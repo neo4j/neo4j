@@ -26,12 +26,7 @@ import static java.lang.String.format;
 
 public class InFlightMap<K, V>
 {
-    private final Map<K,V> map;
-
-    public InFlightMap()
-    {
-        this.map = new ConcurrentHashMap<>();
-    }
+    private final Map<K,V> map = new ConcurrentHashMap<>();
 
     /**
      * Adds a new mapping.
@@ -42,17 +37,21 @@ public class InFlightMap<K, V>
      */
     public void register( K key, V value )
     {
-        V previousValue = map.put( key, value );
+        V previousValue = map.putIfAbsent( key, value );
 
         if ( previousValue != null )
         {
-            map.put( key, previousValue );
             throw new IllegalArgumentException(
                     format( "Attempted to register an already seen value to the log entry cache. Key: %s Value: %s",
                             key, value ) );
         }
     }
 
+    /**
+     * Returns the mapped value for this key or null if the key has not been registered.
+     * @param key
+     * @return the value for this key, otherwise null.
+     */
     public V retrieve( K key )
     {
         return map.get( key );

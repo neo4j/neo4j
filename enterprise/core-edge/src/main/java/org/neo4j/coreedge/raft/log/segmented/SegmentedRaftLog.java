@@ -254,7 +254,8 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
 
         // Not found in cache but within our valid range, so we must read from the log.
         RaftLogEntry raftLogEntry = readLogEntry( logIndex );
-        return raftLogEntry != null ? raftLogEntry.term() : -1;
+        assert (raftLogEntry != null);
+        return raftLogEntry.term();
     }
 
     @Override

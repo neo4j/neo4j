@@ -72,20 +72,11 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     private final CoreStateDownloader downloader;
     private final RaftLogCommitIndexMonitor commitIndexMonitor;
 
-    public CoreState(
-            RaftLog raftLog,
-            int flushEvery,
-            Supplier<DatabaseHealth> dbHealth,
-            LogProvider logProvider,
-            ProgressTracker progressTracker,
-            StateStorage<Long> lastFlushedStorage,
-            StateStorage<Long> lastApplyingStorage,
-            StateStorage<GlobalSessionTrackerState<CoreMember>> sessionStorage,
-            CoreServerSelectionStrategy selectionStrategy,
-            CoreStateApplier applier,
-            CoreStateDownloader downloader,
-            InFlightMap<Long,RaftLogEntry> inFlightMap,
-            Monitors monitors )
+    public CoreState( RaftLog raftLog, int flushEvery, Supplier<DatabaseHealth> dbHealth, LogProvider logProvider,
+            ProgressTracker progressTracker, StateStorage<Long> lastFlushedStorage,
+            StateStorage<Long> lastApplyingStorage, StateStorage<GlobalSessionTrackerState<CoreMember>> sessionStorage,
+            CoreServerSelectionStrategy selectionStrategy, CoreStateApplier applier, CoreStateDownloader downloader,
+            InFlightMap<Long,RaftLogEntry> inFlightMap, Monitors monitors )
     {
         this.raftLog = raftLog;
         this.lastFlushedStorage = lastFlushedStorage;
@@ -141,6 +132,18 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
                         }
                         currentLogEntrySupplier = cursorLogEntrySupplier;
                         raftLogEntry = currentLogEntrySupplier.get( i );
+                    }
+
+                    if ( raftLogEntry == null )
+                    {
+                        String failureMessage = format(
+                                "Log entry at index %d is not present in the log. " +
+                                "Please perform recovery by restarting this database instance. " +
+                                "Indexes to be applied are from %d up to %d. " +
+                                "The append index is %d, and the prev index is %d.",
+                                i, lastApplied + 1, lastToApply, raftLog.appendIndex(), raftLog.prevIndex() );
+                        log.error( failureMessage );
+                        throw new IllegalStateException( failureMessage );
                     }
 
                     applyEntry( raftLogEntry, i );
@@ -295,6 +298,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     public synchronized void start() throws IOException, InterruptedException
     {
         lastFlushed = lastApplied = lastFlushedStorage.getInitialState();
+        log.info( format( "Restoring last applied index to %d", lastApplied ) );
         sessionState = sessionStorage.getInitialState();
 
         submitApplyJob( lastApplyingStorage.getInitialState() );
