@@ -2844,7 +2844,7 @@ public abstract class PageCacheTest<T extends PageCache>
             // The takeLockFuture got it first, so the closeFuture should
             // complete when we release the latch.
             secondThreadGotLockLatch.countDown();
-            closeFuture.get( 2000, TimeUnit.MILLISECONDS );
+            closeFuture.get( 20000, TimeUnit.MILLISECONDS );
         }
     }
 
