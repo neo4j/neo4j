@@ -152,6 +152,15 @@ class AdversarialReadPageCursor extends PageCursor
             }
             return false;
         }
+
+        public boolean isInconsistent()
+        {
+            if ( currentReadIsPreparingInconsistent )
+            {
+                callCounter++;
+            }
+            return currentReadIsInconsistent;
+        }
     }
 
     private final PageCursor delegate;
@@ -342,19 +351,22 @@ class AdversarialReadPageCursor extends PageCursor
     @Override
     public boolean next() throws IOException
     {
-        boolean currentReadIsPreparingInconsistent = state.injectFailureOrMischief( FileNotFoundException.class, IOException.class,
-                SecurityException.class, IllegalStateException.class );
-        state.reset( currentReadIsPreparingInconsistent );
+        prepareNext();
         return delegate.next();
     }
 
     @Override
     public boolean next( long pageId ) throws IOException
     {
+        prepareNext();
+        return delegate.next( pageId );
+    }
+
+    private void prepareNext()
+    {
         boolean currentReadIsPreparingInconsistent = state.injectFailureOrMischief( FileNotFoundException.class, IOException.class,
                 SecurityException.class, IllegalStateException.class );
         state.reset( currentReadIsPreparingInconsistent );
-        return delegate.next( pageId );
     }
 
     @Override
@@ -395,11 +407,7 @@ class AdversarialReadPageCursor extends PageCursor
     public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
     {
         state.injectFailure( IndexOutOfBoundsException.class );
-        if ( state.currentReadIsPreparingInconsistent )
-        {
-            state.callCounter++;
-        }
-        if ( !state.currentReadIsInconsistent )
+        if ( !state.isInconsistent() )
         {
             delegate.copyTo( sourceOffset, targetCursor, targetOffset, lengthInBytes );
         }

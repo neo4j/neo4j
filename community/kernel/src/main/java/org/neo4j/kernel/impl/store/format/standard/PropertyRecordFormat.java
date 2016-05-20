@@ -85,7 +85,7 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
                 return;
             }
             int additionalBlocks = numberOfBlocksUsed - 1;
-            if ( additionalBlocks * 8 > RECORD_SIZE - (cursor.getOffset() - offsetAtBeginning ) )
+            if ( additionalBlocks * Long.BYTES > RECORD_SIZE - (cursor.getOffset() - offsetAtBeginning) )
             {
                 cursor.setCursorException( "PropertyRecord claims to have more property blocks than can fit in a record" );
                 return;
