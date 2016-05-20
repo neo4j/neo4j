@@ -236,7 +236,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public KernelTransactionImplementation initialize( long lastCommittedTx )
     {
         this.locks = locksManager.newClient();
-        this.context.init( locks );
         this.closing = closed = failure = success = terminated = false;
         this.transactionType = TransactionType.ANY;
         this.beforeHookInvoked = false;
@@ -518,23 +517,27 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         try ( CommitEvent commitEvent = transactionEvent.beginCommitEvent() )
         {
             // Trigger transaction "before" hooks.
-            if ( hasDataChanges() )
+            if ( hasTxStateWithChanges() )
             {
-                try
+                if ( txState.hasDataChanges() )
                 {
-                    if ( (hooksState = hooks.beforeCommit( txState, this, storeLayer )) != null && hooksState.failed() )
+                    try
                     {
-                        throw new TransactionFailureException( Status.Transaction.HookFailed, hooksState.failure(),
-                                "" );
+                        if ( (hooksState = hooks.beforeCommit( txState, this, storeLayer )) != null && hooksState.failed() )
+                        {
+                            throw new TransactionFailureException( Status.Transaction.HookFailed, hooksState.failure(),
+                                    "" );
+                        }
+                    }
+                    finally
+                    {
+                        beforeHookInvoked = true;
                     }
                 }
-                finally
-                {
-                    beforeHookInvoked = true;
-                }
-            }
 
-            prepareRecordChangesFromTransactionState();
+                context.init( locks );
+                prepareRecordChangesFromTransactionState();
+            }
 
             // Convert changes into commands and commit
             if ( hasChanges() )

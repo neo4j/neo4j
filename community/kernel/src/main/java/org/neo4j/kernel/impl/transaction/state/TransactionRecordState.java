@@ -127,6 +127,12 @@ public class TransactionRecordState implements RecordState
                 (neoStoreRecord != null && neoStoreRecord.changeSize() > 0);
     }
 
+    // Only for test-access
+    public NeoStoreTransactionContext getContext()
+    {
+        return context;
+    }
+
     @Override
     public void extractCommands( Collection<Command> commands ) throws TransactionFailureException
     {
