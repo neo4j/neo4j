@@ -40,7 +40,7 @@ abstract class MuninnPageCursor extends PageCursor
             flag( MuninnPageCursor.class, "tracePinnedCachePageId", false );
 
     private static final boolean usePreciseCursorErrorStackTraces =
-            flag( MuninnPageCursor.class, "usePreciseCursorErrorStackTraces", true );
+            flag( MuninnPageCursor.class, "usePreciseCursorErrorStackTraces", false );
 
     // Size of the respective primitive types in bytes.
     private static final int SIZE_OF_BYTE = Byte.BYTES;
