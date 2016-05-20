@@ -29,6 +29,7 @@
     <module>bolt</module>
     <module>import-tool</module>
     <module>kernel</module>
+    <module>lucene</module>
   </modules>
 
   <scm>

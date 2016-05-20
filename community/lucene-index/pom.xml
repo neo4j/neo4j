@@ -125,21 +125,6 @@ the relevant Commercial Agreement.
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-graphviz</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.neo4j.doc</groupId>
-      <artifactId>neo4j-doc-tools</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-      <type>test-jar</type>
-    </dependency>
-
   </dependencies>
 
   <build>
