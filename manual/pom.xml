@@ -31,6 +31,7 @@
     <module>shell</module>
     <module>kernel</module>
     <module>lucene</module>
+    <module>backup</module>
   </modules>
 
   <scm>
