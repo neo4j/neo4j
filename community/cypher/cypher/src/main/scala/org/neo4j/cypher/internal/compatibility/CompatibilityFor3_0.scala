@@ -328,7 +328,7 @@ case class ExecutionResultWrapperFor3_0(inner: InternalExecutionResult, planner:
     inner.javaColumnAs[T](column)
   }
 
-  def executionPlanDescription(): ExtendedPlanDescription =
+  def executionPlanDescription(): org.neo4j.cypher.internal.PlanDescription =
     exceptionHandlerFor3_0.runSafely {
       convert(
         inner.executionPlanDescription().
@@ -357,7 +357,7 @@ case class ExecutionResultWrapperFor3_0(inner: InternalExecutionResult, planner:
     next
   }
 
-  def convert(i: InternalPlanDescription): ExtendedPlanDescription = exceptionHandlerFor3_0.runSafely {
+  def convert(i: InternalPlanDescription): org.neo4j.cypher.internal.PlanDescription = exceptionHandlerFor3_0.runSafely {
     CompatibilityPlanDescriptionFor3_0(i, CypherVersion.v3_0, planner, runtime)
   }
 
@@ -449,13 +449,11 @@ case class ExecutionResultWrapperFor3_0(inner: InternalExecutionResult, planner:
 
 case class CompatibilityPlanDescriptionFor3_0(inner: InternalPlanDescription, version: CypherVersion,
                                               planner: PlannerName, runtime: RuntimeName)
-  extends ExtendedPlanDescription {
+  extends org.neo4j.cypher.internal.PlanDescription {
 
   self =>
 
-  override def children = extendedChildren
-
-  def extendedChildren = exceptionHandlerFor3_0.runSafely {
+  def children = exceptionHandlerFor3_0.runSafely {
     inner.children.toSeq.map(CompatibilityPlanDescriptionFor3_0.apply(_, version, planner, runtime))
   }
 
@@ -486,7 +484,7 @@ case class CompatibilityPlanDescriptionFor3_0(inner: InternalPlanDescription, ve
     }
   }
 
-  def asJava(in: ExtendedPlanDescription): PlanDescription = new PlanDescription {
+  def asJava(in: org.neo4j.cypher.internal.PlanDescription): PlanDescription = new PlanDescription {
     def getProfilerStatistics: ProfilerStatistics = new ProfilerStatistics {
       def getDbHits: Long = extract { case DbHits(count) => count }
 
@@ -504,7 +502,7 @@ case class CompatibilityPlanDescriptionFor3_0(inner: InternalPlanDescription, ve
 
     def getIdentifiers: util.Set[String] = identifiers.asJava
 
-    def getChildren: util.List[PlanDescription] = in.extendedChildren.toList.map(_.asJava).asJava
+    def getChildren: util.List[PlanDescription] = in.children.toList.map(_.asJava).asJava
 
     override def toString: String = self.toString
   }

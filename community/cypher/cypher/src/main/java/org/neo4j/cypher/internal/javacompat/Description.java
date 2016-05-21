@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-import org.neo4j.cypher.internal.ExtendedPlanDescription;
 import org.neo4j.cypher.ProfilerStatisticsNotReadyException;
 import org.neo4j.cypher.internal.PlanDescription;
 import org.neo4j.graphdb.ExecutionPlanDescription;
@@ -76,9 +75,9 @@ class Description implements ExecutionPlanDescription
     @Override
     public Set<String> getIdentifiers()
     {
-        if ( description instanceof ExtendedPlanDescription )
+        if ( description != null )
         {
-            return JavaConversions.setAsJavaSet( ((ExtendedPlanDescription) description).identifiers() );
+            return JavaConversions.setAsJavaSet(  description.identifiers() );
         }
         return Collections.emptySet();
     }

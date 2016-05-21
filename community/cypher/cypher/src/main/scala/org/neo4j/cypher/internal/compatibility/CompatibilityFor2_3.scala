@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.frontend.v2_3.{CypherException => InternalCyphe
 import org.neo4j.cypher.internal.javacompat.{PlanDescription, ProfilerStatistics}
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
-import org.neo4j.cypher.internal.{CypherExecutionMode, ExecutionResult, ExtendedPlanDescription, LastCommittedTxIdProvider, ParsedQuery, PreParsedQuery, QueryStatistics}
+import org.neo4j.cypher.internal.{CypherExecutionMode, ExecutionResult, LastCommittedTxIdProvider, ParsedQuery, PreParsedQuery, QueryStatistics}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb._
@@ -273,7 +273,7 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
 
   def javaColumnAs[T](column: String) = exceptionHandlerFor2_3.runSafely{inner.javaColumnAs[T](column)}
 
-  def executionPlanDescription(): ExtendedPlanDescription =
+  def executionPlanDescription(): org.neo4j.cypher.internal.PlanDescription =
     exceptionHandlerFor2_3.runSafely {
       convert(
         inner.executionPlanDescription().
@@ -300,7 +300,7 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
     next
   }
 
-  def convert(i: InternalPlanDescription): ExtendedPlanDescription = exceptionHandlerFor2_3.runSafely {
+  def convert(i: InternalPlanDescription): org.neo4j.cypher.internal.PlanDescription = exceptionHandlerFor2_3.runSafely {
     CompatibilityPlanDescriptionFor2_3(i, CypherVersion.v2_3, planner, runtime)
   }
 
@@ -359,13 +359,11 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
 
 case class CompatibilityPlanDescriptionFor2_3(inner: InternalPlanDescription, version: CypherVersion,
                                               planner: PlannerName, runtime: RuntimeName)
-  extends ExtendedPlanDescription {
+  extends org.neo4j.cypher.internal.PlanDescription {
 
   self =>
 
-  override def children = extendedChildren
-
-  def extendedChildren = exceptionHandlerFor2_3.runSafely {
+  def children = exceptionHandlerFor2_3.runSafely {
     inner.children.toSeq.map(CompatibilityPlanDescriptionFor2_3.apply(_, version, planner, runtime))
   }
 
@@ -388,7 +386,7 @@ case class CompatibilityPlanDescriptionFor2_3(inner: InternalPlanDescription, ve
     }
   }
 
-  def asJava(in: ExtendedPlanDescription): PlanDescription = new PlanDescription {
+  def asJava(in: org.neo4j.cypher.internal.PlanDescription): PlanDescription = new PlanDescription {
     def getProfilerStatistics: ProfilerStatistics = new ProfilerStatistics {
       def getDbHits: Long = extract { case DbHits(count) => count}
 
@@ -406,7 +404,7 @@ case class CompatibilityPlanDescriptionFor2_3(inner: InternalPlanDescription, ve
 
     def getIdentifiers: util.Set[String] = identifiers.asJava
 
-    def getChildren: util.List[PlanDescription] = in.extendedChildren.toList.map(_.asJava).asJava
+    def getChildren: util.List[PlanDescription] = in.children.toList.map(_.asJava).asJava
 
     override def toString: String = self.toString
   }
