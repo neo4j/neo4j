@@ -1,6 +1,5 @@
 [[tools]]
-Tools
-=====
+= Tools
 
 [partintro]
 --
@@ -13,5 +12,5 @@ include::{importdir}/neo4j-import-tool-docs-docs-jar/ops/import-tool.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-shell-docs-jar/dev/shell.asciidoc[]
+include::{importdir}/neo4j-shell-docs-docs-jar/dev/shell.asciidoc[]
 

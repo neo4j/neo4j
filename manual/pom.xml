@@ -28,6 +28,7 @@
     <module>server-examples</module>
     <module>bolt</module>
     <module>import-tool</module>
+    <module>shell</module>
   </modules>
 
   <scm>

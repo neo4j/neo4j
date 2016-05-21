@@ -112,8 +112,8 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-shell</artifactId>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-shell-docs</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
       <scope>provided</scope>
