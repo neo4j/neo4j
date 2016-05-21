@@ -79,14 +79,14 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
   private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
 
   @throws(classOf[SyntaxException])
-  def profile(query: String, scalaParams: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
+  def profile(query: String, scalaParams: Map[String, Any], session: QuerySession): ExecutionResult = {
     // we got deep scala parameters => convert to deep java parameters
     val javaParams = javaValues.asDeepJavaMap(scalaParams).asInstanceOf[JavaMap[String, AnyRef]]
     profile(query, javaParams, session)
   }
 
   @throws(classOf[SyntaxException])
-  def profile(query: String, javaParams: JavaMap[String, AnyRef], session: QuerySession): ExtendedExecutionResult = {
+  def profile(query: String, javaParams: JavaMap[String, AnyRef], session: QuerySession): ExecutionResult = {
     // we got deep java parameters => convert to shallow scala parameters for passing into the engine
     val scalaParams = scalaValues.asShallowScalaMap(javaParams)
     executionMonitor.startQueryExecution(session, query, javaParams)
@@ -95,14 +95,14 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
   }
 
   @throws(classOf[SyntaxException])
-  def execute(query: String, scalaParams: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
+  def execute(query: String, scalaParams: Map[String, Any], session: QuerySession): ExecutionResult = {
     // we got deep scala parameters => convert to deep java parameters
     val javaParams = javaValues.asDeepJavaMap(scalaParams).asInstanceOf[JavaMap[String, AnyRef]]
     execute(query, javaParams, session)
   }
 
   @throws(classOf[SyntaxException])
-  def execute(query: String, javaParams: JavaMap[String, AnyRef], session: QuerySession): ExtendedExecutionResult = {
+  def execute(query: String, javaParams: JavaMap[String, AnyRef], session: QuerySession): ExecutionResult = {
     // we got deep java parameters => convert to shallow scala parameters for passing into the engine
     val scalaParams = scalaValues.asShallowScalaMap(javaParams)
     executionMonitor.startQueryExecution(session, query, javaParams)

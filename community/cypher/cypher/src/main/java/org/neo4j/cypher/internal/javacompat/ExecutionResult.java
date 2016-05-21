@@ -28,7 +28,6 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.neo4j.cypher.CypherException;
-import org.neo4j.cypher.internal.ExtendedExecutionResult;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionException;
@@ -38,6 +37,7 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.query.QuerySession;
 
 /**
  * Holds Cypher query result sets, in tabular form. Each row of the result is a map
@@ -53,7 +53,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
  */
 public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Result
 {
-    private final ExtendedExecutionResult inner;
+    private final org.neo4j.cypher.internal.ExecutionResult inner;
 
     /**
      * Initialized lazily and should be accessed with {@link #innerIterator()} method
@@ -64,11 +64,11 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     /**
      * Constructor used by the Cypher framework. End-users should not
      * create an ExecutionResult directly, but instead use the result
-     * returned from calling {@link ExecutionEngine#execute(String)}.
+     * returned from calling {@link ExecutionEngine#executeQuery(String, Map, QuerySession)}.
      *
      * @param   projection Execution result projection to use.
      */
-    public ExecutionResult( ExtendedExecutionResult projection )
+    public ExecutionResult( org.neo4j.cypher.internal.ExecutionResult projection )
     {
         inner = Objects.requireNonNull( projection );
         //if updating query we must fetch the iterator right away in order to eagerly perform updates

@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.frontend.v2_3.{CypherException => InternalCyphe
 import org.neo4j.cypher.internal.javacompat.{PlanDescription, ProfilerStatistics}
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
-import org.neo4j.cypher.internal.{CypherExecutionMode, ExtendedExecutionResult, ExtendedPlanDescription, LastCommittedTxIdProvider, ParsedQuery, PreParsedQuery, QueryStatistics}
+import org.neo4j.cypher.internal.{CypherExecutionMode, ExecutionResult, ExtendedPlanDescription, LastCommittedTxIdProvider, ParsedQuery, PreParsedQuery, QueryStatistics}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb._
@@ -189,7 +189,7 @@ trait CompatibilityFor2_3 {
     private def queryContext(transactionalContext: TransactionalContextWrapperv3_1): QueryContext =
       new ExceptionTranslatingQueryContextFor2_3(new TransactionBoundQueryContext(transactionalContext))
 
-    def run(transactionalContext: TransactionalContextWrapperv3_1, executionMode: CypherExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
+    def run(transactionalContext: TransactionalContextWrapperv3_1, executionMode: CypherExecutionMode, params: Map[String, Any], session: QuerySession): ExecutionResult = {
       implicit val s = session
       val innerExecutionMode = executionMode match {
         case CypherExecutionMode.explain => ExplainModev2_3
@@ -211,7 +211,7 @@ trait CompatibilityFor2_3 {
 
 case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner: PlannerName, runtime: RuntimeName)
                                        (implicit monitor: QueryExecutionMonitor, session: QuerySession)
-  extends ExtendedExecutionResult {
+  extends ExecutionResult {
 
   import org.neo4j.cypher.internal.compatibility.helpersv2_3._
 

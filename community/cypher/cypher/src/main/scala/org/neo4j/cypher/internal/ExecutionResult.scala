@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal
 
 import java.io.PrintWriter
 
-import org.neo4j.graphdb.ResourceIterator
+import org.neo4j.graphdb.Result.ResultVisitor
+import org.neo4j.graphdb.{Notification, QueryExecutionType, ResourceIterator}
 
 trait ExecutionResult extends Iterator[Map[String, Any]] {
   def columns: List[String]
@@ -34,4 +35,8 @@ trait ExecutionResult extends Iterator[Map[String, Any]] {
   def queryStatistics(): QueryStatistics
   def executionPlanDescription(): PlanDescription
   def close()
+  def planDescriptionRequested: Boolean
+  def executionType: QueryExecutionType
+  def notifications: Iterable[Notification]
+  def accept[EX <: Exception](visitor: ResultVisitor[EX])
 }
