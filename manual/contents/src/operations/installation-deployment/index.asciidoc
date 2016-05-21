@@ -34,5 +34,5 @@ include::{importdir}/neo4j-server-docs-jar/ops/server-debugging.asciidoc[]
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-udc-docs-jar/ops/index.asciidoc[]
+include::udc.asciidoc[]
 
