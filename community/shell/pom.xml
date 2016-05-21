@@ -76,17 +76,6 @@ the relevant Commercial Agreement.
           </archive>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.neo4j.build.plugins</groupId>
-        <artifactId>docs-maven-plugin</artifactId>
-        <configuration>
-          <sourceDirectories>
-            <sourceDirectory>${basedir}/src/docs</sourceDirectory>
-            <sourceDirectory>${project.build.directory}/docs</sourceDirectory>
-            <sourceDirectory>${basedir}/src/test/resources</sourceDirectory>
-          </sourceDirectories>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
 
@@ -164,12 +153,6 @@ the relevant Commercial Agreement.
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-graphviz</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-bolt</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
@@ -182,13 +165,6 @@ the relevant Commercial Agreement.
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>org.neo4j.doc</groupId>
-      <artifactId>neo4j-doc-tools</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-      <type>test-jar</type>
-    </dependency>
   </dependencies>
 
 </project>
