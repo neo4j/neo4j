@@ -98,15 +98,15 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-backup</artifactId>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-backup-docs</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-backup</artifactId>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-backup-docs</artifactId>
       <version>${neo4j.version}</version>
       <classifier>test-sources</classifier>
       <scope>provided</scope>
@@ -342,7 +342,7 @@
               <excludes>META-INF,META-INF/**,org/neo4j/kernel/impl/storemigration/legacystore/**</excludes>
               <type>jar</type>
               <outputDirectory>${docs.test-sources}</outputDirectory>
-              <includeArtifactIds>neo4j-cypher-docs,neo4j-examples,neo4j-harness-test,neo4j-server,neo4j-lucene-index,neo4j-backup,neo4j-kernel</includeArtifactIds>
+              <includeArtifactIds>neo4j-cypher-docs,neo4j-examples,neo4j-harness-test,neo4j-server,neo4j-lucene-index,neo4j-backup-docs,neo4j-kernel</includeArtifactIds>
             </configuration>
           </execution>
           <execution>
