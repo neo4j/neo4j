@@ -24,7 +24,6 @@
   </scm>
 
   <properties>
-    <sun.jta.version>1.1</sun.jta.version>
     <jline.groupId>jline</jline.groupId>
     <jline.artifactId>jline</jline.artifactId>
     <jline.version>2.12</jline.version>
@@ -69,7 +68,7 @@ the relevant Commercial Agreement.
               <packageName>org.neo4j.shell</packageName>
             </manifest>
             <manifestEntries>
-              <Class-Path>neo4j-kernel-${project.version}.jar neo4j-index-${project.version}.jar lucene-core-${lucene.version}.jar jta-${sun.jta.version}.jar ${jta.artifactId}-${jta.version}.jar jline-${jline.main.version}.jar
+              <Class-Path>neo4j-kernel-${project.version}.jar neo4j-index-${project.version}.jar lucene-core-${lucene.version}.jar jline-${jline.main.version}.jar
                 ${jline.artifactId}-${jline.version}.jar</Class-Path>
               <Agent-Class>org.neo4j.shell.StartClient</Agent-Class>
             </manifestEntries>

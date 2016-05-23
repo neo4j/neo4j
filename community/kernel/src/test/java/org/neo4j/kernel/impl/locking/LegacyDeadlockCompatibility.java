@@ -26,14 +26,12 @@ import java.io.File;
 import java.util.Random;
 import java.util.Stack;
 import java.util.concurrent.CountDownLatch;
-import javax.transaction.Transaction;
 
 import org.neo4j.kernel.DeadlockDetectedException;
 
 import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
 
 @Ignore("Not a test, part of a compatibility suite.")
 // This is the legacy deadlock detection tests
@@ -163,7 +161,6 @@ public class LegacyDeadlockCompatibility extends LockingCompatibilityTestSuite.C
         private final float readWriteRatio;
         private final Locks.Client lm;
         private volatile Exception error;
-        private final Transaction tx = mock( Transaction.class );
         public volatile Long startedWaiting = null;
 
         StressThread( String name, int numberOfIterations, int depthCount,

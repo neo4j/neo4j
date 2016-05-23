@@ -19,14 +19,8 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.HeuristicRollbackException;
-import javax.transaction.RollbackException;
-import javax.transaction.Synchronization;
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-import javax.transaction.xa.XAResource;
-
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.locking.community.LockManagerImpl;
 import org.neo4j.kernel.impl.locking.community.RagManager;
 
@@ -305,48 +299,39 @@ public class LockServiceMicroBenchmark
 
         static class ThreadMark implements Transaction
         {
+
             @Override
-            public void commit()
-                    throws HeuristicMixedException, HeuristicRollbackException, RollbackException, SecurityException,
-                           SystemException
+            public void terminate()
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                throw new UnsupportedOperationException("not implemented");
             }
 
             @Override
-            public boolean delistResource( XAResource xaRes, int flag ) throws IllegalStateException, SystemException
+            public void failure()
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                throw new UnsupportedOperationException("not implemented");
             }
 
             @Override
-            public boolean enlistResource( XAResource xaRes )
-                    throws IllegalStateException, RollbackException, SystemException
+            public void success()
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                throw new UnsupportedOperationException("not implemented");
             }
 
             @Override
-            public int getStatus() throws SystemException
+            public void close()
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                throw new UnsupportedOperationException("not implemented");
             }
 
             @Override
-            public void registerSynchronization( Synchronization synch )
-                    throws IllegalStateException, RollbackException, SystemException
+            public org.neo4j.graphdb.Lock acquireWriteLock( PropertyContainer entity )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                throw new UnsupportedOperationException("not implemented");
             }
 
             @Override
-            public void rollback() throws IllegalStateException, SystemException
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            public void setRollbackOnly() throws IllegalStateException, SystemException
+            public org.neo4j.graphdb.Lock acquireReadLock( PropertyContainer entity )
             {
                 throw new UnsupportedOperationException( "not implemented" );
             }

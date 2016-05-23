@@ -61,41 +61,6 @@ public class KernelIT extends KernelIntegrationTest
 {
     // TODO: Split this into area-specific tests, see PropertyIT.
 
-    /**
-     * While we transition ownership from the Beans API to the Kernel API for core database
-     * interactions, there will be a bit of a mess. Our first goal is an architecture like this:
-     * <p>
-     * Users
-     * /    \
-     * Beans API   Cypher
-     * \    /
-     * Kernel API
-     * |
-     * Kernel Implementation
-     * <p>
-     * But our current intermediate architecture looks like this:
-     * <p>
-     * Users
-     * /        \
-     * Beans API <--- Cypher
-     * |    \    /
-     * |  Kernel API
-     * |      |
-     * Kernel Implementation
-     * <p>
-     * Meaning Kernel API and Beans API both manipulate the underlying kernel, causing lots of corner cases. Most
-     * notably, those corner cases are related to Transactions, and the interplay between three transaction APIs:
-     * - The Beans API
-     * - The JTA Transaction Manager API
-     * - The Kernel TransactionContext API
-     * <p>
-     * In the long term, the goal is for JTA compliant stuff to live outside of the kernel, as an addon. The Kernel
-     * API will rule supreme over the land of transactions. We are a long way away from there, however, so as a first
-     * intermediary step, the JTA transaction manager rules supreme, and the Kernel API piggybacks on it.
-     * <p>
-     * This test shows us how to use both the Kernel API and the Beans API together in the same transaction,
-     * during the transition phase.
-     */
     @Test
     public void mixingBeansApiWithKernelAPI() throws Exception
     {
@@ -118,14 +83,6 @@ public class KernelIT extends KernelIntegrationTest
         // 5: Commit through the beans API
         transaction.success();
         transaction.close();
-
-        // NOTE: Transactions are still thread-bound right now, because we use JTA to "own" transactions,
-        // meaning if you use
-        // both the Kernel API to create transactions while a Beans API transaction is running in the same
-        // thread, the results are undefined.
-
-        // When the Kernel API implementation is done, the Kernel API transaction implementation is not meant
-        // to be bound to threads.
     }
 
     @Test

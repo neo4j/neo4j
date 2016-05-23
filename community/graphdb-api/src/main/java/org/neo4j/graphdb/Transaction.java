@@ -27,9 +27,7 @@ package org.neo4j.graphdb;
  * If you attempt to access the graph outside of a transaction, those operations will throw
  * {@link NotInTransactionException}.
  * <p>
- * Transactions are bound to the thread in which they were created. Transactions can either be handled
- * programmatically, through this interface, or by a container through the Java Transaction API (JTA). The
- * Transaction interface makes handling programmatic transactions easier than using JTA programmatically.
+ * Transactions are bound to the thread in which they were created.
  * Here's the idiomatic use of programmatic transactions in Neo4j starting from java 7:
  *
  * <pre>
