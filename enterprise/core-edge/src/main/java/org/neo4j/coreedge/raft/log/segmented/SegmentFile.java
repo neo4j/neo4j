@@ -43,13 +43,13 @@ import static org.neo4j.coreedge.raft.log.EntryRecord.read;
 /**
  * Keeps track of a segment of the RAFT log, i.e. a consecutive set of entries.
  * A segment can have several concurrent readers but just a single writer.
- * <p>
+ *
  * The single writer should perform all write and control operations,
  * since these are not thread-safe.
- * <p>
+ *
  * Concurrent reading is thread-safe.
  */
-class SegmentFile implements AutoCloseable
+class SegmentFile
 {
     private static final SegmentHeader.Marshal headerMarshal = new SegmentHeader.Marshal();
 
@@ -66,8 +66,12 @@ class SegmentFile implements AutoCloseable
     private Runnable onDisposal;
     private volatile boolean isDisposed;
 
-    SegmentFile( FileSystemAbstraction fileSystem, File file, ChannelMarshal<ReplicatedContent> contentMarshal,
-            LogProvider logProvider, SegmentHeader header )
+    SegmentFile(
+            FileSystemAbstraction fileSystem,
+            File file,
+            ChannelMarshal<ReplicatedContent> contentMarshal,
+            LogProvider logProvider,
+            SegmentHeader header )
     {
         this.fileSystem = fileSystem;
         this.file = file;
@@ -78,9 +82,12 @@ class SegmentFile implements AutoCloseable
         readerPool = new StoreChannelPool( fileSystem, file, "r", logProvider );
     }
 
-    static SegmentFile create( FileSystemAbstraction fileSystem, File file,
-            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider, SegmentHeader header )
-            throws IOException
+    static SegmentFile create(
+            FileSystemAbstraction fileSystem,
+            File file,
+            ChannelMarshal<ReplicatedContent> contentMarshal,
+            LogProvider logProvider,
+            SegmentHeader header ) throws IOException
     {
         SegmentFile segment = new SegmentFile( fileSystem, file, contentMarshal, logProvider, header );
 
@@ -166,7 +173,7 @@ class SegmentFile implements AutoCloseable
      */
     WritableChannel writer() throws IOException, DisposedException
     {
-        if ( markedForDisposal )
+        if( markedForDisposal )
         {
             throw new DisposedException();
         }
@@ -216,7 +223,7 @@ class SegmentFile implements AutoCloseable
      */
     void markForDisposal( Runnable onDisposal ) throws DisposedException
     {
-        if ( markedForDisposal )
+        if( markedForDisposal )
         {
             throw new DisposedException();
         }
@@ -254,16 +261,5 @@ class SegmentFile implements AutoCloseable
     public long size()
     {
         return fileSystem.getFileSize( file );
-    }
-
-    @Override
-    public void close() throws DisposedException
-    {
-        closeWriter();
-        if ( !markedForDisposal )
-        {
-            markForDisposal( () -> {
-            } );
-        }
     }
 }

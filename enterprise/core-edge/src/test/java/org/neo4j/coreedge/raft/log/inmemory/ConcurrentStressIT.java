@@ -24,41 +24,12 @@ import java.io.File;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 
-public class ConcurrentStressIT extends org.neo4j.coreedge.raft.log.ConcurrentStressIT<ConcurrentStressIT.LifecycledInMemoryRaftLog>
+public class ConcurrentStressIT extends org.neo4j.coreedge.raft.log.ConcurrentStressIT
 {
     @Override
-    public LifecycledInMemoryRaftLog createRaftLog( FileSystemAbstraction fsa, File dir ) throws Throwable
+    public RaftLog createRaftLog( FileSystemAbstraction fsa, File dir ) throws Throwable
     {
-        return new LifecycledInMemoryRaftLog();
-    }
-
-    public static class LifecycledInMemoryRaftLog extends InMemoryRaftLog implements Lifecycle
-    {
-
-        @Override
-        public void init() throws Throwable
-        {
-
-        }
-
-        @Override
-        public void start() throws Throwable
-        {
-
-        }
-
-        @Override
-        public void stop() throws Throwable
-        {
-
-        }
-
-        @Override
-        public void shutdown() throws Throwable
-        {
-
-        }
+        return new InMemoryRaftLog();
     }
 }

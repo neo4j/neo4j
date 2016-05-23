@@ -35,19 +35,18 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.rule.TargetDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 
-public abstract class ConcurrentStressIT<T extends RaftLog & Lifecycle>
+public abstract class ConcurrentStressIT
 {
     private static final int MAX_CONTENT_SIZE = 2048;
     @Rule
     public final TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
 
-    protected abstract T createRaftLog( FileSystemAbstraction fsa, File dir ) throws Throwable;
+    protected abstract RaftLog createRaftLog( FileSystemAbstraction fsa, File dir ) throws Throwable;
 
     @Test
     public void readAndWrite() throws Throwable
@@ -58,36 +57,30 @@ public abstract class ConcurrentStressIT<T extends RaftLog & Lifecycle>
     private void readAndWrite( int nReaders, int time, TimeUnit unit ) throws Throwable
     {
         DefaultFileSystemAbstraction fsa = new DefaultFileSystemAbstraction();
-        T raftLog = createRaftLog( fsa, dir.directory() );
+        RaftLog raftLog = createRaftLog( fsa, dir.directory() );
 
-        try
+        ExecutorService es = Executors.newCachedThreadPool();
+
+        Collection<Future<Long>> futures = new ArrayList<>();
+
+        futures.add(
+                es.submit( new TimedTask( () -> {
+                    write( raftLog );
+                }, time, unit ) )
+        );
+
+        for ( int i = 0; i < nReaders; i++ )
         {
-            ExecutorService es = Executors.newCachedThreadPool();
-
-            Collection<Future<Long>> futures = new ArrayList<>();
-
-            futures.add( es.submit( new TimedTask( () -> {
-                write( raftLog );
-            }, time, unit ) ) );
-
-            for ( int i = 0; i < nReaders; i++ )
-            {
-                futures.add( es.submit( new TimedTask( () -> {
-                    read( raftLog );
-                }, time, unit ) ) );
-            }
-
-            for ( Future<Long> f : futures )
-            {
-                long iterations = f.get();
-            }
-
-            es.shutdown();
+            futures.add(
+                    es.submit( new TimedTask( () -> {
+                        read( raftLog );
+                    }, time, unit ) )
+            );
         }
-        finally
+
+        for ( Future<Long> f : futures )
         {
-            //noinspection ThrowFromFinallyBlock
-            raftLog.shutdown();
+            long iterations = f.get();
         }
     }
 
@@ -148,8 +141,6 @@ public abstract class ConcurrentStressIT<T extends RaftLog & Lifecycle>
         }
     }
 
-    private static final CharSequence CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
     private String stringForIndex( long index )
     {
         int len = ((int) index) % MAX_CONTENT_SIZE + 1;
@@ -157,7 +148,7 @@ public abstract class ConcurrentStressIT<T extends RaftLog & Lifecycle>
 
         while ( len-- > 0 )
         {
-            str.append( CHARS.charAt( len % CHARS.length() ) );
+            str.append( (char) len );
         }
 
         return str.toString();

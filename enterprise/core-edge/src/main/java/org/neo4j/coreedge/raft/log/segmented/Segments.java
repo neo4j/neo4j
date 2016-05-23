@@ -41,7 +41,7 @@ import static java.lang.String.format;
 /**
  * Keeps track of all the segments that the RAFT log consists of.
  */
-class Segments implements AutoCloseable
+class Segments
 {
     private final OpenEndRangeMap<Long/*minIndex*/,SegmentFile> rangeMap = new OpenEndRangeMap<>();
     private final List<SegmentFile> segmentFiles;
@@ -247,34 +247,5 @@ class Segments implements AutoCloseable
     public ListIterator<SegmentFile> getSegmentFileIteratorAtEnd()
     {
         return segmentFiles.listIterator( segmentFiles.size() );
-    }
-
-    @Override
-    public void close() throws DisposedException
-    {
-        DisposedException error = null;
-        for ( SegmentFile segment : segmentFiles )
-        {
-            try
-            {
-                segment.close();
-            }
-            catch ( DisposedException ex )
-            {
-                if ( error == null )
-                {
-                    error = ex;
-                }
-                else
-                {
-                    error.addSuppressed( ex );
-                }
-            }
-        }
-
-        if ( error != null )
-        {
-            throw error;
-        }
     }
 }

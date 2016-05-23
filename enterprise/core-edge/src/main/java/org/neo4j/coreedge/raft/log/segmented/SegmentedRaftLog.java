@@ -102,12 +102,6 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
     }
 
     @Override
-    public void shutdown() throws DisposedException
-    {
-        entryStore.close();
-    }
-
-    @Override
     public synchronized long append( RaftLogEntry entry ) throws IOException
     {
         ensureOk();

@@ -28,10 +28,10 @@ import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning;
 
-public class ConcurrentStressIT extends org.neo4j.coreedge.raft.log.ConcurrentStressIT<SegmentedRaftLog>
+public class ConcurrentStressIT extends org.neo4j.coreedge.raft.log.ConcurrentStressIT
 {
     @Override
-    public SegmentedRaftLog createRaftLog( FileSystemAbstraction fsa, File dir ) throws Throwable
+    public RaftLog createRaftLog( FileSystemAbstraction fsa, File dir ) throws Throwable
     {
         SegmentedRaftLog raftLog = new SegmentedRaftLog( fsa, dir, 8 * 1024 * 1024, new DummyRaftableContentSerializer(), NullLogProvider.getInstance(), 8,
                 raft_log_pruning.getDefaultValue());

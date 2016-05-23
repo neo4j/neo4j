@@ -95,7 +95,8 @@ public class PhysicalRaftLogFile implements LogFile, Lifecycle
     public void init() throws IOException
     {
         // Make sure at least a bare bones log file is available before recovery
-        openLogChannelForVersion( logFiles.getHighestLogVersion() ).close();
+        channel = openLogChannelForVersion( logFiles.getHighestLogVersion() );
+        channel.close();
     }
 
     @Override
