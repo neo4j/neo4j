@@ -498,9 +498,8 @@ public abstract class GraphDatabaseSettings
     public static final Setting<File> auth_store =
             pathSetting( "unsupported.dbms.security.auth_store.location", NO_DEFAULT );
 
-    @Internal
-    public static final Setting<File> role_store = // TODO: Move this to enterprise
-            pathSetting( "unsupported.dbms.security.role_store.location", NO_DEFAULT );
+    @Description("Location of the directory where to store users and roles used for authentication and authorization.")
+    public static final Setting<File> auth_store_dir = pathSetting( "dbms.directories.auth", NO_DEFAULT );
 
     @Internal
     public static final Setting<String> auth_manager = setting( "unsupported.dbms.security.auth_manager", STRING, "" );
