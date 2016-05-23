@@ -9,7 +9,7 @@ test_expect_success "should invoke convert classic store main class, pass in dat
   neo4j-home/bin/neo4j-admin core-convert --database=foo.db  &&
   test_expect_java_arg 'org.neo4j.coreedge.convert.ConvertNonCoreEdgeStoreCli' &&
   test_expect_java_arg '--database=foo.db' &&
-  test_expect_java_arg '--config=conf'
+  test_expect_java_arg '--config=$(neo4j_home)/conf'
 "
 
 test_done
