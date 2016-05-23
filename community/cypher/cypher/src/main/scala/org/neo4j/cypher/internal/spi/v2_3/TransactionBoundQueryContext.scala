@@ -282,6 +282,15 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
       }
     }
 
+    def detachDelete(obj: Node): Int = {
+      try {
+        tc.statement.dataWriteOperations().nodeDetachDelete(obj.getId)
+      } catch {
+        case _: exceptions.EntityNotFoundException => // the node has been deleted by another transaction, oh well...
+          0
+      }
+    }
+
     def propertyKeyIds(id: Long): Iterator[Int] =
       JavaConversionSupport.asScala(tc.statement.readOperations().nodeGetPropertyKeys(id))
 
@@ -333,6 +342,8 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
         case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
       }
     }
+
+    override def detachDelete(obj: Relationship): Int = ??? // not supported for relationships
 
     override def getProperty(id: Long, propertyKeyId: Int): Any =
       tc.statement.readOperations().relationshipGetProperty(id, propertyKeyId)
