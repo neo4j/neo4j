@@ -48,26 +48,28 @@ public class ShiroAuthManager extends BasicAuthManager
     private final EhCacheManager cacheManager;
     private final FileUserRealm realm;
 
-    public ShiroAuthManager( UserRepository userRepository, GroupRepository groupRepository,
+    public ShiroAuthManager( UserRepository userRepository, RoleRepository roleRepository,
             PasswordPolicy passwordPolicy, AuthenticationStrategy authStrategy, boolean authEnabled )
     {
         super( userRepository, passwordPolicy, authStrategy, authEnabled );
 
-        realm = new FileUserRealm( userRepository, groupRepository );
+        realm = new FileUserRealm( userRepository, roleRepository );
         // TODO: Maybe MemoryConstrainedCacheManager is good enough if we do not need timeToLiveSeconds? It would be one less dependency.
         //       Or we could try to reuse Hazelcast which is already a dependency, but we would need to write some glue code.
         cacheManager = new EhCacheManager();
         securityManager = new DefaultSecurityManager( realm );
     }
 
-    public ShiroAuthManager( UserRepository users, GroupRepository groups, PasswordPolicy passwordPolicy, AuthenticationStrategy authStrategy )
+    public ShiroAuthManager( UserRepository userRepository, RoleRepository roleRepository, PasswordPolicy passwordPolicy,
+            AuthenticationStrategy authStrategy )
     {
-        this( users, groups, passwordPolicy, authStrategy, true );
+        this( userRepository, roleRepository, passwordPolicy, authStrategy, true );
     }
 
-    public ShiroAuthManager( UserRepository users, GroupRepository groups, PasswordPolicy passwordPolicy, Clock clock, boolean authEnabled )
+    public ShiroAuthManager( UserRepository userRepository, RoleRepository roleRepository, PasswordPolicy passwordPolicy,
+            Clock clock, boolean authEnabled )
     {
-        this( users, groups, passwordPolicy, new RateLimitedAuthenticationStrategy( clock, 3 ), authEnabled );
+        this( userRepository, roleRepository, passwordPolicy, new RateLimitedAuthenticationStrategy( clock, 3 ), authEnabled );
     }
 
     @Override
@@ -118,13 +120,13 @@ public class ShiroAuthManager extends BasicAuthManager
         }
     }
 
-    public GroupRecord newGroup( String groupName, String... users ) throws IOException, IllegalCredentialsException
+    public RoleRecord newRole( String roleName, String... users ) throws IOException, IllegalCredentialsException
     {
         assertAuthEnabled();
 
         try
         {
-            return realm.newGroup( groupName, users );
+            return realm.newRole( roleName, users );
 
         }
         catch ( ConcurrentModificationException e )

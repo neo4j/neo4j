@@ -30,9 +30,9 @@ import org.neo4j.string.UTF8;
 import static java.lang.String.format;
 
 /**
- * Serializes group authorization and authentication data to a format similar to unix passwd files.
+ * Serializes role authorization and authentication data to a format similar to unix passwd files.
  */
-public class GroupSerialization
+public class RoleSerialization
 {
     public class FormatException extends Exception
     {
@@ -42,47 +42,47 @@ public class GroupSerialization
         }
     }
 
-    private static final String groupSeparator = ":";
+    private static final String roleSeparator = ":";
     private static final String userSeparator = ",";
 
-    public byte[] serialize(Collection<GroupRecord> groups)
+    public byte[] serialize(Collection<RoleRecord> roles)
     {
         StringBuilder sb = new StringBuilder();
-        for ( GroupRecord group : groups )
+        for ( RoleRecord role : roles )
         {
-            sb.append( serialize(group) ).append( "\n" );
+            sb.append( serialize(role) ).append( "\n" );
         }
         return UTF8.encode( sb.toString() );
     }
 
-    public List<GroupRecord> deserializeGroups( byte[] bytes ) throws FormatException
+    public List<RoleRecord> deserializeRoles( byte[] bytes ) throws FormatException
     {
-        List<GroupRecord> out = new ArrayList<>();
+        List<RoleRecord> out = new ArrayList<>();
         int lineNumber = 1;
         for ( String line : UTF8.decode( bytes ).split( "\n" ) )
         {
             if (line.trim().length() > 0)
             {
-                out.add( deserializeGroup( line, lineNumber ) );
+                out.add( deserializeRole( line, lineNumber ) );
             }
             lineNumber++;
         }
         return out;
     }
 
-    private String serialize( GroupRecord group )
+    private String serialize( RoleRecord role )
     {
-        return join( groupSeparator, group.name(), serialize( group.users() ) );
+        return join( roleSeparator, role.name(), serialize( role.users() ) );
     }
 
-    private GroupRecord deserializeGroup( String line, int lineNumber ) throws FormatException
+    private RoleRecord deserializeRole( String line, int lineNumber ) throws FormatException
     {
-        String[] parts = line.split( groupSeparator, -1 );
+        String[] parts = line.split( roleSeparator, -1 );
         if ( parts.length != 2 )
         {
             throw new FormatException( format( "wrong number of line fields [line %d]", lineNumber ) );
         }
-        return new GroupRecord.Builder()
+        return new RoleRecord.Builder()
                 .withName( parts[0] )
                 .withUsers( deserializeUsers( parts[1], lineNumber ) )
                 .build();

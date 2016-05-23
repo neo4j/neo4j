@@ -54,7 +54,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
-public class FileGroupRepositoryTest
+public class FileRoleRepositoryTest
 {
     private final FileSystem fs;
     private Path authFile;
@@ -72,75 +72,75 @@ public class FileGroupRepositoryTest
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
-    public FileGroupRepositoryTest( Configuration fsConfig, String fsType )
+    public FileRoleRepositoryTest( Configuration fsConfig, String fsType )
     {
         fs = Jimfs.newFileSystem( fsConfig );
         authFile = fs.getPath( "dbms", "auth.db" );
     }
 
     @Test
-    public void shouldStoreAndRetriveGroupsByName() throws Exception
+    public void shouldStoreAndRetriveRolesByName() throws Exception
     {
         // Given
-        FileGroupRepository groups = new FileGroupRepository( authFile, NullLogProvider.getInstance() );
-        GroupRecord group = new GroupRecord( "admin", "petra", "olivia" );
-        groups.create( group );
+        FileRoleRepository roleRepository = new FileRoleRepository( authFile, NullLogProvider.getInstance() );
+        RoleRecord role = new RoleRecord( "admin", "petra", "olivia" );
+        roleRepository.create( role );
 
         // When
-        GroupRecord result = groups.findByName( group.name() );
+        RoleRecord result = roleRepository.findByName( role.name() );
 
         // Then
-        assertThat( result, equalTo( group ) );
+        assertThat( result, equalTo( role ) );
     }
 
     @Test
-    public void shouldPersistGroups() throws Throwable
+    public void shouldPersistRoles() throws Throwable
     {
         // Given
-        FileGroupRepository groups = new FileGroupRepository( authFile, NullLogProvider.getInstance() );
-        GroupRecord group = new GroupRecord( "admin", "craig", "karl" );
-        groups.create( group );
+        FileRoleRepository roleRepository = new FileRoleRepository( authFile, NullLogProvider.getInstance() );
+        RoleRecord role = new RoleRecord( "admin", "craig", "karl" );
+        roleRepository.create( role );
 
-        groups = new FileGroupRepository( authFile, NullLogProvider.getInstance() );
-        groups.start();
+        roleRepository = new FileRoleRepository( authFile, NullLogProvider.getInstance() );
+        roleRepository.start();
 
         // When
-        GroupRecord resultByName = groups.findByName( group.name() );
+        RoleRecord resultByName = roleRepository.findByName( role.name() );
 
         // Then
-        assertThat( resultByName, equalTo( group ) );
+        assertThat( resultByName, equalTo( role ) );
     }
 
     @Test
-    public void shouldNotFindGroupAfterDelete() throws Throwable
+    public void shouldNotFindRoleAfterDelete() throws Throwable
     {
         // Given
-        FileGroupRepository groups = new FileGroupRepository( authFile, NullLogProvider.getInstance() );
-        GroupRecord group = new GroupRecord( "jake", "admin" );
-        groups.create( group );
+        FileRoleRepository roleRepository = new FileRoleRepository( authFile, NullLogProvider.getInstance() );
+        RoleRecord role = new RoleRecord( "jake", "admin" );
+        roleRepository.create( role );
 
         // When
-        groups.delete( group );
+        roleRepository.delete( role );
 
         // Then
-        assertThat( groups.findByName( group.name() ), nullValue() );
+        assertThat( roleRepository.findByName( role.name() ), nullValue() );
     }
 
     @Test
     public void shouldNotAllowComplexNames() throws Exception
     {
         // Given
-        FileGroupRepository groups = new FileGroupRepository( authFile, NullLogProvider.getInstance() );
+        FileRoleRepository roleRepository = new FileRoleRepository( authFile, NullLogProvider.getInstance() );
 
         // When
-        assertTrue( groups.isValidName( "neo4j" ) );
-        assertTrue( groups.isValidName( "johnosbourne" ) );
-        assertTrue( groups.isValidName( "john_osbourne" ) );
+        assertTrue( roleRepository.isValidName( "neo4j" ) );
+        assertTrue( roleRepository.isValidName( "johnosbourne" ) );
+        assertTrue( roleRepository.isValidName( "john_osbourne" ) );
 
-        assertFalse( groups.isValidName( ":" ) );
-        assertFalse( groups.isValidName( "" ) );
-        assertFalse( groups.isValidName( "john osbourne" ) );
-        assertFalse( groups.isValidName( "john:osbourne" ) );
+        assertFalse( roleRepository.isValidName( ":" ) );
+        assertFalse( roleRepository.isValidName( "" ) );
+        assertFalse( roleRepository.isValidName( "john osbourne" ) );
+        assertFalse( roleRepository.isValidName( "john:osbourne" ) );
     }
 
     @Test
@@ -170,14 +170,14 @@ public class FileGroupRepositoryTest
 
         Path authFile = moveFailingFileSystem.getPath( "dbms", "auth.db" );
 
-        FileGroupRepository groups = new FileGroupRepository( authFile, NullLogProvider.getInstance() );
-        groups.start();
-        GroupRecord group = new GroupRecord( "admin", "jake" );
+        FileRoleRepository roleRepository = new FileRoleRepository( authFile, NullLogProvider.getInstance() );
+        roleRepository.start();
+        RoleRecord role = new RoleRecord( "admin", "jake" );
 
         // When
         try
         {
-            groups.create( group );
+            roleRepository.create( role );
             fail( "Expected an IOException" );
         } catch ( IOException e )
         {
@@ -193,38 +193,38 @@ public class FileGroupRepositoryTest
     public void shouldThrowIfUpdateChangesName() throws Throwable
     {
         // Given
-        FileGroupRepository groups = new FileGroupRepository( authFile, NullLogProvider.getInstance() );
-        GroupRecord group = new GroupRecord( "admin", "steve", "bob" );
-        groups.create( group );
+        FileRoleRepository roleRepository = new FileRoleRepository( authFile, NullLogProvider.getInstance() );
+        RoleRecord role = new RoleRecord( "admin", "steve", "bob" );
+        roleRepository.create( role );
 
         // When
-        GroupRecord updatedGroup = new GroupRecord( "admins", "steve", "bob" );
+        RoleRecord updatedRole = new RoleRecord( "admins", "steve", "bob" );
         try
         {
-            groups.update( group, updatedGroup );
+            roleRepository.update( role, updatedRole );
             fail( "expected exception not thrown" );
         } catch ( IllegalArgumentException e )
         {
             // Then continue
         }
 
-        assertThat( groups.findByName( group.name() ), equalTo( group ) );
+        assertThat( roleRepository.findByName( role.name() ), equalTo( role ) );
     }
 
     @Test
-    public void shouldThrowIfExistingGroupDoesNotMatch() throws Throwable
+    public void shouldThrowIfExistingRoleDoesNotMatch() throws Throwable
     {
         // Given
-        FileGroupRepository groups = new FileGroupRepository( authFile, NullLogProvider.getInstance() );
-        GroupRecord group = new GroupRecord( "admin", "jake" );
-        groups.create( group );
-        GroupRecord modifiedGroup = new GroupRecord( "admin", "jake", "john" );
+        FileRoleRepository roleRepository = new FileRoleRepository( authFile, NullLogProvider.getInstance() );
+        RoleRecord role = new RoleRecord( "admin", "jake" );
+        roleRepository.create( role );
+        RoleRecord modifiedRole = new RoleRecord( "admin", "jake", "john" );
 
         // When
-        GroupRecord updatedGroup = new GroupRecord( "admin", "john" );
+        RoleRecord updatedRole = new RoleRecord( "admin", "john" );
         try
         {
-            groups.update( modifiedGroup, updatedGroup );
+            roleRepository.update( modifiedRole, updatedRole );
             fail( "expected exception not thrown" );
         } catch ( ConcurrentModificationException e )
         {
@@ -243,16 +243,16 @@ public class FileGroupRepositoryTest
                 "admin:admin:\n" ) );
 
         // When
-        FileGroupRepository groups = new FileGroupRepository( authFile, logProvider );
+        FileRoleRepository roleRepository = new FileRoleRepository( authFile, logProvider );
         thrown.expect( IllegalStateException.class );
-        thrown.expectMessage( startsWith( "Failed to read group file: " ) );
-        groups.start();
+        thrown.expectMessage( startsWith( "Failed to read role file: " ) );
+        roleRepository.start();
 
         // Then
-        assertThat( groups.numberOfGroups(), equalTo( 1 ) );
+        assertThat( roleRepository.numberOfRoles(), equalTo( 1 ) );
         logProvider.assertExactly(
-                AssertableLogProvider.inLog( FileGroupRepository.class ).error(
-                        "Ignoring group file \"%s\" (%s)", authFile.toAbsolutePath(), "wrong number of line fields [line 1]"
+                AssertableLogProvider.inLog( FileRoleRepository.class ).error(
+                        "Ignoring role file \"%s\" (%s)", authFile.toAbsolutePath(), "wrong number of line fields [line 1]"
                 )
         );
     }

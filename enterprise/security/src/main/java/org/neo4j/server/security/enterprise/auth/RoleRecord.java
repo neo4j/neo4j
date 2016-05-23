@@ -25,26 +25,26 @@ import java.util.TreeSet;
 /**
  * Controls authorization and authentication for a set of users.
  */
-public class GroupRecord
+public class RoleRecord
 {
     /*
       Design note: These instances are shared across threads doing disparate things with them, and there are no access
       locks. Correctness depends on write-time assertions and this class remaining immutable. Please do not introduce
       mutable fields here.
      */
-    /** Group name */
+    /** Role name */
     private final String name;
 
     /** Member users */
     private final SortedSet<String> users;
 
-    public GroupRecord( String name, SortedSet<String> users )
+    public RoleRecord( String name, SortedSet<String> users )
     {
         this.name = name;
         this.users = users;
     }
 
-    public GroupRecord( String name, String... users )
+    public RoleRecord( String name, String... users )
     {
         this.name = name;
         this.users = new TreeSet<String>();
@@ -62,7 +62,7 @@ public class GroupRecord
 
     public SortedSet<String> users() { return users; }
 
-    /** Use this group as a base for a new group object */
+    /** Use this role as a base for a new role object */
     public Builder augment() { return new Builder(this); }
 
     @Override
@@ -77,13 +77,13 @@ public class GroupRecord
             return false;
         }
 
-        GroupRecord group = (GroupRecord) o;
+        RoleRecord role = (RoleRecord) o;
 
-        if ( name != null ? !name.equals( group.name ) : group.name != null )
+        if ( name != null ? !name.equals( role.name ) : role.name != null )
         {
             return false;
         }
-        if ( users != null ? !users.equals( group.users ) : group.users != null )
+        if ( users != null ? !users.equals( role.users ) : role.users != null )
         {
             return false;
         }
@@ -102,7 +102,7 @@ public class GroupRecord
     @Override
     public String toString()
     {
-        return "Group{" +
+        return "Role{" +
                 "name='" + name + '\'' +
                 ", users='" + users + '\'' +
                 '}';
@@ -115,7 +115,7 @@ public class GroupRecord
 
         public Builder() { }
 
-        public Builder( GroupRecord base )
+        public Builder( RoleRecord base )
         {
             name = base.name;
             users = base.users;
@@ -125,9 +125,9 @@ public class GroupRecord
         public Builder withUsers( SortedSet<String> users ) { this.users = users; return this; }
         public Builder withUser( String user ) { this.users.add( user ); return this; }
 
-        public GroupRecord build()
+        public RoleRecord build()
         {
-            return new GroupRecord( name, users );
+            return new RoleRecord( name, users );
         }
     }
 }

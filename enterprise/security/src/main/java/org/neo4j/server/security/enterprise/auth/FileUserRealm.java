@@ -55,7 +55,7 @@ import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 public class FileUserRealm extends AuthorizingRealm
 {
     private final UserRepository userRepository;
-    private final GroupRepository groupRepository;
+    private final RoleRepository roleRepository;
 
     private final CredentialsMatcher credentialsMatcher =
             ( AuthenticationToken token, AuthenticationInfo info ) ->
@@ -90,12 +90,12 @@ public class FileUserRealm extends AuthorizingRealm
 
     private final Map<String, SimpleRole> roles;
 
-    public FileUserRealm( UserRepository userRepository, GroupRepository groupRepository )
+    public FileUserRealm( UserRepository userRepository, RoleRepository roleRepository )
     {
         super();
 
         this.userRepository = userRepository;
-        this.groupRepository = groupRepository;
+        this.roleRepository = roleRepository;
         setCredentialsMatcher( credentialsMatcher );
         setRolePermissionResolver( rolePermissionResolver );
 
@@ -107,7 +107,7 @@ public class FileUserRealm extends AuthorizingRealm
     {
         User user = userRepository.findByName( (String) principals.getPrimaryPrincipal() );
 
-        Set<String> roles = groupRepository.findByUsername( user.name() );
+        Set<String> roles = roleRepository.findByUsername( user.name() );
         return new SimpleAuthorizationInfo( roles );
     }
 
@@ -154,31 +154,31 @@ public class FileUserRealm extends AuthorizingRealm
         return user;
     }
 
-    GroupRecord newGroup( String groupName, String... users ) throws
+    RoleRecord newRole( String roleName, String... users ) throws
             IOException, IllegalCredentialsException, ConcurrentModificationException
     {
-        assertValidName( groupName );
+        assertValidName( roleName );
 
         SortedSet<String> userSet = new TreeSet<String>( Arrays.asList( users ) );
-        GroupRecord group = new GroupRecord.Builder().withName( groupName ).withUsers( userSet ).build();
-        groupRepository.create( group );
+        RoleRecord role = new RoleRecord.Builder().withName( roleName ).withUsers( userSet ).build();
+        roleRepository.create( role );
 
-        return group;
+        return role;
     }
 
-    private void addUserToGroup( User user, String groupName )
+    private void addUserToRole( User user, String roleName )
             throws IOException, IllegalCredentialsException, ConcurrentModificationException
     {
-        GroupRecord group = groupRepository.findByName( groupName );
-        if ( group == null )
+        RoleRecord role = roleRepository.findByName( roleName );
+        if ( role == null )
         {
-            GroupRecord newGroup = new GroupRecord( groupName, user.name() );
-            groupRepository.create( newGroup );
+            RoleRecord newRole = new RoleRecord( roleName, user.name() );
+            roleRepository.create( newRole );
         }
         else
         {
-            GroupRecord newGroup = group.augment().withUser( user.name() ).build();
-            groupRepository.update( group, newGroup );
+            RoleRecord newRole = role.augment().withUser( user.name() ).build();
+            roleRepository.update( role, newRole );
         }
     }
 

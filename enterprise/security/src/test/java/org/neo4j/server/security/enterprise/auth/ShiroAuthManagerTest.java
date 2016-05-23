@@ -47,7 +47,7 @@ import static org.mockito.Mockito.when;
 public class ShiroAuthManagerTest
 {
     private InMemoryUserRepository users;
-    private InMemoryGroupRepository groups;
+    private InMemoryRoleRepository roles;
     private AuthenticationStrategy authStrategy;
     private PasswordPolicy passwordPolicy;
     private ShiroAuthManager manager;
@@ -56,10 +56,10 @@ public class ShiroAuthManagerTest
     public void setUp() throws Throwable
     {
         users = new InMemoryUserRepository();
-        groups = new InMemoryGroupRepository();
+        roles = new InMemoryRoleRepository();
         authStrategy = mock( AuthenticationStrategy.class );
         passwordPolicy = mock( PasswordPolicy.class );
-        manager = new ShiroAuthManager( users, groups, passwordPolicy, authStrategy, true );
+        manager = new ShiroAuthManager( users, roles, passwordPolicy, authStrategy, true );
         manager.init();
     }
 
@@ -235,20 +235,20 @@ public class ShiroAuthManagerTest
     private void createTestUsers() throws Throwable
     {
         manager.newUser( "morpheus", "abc123", false );
-        manager.newGroup( "admin", "morpheus" );
+        manager.newRole( "admin", "morpheus" );
         manager.newUser( "trinity", "abc123", false );
-        manager.newGroup( "architect", "trinity" );
+        manager.newRole( "architect", "trinity" );
         manager.newUser( "tank", "abc123", false );
-        manager.newGroup( "publisher", "tank" );
+        manager.newRole( "publisher", "tank" );
         manager.newUser( "neo", "abc123", false );
-        manager.newGroup( "reader", "neo" );
+        manager.newRole( "reader", "neo" );
         manager.newUser( "smith", "abc123", false );
-        manager.newGroup( "agent", "smith" );
+        manager.newRole( "agent", "smith" );
         when( authStrategy.isAuthenticationPermitted( anyString() ) ).thenReturn( true );
     }
 
     @Test
-    public void userWithAdminGroupShouldHaveCorrectPermissions() throws Throwable
+    public void userWithAdminRoleShouldHaveCorrectPermissions() throws Throwable
     {
         // Given
         createTestUsers();
@@ -264,7 +264,7 @@ public class ShiroAuthManagerTest
     }
 
     @Test
-    public void userWithArchitectGroupShouldHaveCorrectPermissions() throws Throwable
+    public void userWithArchitectRoleShouldHaveCorrectPermissions() throws Throwable
     {
         // Given
         createTestUsers();
@@ -280,7 +280,7 @@ public class ShiroAuthManagerTest
     }
 
     @Test
-    public void userWithPublisherGroupShouldHaveCorrectPermissions() throws Throwable
+    public void userWithPublisherRoleShouldHaveCorrectPermissions() throws Throwable
     {
         // Given
         createTestUsers();
@@ -296,7 +296,7 @@ public class ShiroAuthManagerTest
     }
 
     @Test
-    public void userWithReaderGroupShouldHaveCorrectPermissions() throws Throwable
+    public void userWithReaderRoleShouldHaveCorrectPermissions() throws Throwable
     {
         // Given
         createTestUsers();
@@ -312,7 +312,7 @@ public class ShiroAuthManagerTest
     }
 
     @Test
-    public void userWithNonPredefinedGroupShouldHaveNoPermissions() throws Throwable
+    public void userWithNonPredefinedRoleShouldHaveNoPermissions() throws Throwable
     {
         // Given
         createTestUsers();
@@ -354,7 +354,7 @@ public class ShiroAuthManagerTest
         // Restart with auth disabled
         manager.stop();
         manager.shutdown();
-        manager = new ShiroAuthManager( users, groups, passwordPolicy, authStrategy, false );
+        manager = new ShiroAuthManager( users, roles, passwordPolicy, authStrategy, false );
         manager.start();
 
         try

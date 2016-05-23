@@ -32,7 +32,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-public class GroupSerializationTest
+public class RoleSerializationTest
 {
 
     private SortedSet<String> steveBob;
@@ -54,17 +54,17 @@ public class GroupSerializationTest
     public void shouldSerializeAndDeserialize() throws Exception
     {
         // Given
-        GroupSerialization serialization = new GroupSerialization();
+        RoleSerialization serialization = new RoleSerialization();
 
-        List<GroupRecord> groups = asList(
-                new GroupRecord( "admin", steveBob ),
-                new GroupRecord( "publisher", kellyMarie ) );
+        List<RoleRecord> roles = asList(
+                new RoleRecord( "admin", steveBob ),
+                new RoleRecord( "publisher", kellyMarie ) );
 
         // When
-        byte[] serialized = serialization.serialize( groups );
+        byte[] serialized = serialization.serialize( roles );
 
         // Then
-        assertThat( serialization.deserializeGroups( serialized ), equalTo( groups ) );
+        assertThat( serialization.deserializeRoles( serialized ), equalTo( roles ) );
     }
 
     /**
@@ -75,16 +75,16 @@ public class GroupSerializationTest
     public void shouldReadV1SerializationFormat() throws Exception
     {
         // Given
-        GroupSerialization serialization = new GroupSerialization();
+        RoleSerialization serialization = new RoleSerialization();
 
         // When
-        List<GroupRecord> deserialized = serialization.deserializeGroups( UTF8.encode(
+        List<RoleRecord> deserialized = serialization.deserializeRoles( UTF8.encode(
                 ("admin:Bob,Steve\n" +
                  "publisher:Kelly,Marie\n") ) );
 
         // Then
         assertThat( deserialized, equalTo( asList(
-                new GroupRecord( "admin", steveBob ),
-                new GroupRecord( "publisher", kellyMarie ) ) ) );
+                new RoleRecord( "admin", steveBob ),
+                new RoleRecord( "publisher", kellyMarie ) ) ) );
     }
 }
