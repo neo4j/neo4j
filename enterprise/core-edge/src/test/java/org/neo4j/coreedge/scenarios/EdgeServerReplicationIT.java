@@ -156,7 +156,6 @@ public class EdgeServerReplicationIT
                 tx.success();
             }
         }
-        Thread.sleep( 10_000 );
     }
 
     @Test
