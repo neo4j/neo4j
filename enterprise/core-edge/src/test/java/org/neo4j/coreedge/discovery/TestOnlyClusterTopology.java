@@ -22,7 +22,6 @@ package org.neo4j.coreedge.discovery;
 import java.util.ArrayList;
 import java.util.Set;
 
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.coreedge.server.BoltAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.helpers.collection.Iterables;

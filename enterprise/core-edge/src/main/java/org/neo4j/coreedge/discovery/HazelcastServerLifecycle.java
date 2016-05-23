@@ -37,7 +37,6 @@ import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
 import com.hazelcast.instance.GroupProperties;
 
-import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.ListenSocketAddress;
@@ -46,27 +45,30 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 class HazelcastServerLifecycle extends LifecycleAdapter
         implements CoreTopologyService, ReadOnlyTopologyService
 {
     private static final String CLUSTER_SERVER = "cluster_server";
-    private static final String SERVER_ID = "server_id";
 
     static final String TRANSACTION_SERVER = "transaction_server";
     static final String RAFT_SERVER = "raft_server";
     static final String BOLT_SERVER = "bolt_server";
 
     private Config config;
+    private final Log log;
     private HazelcastInstance hazelcastInstance;
 
     private List<StartupListener> startupListeners = new ArrayList<>();
     private List<MembershipListener> membershipListeners = new ArrayList<>();
     private Map<MembershipListener, String> membershipRegistrationId = new ConcurrentHashMap<>();
 
-    public HazelcastServerLifecycle( Config config )
+    public HazelcastServerLifecycle( Config config, LogProvider logProvider )
     {
         this.config = config;
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -137,27 +139,29 @@ class HazelcastServerLifecycle extends LifecycleAdapter
         TcpIpConfig tcpIpConfig = joinConfig.getTcpIpConfig();
         tcpIpConfig.setEnabled( true );
 
-        for ( AdvertisedSocketAddress address : config.get( CoreEdgeClusterSettings.initial_core_cluster_members ) )
+        List<AdvertisedSocketAddress> initialMembers = config.get( CoreEdgeClusterSettings.initial_core_cluster_members );
+        for ( AdvertisedSocketAddress address : initialMembers )
         {
             tcpIpConfig.addMember( address.toString() );
         }
+        log.info( "Discovering cluster with initial members: " + initialMembers );
 
         NetworkConfig networkConfig = new NetworkConfig();
         ListenSocketAddress address = config.get( CoreEdgeClusterSettings.cluster_listen_address );
         networkConfig.setPort( address.socketAddress().getPort() );
         networkConfig.setJoin( joinConfig );
-        String instanceName = String.valueOf( config.get( ClusterSettings.server_id ).toIntegerIndex() );
+        int serverId = config.get( CoreEdgeClusterSettings.server_id );
 
-        com.hazelcast.config.Config c = new com.hazelcast.config.Config( instanceName );
+        com.hazelcast.config.Config c = new com.hazelcast.config.Config( String.valueOf( serverId ) );
         c.setProperty( GroupProperties.PROP_INITIAL_MIN_CLUSTER_SIZE,
                 String.valueOf( minimumClusterSizeThatCanTolerateOneFaultForExpectedClusterSize() ) );
         c.setProperty( GroupProperties.PROP_LOGGING_TYPE, "none" );
 
         c.setNetworkConfig( networkConfig );
-        c.getGroupConfig().setName( config.get( ClusterSettings.cluster_name ) );
+        c.getGroupConfig().setName( config.get( CoreEdgeClusterSettings.cluster_name ) );
 
         MemberAttributeConfig memberAttributeConfig = new MemberAttributeConfig();
-        memberAttributeConfig.setIntAttribute( SERVER_ID, config.get( ClusterSettings.server_id ).toIntegerIndex() );
+        memberAttributeConfig.setIntAttribute( CoreEdgeClusterSettings.server_id.name(), serverId );
 
         memberAttributeConfig.setStringAttribute( CLUSTER_SERVER, address.toString() );
 
