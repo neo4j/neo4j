@@ -48,7 +48,7 @@ public class InMemoryRoleRepository extends LifecycleAdapter implements RoleRepo
     }
 
     @Override
-    public void create( RoleRecord role ) throws IllegalCredentialsException
+    public void create( RoleRecord role )
     {
         synchronized (this)
         {
@@ -57,7 +57,7 @@ public class InMemoryRoleRepository extends LifecycleAdapter implements RoleRepo
             {
                 if ( other.name().equals( role.name() ) )
                 {
-                    throw new IllegalCredentialsException( "The specified role already exists" );
+                    throw new IllegalArgumentException( "The specified role already exists" );
                 }
             }
 

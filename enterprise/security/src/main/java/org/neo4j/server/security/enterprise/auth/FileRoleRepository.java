@@ -30,11 +30,9 @@ import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
-import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-//import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
@@ -48,6 +46,8 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 public class FileRoleRepository extends LifecycleAdapter implements RoleRepository
 {
     private final Path roleFile;
+
+    // TODO: We could improve concurrency by using a ReadWriteLock
 
     /** Quick lookup of roles by name */
     private final Map<String,RoleRecord> rolesByName = new ConcurrentHashMap<>();
@@ -88,11 +88,11 @@ public class FileRoleRepository extends LifecycleAdapter implements RoleReposito
     }
 
     @Override
-    public void create( RoleRecord role ) throws IllegalCredentialsException, IOException
+    public void create( RoleRecord role ) throws IllegalArgumentException, IOException
     {
         if ( !isValidName( role.name() ) )
         {
-            throw new IllegalCredentialsException( "'" + role.name() + "' is not a valid role name." );
+            throw new IllegalArgumentException( "'" + role.name() + "' is not a valid role name." );
         }
 
         synchronized (this)
@@ -102,7 +102,7 @@ public class FileRoleRepository extends LifecycleAdapter implements RoleReposito
             {
                 if ( other.name().equals( role.name() ) )
                 {
-                    throw new IllegalCredentialsException( "The specified role already exists" );
+                    throw new IllegalArgumentException( "The specified role already exists" );
                 }
             }
 
@@ -122,7 +122,7 @@ public class FileRoleRepository extends LifecycleAdapter implements RoleReposito
         // Assert input is ok
         if ( !existingRole.name().equals( updatedRole.name() ) )
         {
-            throw new IllegalArgumentException( "updatedRole has a different name" );
+            throw new IllegalArgumentException( "updated role has a different name" );
         }
 
         synchronized (this)

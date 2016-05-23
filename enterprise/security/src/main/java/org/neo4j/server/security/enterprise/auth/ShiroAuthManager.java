@@ -40,9 +40,8 @@ import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.auth.UserRepository;
-import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
-public class ShiroAuthManager extends BasicAuthManager
+public class ShiroAuthManager extends BasicAuthManager implements RoleManager
 {
     private final SecurityManager securityManager;
     private final EhCacheManager cacheManager;
@@ -108,32 +107,14 @@ public class ShiroAuthManager extends BasicAuthManager
     {
         assertAuthEnabled();
 
-        try
-        {
-            return realm.newUser( username, initialPassword, requirePasswordChange );
-
-        }
-        catch ( ConcurrentModificationException e )
-        {
-            // TODO: Try again
-            return null;
-        }
+        return realm.newUser( username, initialPassword, requirePasswordChange );
     }
 
     public RoleRecord newRole( String roleName, String... users ) throws IOException, IllegalCredentialsException
     {
         assertAuthEnabled();
 
-        try
-        {
-            return realm.newRole( roleName, users );
-
-        }
-        catch ( ConcurrentModificationException e )
-        {
-            // TODO: Try again
-            return null;
-        }
+        return realm.newRole( roleName, users );
     }
 
 
@@ -183,5 +164,17 @@ public class ShiroAuthManager extends BasicAuthManager
         passwordPolicy.validatePassword( password );
 
         setUserPassword( username, password );
+    }
+
+    @Override
+    public void addUserToRole( String username, String roleName ) throws IOException
+    {
+        realm.addUserToRole( username, roleName );
+    }
+
+    @Override
+    public void removeUserFromRole( String username, String roleName ) throws IOException
+    {
+        realm.removeUserFromRole( username, roleName );
     }
 }

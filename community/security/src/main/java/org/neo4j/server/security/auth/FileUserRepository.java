@@ -44,6 +44,8 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
 {
     private final Path authFile;
 
+    // TODO: We could improve concurrency by using a ReadWriteLock
+
     /** Quick lookup of users by name */
     private final Map<String, User> usersByName = new ConcurrentHashMap<>();
     private final Log log;

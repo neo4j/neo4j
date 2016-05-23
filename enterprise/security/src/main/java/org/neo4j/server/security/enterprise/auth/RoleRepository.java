@@ -22,7 +22,6 @@ package org.neo4j.server.security.enterprise.auth;
 import java.io.IOException;
 import java.util.Set;
 
-import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
@@ -38,9 +37,9 @@ public interface RoleRepository extends Lifecycle
     /**
      * Create a role, given that the roles token is unique.
      * @param role the new role object
-     * @throws IllegalCredentialsException if the role name is not valid
+     * @throws IllegalArgumentException if the role name is not valid
      */
-    void create( RoleRecord role ) throws IllegalCredentialsException, IOException;
+    void create( RoleRecord role ) throws IllegalArgumentException, IOException;
 
     /**
      * Update a role, given that the role token is unique.

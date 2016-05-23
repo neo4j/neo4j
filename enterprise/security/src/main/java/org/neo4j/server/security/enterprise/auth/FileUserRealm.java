@@ -139,10 +139,10 @@ public class FileUserRealm extends AuthorizingRealm
         return userRepository.numberOfUsers();
     }
 
-    User newUser( String username, String initialPassword, boolean requirePasswordChange ) throws
-            IOException, IllegalCredentialsException, ConcurrentModificationException
+    User newUser( String username, String initialPassword, boolean requirePasswordChange )
+            throws IOException, IllegalCredentialsException
     {
-        assertValidName( username );
+        assertValidUsername( username );
 
         User user = new User.Builder()
                 .withName( username )
@@ -154,40 +154,78 @@ public class FileUserRealm extends AuthorizingRealm
         return user;
     }
 
-    RoleRecord newRole( String roleName, String... users ) throws
-            IOException, IllegalCredentialsException, ConcurrentModificationException
+    RoleRecord newRole( String roleName, String... users ) throws IOException, IllegalCredentialsException
     {
-        assertValidName( roleName );
+        assertValidRoleName( roleName );
+        for (String username : users)
+        {
+            assertValidUsername( username );
+        }
 
         SortedSet<String> userSet = new TreeSet<String>( Arrays.asList( users ) );
+
         RoleRecord role = new RoleRecord.Builder().withName( roleName ).withUsers( userSet ).build();
         roleRepository.create( role );
 
         return role;
     }
 
-    private void addUserToRole( User user, String roleName )
-            throws IOException, IllegalCredentialsException, ConcurrentModificationException
+    void addUserToRole( String username, String roleName ) throws IOException
     {
+        assertValidUsername( username );
+        assertValidRoleName( roleName );
+
+        // TODO: FIXME This is not atomic. E.g. the user could be deleted between here and updating the role
+        User user = userRepository.findByName( username );
+        if ( user == null )
+        {
+            throw new IllegalArgumentException( "User " + username + " does not exist." );
+        }
+
+        // TODO: FIXME This is not atomic. E.g. the role could be created between here and create
+        // In that case we would get an IllegalArgumentException, but what we want is a
+        // ConcurrentModificationException and then retry. We should use a RoleRepositoty.createOrUpdate instead.
         RoleRecord role = roleRepository.findByName( roleName );
         if ( role == null )
         {
-            RoleRecord newRole = new RoleRecord( roleName, user.name() );
+            RoleRecord newRole = new RoleRecord( roleName, username );
             roleRepository.create( newRole );
         }
         else
         {
-            RoleRecord newRole = role.augment().withUser( user.name() ).build();
-            roleRepository.update( role, newRole );
+            RoleRecord newRole = role.augment().withUser( username ).build();
+            try
+            {
+                roleRepository.update( role, newRole );
+            }
+            catch ( ConcurrentModificationException e )
+            {
+                // Try again
+                addUserToRole( username, roleName );
+            }
         }
     }
 
-    private void assertValidName( String name )
+    void removeUserFromRole( String username, String rolename ) throws IOException
+    {
+        // TODO
+    }
+
+    private void assertValidUsername( String name )
     {
         if ( !userRepository.isValidName( name ) )
         {
             throw new IllegalArgumentException(
                     "User name contains illegal characters. Please use simple ascii characters and numbers." );
+        }
+    }
+
+    private void assertValidRoleName( String name )
+    {
+        if ( !roleRepository.isValidName( name ) )
+        {
+            throw new IllegalArgumentException(
+                    "Role name contains illegal characters. Please use simple ascii characters and numbers." );
         }
     }
 }
