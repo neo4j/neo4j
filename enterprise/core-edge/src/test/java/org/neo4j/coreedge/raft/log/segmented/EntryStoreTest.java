@@ -19,23 +19,19 @@
  */
 package org.neo4j.coreedge.raft.log.segmented;
 
-import java.io.File;
+import org.junit.Test;
 
-import org.neo4j.coreedge.raft.log.DummyRaftableContentSerializer;
-import org.neo4j.coreedge.raft.log.RaftLog;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.logging.NullLogProvider;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
-import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning;
-
-public class ConcurrentStressIT extends org.neo4j.coreedge.raft.log.ConcurrentStressIT<SegmentedRaftLog>
+public class EntryStoreTest
 {
-    @Override
-    public SegmentedRaftLog createRaftLog( FileSystemAbstraction fsa, File dir ) throws Throwable
+    @Test
+    public void segmentsShouldBeClosedWhenEntryStoreIsClosed() throws Exception
     {
-        SegmentedRaftLog raftLog = new SegmentedRaftLog( fsa, dir, 8 * 1024 * 1024, new DummyRaftableContentSerializer(), NullLogProvider.getInstance(), 8,
-                raft_log_pruning.getDefaultValue());
-        raftLog.start();
-        return raftLog;
+        Segments segments = mock( Segments.class );
+        new EntryStore( segments ).close();
+        verify( segments ).close();
     }
 }
+
