@@ -54,7 +54,7 @@ public class CopiedStoreRecovery
         }
         catch ( Exception e )
         {
-            if ( e.getCause().getCause() instanceof UpgradeNotAllowedByConfigurationException )
+            if ( e.getCause() != null && e.getCause().getCause() instanceof UpgradeNotAllowedByConfigurationException )
             {
                 throw new RuntimeException( failedToStartMessage(), e );
             }
