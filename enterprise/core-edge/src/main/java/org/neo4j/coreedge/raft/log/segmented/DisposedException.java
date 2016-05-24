@@ -19,6 +19,6 @@
  */
 package org.neo4j.coreedge.raft.log.segmented;
 
-class DisposedException extends Exception
+public class DisposedException extends Exception
 {
 }

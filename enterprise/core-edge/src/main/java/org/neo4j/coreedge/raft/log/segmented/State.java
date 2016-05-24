@@ -31,6 +31,11 @@ public class State
     long appendIndex = -1;
     long currentTerm = -1;
 
+    public Segments getSegments()
+    {
+        return segments;
+    }
+
     @Override
     public String toString()
     {

@@ -99,7 +99,7 @@ class SegmentFile implements AutoCloseable
     /**
      * Channels must be closed when no longer used, so that they are released back to the pool of readers.
      */
-    IOCursor<EntryRecord> getReader( long logIndex ) throws IOException, DisposedException
+    public IOCursor<EntryRecord> getReader( long logIndex ) throws IOException, DisposedException
     {
         assert logIndex > header.prevIndex();
         long offsetIndex = logIndex - (header.prevIndex() + 1);
@@ -262,6 +262,11 @@ class SegmentFile implements AutoCloseable
     public long size()
     {
         return fileSystem.getFileSize( file );
+    }
+
+    public String getFilename()
+    {
+        return file.getName();
     }
 
     @Override
