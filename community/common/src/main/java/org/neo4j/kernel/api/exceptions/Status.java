@@ -458,6 +458,28 @@ public interface Status
         }
     }
 
+    enum Cluster implements Status
+    {
+        // transient errors
+        NoLeader( TransientError,
+                "No leader available at the moment. Retrying your request at a later time may succeed." ),
+
+        ;
+
+        private final Code code;
+
+        @Override
+        public Code code()
+        {
+            return code;
+        }
+
+        Cluster( Classification classification, String description )
+        {
+            this.code = new Code( classification, this, description );
+        }
+    }
+
     Code code();
 
     class Code

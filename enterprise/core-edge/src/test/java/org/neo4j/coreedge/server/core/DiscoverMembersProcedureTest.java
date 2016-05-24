@@ -26,39 +26,38 @@ import java.util.Set;
 import org.junit.Test;
 
 import org.neo4j.coreedge.discovery.ClusterTopology;
-import org.neo4j.coreedge.discovery.CoreTopologyService;
+import org.neo4j.coreedge.discovery.ReadOnlyTopologyService;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.BoltAddress;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.logging.NullLogProvider;
 
-import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.ConsistencyLevel.RYOW_CORE;
-import static org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.ConsistencyLevel.RYOW_EDGE;
 import static org.neo4j.helpers.collection.Iterators.asList;
 
 public class DiscoverMembersProcedureTest
 {
     @Test
-    public void shouldDiscoverCoreMachinesBoltAddresses() throws Exception
+    public void shouldOnlyReturnCoreMembers() throws Exception
     {
         // given
-        final CoreTopologyService coreTopologyService = mock( CoreTopologyService.class );
+        final ReadOnlyTopologyService coreTopologyService = mock( ReadOnlyTopologyService.class );
 
         final ClusterTopology clusterTopology = mock( ClusterTopology.class );
         when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
 
-        when( clusterTopology.boltCoreMembers() ).thenReturn( boltCoreMembers( 1, 2, 3 ) );
+        when( clusterTopology.boltCoreMembers() ).thenReturn( addresses( 1, 2, 3 ) );
+        when( clusterTopology.edgeMembers() ).thenReturn( addresses( 4, 5, 6 ) );
 
-        final DiscoverMembersProcedure proc = new DiscoverMembersProcedure( coreTopologyService );
+        final DiscoverMembersProcedure proc = new DiscoverMembersProcedure( coreTopologyService, NullLogProvider.getInstance() );
 
         // when
-        final List<Object[]> members = asList( proc.apply( null, new Object[]{RYOW_CORE.name()} ) );
+        final List<Object[]> members = asList( proc.apply( null, new Object[0] ) );
 
         // then
         assertThat( members, containsInAnyOrder(
@@ -68,62 +67,67 @@ public class DiscoverMembersProcedureTest
     }
 
     @Test
-    public void shouldDiscoverEdgeMachinesBoltAddresses() throws Exception
+    public void shouldReturnSelfIfOnlyMemberOfTheCluster() throws Exception
     {
-        // given
-        final CoreTopologyService coreTopologyService = mock( CoreTopologyService.class );
+        final ReadOnlyTopologyService coreTopologyService = mock( ReadOnlyTopologyService.class );
 
         final ClusterTopology clusterTopology = mock( ClusterTopology.class );
         when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
 
-        when( clusterTopology.edgeMembers() ).thenReturn( edgeMembers( 1, 2, 3, 4, 5 ) );
+        when( clusterTopology.boltCoreMembers() ).thenReturn( addresses( 1 ) );
 
-        final DiscoverMembersProcedure proc = new DiscoverMembersProcedure( coreTopologyService );
+        final DiscoverMembersProcedure proc = new DiscoverMembersProcedure( coreTopologyService, NullLogProvider.getInstance() );
 
         // when
-        final List<Object[]> members = asList( proc.apply( null, new
-                Object[]{RYOW_EDGE.name()} ) );
+        final List<Object[]> members = asList( proc.apply( null, new Object[0] ) );
 
         // then
-        assertThat( members, containsInAnyOrder(
-                new Object[]{"localhost:3001"},
-                new Object[]{"localhost:3002"},
-                new Object[]{"localhost:3003"},
-                new Object[]{"localhost:3004"},
-                new Object[]{"localhost:3005"} ) );
+        assertArrayEquals( members.get( 0 ), new Object[]{"localhost:3001"} );
     }
 
     @Test
-    public void shouldThrowExceptionForUnknownConsistencyLevel() throws Exception
+    public void shouldReturnLimitedNumberOfAddresses() throws Exception
     {
         // given
-        try
-        {
-            // when
-            new DiscoverMembersProcedure( null ).apply( null, new Object[]{"FOOBAR"} );
-            fail( "ProcedureException should have been thrown" );
-        }
-        catch ( ProcedureException expected )
-        {
-            // then
-            assertThat( expected.getMessage(), containsString( RYOW_CORE.name() ) );
-            assertThat( expected.getMessage(), containsString( RYOW_EDGE.name() ) );
-        }
+        final ReadOnlyTopologyService coreTopologyService = mock( ReadOnlyTopologyService.class );
+
+        final ClusterTopology clusterTopology = mock( ClusterTopology.class );
+        when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
+
+        when( clusterTopology.boltCoreMembers() ).thenReturn( addresses( 1, 2, 3 ) );
+        when( clusterTopology.edgeMembers() ).thenReturn( addresses( 4, 5, 6 ) );
+
+        final DiscoverMembersProcedure proc = new DiscoverMembersProcedure( coreTopologyService, NullLogProvider.getInstance() );
+
+        // when
+        final List<Object[]> members = asList( proc.apply( null, new Object[] { 1 } ) );
+
+        // then
+        assertEquals( 1, members.size() );
     }
 
-    private Set<BoltAddress> edgeMembers( int... ids )
+    @Test
+    public void shouldReturnAllAddressesForStupidLimit() throws Exception
     {
-        final HashSet<BoltAddress> edgeMembers = new HashSet<>();
+        // given
+        final ReadOnlyTopologyService coreTopologyService = mock( ReadOnlyTopologyService.class );
 
-        for ( int id : ids )
-        {
-            edgeMembers.add( new BoltAddress( new AdvertisedSocketAddress( "localhost:" + (3000 + id) ) ) );
-        }
+        final ClusterTopology clusterTopology = mock( ClusterTopology.class );
+        when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
 
-        return edgeMembers;
+        when( clusterTopology.boltCoreMembers() ).thenReturn( addresses( 1, 2, 3 ) );
+        when( clusterTopology.edgeMembers() ).thenReturn( addresses( 4, 5, 6 ) );
+
+        final DiscoverMembersProcedure proc = new DiscoverMembersProcedure( coreTopologyService, NullLogProvider.getInstance() );
+
+        // when
+        final List<Object[]> members = asList( proc.apply( null, new Object[] { "bam" } ) );
+
+        // then
+        assertEquals( 3, members.size() );
     }
 
-    private Set<BoltAddress> boltCoreMembers( int... ids )
+    private Set<BoltAddress> addresses( int... ids )
     {
         final HashSet<BoltAddress> coreMembers = new HashSet<>();
 

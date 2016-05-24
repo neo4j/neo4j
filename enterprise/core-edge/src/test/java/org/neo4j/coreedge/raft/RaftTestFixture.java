@@ -29,17 +29,16 @@ import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
-import org.neo4j.coreedge.server.RaftTestMember;
-import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
-import org.neo4j.coreedge.raft.net.LoggingOutbound;
 import org.neo4j.coreedge.raft.net.Inbound;
+import org.neo4j.coreedge.raft.net.LoggingOutbound;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.coreedge.server.logging.MessageLogger;
+import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
 import org.neo4j.coreedge.server.logging.NullMessageLogger;
-import org.neo4j.helpers.Clock;
 
 import static java.lang.String.format;
+
 import static org.neo4j.coreedge.server.RaftTestMember.member;
 
 public class RaftTestFixture
@@ -47,17 +46,6 @@ public class RaftTestFixture
     private Members members = new Members();
 
     public RaftTestFixture( DirectNetworking net, int expectedClusterSize, long... ids )
-    {
-        this( Clock.SYSTEM_CLOCK, net, new NullMessageLogger<>(), expectedClusterSize, ids );
-    }
-
-    public RaftTestFixture( Clock clock, DirectNetworking net, int expectedClusterSize, long... ids )
-    {
-        this( clock, net, new NullMessageLogger<>(), expectedClusterSize, ids );
-    }
-
-    public RaftTestFixture( Clock clock, DirectNetworking net, MessageLogger<RaftTestMember> logger,
-                            int expectedClusterSize, long... ids )
     {
         for ( long id : ids )
         {
@@ -69,13 +57,14 @@ public class RaftTestFixture
             fixtureMember.member = member( id );
 
             Inbound inbound = net.new Inbound( id );
-            Outbound<RaftTestMember> outbound = new LoggingOutbound<>( net.new Outbound( id ), fixtureMember.member, new NullMessageLogger<>() );
+            Outbound<RaftTestMember> outbound = new LoggingOutbound<>( net.new Outbound( id ), fixtureMember.member,
+                    new NullMessageLogger<>() );
 
             fixtureMember.raftInstance = new RaftInstanceBuilder<>( fixtureMember.member, expectedClusterSize,
                     RaftTestMemberSetBuilder.INSTANCE )
                     .inbound( inbound )
                     .outbound( outbound )
-                    .raftLog ( fixtureMember.raftLog )
+                    .raftLog( fixtureMember.raftLog )
                     .timeoutService( fixtureMember.timeoutService )
                     .build();
 

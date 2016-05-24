@@ -145,8 +145,9 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
 
         AdvertisedSocketAddress coreAddress = marshal.unmarshal( buffer );
         AdvertisedSocketAddress raftAddress = marshal.unmarshal( buffer );
+        AdvertisedSocketAddress boltAddress = marshal.unmarshal( buffer );
 
-        return new CoreMember( coreAddress, raftAddress );
+        return new CoreMember( coreAddress, raftAddress, boltAddress );
     }
 
     @Override

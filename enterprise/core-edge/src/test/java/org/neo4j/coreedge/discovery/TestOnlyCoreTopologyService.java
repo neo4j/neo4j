@@ -19,25 +19,16 @@
  */
 package org.neo4j.coreedge.discovery;
 
-import java.util.List;
-
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.BoltAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.core.NoBoltConnectivityException;
 import org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static java.util.stream.Collectors.toList;
-
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
 import static org.neo4j.helpers.Listeners.notifyListeners;
 import static org.neo4j.helpers.collection.Iterables.firstOrNull;
-import static org.neo4j.kernel.configuration.GroupSettingSupport.enumerate;
 
 class TestOnlyCoreTopologyService extends LifecycleAdapter implements CoreTopologyService
 {
@@ -70,7 +61,8 @@ class TestOnlyCoreTopologyService extends LifecycleAdapter implements CoreTopolo
     {
         return new CoreMember(
                 config.get( CoreEdgeClusterSettings.transaction_advertised_address ),
-                config.get( CoreEdgeClusterSettings.raft_advertised_address )
+                config.get( CoreEdgeClusterSettings.raft_advertised_address ),
+                new AdvertisedSocketAddress(  EnterpriseEdgeEditionModule.extractBoltAddress( config  ).toString())
         );
     }
 

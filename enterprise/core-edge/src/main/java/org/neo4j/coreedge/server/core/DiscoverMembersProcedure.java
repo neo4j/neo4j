@@ -19,68 +19,73 @@
  */
 package org.neo4j.coreedge.server.core;
 
-import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.coreedge.discovery.ClusterTopology;
-import org.neo4j.coreedge.discovery.CoreTopologyService;
+import org.neo4j.coreedge.discovery.ReadOnlyTopologyService;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.BoltAddress;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
-class DiscoverMembersProcedure extends CallableProcedure.BasicProcedure
+import static java.lang.Integer.parseInt;
+import static java.util.stream.Collectors.toSet;
+
+public class DiscoverMembersProcedure extends CallableProcedure.BasicProcedure
 {
-    private final CoreTopologyService discoveryService;
+    public static final String NAME = "discoverMembers";
+    private final ReadOnlyTopologyService discoveryService;
+    private final Log log;
 
-    DiscoverMembersProcedure( CoreTopologyService discoveryService )
+    public DiscoverMembersProcedure( ReadOnlyTopologyService discoveryService, LogProvider logProvider )
     {
         super( new ProcedureSignature(
-                new ProcedureSignature.ProcedureName( new String[]{"dbms", "cluster"}, "discoverMembers" ) ) );
+                new ProcedureSignature.ProcedureName( new String[]{"dbms", "cluster"}, NAME ) ) );
         this.discoveryService = discoveryService;
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
     public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
-        final String consistencyLevelInput = input[0].toString();
-        EnterpriseCoreEditionModule.ConsistencyLevel consistencyLevel;
+        Set<AdvertisedSocketAddress> addresses = findAddresses().map( BoltAddress::getBoltAddress )
+                .limit( noOfAddressesToReturn( input ) ).collect( toSet() );
+        log.info( "Discovery members: %s", addresses.stream().collect( toSet() ) );
+        return wrapUpAddresses( addresses );
+    }
+
+    private Stream<BoltAddress> findAddresses()
+    {
+        return discoveryService.currentTopology().boltCoreMembers().stream();
+    }
+
+    private int noOfAddressesToReturn( Object[] input )
+    {
+        if ( input.length == 0 )
+        {
+            return Integer.MAX_VALUE;
+        }
+
         try
         {
-            consistencyLevel = EnterpriseCoreEditionModule.ConsistencyLevel.valueOf( consistencyLevelInput );
+            return parseInt( input[0].toString() );
         }
-        catch ( IllegalArgumentException badEnum )
+        catch ( NumberFormatException e )
         {
-            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, errorMessage( consistencyLevelInput ) );
-        }
-
-        ClusterTopology clusterTopology = discoveryService.currentTopology();
-
-        if ( EnterpriseCoreEditionModule.ConsistencyLevel.RYOW_CORE.equals( consistencyLevel ) )
-        {
-            return wrapUpAddresses( clusterTopology.boltCoreMembers() );
-        }
-        else // RYOW_EDGE otherwise
-        {
-            return wrapUpAddresses( clusterTopology.edgeMembers() );
+            return Integer.MAX_VALUE;
         }
     }
 
-    private static RawIterator<Object[], ProcedureException> wrapUpAddresses( Set<BoltAddress> boltAddresses )
+    private static RawIterator<Object[], ProcedureException> wrapUpAddresses(
+            Set<AdvertisedSocketAddress> boltAddresses )
     {
-        Stream<AdvertisedSocketAddress> members = boltAddresses.stream().map( BoltAddress::getBoltAddress );
-        return Iterators.map( ( l ) -> new Object[]{l.toString()}, Iterators.asRawIterator( members.iterator() ) );
-    }
-
-    private String errorMessage( String consistencyLevel )
-    {
-        return String.format( "Invalid consistency level provided: [%s]. Valid consistency levels are: %s",
-                consistencyLevel ,
-                Arrays.toString( EnterpriseCoreEditionModule.ConsistencyLevel.values() ) );
+        return Iterators.map( ( l ) -> new Object[]{l.toString()},
+                Iterators.asRawIterator( boltAddresses.stream().iterator() ) );
     }
 }

@@ -37,9 +37,11 @@ import static org.junit.Assert.assertTrue;
 public class ReplicatedIdRangeAcquirerTest
 {
     private final CoreMember memberA =
-            new CoreMember( new AdvertisedSocketAddress( "a:1" ), new AdvertisedSocketAddress( "a:2" ) );
+            new CoreMember( new AdvertisedSocketAddress( "a:1" ), new AdvertisedSocketAddress( "a:2" ),
+                    new AdvertisedSocketAddress( "a:3" ) );
     private final CoreMember memberB =
-            new CoreMember( new AdvertisedSocketAddress( "b:1" ), new AdvertisedSocketAddress( "b:2" ) );
+            new CoreMember( new AdvertisedSocketAddress( "b:1" ), new AdvertisedSocketAddress( "b:2" ),
+                    new AdvertisedSocketAddress( "c:2" ));
 
     private final ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine(
             new InMemoryStateStorage<>( new IdAllocationState() ) );
