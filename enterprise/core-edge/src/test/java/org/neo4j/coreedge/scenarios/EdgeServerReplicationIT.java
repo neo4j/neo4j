@@ -25,11 +25,15 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BinaryOperator;
 
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
+import org.neo4j.coreedge.raft.log.segmented.FileNames;
+import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
@@ -38,17 +42,24 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.logging.Log;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TargetDirectory;
 
 import static java.io.File.pathSeparator;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
+import static org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
 import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class EdgeServerReplicationIT
@@ -102,7 +113,7 @@ public class EdgeServerReplicationIT
         // then
         for ( final EdgeGraphDatabase edgeGraphDatabase : cluster.edgeServers() )
         {
-            ThrowingSupplier<Boolean, Exception> availability = () -> edgeGraphDatabase.isAvailable( 0 );
+            ThrowingSupplier<Boolean,Exception> availability = () -> edgeGraphDatabase.isAvailable( 0 );
             assertEventually( "edge server becomes available", availability, is( true ), 10, SECONDS );
         }
     }
@@ -144,9 +155,9 @@ public class EdgeServerReplicationIT
         {
             try ( Transaction tx = edgeDB.beginTx() )
             {
-                ThrowingSupplier<Long, Exception> nodeCount = () -> count( edgeDB.getAllNodes() );
-                assertEventually( "node to appear on edge server", nodeCount, is( nodesBeforeEdgeServerStarts + 1L ),
-                        1, MINUTES );
+                ThrowingSupplier<Long,Exception> nodeCount = () -> count( edgeDB.getAllNodes() );
+                assertEventually( "node to appear on edge server", nodeCount, is( nodesBeforeEdgeServerStarts + 1L ), 1,
+                        MINUTES );
 
                 for ( Node node : edgeDB.getAllNodes() )
                 {
@@ -185,13 +196,69 @@ public class EdgeServerReplicationIT
         }
     }
 
+    @Test
+    public void shouldBeAbleToCopyStoresFromCoreToEdge() throws Exception
+    {
+        // given
+        cluster = Cluster.start( dir.cleanDirectory( "db" ), 3, 0, stringMap(
+                CoreEdgeClusterSettings.raft_log_rotation_size.name(), "1k",
+                CoreEdgeClusterSettings.raft_log_pruning_frequency.name(), "500ms",
+                CoreEdgeClusterSettings.state_machine_flush_window_size.name(), "1",
+                CoreEdgeClusterSettings.raft_log_pruning.name(), "1 entries"
+        ) );
+
+        cluster.coreTx( ( db, tx ) -> {
+            Node node = db.createNode( Label.label( "L" ) );
+            for ( int i = 0; i < 10; i++ )
+            {
+                node.setProperty( "prop-" + i, "this is a quite long string to get to the log limit soonish" );
+            }
+            tx.success();
+        } );
+
+        long baseVersion = versionBy( new File( cluster.awaitLeader().getStoreDir() ), Math::max );
+
+        CoreGraphDatabase coreGraphDatabase = null;
+        for ( int j = 0; j < 2; j++ )
+        {
+            coreGraphDatabase = cluster.coreTx( ( db, tx ) -> {
+                Node node = db.createNode( Label.label( "L" ) );
+                for ( int i = 0; i < 10; i++ )
+                {
+                    node.setProperty( "prop-" + i, "this is a quite long string to get to the log limit soonish" );
+                }
+                tx.success();
+            } );
+        }
+
+        File storeDir = new File( coreGraphDatabase.getStoreDir() );
+        assertEventually( "pruning happened", () -> versionBy( storeDir, Math::min ), greaterThan( baseVersion ), 1, SECONDS );
+
+        // when
+        cluster.addEdgeServerWithFileLocation( 42 );
+
+        // then
+        for ( final EdgeGraphDatabase edge : cluster.edgeServers() )
+        {
+            assertEventually( "edge server available", () -> edge.isAvailable( 0 ), is( true ), 10, SECONDS );
+        }
+    }
+
+    private long versionBy( File storeDir, BinaryOperator<Long> operator )
+    {
+        File raftLogDir = new File( new File( storeDir, CLUSTER_STATE_DIRECTORY_NAME ), SEGMENTED_LOG_DIRECTORY_NAME );
+        SortedMap<Long,File> logs =
+                new FileNames( raftLogDir ).getAllFiles( new DefaultFileSystemAbstraction(), mock( Log.class ) );
+        return logs.keySet().stream().reduce( operator ).get();
+    }
+
     private File createExistingEdgeStore( String path )
     {
         File dir = new File( path );
         dir.mkdirs();
 
-        GraphDatabaseService db = new TestGraphDatabaseFactory()
-                .newEmbeddedDatabase( Cluster.edgeServerStoreDirectory( dir, 1966 ) );
+        GraphDatabaseService db =
+                new TestGraphDatabaseFactory().newEmbeddedDatabase( Cluster.edgeServerStoreDirectory( dir, 1966 ) );
 
         try ( Transaction tx = db.beginTx() )
         {
