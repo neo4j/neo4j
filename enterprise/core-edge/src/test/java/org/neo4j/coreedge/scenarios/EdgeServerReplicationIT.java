@@ -38,12 +38,17 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TargetDirectory;
 
 import static java.io.File.pathSeparator;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -156,7 +161,6 @@ public class EdgeServerReplicationIT
                 tx.success();
             }
         }
-        Thread.sleep( 10_000 );
     }
 
     @Test
@@ -167,7 +171,7 @@ public class EdgeServerReplicationIT
 
         cluster = Cluster.start( dir.directory(), 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
-        GraphDatabaseService coreDB = executeOnLeaderWithRetry( db -> {
+        executeOnLeaderWithRetry( db -> {
             for ( int i = 0; i < 10; i++ )
             {
                 Node node = db.createNode();
@@ -183,6 +187,35 @@ public class EdgeServerReplicationIT
         catch ( Throwable required )
         {
             // Lifecycle should throw exception, server should not start.
+        }
+    }
+
+    @Test
+    public void shouldThrowExceptionIfEdgeRecordFormatDiffersToCoreRecordFormat() throws Exception
+    {
+        // given
+        String coreRecordFormat = HighLimit.NAME;
+        String edgeRecordFormat = StandardV3_0.NAME;
+
+        cluster = Cluster.start( dir.directory(), 3, 0, new TestOnlyDiscoveryServiceFactory(), coreRecordFormat );
+
+        // when
+        executeOnLeaderWithRetry( db -> {
+            for ( int i = 0; i < 10; i++ )
+            {
+                Node node = db.createNode();
+                node.setProperty( "foobar", "baz_bat" );
+            }
+        } );
+
+        try
+        {
+            cluster.addEdgeServerWithFileLocation( 0, edgeRecordFormat );
+        }
+        catch ( Exception e )
+        {
+            assertThat(e.getCause().getCause().getMessage(),
+                    containsString("Failed to start database with copied store"));
         }
     }
 
