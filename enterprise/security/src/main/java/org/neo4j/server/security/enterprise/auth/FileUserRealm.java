@@ -154,7 +154,7 @@ public class FileUserRealm extends AuthorizingRealm
         return user;
     }
 
-    RoleRecord newRole( String roleName, String... users ) throws IOException, IllegalCredentialsException
+    RoleRecord newRole( String roleName, String... users ) throws IOException
     {
         assertValidRoleName( roleName );
         for (String username : users)
@@ -175,33 +175,31 @@ public class FileUserRealm extends AuthorizingRealm
         assertValidUsername( username );
         assertValidRoleName( roleName );
 
-        // TODO: FIXME This is not atomic. E.g. the user could be deleted between here and updating the role
-        User user = userRepository.findByName( username );
-        if ( user == null )
+        synchronized ( this )
         {
-            throw new IllegalArgumentException( "User " + username + " does not exist." );
-        }
-
-        // TODO: FIXME This is not atomic. E.g. the role could be created between here and create
-        // In that case we would get an IllegalArgumentException, but what we want is a
-        // ConcurrentModificationException and then retry. We should use a RoleRepositoty.createOrUpdate instead.
-        RoleRecord role = roleRepository.findByName( roleName );
-        if ( role == null )
-        {
-            RoleRecord newRole = new RoleRecord( roleName, username );
-            roleRepository.create( newRole );
-        }
-        else
-        {
-            RoleRecord newRole = role.augment().withUser( username ).build();
-            try
+            User user = userRepository.findByName( username );
+            if ( user == null )
             {
-                roleRepository.update( role, newRole );
+                throw new IllegalArgumentException( "User " + username + " does not exist." );
             }
-            catch ( ConcurrentModificationException e )
+
+            RoleRecord role = roleRepository.findByName( roleName );
+            if ( role == null )
             {
-                // Try again
-                addUserToRole( username, roleName );
+                throw new IllegalArgumentException( "Role " + roleName + " does not exist." );
+            }
+            else
+            {
+                RoleRecord newRole = role.augment().withUser( username ).build();
+                try
+                {
+                    roleRepository.update( role, newRole );
+                }
+                catch ( ConcurrentModificationException e )
+                {
+                    // Try again
+                    addUserToRole( username, roleName );
+                }
             }
         }
     }
@@ -209,6 +207,34 @@ public class FileUserRealm extends AuthorizingRealm
     void removeUserFromRole( String username, String rolename ) throws IOException
     {
         // TODO
+    }
+
+    boolean deleteUser( String username ) throws IOException
+    {
+        boolean result = false;
+        synchronized ( this )
+        {
+            User user = userRepository.findByName( username );
+            if ( user != null && userRepository.delete( user ) )
+            {
+                removeUserFromAllRoles( username );
+                result = true;
+            }
+        }
+        return result;
+    }
+
+    private void removeUserFromAllRoles( String username ) throws IOException
+    {
+        try
+        {
+            roleRepository.removeUserFromAllRoles( username );
+        }
+        catch ( ConcurrentModificationException e )
+        {
+            // Try again
+            removeUserFromAllRoles( username );
+        }
     }
 
     private void assertValidUsername( String name )

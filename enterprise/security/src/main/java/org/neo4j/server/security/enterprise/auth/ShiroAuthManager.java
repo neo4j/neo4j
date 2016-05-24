@@ -169,12 +169,22 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
     @Override
     public void addUserToRole( String username, String roleName ) throws IOException
     {
+        assertAuthEnabled();
         realm.addUserToRole( username, roleName );
     }
 
     @Override
     public void removeUserFromRole( String username, String roleName ) throws IOException
     {
+        assertAuthEnabled();
         realm.removeUserFromRole( username, roleName );
     }
+
+    @Override
+    public boolean deleteUser( String username ) throws IOException
+    {
+        assertAuthEnabled();
+        return realm.deleteUser( username );
+    }
+
 }

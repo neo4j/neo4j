@@ -84,7 +84,7 @@ public class RoleSerialization
         }
         return new RoleRecord.Builder()
                 .withName( parts[0] )
-                .withUsers( deserializeUsers( parts[1], lineNumber ) )
+                .withUsers( deserializeUsers( parts[1] ) )
                 .build();
     }
 
@@ -93,7 +93,7 @@ public class RoleSerialization
         return joinCollection( userSeparator, users );
     }
 
-    private SortedSet<String> deserializeUsers( String part, int lineNumber ) throws FormatException
+    private SortedSet<String> deserializeUsers( String part ) throws FormatException
     {
         String[] splits = part.split( userSeparator, -1 );
 

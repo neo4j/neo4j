@@ -111,7 +111,7 @@ public class RoleRecord
     public static class Builder
     {
         private String name;
-        private SortedSet<String> users;
+        private SortedSet<String> users = new TreeSet<>();
 
         public Builder() { }
 
@@ -124,6 +124,7 @@ public class RoleRecord
         public Builder withName( String name ) { this.name = name; return this; }
         public Builder withUsers( SortedSet<String> users ) { this.users = users; return this; }
         public Builder withUser( String user ) { this.users.add( user ); return this; }
+        public Builder withoutUser( String user ) { this.users.remove( user ); return this; }
 
         public RoleRecord build()
         {

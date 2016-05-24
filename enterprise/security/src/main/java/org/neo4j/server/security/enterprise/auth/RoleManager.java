@@ -23,7 +23,23 @@ import java.io.IOException;
 
 public interface RoleManager
 {
+    /**
+     * Add a user to a role. The role has to exist.
+     *
+     * @param username
+     * @param roleName
+     * @throws IllegalArgumentException if the role does not exist
+     * @throws IOException
+     */
     void addUserToRole( String username, String roleName ) throws IOException;
 
+    /**
+     * Remove a user from a role.
+     *
+     * @param username
+     * @param roleName
+     * @throws IllegalArgumentException if the username or the role does not exist
+     * @throws IOException
+     */
     void removeUserFromRole( String username, String roleName ) throws IOException;
 }

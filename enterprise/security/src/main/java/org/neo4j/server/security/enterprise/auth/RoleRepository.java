@@ -37,7 +37,7 @@ public interface RoleRepository extends Lifecycle
     /**
      * Create a role, given that the roles token is unique.
      * @param role the new role object
-     * @throws IllegalArgumentException if the role name is not valid
+     * @throws IllegalArgumentException if the role name is not valid or the role name already exists
      */
     void create( RoleRecord role ) throws IllegalArgumentException, IOException;
 
@@ -60,4 +60,6 @@ public interface RoleRepository extends Lifecycle
 
     /** Utility for API consumers to tell if #create() will accept a given role name */
     boolean isValidName( String name );
+
+    void removeUserFromAllRoles( String username ) throws ConcurrentModificationException, IOException;
 }

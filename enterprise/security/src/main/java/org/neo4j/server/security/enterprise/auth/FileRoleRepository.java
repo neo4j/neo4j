@@ -24,13 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
@@ -43,20 +37,11 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
  * JVM restarts and crashes.
  */
 // TODO: Extract shared code with FileUserRepository
-public class FileRoleRepository extends LifecycleAdapter implements RoleRepository
+public class FileRoleRepository extends AbstractRoleRepository
 {
     private final Path roleFile;
 
-    // TODO: We could improve concurrency by using a ReadWriteLock
-
-    /** Quick lookup of roles by name */
-    private final Map<String,RoleRecord> rolesByName = new ConcurrentHashMap<>();
-    private final Map<String, SortedSet<String>> rolesByUsername = new ConcurrentHashMap<>();
-
     private final Log log;
-
-    /** Master list of roles */
-    private volatile List<RoleRecord> roles = new ArrayList<>();
 
     private final RoleSerialization serialization = new RoleSerialization();
 
@@ -64,18 +49,6 @@ public class FileRoleRepository extends LifecycleAdapter implements RoleReposito
     {
         this.roleFile = file.toAbsolutePath();
         this.log = logProvider.getLog( getClass() );
-    }
-
-    @Override
-    public RoleRecord findByName( String name )
-    {
-        return rolesByName.get( name );
-    }
-
-    @Override
-    public Set<String> findByUsername( String username )
-    {
-        return rolesByUsername.get( username );
     }
 
     @Override
@@ -88,119 +61,15 @@ public class FileRoleRepository extends LifecycleAdapter implements RoleReposito
     }
 
     @Override
-    public void create( RoleRecord role ) throws IllegalArgumentException, IOException
-    {
-        if ( !isValidName( role.name() ) )
-        {
-            throw new IllegalArgumentException( "'" + role.name() + "' is not a valid role name." );
-        }
-
-        synchronized (this)
-        {
-            // Check for existing role
-            for ( RoleRecord other : roles )
-            {
-                if ( other.name().equals( role.name() ) )
-                {
-                    throw new IllegalArgumentException( "The specified role already exists" );
-                }
-            }
-
-            roles.add( role );
-
-            saveRolesToFile();
-
-            rolesByName.put( role.name(), role );
-
-            populateUserMap( role );
-        }
-    }
-
-    @Override
-    public void update( RoleRecord existingRole, RoleRecord updatedRole ) throws ConcurrentModificationException, IOException
-    {
-        // Assert input is ok
-        if ( !existingRole.name().equals( updatedRole.name() ) )
-        {
-            throw new IllegalArgumentException( "updated role has a different name" );
-        }
-
-        synchronized (this)
-        {
-            // Copy-on-write for the roles list
-            List<RoleRecord> newRoles = new ArrayList<>();
-            boolean foundRole = false;
-            for ( RoleRecord other : roles )
-            {
-                if ( other.equals( existingRole ) )
-                {
-                    foundRole = true;
-                    newRoles.add( updatedRole );
-                } else
-                {
-                    newRoles.add( other );
-                }
-            }
-
-            if ( !foundRole )
-            {
-                throw new ConcurrentModificationException();
-            }
-
-            roles = newRoles;
-
-            saveRolesToFile();
-
-            rolesByName.put( updatedRole.name(), updatedRole );
-
-            removeFromUserMap( existingRole );
-            populateUserMap( updatedRole );
-        }
-    }
-
-    @Override
-    public boolean delete( RoleRecord role ) throws IOException
-    {
-        boolean foundRole = false;
-        synchronized (this)
-        {
-            // Copy-on-write for the roles list
-            List<RoleRecord> newRoles = new ArrayList<>();
-            for ( RoleRecord other : roles )
-            {
-                if ( other.name().equals( role.name() ) )
-                {
-                    foundRole = true;
-                } else
-                {
-                    newRoles.add( other );
-                }
-            }
-
-            if ( foundRole )
-            {
-                roles = newRoles;
-
-                saveRolesToFile();
-
-                rolesByName.remove( role.name() );
-            }
-
-            removeFromUserMap( role );
-        }
-        return foundRole;
-    }
-
-    @Override
-    public int numberOfRoles()
-    {
-        return roles.size();
-    }
-
-    @Override
     public boolean isValidName( String name )
     {
         return name.matches( "^[a-zA-Z0-9_]+$" );
+    }
+
+    @Override
+    protected void saveRoles() throws IOException
+    {
+        saveRolesToFile();
     }
 
     private void saveRolesToFile() throws IOException
@@ -242,32 +111,6 @@ public class FileRoleRepository extends LifecycleAdapter implements RoleReposito
             rolesByName.put( role.name(), role );
 
             populateUserMap( role );
-        }
-    }
-
-    private void populateUserMap( RoleRecord role )
-    {
-        for ( String username : role.users() )
-        {
-            SortedSet<String> memberOfRoles = rolesByUsername.get( username );
-            if ( memberOfRoles == null )
-            {
-                memberOfRoles = new ConcurrentSkipListSet<>();
-                rolesByUsername.put( username, memberOfRoles );
-            }
-            memberOfRoles.add( role.name() );
-        }
-    }
-
-    private void removeFromUserMap( RoleRecord role )
-    {
-        for ( String username : role.users() )
-        {
-            SortedSet<String> memberOfRoles = rolesByUsername.get( username );
-            if ( memberOfRoles != null )
-            {
-                memberOfRoles.remove( role.name() );
-            }
         }
     }
 }
