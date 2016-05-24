@@ -57,18 +57,12 @@ public abstract class ServerBootstrapper implements Bootstrapper
     public static int start( Bootstrapper boot, String... argv )
     {
         ServerCommandLineArgs args = ServerCommandLineArgs.parse( argv );
-
-        if ( args.homeDir() == null )
-        {
-            throw new ServerStartupException( "Argument --home-dir is required and was not provided." );
-        }
-
-        return boot.start( args.homeDir(), args.configFile(), args.configOverrides() );
+        return boot.start( args.configFile(), args.configOverrides() );
     }
 
     @Override
     @SafeVarargs
-    public final int start( File homeDir, Optional<File> configFile, Pair<String, String>... configOverrides )
+    public final int start( Optional<File> configFile, Pair<String, String>... configOverrides )
     {
         LogProvider userLogProvider = setupLogging();
         dependencies = dependencies.userLogProvider( userLogProvider );

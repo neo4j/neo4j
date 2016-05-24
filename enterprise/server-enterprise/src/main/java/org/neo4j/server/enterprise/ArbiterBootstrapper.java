@@ -58,7 +58,7 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
 
     @SafeVarargs
     @Override
-    public final int start( File homeDir, Optional<File> configFile, Pair<String, String>... configOverrides )
+    public final int start( Optional<File> configFile, Pair<String, String>... configOverrides )
     {
         Config config = getConfig( configFile, configOverrides );
         try

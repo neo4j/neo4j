@@ -103,7 +103,6 @@ Function Get-Neo4jPrunsrv
           '--StartMethod=start',
           "`"--StartPath=$($Neo4jServer.Home)`"",
           "`"--StartParams=--config-dir=$($Neo4jServer.ConfDir)`"",
-          "`"++StartParams=--home-dir=$($Neo4jServer.Home)`"",
           '--StopMode=jvm',
           '--StopMethod=stop',
           "`"--StopPath=$($Neo4jServer.Home)`"",

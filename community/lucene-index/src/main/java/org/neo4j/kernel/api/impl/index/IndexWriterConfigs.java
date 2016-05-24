@@ -48,6 +48,11 @@ public final class IndexWriterConfigs
     private static final int POPULATION_RAM_BUFFER_SIZE_MB =
             FeatureToggles.getInteger( IndexWriterConfigs.class, "population.ram.buffer.size", 50 );
 
+    /**
+     * Default postings format for schema and label scan store indexes.
+     */
+    private static final BlockTreeOrdsPostingsFormat blockTreeOrdsPostingsFormat = new BlockTreeOrdsPostingsFormat();
+
     private IndexWriterConfigs()
     {
         throw new AssertionError( "Not for instantiation!" );
@@ -66,8 +71,7 @@ public final class IndexWriterConfigs
             public PostingsFormat getPostingsFormatForField( String field )
             {
                 PostingsFormat postingFormat = super.getPostingsFormatForField( field );
-                return CODEC_BLOCK_TREE_ORDS_POSTING_FORMAT ? new BlockTreeOrdsPostingsFormat() :
-                       postingFormat;
+                return CODEC_BLOCK_TREE_ORDS_POSTING_FORMAT ? blockTreeOrdsPostingsFormat : postingFormat;
             }
         });
 

@@ -37,7 +37,7 @@ public class ArbiterBootstrapperTestProxy
         System.out.println( START_SIGNAL );
         try ( ArbiterBootstrapper arbiter = new ArbiterBootstrapper() )
         {
-            arbiter.start( args.homeDir(), args.configFile() );
+            arbiter.start( args.configFile() );
             System.in.read();
         }
     }
