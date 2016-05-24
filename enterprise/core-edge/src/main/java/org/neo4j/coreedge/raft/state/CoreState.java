@@ -121,7 +121,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
             {
                 lastApplyingStorage.persistStoreData( lastToApply );
 
-                while ( cursor.next() && cursor.index() <= lastToApply )
+                while ( cursor.index() < lastToApply && cursor.next() )
                 {
                     if ( cursor.get().content() instanceof DistributedOperation )
                     {
