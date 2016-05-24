@@ -25,11 +25,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -38,9 +36,6 @@ import static org.neo4j.test.Assert.assertEventually;
 
 public class BlockingBootstrapperTest
 {
-    @Rule
-    public TargetDirectory.TestDirectory homeDir = TargetDirectory.testDirForTest( getClass() );
-
     @Test
     public void shouldBlockUntilStoppedIfTheWrappedStartIsSuccessful()
     {
@@ -52,7 +47,7 @@ public class BlockingBootstrapperTest
         {
             @SafeVarargs
             @Override
-            public final int start( File homeDir, Optional<File> configFile, Pair<String, String>... configOverrides )
+            public final int start( Optional<File> configFile, Pair<String, String>... configOverrides )
             {
                 running.set( true );
                 return 0;
@@ -67,7 +62,7 @@ public class BlockingBootstrapperTest
         } );
 
         new Thread( () -> {
-            status.set( bootstrapper.start( homeDir.directory( "home-dir" ), null ) );
+            status.set( bootstrapper.start( null ) );
             exited.set( true );
         } ).start();
 
@@ -91,7 +86,7 @@ public class BlockingBootstrapperTest
         {
             @SafeVarargs
             @Override
-            public final int start( File homeDir, Optional<File> configFile, Pair<String, String>... configOverrides )
+            public final int start( Optional<File> configFile, Pair<String, String>... configOverrides )
             {
                 return 1;
             }
@@ -104,7 +99,7 @@ public class BlockingBootstrapperTest
         } );
 
         new Thread( () -> {
-            status.set( bootstrapper.start( homeDir.directory( "home-dir" ), null ) );
+            status.set( bootstrapper.start( null ) );
             exited.set( true );
         } ).start();
 

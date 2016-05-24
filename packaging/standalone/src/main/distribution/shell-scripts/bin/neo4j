@@ -111,7 +111,7 @@ setup_java_opts() {
 
 assemble_command_line() {
   retval=("${JAVA_CMD}" "-cp" "${CLASSPATH}" "${JAVA_OPTS[@]}" "-Dfile.encoding=UTF-8" "${MAIN_CLASS}" \
-          "--home-dir=${NEO4J_HOME}" "--config-dir=${NEO4J_CONF}")
+          "--config-dir=${NEO4J_CONF}")
 }
 
 do_console() {
@@ -216,7 +216,7 @@ do_status() {
 
 main() {
   setup_environment
-  CONSOLE_LOG="${NEO4J_LOGS}/neo4j.log"
+  CONSOLE_LOG="$(cd "${NEO4J_LOGS}" && pwd)/neo4j.log"
   NEO4J_PIDFILE="${NEO4J_RUN}/neo4j.pid"
   readonly CONSOLE_LOG NEO4J_PIDFILE
 

@@ -25,6 +25,32 @@ set -euo pipefail
 readonly NEO4J_BIN
 . "${NEO4J_BIN}/neo4j-shared.sh"
 
+declare -a ARGS=("")
+while [[ $# > 0 ]]
+do
+    option="$1"
+    case "${option}" in
+        -to=*|--to=*)
+            orig_filename="${option#*=}"
+            orig_arg="${option%=*}"
+
+            ARGS+=("${orig_arg}=$(resolve_path "${orig_filename}")")
+            shift
+            ;;
+        -to|--to)
+            orig_filename="${2}"
+
+            ARGS+=("${option}")
+            ARGS+=("$(resolve_path "${orig_filename}")")
+            shift
+            shift
+            ;;
+        *)
+            ARGS+=("${option}")
+            shift
+            ;;
+    esac
+done
 
 setup_environment
 check_java
@@ -33,4 +59,4 @@ build_classpath
 exec "$JAVA_CMD" ${JAVA_OPTS:-} \
   -classpath "$CLASSPATH" \
   org.neo4j.backup.BackupTool \
-  "$@"
+  "${ARGS[@]}"

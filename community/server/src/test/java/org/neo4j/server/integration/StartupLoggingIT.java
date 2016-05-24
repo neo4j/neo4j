@@ -41,7 +41,6 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.test.SuppressOutput;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static java.util.Arrays.asList;
@@ -61,16 +60,13 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         FileUtils.deleteRecursively( ServerTestUtils.getRelativeFile( DatabaseManagementSystemSettings.data_directory ) );
     }
 
-    @Rule
-    public TargetDirectory.TestDirectory homeDir = TargetDirectory.testDirForTest( getClass() );
-
     @Test
     public void shouldLogHelpfulStartupMessages() throws Throwable
     {
         CommunityBootstrapper boot = new CommunityBootstrapper();
         Pair[] propertyPairs = getPropertyPairs();
 
-        boot.start( homeDir.directory(), Optional.of( new File( "nonexistent-file.conf" ) ), propertyPairs );
+        boot.start( Optional.of( new File( "nonexistent-file.conf" ) ), propertyPairs );
         boot.stop();
 
         List<String> captured = suppressOutput.getOutputVoice().lines();

@@ -33,7 +33,7 @@ public class ArbiterEntryPoint
     public static void main( String[] argv ) throws IOException
     {
         ServerCommandLineArgs args = ServerCommandLineArgs.parse( argv );
-        int status = new ArbiterBootstrapper().start( args.homeDir(), args.configFile() );
+        int status = new ArbiterBootstrapper().start( args.configFile() );
         if ( status != 0 )
         {
             System.exit( status );

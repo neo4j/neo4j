@@ -81,7 +81,6 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
     {
         // When
         int resultCode = ServerBootstrapper.start( bootstrapper,
-                "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
                 "-c", configOption( data_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( tls_certificate_file,
@@ -109,9 +108,7 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
         store( properties, configFile );
 
         // When
-        ServerBootstrapper.start( bootstrapper,
-                "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
-                "--config-dir", configFile.getParentFile().getAbsolutePath() );
+        ServerBootstrapper.start( bootstrapper, "--config-dir", configFile.getParentFile().getAbsolutePath() );
 
         // Then
         assertThat( bootstrapper.getServer().getConfig().get( forced_kernel_id ), equalTo( "ourcustomvalue" ) );
@@ -131,7 +128,6 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
 
         // When
         ServerBootstrapper.start( bootstrapper,
-                "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
                 "--config-dir", configFile.getParentFile().getAbsolutePath(),
                 "-c", configOption( forced_kernel_id, "mycustomvalue" ) );
 

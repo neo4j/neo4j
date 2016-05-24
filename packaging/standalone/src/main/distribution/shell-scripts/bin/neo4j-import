@@ -25,6 +25,33 @@ set -euo pipefail
 readonly NEO4J_BIN
 . "${NEO4J_BIN}/neo4j-shared.sh"
 
+declare -a ARGS=("")
+while [[ $# > 0 ]]
+do
+    option="$1"
+    case "${option}" in
+        --into=*|-into=*|--db-config=*|-db-config=*)
+            orig_filename="${option#*=}"
+            orig_arg="${option%=*}"
+
+            ARGS+=("${orig_arg}=$(resolve_path "${orig_filename}")")
+            shift
+            ;;
+        --into|-into|--db-config|-db-config)
+            orig_filename="${2}"
+
+            ARGS+=("${option}")
+            ARGS+=("$(resolve_path "${orig_filename}")")
+            shift
+            shift
+            ;;
+        *)
+            ARGS+=("${option}")
+            shift
+            ;;
+    esac
+done
+
 setup_environment
 check_java
 build_classpath
@@ -35,4 +62,4 @@ exec "$JAVA_CMD" ${JAVA_OPTS:-} \
   $EXTRA_JVM_ARGUMENTS \
   -classpath "$CLASSPATH" \
   org.neo4j.tooling.ImportTool \
-  "$@"
+  "${ARGS[@]}"

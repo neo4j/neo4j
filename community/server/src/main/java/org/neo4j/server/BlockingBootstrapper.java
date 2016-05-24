@@ -38,9 +38,9 @@ public class BlockingBootstrapper implements Bootstrapper
 
     @SafeVarargs
     @Override
-    public final int start( File homeDir, Optional<File> configFile, Pair<String, String>... configOverrides )
+    public final int start( Optional<File> configFile, Pair<String, String>... configOverrides )
     {
-        int status = wrapped.start( homeDir, configFile, configOverrides );
+        int status = wrapped.start( configFile, configOverrides );
         if ( status != ServerBootstrapper.OK )
         {
             return status;

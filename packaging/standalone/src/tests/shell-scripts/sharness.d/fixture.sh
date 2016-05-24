@@ -19,7 +19,7 @@ set_config() {
   name=$1
   value=$2
   file=$3
-  echo "${name}=${value}" >>"${SHARNESS_TRASH_DIRECTORY}/neo4j-home/conf/${file}"
+  echo "${name}=${value}" >>"neo4j-home/conf/${file}"
 }
 
 set_main_class() {
@@ -28,7 +28,7 @@ set_main_class() {
 }
 
 neo4j_home() {
-  echo "${SHARNESS_TRASH_DIRECTORY}/neo4j-home"
+  echo "$(pwd)/neo4j-home"
 }
 
 export JAVA_CMD="$(pwd)/sharness.d/fake-java"
