@@ -23,12 +23,11 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
-import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.explorer.ClusterState;
 import org.neo4j.coreedge.raft.state.explorer.ComparableRaftState;
+import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 
@@ -43,7 +42,7 @@ public class ProcessMessage implements Action
     }
 
     @Override
-    public ClusterState advance( ClusterState previous ) throws IOException, RaftLogCompactedException
+    public ClusterState advance( ClusterState previous ) throws IOException
     {
         ClusterState newClusterState = new ClusterState( previous );
         Queue<RaftMessages.RaftMessage<RaftTestMember>> inboundQueue = new LinkedList<>( previous.queues.get( member ) );

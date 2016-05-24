@@ -21,7 +21,6 @@ package org.neo4j.coreedge.raft.log.physical;
 
 import java.io.IOException;
 
-import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.cursor.IOCursor;
 
 /**
@@ -32,5 +31,5 @@ import org.neo4j.cursor.IOCursor;
  */
 public interface RaftEntryStore
 {
-    IOCursor<RaftLogAppendRecord> getEntriesFrom( long logIndex ) throws IOException, RaftLogCompactedException;
+    IOCursor<RaftLogAppendRecord> getEntriesFrom( long logIndex ) throws IOException;
 }

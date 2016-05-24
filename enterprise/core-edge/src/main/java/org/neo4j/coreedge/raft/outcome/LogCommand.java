@@ -22,9 +22,8 @@ package org.neo4j.coreedge.raft.outcome;
 import java.io.IOException;
 
 import org.neo4j.coreedge.raft.log.RaftLog;
-import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 
 public interface LogCommand
 {
-    void applyTo( RaftLog raftLog ) throws IOException, RaftLogCompactedException;
+    void applyTo( RaftLog raftLog ) throws IOException;
 }

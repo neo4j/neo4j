@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.raft.log.RaftLog;
-import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.log.RaftLogCursor;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.RaftLogMetadataCache;
@@ -165,7 +164,7 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
     }
 
     @Override
-    public void truncate( long fromIndex ) throws IOException, RaftLogCompactedException
+    public void truncate( long fromIndex ) throws IOException
     {
         if ( fromIndex <= commitIndex )
         {
@@ -205,7 +204,7 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
     }
 
     @Override
-    public RaftLogCursor getEntryCursor( long fromIndex ) throws IOException, RaftLogCompactedException
+    public RaftLogCursor getEntryCursor( long fromIndex ) throws IOException
     {
         final IOCursor<RaftLogAppendRecord> inner = entryStore.getEntriesFrom( fromIndex );
         return new RaftLogCursor()
@@ -268,7 +267,7 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
         return appendIndex.get();
     }
 
-    private RaftLogEntry readLogEntry( long logIndex ) throws IOException, RaftLogCompactedException
+    private RaftLogEntry readLogEntry( long logIndex ) throws IOException
     {
         RaftLogEntry entry = entryCache.get( logIndex );
         if( entry != null )
@@ -298,7 +297,7 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
     }
 
     @Override
-    public long readEntryTerm( long logIndex ) throws IOException, RaftLogCompactedException
+    public long readEntryTerm( long logIndex ) throws IOException
     {
         // Index -1 is not an existing log index, but represents the beginning of the log.
         // It is a valid value to request the term for, and the term is -1.
@@ -336,7 +335,7 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
     }
 
     @Override
-    public void start() throws IOException, RaftLogCompactedException
+    public void start() throws IOException
     {
         this.logRotation = new LogRotationImpl( new LoggingLogFileMonitor( log ), logFile, databaseHealthSupplier.get() );
 
@@ -427,7 +426,7 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
         log.info( "Restored prev term at %d", prevTerm );
     }
 
-    private void restoreAppendIndex() throws IOException, RaftLogCompactedException
+    private void restoreAppendIndex() throws IOException
     {
         long restoredAppendIndex = prevIndex;
         try( IOCursor<RaftLogAppendRecord> cursor = entryStore.getEntriesFrom( prevIndex + 1 ) )

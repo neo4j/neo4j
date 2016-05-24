@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.raft.state;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
@@ -27,7 +28,6 @@ import org.neo4j.coreedge.catchup.storecopy.core.CoreStateType;
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
 import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.log.RaftLog;
-import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.log.RaftLogCursor;
 import org.neo4j.coreedge.raft.log.monitoring.RaftLogCommitIndexMonitor;
 import org.neo4j.coreedge.raft.log.pruning.LogPruner;
@@ -170,14 +170,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
      */
     public void compact() throws IOException
     {
-        try
-        {
-            raftLog.prune( lastFlushed );
-        }
-        catch ( RaftLogCompactedException e )
-        {
-            log.warn( "Log already pruned?", e );
-        }
+        raftLog.prune( lastFlushed );
     }
 
     /**
@@ -222,7 +215,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     }
 
     @Override
-    public synchronized void start() throws IOException, RaftLogCompactedException, InterruptedException
+    public synchronized void start() throws IOException, InterruptedException
     {
         lastFlushed = lastApplied = lastFlushedStorage.getInitialState();
         sessionState = sessionStorage.getInitialState();
@@ -238,7 +231,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
         flush();
     }
 
-    public synchronized CoreSnapshot snapshot() throws IOException, RaftLogCompactedException, InterruptedException
+    public synchronized CoreSnapshot snapshot() throws IOException, InterruptedException
     {
         applier.sync( false );
 

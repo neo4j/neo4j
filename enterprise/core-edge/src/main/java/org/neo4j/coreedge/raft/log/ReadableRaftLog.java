@@ -39,11 +39,11 @@ public interface ReadableRaftLog
      * @param logIndex The index of the log entry.
      * @return The term of the entry, or -1 if the entry does not exist
      */
-    long readEntryTerm( long logIndex ) throws IOException, RaftLogCompactedException;
+    long readEntryTerm( long logIndex ) throws IOException;
 
     /**
      * Returns a {@link RaftLogCursor} of {@link RaftLogEntry}s from the specified index until the end of the log
      * @param fromIndex The log index at which the cursor should be positioned
      */
-    RaftLogCursor getEntryCursor( long fromIndex ) throws IOException, RaftLogCompactedException;
+    RaftLogCursor getEntryCursor( long fromIndex ) throws IOException;
 }

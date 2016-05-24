@@ -23,15 +23,19 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
+import org.neo4j.coreedge.raft.log.EntryRecord;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.cursor.IOCursor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -206,4 +210,74 @@ public class SegmentsTest
         assertEquals( 10, header.prevIndex() );
         assertEquals( 2, header.prevTerm() );
     }
+
+    @Test
+    public void attemptsPruningUntilOpenFileIsFound() throws Exception
+    {
+        /**
+         * prune stops attempting to prune files after finding one that is open.
+         */
+
+        // Given
+        FileSystemAbstraction fsa = mock( FileSystemAbstraction.class, RETURNS_MOCKS );
+        File baseDirectory = new File( "." );
+        FileNames fileNames = new FileNames( baseDirectory );
+        ChannelMarshal<ReplicatedContent> contentMarshal = mock( ChannelMarshal.class );
+        LogProvider logProvider = mock( LogProvider.class );
+
+        Segments segments = new Segments( fsa, fileNames, Collections.emptyList(), contentMarshal, logProvider, -1 );
+
+        /*
+        create 0
+        create 1
+        create 2
+        create 3
+
+        closeWriter on all
+        create reader on 1
+        prune on 3
+
+        only 0 should be deleted
+         */
+
+        segments.rotate( -1, -1, -1 );
+        segments.last().closeWriter(); // need to close writer otherwise dispose will not be called
+
+        segments.rotate( 10, 10, 2 ); // we will truncate this whole file away
+        segments.last().closeWriter(); // need to close writer otherwise dispose will not be called
+        IOCursor<EntryRecord> reader = segments.last().getReader( 11 );
+
+        segments.rotate( 20, 20, 3 ); // we will truncate this whole file away
+        segments.last().closeWriter();
+
+        segments.rotate( 30, 30, 4 ); // we will truncate this whole file away
+        segments.last().closeWriter();
+
+        segments.prune( 31 );
+
+        //when
+        OpenEndRangeMap.ValueRange<Long,SegmentFile> shouldBePruned = segments.getForIndex( 5 );
+        OpenEndRangeMap.ValueRange<Long,SegmentFile> shouldNotBePruned = segments.getForIndex( 15 );
+        OpenEndRangeMap.ValueRange<Long,SegmentFile> shouldAlsoNotBePruned = segments.getForIndex( 25 );
+
+        //then
+        assertFalse( shouldBePruned.value().isPresent() );
+        assertTrue( shouldNotBePruned.value().isPresent() );
+        assertTrue( shouldAlsoNotBePruned.value().isPresent() );
+
+        //when
+        reader.close();
+        segments.prune( 31 );
+
+        shouldBePruned = segments.getForIndex( 5 );
+        shouldNotBePruned = segments.getForIndex( 15 );
+        shouldAlsoNotBePruned = segments.getForIndex( 25 );
+
+        //then
+        assertFalse( shouldBePruned.value().isPresent() );
+        assertFalse( shouldNotBePruned.value().isPresent() );
+        assertFalse( shouldAlsoNotBePruned.value().isPresent() );
+
+    }
+
 }

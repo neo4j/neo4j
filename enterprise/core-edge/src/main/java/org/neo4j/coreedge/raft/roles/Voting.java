@@ -22,14 +22,13 @@ package org.neo4j.coreedge.raft.roles;
 import java.io.IOException;
 
 import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 
 public class Voting
 {
     public static <MEMBER> void handleVoteRequest( ReadableRaftState<MEMBER> state, Outcome<MEMBER> outcome,
-                                                   RaftMessages.Vote.Request<MEMBER> voteRequest ) throws IOException, RaftLogCompactedException
+                                                   RaftMessages.Vote.Request<MEMBER> voteRequest ) throws IOException
     {
         if ( voteRequest.term() > state.term() )
         {

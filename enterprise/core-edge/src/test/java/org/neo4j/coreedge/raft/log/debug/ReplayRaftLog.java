@@ -23,22 +23,19 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
-import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
+import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionFactory;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.helpers.Args;
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
 
 public class ReplayRaftLog
 {
-    public static void main( String[] args ) throws IOException, RaftLogCompactedException
+    public static void main( String[] args ) throws IOException
     {
         Args arg = Args.parse( args );
 

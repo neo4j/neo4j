@@ -127,7 +127,7 @@ public abstract class ConcurrentStressIT<T extends RaftLog & Lifecycle>
                 assertEquals( stringForIndex( cursor.index() ), content.value() );
             }
         }
-        catch ( RaftLogCompactedException | IOException e )
+        catch ( IOException e )
         {
             throw new RuntimeException( e );
         }

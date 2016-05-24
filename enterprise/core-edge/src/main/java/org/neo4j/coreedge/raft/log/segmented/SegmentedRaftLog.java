@@ -25,7 +25,6 @@ import java.io.IOException;
 import org.neo4j.coreedge.raft.log.DamagedLogStorageException;
 import org.neo4j.coreedge.raft.log.EntryRecord;
 import org.neo4j.coreedge.raft.log.RaftLog;
-import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.log.RaftLogCursor;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
@@ -67,7 +66,6 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
     private boolean needsRecovery;
     private final LogProvider logProvider;
     private final LruCache<Long,RaftLogEntry> entryCache; // TODO: replace with ring buffer, limit based on size
-    private EntryStore entryStore;
     private final SegmentedRaftLogPruner segmentedRaftLogPruner;
 
     private State state;
@@ -84,11 +82,11 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
         this.fileNames = new FileNames( directory );
         this.logProvider = logProvider;
         this.entryCache = entryCacheSize >= 1 ? new LruCache<>( "raft-log-entry-cache", entryCacheSize ) : null;
-        this.segmentedRaftLogPruner = new SegmentedRaftLogPruner( pruningStrategyConfig, logProvider);
+        this.segmentedRaftLogPruner = new SegmentedRaftLogPruner( pruningStrategyConfig, logProvider );
     }
 
     @Override
-    public synchronized void start() throws IOException, RaftLogCompactedException, DamagedLogStorageException
+    public synchronized void start() throws IOException, DamagedLogStorageException
     {
         if ( !directory.exists() && !directory.mkdirs() )
         {
@@ -98,13 +96,12 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
         RecoveryProtocol recoveryProtocol = new RecoveryProtocol( fileSystem, fileNames, contentMarshal, logProvider );
         state = recoveryProtocol.run();
 
-        entryStore = new EntryStore( state.segments );
     }
 
     @Override
     public void shutdown() throws DisposedException
     {
-        entryStore.close();
+        state.segments.close();
     }
 
     @Override
@@ -160,7 +157,7 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
     }
 
     @Override
-    public synchronized void truncate( long fromIndex ) throws IOException, RaftLogCompactedException
+    public synchronized void truncate( long fromIndex ) throws IOException
     {
         if ( state.appendIndex < fromIndex )
         {
@@ -212,9 +209,9 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
     }
 
     @Override
-    public RaftLogCursor getEntryCursor( long fromIndex ) throws IOException, RaftLogCompactedException
+    public RaftLogCursor getEntryCursor( long fromIndex ) throws IOException
     {
-        final IOCursor<EntryRecord> inner = entryStore.getEntriesFrom( fromIndex );
+        final IOCursor<EntryRecord> inner = new EntryCursor( state.segments, fromIndex );
         return new SegmentedRaftLogCursor( fromIndex, inner );
     }
 
@@ -233,7 +230,7 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
         return state.appendIndex;
     }
 
-    private RaftLogEntry readLogEntry( long logIndex ) throws IOException, RaftLogCompactedException
+    private RaftLogEntry readLogEntry( long logIndex ) throws IOException
     {
         RaftLogEntry entry = entryCache != null ? entryCache.get( logIndex ) : null;
         if ( entry != null )
@@ -241,14 +238,14 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
             return entry;
         }
 
-        try ( IOCursor<EntryRecord> cursor = entryStore.getEntriesFrom( logIndex ) )
+        try ( IOCursor<EntryRecord> cursor = new EntryCursor( state.segments, logIndex ) )
         {
             return cursor.next() ? cursor.get().logEntry() : null;
         }
     }
 
     @Override
-    public long readEntryTerm( long logIndex ) throws IOException, RaftLogCompactedException
+    public long readEntryTerm( long logIndex ) throws IOException
     {
         if ( logIndex == state.prevIndex )
         {

@@ -274,6 +274,6 @@ public class RaftLogDurabilityTest
 
     private interface LogVerifier
     {
-        void verifyLog( RaftLog log ) throws IOException, RaftLogCompactedException;
+        void verifyLog( RaftLog log ) throws IOException;
     }
 }

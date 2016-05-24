@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.coreedge.raft.RaftMessages.NewEntry.Request;
-import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
@@ -113,7 +112,7 @@ public class CatchUpTest
         assertThat( integerValues( fixture.members().withId( sleepyId ).raftLog() ), hasItems( 10, 20, 30, 40 ) );
     }
 
-    private List<Integer> integerValues( ReadableRaftLog log ) throws IOException, RaftLogCompactedException
+    private List<Integer> integerValues( ReadableRaftLog log ) throws IOException
     {
         List<Integer> actual = new ArrayList<>();
         for ( long logIndex = 0; logIndex <= log.appendIndex(); logIndex++ )

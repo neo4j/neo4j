@@ -27,11 +27,10 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 
-import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
-import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.RaftState;
+import org.neo4j.coreedge.server.RaftTestMember;
 
 import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;
 
@@ -41,7 +40,7 @@ public class ClusterState
     public final Map<RaftTestMember, ComparableRaftState> states;
     public final Map<RaftTestMember, Queue<RaftMessages.RaftMessage<RaftTestMember>>> queues;
 
-    public ClusterState( Set<RaftTestMember> members ) throws IOException, RaftLogCompactedException
+    public ClusterState( Set<RaftTestMember> members ) throws IOException
     {
         this.roles = new HashMap<>();
         this.states = new HashMap<>();

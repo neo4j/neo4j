@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLogFiles;
 import org.neo4j.helpers.Clock;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.log.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.pruning.EntryCountThreshold;
 import org.neo4j.kernel.impl.transaction.log.pruning.EntryTimespanThreshold;
@@ -32,8 +31,9 @@ import org.neo4j.kernel.impl.transaction.log.pruning.FileCountThreshold;
 import org.neo4j.kernel.impl.transaction.log.pruning.FileSizeThreshold;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategy;
 import org.neo4j.kernel.impl.transaction.log.pruning.Threshold;
+import org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser;
 
-import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
+import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.parse;
 
 public class RaftLogPruneStrategyFactory
 {
@@ -51,18 +51,6 @@ public class RaftLogPruneStrategyFactory
             return "NO_PRUNING";
         }
     };
-
-    static boolean decidePruneForIllegalLogFormat( IllegalLogFormatException e )
-    {
-        if ( e.wasNewerLogVersion() )
-        {
-            throw new RuntimeException( "Unable to read database logs, because it contains" +
-                    " logs from a newer version of Neo4j.", e );
-        }
-
-        // Hit an old version log, consider this out of date.
-        return true;
-    }
 
     /**
      * Parses a configuration value for log specifying log pruning. It has one of these forms:
@@ -83,63 +71,40 @@ public class RaftLogPruneStrategyFactory
                                                     PhysicalRaftLogFiles files,
                                                     String configValue )
     {
-        String[] tokens = configValue.split( " " );
-        if ( tokens.length == 0 )
+        ThresholdConfigParser.ThresholdConfigValue value = parse( configValue );
+
+        if ( value == ThresholdConfigParser.ThresholdConfigValue.NO_PRUNING )
         {
-            throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue + "'" );
+            return NO_PRUNING;
         }
 
-        final String boolOrNumber = tokens[0];
-
-        if ( tokens.length == 1 )
-        {
-            switch ( boolOrNumber )
-            {
-                case "true":
-                    return NO_PRUNING;
-                case "false":
-                    final EntryCountThreshold thresholdToUse = new EntryCountThreshold( 1 );
-                    return new RaftLogPruneStrategy( logFileInformation, files, thresholdToUse );
-                default:
-                    throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue +
-                            "'. The form is 'all' or '<number><unit> <type>' for example '100k txs' " +
-                            "for the latest 100 000 transactions" );
-            }
-        }
-
-        Threshold thresholdToUse = getThresholdByType( fileSystem, tokens[1], boolOrNumber, configValue );
+        Threshold thresholdToUse = getThresholdByType( fileSystem, value, configValue );
         return new RaftLogPruneStrategy( logFileInformation, files, thresholdToUse );
     }
 
-    public static Threshold getThresholdByType( FileSystemAbstraction fileSystem, String type, String thresholdValueString,
-            String originalConfigValue )
+    // visible for testing
+    private static Threshold getThresholdByType( FileSystemAbstraction fileSystem,
+            ThresholdConfigParser.ThresholdConfigValue value, String originalConfigValue )
     {
-        long thresholdValue = parseLongWithUnit( thresholdValueString );
+        long thresholdValue = value.value;
 
-        Threshold thresholdToUse;
-        switch ( type )
+        switch ( value.type )
         {
-            case "files":
-                thresholdToUse = new FileCountThreshold( thresholdValue );
-                break;
-            case "size":
-                thresholdToUse = new FileSizeThreshold( fileSystem, thresholdValue );
-                break;
-            case "txs":
-            case "entries": // txs and entries are synonyms
-                thresholdToUse = new EntryCountThreshold( thresholdValue );
-                break;
-            case "hours":
-                thresholdToUse = new EntryTimespanThreshold( Clock.SYSTEM_CLOCK, TimeUnit.HOURS, thresholdValue );
-                break;
-            case "days":
-                thresholdToUse = new EntryTimespanThreshold( Clock.SYSTEM_CLOCK, TimeUnit.DAYS, thresholdValue );
-                break;
-            default:
-                throw new IllegalArgumentException( "Invalid log pruning configuration value '" + originalConfigValue +
-                        "'. Invalid type '" + type + "', valid are files, size, txs, entries, hours, days." );
+        case "files":
+            return new FileCountThreshold( thresholdValue );
+        case "size":
+            return new FileSizeThreshold( fileSystem, thresholdValue );
+        case "txs":
+        case "entries": // txs and entries are synonyms
+            return new EntryCountThreshold( thresholdValue );
+        case "hours":
+            return new EntryTimespanThreshold( Clock.SYSTEM_CLOCK, TimeUnit.HOURS, thresholdValue );
+        case "days":
+            return new EntryTimespanThreshold( Clock.SYSTEM_CLOCK, TimeUnit.DAYS, thresholdValue );
+        default:
+            throw new IllegalArgumentException( "Invalid log pruning configuration value '" + originalConfigValue +
+                    "'. Invalid type '" + value.type + "', valid are files, size, txs, entries, hours, days." );
         }
-        return thresholdToUse;
     }
 
 }

@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Objects;
 
 import org.neo4j.coreedge.raft.log.RaftLog;
-import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 
 public class TruncateLogCommand implements LogCommand
 {
@@ -35,7 +34,7 @@ public class TruncateLogCommand implements LogCommand
     }
 
     @Override
-    public void applyTo( RaftLog raftLog ) throws IOException, RaftLogCompactedException
+    public void applyTo( RaftLog raftLog ) throws IOException
     {
         raftLog.truncate( fromIndex );
     }

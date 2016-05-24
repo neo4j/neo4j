@@ -26,7 +26,7 @@ import org.neo4j.cursor.RawCursor;
 public interface RaftLogCursor extends RawCursor<RaftLogEntry,Exception>
 {
     @Override
-    boolean next() throws IOException, RaftLogCompactedException;
+    boolean next() throws IOException;
 
     @Override
     void close() throws IOException;

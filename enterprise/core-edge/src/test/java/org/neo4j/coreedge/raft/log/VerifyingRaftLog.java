@@ -50,14 +50,14 @@ class VerifyingRaftLog implements RaftLog
     }
 
     @Override
-    public void truncate( long fromIndex ) throws IOException, RaftLogCompactedException
+    public void truncate( long fromIndex ) throws IOException
     {
         expected.truncate( fromIndex );
         other.truncate( fromIndex );
     }
 
     @Override
-    public long prune( long safeIndex ) throws IOException, RaftLogCompactedException
+    public long prune( long safeIndex ) throws IOException
     {
         // the expected one should be able to prune exactly, while others are not required to
         long pruneIndex = other.prune( safeIndex );
@@ -82,7 +82,7 @@ class VerifyingRaftLog implements RaftLog
     }
 
     @Override
-    public long readEntryTerm( long logIndex ) throws IOException, RaftLogCompactedException
+    public long readEntryTerm( long logIndex ) throws IOException
     {
         long term = expected.readEntryTerm( logIndex );
         assertEquals( term, other.readEntryTerm( logIndex ) );
@@ -90,7 +90,7 @@ class VerifyingRaftLog implements RaftLog
     }
 
     @Override
-    public RaftLogCursor getEntryCursor( long fromIndex ) throws IOException, RaftLogCompactedException
+    public RaftLogCursor getEntryCursor( long fromIndex ) throws IOException
     {
         return other.getEntryCursor( fromIndex );
     }
@@ -103,12 +103,12 @@ class VerifyingRaftLog implements RaftLog
         return expectedAppendIndex;
     }
 
-    public void verify() throws IOException, RaftLogCompactedException
+    public void verify() throws IOException
     {
         verifyUsing( other );
     }
 
-    public void verifyUsing( RaftLog other ) throws IOException, RaftLogCompactedException
+    public void verifyUsing( RaftLog other ) throws IOException
     {
         assertEquals( expected.appendIndex(), other.appendIndex() );
 
@@ -117,7 +117,7 @@ class VerifyingRaftLog implements RaftLog
         verifyDirectLookupBackwards( expected, other );
     }
 
-    private void verifyDirectLookupForwards( InMemoryRaftLog expected, RaftLog other ) throws IOException, RaftLogCompactedException
+    private void verifyDirectLookupForwards( InMemoryRaftLog expected, RaftLog other ) throws IOException
     {
         for ( long logIndex = expected.prevIndex()+1; logIndex <= expected.appendIndex(); logIndex++ )
         {
@@ -125,7 +125,7 @@ class VerifyingRaftLog implements RaftLog
         }
     }
 
-    private void verifyDirectLookupBackwards( InMemoryRaftLog expected, RaftLog other ) throws IOException, RaftLogCompactedException
+    private void verifyDirectLookupBackwards( InMemoryRaftLog expected, RaftLog other ) throws IOException
     {
         for ( long logIndex = expected.appendIndex(); logIndex > expected.prevIndex(); logIndex-- )
         {
@@ -133,12 +133,12 @@ class VerifyingRaftLog implements RaftLog
         }
     }
 
-    private void directAssertions( InMemoryRaftLog expected, RaftLog other, long logIndex ) throws IOException, RaftLogCompactedException
+    private void directAssertions( InMemoryRaftLog expected, RaftLog other, long logIndex ) throws IOException
     {
         assertEquals( expected.readEntryTerm( logIndex ), other.readEntryTerm( logIndex ) );
     }
 
-    private void verifyTraversalUsingCursor( RaftLog expected, RaftLog other ) throws IOException, RaftLogCompactedException
+    private void verifyTraversalUsingCursor( RaftLog expected, RaftLog other ) throws IOException
     {
         long startIndex = expected.prevIndex() + 1;
         try( RaftLogCursor expectedCursor = expected.getEntryCursor( startIndex) )

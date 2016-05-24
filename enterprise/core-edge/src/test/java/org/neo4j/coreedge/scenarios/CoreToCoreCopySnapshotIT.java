@@ -19,13 +19,14 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import java.io.File;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
@@ -36,11 +37,15 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.rule.TargetDirectory;
 
+import static java.util.Collections.emptyMap;
 import static junit.framework.TestCase.assertEquals;
-
+import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning_frequency;
+import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning_strategy;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class CoreToCoreCopySnapshotIT
@@ -85,12 +90,11 @@ public class CoreToCoreCopySnapshotIT
         File dbDir = dir.directory();
         cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
-        CoreGraphDatabase source =
-                cluster.coreTx( ( db, tx ) -> {
-                    Node node = db.createNode();
-                    node.setProperty( "hej", "svej" );
-                    tx.success();
-                } );
+        CoreGraphDatabase source = cluster.coreTx( ( db, tx ) -> {
+            Node node = db.createNode();
+            node.setProperty( "hej", "svej" );
+            tx.success();
+        } );
 
         // when
         CoreGraphDatabase follower = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.FOLLOWER );
@@ -107,11 +111,10 @@ public class CoreToCoreCopySnapshotIT
         File dbDir = dir.directory();
         cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
-        CoreGraphDatabase source =
-                cluster.coreTx( ( db, tx ) -> {
-                    createData( db, 1000 );
-                    tx.success();
-                } );
+        CoreGraphDatabase source = cluster.coreTx( ( db, tx ) -> {
+            createData( db, 1000 );
+            tx.success();
+        } );
 
         // when
         CoreGraphDatabase follower = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.FOLLOWER );
@@ -122,22 +125,20 @@ public class CoreToCoreCopySnapshotIT
     }
 
     @Test
-    public void shouldBeAbleToDownloadAfterPruning() throws Exception
+    public void shouldBeAbleToDownloadToNewInstanceAfterPruning() throws Exception
     {
         // given
         File dbDir = dir.directory();
-        Map<String,String> params = stringMap(
-                CoreEdgeClusterSettings.state_machine_flush_window_size.name(), "1",
-                CoreEdgeClusterSettings.raft_log_pruning.name(), "3 entries",
+        Map<String,String> params = stringMap( CoreEdgeClusterSettings.state_machine_flush_window_size.name(), "1",
+                CoreEdgeClusterSettings.raft_log_pruning_strategy.name(), "3 entries",
                 CoreEdgeClusterSettings.raft_log_rotation_size.name(), "1K" );
 
         cluster = Cluster.start( dbDir, 3, 0, params, new TestOnlyDiscoveryServiceFactory() );
 
-        CoreGraphDatabase source =
-                cluster.coreTx( ( db, tx ) -> {
-                    createData( db, 10000 );
-                    tx.success();
-                } );
+        CoreGraphDatabase source = cluster.coreTx( ( db, tx ) -> {
+            createData( db, 10000 );
+            tx.success();
+        } );
 
         // when
         for ( CoreGraphDatabase coreDb : cluster.coreServers() )
@@ -151,6 +152,71 @@ public class CoreToCoreCopySnapshotIT
 
         // then
         assertEquals( DbRepresentation.of( source ), DbRepresentation.of( newDb ) );
+    }
+
+    @Test
+    public void shouldBeAbleToDownloadToRejoinedInstanceAfterPruning() throws Exception
+    {
+        // given
+        File dbDir = dir.directory();
+
+        Map<String,String> coreParams = stringMap();
+        int pruneFrequencyMs = 100;
+        coreParams.put( raft_log_pruning_strategy.name(), "keep_none" );
+        coreParams.put( raft_log_pruning_frequency.name(), pruneFrequencyMs + "ms" );
+
+        try ( Cluster cluster = Cluster
+                .start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory(), coreParams, emptyMap(),
+                        StandardV3_0.NAME ) )
+        {
+
+            AtomicBoolean running = new AtomicBoolean( true );
+            Thread thread = new Thread()
+            {
+                @Override
+                public synchronized void run()
+                {
+                    while ( running.get() )
+                    {
+                        try
+                        {
+                            cluster.coreTx( ( db, tx ) -> {
+                                Node node = db.createNode();
+                                node.setProperty( "that's a bam", string( 1024 ) );
+                                tx.success();
+                            } );
+                        }
+                        catch ( Exception e )
+                        {
+                            throw new RuntimeException( e );
+                        }
+                    }
+                }
+            };
+
+            thread.start();
+
+            Thread.sleep( pruneFrequencyMs * 100 );
+            CoreGraphDatabase follower = cluster.awaitCoreGraphDatabaseWithRole( 5_000, Role.FOLLOWER );
+            follower.shutdown();
+            Config config = follower.getDependencyResolver().resolveDependency( Config.class );
+
+            Thread.sleep( pruneFrequencyMs * 100 );
+
+            cluster.addCoreServerWithServerId( config.get( CoreEdgeClusterSettings.server_id ), 3 );
+            running.set( false );
+            thread.join();
+        }
+    }
+
+    private String string( int numberOfCharacters )
+    {
+        StringBuffer s = new StringBuffer();
+        for ( int i = 0; i < numberOfCharacters; i++ )
+        {
+            s.append( String.valueOf( i ) );
+        }
+        return s.toString();
     }
 
     static void createData( GraphDatabaseService db, int size )

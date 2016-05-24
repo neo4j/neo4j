@@ -22,13 +22,12 @@ package org.neo4j.coreedge.raft.roles;
 import java.io.IOException;
 
 import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 
 public class Heart
 {
-    public static <MEMBER> void beat( ReadableRaftState<MEMBER> state, Outcome<MEMBER> outcome, RaftMessages.Heartbeat<MEMBER> request ) throws IOException, RaftLogCompactedException
+    public static <MEMBER> void beat( ReadableRaftState<MEMBER> state, Outcome<MEMBER> outcome, RaftMessages.Heartbeat<MEMBER> request ) throws IOException
     {
         if ( request.leaderTerm() < state.term() )
         {

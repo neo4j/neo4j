@@ -28,7 +28,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
-import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning;
+import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning_strategy;
 
 public class SegmentedRaftLogVerificationIT extends RaftLogVerificationIT
 {
@@ -45,7 +45,7 @@ public class SegmentedRaftLogVerificationIT extends RaftLogVerificationIT
 
         SegmentedRaftLog newRaftLog = new SegmentedRaftLog( fsa, directory, rotateAtSizeBytes,
                 new DummyRaftableContentSerializer(), NullLogProvider.getInstance(), entryCacheSize,
-                raft_log_pruning.getDefaultValue() );
+                raft_log_pruning_strategy.getDefaultValue() );
 
         newRaftLog.init();
         newRaftLog.start();

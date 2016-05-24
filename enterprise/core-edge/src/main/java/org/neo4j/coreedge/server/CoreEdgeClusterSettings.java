@@ -184,8 +184,8 @@ public class CoreEdgeClusterSettings
             setting( "core_edge.state_machine_flush_window_size", INTEGER, "100" );
 
     @Description( "RAFT log pruning strategy" )
-    public static final Setting<String> raft_log_pruning =
-            setting( "core_edge.keep_raft_logs", STRING, "true" );
+    public static final Setting<String> raft_log_pruning_strategy =
+            setting( "core_edge.raft_log_prune_strategy", STRING, "keep_all" );
 
     @Description( "RAFT log implementation" )
     public static final Setting<String> raft_log_implementation =
