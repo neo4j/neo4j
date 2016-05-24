@@ -97,7 +97,7 @@ public class ReplicatedIdGenerator implements IdGenerator
             {
                 throw new IdGenerationException( e );
             }
-            log.info( "Received id allocation " + allocation + " for " + idType );
+            log.debug( "Received id allocation " + allocation + " for " + idType );
             nextId = storeLocally( allocation );
         }
         highId = max( highId, nextId + 1 );
