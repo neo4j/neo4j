@@ -58,6 +58,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 // TODO: Fix lock exception usage when lock exception hierarchy has been fixed.
 public class LeaderOnlyLockManager<MEMBER> implements Locks
 {
+    public static final String LOCK_NOT_ON_LEADER_ERROR_MESSAGE = "Should only attempt to take locks when leader.";
+
     private final MEMBER myself;
 
     private final Replicator replicator;
@@ -150,7 +152,7 @@ public class LeaderOnlyLockManager<MEMBER> implements Locks
 
         if ( !leader.equals( myself ) )
         {
-            throw new AcquireLockTimeoutException( "Should only attempt to take locks when leader." );
+            throw new AcquireLockTimeoutException( LOCK_NOT_ON_LEADER_ERROR_MESSAGE );
         }
     }
 

@@ -36,11 +36,13 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
 
+import org.neo4j.coreedge.raft.NoLeaderFoundException;
 import org.neo4j.coreedge.raft.replication.id.IdGenerationException;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
+import org.neo4j.coreedge.server.core.locks.LeaderOnlyLockManager;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -49,6 +51,7 @@ import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -546,7 +549,7 @@ public class Cluster
                 tx.close();
                 return db;
             }
-            catch ( TransactionFailureException e )
+            catch ( Throwable e )
             {
                 if ( isTransientFailure( e ) )
                 {
@@ -564,20 +567,23 @@ public class Cluster
         throw new TimeoutException( "Transaction did not succeed in time" );
     }
 
-    private boolean isTransientFailure( TransactionFailureException e )
+    private boolean isTransientFailure( Throwable e )
     {
         // TODO: This should really catch all cases of transient failures. Must be able to express that in a clearer manner...
-        if ( e instanceof IdGenerationException )
-        {
-            return true;
-        }
-        else if ( e.getCause() instanceof org.neo4j.kernel.api.exceptions.TransactionFailureException &&
-                ((org.neo4j.kernel.api.exceptions.TransactionFailureException) e.getCause()).status() ==
-                        LockSessionExpired )
-        {
-            return true;
-        }
+        return ( e instanceof IdGenerationException ) || isLockExpired( e ) || isLockOnFollower( e );
 
-        return false;
+    }
+
+    private boolean isLockOnFollower( Throwable e )
+    {
+        return e instanceof AcquireLockTimeoutException && ( e.getMessage().equals( LeaderOnlyLockManager.LOCK_NOT_ON_LEADER_ERROR_MESSAGE ) || e.getCause() instanceof NoLeaderFoundException);
+    }
+
+    private boolean isLockExpired( Throwable e )
+    {
+        return e instanceof TransactionFailureException &&
+                e.getCause() instanceof org.neo4j.kernel.api.exceptions.TransactionFailureException &&
+                ((org.neo4j.kernel.api.exceptions.TransactionFailureException) e.getCause()).status() ==
+                        LockSessionExpired;
     }
 }
