@@ -95,25 +95,6 @@
             <id>get-javadoc-sources</id>
             <phase>none</phase>
           </execution>
-          <execution>
-            <id>unpack-upgrade</id>
-            <phase>generate-resources</phase>
-            <goals><goal>unpack</goal></goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.neo4j.doc</groupId>
-                  <artifactId>neo4j-manual</artifactId>
-                  <version>${neo4j.version}</version>
-                  <classifier>upgrade</classifier>
-                  <type>zip</type>
-                  <outputDirectory>${project.build.directory}/upgrade</outputDirectory>
-                  <includes>*.*,**/*.*</includes>
-                  <excludes>META-INF/**</excludes>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -317,13 +298,6 @@
       <artifactId>neo4j-manual</artifactId>
       <version>${neo4j.version}</version>
       <classifier>manpagesenterprise</classifier>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.doc</groupId>
-      <artifactId>neo4j-manual</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>upgrade</classifier>
-      <type>zip</type>
     </dependency>
   </dependencies>
 
