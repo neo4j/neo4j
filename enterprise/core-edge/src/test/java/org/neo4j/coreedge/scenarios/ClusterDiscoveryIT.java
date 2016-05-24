@@ -72,8 +72,6 @@ public class ClusterDiscoveryIT
         // given
         File dbDir = dir.directory();
 
-        System.out.println( "dbDir = " + dbDir );
-
         // when
         cluster = Cluster.start( dbDir, 3, 0 );
 
@@ -88,8 +86,6 @@ public class ClusterDiscoveryIT
                     new Object[]{"127.0.0.1:8001"},
                     new Object[]{"127.0.0.1:8002"} ) );
         }
-
-        System.exit(1);
     }
 
     @Test
@@ -97,8 +93,6 @@ public class ClusterDiscoveryIT
     {
         // given
         File dbDir = dir.directory();
-
-        System.out.println( "dbDir = " + dbDir );
 
         // when
         cluster = Cluster.start( dbDir, 3, 1 );
@@ -114,7 +108,6 @@ public class ClusterDiscoveryIT
             assertEquals(1, currentMembers.stream().filter( x -> x[1].equals( "read" ) ).count());
         }
 
-        System.exit(1);
     }
 
     @Test
