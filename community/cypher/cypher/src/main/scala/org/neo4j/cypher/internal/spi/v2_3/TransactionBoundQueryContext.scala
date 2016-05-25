@@ -387,21 +387,34 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
     override def detachDelete(obj: Relationship): Int = ??? // not supported for relationships
 
-    def propertyKeyIds(id: Long): Iterator[Int] =
-      asScala(statement.readOperations().relationshipGetPropertyKeys(id))
-
-    def getProperty(id: Long, propertyKeyId: Int): Any =
-      statement.readOperations().relationshipGetProperty(id, propertyKeyId)
-
-    def hasProperty(id: Long, propertyKey: Int) =
-      statement.readOperations().relationshipHasProperty(id, propertyKey)
-
-    def removeProperty(id: Long, propertyKeyId: Int) {
-      statement.dataWriteOperations().relationshipRemoveProperty(id, propertyKeyId)
+    def propertyKeyIds(id: Long): Iterator[Int] = try {
+      JavaConversionSupport.asScalaENFXSafe(statement.readOperations().relationshipGetPropertyKeys(id))
+    } catch {
+      case _: exceptions.EntityNotFoundException => Iterator.empty
     }
 
-    def setProperty(id: Long, propertyKeyId: Int, value: Any) {
-      statement.dataWriteOperations().relationshipSetProperty(id, properties.Property.property(propertyKeyId, value) )
+    def getProperty(id: Long, propertyKeyId: Int): Any = try {
+      statement.readOperations().relationshipGetProperty(id, propertyKeyId)
+    } catch {
+      case _: exceptions.EntityNotFoundException => null
+    }
+
+    def hasProperty(id: Long, propertyKey: Int) = try {
+      statement.readOperations().relationshipHasProperty(id, propertyKey)
+    } catch {
+      case _: exceptions.EntityNotFoundException => false
+    }
+
+    def removeProperty(id: Long, propertyKeyId: Int) = try {
+      statement.dataWriteOperations().relationshipRemoveProperty(id, propertyKeyId)
+    } catch {
+      case _: exceptions.EntityNotFoundException => //ignore
+    }
+
+    def setProperty(id: Long, propertyKeyId: Int, value: Any) = try {
+      statement.dataWriteOperations().relationshipSetProperty(id, properties.Property.property(propertyKeyId, value))
+    } catch {
+      case _: exceptions.EntityNotFoundException => //ignore
     }
 
     def getById(id: Long) = try {
