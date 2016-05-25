@@ -43,13 +43,6 @@ public interface AuthManager extends Lifecycle
     }
 
     /**
-     * Authenticate a username and password
-     * @param username The name of the user
-     * @param password The password of the user
-     */
-    AuthenticationResult authenticate( String username, String password );
-
-    /**
      * Log in using the provided username and password
      * @param username The name of the user
      * @param password The password of the user
@@ -80,12 +73,6 @@ public interface AuthManager extends Lifecycle
         @Override
         public void shutdown() throws Throwable
         {
-        }
-
-        @Override
-        public AuthenticationResult authenticate( String username, String password )
-        {
-            return AuthenticationResult.SUCCESS;
         }
 
         @Override

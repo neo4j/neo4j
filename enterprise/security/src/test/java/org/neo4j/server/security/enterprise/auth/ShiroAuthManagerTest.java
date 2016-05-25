@@ -5,44 +5,75 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.auth;
+package org.neo4j.server.security.enterprise.auth;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+import org.neo4j.server.security.auth.AuthenticationStrategy;
+import org.neo4j.server.security.auth.Credential;
+import org.neo4j.server.security.auth.PasswordPolicy;
+import org.neo4j.server.security.auth.User;
+
+import org.neo4j.server.security.auth.InMemoryUserRepository;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class BasicAuthManagerTest
+public class ShiroAuthManagerTest
 {
+    private InMemoryUserRepository users;
+    private InMemoryRoleRepository roles;
+    private AuthenticationStrategy authStrategy;
+    private PasswordPolicy passwordPolicy;
+    private ShiroAuthManager manager;
+
+    @Before
+    public void setUp() throws Throwable
+    {
+        users = new InMemoryUserRepository();
+        roles = new InMemoryRoleRepository();
+        authStrategy = mock( AuthenticationStrategy.class );
+        passwordPolicy = mock( PasswordPolicy.class );
+        manager = new ShiroAuthManager( users, roles, passwordPolicy, authStrategy, true );
+        manager.init();
+    }
+
+    @After
+    public void tearDown() throws Throwable
+    {
+        manager.stop();
+        manager.shutdown();
+    }
+
     @Test
     public void shouldCreateDefaultUserIfNoneExist() throws Throwable
     {
         // Given
-        final InMemoryUserRepository users = new InMemoryUserRepository();
-        final BasicAuthManager manager =
-                new BasicAuthManager( users, mock( PasswordPolicy.class ), mock( AuthenticationStrategy.class ) );
 
         // When
         manager.start();
@@ -58,17 +89,13 @@ public class BasicAuthManagerTest
     public void shouldFindAndAuthenticateUserSuccessfully() throws Throwable
     {
         // Given
-        final InMemoryUserRepository users = new InMemoryUserRepository();
         final User user = new User( "jake", Credential.forPassword( "abc123" ), false );
         users.create( user );
-        final AuthenticationStrategy authStrategy = mock( AuthenticationStrategy.class );
-        final BasicAuthManager manager = new BasicAuthManager( users, mock( PasswordPolicy.class ), authStrategy );
         manager.start();
-        when( authStrategy.authenticate( user, "abc123" )).thenReturn( AuthenticationResult.SUCCESS );
+        when( authStrategy.isAuthenticationPermitted( user.name() )).thenReturn( true );
 
         // When
-        AuthSubject authSubject = manager.login( "jake", "abc123" );
-        AuthenticationResult result = authSubject.getAuthenticationResult();
+        AuthenticationResult result = manager.login( "jake", "abc123" ).getAuthenticationResult();
 
         // Then
         assertThat( result, equalTo( AuthenticationResult.SUCCESS ) );
@@ -78,13 +105,9 @@ public class BasicAuthManagerTest
     public void shouldFindAndAuthenticateUserAndReturnAuthStrategyResult() throws Throwable
     {
         // Given
-        final InMemoryUserRepository users = new InMemoryUserRepository();
         final User user = new User( "jake", Credential.forPassword( "abc123" ), true );
         users.create( user );
-        final AuthenticationStrategy authStrategy = mock( AuthenticationStrategy.class );
-        final BasicAuthManager manager = new BasicAuthManager( users, mock( PasswordPolicy.class ), authStrategy );
         manager.start();
-        when( authStrategy.authenticate( user, "abc123" )).thenReturn( AuthenticationResult.TOO_MANY_ATTEMPTS );
 
         // When
         AuthSubject authSubject = manager.login( "jake", "abc123" );
@@ -98,17 +121,13 @@ public class BasicAuthManagerTest
     public void shouldFindAndAuthenticateUserAndReturnPasswordChangeIfRequired() throws Throwable
     {
         // Given
-        final InMemoryUserRepository users = new InMemoryUserRepository();
         final User user = new User( "jake", Credential.forPassword( "abc123" ), true );
         users.create( user );
-        final AuthenticationStrategy authStrategy = mock( AuthenticationStrategy.class );
-        final BasicAuthManager manager = new BasicAuthManager( users, mock( PasswordPolicy.class ), authStrategy );
         manager.start();
-        when( authStrategy.authenticate( user, "abc123" )).thenReturn( AuthenticationResult.SUCCESS );
+        when( authStrategy.isAuthenticationPermitted( user.name() )).thenReturn( true );
 
         // When
-        AuthSubject authSubject = manager.login( "jake", "abc123" );
-        AuthenticationResult result = authSubject.getAuthenticationResult();
+        AuthenticationResult result = manager.login( "jake", "abc123" ).getAuthenticationResult();
 
         // Then
         assertThat( result, equalTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED ) );
@@ -118,12 +137,10 @@ public class BasicAuthManagerTest
     public void shouldFailAuthenticationIfUserIsNotFound() throws Throwable
     {
         // Given
-        final InMemoryUserRepository users = new InMemoryUserRepository();
         final User user = new User( "jake", Credential.forPassword( "abc123" ), true );
         users.create( user );
-        final AuthenticationStrategy authStrategy = mock( AuthenticationStrategy.class );
-        final BasicAuthManager manager = new BasicAuthManager( users, mock( PasswordPolicy.class ), authStrategy );
         manager.start();
+        when( authStrategy.isAuthenticationPermitted( "unknown" )).thenReturn( true );
 
         // When
         AuthSubject authSubject = manager.login( "unknown", "abc123" );
@@ -137,9 +154,6 @@ public class BasicAuthManagerTest
     public void shouldCreateUser() throws Throwable
     {
         // Given
-        final InMemoryUserRepository users = new InMemoryUserRepository();
-        final BasicAuthManager manager =
-                new BasicAuthManager( users, mock( PasswordPolicy.class ), mock( AuthenticationStrategy.class ) );
         manager.start();
 
         // When
@@ -155,12 +169,11 @@ public class BasicAuthManagerTest
     @Test
     public void shouldDeleteUser() throws Throwable
     {
+        System.out.println("shouldDeleteUser");
+
         // Given
-        final InMemoryUserRepository users = new InMemoryUserRepository();
         final User user = new User( "jake", Credential.forPassword( "abc123" ), true );
         users.create( user );
-        final BasicAuthManager manager =
-                new BasicAuthManager( users, mock( PasswordPolicy.class ), mock( AuthenticationStrategy.class ) );
         manager.start();
 
         // When
@@ -174,11 +187,8 @@ public class BasicAuthManagerTest
     public void shouldDeleteUnknownUser() throws Throwable
     {
         // Given
-        final InMemoryUserRepository users = new InMemoryUserRepository();
         final User user = new User( "jake", Credential.forPassword( "abc123" ), true );
         users.create( user );
-        final BasicAuthManager manager =
-                new BasicAuthManager( users, mock( PasswordPolicy.class ), mock( AuthenticationStrategy.class ) );
         manager.start();
 
         // When
@@ -192,10 +202,7 @@ public class BasicAuthManagerTest
     public void shouldSetPassword() throws Throwable
     {
         // Given
-        final InMemoryUserRepository users = new InMemoryUserRepository();
         users.create( new User( "jake", Credential.forPassword( "abc123" ), true ) );
-        final BasicAuthManager manager =
-                new BasicAuthManager( users, mock( PasswordPolicy.class ), mock( AuthenticationStrategy.class ) );
         manager.start();
 
         // When
@@ -211,9 +218,6 @@ public class BasicAuthManagerTest
     public void shouldReturnNullWhenSettingPasswordForUnknownUser() throws Throwable
     {
         // Given
-        final InMemoryUserRepository users = new InMemoryUserRepository();
-        final BasicAuthManager manager =
-                new BasicAuthManager( users, mock( PasswordPolicy.class ), mock( AuthenticationStrategy.class ) );
         manager.start();
 
         // When
@@ -228,12 +232,129 @@ public class BasicAuthManagerTest
         }
     }
 
+    private void createTestUsers() throws Throwable
+    {
+        manager.newUser( "morpheus", "abc123", false );
+        manager.newRole( "admin", "morpheus" );
+        manager.newUser( "trinity", "abc123", false );
+        manager.newRole( "architect", "trinity" );
+        manager.newUser( "tank", "abc123", false );
+        manager.newRole( "publisher", "tank" );
+        manager.newUser( "neo", "abc123", false );
+        manager.newRole( "reader", "neo" );
+        manager.newUser( "smith", "abc123", false );
+        manager.newRole( "agent", "smith" );
+        when( authStrategy.isAuthenticationPermitted( anyString() ) ).thenReturn( true );
+    }
+
+    @Test
+    public void userWithAdminRoleShouldHaveCorrectPermissions() throws Throwable
+    {
+        // Given
+        createTestUsers();
+        manager.start();
+
+        // When
+        AuthSubject subject = manager.login( "morpheus", "abc123");
+
+        // Then
+        assertTrue( subject.allowsReads() );
+        assertTrue( subject.allowsWrites() );
+        assertTrue( subject.allowsSchemaWrites() );
+    }
+
+    @Test
+    public void userWithArchitectRoleShouldHaveCorrectPermissions() throws Throwable
+    {
+        // Given
+        createTestUsers();
+        manager.start();
+
+        // When
+        AuthSubject subject = manager.login( "trinity", "abc123");
+
+        // Then
+        assertTrue( subject.allowsReads() );
+        assertTrue( subject.allowsWrites() );
+        assertTrue( subject.allowsSchemaWrites() );
+    }
+
+    @Test
+    public void userWithPublisherRoleShouldHaveCorrectPermissions() throws Throwable
+    {
+        // Given
+        createTestUsers();
+        manager.start();
+
+        // When
+        AuthSubject subject = manager.login( "tank", "abc123");
+
+        // Then
+        assertTrue( "should allow reads", subject.allowsReads() );
+        assertTrue( "should allow writes", subject.allowsWrites() );
+        assertFalse( "should _not_ allow schema writes", subject.allowsSchemaWrites() );
+    }
+
+    @Test
+    public void userWithReaderRoleShouldHaveCorrectPermissions() throws Throwable
+    {
+        // Given
+        createTestUsers();
+        manager.start();
+
+        // When
+        AuthSubject subject = manager.login( "neo", "abc123");
+
+        // Then
+        assertTrue( subject.allowsReads() );
+        assertFalse( subject.allowsWrites() );
+        assertFalse( subject.allowsSchemaWrites() );
+    }
+
+    @Test
+    public void userWithNonPredefinedRoleShouldHaveNoPermissions() throws Throwable
+    {
+        // Given
+        createTestUsers();
+        manager.start();
+
+        // When
+        AuthSubject subject = manager.login( "smith", "abc123");
+
+        // Then
+        assertFalse( subject.allowsReads() );
+        assertFalse( subject.allowsWrites() );
+        assertFalse( subject.allowsSchemaWrites() );
+    }
+
+    @Test
+    public void shouldHaveNoPermissionsAfterLogout() throws Throwable
+    {
+        // Given
+        createTestUsers();
+        manager.start();
+
+        // When
+        AuthSubject subject = manager.login( "morpheus", "abc123");
+        assertTrue( subject.allowsReads() );
+        assertTrue( subject.allowsWrites() );
+        assertTrue( subject.allowsSchemaWrites() );
+
+        subject.logout();
+
+        // Then
+        assertFalse( subject.allowsReads() );
+        assertFalse( subject.allowsWrites() );
+        assertFalse( subject.allowsSchemaWrites() );
+    }
+
     @Test
     public void shouldThrowWhenAuthIsDisabled() throws Throwable
     {
-        final InMemoryUserRepository users = new InMemoryUserRepository();
-        final BasicAuthManager manager =
-                new BasicAuthManager( users, mock( PasswordPolicy.class ), mock( AuthenticationStrategy.class ), false );
+        // Restart with auth disabled
+        manager.stop();
+        manager.shutdown();
+        manager = new ShiroAuthManager( users, roles, passwordPolicy, authStrategy, false );
         manager.start();
 
         try

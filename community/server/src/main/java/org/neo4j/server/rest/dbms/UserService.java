@@ -115,23 +115,6 @@ public class UserService
                     new Neo4jError( Status.Request.InvalidFormat, String.format( "Expected '%s' to be a string.", PASSWORD ) ) ) );
         }
         String newPassword = (String) o;
-        if ( newPassword.length() == 0 )
-        {
-            return output.response( UNPROCESSABLE, new ExceptionRepresentation(
-                    new Neo4jError( Status.Request.Invalid, "Password cannot be empty." ) ) );
-        }
-
-        final User currentUser = userManager.getUser( username );
-        if (currentUser == null)
-        {
-            return output.notFound();
-        }
-
-        if ( currentUser.credentials().matchesPassword( newPassword ) )
-        {
-            return output.response( UNPROCESSABLE, new ExceptionRepresentation(
-                    new Neo4jError( Status.Request.Invalid, "Old password and new password cannot be the same." ) ) );
-        }
 
         try
         {

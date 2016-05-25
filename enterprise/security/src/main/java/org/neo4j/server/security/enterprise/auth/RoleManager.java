@@ -19,22 +19,27 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import java.time.Clock;
+import java.io.IOException;
 
-import org.neo4j.server.security.auth.PasswordPolicy;
-import org.neo4j.server.security.auth.UserRepository;
-
-public class EnterpriseAuthManager extends ShiroAuthManager
+public interface RoleManager
 {
-    public EnterpriseAuthManager( UserRepository userRepository, RoleRepository roleRepository,
-            PasswordPolicy passwordPolicy, Clock clock, boolean authEnabled )
-    {
-        super( userRepository, roleRepository, passwordPolicy, clock, authEnabled );
-    }
+    /**
+     * Add a user to a role. The role has to exist.
+     *
+     * @param username
+     * @param roleName
+     * @throws IllegalArgumentException if the role does not exist
+     * @throws IOException
+     */
+    void addUserToRole( String username, String roleName ) throws IOException;
 
-    @Override
-    public void start() throws Throwable
-    {
-        super.start();
-    }
+    /**
+     * Remove a user from a role.
+     *
+     * @param username
+     * @param roleName
+     * @throws IllegalArgumentException if the username or the role does not exist
+     * @throws IOException
+     */
+    void removeUserFromRole( String username, String roleName ) throws IOException;
 }

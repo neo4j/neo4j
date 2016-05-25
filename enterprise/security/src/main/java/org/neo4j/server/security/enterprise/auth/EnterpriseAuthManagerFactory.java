@@ -19,12 +19,16 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import java.io.File;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.FileUserRepository;
+import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.UserRepository;
 
 import static java.time.Clock.systemUTC;
@@ -35,6 +39,9 @@ import static java.time.Clock.systemUTC;
 @Service.Implementation( AuthManager.Factory.class )
 public class EnterpriseAuthManagerFactory extends AuthManager.Factory
 {
+    private static final String USER_STORE_FILENAME = "auth";
+    private static final String ROLE_STORE_FILENAME = "roles";
+
     public EnterpriseAuthManagerFactory()
     {
         super( "enterprise-auth-manager" );
@@ -43,9 +50,30 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
     @Override
     public AuthManager newInstance( Config config, LogProvider logProvider )
     {
-        final UserRepository userRepository =
-                new FileUserRepository( config.get( GraphDatabaseSettings.auth_store ).toPath(), logProvider );
+        // Resolve auth store file names
+        File authStoreDir = config.get( GraphDatabaseSettings.auth_store_dir );
+        File userStoreFile;
+        if ( authStoreDir != null )
+        {
+            userStoreFile = new File( authStoreDir, USER_STORE_FILENAME );
+        }
+        else
+        {
+            // Fallback on the directory of the legacy setting
+            userStoreFile = config.get( GraphDatabaseSettings.auth_store );
+            authStoreDir = userStoreFile.getParentFile();
+        }
+        File roleStoreFile = new File( authStoreDir, ROLE_STORE_FILENAME );
 
-        return new EnterpriseAuthManager( userRepository, systemUTC(), config.get( GraphDatabaseSettings.auth_enabled ) );
+        final UserRepository userRepository =
+                new FileUserRepository( userStoreFile.toPath(), logProvider );
+
+        final RoleRepository roleRepository =
+                new FileRoleRepository( roleStoreFile.toPath(), logProvider );
+
+        final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
+
+        return new EnterpriseAuthManager( userRepository, roleRepository, passwordPolicy, systemUTC(),
+                config.get( GraphDatabaseSettings.auth_enabled ) );
     }
 }

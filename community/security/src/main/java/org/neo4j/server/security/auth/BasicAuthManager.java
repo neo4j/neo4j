@@ -40,25 +40,27 @@ import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
  */
 public class BasicAuthManager implements AuthManager, UserManager
 {
-    private final AuthenticationStrategy authStrategy;
-    private final UserRepository users;
-    private final boolean authEnabled;
+    protected final AuthenticationStrategy authStrategy;
+    protected final UserRepository users;
+    protected final PasswordPolicy passwordPolicy;
+    protected final boolean authEnabled;
 
-    public BasicAuthManager( UserRepository users, AuthenticationStrategy authStrategy, boolean authEnabled )
+    public BasicAuthManager( UserRepository users, PasswordPolicy passwordPolicy, AuthenticationStrategy authStrategy, boolean authEnabled )
     {
         this.users = users;
+        this.passwordPolicy = passwordPolicy;
         this.authStrategy = authStrategy;
         this.authEnabled = authEnabled;
     }
 
-    public BasicAuthManager( UserRepository users, AuthenticationStrategy authStrategy )
+    public BasicAuthManager( UserRepository users, PasswordPolicy passwordPolicy, AuthenticationStrategy authStrategy )
     {
-        this( users, authStrategy, true );
+        this( users, passwordPolicy, authStrategy, true );
     }
 
-    public BasicAuthManager( UserRepository users, Clock clock, boolean authEnabled )
+    public BasicAuthManager( UserRepository users, PasswordPolicy passwordPolicy, Clock clock, boolean authEnabled )
     {
-        this( users, new RateLimitedAuthenticationStrategy( clock, 3 ), authEnabled );
+        this( users, passwordPolicy, new RateLimitedAuthenticationStrategy( clock, 3 ), authEnabled );
     }
 
     @Override
@@ -88,13 +90,6 @@ public class BasicAuthManager implements AuthManager, UserManager
     public void shutdown() throws Throwable
     {
         users.shutdown();
-    }
-
-    public AuthenticationResult authenticate( String username, String password )
-    {
-        AuthSubject subject = login( username, password );
-
-        return subject.getAuthenticationResult();
     }
 
     @Override
@@ -147,16 +142,13 @@ public class BasicAuthManager implements AuthManager, UserManager
     public void setPassword( AuthSubject authSubject, String username, String password ) throws IOException,
             IllegalCredentialsException
     {
-        if ( !(authSubject instanceof BasicAuthSubject) )
-        {
-            throw new IllegalArgumentException( "Incorrect AuthSubject type " + authSubject.getClass().getTypeName() );
-        }
-        BasicAuthSubject basicAuthSubject = (BasicAuthSubject) authSubject;
+        BasicAuthSubject basicAuthSubject = BasicAuthSubject.castOrFail( authSubject );
 
         if ( !basicAuthSubject.doesUsernameMatch( username ) )
         {
             throw new AuthorizationViolationException( "Invalid attempt to change the password for user " + username );
         }
+
         setUserPassword( username, password );
     }
 
@@ -171,9 +163,11 @@ public class BasicAuthManager implements AuthManager, UserManager
             throw new IllegalCredentialsException( "User " + username + " does not exist" );
         }
 
+        passwordPolicy.validatePassword( password );
+
         if ( existingUser.credentials().matchesPassword( password ) )
         {
-            return;
+            throw new IllegalCredentialsException( "Old password and new password cannot be the same." );
         }
 
         try
@@ -190,7 +184,7 @@ public class BasicAuthManager implements AuthManager, UserManager
         }
     }
 
-    private void assertAuthEnabled()
+    protected void assertAuthEnabled()
     {
         if ( !authEnabled )
         {

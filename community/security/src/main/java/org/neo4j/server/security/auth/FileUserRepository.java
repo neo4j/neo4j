@@ -44,6 +44,8 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
 {
     private final Path authFile;
 
+    // TODO: We could improve concurrency by using a ReadWriteLock
+
     /** Quick lookup of users by name */
     private final Map<String, User> usersByName = new ConcurrentHashMap<>();
     private final Log log;
@@ -213,11 +215,6 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
         } catch ( UserSerialization.FormatException e )
         {
             log.error( "Ignoring authorization file \"%s\" (%s)", authFile.toAbsolutePath(), e.getMessage() );
-            loadedUsers = new ArrayList<>();
-        }
-
-        if ( loadedUsers == null )
-        {
             throw new IllegalStateException( "Failed to read authentication file: " + authFile );
         }
 

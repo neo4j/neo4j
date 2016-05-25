@@ -19,22 +19,21 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import java.time.Clock;
+import java.io.IOException;
 
-import org.neo4j.server.security.auth.PasswordPolicy;
-import org.neo4j.server.security.auth.UserRepository;
-
-public class EnterpriseAuthManager extends ShiroAuthManager
+/** A role repository implementation that just stores roles in memory */
+public class InMemoryRoleRepository extends AbstractRoleRepository
 {
-    public EnterpriseAuthManager( UserRepository userRepository, RoleRepository roleRepository,
-            PasswordPolicy passwordPolicy, Clock clock, boolean authEnabled )
+    @Override
+    public boolean isValidName( String name )
     {
-        super( userRepository, roleRepository, passwordPolicy, clock, authEnabled );
+        // This repo can store any name
+        return true;
     }
 
     @Override
-    public void start() throws Throwable
+    protected void saveRoles() throws IOException
     {
-        super.start();
+        // Nothing to do
     }
 }

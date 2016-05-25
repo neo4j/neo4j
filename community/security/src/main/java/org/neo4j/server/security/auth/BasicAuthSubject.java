@@ -33,6 +33,15 @@ public class BasicAuthSubject implements AuthSubject
     private AuthenticationResult authenticationResult;
     private final AccessMode.Static accessMode;
 
+    public static BasicAuthSubject castOrFail( AuthSubject authSubject )
+    {
+        if ( !(authSubject instanceof BasicAuthSubject) )
+        {
+            throw new IllegalArgumentException( "Incorrect AuthSubject type " + authSubject.getClass().getTypeName() );
+        }
+        return (BasicAuthSubject) authSubject;
+    }
+
     public BasicAuthSubject( BasicAuthManager authManager, User user, AuthenticationResult authenticationResult )
     {
         this.authManager = authManager;
@@ -72,8 +81,6 @@ public class BasicAuthSubject implements AuthSubject
     @Override
     public void setPassword( String password ) throws IOException, IllegalCredentialsException
     {
-        validatePassword( password );
-
         authManager.setPassword( this, user.name(), password );
     }
 
@@ -104,21 +111,5 @@ public class BasicAuthSubject implements AuthSubject
     public String name()
     {
         return accessMode.name();
-    }
-
-    /*
-     * This is really some very basic password policy and that functionality should probably be
-     * refactored out of the BasicAuthSubject.
-     */
-    private void validatePassword( String password ) throws IllegalCredentialsException
-    {
-        if ( password == null || password.isEmpty() )
-        {
-            throw new IllegalCredentialsException( "Password cannot be empty." );
-        }
-        if ( user.credentials().matchesPassword( password ) )
-        {
-            throw new IllegalCredentialsException( "Old password and new password cannot be the same." );
-        }
     }
 }

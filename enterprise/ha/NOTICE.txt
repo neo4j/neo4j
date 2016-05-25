@@ -26,10 +26,17 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Apache Commons Lang
+  Apache Shiro :: Core
+  Apache Shiro :: Support :: EHCache
+  Commons BeanUtils
+  Ehcache Core
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
   Lucene Memory
   Lucene QueryParsers
   Netty
+
+MIT License
+  SLF4J API Module
 

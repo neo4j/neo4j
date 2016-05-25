@@ -19,22 +19,11 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import java.time.Clock;
+import org.apache.shiro.authz.SimpleRole;
 
-import org.neo4j.server.security.auth.PasswordPolicy;
-import org.neo4j.server.security.auth.UserRepository;
+import java.util.Map;
 
-public class EnterpriseAuthManager extends ShiroAuthManager
+public interface RolesBuilder
 {
-    public EnterpriseAuthManager( UserRepository userRepository, RoleRepository roleRepository,
-            PasswordPolicy passwordPolicy, Clock clock, boolean authEnabled )
-    {
-        super( userRepository, roleRepository, passwordPolicy, clock, authEnabled );
-    }
-
-    @Override
-    public void start() throws Throwable
-    {
-        super.start();
-    }
+    Map<String,SimpleRole> buildRoles();
 }

@@ -5,19 +5,19 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.auth;
+package org.neo4j.server.security.enterprise.auth;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
@@ -54,7 +54,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
-public class FileUserRepositoryTest
+public class FileRoleRepositoryTest
 {
     private final FileSystem fs;
     private Path authFile;
@@ -72,75 +72,75 @@ public class FileUserRepositoryTest
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
-    public FileUserRepositoryTest( Configuration fsConfig, String fsType )
+    public FileRoleRepositoryTest( Configuration fsConfig, String fsType )
     {
         fs = Jimfs.newFileSystem( fsConfig );
         authFile = fs.getPath( "dbms", "auth.db" );
     }
 
     @Test
-    public void shouldStoreAndRetriveUsersByName() throws Exception
+    public void shouldStoreAndRetriveRolesByName() throws Exception
     {
         // Given
-        FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
-        User user = new User( "jake", Credential.INACCESSIBLE, true );
-        users.create( user );
+        FileRoleRepository roleRepository = new FileRoleRepository( authFile, NullLogProvider.getInstance() );
+        RoleRecord role = new RoleRecord( "admin", "petra", "olivia" );
+        roleRepository.create( role );
 
         // When
-        User result = users.findByName( user.name() );
+        RoleRecord result = roleRepository.findByName( role.name() );
 
         // Then
-        assertThat( result, equalTo( user ) );
+        assertThat( result, equalTo( role ) );
     }
 
     @Test
-    public void shouldPersistUsers() throws Throwable
+    public void shouldPersistRoles() throws Throwable
     {
         // Given
-        FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
-        User user = new User( "jake", Credential.INACCESSIBLE, true );
-        users.create( user );
+        FileRoleRepository roleRepository = new FileRoleRepository( authFile, NullLogProvider.getInstance() );
+        RoleRecord role = new RoleRecord( "admin", "craig", "karl" );
+        roleRepository.create( role );
 
-        users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
-        users.start();
+        roleRepository = new FileRoleRepository( authFile, NullLogProvider.getInstance() );
+        roleRepository.start();
 
         // When
-        User resultByName = users.findByName( user.name() );
+        RoleRecord resultByName = roleRepository.findByName( role.name() );
 
         // Then
-        assertThat( resultByName, equalTo( user ) );
+        assertThat( resultByName, equalTo( role ) );
     }
 
     @Test
-    public void shouldNotFindUserAfterDelete() throws Throwable
+    public void shouldNotFindRoleAfterDelete() throws Throwable
     {
         // Given
-        FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
-        User user = new User( "jake", Credential.INACCESSIBLE, true );
-        users.create( user );
+        FileRoleRepository roleRepository = new FileRoleRepository( authFile, NullLogProvider.getInstance() );
+        RoleRecord role = new RoleRecord( "jake", "admin" );
+        roleRepository.create( role );
 
         // When
-        users.delete( user );
+        roleRepository.delete( role );
 
         // Then
-        assertThat( users.findByName( user.name() ), nullValue() );
+        assertThat( roleRepository.findByName( role.name() ), nullValue() );
     }
 
     @Test
     public void shouldNotAllowComplexNames() throws Exception
     {
         // Given
-        FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
+        FileRoleRepository roleRepository = new FileRoleRepository( authFile, NullLogProvider.getInstance() );
 
         // When
-        assertTrue( users.isValidName( "neo4j" ) );
-        assertTrue( users.isValidName( "johnosbourne" ) );
-        assertTrue( users.isValidName( "john_osbourne" ) );
+        assertTrue( roleRepository.isValidName( "neo4j" ) );
+        assertTrue( roleRepository.isValidName( "johnosbourne" ) );
+        assertTrue( roleRepository.isValidName( "john_osbourne" ) );
 
-        assertFalse( users.isValidName( ":" ) );
-        assertFalse( users.isValidName( "" ) );
-        assertFalse( users.isValidName( "john osbourne" ) );
-        assertFalse( users.isValidName( "john:osbourne" ) );
+        assertFalse( roleRepository.isValidName( ":" ) );
+        assertFalse( roleRepository.isValidName( "" ) );
+        assertFalse( roleRepository.isValidName( "john osbourne" ) );
+        assertFalse( roleRepository.isValidName( "john:osbourne" ) );
     }
 
     @Test
@@ -170,14 +170,14 @@ public class FileUserRepositoryTest
 
         Path authFile = moveFailingFileSystem.getPath( "dbms", "auth.db" );
 
-        FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
-        users.start();
-        User user = new User( "jake", Credential.INACCESSIBLE, true );
+        FileRoleRepository roleRepository = new FileRoleRepository( authFile, NullLogProvider.getInstance() );
+        roleRepository.start();
+        RoleRecord role = new RoleRecord( "admin", "jake" );
 
         // When
         try
         {
-            users.create( user );
+            roleRepository.create( role );
             fail( "Expected an IOException" );
         } catch ( IOException e )
         {
@@ -193,38 +193,38 @@ public class FileUserRepositoryTest
     public void shouldThrowIfUpdateChangesName() throws Throwable
     {
         // Given
-        FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
-        User user = new User( "jake", Credential.INACCESSIBLE, true );
-        users.create( user );
+        FileRoleRepository roleRepository = new FileRoleRepository( authFile, NullLogProvider.getInstance() );
+        RoleRecord role = new RoleRecord( "admin", "steve", "bob" );
+        roleRepository.create( role );
 
         // When
-        User updatedUser = new User( "john", Credential.INACCESSIBLE, true );
+        RoleRecord updatedRole = new RoleRecord( "admins", "steve", "bob" );
         try
         {
-            users.update( user, updatedUser );
+            roleRepository.update( role, updatedRole );
             fail( "expected exception not thrown" );
         } catch ( IllegalArgumentException e )
         {
             // Then continue
         }
 
-        assertThat( users.findByName( user.name() ), equalTo( user ) );
+        assertThat( roleRepository.findByName( role.name() ), equalTo( role ) );
     }
 
     @Test
-    public void shouldThrowIfExistingUserDoesNotMatch() throws Throwable
+    public void shouldThrowIfExistingRoleDoesNotMatch() throws Throwable
     {
         // Given
-        FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
-        User user = new User( "jake", Credential.INACCESSIBLE, true );
-        users.create( user );
-        User modifiedUser = new User( "jake", Credential.forPassword( "foo" ), false );
+        FileRoleRepository roleRepository = new FileRoleRepository( authFile, NullLogProvider.getInstance() );
+        RoleRecord role = new RoleRecord( "admin", "jake" );
+        roleRepository.create( role );
+        RoleRecord modifiedRole = new RoleRecord( "admin", "jake", "john" );
 
         // When
-        User updatedUser = new User( "jake", Credential.forPassword( "bar" ), false );
+        RoleRecord updatedRole = new RoleRecord( "admin", "john" );
         try
         {
-            users.update( modifiedUser, updatedUser );
+            roleRepository.update( modifiedRole, updatedRole );
             fail( "expected exception not thrown" );
         } catch ( ConcurrentModificationException e )
         {
@@ -239,21 +239,20 @@ public class FileUserRepositoryTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Files.createDirectories( authFile.getParent() );
         Files.write( authFile, UTF8.encode(
-                "neo4j:admin:fc4c600b43ffe4d5857b4439c35df88f:SHA-256," +
-                        "A42E541F276CF17036DB7818F8B09B1C229AAD52A17F69F4029617F3A554640F,FB7E8AE08A6A7C741F678AD22217808F:\n" +
-                "admin:admin:SHA-256,A42E541F276CF17036DB7818F8B09B1C229AAD52A17F69F4029617F3A554640F,FB7E8AE08A6A7C741F678AD22217808F:\n" ) );
+                "neo4j:admin:\n" +
+                "admin:admin:\n" ) );
 
         // When
-        FileUserRepository users = new FileUserRepository( authFile, logProvider );
+        FileRoleRepository roleRepository = new FileRoleRepository( authFile, logProvider );
         thrown.expect( IllegalStateException.class );
-        thrown.expectMessage( startsWith( "Failed to read authentication file: " ) );
-        users.start();
+        thrown.expectMessage( startsWith( "Failed to read role file: " ) );
+        roleRepository.start();
 
         // Then
-        assertThat( users.numberOfUsers(), equalTo( 1 ) );
+        assertThat( roleRepository.numberOfRoles(), equalTo( 1 ) );
         logProvider.assertExactly(
-                AssertableLogProvider.inLog( FileUserRepository.class ).error(
-                        "Ignoring authorization file \"%s\" (%s)", authFile.toAbsolutePath(), "wrong number of line fields [line 1]"
+                AssertableLogProvider.inLog( FileRoleRepository.class ).error(
+                        "Ignoring role file \"%s\" (%s)", authFile.toAbsolutePath(), "wrong number of line fields [line 1]"
                 )
         );
     }
