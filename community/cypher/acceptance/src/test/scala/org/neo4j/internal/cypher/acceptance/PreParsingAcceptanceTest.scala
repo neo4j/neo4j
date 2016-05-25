@@ -19,10 +19,10 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.ExtendedExecutionResult
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.internal.ExecutionResult
 import org.neo4j.cypher.internal.compatibility.CompatibilityPlanDescriptionFor3_1
 import org.neo4j.cypher.internal.compiler.v3_1._
-import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 class PreParsingAcceptanceTest extends ExecutionEngineFunSuite {
@@ -81,8 +81,8 @@ class PreParsingAcceptanceTest extends ExecutionEngineFunSuite {
     eengine.execute(query, Map.empty[String,Any], graph.session()) should havePlanner(RulePlannerName)
   }
 
-  private def havePlanner(expected: PlannerName): Matcher[ExtendedExecutionResult] = new Matcher[ExtendedExecutionResult] {
-    override def apply(result: ExtendedExecutionResult): MatchResult = {
+  private def havePlanner(expected: PlannerName): Matcher[ExecutionResult] = new Matcher[ExecutionResult] {
+    override def apply(result: ExecutionResult): MatchResult = {
       // exhaust the iterator so we can collect the plan description
       result.length
       result.executionPlanDescription() match {
