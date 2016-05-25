@@ -115,11 +115,14 @@ public class RelationshipCreatorTest
         }
 
         @Override
-        public void acquireExclusive( Locks.ResourceType resourceType, long resourceId )
+        public void acquireExclusive( Locks.ResourceType resourceType, long... resourceIds )
                 throws AcquireLockTimeoutException
         {
             assertEquals( ResourceTypes.RELATIONSHIP, resourceType );
-            relationshipLocksAcquired.add( resourceId );
+            for ( long resourceId : resourceIds )
+            {
+                relationshipLocksAcquired.add( resourceId );
+            }
         }
 
         protected void changingRelationship( long relId )

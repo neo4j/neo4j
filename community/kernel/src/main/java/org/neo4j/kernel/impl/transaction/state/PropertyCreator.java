@@ -53,53 +53,133 @@ public class PropertyCreator
         this.traverser = traverser;
     }
 
-    public <P extends PrimitiveRecord> void primitiveChangeProperty(
+    public <P extends PrimitiveRecord> void primitiveSetProperty(
             RecordProxy<Long, P, Void> primitiveRecordChange, int propertyKey, Object value,
             RecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords )
     {
+        PropertyBlock block = encodePropertyValue( propertyKey, value );
         P primitive = primitiveRecordChange.forReadingLinkage();
         assert traverser.assertPropertyChain( primitive, propertyRecords );
-        long propertyId = // propertyData.getId();
-                traverser.findPropertyRecordContaining( primitive, propertyKey, propertyRecords, true );
-        PropertyRecord propertyRecord = propertyRecords.getOrLoad( propertyId, primitive ).forChangingData();
-        if ( !propertyRecord.inUse() )
+        int newBlockSizeInBytes = block.getSize();
+
+        // Traverse the existing property chain. Tracking two things along the way:
+        // - (a) Free space for this block (candidateHost)
+        // - (b) Existence of a block with the property key
+        // Chain traversal can be aborted only if:
+        // - (1) (b) occurs and new property block fits where the current is
+        // - (2) (a) occurs and (b) has occurred, but new property block didn't fit
+        // - (3) Chain ends
+        RecordProxy<Long, PropertyRecord, PrimitiveRecord> freeHostProxy = null;
+        RecordProxy<Long, PropertyRecord, PrimitiveRecord> existingHostProxy = null;
+        long prop = primitive.getNextProp();
+        while ( prop != Record.NO_NEXT_PROPERTY.intValue() ) // <-- (3)
         {
-            throw new IllegalStateException( "Unable to change property["
-                                             + propertyId
-                                             + "] since it has been deleted." );
+            RecordProxy<Long, PropertyRecord, PrimitiveRecord> proxy =
+                    propertyRecords.getOrLoad( prop, primitive );
+            PropertyRecord propRecord = proxy.forReadingLinkage();
+            assert propRecord.inUse() : propRecord;
+
+            // (a) search for free space
+            if ( propertyFitsInside( newBlockSizeInBytes, propRecord ) )
+            {
+                freeHostProxy = proxy;
+                if ( existingHostProxy != null )
+                {
+                    // (2)
+                    PropertyRecord freeHost = proxy.forChangingData();
+                    freeHost.addPropertyBlock( block );
+                    freeHost.setChanged( primitive );
+                    assert traverser.assertPropertyChain( primitive, propertyRecords );
+                    return;
+                }
+            }
+
+            // (b) search for existence of property key
+            PropertyBlock existingBlock = propRecord.getPropertyBlock( propertyKey );
+            if ( existingBlock != null )
+            {
+                // We found an existing property and whatever happens we have to remove the existing
+                // block so that we can add the new one, where ever we decide to place it
+                existingHostProxy = proxy;
+                PropertyRecord existingHost = existingHostProxy.forChangingData();
+                removeProperty( primitive, existingHost, existingBlock );
+
+                // Now see if we at this point can add the new block
+                if ( newBlockSizeInBytes <= existingBlock.getSize() || // cheap check
+                     propertyFitsInside( newBlockSizeInBytes, existingHost ) ) // fallback check
+                {
+                    // (1) yes we could add it right into the host of the existing block
+                    existingHost.addPropertyBlock( block );
+                    assert traverser.assertPropertyChain( primitive, propertyRecords );
+                    return;
+                }
+                else if ( freeHostProxy != null )
+                {
+                    // (2) yes we could add it to a previously found host with sufficiently free space in it
+                    PropertyRecord freeHost = freeHostProxy.forChangingData();
+                    freeHost.addPropertyBlock( block );
+                    freeHost.setChanged( primitive );
+                    assert traverser.assertPropertyChain( primitive, propertyRecords );
+                    return;
+                }
+                // else we can't add it at this point
+            }
+
+            // Continue down the chain
+            prop = propRecord.getNextProp();
         }
-        PropertyBlock block = propertyRecord.getPropertyBlock( propertyKey );
-        if ( block == null )
+
+        // At this point we haven't added the property block, although we may have found room for it
+        // along the way. If we didn't then just create a new record, it's fine
+        PropertyRecord freeHost = null;
+        if ( freeHostProxy == null )
         {
-            throw new IllegalStateException( "Property with index["
-                                             + propertyKey
-                                             + "] is not present in property["
-                                             + propertyId + "]" );
+            // We couldn't find free space along the way, so create a new host record
+            freeHost = propertyRecords.create( propertyRecordIdGenerator.nextId(), primitive ).forChangingData();
+            freeHost.setInUse( true );
+            if ( primitive.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
+            {
+                // This isn't the first property record for the entity, re-shuffle the first one so that
+                // the new one becomes the first
+                PropertyRecord prevProp = propertyRecords.getOrLoad( primitive.getNextProp(),
+                        primitive ).forChangingLinkage();
+                assert prevProp.getPrevProp() == Record.NO_PREVIOUS_PROPERTY.intValue();
+                prevProp.setPrevProp( freeHost.getId() );
+                freeHost.setNextProp( prevProp.getId() );
+                prevProp.setChanged( primitive );
+            }
+
+            // By the way, this is the only condition where the primitive record also needs to change
+            primitiveRecordChange.forChangingLinkage().setNextProp( freeHost.getId() );
         }
-        propertyRecord.setChanged( primitive );
+        else
+        {
+            freeHost = freeHostProxy.forChangingData();
+        }
+
+        // At this point we know that we have a host record with sufficient space in it for the block
+        // to add, so simply add it
+        freeHost.addPropertyBlock( block );
+        assert traverser.assertPropertyChain( primitive, propertyRecords );
+    }
+
+    private void removeProperty( PrimitiveRecord primitive, PropertyRecord host, PropertyBlock block )
+    {
+        host.removePropertyBlock( block.getKeyIndexId() );
+        host.setChanged( primitive );
         for ( DynamicRecord record : block.getValueRecords() )
         {
             assert record.inUse();
             record.setInUse( false, block.getType().intValue() );
-            propertyRecord.addDeletedRecord( record );
+            host.addDeletedRecord( record );
         }
-        encodeValue( block, propertyKey, value );
-        if ( propertyRecord.size() > PropertyType.getPayloadSize() )
-        {
-            propertyRecord.removePropertyBlock( propertyKey );
-            /*
-             * The record should never, ever be above max size. Less obviously, it should
-             * never remain empty. If removing a property because it won't fit when changing
-             * it leaves the record empty it means that this block was the last one which
-             * means that it doesn't fit in an empty record. Where i come from, we call this
-             * weird.
-             *
-             assert propertyRecord.size() <= PropertyType.getPayloadSize() : propertyRecord;
-             assert propertyRecord.size() > 0 : propertyRecord;
-             */
-            addPropertyBlockToPrimitive( block, primitiveRecordChange, propertyRecords );
-        }
-        assert traverser.assertPropertyChain( primitive, propertyRecords );
+    }
+
+    private boolean propertyFitsInside( int newBlockSizeInBytes, PropertyRecord propRecord )
+    {
+        int propSize = propRecord.size();
+        assert propSize >= 0 : propRecord;
+        return propSize + newBlockSizeInBytes <= PropertyType.getPayloadSize();
     }
 
     public PropertyBlock encodePropertyValue( int propertyKey, Object value )
@@ -111,70 +191,6 @@ public class PropertyCreator
     {
         PropertyStore.encodeValue( block, propertyKey, value, stringRecordAllocator, arrayRecordAllocator );
         return block;
-    }
-
-    public <P extends PrimitiveRecord> void primitiveAddProperty(
-            RecordProxy<Long, P, Void> primitive, int propertyKey, Object value,
-            RecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords )
-    {
-        P record = primitive.forReadingLinkage();
-        assert traverser.assertPropertyChain( record, propertyRecords );
-        PropertyBlock block = new PropertyBlock();
-        encodeValue( block, propertyKey, value );
-        addPropertyBlockToPrimitive( block, primitive, propertyRecords );
-        assert traverser.assertPropertyChain( record, propertyRecords );
-    }
-
-    private <P extends PrimitiveRecord> void addPropertyBlockToPrimitive(
-            PropertyBlock block, RecordProxy<Long, P, Void> primitiveRecordChange,
-            RecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords )
-    {
-        P primitive = primitiveRecordChange.forReadingLinkage();
-        assert traverser.assertPropertyChain( primitive, propertyRecords );
-        int newBlockSizeInBytes = block.getSize();
-
-        // Scan the property record chain for a place to fit this property block
-        PropertyRecord host = null;
-        long prop = primitive.getNextProp();
-        while ( prop != Record.NO_NEXT_PROPERTY.intValue() )
-        {
-            // We do not store in map - might not have enough space
-            RecordProxy<Long, PropertyRecord, PrimitiveRecord> change =
-                    propertyRecords.getOrLoad( prop, primitive );
-            PropertyRecord propRecord = change.forReadingLinkage();
-            assert propRecord.inUse() : propRecord;
-            int propSize = propRecord.size();
-            assert propSize > 0 : propRecord;
-            if ( propSize + newBlockSizeInBytes <= PropertyType.getPayloadSize() )
-            {
-                propRecord = change.forChangingData();
-                host = propRecord;
-                host.addPropertyBlock( block );
-                host.setChanged( primitive );
-                break;
-            }
-            prop = propRecord.getNextProp();
-        }
-
-        if ( host == null )
-        {
-            // There was no room for the propery block in any record in the chain, make new one
-            host = propertyRecords.create( propertyRecordIdGenerator.nextId(), primitive ).forChangingData();
-            if ( primitive.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
-            {
-                PropertyRecord prevProp = propertyRecords.getOrLoad( primitive.getNextProp(),
-                        primitive ).forChangingLinkage();
-                assert prevProp.getPrevProp() == Record.NO_PREVIOUS_PROPERTY.intValue();
-                prevProp.setPrevProp( host.getId() );
-                host.setNextProp( prevProp.getId() );
-                prevProp.setChanged( primitive );
-            }
-            primitiveRecordChange.forChangingLinkage().setNextProp( host.getId() );
-            host.addPropertyBlock( block );
-            host.setInUse( true );
-        }
-        // Ok, here host does for the job. Use it
-        assert traverser.assertPropertyChain( primitive, propertyRecords );
     }
 
     public long createPropertyChain( PrimitiveRecord owner, Iterator<PropertyBlock> properties,

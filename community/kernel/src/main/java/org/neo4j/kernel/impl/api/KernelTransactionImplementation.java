@@ -545,7 +545,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     }
                 }
 
-                context.init( locks );
+                locks.prepare();
+                context.init( locks.delegate() );
                 prepareRecordChangesFromTransactionState();
             }
 

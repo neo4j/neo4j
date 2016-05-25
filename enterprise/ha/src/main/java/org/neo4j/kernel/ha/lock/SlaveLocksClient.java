@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.ha.lock;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -47,7 +49,7 @@ import static org.neo4j.kernel.impl.locking.LockType.WRITE;
  * with the master for certain types of locks. If you grab a lock on a node, for instance, this class will grab a
  * cluster-global lock by talking to the master machine, and then grab that same lock locally before returning.
  */
-class SlaveLocksClient implements Locks.Client
+class SlaveLocksClient extends Locks.ClientAdapter
 {
     private final Master master;
     private final Locks.Client client;
@@ -90,50 +92,80 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
-    public void acquireShared( Locks.ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException
+    public void acquireShared( Locks.ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
     {
         Map<Long, AtomicInteger> lockMap = getLockMap( sharedLocks, resourceType );
-        AtomicInteger preExistingLock = lockMap.get( resourceId );
-        if ( preExistingLock != null )
+        long[] newResourceIds = onlyFirstTimeLocks( lockMap, resourceIds );
+        if ( newResourceIds.length > 0 )
         {
-            // We already hold this lock, just increment the local reference count
-            preExistingLock.incrementAndGet();
-        }
-        else if ( getReadLockOnMaster( resourceType, resourceId ) )
-        {
-            if ( client.trySharedLock( resourceType, resourceId ) )
+            acquireSharedOnMaster( resourceType, newResourceIds );
+            for ( long resourceId : newResourceIds )
             {
-                lockMap.put( resourceId, new AtomicInteger( 1 ) );
-            }
-            else
-            {
-                throw new LocalDeadlockDetectedException( client, localLockManager, resourceType, resourceId, READ );
-
+                if ( client.trySharedLock( resourceType, resourceId ) )
+                {
+                    lockMap.put( resourceId, new AtomicInteger( 1 ) );
+                }
+                else
+                {
+                    throw new LocalDeadlockDetectedException(
+                            client, localLockManager, resourceType, resourceId, READ );
+                }
             }
         }
     }
 
+    private long[] onlyFirstTimeLocks( Map<Long,AtomicInteger> lockMap, long[] resourceIds )
+    {
+        int cursor = 0;
+        for ( int i = 0; i < resourceIds.length; i++ )
+        {
+            AtomicInteger preExistingLock = lockMap.get( resourceIds[i] );
+            if ( preExistingLock != null )
+            {
+                // We already hold this lock, just increment the local reference count
+                preExistingLock.incrementAndGet();
+            }
+            else
+            {
+                resourceIds[cursor++] = resourceIds[i];
+            }
+        }
+        if ( cursor == 0 )
+        {
+            return PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+        }
+        return cursor == resourceIds.length ? resourceIds : Arrays.copyOf( resourceIds, cursor );
+    }
+
     @Override
-    public void acquireExclusive( Locks.ResourceType resourceType, long resourceId ) throws
+    public void acquireExclusive( Locks.ResourceType resourceType, long... resourceIds ) throws
             AcquireLockTimeoutException
     {
         Map<Long, AtomicInteger> lockMap = getLockMap( exclusiveLocks, resourceType );
 
-        AtomicInteger preExistingLock = lockMap.get( resourceId );
-        if ( preExistingLock != null )
+//        for ( long resourceId : resourceIds )
+//        {
+//            AtomicInteger preExistingLock = lockMap.get( resourceId );
+//            if ( preExistingLock != null )
+//            {
+//                // We already hold this lock, just increment the local reference count
+//                preExistingLock.incrementAndGet();
+//            }
+        long[] newResourceIds = onlyFirstTimeLocks( lockMap, resourceIds );
+        if ( newResourceIds.length > 0 )
         {
-            // We already hold this lock, just increment the local reference count
-            preExistingLock.incrementAndGet();
-        }
-        else if ( acquireExclusiveOnMaster( resourceType, resourceId ) )
-        {
-            if ( client.tryExclusiveLock( resourceType, resourceId ) )
+            acquireExclusiveOnMaster( resourceType, newResourceIds );
+            for ( long resourceId : newResourceIds )
             {
-                lockMap.put( resourceId, new AtomicInteger( 1 ) );
-            }
-            else
-            {
-                throw new LocalDeadlockDetectedException( client, localLockManager, resourceType, resourceId, WRITE );
+                if ( client.tryExclusiveLock( resourceType, resourceId ) )
+                {
+                    lockMap.put( resourceId, new AtomicInteger( 1 ) );
+                }
+                else
+                {
+                    throw new LocalDeadlockDetectedException(
+                            client, localLockManager, resourceType, resourceId, WRITE );
+                }
             }
         }
     }
@@ -207,6 +239,12 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
+    public void prepare()
+    {
+        client.prepare();
+    }
+
+    @Override
     public void stop()
     {
         throw new UnsupportedOperationException( "Lock client stop is unsupported on slave side." );
@@ -231,7 +269,7 @@ class SlaveLocksClient implements Locks.Client
         return initialized ? client.getLockSessionId() : -1;
     }
 
-    private boolean getReadLockOnMaster( Locks.ResourceType resourceType, long resourceId )
+    private void acquireSharedOnMaster( Locks.ResourceType resourceType, long... resourceIds )
     {
         if ( resourceType == ResourceTypes.NODE
                 || resourceType == ResourceTypes.RELATIONSHIP
@@ -241,28 +279,24 @@ class SlaveLocksClient implements Locks.Client
             makeSureTxHasBeenInitialized();
 
             RequestContext requestContext = newRequestContextFor( this );
-            try ( Response<LockResult> response = master.acquireSharedLock( requestContext, resourceType, resourceId ) )
+            try ( Response<LockResult> response = master.acquireSharedLock( requestContext, resourceType, resourceIds ) )
             {
-                return receiveLockResponse( response );
+                receiveLockResponse( response );
             }
             catch ( ComException e )
             {
                 throw new DistributedLockFailureException( "Cannot get shared lock on master", master, e );
             }
         }
-        else
-        {
-            return true;
-        }
     }
 
-    private boolean acquireExclusiveOnMaster( Locks.ResourceType resourceType, long resourceId )
+    private void acquireExclusiveOnMaster( Locks.ResourceType resourceType, long... resourceIds )
     {
         makeSureTxHasBeenInitialized();
         RequestContext requestContext = newRequestContextFor( this );
-        try ( Response<LockResult> response = master.acquireExclusiveLock( requestContext, resourceType, resourceId ) )
+        try ( Response<LockResult> response = master.acquireExclusiveLock( requestContext, resourceType, resourceIds ) )
         {
-            return receiveLockResponse( response );
+            receiveLockResponse( response );
         }
         catch ( ComException e )
         {
@@ -270,7 +304,7 @@ class SlaveLocksClient implements Locks.Client
         }
     }
 
-    private boolean receiveLockResponse( Response<LockResult> response )
+    private void receiveLockResponse( Response<LockResult> response )
     {
         LockResult result = response.response();
 
@@ -285,8 +319,6 @@ class SlaveLocksClient implements Locks.Client
             default:
                 throw new UnsupportedOperationException( result.toString() );
         }
-
-        return true;
     }
 
     private void makeSureTxHasBeenInitialized()

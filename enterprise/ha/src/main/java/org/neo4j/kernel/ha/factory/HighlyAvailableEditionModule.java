@@ -641,7 +641,7 @@ public class HighlyAvailableEditionModule
                 lockManagerDelegate );
         modeSwitchersLife.add( new LockManagerModeSwitcher( highAvailabilityModeSwitcher, lockManagerDelegate,
                 masterDelegateInvocationHandler,
-                requestContextFactory, availabilityGuard, new Factory<Locks>()
+                requestContextFactory, availabilityGuard, config, new Factory<Locks>()
         {
             @Override
             public Locks newInstance()

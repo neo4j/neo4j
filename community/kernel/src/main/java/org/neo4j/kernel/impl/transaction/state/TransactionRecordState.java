@@ -361,7 +361,7 @@ public class TransactionRecordState implements RecordState
     public DefinedProperty relChangeProperty( long relId, int propertyKey, Object value )
     {
         RecordProxy<Long, RelationshipRecord, Void> rel = context.getRelRecords().getOrLoad( relId, null );
-        context.primitiveChangeProperty( rel, propertyKey, value );
+        context.primitiveSetProperty( rel, propertyKey, value );
         return Property.property( propertyKey, value );
     }
 
@@ -377,7 +377,7 @@ public class TransactionRecordState implements RecordState
     public DefinedProperty nodeChangeProperty( long nodeId, int propertyKey, Object value )
     {
         RecordProxy<Long, NodeRecord, Void> node = context.getNodeRecords().getOrLoad( nodeId, null ); //getNodeRecord( nodeId );
-        context.primitiveChangeProperty( node, propertyKey, value );
+        context.primitiveSetProperty( node, propertyKey, value );
         return Property.property( propertyKey, value );
     }
 
@@ -393,7 +393,7 @@ public class TransactionRecordState implements RecordState
     public DefinedProperty relAddProperty( long relId, int propertyKey, Object value )
     {
         RecordProxy<Long, RelationshipRecord, Void> rel = context.getRelRecords().getOrLoad( relId, null );
-        context.primitiveAddProperty( rel, propertyKey, value );
+        context.primitiveSetProperty( rel, propertyKey, value );
         return Property.property( propertyKey, value );
     }
 
@@ -408,7 +408,7 @@ public class TransactionRecordState implements RecordState
     public DefinedProperty nodeAddProperty( long nodeId, int propertyKey, Object value )
     {
         RecordProxy<Long, NodeRecord, Void> node = context.getNodeRecords().getOrLoad( nodeId, null );
-        context.primitiveAddProperty( node, propertyKey, value );
+        context.primitiveSetProperty( node, propertyKey, value );
         return Property.property( propertyKey, value );
     }
 
@@ -538,7 +538,7 @@ public class TransactionRecordState implements RecordState
      */
     public DefinedProperty graphAddProperty( int propertyKey, Object value )
     {
-        context.primitiveAddProperty( getOrLoadNeoStoreRecord(), propertyKey, value );
+        context.primitiveSetProperty( getOrLoadNeoStoreRecord(), propertyKey, value );
         return Property.property( propertyKey, value );
     }
 
@@ -552,7 +552,7 @@ public class TransactionRecordState implements RecordState
      */
     public DefinedProperty graphChangeProperty( int propertyKey, Object value )
     {
-        context.primitiveChangeProperty( getOrLoadNeoStoreRecord(), propertyKey, value );
+        context.primitiveSetProperty( getOrLoadNeoStoreRecord(), propertyKey, value );
         return Property.property( propertyKey, value );
     }
 
