@@ -39,6 +39,7 @@ import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.raft.replication.tx.ExponentialBackoffStrategy;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.NonBlockingChannels;
 import org.neo4j.coreedge.server.core.NoBoltConnectivityException;
@@ -202,22 +203,8 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
     public static HostnamePort extractBoltAddress( Config config )
     {
-        List<HostnamePort> addresses = config
-                .view( enumerate( GraphDatabaseSettings.Connector.class ) )
-                .map( GraphDatabaseSettings.BoltConnector::new )
-                .filter( ( connConfig ) -> BOLT.equals( config.get( connConfig.type ) )
-                        && config.get( connConfig.enabled ) )
-                .map( ( connConfig ) -> config.get( connConfig.address ) )
-                .collect( toList() );
-        if ( addresses.size() == 0 )
-        {
-            throw new NoBoltConnectivityException();
-        }
-        else
-        {
-            // Just use the first.
-            return addresses.get( 0 );
-        }
+        AdvertisedSocketAddress advertisedSocketAddress = config.get( CoreEdgeClusterSettings.bolt_advertised_address );
+        return new HostnamePort( advertisedSocketAddress.toString() );
     }
 
     private void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,

@@ -129,6 +129,10 @@ public class CoreEdgeClusterSettings
     public static final Setting<AdvertisedSocketAddress> raft_advertised_address =
             setting( "core_edge.raft_advertised_address", ADVERTISED_SOCKET_ADDRESS, "localhost:7400" );
 
+    @Description("Hostname/IP address and port that we can be connected to be the driver.")
+    public static final Setting<AdvertisedSocketAddress> bolt_advertised_address =
+            setting( "core_edge.bolt_advertised_address", ADVERTISED_SOCKET_ADDRESS, "localhost:7687" );
+
     @Description("Host and port to bind the cluster management communication.")
     public static final Setting<ListenSocketAddress> cluster_listen_address =
             setting( "core_edge.cluster_listen_address", LISTEN_SOCKET_ADDRESS, "0.0.0.0:5001" );
