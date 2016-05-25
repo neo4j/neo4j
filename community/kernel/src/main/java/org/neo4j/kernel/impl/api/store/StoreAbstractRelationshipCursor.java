@@ -21,18 +21,12 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.cursor.EntityItemHelper;
-import org.neo4j.kernel.impl.locking.Lock;
-import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordCursors;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
-
-import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
  * Base cursor for relationships.
@@ -42,15 +36,12 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper
 {
     protected final RelationshipRecord relationshipRecord;
     protected final RecordCursor<RelationshipRecord> relationshipRecordCursor;
-    private final LockService lockService;
 
     private final InstanceCache<StoreSinglePropertyCursor> singlePropertyCursor;
     private final InstanceCache<StorePropertyCursor> allPropertyCursor;
 
-    public StoreAbstractRelationshipCursor( RelationshipRecord relationshipRecord, LockService lockService,
-            RecordCursors cursors )
+    public StoreAbstractRelationshipCursor( RelationshipRecord relationshipRecord, RecordCursors cursors )
     {
-        this.lockService = lockService;
         this.relationshipRecordCursor = cursors.relationship();
         this.relationshipRecord = relationshipRecord;
 
@@ -109,54 +100,15 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper
                 relationshipRecord.getSecondNode() : relationshipRecord.getFirstNode();
     }
 
-    /**
-     * Acquires a read lock for the relationship in this cursor and then re-reads the record to get consistent data.
-     * This method should be called <strong>before</strong> accessing other fields of the entity record.
-     *
-     * @return the {@link Lock} that must be closed after all related data have been read.
-     */
-    private Lock shortLivedReadLock()
-    {
-        Lock lock = lockService.acquireRelationshipLock( relationshipRecord.getId(), LockService.LockType.READ_LOCK );
-        if ( lockService != NO_LOCK_SERVICE )
-        {
-            boolean success = true;
-            try
-            {
-                // It's safer to re-read the relationship record here, specifically nextProp, after acquiring the lock
-                if ( !relationshipRecordCursor.next( relationshipRecord.getId(), relationshipRecord, CHECK ) )
-                {
-                    // So it looks like the node has been deleted. The current behavior of RelationshipStore#fillRecord
-                    // w/ FORCE is to only set the inUse field on loading an unused record. This should (and will)
-                    // change to be more of a centralized behavior by the stores. Anyway, setting this pointer
-                    // to the primitive equivalent of null the property cursor will just look empty from the
-                    // outside and the releasing of the lock will be done as usual.
-                    relationshipRecord.setNextProp( Record.NO_NEXT_PROPERTY.intValue() );
-                }
-                success = true;
-            }
-            finally
-            {
-                if ( !success )
-                {
-                    lock.release();
-                }
-            }
-        }
-        return lock;
-    }
-
     @Override
     public Cursor<PropertyItem> properties()
     {
-        Lock lock = shortLivedReadLock();
-        return allPropertyCursor.get().init( relationshipRecord.getNextProp(), lock );
+        return allPropertyCursor.get().init( relationshipRecord.getNextProp() );
     }
 
     @Override
     public Cursor<PropertyItem> property( int propertyKeyId )
     {
-        Lock lock = shortLivedReadLock();
-        return singlePropertyCursor.get().init( relationshipRecord.getNextProp(), propertyKeyId, lock );
+        return singlePropertyCursor.get().init( relationshipRecord.getNextProp(), propertyKeyId );
     }
 }

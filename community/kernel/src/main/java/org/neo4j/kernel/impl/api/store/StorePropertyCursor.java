@@ -40,8 +40,6 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
     private final StorePropertyPayloadCursor payload;
     private final RecordCursor<PropertyRecord> recordCursor;
 
-    private Lock lock;
-
     public StorePropertyCursor( RecordCursors cursors, Consumer<StorePropertyCursor> instanceCache )
     {
         this.instanceCache = instanceCache;
@@ -49,9 +47,8 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
         this.recordCursor = cursors.property();
     }
 
-    public StorePropertyCursor init( long firstPropertyId, Lock lock )
+    public StorePropertyCursor init( long firstPropertyId )
     {
-        this.lock = lock;
         recordCursor.placeAt( firstPropertyId, FORCE );
         payload.clear();
         return this;
@@ -111,14 +108,7 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
     @Override
     public void close()
     {
-        try
-        {
-            payload.clear();
-            instanceCache.accept( this );
-        }
-        finally
-        {
-            lock.release();
-        }
+        payload.clear();
+        instanceCache.accept( this );
     }
 }

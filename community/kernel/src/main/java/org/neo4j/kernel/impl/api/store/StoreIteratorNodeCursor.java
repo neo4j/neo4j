@@ -23,7 +23,6 @@ import java.util.function.Consumer;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -42,10 +41,9 @@ public class StoreIteratorNodeCursor extends StoreAbstractNodeCursor
             NeoStores neoStores,
             StoreStatement storeStatement,
             Consumer<StoreIteratorNodeCursor> instanceCache,
-            LockService lockService,
             RecordCursors cursors )
     {
-        super( nodeRecord, neoStores, storeStatement, lockService, cursors );
+        super( nodeRecord, neoStores, storeStatement, cursors );
         this.instanceCache = instanceCache;
     }
 

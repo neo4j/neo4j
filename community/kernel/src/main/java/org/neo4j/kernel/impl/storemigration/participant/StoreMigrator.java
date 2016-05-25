@@ -544,7 +544,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         final StorePropertyCursor cursor = new StorePropertyCursor( cursors, ignored -> {} );
         final List<Object> scratch = new ArrayList<>();
         return (ENTITY entity, RECORD record) -> {
-            cursor.init( record.getNextProp(), LockService.NO_LOCK );
+            cursor.init( record.getNextProp() );
             scratch.clear();
             while ( cursor.next() )
             {

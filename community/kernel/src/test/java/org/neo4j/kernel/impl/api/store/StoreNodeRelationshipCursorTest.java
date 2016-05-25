@@ -34,7 +34,6 @@ import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
 public class StoreNodeRelationshipCursorTest
@@ -53,9 +52,10 @@ public class StoreNodeRelationshipCursorTest
         @SuppressWarnings( "unchecked" )
         StoreNodeRelationshipCursor cursor = new StoreNodeRelationshipCursor(
                 new RelationshipRecord( -1 ),
+
                 new RelationshipGroupRecord( -1 ),
                 mock( Consumer.class ),
-                NO_LOCK_SERVICE, new RecordCursors( stores ) );
+                new RecordCursors( stores ) );
         reset( stores.getRelationshipGroupStore() );
 
         // WHEN

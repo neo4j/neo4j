@@ -449,7 +449,7 @@ public class StateHandlingStatementOperationsTest
 
         StoreStatementWithSingleFreshIndexReader( IndexReader reader )
         {
-            super( basicMockedNeoStores(), new ReentrantLockService(), () -> mock( IndexReaderFactory.class ),
+            super( basicMockedNeoStores(), () -> mock( IndexReaderFactory.class ),
                     () -> mock( LabelScanReader.class ) );
             this.reader = reader;
         }

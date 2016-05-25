@@ -126,13 +126,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 {
     private static final boolean safeIdBuffering = flag( RecordStorageEngine.class, "safeIdBuffering", true );
 
-    /**
-     * This setting is hidden to the user and is here merely for making it easier to back out of
-     * a change where reading property chains incurs read locks on {@link LockService}.
-     */
-    private static final Setting<Boolean> use_read_locks_on_property_reads =
-            setting( "unsupported.dbms.use_read_locks_on_property_reads", BOOLEAN, TRUE );
-
     private final StoreReadLayer storeLayer;
     private final IndexingService indexingService;
     private final NeoStores neoStores;
@@ -239,7 +232,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
 
             labelScanStore = labelScanStoreProvider.getLabelScanStore();
-            storeStatementSupplier = storeStatementSupplier( neoStores, config, lockService );
+            storeStatementSupplier = storeStatementSupplier( neoStores );
             DiskLayer diskLayer = new DiskLayer(
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
                     schemaStorage, neoStores, indexingService,
@@ -271,14 +264,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         }
     }
 
-    private Supplier<StorageStatement> storeStatementSupplier(
-            NeoStores neoStores, Config config, LockService lockService )
+    private Supplier<StorageStatement> storeStatementSupplier( NeoStores neoStores )
     {
-        final LockService currentLockService =
-                config.get( use_read_locks_on_property_reads ) ? lockService : NO_LOCK_SERVICE;
         final Supplier<IndexReaderFactory> indexReaderFactory = () -> new IndexReaderFactory.Caching( indexingService );
 
-        return () -> new StoreStatement( neoStores, currentLockService, indexReaderFactory, labelScanStore::newReader );
+        return () -> new StoreStatement( neoStores, indexReaderFactory, labelScanStore::newReader );
     }
 
     @Override
