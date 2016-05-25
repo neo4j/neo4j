@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
@@ -32,13 +31,13 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
  */
 public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCursor
 {
-    private long relationshipId = -1;
     private final InstanceCache<StoreSingleRelationshipCursor> instanceCache;
+    private long relationshipId = -1;
 
     public StoreSingleRelationshipCursor( RelationshipRecord relationshipRecord,
-            InstanceCache<StoreSingleRelationshipCursor> instanceCache, LockService lockService, RecordCursors cursors )
+            InstanceCache<StoreSingleRelationshipCursor> instanceCache, RecordCursors cursors )
     {
-        super( relationshipRecord, lockService, cursors );
+        super( relationshipRecord, cursors );
         this.instanceCache = instanceCache;
     }
 

@@ -43,9 +43,8 @@ public class StoreStatementTest
         LabelScanReader scanReader = mock( LabelScanReader.class );
 
         when( scanStore.get() ).thenReturn( scanReader );
-        StoreStatement statement = new StoreStatement(
-                MockedNeoStores.basicMockedNeoStores(), LockService.NO_LOCK_SERVICE,
-                mock( Supplier.class ), scanStore );
+        StoreStatement statement = new StoreStatement( MockedNeoStores.basicMockedNeoStores(), mock( Supplier.class ),
+                scanStore );
         statement.acquire();
 
         // when

@@ -66,8 +66,8 @@ public class StoreStatement implements StorageStatement
     private boolean acquired;
     private boolean closed;
 
-    public StoreStatement( NeoStores neoStores, LockService lockService,
-            Supplier<IndexReaderFactory> indexReaderFactory, Supplier<LabelScanReader> labelScanReaderSupplier )
+    public StoreStatement( NeoStores neoStores, Supplier<IndexReaderFactory> indexReaderFactory,
+            Supplier<LabelScanReader> labelScanReaderSupplier )
     {
         this.neoStores = neoStores;
         this.indexReaderFactorySupplier = indexReaderFactory;
@@ -82,7 +82,7 @@ public class StoreStatement implements StorageStatement
             protected StoreSingleNodeCursor create()
             {
                 return new StoreSingleNodeCursor( nodeStore.newRecord(), neoStores, StoreStatement.this, this,
-                        lockService, recordCursors );
+                        recordCursors );
             }
         };
         iteratorNodeCursor = new InstanceCache<StoreIteratorNodeCursor>()
@@ -91,7 +91,7 @@ public class StoreStatement implements StorageStatement
             protected StoreIteratorNodeCursor create()
             {
                 return new StoreIteratorNodeCursor( nodeStore.newRecord(), neoStores, StoreStatement.this, this,
-                        lockService, recordCursors );
+                        recordCursors );
             }
         };
         singleRelationshipCursor = new InstanceCache<StoreSingleRelationshipCursor>()
@@ -99,8 +99,7 @@ public class StoreStatement implements StorageStatement
             @Override
             protected StoreSingleRelationshipCursor create()
             {
-                return new StoreSingleRelationshipCursor( relationshipStore.newRecord(),
-                        this, lockService, recordCursors );
+                return new StoreSingleRelationshipCursor( relationshipStore.newRecord(), this, recordCursors );
             }
         };
         iteratorRelationshipCursor = new InstanceCache<StoreIteratorRelationshipCursor>()
@@ -108,8 +107,7 @@ public class StoreStatement implements StorageStatement
             @Override
             protected StoreIteratorRelationshipCursor create()
             {
-                return new StoreIteratorRelationshipCursor( relationshipStore.newRecord(),
-                        this, lockService, recordCursors );
+                return new StoreIteratorRelationshipCursor( relationshipStore.newRecord(), this, recordCursors );
             }
         };
     }

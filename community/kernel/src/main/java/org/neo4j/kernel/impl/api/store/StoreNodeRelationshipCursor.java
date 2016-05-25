@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.function.Consumer;
 
-import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -54,10 +53,9 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
     public StoreNodeRelationshipCursor( RelationshipRecord relationshipRecord,
             RelationshipGroupRecord groupRecord,
             Consumer<StoreNodeRelationshipCursor> instanceCache,
-            LockService lockService,
             RecordCursors cursors )
     {
-        super( relationshipRecord, lockService, cursors );
+        super( relationshipRecord, cursors );
         this.groupRecord = groupRecord;
         this.instanceCache = instanceCache;
         this.cursors = cursors;
