@@ -24,10 +24,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
@@ -70,10 +72,6 @@ import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
  * <pre>
  * Relationship format:
  * - properties (see "Properties format")
- * - specific id:
- *   - 1B specific id boolean, {@link #SPECIFIC_ID} or {@link #UNSPECIFIED_ID}
- *     IF {@link #SPECIFIC_ID}
- *     - 8B specific relationship id
  * - start node group (see "Group format")
  * - end node group (see "Group format")
  * - start node id
@@ -118,31 +116,34 @@ public class InputCache implements Closeable
 
     private final FileSystemAbstraction fs;
     private final File cacheDirectory;
+    private RecordFormats recordFormats;
     private final int bufferSize;
     private final Set<String> subTypes = new HashSet<>();
 
-    public InputCache( FileSystemAbstraction fs, File cacheDirectory )
+    public InputCache( FileSystemAbstraction fs, File cacheDirectory, RecordFormats recordFormats )
     {
-        this( fs, cacheDirectory, (int) ByteUnit.kibiBytes( 512 ) );
+        this( fs, cacheDirectory, recordFormats, (int) ByteUnit.kibiBytes( 512 ) );
     }
 
-    public InputCache( FileSystemAbstraction fs, File cacheDirectory, int bufferSize )
+    public InputCache( FileSystemAbstraction fs, File cacheDirectory, RecordFormats recordFormats, int bufferSize )
     {
         this.fs = fs;
         this.cacheDirectory = cacheDirectory;
+        this.recordFormats = recordFormats;
         this.bufferSize = bufferSize;
     }
 
     public Receiver<InputNode[],IOException> cacheNodes( String subType ) throws IOException
     {
         return new InputNodeCacher( channel( NODES, subType, "rw" ), channel( NODES_HEADER, subType, "rw" ),
-                bufferSize );
+                recordFormats, bufferSize );
     }
 
-    public Receiver<InputRelationship[],IOException> cacheRelationships( String subType ) throws IOException
+    public Receiver<InputRelationship[],IOException> cacheRelationships( String subType ) throws
+            IOException
     {
         return new InputRelationshipCacher( channel( RELATIONSHIPS, subType, "rw" ),
-                channel( RELATIONSHIPS_HEADER, subType, "rw" ), bufferSize );
+                channel( RELATIONSHIPS_HEADER, subType, "rw" ), recordFormats, bufferSize );
     }
 
     private StoreChannel channel( String type, String subType, String mode ) throws IOException

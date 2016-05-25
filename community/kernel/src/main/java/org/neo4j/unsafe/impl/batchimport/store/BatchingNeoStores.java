@@ -90,8 +90,8 @@ public class BatchingNeoStores implements AutoCloseable
     private final LabelScanStore labelScanStore;
     private final IoTracer ioTracer;
 
-    public BatchingNeoStores( FileSystemAbstraction fileSystem, File storeDir, Configuration config,
-            LogService logService, AdditionalInitialIds initialIds, Config dbConfig )
+    public BatchingNeoStores( FileSystemAbstraction fileSystem, File storeDir, RecordFormats recordFormats,
+            Configuration config, LogService logService, AdditionalInitialIds initialIds, Config dbConfig )
     {
         this.fileSystem = fileSystem;
         this.logProvider = logService.getInternalLogProvider();
@@ -109,7 +109,7 @@ public class BatchingNeoStores implements AutoCloseable
         final PageCacheTracer tracer = new DefaultPageCacheTracer();
         this.pageCache = createPageCache( fileSystem, neo4jConfig, logProvider, tracer );
         this.ioTracer = tracer::bytesWritten;
-        this.neoStores = newNeoStores( pageCache );
+        this.neoStores = newNeoStores( pageCache, recordFormats );
         if ( alreadyContainsData( neoStores ) )
         {
             neoStores.close();
@@ -206,11 +206,11 @@ public class BatchingNeoStores implements AutoCloseable
         }
     }
 
-    private NeoStores newNeoStores( PageCache pageCache )
+    private NeoStores newNeoStores( PageCache pageCache, RecordFormats recordFormats )
     {
         BatchingIdGeneratorFactory idGeneratorFactory = new BatchingIdGeneratorFactory( fileSystem );
         StoreFactory storeFactory = new StoreFactory( storeDir, neo4jConfig, idGeneratorFactory, pageCache, fileSystem,
-                logProvider );
+                recordFormats, logProvider );
         return storeFactory.openAllNeoStores( true );
     }
 

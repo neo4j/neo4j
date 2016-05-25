@@ -31,7 +31,10 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.Log;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
@@ -51,7 +54,6 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.SourceOrCachedInputIterable.cachedForSure;
@@ -125,11 +127,12 @@ public class ParallelBatchImporter implements BatchImporter
         boolean hasBadEntries = false;
         File badFile = new File( storeDir, Configuration.BAD_FILE_NAME );
         CountingStoreUpdateMonitor storeUpdateMonitor = new CountingStoreUpdateMonitor();
-        try ( BatchingNeoStores neoStore = new BatchingNeoStores( fileSystem, storeDir, config, logService,
+        RecordFormats recordFormats = RecordFormatSelector.autoSelectFormat( dbConfig, NullLogService.getInstance() );
+        try ( BatchingNeoStores neoStore = new BatchingNeoStores( fileSystem, storeDir, recordFormats, config, logService,
                 additionalInitialIds, dbConfig );
               CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(
                     neoStore.getLastCommittedTransactionId() );
-              InputCache inputCache = new InputCache( fileSystem, storeDir ) )
+              InputCache inputCache = new InputCache( fileSystem, storeDir, recordFormats ) )
         {
             Collector badCollector = input.badCollector();
             // Some temporary caches and indexes in the import

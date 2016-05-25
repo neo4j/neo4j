@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import java.io.IOException;
 
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 
 import static org.neo4j.helpers.ArrayUtil.contains;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_LABEL_CHANGES;
@@ -37,9 +38,10 @@ public class InputNodeCacher extends InputEntityCacher<InputNode>
 {
     private String[] previousLabels = InputEntity.NO_LABELS;
 
-    public InputNodeCacher( StoreChannel channel, StoreChannel header, int bufferSize ) throws IOException
+    public InputNodeCacher( StoreChannel channel, StoreChannel header, RecordFormats recordFormats, int bufferSize )
+            throws IOException
     {
-        super( channel, header, bufferSize, 1 );
+        super( channel, header, recordFormats, bufferSize, 1 );
     }
 
     @Override
