@@ -238,8 +238,10 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
         flush();
     }
 
-    public synchronized CoreSnapshot snapshot() throws IOException, RaftLogCompactedException
+    public synchronized CoreSnapshot snapshot() throws IOException, RaftLogCompactedException, InterruptedException
     {
+        applier.sync( false );
+
         long prevIndex = lastApplied;
         long prevTerm = raftLog.readEntryTerm( prevIndex );
         CoreSnapshot coreSnapshot = new CoreSnapshot( prevIndex, prevTerm );
