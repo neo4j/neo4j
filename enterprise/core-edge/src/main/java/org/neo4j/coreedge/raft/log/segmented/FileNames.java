@@ -39,7 +39,7 @@ import org.neo4j.logging.Log;
  *
  * where the suffix represents the version, which is a strictly monotonic sequence.
  */
-class FileNames
+public class FileNames
 {
     static final String BASE_FILE_NAME = "raft.log.";
     private static final String VERSION_MATCH = "(0|[1-9]\\d*)";
@@ -52,7 +52,7 @@ class FileNames
      *
      * @param baseDirectory The base directory in which the RAFT log files reside.
      */
-    FileNames( File baseDirectory )
+    public FileNames( File baseDirectory )
     {
         this.baseDirectory = baseDirectory;
         this.logFilePattern = Pattern.compile( BASE_FILE_NAME + VERSION_MATCH );
@@ -79,7 +79,7 @@ class FileNames
      *
      * @return The sorted version to file map.
      */
-    SortedMap<Long,File> getAllFiles( FileSystemAbstraction fileSystem, Log log )
+    public SortedMap<Long,File> getAllFiles( FileSystemAbstraction fileSystem, Log log )
     {
         SortedMap<Long,File> versionFileMap = new TreeMap<>();
 
