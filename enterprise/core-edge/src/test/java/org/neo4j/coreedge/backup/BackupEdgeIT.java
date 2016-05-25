@@ -19,14 +19,16 @@
  */
 package org.neo4j.coreedge.backup;
 
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.test.coreedge.ClusterRule;
-
-import java.io.File;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
@@ -34,17 +36,21 @@ import static org.neo4j.coreedge.backup.BackupCoreIT.backupArguments;
 
 public class BackupEdgeIT
 {
-    @ClassRule
-    public static ClusterRule clusterRule = new ClusterRule( BackupCoreIT.class )
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppress( SuppressOutput.System.out );
+
+    @Rule
+    public ClusterRule clusterRule = new ClusterRule( BackupCoreIT.class )
             .withNumberOfCoreServers( 3 )
             .withSharedCoreParam( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
             .withNumberOfEdgeServers( 1 )
             .withSharedEdgeParam( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
             .withInstanceEdgeParam( OnlineBackupSettings.online_backup_server, serverId -> ":8000" );
-    private static File backupPath;
 
-    @BeforeClass
-    public static void setup() throws Exception
+    private File backupPath;
+
+    @Before
+    public void setup() throws Exception
     {
         backupPath = clusterRule.testDirectory().cleanDirectory( "backup-db" );
         clusterRule.startCluster();
