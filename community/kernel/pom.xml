@@ -269,12 +269,5 @@ the relevant Commercial Agreement.
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
-
-
-    <dependency>
-      <groupId>geronimo-spec</groupId>
-      <artifactId>geronimo-spec-j2ee</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 </project>

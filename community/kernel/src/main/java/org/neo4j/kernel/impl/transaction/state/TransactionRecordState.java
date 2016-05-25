@@ -73,13 +73,6 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
  * keeping track of transaction state, serialization and deserialization to and from logical log, and applying things
  * to store. It would most likely do this by keeping a component derived from the current WriteTransaction
  * implementation as a sub-component, responsible for handling logical log commands.
- *
- * The class XAResourceManager plays in here as well, in that it shares responsibilities with WriteTransaction to
- * write data to the logical log. As we continue to refactor this subsystem, XAResourceManager should ideally not know
- * about the logical log, but defer entirely to the Kernel to handle this. Doing that will give the kernel full
- * discretion to start experimenting with higher-performing logical log implementations, without being hindered by
- * having to contend with the JTA compliance layers. In short, it would encapsulate the logical log/storage logic better
- * and thus make it easier to change.
  */
 public class TransactionRecordState implements RecordState
 {

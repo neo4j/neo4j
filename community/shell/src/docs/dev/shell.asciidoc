@@ -59,7 +59,8 @@ neo4j-sh (0)$
 === Pointing the shell to a path
 
 To start the shell by just pointing it to a Neo4j store path you run the shell jar file.
-Given that the right neo4j-kernel-<version>.jar and jta jar files are in the same path as your neo4j-shell-<version>.jar file you run it with:
+Given that the right neo4j-kernel-<version>.jar is in the same path as your neo4j-shell-<version>.jar file you run it
+with:
 [source,plain]
 ----
 $ neo4j-shell -path path/to/neo4j-db

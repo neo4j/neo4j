@@ -29,8 +29,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import javax.transaction.Transaction;
 
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 

@@ -19,9 +19,6 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jta.groupId>org.apache.geronimo.specs</jta.groupId>
-    <jta.artifactId>geronimo-jta_1.1_spec</jta.artifactId>
-    <jta.version>1.1.1</jta.version>
     <pico.version>2.14.3</pico.version>
     <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
     <licensing.phase>compile</licensing.phase>
@@ -509,12 +506,6 @@
           </exclusion>
         </exclusions>
       </dependency>
-      <!-- special -->
-      <dependency>
-        <groupId>${jta.groupId}</groupId>
-        <artifactId>${jta.artifactId}</artifactId>
-        <version>${jta.version}</version>
-      </dependency>
       <!-- testing -->
       <dependency>
         <groupId>org.apache.httpcomponents</groupId>
@@ -576,12 +567,6 @@
           <scope>test</scope>
       </dependency>
 
-      <dependency>
-        <groupId>geronimo-spec</groupId>
-        <artifactId>geronimo-spec-j2ee</artifactId>
-        <version>1.4-rc4</version>
-        <scope>test</scope>
-      </dependency>
       <dependency>
         <groupId>org.hsqldb</groupId>
         <artifactId>hsqldb</artifactId>
