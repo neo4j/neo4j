@@ -137,7 +137,6 @@ public class NodeRelationshipCacheTest
             long previous = cache.getAndPutRelationship( i, directions[i % directions.length],
                     random.nextInt( 1_000_000 ), true );
             assertEquals( -1L, previous );
-            assertEquals( 1, cache.getCount( i, directions[i % directions.length] ) );
         }
 
         // WHEN
@@ -147,7 +146,6 @@ public class NodeRelationshipCacheTest
             long previous = cache.getAndPutRelationship( i, directions[i % directions.length],
                     random.nextInt( 1_000_000 ), false );
             assertEquals( -1L, previous );
-            assertEquals( 1, cache.getCount( i, directions[i % directions.length] ) );
         }
 
         // THEN
@@ -155,8 +153,28 @@ public class NodeRelationshipCacheTest
         for ( int i = 0; i < nodes; i++ )
         {
             assertEquals( -1L, cache.getFirstRel( nodes, groupVisitor ) );
-            assertEquals( 1, cache.getCount( i, directions[i % directions.length] ) );
         }
+    }
+
+    @Test
+    public void shouldResetCountAfterGetOnDenseNodes() throws Exception
+    {
+        // GIVEN
+        cache = new NodeRelationshipCache( NumberArrayFactory.AUTO, 1, 100, base );
+        long nodeId = 0;
+        cache.setHighNodeId( 1 );
+        cache.incrementCount( nodeId );
+        cache.incrementCount( nodeId );
+        cache.getAndPutRelationship( nodeId, OUTGOING, 10, true );
+        cache.getAndPutRelationship( nodeId, OUTGOING, 12, true );
+        assertTrue( cache.isDense( nodeId ) );
+
+        // WHEN
+        long count = cache.getCount( nodeId, OUTGOING );
+        assertEquals( 2, count );
+
+        // THEN
+        assertEquals( 0, cache.getCount( nodeId, OUTGOING ) );
     }
 
     @Test

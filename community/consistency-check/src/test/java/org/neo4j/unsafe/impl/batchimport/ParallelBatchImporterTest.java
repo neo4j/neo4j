@@ -44,11 +44,13 @@ import java.util.UUID;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -74,6 +76,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
@@ -359,6 +363,7 @@ public class ParallelBatchImporterTest
                 String inputId = uniqueId( input.group(), node );
                 assertNull( nodeByInputId.put( inputId, node ) );
                 verifiedNodes++;
+                assertDegrees( node );
             }
             assertEquals( nodeCount, verifiedNodes );
 
@@ -389,6 +394,19 @@ public class ParallelBatchImporterTest
                 verifiedRelationships++;
             }
             assertEquals( relationshipCount, verifiedRelationships );
+        }
+    }
+
+    private void assertDegrees( Node node )
+    {
+        for ( RelationshipType type : node.getRelationshipTypes() )
+        {
+            for ( Direction direction : Direction.values() )
+            {
+                long degree = node.getDegree( type, direction );
+                long actualDegree = count( node.getRelationships( type, direction ) );
+                assertEquals( actualDegree, degree );
+            }
         }
     }
 
