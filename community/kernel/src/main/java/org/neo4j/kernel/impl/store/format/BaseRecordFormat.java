@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.store.format;
 import java.util.function.Function;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.IntStoreHeader;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.id.IdSequence;
@@ -32,8 +31,8 @@ import org.neo4j.kernel.impl.store.record.Record;
 
 /**
  * Basic abstract implementation of a {@link RecordFormat} implementing most functionality except
- * {@link #read(AbstractBaseRecord, PageCursor, org.neo4j.kernel.impl.store.record.RecordLoad, int, PagedFile)} and
- * {@link #write(AbstractBaseRecord, PageCursor, int, PagedFile)}.
+ * {@link RecordFormat#read(AbstractBaseRecord, PageCursor, org.neo4j.kernel.impl.store.record.RecordLoad, int)} and
+ * {@link RecordFormat#write(AbstractBaseRecord, PageCursor, int)}.
  *
  * @param <RECORD> type of record.
  */

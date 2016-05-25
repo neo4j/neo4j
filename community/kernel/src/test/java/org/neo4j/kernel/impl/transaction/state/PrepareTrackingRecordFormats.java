@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.CapabilityType;
@@ -181,10 +180,10 @@ public class PrepareTrackingRecordFormats implements RecordFormats
         }
 
         @Override
-        public void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
+        public void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize )
                 throws IOException
         {
-            actual.read( record, cursor, mode, recordSize, storeFile );
+            actual.read( record, cursor, mode, recordSize );
         }
 
         @Override
@@ -195,9 +194,9 @@ public class PrepareTrackingRecordFormats implements RecordFormats
         }
 
         @Override
-        public void write( RECORD record, PageCursor cursor, int recordSize, PagedFile storeFile ) throws IOException
+        public void write( RECORD record, PageCursor cursor, int recordSize ) throws IOException
         {
-            actual.write( record, cursor, recordSize, storeFile );
+            actual.write( record, cursor, recordSize );
         }
 
         @Override

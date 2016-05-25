@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.store.format.standard;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -47,8 +46,7 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
     }
 
     @Override
-    public void read( RelationshipGroupRecord record, PageCursor cursor, RecordLoad mode, int recordSize,
-            PagedFile storeFile ) throws IOException
+    public void read( RelationshipGroupRecord record, PageCursor cursor, RecordLoad mode, int recordSize ) throws IOException
     {
         // [    ,   x] in use
         // [    ,xxx ] high next id bits
@@ -84,7 +82,7 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
     }
 
     @Override
-    public void write( RelationshipGroupRecord record, PageCursor cursor, int recordSize, PagedFile storeFile )
+    public void write( RelationshipGroupRecord record, PageCursor cursor, int recordSize )
             throws IOException
     {
         if ( record.inUse() )

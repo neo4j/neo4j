@@ -278,7 +278,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                         record.setId( position.id );
                         do
                         {
-                            format.read( record, cursor, RecordLoad.CHECK, RECORD_SIZE, pagedFile );
+                            format.read( record, cursor, RecordLoad.CHECK, RECORD_SIZE );
                             if ( record.inUse() )
                             {
                                 value = record.getValue();
@@ -522,7 +522,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         try
         {
             record.setId( position.id );
-            recordFormat.read( record, cursor, NORMAL, RECORD_SIZE, storeFile );
+            recordFormat.read( record, cursor, NORMAL, RECORD_SIZE );
             return record.getValue();
         }
         catch ( IOException e )

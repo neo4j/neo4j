@@ -91,12 +91,12 @@ public class RelationshipRecordFormatTest
         record.setSecondaryUnitId( 17 );
         record.setRequiresSecondaryUnit( true );
         cursor.setOffset( offsetForId( record.getId(), cursor.getCurrentPageSize(), recordSize ) );
-        format.write( record, cursor, recordSize, storeFile );
+        format.write( record, cursor, recordSize );
 
         // WHEN deleting that record
         record.setInUse( false );
         cursor.setOffset( offsetForId( record.getId(), cursor.getCurrentPageSize(), recordSize ) );
-        format.write( record, cursor, recordSize, storeFile );
+        format.write( record, cursor, recordSize );
 
         // THEN both units should have been marked as unused
         cursor.setOffset( offsetForId( record.getId(), cursor.getCurrentPageSize(), recordSize ) );
@@ -114,12 +114,12 @@ public class RelationshipRecordFormatTest
     private void checkRecord( RelationshipRecordFormat format, int recordSize, StubPageCursor cursor,
             long recordId, int recordOffset, RelationshipRecord record ) throws IOException
     {
-        format.write( record, cursor, recordSize, null);
+        format.write( record, cursor, recordSize );
 
         RelationshipRecord recordFromStore = format.newRecord();
         recordFromStore.setId( recordId  );
         resetCursor( cursor, recordOffset );
-        format.read( recordFromStore, cursor, RecordLoad.NORMAL, recordSize, null );
+        format.read( recordFromStore, cursor, RecordLoad.NORMAL, recordSize );
 
         // records should be the same
         assertEquals( record.getFirstNextRel(), recordFromStore.getFirstNextRel() );
@@ -133,7 +133,7 @@ public class RelationshipRecordFormatTest
         resetCursor( cursor, recordOffset );
         RelationshipRecord recordWithOtherId = format.newRecord();
         recordWithOtherId.setId( 1L  );
-        format.read( recordWithOtherId, cursor, RecordLoad.NORMAL, recordSize, null );
+        format.read( recordWithOtherId, cursor, RecordLoad.NORMAL, recordSize );
 
         assertNotEquals( record.getFirstNextRel(), recordWithOtherId.getFirstNextRel() );
         assertNotEquals( record.getFirstPrevRel(), recordWithOtherId.getFirstPrevRel() );

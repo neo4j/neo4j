@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store.format.standard;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -48,7 +47,7 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
     }
 
     @Override
-    public void read( DynamicRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
+    public void read( DynamicRecord record, PageCursor cursor, RecordLoad mode, int recordSize )
     {
         /*
          * First 4b
@@ -124,7 +123,7 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
     }
 
     @Override
-    public void write( DynamicRecord record, PageCursor cursor, int recordSize, PagedFile storeFile )
+    public void write( DynamicRecord record, PageCursor cursor, int recordSize )
     {
         if ( record.inUse() )
         {

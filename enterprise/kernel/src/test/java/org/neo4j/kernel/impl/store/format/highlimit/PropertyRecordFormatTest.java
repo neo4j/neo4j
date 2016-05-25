@@ -46,12 +46,12 @@ public class PropertyRecordFormatTest
         int recordOffset = cursor.getOffset();
 
         PropertyRecord record = createRecord( format, recordId );
-        format.write( record, cursor, recordSize, null);
+        format.write( record, cursor, recordSize );
 
         PropertyRecord recordFromStore = format.newRecord();
         recordFromStore.setId( recordId  );
         resetCursor( cursor, recordOffset );
-        format.read( recordFromStore, cursor, RecordLoad.NORMAL, recordSize, null );
+        format.read( recordFromStore, cursor, RecordLoad.NORMAL, recordSize );
 
         // records should be the same
         assertEquals( record.getNextProp(), recordFromStore.getNextProp() );
@@ -61,7 +61,7 @@ public class PropertyRecordFormatTest
         resetCursor( cursor, recordOffset );
         PropertyRecord recordWithOtherId = format.newRecord();
         recordWithOtherId.setId( 1L  );
-        format.read( recordWithOtherId, cursor, RecordLoad.NORMAL, recordSize, null );
+        format.read( recordWithOtherId, cursor, RecordLoad.NORMAL, recordSize );
 
         assertNotEquals( record.getNextProp(), recordWithOtherId.getNextProp() );
         assertNotEquals( record.getPrevProp(), recordWithOtherId.getPrevProp() );

@@ -218,7 +218,7 @@ public abstract class RecordFormatTest
             do
             {
                 cursor.setOffset( offset );
-                format.read( read, cursor, NORMAL, recordSize, storeFile );
+                format.read( read, cursor, NORMAL, recordSize );
             }
             while ( cursor.shouldRetry() );
             assertFalse( "Out-of-bounds when reading record " + written, cursor.checkAndClearBoundsFlag() );
@@ -252,7 +252,7 @@ public abstract class RecordFormatTest
 
             int offset = Math.toIntExact( record.getId() * recordSize );
             cursor.setOffset( offset );
-            format.write( record, cursor, recordSize, storeFile );
+            format.write( record, cursor, recordSize );
             assertFalse( "Out-of-bounds when writing record " + record, cursor.checkAndClearBoundsFlag() );
         }
     }

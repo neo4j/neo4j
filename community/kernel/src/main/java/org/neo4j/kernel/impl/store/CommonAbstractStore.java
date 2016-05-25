@@ -1040,7 +1040,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             do
             {
                 prepareForReading( cursor, offset, record );
-                recordFormat.read( record, cursor, mode, recordSize, storeFile );
+                recordFormat.read( record, cursor, mode, recordSize );
             }
             while ( cursor.shouldRetry() );
             checkForDecodingErrors( cursor, id, mode );
@@ -1067,7 +1067,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                 do
                 {
                     cursor.setOffset( offset );
-                    recordFormat.write( record, cursor, recordSize, storeFile );
+                    recordFormat.write( record, cursor, recordSize );
                 }
                 while ( cursor.shouldRetry() );
                 checkForDecodingErrors( cursor, id, NORMAL ); // We don't free ids if something weird goes wrong
