@@ -21,19 +21,21 @@ package cypher.feature.steps
 
 import java.util
 
-import _root_.cucumber.api.DataTable
+import cucumber.api.DataTable
 import cypher.FeatureSuiteTest
 import cypher.cucumber.db.DatabaseConfigProvider.cypherConfig
-import cypher.cucumber.db.DatabaseLoader
+import cypher.cucumber.db.{GraphArchive, GraphArchiveImporter, GraphArchiveLibrary}
 import cypher.feature.parser.matchers.ResultWrapper
 import cypher.feature.parser.{MatcherMatchingSupport, constructResultMatcher, parseParameters, statisticsParser}
-import org.neo4j.graphdb._
-import org.neo4j.graphdb.factory.{GraphDatabaseBuilder, GraphDatabaseFactory, GraphDatabaseSettings}
+import org.neo4j.graphdb.factory.{GraphDatabaseFactory, GraphDatabaseSettings}
+import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.opencypher.tools.tck.TCKCucumberTemplate
 import org.opencypher.tools.tck.constants.TCKStepDefinitions._
 import org.scalatest.{FunSuiteLike, Matchers}
 
+import scala.collection.JavaConverters._
+import scala.reflect.io.Path
 import scala.util.{Failure, Success, Try}
 
 class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate with MatcherMatchingSupport {
@@ -77,8 +79,7 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
   Given(NAMED_GRAPH) { (dbName: String) =>
     ifEnabled {
-      val builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(DatabaseLoader(dbName))
-      graph = loadConfig(builder).newGraphDatabase()
+      initNamed(dbName)
     }
   }
 
@@ -207,12 +208,36 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   private def initEmpty() =
     if (graph == null || !graph.isAvailable(1L)) {
       val builder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-      graph = loadConfig(builder).newGraphDatabase()
+      builder.setConfig(currentDatabaseConfig("8M").asJava)
+      graph = builder.newGraphDatabase()
     }
 
-  private def loadConfig(builder: GraphDatabaseBuilder): GraphDatabaseBuilder = {
-    builder.setConfig(GraphDatabaseSettings.pagecache_memory, "8M")
-    cypherConfig().map { case (s, v) => builder.setConfig(s, v) }
-    builder
+  private def initNamed(dbName: String) = {
+    val recipe = GraphArchiveLibrary.default.recipe(dbName)
+    val recommendedPcSize = recipe.recommendedPageCacheSize
+    val pcSize = (recommendedPcSize/MB(32)+1)*MB(32)
+    val config = currentDatabaseConfig(pcSize.toString)
+    val archive = GraphArchive(recipe, Map.empty, config)
+    val path = GraphArchiveLibrary.default.lendForReadingOnly(archive)(graphArchiveImporter)
+    val builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(path.jfile)
+    builder.setConfig(config.asJava)
+    graph = builder.newGraphDatabase()
+  }
+
+  private def MB(v: Int) = v * 1024 * 1024
+
+  private def currentDatabaseConfig(sizeHint: String) = {
+    val builder = Map.newBuilder[String, String]
+    builder += GraphDatabaseSettings.pagecache_memory.name() -> sizeHint
+    cypherConfig().foreach { case (s, v) => builder += s.name() -> v }
+    builder.result()
+  }
+
+  object graphArchiveImporter extends GraphArchiveImporter {
+    protected def createDatabase(archive: GraphArchive.Descriptor, destination: Path): GraphDatabaseService = {
+      val builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(destination.jfile)
+      builder.setConfig(archive.dbConfig.asJava)
+      builder.newGraphDatabase()
+    }
   }
 }

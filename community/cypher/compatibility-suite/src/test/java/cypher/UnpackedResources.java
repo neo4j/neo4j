@@ -28,6 +28,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
+import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.Iterator;
 
@@ -35,24 +36,23 @@ import org.junit.experimental.runners.Enclosed;
 import org.junit.runners.model.RunnerBuilder;
 import org.opencypher.tools.tck.TCKCucumberTemplate;
 
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-
-public class UnpackedFeatures extends Enclosed
+public class UnpackedResources extends Enclosed
 {
-    public UnpackedFeatures( Class<?> klass, RunnerBuilder builder ) throws Throwable
+    public UnpackedResources( Class<?> klass, RunnerBuilder builder ) throws Throwable
     {
         super( klass, download( builder ) );
     }
 
     private static RunnerBuilder download( RunnerBuilder builder )
     {
-        unpackFeatures();
+        unpackResources();
         return builder;
     }
 
-    private static void unpackFeatures()
+    private static void unpackResources()
     {
-        File directory = createTargetDirectory();
+        File featuresDirectory = createTargetDirectory( "features" );
+        File graphsDirectory = createTargetDirectory( "graphs" );
 
         URI uri;
         try
@@ -65,17 +65,9 @@ public class UnpackedFeatures extends Enclosed
         }
         try ( FileSystem fileSystem = FileSystems.newFileSystem( uri, Collections.emptyMap() ) )
         {
-            PathMatcher matcher = fileSystem.getPathMatcher("glob:**/*.feature");
-            for ( Iterator<Path> it = Files.walk( fileSystem.getPath( "/" ), 1 ).iterator(); it.hasNext(); )
-            {
-                Path next = it.next();
-                if ( matcher.matches( next ) )
-                {
-                    File target = new File( directory, next.toString() );
-                    Files.copy( next, target.toPath() );
-                    System.out.println( "Unpacked " + target.getName() );
-                }
-            }
+            findAndUnpackTo( fileSystem, "glob:**/*.feature", featuresDirectory );
+            findAndUnpackTo( fileSystem, "glob:**/*.cyp", graphsDirectory );
+            findAndUnpackTo( fileSystem, "glob:**/*.json", graphsDirectory );
         }
         catch ( IOException e )
         {
@@ -83,12 +75,38 @@ public class UnpackedFeatures extends Enclosed
         }
     }
 
-    private static File createTargetDirectory()
+    private static void findAndUnpackTo( FileSystem sourceFileSystem, String sourcePattern, File targetDirectory ) throws IOException
     {
-        File directory = new File( "target/features" );
+        System.out.println( "Unpacking to " + targetDirectory.getCanonicalPath() );
+        PathMatcher matcher = sourceFileSystem.getPathMatcher(sourcePattern);
+        for (Iterator<Path> it = Files.walk( sourceFileSystem.getPath( "/" ), 1 ).iterator(); it.hasNext(); )
+        {
+            Path next = it.next();
+            if ( matcher.matches( next ) )
+            {
+                File target = new File( targetDirectory, next.toString() );
+                Files.copy( next, target.toPath() );
+                System.out.println( "Unpacked " + target.getName() );
+            }
+        }
+    }
+
+    private static File createTargetDirectory( String suffix )
+    {
+        return obtainTargetDirectory( true, suffix );
+    }
+
+    public static File targetDirectory( String suffix )
+    {
+        return obtainTargetDirectory( false, suffix );
+    }
+
+    private static File obtainTargetDirectory( boolean create, String suffix )
+    {
+        File directory = new File( new File( "target" ), suffix );
         if ( !directory.exists() )
         {
-            if ( !directory.mkdirs() )
+            if ( !(create && directory.mkdirs()) )
             {
                 throw new IllegalStateException(
                         "Failed to create target directory for cypher feature files: " + directory );

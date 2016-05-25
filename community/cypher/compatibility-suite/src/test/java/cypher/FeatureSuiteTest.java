@@ -23,7 +23,7 @@ import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
 import org.junit.runner.RunWith;
 
-@RunWith( UnpackedFeatures.class )
+@RunWith( UnpackedResources.class )
 public class FeatureSuiteTest
 {
 
