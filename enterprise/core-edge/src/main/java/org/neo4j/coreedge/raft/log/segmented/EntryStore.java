@@ -32,7 +32,7 @@ import org.neo4j.cursor.IOCursor;
  * segment to the next in a transparent manner. It can thus be mainly viewed as a factory for a
  * smart segment-crossing cursor.
  */
-class EntryStore
+class EntryStore implements AutoCloseable
 {
     private Segments segments;
 
@@ -122,5 +122,11 @@ class EntryStore
                 return currentRecord.get();
             }
         };
+    }
+
+    @Override
+    public void close() throws DisposedException
+    {
+        segments.close();
     }
 }

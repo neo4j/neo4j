@@ -38,6 +38,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.WritableChannel;
 
+import static java.lang.String.format;
 import static org.neo4j.coreedge.raft.log.EntryRecord.read;
 
 /**
@@ -49,8 +50,9 @@ import static org.neo4j.coreedge.raft.log.EntryRecord.read;
  *
  * Concurrent reading is thread-safe.
  */
-class SegmentFile
+class SegmentFile implements AutoCloseable
 {
+    static final String CLOSED_ERROR_MESSAGE = "segment file '%s' is closed";
     private static final SegmentHeader.Marshal headerMarshal = new SegmentHeader.Marshal();
 
     private final Log log;
@@ -65,13 +67,10 @@ class SegmentFile
     private boolean markedForDisposal;
     private Runnable onDisposal;
     private volatile boolean isDisposed;
+    private volatile boolean closed;
 
-    SegmentFile(
-            FileSystemAbstraction fileSystem,
-            File file,
-            ChannelMarshal<ReplicatedContent> contentMarshal,
-            LogProvider logProvider,
-            SegmentHeader header )
+    SegmentFile( FileSystemAbstraction fileSystem, File file, ChannelMarshal<ReplicatedContent> contentMarshal,
+            LogProvider logProvider, SegmentHeader header )
     {
         this.fileSystem = fileSystem;
         this.file = file;
@@ -82,12 +81,9 @@ class SegmentFile
         readerPool = new StoreChannelPool( fileSystem, file, "r", logProvider );
     }
 
-    static SegmentFile create(
-            FileSystemAbstraction fileSystem,
-            File file,
-            ChannelMarshal<ReplicatedContent> contentMarshal,
-            LogProvider logProvider,
-            SegmentHeader header ) throws IOException
+    static SegmentFile create( FileSystemAbstraction fileSystem, File file,
+            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider, SegmentHeader header )
+            throws IOException
     {
         SegmentFile segment = new SegmentFile( fileSystem, file, contentMarshal, logProvider, header );
 
@@ -159,6 +155,11 @@ class SegmentFile
 
     private PhysicalFlushableChannel getOrCreateWriter() throws IOException
     {
+        if ( closed )
+        {
+            throw new RuntimeException( format( CLOSED_ERROR_MESSAGE, file ) );
+        }
+
         if ( bufferedWriter == null )
         {
             StoreChannel channel = fileSystem.open( file, "rw" );
@@ -173,7 +174,7 @@ class SegmentFile
      */
     WritableChannel writer() throws IOException, DisposedException
     {
-        if( markedForDisposal )
+        if ( markedForDisposal )
         {
             throw new DisposedException();
         }
@@ -223,7 +224,7 @@ class SegmentFile
      */
     void markForDisposal( Runnable onDisposal ) throws DisposedException
     {
-        if( markedForDisposal )
+        if ( markedForDisposal )
         {
             throw new DisposedException();
         }
@@ -236,7 +237,7 @@ class SegmentFile
 
     private synchronized void checkFullDisposal()
     {
-        if ( bufferedWriter == null && readerPool.isDisposed() )
+        if ( markedForDisposal && bufferedWriter == null && readerPool.isDisposed() )
         {
             isDisposed = true;
             onDisposal.run();
@@ -261,5 +262,18 @@ class SegmentFile
     public long size()
     {
         return fileSystem.getFileSize( file );
+    }
+
+    @Override
+    public void close() throws DisposedException
+    {
+        if ( closed )
+        {
+            throw new RuntimeException( format( CLOSED_ERROR_MESSAGE, file ) );
+        }
+
+        closed = true;
+        closeWriter();
+        readerPool.close();
     }
 }
