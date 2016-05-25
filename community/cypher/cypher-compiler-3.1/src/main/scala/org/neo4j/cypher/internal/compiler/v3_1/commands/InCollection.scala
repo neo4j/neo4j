@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.helpers.CollectionSupport
 import pipes.QueryState
 import collection.Seq
 
-abstract class InCollection(collection: Expression, id: String, predicate: Predicate)
+abstract class InCollection(collectionExpression: Expression, id: String, predicate: Predicate)
   extends Predicate
   with CollectionSupport
   with Closure {
@@ -36,22 +36,27 @@ abstract class InCollection(collection: Expression, id: String, predicate: Predi
   def seqMethod[U](f: Seq[U]): CollectionPredicate[U]
 
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
-    val seq = makeTraversable(collection(m)).toSeq
+    val list = collectionExpression(m)
 
-    seqMethod(seq)(item => predicate.isMatch(m.newWith(id -> item)))
+    if (list == null) None
+    else {
+      val seq = makeTraversable(list).toSeq
+
+      seqMethod(seq)(item => predicate.isMatch(m.newWith(id -> item)))
+    }
   }
 
   def name: String
 
-  override def toString() = name + "(" + id + " in " + collection + " where " + predicate + ")"
+  override def toString() = name + "(" + id + " in " + collectionExpression + " where " + predicate + ")"
 
   def containsIsNull = predicate.containsIsNull
 
-  override def children = Seq(collection, predicate)
+  override def children = Seq(collectionExpression, predicate)
 
-  def arguments: scala.Seq[Expression] = Seq(collection)
+  def arguments: scala.Seq[Expression] = Seq(collectionExpression)
 
-  def symbolTableDependencies = symbolTableDependencies(collection, predicate, id)
+  def symbolTableDependencies = symbolTableDependencies(collectionExpression, predicate, id)
 }
 
 case class AllInCollection(collection: Expression, symbolName: String, inner: Predicate)
