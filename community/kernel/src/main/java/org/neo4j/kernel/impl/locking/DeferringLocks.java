@@ -180,5 +180,11 @@ public class DeferringLocks extends Lifecycle.Delegate implements Locks
         {
             return clientDelegate.getLockSessionId();
         }
+
+        @Override
+        public Client delegate()
+        {
+            return clientDelegate;
+        }
     }
 }

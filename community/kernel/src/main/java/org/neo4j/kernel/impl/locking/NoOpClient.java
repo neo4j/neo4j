@@ -78,4 +78,10 @@ public class NoOpClient implements Locks.Client
     {
         return -1;
     }
+
+    @Override
+    public Locks.Client delegate()
+    {
+        return this;
+    }
 }

@@ -306,6 +306,12 @@ public class CommunityLockClient implements Locks.Client
         return lockTransaction.getId();
     }
 
+    @Override
+    public Locks.Client delegate()
+    {
+        return this;
+    }
+
     private PrimitiveLongObjectMap<LockResource> localShared( Locks.ResourceType resourceType )
     {
         PrimitiveLongObjectMap<LockResource> map = sharedLocks.get( resourceType.typeId() );

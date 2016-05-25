@@ -574,6 +574,12 @@ public class ForsetiClient implements Locks.Client
         return clientId;
     }
 
+    @Override
+    public Locks.Client delegate()
+    {
+        return this;
+    }
+
     public int waitListSize()
     {
         return waitList.size();

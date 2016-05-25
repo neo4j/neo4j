@@ -117,6 +117,9 @@ public interface Locks extends Lifecycle
 
         /** For slave transactions, this tracks an identifier for the lock session running on the master */
         int getLockSessionId();
+
+        /** Get a potential delegate */
+        Client delegate();
     }
 
     /**
