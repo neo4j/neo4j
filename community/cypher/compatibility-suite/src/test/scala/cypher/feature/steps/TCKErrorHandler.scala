@@ -58,6 +58,8 @@ case class TCKErrorHandler(typ: String, phase: String, detail: String) extends M
           detail should equal(NEGATIVE_INTEGER_ARGUMENT)
         else if (e.getMessage.matches("Can't use aggregate functions inside of aggregate functions\\."))
           detail should equal(NESTED_AGGREGATION)
+        else if (e.getMessage.matches("Only directed relationships are supported in .+"))
+          detail should equal(REQUIRES_DIRECTED_RELATIONSHIP)
         else if (e.getMessage.matches("Can't create node `(\\w+)` with labels or properties here. The variable is already declared in this context"))
           detail should equal(VARIABLE_ALREADY_BOUND)
         else if (e.getMessage.matches("Can't create `\\w+` with properties or labels here. The variable is already declared in this context"))
