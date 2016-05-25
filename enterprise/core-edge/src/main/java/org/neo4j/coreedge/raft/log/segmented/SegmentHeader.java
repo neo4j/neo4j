@@ -30,7 +30,7 @@ import org.neo4j.storageengine.api.WritableChannel;
 /**
  * The header written at the beginning of each segment.
  */
-public class SegmentHeader
+class SegmentHeader
 {
     static final int SIZE = 4 * Long.BYTES;
 

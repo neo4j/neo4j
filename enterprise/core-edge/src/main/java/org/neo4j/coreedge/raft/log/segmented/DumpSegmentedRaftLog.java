@@ -1,4 +1,23 @@
-package org.neo4j.coreedge.raft.log.debug;
+/*
+ * Copyright (c) 2002-2016 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.coreedge.raft.log.segmented;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -6,14 +25,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ListIterator;
 
-import org.neo4j.coreedge.raft.log.DamagedLogStorageException;
 import org.neo4j.coreedge.raft.log.EntryRecord;
-import org.neo4j.coreedge.raft.log.segmented.DisposedException;
-import org.neo4j.coreedge.raft.log.segmented.FileNames;
-import org.neo4j.coreedge.raft.log.segmented.RecoveryProtocol;
-import org.neo4j.coreedge.raft.log.segmented.SegmentFile;
-import org.neo4j.coreedge.raft.log.segmented.SegmentHeader;
-import org.neo4j.coreedge.raft.log.segmented.Segments;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
@@ -25,19 +37,19 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 
-public class DumpSegmentedRaftLog
+class DumpSegmentedRaftLog
 {
     private final FileSystemAbstraction fileSystem;
     private static final String TO_FILE = "tofile";
     private ChannelMarshal<ReplicatedContent> marshal = new CoreReplicatedContentMarshal();
 
-    public DumpSegmentedRaftLog( FileSystemAbstraction fileSystem, ChannelMarshal<ReplicatedContent> marshal )
+    private DumpSegmentedRaftLog( FileSystemAbstraction fileSystem, ChannelMarshal<ReplicatedContent> marshal )
     {
         this.fileSystem = fileSystem;
         this.marshal = marshal;
     }
 
-    public int dump( String filenameOrDirectory, PrintStream out )
+    private int dump( String filenameOrDirectory, PrintStream out )
             throws IOException, DamagedLogStorageException, DisposedException
     {
         LogProvider logProvider = NullLogProvider.getInstance();
@@ -45,7 +57,7 @@ public class DumpSegmentedRaftLog
         RecoveryProtocol recoveryProtocol =
                 new RecoveryProtocol( fileSystem, new FileNames( new File( filenameOrDirectory ) ), marshal,
                         logProvider );
-        Segments segments = recoveryProtocol.run().getSegments();
+        Segments segments = recoveryProtocol.run().segments;
 
         ListIterator<SegmentFile> segmentFileIterator = segments.getSegmentFileIteratorAtStart();
 
@@ -85,13 +97,13 @@ public class DumpSegmentedRaftLog
         }
     }
 
-    public static Printer getPrinter( Args args )
+    private static Printer getPrinter( Args args )
     {
         boolean toFile = args.getBoolean( TO_FILE, false, true );
         return toFile ? new DumpSegmentedRaftLog.FilePrinter() : SYSTEM_OUT_PRINTER;
     }
 
-    public interface Printer extends AutoCloseable
+    interface Printer extends AutoCloseable
     {
         PrintStream getFor( String file ) throws FileNotFoundException;
 

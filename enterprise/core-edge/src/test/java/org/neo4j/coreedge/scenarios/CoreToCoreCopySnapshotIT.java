@@ -47,13 +47,13 @@ import org.neo4j.test.rule.TargetDirectory;
 
 import static java.util.Collections.emptyMap;
 import static junit.framework.TestCase.assertEquals;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
 import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning_frequency;
 import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning_strategy;
 import static org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class CoreToCoreCopySnapshotIT
 {

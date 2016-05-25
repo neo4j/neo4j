@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.coreedge.raft.log.EntryRecord;
-import org.neo4j.coreedge.raft.log.EntryRecordCursor;
 import org.neo4j.coreedge.raft.log.LogPosition;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
@@ -99,7 +98,7 @@ class SegmentFile implements AutoCloseable
     /**
      * Channels must be closed when no longer used, so that they are released back to the pool of readers.
      */
-    public IOCursor<EntryRecord> getReader( long logIndex ) throws IOException, DisposedException
+    IOCursor<EntryRecord> getReader( long logIndex ) throws IOException, DisposedException
     {
         assert logIndex > header.prevIndex();
         long offsetIndex = logIndex - (header.prevIndex() + 1);

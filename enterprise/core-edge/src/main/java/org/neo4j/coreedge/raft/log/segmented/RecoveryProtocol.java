@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 
-import org.neo4j.coreedge.raft.log.DamagedLogStorageException;
 import org.neo4j.coreedge.raft.log.EntryRecord;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
@@ -45,7 +44,7 @@ import static java.util.Collections.emptyList;
  * Recovers all the state required for operating the RAFT log and does some simple
  * verifications; e.g. checking for gaps, verifying headers.
  */
-public class RecoveryProtocol
+class RecoveryProtocol
 {
     private static final SegmentHeader.Marshal headerMarshal = new SegmentHeader.Marshal();
 
@@ -56,8 +55,8 @@ public class RecoveryProtocol
     private final Log log;
     private long expectedVersion;
 
-    public RecoveryProtocol( FileSystemAbstraction fileSystem, FileNames fileNames,
-                      ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider )
+    RecoveryProtocol( FileSystemAbstraction fileSystem, FileNames fileNames,
+            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider )
     {
         this.fileSystem = fileSystem;
         this.fileNames = fileNames;
@@ -66,7 +65,7 @@ public class RecoveryProtocol
         this.log = logProvider.getLog( getClass() );
     }
 
-    public State run() throws IOException, DamagedLogStorageException
+    State run() throws IOException, DamagedLogStorageException
     {
         State state = new State();
         SortedMap<Long,File> files = fileNames.getAllFiles( fileSystem, log );
