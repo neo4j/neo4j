@@ -314,8 +314,17 @@ case class UnresolvedCall(procedureNamespace: ProcedureNamespace,
   override def semanticCheck: SemanticCheck = {
     val argumentCheck = declaredArguments.map(_.semanticCheck(SemanticContext.Results)).getOrElse(success)
     val resultsCheck = declaredResults.map(_.foldSemanticCheck(_.semanticCheck)).getOrElse(success)
+    val invalidExpressionsCheck = declaredArguments.map(_.map {
+      case arg if arg.containsAggregate =>
+        error(_: SemanticState,
+              SemanticError(
+                """Procedure call cannot take an aggregating function as argument, please add a 'WITH' to your statement.
+                  |For example:
+                  |    MATCH (n:Person) WITH collect(n.name) AS names CALL proc(names) YIELD value RETURN value""".stripMargin, position))
+      case _ => success
+    }.foldLeft(success)(_ chain _)).getOrElse(success)
 
-    argumentCheck chain resultsCheck
+    argumentCheck chain resultsCheck chain invalidExpressionsCheck
   }
 
   //At this stage we are not sure whether or not the procedure

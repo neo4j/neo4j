@@ -208,6 +208,14 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
     result shouldBe empty
   }
 
+  test("should fail when using aggregating function as argument") {
+    // Given
+    registerDummyInOutProcedure(Neo4jTypes.NTNumber)
+
+    // Then
+    a [SyntaxException] shouldBe thrownBy(execute("MATCH (n) CALL my.first.proc(count(n)) YIELD out0 RETURN out0"))
+  }
+
   test("should fail if calling non-existent procedure") {
     a [CypherExecutionException] shouldBe thrownBy(execute("CALL no.such.thing.exists(42) YIELD x RETURN *"))
   }
@@ -226,7 +234,7 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
   }
 
   test("should fail if calling procedure via rule planner") {
-    a [InternalException] shouldBe thrownBy(execute(
+    an [InternalException] shouldBe thrownBy(execute(
       "CYPHER planner=rule CALL db.labels() YIELD label RETURN *"
     ))
   }
