@@ -22,12 +22,10 @@ package org.neo4j.server.security.enterprise.auth;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -36,9 +34,10 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
  * Stores role data. In memory, but backed by persistent storage so changes to this repository will survive
  * JVM restarts and crashes.
  */
-// TODO: Extract shared code with FileUserRepository
 public class FileRoleRepository extends AbstractRoleRepository
 {
+    // TODO: Extract shared code with FileUserRepository
+
     private final Path roleFile;
 
     private final Log log;
@@ -85,7 +84,8 @@ public class FileRoleRepository extends AbstractRoleRepository
         {
             Files.write( tempFile, serialization.serialize( roles ) );
             Files.move( tempFile, roleFile, ATOMIC_MOVE, REPLACE_EXISTING );
-        } catch ( Throwable e )
+        }
+        catch ( Throwable e )
         {
             Files.delete( tempFile );
             throw e;
@@ -99,7 +99,8 @@ public class FileRoleRepository extends AbstractRoleRepository
         try
         {
             loadedRoles = serialization.deserializeRoles( fileBytes );
-        } catch ( RoleSerialization.FormatException e )
+        }
+        catch ( RoleSerialization.FormatException e )
         {
             log.error( "Ignoring role file \"%s\" (%s)", roleFile.toAbsolutePath(), e.getMessage() );
             throw new IllegalStateException( "Failed to read role file: " + roleFile );

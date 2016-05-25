@@ -53,22 +53,25 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
         super( userRepository, passwordPolicy, authStrategy, authEnabled );
 
         realm = new FileUserRealm( userRepository, roleRepository );
-        // TODO: Maybe MemoryConstrainedCacheManager is good enough if we do not need timeToLiveSeconds? It would be one less dependency.
-        //       Or we could try to reuse Hazelcast which is already a dependency, but we would need to write some glue code.
+        // TODO: Maybe MemoryConstrainedCacheManager is good enough if we do not need timeToLiveSeconds?
+        // It would be one less dependency.
+        // Or we could try to reuse Hazelcast which is already a dependency, but we would need to write some
+        // glue code or use the HazelcastCacheManager from the Shiro Support repository.
         cacheManager = new EhCacheManager();
         securityManager = new DefaultSecurityManager( realm );
     }
 
-    public ShiroAuthManager( UserRepository userRepository, RoleRepository roleRepository, PasswordPolicy passwordPolicy,
-            AuthenticationStrategy authStrategy )
+    public ShiroAuthManager( UserRepository userRepository, RoleRepository roleRepository,
+            PasswordPolicy passwordPolicy, AuthenticationStrategy authStrategy )
     {
         this( userRepository, roleRepository, passwordPolicy, authStrategy, true );
     }
 
-    public ShiroAuthManager( UserRepository userRepository, RoleRepository roleRepository, PasswordPolicy passwordPolicy,
-            Clock clock, boolean authEnabled )
+    public ShiroAuthManager( UserRepository userRepository, RoleRepository roleRepository,
+            PasswordPolicy passwordPolicy, Clock clock, boolean authEnabled )
     {
-        this( userRepository, roleRepository, passwordPolicy, new RateLimitedAuthenticationStrategy( clock, 3 ), authEnabled );
+        this( userRepository, roleRepository, passwordPolicy, new RateLimitedAuthenticationStrategy( clock, 3 ),
+                authEnabled );
     }
 
     @Override
@@ -117,12 +120,11 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
         return realm.newRole( roleName, users );
     }
 
-
     public AuthSubject login( String username, String password )
     {
         assertAuthEnabled();
 
-        Subject subject = new Subject.Builder(securityManager).buildSubject();
+        Subject subject = new Subject.Builder( securityManager ).buildSubject();
 
         UsernamePasswordToken token = new UsernamePasswordToken( username, password );
         AuthenticationResult result = AuthenticationResult.SUCCESS;
@@ -147,7 +149,7 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
             }
             authStrategy.updateWithAuthenticationResult( result, username );
         }
-        return new ShiroAuthSubject(this, subject, result);
+        return new ShiroAuthSubject( this, subject, result );
     }
 
     @Override

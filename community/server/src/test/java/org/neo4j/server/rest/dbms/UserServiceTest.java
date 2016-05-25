@@ -82,7 +82,6 @@ public class UserServiceTest
         userRepository.create( NEO4J_USER );
     }
 
-
     @After
     public void tearDown() throws IllegalCredentialsException
     {

@@ -36,6 +36,7 @@ public interface RoleRepository extends Lifecycle
 
     /**
      * Create a role, given that the roles token is unique.
+     *
      * @param role the new role object
      * @throws IllegalArgumentException if the role name is not valid or the role name already exists
      */
@@ -43,6 +44,7 @@ public interface RoleRepository extends Lifecycle
 
     /**
      * Update a role, given that the role token is unique.
+     *
      * @param existingRole the existing role object, which must match the current state in this repository
      * @param updatedRole the updated role object
      * @throws ConcurrentModificationException if the existingRole does not match the current state in the repository
@@ -51,6 +53,7 @@ public interface RoleRepository extends Lifecycle
 
     /**
      * Deletes a role.
+     *
      * @param role the role to delete
      * @return true if the role was found and deleted
      */

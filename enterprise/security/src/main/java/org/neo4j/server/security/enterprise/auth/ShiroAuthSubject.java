@@ -61,7 +61,10 @@ public class ShiroAuthSubject implements AuthSubject
     }
 
     @Override
-    public AuthenticationResult getAuthenticationResult() { return authenticationResult; }
+    public AuthenticationResult getAuthenticationResult()
+    {
+        return authenticationResult;
+    }
 
     @Override
     public void setPassword( String password ) throws IOException, IllegalCredentialsException

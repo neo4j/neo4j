@@ -37,7 +37,7 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
 
     /** Quick lookup of roles by name */
     protected final Map<String,RoleRecord> rolesByName = new ConcurrentHashMap<>();
-    private final Map<String, SortedSet<String>> rolesByUsername = new ConcurrentHashMap<>();
+    private final Map<String,SortedSet<String>> rolesByUsername = new ConcurrentHashMap<>();
 
     /** Master list of roles */
     protected volatile List<RoleRecord> roles = new ArrayList<>();
@@ -62,7 +62,7 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
             throw new IllegalArgumentException( "'" + role.name() + "' is not a valid role name." );
         }
 
-        synchronized (this)
+        synchronized ( this )
         {
             // Check for existing role
             for ( RoleRecord other : roles )
@@ -84,7 +84,8 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     }
 
     @Override
-    public void update( RoleRecord existingRole, RoleRecord updatedRole ) throws ConcurrentModificationException, IOException
+    public void update( RoleRecord existingRole, RoleRecord updatedRole )
+            throws ConcurrentModificationException, IOException
     {
         // Assert input is ok
         if ( !existingRole.name().equals( updatedRole.name() ) )
@@ -92,7 +93,7 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
             throw new IllegalArgumentException( "updated role has a different name" );
         }
 
-        synchronized (this)
+        synchronized ( this )
         {
             // Copy-on-write for the roles list
             List<RoleRecord> newRoles = new ArrayList<>();
@@ -103,7 +104,8 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
                 {
                     foundRole = true;
                     newRoles.add( updatedRole );
-                } else
+                }
+                else
                 {
                     newRoles.add( other );
                 }
@@ -129,7 +131,7 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     public boolean delete( RoleRecord role ) throws IOException
     {
         boolean foundRole = false;
-        synchronized (this)
+        synchronized ( this )
         {
             // Copy-on-write for the roles list
             List<RoleRecord> newRoles = new ArrayList<>();
@@ -138,7 +140,8 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
                 if ( other.name().equals( role.name() ) )
                 {
                     foundRole = true;
-                } else
+                }
+                else
                 {
                     newRoles.add( other );
                 }
@@ -160,9 +163,10 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
 
     /**
      * Override this in the implementing class to persist roles
+     *
      * @throws IOException
      */
-    abstract protected void saveRoles() throws IOException;
+    protected abstract void saveRoles() throws IOException;
 
     @Override
     public int numberOfRoles()

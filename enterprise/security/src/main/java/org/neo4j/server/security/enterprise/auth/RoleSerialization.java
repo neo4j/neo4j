@@ -45,12 +45,12 @@ public class RoleSerialization
     private static final String roleSeparator = ":";
     private static final String userSeparator = ",";
 
-    public byte[] serialize(Collection<RoleRecord> roles)
+    public byte[] serialize( Collection<RoleRecord> roles )
     {
         StringBuilder sb = new StringBuilder();
         for ( RoleRecord role : roles )
         {
-            sb.append( serialize(role) ).append( "\n" );
+            sb.append( serialize( role ) ).append( "\n" );
         }
         return UTF8.encode( sb.toString() );
     }
@@ -61,7 +61,7 @@ public class RoleSerialization
         int lineNumber = 1;
         for ( String line : UTF8.decode( bytes ).split( "\n" ) )
         {
-            if (line.trim().length() > 0)
+            if ( line.trim().length() > 0 )
             {
                 out.add( deserializeRole( line, lineNumber ) );
             }
@@ -125,7 +125,7 @@ public class RoleSerialization
         StringBuilder sb = new StringBuilder();
         for ( int i = 0; i < segments.length; i++ )
         {
-            if(i > 0) { sb.append( separator ); }
+            if ( i > 0 ) { sb.append( separator ); }
             sb.append( segments[i] == null ? "" : segments[i] );
         }
         return sb.toString();

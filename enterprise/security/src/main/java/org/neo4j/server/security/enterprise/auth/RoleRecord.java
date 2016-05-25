@@ -49,7 +49,7 @@ public class RoleRecord
         this.name = name;
         this.users = new TreeSet<String>();
 
-        for( String user : users )
+        for ( String user : users )
         {
             this.users.add( user );
         }
@@ -60,10 +60,16 @@ public class RoleRecord
         return name;
     }
 
-    public SortedSet<String> users() { return users; }
+    public SortedSet<String> users()
+    {
+        return users;
+    }
 
     /** Use this role as a base for a new role object */
-    public Builder augment() { return new Builder(this); }
+    public Builder augment()
+    {
+        return new Builder( this );
+    }
 
     @Override
     public boolean equals( Object o )
@@ -95,7 +101,7 @@ public class RoleRecord
     public int hashCode()
     {
         int result = name != null ? name.hashCode() : 0;
-        result = 31 * result + ( users != null ? users.hashCode() : 0);
+        result = 31 * result + (users != null ? users.hashCode() : 0);
         return result;
     }
 
@@ -103,9 +109,9 @@ public class RoleRecord
     public String toString()
     {
         return "Role{" +
-                "name='" + name + '\'' +
-                ", users='" + users + '\'' +
-                '}';
+               "name='" + name + '\'' +
+               ", users='" + users + '\'' +
+               '}';
     }
 
     public static class Builder
@@ -113,7 +119,9 @@ public class RoleRecord
         private String name;
         private SortedSet<String> users = new TreeSet<>();
 
-        public Builder() { }
+        public Builder()
+        {
+        }
 
         public Builder( RoleRecord base )
         {
@@ -121,10 +129,29 @@ public class RoleRecord
             users = base.users;
         }
 
-        public Builder withName( String name ) { this.name = name; return this; }
-        public Builder withUsers( SortedSet<String> users ) { this.users = users; return this; }
-        public Builder withUser( String user ) { this.users.add( user ); return this; }
-        public Builder withoutUser( String user ) { this.users.remove( user ); return this; }
+        public Builder withName( String name )
+        {
+            this.name = name;
+            return this;
+        }
+
+        public Builder withUsers( SortedSet<String> users )
+        {
+            this.users = users;
+            return this;
+        }
+
+        public Builder withUser( String user )
+        {
+            this.users.add( user );
+            return this;
+        }
+
+        public Builder withoutUser( String user )
+        {
+            this.users.remove( user );
+            return this;
+        }
 
         public RoleRecord build()
         {

@@ -88,7 +88,7 @@ public class FileUserRealm extends AuthorizingRealm
         }
     };
 
-    private final Map<String, SimpleRole> roles;
+    private final Map<String,SimpleRole> roles;
 
     public FileUserRealm( UserRepository userRepository, RoleRepository roleRepository )
     {
@@ -157,7 +157,7 @@ public class FileUserRealm extends AuthorizingRealm
     RoleRecord newRole( String roleName, String... users ) throws IOException
     {
         assertValidRoleName( roleName );
-        for (String username : users)
+        for ( String username : users )
         {
             assertValidUsername( username );
         }
@@ -207,6 +207,7 @@ public class FileUserRealm extends AuthorizingRealm
     void removeUserFromRole( String username, String rolename ) throws IOException
     {
         // TODO
+        throw new UnsupportedOperationException( "Removing user from role is not implemented." );
     }
 
     boolean deleteUser( String username ) throws IOException
