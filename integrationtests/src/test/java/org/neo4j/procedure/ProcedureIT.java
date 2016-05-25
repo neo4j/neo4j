@@ -656,6 +656,40 @@ public class ProcedureIT
         assertFalse( res.hasNext() );
     }
 
+    @Test
+    public void shouldGiveNiceErrorMessageWhenAggregationFunctionInProcedureCall()
+    {
+        try (Transaction ignore = db.beginTx())
+        {
+            db.createNode( Label.label( "Person" ) );
+            db.createNode( Label.label( "Person" ) );
+
+            // Expect
+            exception.expect( QueryExecutionException.class );
+
+            // When
+            db.execute(
+                    "MATCH (n:Person) CALL org.neo4j.procedure.nodeListArgument(collect(n)) YIELD someVal RETURN someVal" );
+        }
+    }
+
+    @Test
+    public void shouldWorkWhenUsingWithToProjectList()
+    {
+        try (Transaction ignore = db.beginTx())
+        {
+            db.createNode( Label.label( "Person" ) );
+            db.createNode( Label.label( "Person" ) );
+
+            // When
+            Result res = db.execute(
+                    "MATCH (n:Person) WITH collect(n) as persons CALL org.neo4j.procedure.nodeListArgument(persons) YIELD someVal RETURN someVal" );
+
+            // THEN
+            assertThat(res.next().get( "someVal" ), equalTo(2L));
+        }
+    }
+
     @Before
     public void setUp() throws IOException
     {
@@ -768,6 +802,12 @@ public class ProcedureIT
         public Stream<Output> simpleArgument( @Name( "name" ) long someValue )
         {
             return Stream.of( new Output( someValue ) );
+        }
+
+        @Procedure
+        public Stream<Output> nodeListArgument( @Name( "nodes" ) List<Node> nodes )
+        {
+            return Stream.of( new Output( nodes.size() ) );
         }
 
         @Procedure
