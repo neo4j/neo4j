@@ -175,6 +175,11 @@ object HttpServerTestSupport {
     cookieString.exists(cookie => cookie.split(";").contains(cookie))
   }
 
+  def hasUserAgent(userAgent: String)(exchange: HttpExchange) = {
+    val userAgentString = Option(exchange.getRequestHeaders.getFirst("User-Agent"))
+    userAgentString.contains(userAgent)
+  }
+
   def setCookie(cookie: String)(exchange: HttpExchange) = {
     exchange.getResponseHeaders.set("Set-Cookie", cookie)
     exchange

@@ -29,11 +29,13 @@ import org.neo4j.csv.reader._
 import org.neo4j.cypher.internal.compiler.v3_0.TaskCloser
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.ExternalCSVResource
 import org.neo4j.cypher.internal.frontend.v3_0.LoadExternalResourceException
+import sun.net.www.protocol.http.HttpURLConnection
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks._
 
 object CSVResources {
+  val NEO_USER_AGENT_PREFIX = "NeoLoadCSV_"
   val DEFAULT_FIELD_TERMINATOR: Char = ','
   val DEFAULT_BUFFER_SIZE: Int =  2 * 1024 * 1024
   val DEFAULT_QUOTE_CHAR: Char = '"'
@@ -56,9 +58,9 @@ class CSVResources(cleaner: TaskCloser) extends ExternalCSVResource {
 
     val reader = if (url.getProtocol == "file") {
       Readables.files(StandardCharsets.UTF_8, Paths.get(url.toURI).toFile)
-    }
-    else
+    } else {
       Readables.wrap(inputStream, url.toString, StandardCharsets.UTF_8)
+    }
     val delimiter: Char = fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR)
     val seeker = CharSeekers.charSeeker(reader, CSVResources.defaultConfig, true)
     val extractor = new Extractors(delimiter).string()
@@ -104,6 +106,7 @@ class CSVResources(cleaner: TaskCloser) extends ExternalCSVResource {
       if (url.getProtocol.startsWith("http"))
         TheCookieManager.ensureEnabled()
       val con = url.openConnection()
+      con.setRequestProperty("User-Agent", s"${CSVResources.NEO_USER_AGENT_PREFIX}${HttpURLConnection.userAgent}")
       con.setConnectTimeout(connectionTimeout)
       con.setReadTimeout(readTimeout)
       val stream = con.getInputStream
