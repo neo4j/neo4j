@@ -470,6 +470,28 @@ public class ForsetiClient implements Locks.Client
         }
     }
 
+    @Override
+    public void releaseAll()
+    {
+        // increment number of active clients if we can't do so we are closed so exiting
+        stateHolder.incrementActiveClients( this );
+
+        try
+        {
+            releaseAllClientLocks();
+        }
+        finally
+        {
+            stateHolder.decrementActiveClients();
+        }
+    }
+
+    @Override
+    public void prepare()
+    {
+        // Do nothing
+    }
+
     private void releaseAllClientLocks()
     {
         // Force the release of all locks held.

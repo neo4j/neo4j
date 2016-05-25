@@ -203,6 +203,34 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
+    public void releaseAll()
+    {
+        sharedLocks.clear();
+        exclusiveLocks.clear();
+        client.releaseAll();
+        if ( initialized )
+        {
+            try ( Response<Void> ignored = master.endLockSession( newRequestContextFor( client ), true ) )
+            {
+                // Lock session is closed on master at this point
+            }
+            catch ( ComException e )
+            {
+                throw new DistributedLockFailureException(
+                        "Failed to end the lock session on the master (which implies releasing all held locks)",
+                        master, e );
+            }
+            initialized = false;
+        }
+    }
+
+    @Override
+    public void prepare()
+    {
+        client.prepare();
+    }
+
+    @Override
     public void stop()
     {
         if ( txTerminationAwareLocks )
@@ -229,8 +257,6 @@ class SlaveLocksClient implements Locks.Client
             initialized = false;
         }
     }
-
-    @Override
     public int getLockSessionId()
     {
         assertNotStopped();
