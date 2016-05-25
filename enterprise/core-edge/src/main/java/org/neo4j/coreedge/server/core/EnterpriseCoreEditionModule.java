@@ -517,8 +517,7 @@ public class EnterpriseCoreEditionModule
                 platformModule.dataSourceManager, replicatedIdGeneratorFactory, raft,
                 coreState, raftServer,
                 catchupServer, raftTimeoutService, membershipWaiter,
-                joinCatchupTimeout
-        ) );
+                joinCatchupTimeout, logProvider ) );
     }
 
     private RaftLog createRaftLog(
