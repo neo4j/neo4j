@@ -48,12 +48,12 @@ object CRS {
   def fromName(name: String) = name match {
     case Cartesian.name => Cartesian
     case WGS84.name => WGS84
-    case _ => throw new InvalidArgumentException("Invalid or unsupported CRS name: " + name)
+    case _ => throw new InvalidArgumentException(s"'$name' is not a supported coordinate reference system for points, supported CRS are: '${WGS84.name}', '${Cartesian.name}'")
   }
 
   def fromSRID(id: Int) = id match {
     case Cartesian.`code` => Cartesian
     case WGS84.`code` => WGS84
-    case _ => throw new InvalidArgumentException("Invalid or unsupported SRID: " + id)
+    case _ => throw new InvalidArgumentException(s"SRID '$id' does not match any supported coordinate reference system for points, supported CRS are: '${WGS84.name}', '${Cartesian.name}'")
   }
 }

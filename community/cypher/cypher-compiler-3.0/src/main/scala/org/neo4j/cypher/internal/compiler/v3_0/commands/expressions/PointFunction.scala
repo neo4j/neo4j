@@ -38,7 +38,6 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
         val crs = CRS.fromName(crsName)
         crs match {
           case CRS.WGS84 => GeographicPoint(x, y, crs)
-          case null => throw new InvalidArgumentException(s"'$crsName' is not a supported coordinate reference system for points, supported CRS are: '${CRS.WGS84.name}', '${CRS.Cartesian.name}'")
           case _ => CartesianPoint(x, y, crs)
         }
       } else if (map.contains("latitude") && map.contains("longitude")) {

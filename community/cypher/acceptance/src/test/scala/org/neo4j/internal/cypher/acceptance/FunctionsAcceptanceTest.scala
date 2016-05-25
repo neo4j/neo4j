@@ -469,13 +469,13 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
   }
 
   test("should fail properly if missing geographic longitude") {
-    a [InvalidArgumentException] shouldBe thrownBy(
+    an [InvalidArgumentException] shouldBe thrownBy(
       executeWithAllPlanners("RETURN point({params}) as point", "params" -> Map("latitude" -> 1.0, "crs" -> "WGS-84"))
     )
   }
 
   test("should fail properly if missing geographic latitude") {
-    a [InvalidArgumentException] shouldBe thrownBy(
+    an [InvalidArgumentException] shouldBe thrownBy(
       executeWithAllPlanners("RETURN point({params}) as point", "params" -> Map("longitude" -> 1.0, "crs" -> "WGS-84"))
     )
   }
