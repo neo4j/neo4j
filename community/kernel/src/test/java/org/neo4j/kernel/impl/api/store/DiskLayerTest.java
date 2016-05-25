@@ -45,7 +45,6 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
@@ -90,7 +89,7 @@ public class DiskLayerTest
                     @Override
                     public StoreStatement newInstance()
                     {
-                        return new StoreStatement( neoStores, LockService.NO_LOCK_SERVICE );
+                        return new StoreStatement( neoStores );
                     }
                 } );
         this.state = new KernelStatement( null, new IndexReaderFactory.Caching( indexingService ),
