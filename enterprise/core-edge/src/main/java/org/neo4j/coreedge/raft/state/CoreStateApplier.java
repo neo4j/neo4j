@@ -85,12 +85,9 @@ public class CoreStateApplier
      *
      * @param cancelTasks Whether or not to flag for cancelling.
      *
-     * @return Returns true if the executor managed to synchronize with the executor, meaning
-     *         it successfully finished pending tasks. Otherwise false.
-     *
      * @throws InterruptedException
      */
-    public boolean sync( boolean cancelTasks ) throws InterruptedException
+    public void sync( boolean cancelTasks ) throws InterruptedException
     {
         if ( applier != null )
         {
@@ -108,6 +105,5 @@ public class CoreStateApplier
         }
 
         spawnExecutor();
-        return true;
     }
 }
