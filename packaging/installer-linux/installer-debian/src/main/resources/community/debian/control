@@ -10,7 +10,7 @@ Package: neo4j
 Architecture: all
 Pre-Depends: dpkg (>= 1.15.7.2)
 Depends: ${misc:Depends}, bash, daemon, adduser, psmisc, lsb-base, java8-runtime | j2re1.8
-Conflicts: 
+Conflicts: java9-runtime-headless, java9-runtime
 Replaces: neo4j-enterprise, neo4j-advanced
 Description: graph database server
  Neo4j server is a database that stores data as graphs rather than tables.
