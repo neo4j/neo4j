@@ -257,7 +257,9 @@ public class Cluster
 
         params.put( new GraphDatabaseSettings.BoltConnector("bolt").type.name(), "BOLT" );
         params.put( new GraphDatabaseSettings.BoltConnector("bolt").enabled.name(), "true" );
-        params.put( new GraphDatabaseSettings.BoltConnector("bolt").address.name(), "127.0.0.1:" + boltPort );
+        params.put( new GraphDatabaseSettings.BoltConnector("bolt").address.name(), "0.0.0.0:" + boltPort );
+
+        params.put( CoreEdgeClusterSettings.bolt_advertised_address.name(), "127.0.0.1:" + boltPort );
 
         params.put( CoreEdgeClusterSettings.expected_core_cluster_size.name(), String.valueOf( clusterSize ) );
         params.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
@@ -302,7 +304,9 @@ public class Cluster
         }
         params.put( new GraphDatabaseSettings.BoltConnector("bolt").type.name(), "BOLT" );
         params.put( new GraphDatabaseSettings.BoltConnector("bolt").enabled.name(), "true" );
-        params.put( new GraphDatabaseSettings.BoltConnector("bolt").address.name(), "127.0.0.1:" + (9000 + serverId ));
+        params.put( new GraphDatabaseSettings.BoltConnector("bolt").address.name(), "0.0.0.0:" + (9000 + serverId ));
+
+        params.put( CoreEdgeClusterSettings.bolt_advertised_address.name(), "127.0.0.1:" + (9000 + serverId) );
 
         return new EdgeGraphDatabase( storeDir, params, GraphDatabaseDependencies.newDependencies(),
                 discoveryServiceFactory );

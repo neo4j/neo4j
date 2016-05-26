@@ -29,6 +29,7 @@ import org.neo4j.coreedge.server.BoltAddress;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
@@ -36,6 +37,8 @@ import org.neo4j.logging.LogProvider;
 
 import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toSet;
+
+import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class DiscoverMembersProcedure extends CallableProcedure.BasicProcedure
 {
@@ -45,8 +48,9 @@ public class DiscoverMembersProcedure extends CallableProcedure.BasicProcedure
 
     public DiscoverMembersProcedure( ReadOnlyTopologyService discoveryService, LogProvider logProvider )
     {
-        super( new ProcedureSignature(
-                new ProcedureSignature.ProcedureName( new String[]{"dbms", "cluster"}, NAME ) ) );
+        super( procedureSignature( new ProcedureSignature.ProcedureName( new String[]{"dbms", "cluster"}, NAME ) )
+                .out( "address", Neo4jTypes.NTString ).build());
+
         this.discoveryService = discoveryService;
         this.log = logProvider.getLog( getClass() );
     }
