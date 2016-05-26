@@ -59,11 +59,11 @@ enum SystemDiagnostics implements DiagnosticsProvider
         @Override
         void dump( Logger logger )
         {
-            logOsBeanValue( logger, "Total Physical memory: ", OsBeanUtil.getTotalPhysicalMemory() );
-            logOsBeanValue( logger, "Free Physical memory: ", OsBeanUtil.getFreePhysicalMemory() );
-            logOsBeanValue( logger, "Committed virtual memory: ", OsBeanUtil.getCommittedVirtualMemory() );
-            logOsBeanValue( logger, "Total swap space: ", OsBeanUtil.getTotalSwapSpace() );
-            logOsBeanValue( logger, "Free swap space: ", OsBeanUtil.getFreeSwapSpace() );
+            logBytes( logger, "Total Physical memory: ", OsBeanUtil.getTotalPhysicalMemory() );
+            logBytes( logger, "Free Physical memory: ", OsBeanUtil.getFreePhysicalMemory() );
+            logBytes( logger, "Committed virtual memory: ", OsBeanUtil.getCommittedVirtualMemory() );
+            logBytes( logger, "Total swap space: ", OsBeanUtil.getTotalSwapSpace() );
+            logBytes( logger, "Free swap space: ", OsBeanUtil.getFreeSwapSpace() );
         }
     },
     JAVA_MEMORY( "JVM memory information:" )
@@ -97,8 +97,8 @@ enum SystemDiagnostics implements DiagnosticsProvider
             RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
             logger.log( String.format( "Operating System: %s; version: %s; arch: %s; cpus: %s", os.getName(),
                     os.getVersion(), os.getArch(), os.getAvailableProcessors() ) );
-            logOsBeanValue( logger, "Max number of file descriptors: ", OsBeanUtil.getMaxFileDescriptors() );
-            logOsBeanValue( logger, "Number of open file descriptors: ", OsBeanUtil.getOpenFileDescriptors() );
+            logLong( logger, "Max number of file descriptors: ", OsBeanUtil.getMaxFileDescriptors() );
+            logLong( logger, "Number of open file descriptors: ", OsBeanUtil.getOpenFileDescriptors() );
             logger.log( "Process id: " + runtime.getName() );
             logger.log( "Byte order: " + ByteOrder.nativeOrder() );
             logger.log( "Local timezone: " + getLocalTimeZone() );
@@ -339,11 +339,19 @@ enum SystemDiagnostics implements DiagnosticsProvider
         }
     }
 
-    private static void logOsBeanValue( Logger logger, String message, long value )
+    private static void logBytes( Logger logger, String message, long value )
     {
         if ( value != OsBeanUtil.VALUE_UNAVAILABLE )
         {
             logger.log( message + bytes( value ) );
+        }
+    }
+
+    private static void logLong( Logger logger, String message, long value )
+    {
+        if ( value != OsBeanUtil.VALUE_UNAVAILABLE )
+        {
+            logger.log( message + value );
         }
     }
 }
