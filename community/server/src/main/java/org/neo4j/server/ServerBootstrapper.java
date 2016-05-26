@@ -159,7 +159,8 @@ public abstract class ServerBootstrapper implements Bootstrapper
     private Config createConfig( Log log, File homeDir, Optional<File> file, Pair<String, String>[] configOverrides )
             throws IOException
     {
-        return new ConfigLoader( this::settingsClasses ).loadConfig( homeDir, file, log, configOverrides );
+        return new ConfigLoader( this::settingsClasses ).loadConfig( Optional.of( homeDir ), file, log,
+                configOverrides );
     }
 
     private void addShutdownHook()

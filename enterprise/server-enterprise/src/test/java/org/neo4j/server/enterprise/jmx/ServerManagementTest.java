@@ -23,6 +23,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import java.util.Optional;
+
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -61,7 +63,7 @@ public class ServerManagementTest
         String dataDirectory2 = baseDir.directory( "data2" ).getAbsolutePath();
 
         Config config = new ConfigLoader( CommunityBootstrapper.settingsClasses ).loadConfig(
-                baseDir.directory(),
+                Optional.of( baseDir.directory() ),
                 EnterpriseServerBuilder
                         .server()
                         .withDefaultDatabaseTuning()

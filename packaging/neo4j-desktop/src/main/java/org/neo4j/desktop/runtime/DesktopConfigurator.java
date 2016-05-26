@@ -54,7 +54,7 @@ public class DesktopConfigurator
     public void refresh()
     {
         config = new ConfigLoader( CommunityBootstrapper.settingsClasses).loadConfig(
-                dbDir.getAbsoluteFile(),
+                Optional.of( dbDir.getAbsoluteFile() ),
                 Optional.of( getConfigurationsFile() ),
                 FormattedLog.toOutputStream( System.out ),
                 pair( DatabaseManagementSystemSettings.database_path.name(), dbDir.getAbsolutePath() ) );
