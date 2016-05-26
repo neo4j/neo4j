@@ -56,8 +56,10 @@ import static org.junit.Assert.fail;
 @RunWith(Parameterized.class)
 public class FileRoleRepositoryTest
 {
+    public static final String ROLE_FILE_NAME = "roles.db";
+
     private final FileSystem fs;
-    private Path authFile;
+    private Path roleFile;
 
     @Parameters(name = "{1} filesystem")
     public static Collection<Object[]> data()
@@ -75,14 +77,14 @@ public class FileRoleRepositoryTest
     public FileRoleRepositoryTest( Configuration fsConfig, String fsType )
     {
         fs = Jimfs.newFileSystem( fsConfig );
-        authFile = fs.getPath( "dbms", "auth.db" );
+        roleFile = fs.getPath( "dbms", ROLE_FILE_NAME );
     }
 
     @Test
     public void shouldStoreAndRetriveRolesByName() throws Exception
     {
         // Given
-        FileRoleRepository roleRepository = new FileRoleRepository( authFile, NullLogProvider.getInstance() );
+        FileRoleRepository roleRepository = new FileRoleRepository( roleFile, NullLogProvider.getInstance() );
         RoleRecord role = new RoleRecord( "admin", "petra", "olivia" );
         roleRepository.create( role );
 
@@ -97,11 +99,11 @@ public class FileRoleRepositoryTest
     public void shouldPersistRoles() throws Throwable
     {
         // Given
-        FileRoleRepository roleRepository = new FileRoleRepository( authFile, NullLogProvider.getInstance() );
+        FileRoleRepository roleRepository = new FileRoleRepository( roleFile, NullLogProvider.getInstance() );
         RoleRecord role = new RoleRecord( "admin", "craig", "karl" );
         roleRepository.create( role );
 
-        roleRepository = new FileRoleRepository( authFile, NullLogProvider.getInstance() );
+        roleRepository = new FileRoleRepository( roleFile, NullLogProvider.getInstance() );
         roleRepository.start();
 
         // When
@@ -115,7 +117,7 @@ public class FileRoleRepositoryTest
     public void shouldNotFindRoleAfterDelete() throws Throwable
     {
         // Given
-        FileRoleRepository roleRepository = new FileRoleRepository( authFile, NullLogProvider.getInstance() );
+        FileRoleRepository roleRepository = new FileRoleRepository( roleFile, NullLogProvider.getInstance() );
         RoleRecord role = new RoleRecord( "jake", "admin" );
         roleRepository.create( role );
 
@@ -130,7 +132,7 @@ public class FileRoleRepositoryTest
     public void shouldNotAllowComplexNames() throws Exception
     {
         // Given
-        FileRoleRepository roleRepository = new FileRoleRepository( authFile, NullLogProvider.getInstance() );
+        FileRoleRepository roleRepository = new FileRoleRepository( roleFile, NullLogProvider.getInstance() );
 
         // When
         assertTrue( roleRepository.isValidName( "neo4j" ) );
@@ -158,7 +160,7 @@ public class FileRoleRepositoryTest
                     @Override
                     public void move( Path source, Path target, CopyOption... options ) throws IOException
                     {
-                        if ( authFile.getFileName().toString().equals( target.getFileName().toString() ) )
+                        if ( roleFile.getFileName().toString().equals( target.getFileName().toString() ) )
                         {
                             throw exception;
                         }
@@ -168,7 +170,7 @@ public class FileRoleRepositoryTest
             }
         };
 
-        Path authFile = moveFailingFileSystem.getPath( "dbms", "auth.db" );
+        Path authFile = moveFailingFileSystem.getPath( "dbms", ROLE_FILE_NAME );
 
         FileRoleRepository roleRepository = new FileRoleRepository( authFile, NullLogProvider.getInstance() );
         roleRepository.start();
@@ -193,7 +195,7 @@ public class FileRoleRepositoryTest
     public void shouldThrowIfUpdateChangesName() throws Throwable
     {
         // Given
-        FileRoleRepository roleRepository = new FileRoleRepository( authFile, NullLogProvider.getInstance() );
+        FileRoleRepository roleRepository = new FileRoleRepository( roleFile, NullLogProvider.getInstance() );
         RoleRecord role = new RoleRecord( "admin", "steve", "bob" );
         roleRepository.create( role );
 
@@ -215,7 +217,7 @@ public class FileRoleRepositoryTest
     public void shouldThrowIfExistingRoleDoesNotMatch() throws Throwable
     {
         // Given
-        FileRoleRepository roleRepository = new FileRoleRepository( authFile, NullLogProvider.getInstance() );
+        FileRoleRepository roleRepository = new FileRoleRepository( roleFile, NullLogProvider.getInstance() );
         RoleRecord role = new RoleRecord( "admin", "jake" );
         roleRepository.create( role );
         RoleRecord modifiedRole = new RoleRecord( "admin", "jake", "john" );
@@ -233,27 +235,37 @@ public class FileRoleRepositoryTest
     }
 
     @Test
-    public void shouldIgnoreInvalidEntries() throws Throwable
+    public void shouldFailOnReadingInvalidEntries() throws Throwable
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        Files.createDirectories( authFile.getParent() );
-        Files.write( authFile, UTF8.encode(
-                "neo4j:admin:\n" +
+        Files.createDirectories( roleFile.getParent() );
+        // First line is correctly formatted, second line has an extra field
+        Files.write( roleFile, UTF8.encode(
+                "neo4j:admin\n" +
                 "admin:admin:\n" ) );
 
         // When
-        FileRoleRepository roleRepository = new FileRoleRepository( authFile, logProvider );
+        FileRoleRepository roles = new FileRoleRepository( roleFile, logProvider );
+
         thrown.expect( IllegalStateException.class );
         thrown.expectMessage( startsWith( "Failed to read role file: " ) );
-        roleRepository.start();
 
+        try
+        {
+            roles.start();
+        }
         // Then
-        assertThat( roleRepository.numberOfRoles(), equalTo( 1 ) );
-        logProvider.assertExactly(
-                AssertableLogProvider.inLog( FileRoleRepository.class ).error(
-                        "Ignoring role file \"%s\" (%s)", authFile.toAbsolutePath(), "wrong number of line fields [line 1]"
-                )
-        );
+        catch ( IllegalStateException e )
+        {
+            assertThat( roles.numberOfRoles(), equalTo( 0 ) );
+            logProvider.assertExactly(
+                    AssertableLogProvider.inLog( FileRoleRepository.class ).error(
+                            "Failed to read role file \"%s\" (%s)", roleFile.toAbsolutePath(),
+                            "wrong number of line fields [line 2]"
+                    )
+            );
+            throw e;
+        }
     }
 }
