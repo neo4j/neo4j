@@ -248,6 +248,25 @@ public class ShiroAuthManagerTest
     }
 
     @Test
+    public void defaultUserShouldHaveCorrectPermissions() throws Throwable
+    {
+        // Given
+        when( authStrategy.isAuthenticationPermitted( anyString() ) ).thenReturn( true );
+        manager.start();
+
+        // When
+        AuthSubject subject = manager.login( "neo4j", "neo4j");
+        manager.setUserPassword( "neo4j", "1234" );
+        subject.logout();
+        subject = manager.login( "neo4j", "1234");
+
+        // Then
+        assertTrue( subject.allowsReads() );
+        assertTrue( subject.allowsWrites() );
+        assertTrue( subject.allowsSchemaWrites() );
+    }
+
+    @Test
     public void userWithAdminRoleShouldHaveCorrectPermissions() throws Throwable
     {
         // Given
