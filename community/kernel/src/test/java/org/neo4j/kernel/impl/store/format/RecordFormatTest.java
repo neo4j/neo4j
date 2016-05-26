@@ -47,8 +47,8 @@ import static java.lang.System.currentTimeMillis;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -221,7 +221,7 @@ public abstract class RecordFormatTest
                 format.read( read, cursor, NORMAL, recordSize );
             }
             while ( cursor.shouldRetry() );
-            assertFalse( "Out-of-bounds when reading record " + written, cursor.checkAndClearBoundsFlag() );
+            assertWithinBounds( written, cursor, "reading" );
             cursor.checkAndClearCursorException();
 
             // THEN
@@ -253,7 +253,15 @@ public abstract class RecordFormatTest
             int offset = Math.toIntExact( record.getId() * recordSize );
             cursor.setOffset( offset );
             format.write( record, cursor, recordSize );
-            assertFalse( "Out-of-bounds when writing record " + record, cursor.checkAndClearBoundsFlag() );
+            assertWithinBounds( record, cursor, "writing" );
+        }
+    }
+
+    private <R extends AbstractBaseRecord> void assertWithinBounds( R record, PageCursor cursor, String operation )
+    {
+        if ( cursor.checkAndClearBoundsFlag() )
+        {
+            fail( "Out-of-bounds when " + operation + " record " + record );
         }
     }
 
