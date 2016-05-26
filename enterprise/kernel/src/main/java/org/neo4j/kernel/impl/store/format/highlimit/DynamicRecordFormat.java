@@ -79,6 +79,10 @@ class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRecord>
             record.initialize( inUse, isStartRecord, next, -1, length );
             readData( record, cursor );
         }
+        else
+        {
+            record.setInUse( inUse );
+        }
     }
 
     private String payloadLengthErrorMessage( DynamicRecord record, int recordSize, int length )

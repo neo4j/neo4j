@@ -58,7 +58,7 @@ public abstract class RecordFormatTest
     private static final int PAGE_SIZE = (int) kibiBytes( 1 );
 
     // Whoever is hit first
-    private static final long TEST_ITERATIONS = 20_000;
+    private static final long TEST_ITERATIONS = 40_000;
     private static final long TEST_TIME = 500;
     private static final long PRINT_RESULTS_THRESHOLD = SECONDS.toMillis( 1 );
     private static final int DATA_SIZE = 100;
