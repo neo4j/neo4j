@@ -45,7 +45,7 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
     // HeartbeatContext
     private Set<InstanceId> failed = new HashSet<InstanceId>();
 
-    private Map<InstanceId, Set<InstanceId>> nodeSuspicions = new HashMap<InstanceId, Set<InstanceId>>();
+    private Map<InstanceId, Set<InstanceId>> nodeSuspicions = new HashMap<>();
 
     private Iterable<HeartbeatListener> heartBeatListeners = Listeners.newListeners();
 
@@ -61,8 +61,8 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
     }
 
     private HeartbeatContextImpl( InstanceId me, CommonContextState commonState, LogProvider logging, Timeouts timeouts,
-                          Set<InstanceId> failed, Map<InstanceId, Set<InstanceId>> nodeSuspicions,
-                          Iterable<HeartbeatListener> heartBeatListeners, Executor executor)
+                                  Set<InstanceId> failed, Map<InstanceId, Set<InstanceId>> nodeSuspicions,
+                                  Iterable<HeartbeatListener> heartBeatListeners, Executor executor )
     {
         super( me, commonState, logging, timeouts );
         this.failed = failed;
@@ -243,20 +243,20 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
     }
 
     /**
-     * Get the suspicions as reported by a specific server.
+     * Get all of the servers which suspect a specific member.
      *
-     * @param server which might suspect someone.
-     * @return a list of those members which server suspects.
+     * @param instanceId for the member of interest.
+     * @return a set of servers which suspect the specified member.
      */
     @Override
-    public List<InstanceId> getSuspicionsOf( InstanceId server )
+    public List<InstanceId> getSuspicionsOf( InstanceId instanceId )
     {
         List<InstanceId> suspicions = new ArrayList<InstanceId>();
         for ( InstanceId member : commonState.configuration().getMemberIds() )
         {
             Set<InstanceId> memberSuspicions = nodeSuspicions.get( member );
             if ( memberSuspicions != null && !failed.contains( member )
-                    && memberSuspicions.contains( server ) )
+                    && memberSuspicions.contains( instanceId ) )
             {
                 suspicions.add( member );
             }
@@ -265,17 +265,18 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
         return suspicions;
     }
 
+
     /**
-     * Get all of the servers which suspect a specific member.
+     * Get the suspicions as reported by a specific server.
      *
-     * @param uri for the member of interest.
-     * @return a set of servers which suspect the specified member.
+     * @param instanceId which might suspect someone.
+     * @return a list of those members which server suspects.
      */
     @Override
-    public Set<InstanceId> getSuspicionsFor( InstanceId uri )
+    public Set<InstanceId> getSuspicionsFor( InstanceId instanceId )
     {
-        Set<org.neo4j.cluster.InstanceId> suspicions = suspicionsFor( uri );
-        return new HashSet<org.neo4j.cluster.InstanceId>( suspicions );
+        Set<org.neo4j.cluster.InstanceId> suspicions = suspicionsFor( instanceId );
+        return new HashSet<>( suspicions );
     }
 
     private Set<InstanceId> suspicionsFor( InstanceId uri )
@@ -283,7 +284,7 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
         Set<InstanceId> serverSuspicions = nodeSuspicions.get( uri );
         if ( serverSuspicions == null )
         {
-            serverSuspicions = new HashSet<InstanceId>();
+            serverSuspicions = new HashSet<>();
             nodeSuspicions.put( uri, serverSuspicions );
         }
         return serverSuspicions;
@@ -307,11 +308,12 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
         return learnerContext.getLastLearnedInstanceId();
     }
 
-    public HeartbeatContextImpl snapshot( CommonContextState commonStateSnapshot, LogProvider logging, Timeouts timeouts,
+    public HeartbeatContextImpl snapshot( CommonContextState commonStateSnapshot, LogProvider logging, Timeouts
+            timeouts,
                                           Executor executor )
     {
-        return new HeartbeatContextImpl( me, commonStateSnapshot, logging, timeouts, new HashSet<>(failed),
-                new HashMap<>(nodeSuspicions), new ArrayList<>( asList(heartBeatListeners)), executor );
+        return new HeartbeatContextImpl( me, commonStateSnapshot, logging, timeouts, new HashSet<>( failed ),
+                new HashMap<>( nodeSuspicions ), new ArrayList<>( asList( heartBeatListeners ) ), executor );
     }
 
     @Override
