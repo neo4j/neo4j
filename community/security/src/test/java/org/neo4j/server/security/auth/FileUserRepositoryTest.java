@@ -233,28 +233,38 @@ public class FileUserRepositoryTest
     }
 
     @Test
-    public void shouldIgnoreInvalidEntries() throws Throwable
+    public void shouldFailOnReadingInvalidEntries() throws Throwable
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Files.createDirectories( authFile.getParent() );
+        // First line is correctly formatted, second line has an extra field
         Files.write( authFile, UTF8.encode(
-                "neo4j:admin:fc4c600b43ffe4d5857b4439c35df88f:SHA-256," +
-                        "A42E541F276CF17036DB7818F8B09B1C229AAD52A17F69F4029617F3A554640F,FB7E8AE08A6A7C741F678AD22217808F:\n" +
-                "admin:admin:SHA-256,A42E541F276CF17036DB7818F8B09B1C229AAD52A17F69F4029617F3A554640F,FB7E8AE08A6A7C741F678AD22217808F:\n" ) );
+                "admin:SHA-256,A42E541F276CF17036DB7818F8B09B1C229AAD52A17F69F4029617F3A554640F,FB7E8AE08A6A7C741F678AD22217808F:\n" +
+                "neo4j:fc4c600b43ffe4d5857b4439c35df88f:SHA-256," +
+                        "A42E541F276CF17036DB7818F8B09B1C229AAD52A17F69F4029617F3A554640F,FB7E8AE08A6A7C741F678AD22217808F:\n" ) );
 
         // When
         FileUserRepository users = new FileUserRepository( authFile, logProvider );
+
         thrown.expect( IllegalStateException.class );
         thrown.expectMessage( startsWith( "Failed to read authentication file: " ) );
-        users.start();
 
+        try
+        {
+            users.start();
+        }
         // Then
-        assertThat( users.numberOfUsers(), equalTo( 1 ) );
-        logProvider.assertExactly(
-                AssertableLogProvider.inLog( FileUserRepository.class ).error(
-                        "Ignoring authorization file \"%s\" (%s)", authFile.toAbsolutePath(), "wrong number of line fields [line 1]"
-                )
-        );
+        catch ( IllegalStateException e )
+        {
+            assertThat( users.numberOfUsers(), equalTo( 0 ) );
+            logProvider.assertExactly(
+                    AssertableLogProvider.inLog( FileUserRepository.class ).error(
+                            "Failed to read authentication file \"%s\" (%s)", authFile.toAbsolutePath(),
+                            "wrong number of line fields [line 2]"
+                    )
+            );
+            throw e;
+        }
     }
 }

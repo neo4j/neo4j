@@ -214,7 +214,7 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
             loadedUsers = serialization.deserializeUsers( fileBytes );
         } catch ( UserSerialization.FormatException e )
         {
-            log.error( "Ignoring authorization file \"%s\" (%s)", authFile.toAbsolutePath(), e.getMessage() );
+            log.error( "Failed to read authentication file \"%s\" (%s)", authFile.toAbsolutePath(), e.getMessage() );
             throw new IllegalStateException( "Failed to read authentication file: " + authFile );
         }
 
