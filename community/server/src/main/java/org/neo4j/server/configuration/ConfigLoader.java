@@ -79,10 +79,9 @@ public class ConfigLoader
         config.ifPresent( ( c ) -> settings.putAll( loadFromFile( log, c ) ) );
         settings.putAll( toMap( configOverrides ) );
         overrideEmbeddedDefaults( settings );
-        homeDir.map( ( h ) ->
-                settings.put( GraphDatabaseSettings.neo4j_home.name(), h.getAbsolutePath() )
-        ).orElse(
-                settings.put( GraphDatabaseSettings.neo4j_home.name(), System.getProperty( "user.dir" ) ) );
+        settings.put( GraphDatabaseSettings.neo4j_home.name(),
+                homeDir.map( File::getAbsolutePath ).orElse( System.getProperty( "user.dir" ) ) );
+
         return settings;
     }
 
