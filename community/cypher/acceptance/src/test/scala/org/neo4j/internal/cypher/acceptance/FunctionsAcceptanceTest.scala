@@ -435,32 +435,79 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
   test("point function should work with literal map and cartesian coordinates") {
     val result = executeWithAllPlanners("RETURN point({x: 2.3, y: 4.5, crs: 'cartesian'}) as point")
     result should useProjectionWith("Point")
-    result.toList should equal(List(Map("point" -> CartesianPoint(2.3, 4.5))))
+    result.toList should equal(List(Map("point" -> CartesianPoint(2.3, 4.5, CRS.Cartesian))))
+  }
+
+  test("point function should work with literal map and geographic coordinates") {
+    val result = executeWithAllPlanners("RETURN point({longitude: 2.3, latitude: 4.5, crs: 'WGS-84'}) as point")
+    result should useProjectionWith("Point")
+    result.toList should equal(List(Map("point" -> GeographicPoint(2.3, 4.5, CRS.WGS84))))
+  }
+
+  test("point function should not work with literal map and incorrect cartesian CRS") {
+    an [InvalidArgumentException] shouldBe thrownBy(
+      executeWithAllPlanners("RETURN point({x: 2.3, y: 4.5, crs: 'cart'}) as point")
+    )
+  }
+
+  test("point function should not work with literal map and incorrect geographic CRS") {
+    an [InvalidArgumentException] shouldBe thrownBy(
+      executeWithAllPlanners("RETURN point({x: 2.3, y: 4.5, crs: 'WGS84'}) as point")
+    )
   }
 
   test("point function should work with integer arguments") {
-    val result = executeWithAllPlanners("RETURN point({x: 2, y: 4, crs: 'cartesian'}) as point")
+    val result = executeWithAllPlanners("RETURN point({x: 2, y: 4}) as point")
     result should useProjectionWith("Point")
-    result.toList should equal(List(Map("point" -> CartesianPoint(2, 4))))
+    result.toList should equal(List(Map("point" -> CartesianPoint(2, 4, CRS.Cartesian))))
   }
 
   test("should fail properly if missing cartesian coordinates") {
-    an [InvalidArgumentException] shouldBe thrownBy(executeWithAllPlanners("RETURN point({params}) as point",
-                                                                           "params" -> Map("y" -> 1.0, "crs" -> "cartesian")))
+    an [InvalidArgumentException] shouldBe thrownBy(
+      executeWithAllPlanners("RETURN point({params}) as point", "params" -> Map("y" -> 1.0, "crs" -> "cartesian"))
+    )
   }
 
-  test("should fail properly if missing geographic coordinates") {
-    a [SyntaxException] shouldBe thrownBy(executeWithAllPlanners("RETURN point({params}) as point",
-                                                                 "params" -> Map("y" -> 1.0, "crs" -> "WGS-84")))
+  test("should fail properly if missing geographic longitude") {
+    an [InvalidArgumentException] shouldBe thrownBy(
+      executeWithAllPlanners("RETURN point({params}) as point", "params" -> Map("latitude" -> 1.0, "crs" -> "WGS-84"))
+    )
+  }
+
+  test("should fail properly if missing geographic latitude") {
+    an [InvalidArgumentException] shouldBe thrownBy(
+      executeWithAllPlanners("RETURN point({params}) as point", "params" -> Map("longitude" -> 1.0, "crs" -> "WGS-84"))
+    )
   }
 
   test("should fail properly if unknown coordinate system") {
-    an [InvalidArgumentException] shouldBe thrownBy(executeWithAllPlanners("RETURN point({params}) as point",
-                                                                 "params" -> Map("crs" -> "WGS-1337")))
+    an [InvalidArgumentException] shouldBe thrownBy(
+      executeWithAllPlanners("RETURN point({params}) as point", "params" -> Map("x" -> 1, "y" -> 2, "crs" -> "WGS-1337"))
+    )
   }
 
-  test("should fail properly if missing CRS") {
-    a [SyntaxException] shouldBe thrownBy(executeWithAllPlanners("RETURN point({x: 2.3, y: 4.5}) as point"))
+  test("should default to Cartesian if missing cartesian CRS") {
+    val result = executeWithAllPlanners("RETURN point({x: 2.3, y: 4.5}) as point")
+    result should useProjectionWith("Point")
+    result.toList should equal(List(Map("point" -> CartesianPoint(2.3, 4.5, CRS.Cartesian))))
+  }
+
+  test("should default to WGS84 if missing geographic CRS") {
+    val result = executeWithAllPlanners("RETURN point({longitude: 2.3, latitude: 4.5}) as point")
+    result should useProjectionWith("Point")
+    result.toList should equal(List(Map("point" -> GeographicPoint(2.3, 4.5, CRS.WGS84))))
+  }
+
+  test("should allow Geographic CRS with x/y coordinates") {
+    val result = executeWithAllPlanners("RETURN point({x: 2.3, y: 4.5, crs: 'WGS-84'}) as point")
+    result should useProjectionWith("Point")
+    result.toList should equal(List(Map("point" -> GeographicPoint(2.3, 4.5, CRS.WGS84))))
+  }
+
+  test("should not allow Cartesian CRS with latitude/longitude coordinates") {
+    an [InvalidArgumentException] shouldBe thrownBy(
+      executeWithAllPlanners("RETURN point({longitude: 2.3, latitude: 4.5, crs: 'cartesian'}) as point")
+    )
   }
 
   test("point function should work with previous map") {

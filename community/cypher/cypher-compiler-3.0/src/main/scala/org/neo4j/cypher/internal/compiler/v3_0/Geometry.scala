@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0
 
+import org.neo4j.cypher.internal.frontend.v3_0.InvalidArgumentException
+
 trait Geometry {
   def coordinates: Seq[Double]
   def crs: CRS
@@ -30,9 +32,7 @@ trait Point extends Geometry {
   def coordinates = Vector(x, y)
 }
 
-case class CartesianPoint(x: Double, y: Double) extends Point {
-  def crs = CRS.Cartesian
-}
+case class CartesianPoint(x: Double, y: Double, crs: CRS) extends Point
 
 case class GeographicPoint(longitude: Double, latitude: Double, crs: CRS) extends Point {
   def x: Double = longitude
@@ -48,12 +48,12 @@ object CRS {
   def fromName(name: String) = name match {
     case Cartesian.name => Cartesian
     case WGS84.name => WGS84
-    case _ => throw new UnsupportedOperationException("Invalid or unsupported CRS name: " + name)
+    case _ => throw new InvalidArgumentException(s"'$name' is not a supported coordinate reference system for points, supported CRS are: '${WGS84.name}', '${Cartesian.name}'")
   }
 
   def fromSRID(id: Int) = id match {
     case Cartesian.`code` => Cartesian
     case WGS84.`code` => WGS84
-    case _ => throw new UnsupportedOperationException("Invalid or unsupported SRID: " + id)
+    case _ => throw new InvalidArgumentException(s"SRID '$id' does not match any supported coordinate reference system for points, supported CRS are: '${WGS84.name}', '${Cartesian.name}'")
   }
 }
