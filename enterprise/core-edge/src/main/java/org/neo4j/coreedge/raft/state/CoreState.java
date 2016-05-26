@@ -96,7 +96,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
         this.commitIndexMonitor = monitors.newMonitor( RaftLogCommitIndexMonitor.class, getClass() );
     }
 
-    public synchronized void setStateMachine( CoreStateMachines coreStateMachines, long lastApplied )
+    synchronized void setStateMachine( CoreStateMachines coreStateMachines, long lastApplied )
     {
         this.coreStateMachines = coreStateMachines;
         this.lastApplied = this.lastFlushed = lastApplied;
@@ -187,11 +187,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
      */
     public synchronized void downloadSnapshot( AdvertisedSocketAddress source ) throws InterruptedException, StoreCopyFailedException
     {
-        if ( !applier.sync( true ) )
-        {
-            throw new StoreCopyFailedException( "Failed to synchronize with executor" );
-        }
-
+        applier.sync( true );
         downloader.downloadSnapshot( source, this );
     }
 
@@ -238,14 +234,14 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     @Override
     public synchronized void stop() throws Throwable
     {
-        if ( applier.sync( true ) )
-        {
-            flush();
-        }
+        applier.sync( true );
+        flush();
     }
 
-    public synchronized CoreSnapshot snapshot() throws IOException, RaftLogCompactedException
+    public synchronized CoreSnapshot snapshot() throws IOException, RaftLogCompactedException, InterruptedException
     {
+        applier.sync( false );
+
         long prevIndex = lastApplied;
         long prevTerm = raftLog.readEntryTerm( prevIndex );
         CoreSnapshot coreSnapshot = new CoreSnapshot( prevIndex, prevTerm );
@@ -256,7 +252,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
         return coreSnapshot;
     }
 
-    public synchronized void installSnapshot( CoreSnapshot coreSnapshot )
+    synchronized void installSnapshot( CoreSnapshot coreSnapshot )
     {
         coreStateMachines.installSnapshots( coreSnapshot );
         sessionState = coreSnapshot.get( CoreStateType.SESSION_TRACKER );
