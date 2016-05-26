@@ -139,6 +139,11 @@ public class FileUserRealm extends AuthorizingRealm
         return userRepository.numberOfUsers();
     }
 
+    int numberOfRoles()
+    {
+        return roleRepository.numberOfRoles();
+    }
+
     User newUser( String username, String initialPassword, boolean requirePasswordChange )
             throws IOException, IllegalCredentialsException
     {
