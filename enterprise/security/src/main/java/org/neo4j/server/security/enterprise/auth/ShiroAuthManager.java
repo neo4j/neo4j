@@ -25,6 +25,8 @@ import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.cache.ehcache.EhCacheManager;
 import org.apache.shiro.mgt.DefaultSecurityManager;
 import org.apache.shiro.mgt.SecurityManager;
+import org.apache.shiro.subject.PrincipalCollection;
+import org.apache.shiro.subject.SimplePrincipalCollection;
 import org.apache.shiro.subject.Subject;
 
 import java.io.IOException;
@@ -130,7 +132,8 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
     {
         assertAuthEnabled();
 
-        Subject subject = new Subject.Builder( securityManager ).buildSubject();
+        // Start with an anonymous subject
+        Subject subject = buildSubject( null );
 
         UsernamePasswordToken token = new UsernamePasswordToken( username, password );
         AuthenticationResult result = AuthenticationResult.SUCCESS;
@@ -148,6 +151,10 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
             catch ( ExpiredCredentialsException e )
             {
                 result = AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
+
+                // We have to build an identity with the given username to allow the user to change password
+                // At this point we know that the username is valid
+                subject = buildSubject( username );
             }
             catch ( AuthenticationException e )
             {
@@ -195,4 +202,16 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
         return realm.deleteUser( username );
     }
 
+    private Subject buildSubject( String username )
+    {
+        Subject.Builder subjectBuilder = new Subject.Builder( securityManager );
+
+        if ( username != null )
+        {
+            PrincipalCollection identity = new SimplePrincipalCollection( username, realm.getName() );
+            subjectBuilder = subjectBuilder.principals( identity );
+        }
+
+        return subjectBuilder.buildSubject();
+    }
 }

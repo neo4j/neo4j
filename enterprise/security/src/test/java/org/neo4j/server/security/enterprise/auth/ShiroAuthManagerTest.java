@@ -215,6 +215,30 @@ public class ShiroAuthManagerTest
     }
 
     @Test
+    public void shouldSetPasswordThroughAuthSubject() throws Throwable
+    {
+        // Given
+        users.create( new User( "neo", Credential.forPassword( "abc123" ), true ) );
+        manager.start();
+        when( authStrategy.isAuthenticationPermitted( "neo" )).thenReturn( true );
+
+        // When
+        AuthSubject authSubject = manager.login( "neo", "abc123" );
+        assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED ) );
+
+        authSubject.setPassword( "hello, world!" );
+
+        // Then
+        User user = manager.getUser( "neo" );
+        assertTrue( user.credentials().matchesPassword( "hello, world!" ) );
+        assertThat( users.findByName( "neo" ), equalTo( user ) );
+
+        authSubject.logout();
+        authSubject = manager.login( "neo", "hello, world!" );
+        assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
+    }
+
+    @Test
     public void shouldReturnNullWhenSettingPasswordForUnknownUser() throws Throwable
     {
         // Given

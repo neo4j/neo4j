@@ -74,7 +74,8 @@ public class ShiroAuthSubject implements AuthSubject
 
     public boolean doesUsernameMatch( String username )
     {
-        return subject.getPrincipal().equals( username );
+        Object principal = subject.getPrincipal();
+        return principal != null && username.equals( principal );
     }
 
     @Override
