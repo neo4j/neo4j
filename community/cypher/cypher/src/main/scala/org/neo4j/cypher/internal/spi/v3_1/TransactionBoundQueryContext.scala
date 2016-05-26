@@ -298,8 +298,11 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       }
     }
 
-    override def propertyKeyIds(id: Long): Iterator[Int] =
-      JavaConversionSupport.asScala(transactionalContext.statement.readOperations().nodeGetPropertyKeys(id))
+    override def propertyKeyIds(id: Long): Iterator[Int] = try {
+      JavaConversionSupport.asScalaENFXSafe(transactionalContext.statement.readOperations().nodeGetPropertyKeys(id))
+    } catch {
+      case _: exceptions.EntityNotFoundException => Iterator.empty
+    }
 
     override def getProperty(id: Long, propertyKeyId: Int): Any = try {
       transactionalContext.statement.readOperations().nodeGetProperty(id, propertyKeyId)
@@ -311,15 +314,26 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
           null
     }
 
-    override def hasProperty(id: Long, propertyKey: Int) =
+    override def hasProperty(id: Long, propertyKey: Int) = try {
       transactionalContext.statement.readOperations().nodeHasProperty(id, propertyKey)
+    } catch {
+      case _: exceptions.EntityNotFoundException => false
+    }
 
     override def removeProperty(id: Long, propertyKeyId: Int) {
-      transactionalContext.statement.dataWriteOperations().nodeRemoveProperty(id, propertyKeyId)
+      try {
+        transactionalContext.statement.dataWriteOperations().nodeRemoveProperty(id, propertyKeyId)
+      } catch {
+        case _: exceptions.EntityNotFoundException => //ignore
+      }
     }
 
     override def setProperty(id: Long, propertyKeyId: Int, value: Any) {
-      transactionalContext.statement.dataWriteOperations().nodeSetProperty(id, properties.Property.property(propertyKeyId, value) )
+      try {
+        transactionalContext.statement.dataWriteOperations().nodeSetProperty(id, properties.Property.property(propertyKeyId, value) )
+      } catch {
+        case _: exceptions.EntityNotFoundException => //ignore
+      }
     }
 
     override def getById(id: Long) = try {
@@ -359,8 +373,11 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       }
     }
 
-    override def propertyKeyIds(id: Long): Iterator[Int] =
-      asScala(transactionalContext.statement.readOperations().relationshipGetPropertyKeys(id))
+    override def propertyKeyIds(id: Long): Iterator[Int] = try {
+      asScalaENFXSafe(transactionalContext.statement.readOperations().relationshipGetPropertyKeys(id))
+    } catch {
+      case _: exceptions.EntityNotFoundException => Iterator.empty
+    }
 
     override def getProperty(id: Long, propertyKeyId: Int): Any = try {
       transactionalContext.statement.readOperations().relationshipGetProperty(id, propertyKeyId)
@@ -372,15 +389,26 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
           null
     }
 
-    override def hasProperty(id: Long, propertyKey: Int) =
+    override def hasProperty(id: Long, propertyKey: Int) = try {
       transactionalContext.statement.readOperations().relationshipHasProperty(id, propertyKey)
+    } catch {
+      case _: exceptions.EntityNotFoundException => false
+    }
 
     override def removeProperty(id: Long, propertyKeyId: Int) {
-      transactionalContext.statement.dataWriteOperations().relationshipRemoveProperty(id, propertyKeyId)
+      try {
+        transactionalContext.statement.dataWriteOperations().relationshipRemoveProperty(id, propertyKeyId)
+      } catch {
+        case _: exceptions.EntityNotFoundException => //ignore
+      }
     }
 
     override def setProperty(id: Long, propertyKeyId: Int, value: Any) {
-      transactionalContext.statement.dataWriteOperations().relationshipSetProperty(id, properties.Property.property(propertyKeyId, value) )
+      try {
+        transactionalContext.statement.dataWriteOperations().relationshipSetProperty(id, properties.Property.property(propertyKeyId, value))
+      } catch {
+        case _: exceptions.EntityNotFoundException => //ignore
+      }
     }
 
     override def getById(id: Long) = try {

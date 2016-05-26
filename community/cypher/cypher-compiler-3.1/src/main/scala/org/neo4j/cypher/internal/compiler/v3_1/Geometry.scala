@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1
 
-import org.neo4j.cypher.internal.frontend.v3_0.InvalidArgumentException
+import org.neo4j.cypher.internal.frontend.v3_1.InvalidArgumentException
 
 trait Geometry {
   def coordinates: Seq[Double]
