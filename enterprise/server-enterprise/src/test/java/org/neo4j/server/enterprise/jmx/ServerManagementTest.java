@@ -61,6 +61,7 @@ public class ServerManagementTest
         String dataDirectory2 = baseDir.directory( "data2" ).getAbsolutePath();
 
         Config config = new ConfigLoader( CommunityBootstrapper.settingsClasses ).loadConfig(
+                baseDir.directory(),
                 EnterpriseServerBuilder
                         .server()
                         .withDefaultDatabaseTuning()

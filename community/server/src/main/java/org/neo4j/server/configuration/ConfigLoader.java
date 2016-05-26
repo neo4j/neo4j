@@ -55,10 +55,17 @@ public class ConfigLoader
 
     public Config loadConfig( Optional<File> configFile, Log log, Pair<String, String>... configOverrides )
     {
-        return loadConfig( configFile, log, settings -> {}, configOverrides );
+        return loadConfig( Optional.empty(), configFile, log, settings -> {}, configOverrides );
     }
 
-    public Config loadConfig( Optional<File> configFile,
+    public Config loadConfig( File homeDir, Optional<File> configFile, Log log,
+            Pair<String, String>... configOverrides )
+    {
+        return loadConfig( Optional.ofNullable( homeDir ), configFile, log, settings -> {}, configOverrides );
+    }
+
+    public Config loadConfig( Optional<File> homeDir,
+                              Optional<File> configFile,
                               Log log,
                               Consumer<Map<String, String>> customizer,
                               Pair<String, String>... configOverrides )
@@ -68,14 +75,14 @@ public class ConfigLoader
             throw new IllegalArgumentException( "log cannot be null" );
         }
 
-        Map<String, String> settings = calculateSettings( configFile, log, configOverrides, customizer );
+        Map<String, String> settings = calculateSettings( homeDir, configFile, log, configOverrides, customizer );
         Config config = new Config( settings, settingsClasses.calculate( settings ) );
         config.setLogger( log );
         return config;
     }
 
 
-    private Map<String, String> calculateSettings( Optional<File> config, Log log,
+    private Map<String, String> calculateSettings( Optional<File> homeDir, Optional<File> config, Log log,
                                                    Pair<String, String>[] configOverrides,
                                                    Consumer<Map<String, String>> customizer )
     {
@@ -84,7 +91,7 @@ public class ConfigLoader
         config.ifPresent( ( c ) -> settings.putAll( loadFromFile( log, c ) ) );
         settings.putAll( toMap( configOverrides ) );
         overrideEmbeddedDefaults( settings );
-        settings.put( GraphDatabaseSettings.neo4j_home.name(), System.getProperty( "user.dir" ) );
+        homeDir.ifPresent( ( h ) -> settings.put( GraphDatabaseSettings.neo4j_home.name(), h.getAbsolutePath() ) );
         customizer.accept( settings );
         return settings;
     }
