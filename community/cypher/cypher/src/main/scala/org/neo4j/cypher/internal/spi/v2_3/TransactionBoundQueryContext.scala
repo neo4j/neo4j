@@ -43,10 +43,10 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.kernel.api.{exceptions, _}
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
+import org.neo4j.kernel.api.{exceptions, _}
 import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.{NodeManager, ThreadToStatementContextBridge}
 import org.neo4j.kernel.security.URLAccessValidationError
@@ -328,8 +328,11 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       }
     }
 
-    def propertyKeyIds(id: Long): Iterator[Int] =
-      JavaConversionSupport.asScala(statement.readOperations().nodeGetPropertyKeys(id))
+    def propertyKeyIds(id: Long): Iterator[Int] = try {
+      JavaConversionSupport.asScalaENFXSafe(statement.readOperations().nodeGetPropertyKeys(id))
+    } catch {
+      case _: exceptions.EntityNotFoundException => Iterator.empty
+    }
 
     def getProperty(id: Long, propertyKeyId: Int): Any = try {
       statement.readOperations().nodeGetProperty(id, propertyKeyId)
@@ -337,15 +340,22 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => null
     }
 
-    def hasProperty(id: Long, propertyKey: Int) =
+    def hasProperty(id: Long, propertyKey: Int) = try {
       statement.readOperations().nodeHasProperty(id, propertyKey)
-
-    def removeProperty(id: Long, propertyKeyId: Int) {
-      statement.dataWriteOperations().nodeRemoveProperty(id, propertyKeyId)
+    } catch {
+      case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => false
     }
 
-    def setProperty(id: Long, propertyKeyId: Int, value: Any) {
+    def removeProperty(id: Long, propertyKeyId: Int) = try {
+      statement.dataWriteOperations().nodeRemoveProperty(id, propertyKeyId)
+    } catch {
+      case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => //ignore
+    }
+
+    def setProperty(id: Long, propertyKeyId: Int, value: Any) = try {
       statement.dataWriteOperations().nodeSetProperty(id, properties.Property.property(propertyKeyId, value) )
+    } catch {
+      case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => //ignore
     }
 
     def getById(id: Long) = try {
@@ -377,21 +387,34 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
     override def detachDelete(obj: Relationship): Int = ??? // not supported for relationships
 
-    def propertyKeyIds(id: Long): Iterator[Int] =
-      asScala(statement.readOperations().relationshipGetPropertyKeys(id))
-
-    def getProperty(id: Long, propertyKeyId: Int): Any =
-      statement.readOperations().relationshipGetProperty(id, propertyKeyId)
-
-    def hasProperty(id: Long, propertyKey: Int) =
-      statement.readOperations().relationshipHasProperty(id, propertyKey)
-
-    def removeProperty(id: Long, propertyKeyId: Int) {
-      statement.dataWriteOperations().relationshipRemoveProperty(id, propertyKeyId)
+    def propertyKeyIds(id: Long): Iterator[Int] = try {
+      JavaConversionSupport.asScalaENFXSafe(statement.readOperations().relationshipGetPropertyKeys(id))
+    } catch {
+      case _: exceptions.EntityNotFoundException => Iterator.empty
     }
 
-    def setProperty(id: Long, propertyKeyId: Int, value: Any) {
-      statement.dataWriteOperations().relationshipSetProperty(id, properties.Property.property(propertyKeyId, value) )
+    def getProperty(id: Long, propertyKeyId: Int): Any = try {
+      statement.readOperations().relationshipGetProperty(id, propertyKeyId)
+    } catch {
+      case _: exceptions.EntityNotFoundException => null
+    }
+
+    def hasProperty(id: Long, propertyKey: Int) = try {
+      statement.readOperations().relationshipHasProperty(id, propertyKey)
+    } catch {
+      case _: exceptions.EntityNotFoundException => false
+    }
+
+    def removeProperty(id: Long, propertyKeyId: Int) = try {
+      statement.dataWriteOperations().relationshipRemoveProperty(id, propertyKeyId)
+    } catch {
+      case _: exceptions.EntityNotFoundException => //ignore
+    }
+
+    def setProperty(id: Long, propertyKeyId: Int, value: Any) = try {
+      statement.dataWriteOperations().relationshipSetProperty(id, properties.Property.property(propertyKeyId, value))
+    } catch {
+      case _: exceptions.EntityNotFoundException => //ignore
     }
 
     def getById(id: Long) = try {
