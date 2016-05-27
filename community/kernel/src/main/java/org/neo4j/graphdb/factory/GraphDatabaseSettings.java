@@ -502,7 +502,7 @@ public abstract class GraphDatabaseSettings
     public static final Setting<File> auth_store_dir = pathSetting( "dbms.directories.auth", NO_DEFAULT );
 
     @Internal
-    public static final Setting<String> auth_manager = setting( "unsupported.dbms.security.auth_manager", STRING, "" );
+    public static final Setting<String> auth_manager = setting( "unsupported.dbms.security.auth_manager", STRING, "basic-auth-manager" );
 
     // Bolt Settings
 
