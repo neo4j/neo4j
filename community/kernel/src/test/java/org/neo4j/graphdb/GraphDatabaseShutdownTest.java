@@ -130,7 +130,7 @@ public class GraphDatabaseShutdownTest
         try
         {
             secondTxResult.get( 60, SECONDS );
-            fail("exception expected");
+            fail( "exception expected" );
         }
         catch ( Exception e )
         {

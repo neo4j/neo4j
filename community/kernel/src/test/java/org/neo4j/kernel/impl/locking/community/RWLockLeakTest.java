@@ -23,8 +23,6 @@ import org.junit.Test;
 
 import javax.transaction.Transaction;
 
-import org.neo4j.kernel.impl.api.tx.TxTermination;
-
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
@@ -39,7 +37,7 @@ public class RWLockLeakTest
         final Transaction tx1 = mock( Transaction.class );
         
         lock.mark();
-        lock.acquireWriteLock( tx1, TxTermination.NONE );
+        lock.acquireWriteLock( tx1, CommunityLockClientTermination.NONE );
         lock.mark();
         
         assertEquals( 1, lock.getTxLockElementCount() );
@@ -56,7 +54,7 @@ public class RWLockLeakTest
         final Transaction tx1 = mock( Transaction.class );
         
         lock.mark();
-        lock.acquireReadLock( tx1, TxTermination.NONE );
+        lock.acquireReadLock( tx1, CommunityLockClientTermination.NONE );
         lock.mark();
         
         assertEquals( 1, lock.getTxLockElementCount() );

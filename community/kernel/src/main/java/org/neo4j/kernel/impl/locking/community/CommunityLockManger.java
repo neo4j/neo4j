@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.locking.community;
 
-import org.neo4j.kernel.impl.api.tx.TxTermination;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -29,7 +28,7 @@ public class CommunityLockManger extends LifecycleAdapter implements Locks
     private volatile boolean closed;
 
     @Override
-    public Client newClient( TxTermination txTermination )
+    public Client newClient()
     {
         // We check this volatile closed flag here, which may seem like a contention overhead, but as the time
         // of writing we apply pooling of transactions and in extension pooling of lock clients,
@@ -38,7 +37,7 @@ public class CommunityLockManger extends LifecycleAdapter implements Locks
         {
             throw new IllegalStateException( this + " already closed" );
         }
-        return new CommunityLockClient( manager, txTermination );
+        return new CommunityLockClient( manager );
     }
 
     @Override

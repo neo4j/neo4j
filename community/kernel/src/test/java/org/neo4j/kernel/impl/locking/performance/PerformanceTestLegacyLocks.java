@@ -32,7 +32,7 @@ import javax.transaction.Transaction;
 import javax.transaction.xa.XAResource;
 
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.impl.api.tx.TxTermination;
+import org.neo4j.kernel.impl.locking.community.CommunityLockClientTermination;
 import org.neo4j.kernel.impl.locking.community.LockManagerImpl;
 import org.neo4j.kernel.impl.locking.community.RagManager;
 
@@ -92,7 +92,7 @@ public class PerformanceTestLegacyLocks
                             for(; currentLock<numLocks; currentLock++)
                             {
                                 Object resource = localResources[rand.nextInt( numResources )];
-                                lockManager.getWriteLock( resource, tx, TxTermination.NONE );
+                                lockManager.getWriteLock( resource, tx, CommunityLockClientTermination.NONE );
                                 acquired[currentLock] = resource;
                             }
                         }

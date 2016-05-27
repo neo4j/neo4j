@@ -28,7 +28,6 @@ import org.neo4j.collection.primitive.PrimitiveLongIntMap;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.impl.api.tx.TxTermination;
 import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
@@ -78,7 +77,7 @@ public class ForsetiClient implements Locks.Client
      * we want to hold in the global lock map. */
     private final ExclusiveLock myExclusiveLock = new ExclusiveLock(this);
 
-    private TxTermination txTermination;
+    private volatile boolean markedForTermination;
 
     public ForsetiClient( int id,
                           ConcurrentMap<Long, ForsetiLockManager.Lock>[] lockMaps,
@@ -97,11 +96,6 @@ public class ForsetiClient implements Locks.Client
             sharedLockCounts[i] = Primitive.longIntMap();
             exclusiveLockCounts[i] = Primitive.longIntMap();
         }
-    }
-
-    public void initialize( TxTermination txTermination )
-    {
-        this.txTermination = txTermination;
     }
 
     @Override
@@ -456,9 +450,15 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
+    public void markForTermination()
+    {
+        markedForTermination = true;
+    }
+
+    @Override
     public void close()
     {
-        txTermination = null;
+        markedForTermination = false;
         releaseAll();
         clientPool.release( this );
     }
@@ -670,7 +670,7 @@ public class ForsetiClient implements Locks.Client
         WaitStrategy<AcquireLockTimeoutException> waitStrategy = waitStrategies[resourceType.typeId()];
         waitStrategy.apply( tries );
 
-        if ( txTermination.shouldBeTerminated() )
+        if ( markedForTermination )
         {
             throw new TransactionTerminatedException();
         }

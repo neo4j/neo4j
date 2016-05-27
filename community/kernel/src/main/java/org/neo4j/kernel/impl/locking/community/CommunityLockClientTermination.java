@@ -17,16 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.tx;
-
-import org.neo4j.kernel.api.KernelTransaction;
+package org.neo4j.kernel.impl.locking.community;
 
 /**
- * Shows whether or not the associated {@link KernelTransaction} should be terminated.
+ * Shows whether or not the associated {@link CommunityLockClient} should be terminated.
  */
-public interface TxTermination
+public interface CommunityLockClientTermination
 {
-    TxTermination NONE = new TxTermination()
+    CommunityLockClientTermination NONE = new CommunityLockClientTermination()
     {
         @Override
         public boolean shouldBeTerminated()
@@ -35,10 +33,5 @@ public interface TxTermination
         }
     };
 
-    /**
-     * Determine if the associated transaction should be terminated.
-     *
-     * @return {@code true} if transaction was marked for termination, {@code false} otherwise.
-     */
     boolean shouldBeTerminated();
 }

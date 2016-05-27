@@ -27,7 +27,6 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.impl.api.tx.TxTermination;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 
@@ -70,13 +69,13 @@ public class SlaveLockManagerTest
     {
         SlaveLockManager slaveLockManager = newSlaveLockManager( new CommunityLockManger() );
 
-        assertNotNull( slaveLockManager.newClient( TxTermination.NONE ) );
+        assertNotNull( slaveLockManager.newClient() );
 
         slaveLockManager.shutdown();
 
         try
         {
-            slaveLockManager.newClient( TxTermination.NONE );
+            slaveLockManager.newClient();
             fail( "Exception expected" );
         }
         catch ( Exception e )

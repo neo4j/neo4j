@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.locking;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.kernel.impl.api.tx.TxTermination;
+import org.neo4j.kernel.impl.locking.Locks;
 
 class LockWorkerState
 {
@@ -35,7 +35,7 @@ class LockWorkerState
     public LockWorkerState( Locks locks )
     {
         this.grabber = locks;
-        this.client = locks.newClient( TxTermination.NONE );
+        this.client = locks.newClient();
     }
     
     public void doing( String doing )

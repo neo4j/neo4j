@@ -52,7 +52,6 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.api.tx.TxTermination;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -215,10 +214,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     /** Reset this transaction to a vanilla state, turning it into a logically new transaction. */
     public KernelTransactionImplementation initialize( long lastCommittedTx )
     {
-        this.locks = newLocksClient();
+        this.locks = locksManager.newClient();
         this.context.bind( locks );
-        this.closing = closed = failure = success = false;
-        this.terminated = false;
+        this.closing = closed = failure = success = terminated = false;
         this.transactionType = TransactionType.ANY;
         this.beforeHookInvoked = false;
         this.recordState.initialize( lastCommittedTx );
@@ -254,6 +252,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             failure = true;
             terminated = true;
+            if ( TX_TERMINATION_AWARE_LOCKS )
+            {
+                locks.markForTermination();
+            }
             transactionMonitor.transactionTerminated();
         }
     }
@@ -971,14 +973,5 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public String toString()
     {
         return "KernelTransaction[" + this.locks.getLockSessionId() + "]";
-    }
-
-    private Locks.Client newLocksClient()
-    {
-        if ( TX_TERMINATION_AWARE_LOCKS )
-        {
-            return locksManager.newClient( this );
-        }
-        return locksManager.newClient( TxTermination.NONE );
     }
 }

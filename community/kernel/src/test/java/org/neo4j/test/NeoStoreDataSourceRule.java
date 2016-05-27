@@ -19,6 +19,11 @@
  */
 package org.neo4j.test;
 
+import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -37,7 +42,6 @@ import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
-import org.neo4j.kernel.impl.api.tx.TxTermination;
 import org.neo4j.kernel.impl.cache.NoCacheProvider;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.DefaultCaches;
@@ -58,12 +62,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
-
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class NeoStoreDataSourceRule extends ExternalResource
 {
@@ -86,7 +84,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 StringLogger.DEV_NULL, new Monitors() );
 
         Locks locks = mock( Locks.class );
-        when( locks.newClient( any( TxTermination.class ) ) ).thenReturn( mock( Locks.Client.class ) );
+        when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
         Caches caches = new DefaultCaches( StringLogger.DEV_NULL, new Monitors() );
         caches.configure( new NoCacheProvider(), config );
 

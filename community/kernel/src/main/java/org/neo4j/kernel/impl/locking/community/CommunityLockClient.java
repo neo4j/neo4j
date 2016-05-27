@@ -24,24 +24,23 @@ import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
-import org.neo4j.kernel.impl.api.tx.TxTermination;
 import org.neo4j.kernel.impl.locking.Locks;
 
 import static java.lang.String.format;
 
-public class CommunityLockClient implements Locks.Client
+public class CommunityLockClient implements Locks.Client, CommunityLockClientTermination
 {
     private final LockManagerImpl manager;
-    private final TxTermination txTermination;
     private final LockTransaction lockTransaction = new LockTransaction();
 
     private final PrimitiveIntObjectMap<PrimitiveLongObjectMap<LockResource>> sharedLocks = Primitive.intObjectMap();
     private final PrimitiveIntObjectMap<PrimitiveLongObjectMap<LockResource>> exclusiveLocks = Primitive.intObjectMap();
 
-    public CommunityLockClient( LockManagerImpl manager, TxTermination txTermination )
+    private volatile boolean markedForTermination;
+
+    public CommunityLockClient( LockManagerImpl manager )
     {
         this.manager = manager;
-        this.txTermination = txTermination;
     }
 
     @Override
@@ -58,7 +57,7 @@ public class CommunityLockClient implements Locks.Client
             }
 
             resource = new LockResource( resourceType, resourceId );
-            manager.getReadLock( resource, lockTransaction, txTermination );
+            manager.getReadLock( resource, lockTransaction, this );
             localLocks.put(resourceId, resource);
         }
     }
@@ -77,7 +76,7 @@ public class CommunityLockClient implements Locks.Client
             }
 
             resource = new LockResource( resourceType, resourceId );
-            manager.getWriteLock( resource, lockTransaction, txTermination );
+            manager.getWriteLock( resource, lockTransaction, this );
             localLocks.put(resourceId, resource);
         }
     }
@@ -188,8 +187,21 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
+    public void markForTermination()
+    {
+        markedForTermination = true;
+    }
+
+    @Override
+    public boolean shouldBeTerminated()
+    {
+        return markedForTermination;
+    }
+
+    @Override
     public void close()
     {
+        markedForTermination = false;
         releaseAll();
     }
 

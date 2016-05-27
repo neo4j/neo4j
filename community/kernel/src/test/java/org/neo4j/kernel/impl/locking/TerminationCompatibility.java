@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -38,7 +39,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.kernel.impl.api.tx.TxTermination;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -53,7 +53,7 @@ import static org.neo4j.kernel.impl.locking.Locks.ResourceType;
 import static org.neo4j.kernel.impl.locking.Locks.Visitor;
 
 @Ignore( "Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite." )
-public class TxTerminationCompatibility extends LockingCompatibilityTestSuite.Compatibility
+public class TerminationCompatibility extends LockingCompatibilityTestSuite.Compatibility
 {
     private static final ResourceType RESOURCE_TYPE = ResourceTypes.NODE;
     private static final long RESOURCE_ID = 42;
@@ -62,7 +62,7 @@ public class TxTerminationCompatibility extends LockingCompatibilityTestSuite.Co
     private ExecutorService executor;
     private Client client;
 
-    public TxTerminationCompatibility( LockingCompatibilityTestSuite suite )
+    public TerminationCompatibility( LockingCompatibilityTestSuite suite )
     {
         super( suite );
     }
@@ -71,7 +71,7 @@ public class TxTerminationCompatibility extends LockingCompatibilityTestSuite.Co
     public void setUp() throws Exception
     {
         executor = Executors.newSingleThreadExecutor();
-        client = locks.newClient( TxTermination.NONE );
+        client = locks.newClient();
     }
 
     @After
@@ -87,11 +87,10 @@ public class TxTerminationCompatibility extends LockingCompatibilityTestSuite.Co
     {
         acquireExclusiveLockInThisThread();
 
-        TxTerminationImpl txTermination = new TxTerminationImpl();
-        Future<?> sharedLockAcquisition = acquireSharedLockInAnotherThread( txTermination );
+        LockAcquisition sharedLockAcquisition = acquireSharedLockInAnotherThread();
         assertThreadIsWaitingForLock( sharedLockAcquisition );
 
-        txTermination.markForTermination();
+        sharedLockAcquisition.terminate();
         assertLockAcquisitionFailed( sharedLockAcquisition );
     }
 
@@ -100,11 +99,10 @@ public class TxTerminationCompatibility extends LockingCompatibilityTestSuite.Co
     {
         acquireExclusiveLockInThisThread();
 
-        TxTerminationImpl txTermination = new TxTerminationImpl();
-        Future<?> exclusiveLockAcquisition = acquireExclusiveLockInAnotherThread( txTermination );
+        LockAcquisition exclusiveLockAcquisition = acquireExclusiveLockInAnotherThread();
         assertThreadIsWaitingForLock( exclusiveLockAcquisition );
 
-        txTermination.markForTermination();
+        exclusiveLockAcquisition.terminate();
         assertLockAcquisitionFailed( exclusiveLockAcquisition );
     }
 
@@ -113,16 +111,15 @@ public class TxTerminationCompatibility extends LockingCompatibilityTestSuite.Co
     {
         acquireExclusiveLockInThisThread();
 
-        TxTerminationImpl txTermination = new TxTerminationImpl();
-        Future<?> sharedLockAcquisition1 = acquireSharedLockInAnotherThread( txTermination );
+        LockAcquisition sharedLockAcquisition1 = acquireSharedLockInAnotherThread();
         assertThreadIsWaitingForLock( sharedLockAcquisition1 );
 
-        txTermination.markForTermination();
+        sharedLockAcquisition1.terminate();
         assertLockAcquisitionFailed( sharedLockAcquisition1 );
 
         releaseAllLocksInThisThread();
 
-        Future<?> sharedLockAcquisition2 = acquireSharedLockInAnotherThread( txTermination );
+        LockAcquisition sharedLockAcquisition2 = acquireSharedLockInAnotherThread();
         assertLockAcquisitionSucceeded( sharedLockAcquisition2 );
     }
 
@@ -131,16 +128,15 @@ public class TxTerminationCompatibility extends LockingCompatibilityTestSuite.Co
     {
         acquireExclusiveLockInThisThread();
 
-        TxTerminationImpl txTermination = new TxTerminationImpl();
-        Future<?> exclusiveLockAcquisition1 = acquireExclusiveLockInAnotherThread( txTermination );
+        LockAcquisition exclusiveLockAcquisition1 = acquireExclusiveLockInAnotherThread();
         assertThreadIsWaitingForLock( exclusiveLockAcquisition1 );
 
-        txTermination.markForTermination();
+        exclusiveLockAcquisition1.terminate();
         assertLockAcquisitionFailed( exclusiveLockAcquisition1 );
 
         releaseAllLocksInThisThread();
 
-        Future<?> exclusiveLockAcquisition2 = acquireExclusiveLockInAnotherThread( txTermination );
+        LockAcquisition exclusiveLockAcquisition2 = acquireExclusiveLockInAnotherThread();
         assertLockAcquisitionSucceeded( exclusiveLockAcquisition2 );
     }
 
@@ -149,16 +145,15 @@ public class TxTerminationCompatibility extends LockingCompatibilityTestSuite.Co
     {
         acquireExclusiveLockInThisThread();
 
-        TxTerminationImpl txTermination = new TxTerminationImpl();
-        Future<?> exclusiveLockAcquisition = acquireExclusiveLockInAnotherThread( txTermination );
+        LockAcquisition exclusiveLockAcquisition = acquireExclusiveLockInAnotherThread();
         assertThreadIsWaitingForLock( exclusiveLockAcquisition );
 
-        txTermination.markForTermination();
+        exclusiveLockAcquisition.terminate();
         assertLockAcquisitionFailed( exclusiveLockAcquisition );
 
         releaseAllLocksInThisThread();
 
-        Future<?> sharedLockAcquisition = acquireSharedLockInAnotherThread( txTermination );
+        LockAcquisition sharedLockAcquisition = acquireSharedLockInAnotherThread();
         assertLockAcquisitionSucceeded( sharedLockAcquisition );
     }
 
@@ -167,16 +162,15 @@ public class TxTerminationCompatibility extends LockingCompatibilityTestSuite.Co
     {
         acquireExclusiveLockInThisThread();
 
-        TxTerminationImpl txTermination = new TxTerminationImpl();
-        Future<?> sharedLockAcquisition = acquireSharedLockInAnotherThread( txTermination );
+        LockAcquisition sharedLockAcquisition = acquireSharedLockInAnotherThread();
         assertThreadIsWaitingForLock( sharedLockAcquisition );
 
-        txTermination.markForTermination();
+        sharedLockAcquisition.terminate();
         assertLockAcquisitionFailed( sharedLockAcquisition );
 
         releaseAllLocksInThisThread();
 
-        Future<?> exclusiveLockAcquisition = acquireExclusiveLockInAnotherThread( txTermination );
+        LockAcquisition exclusiveLockAcquisition = acquireExclusiveLockInAnotherThread();
         assertLockAcquisitionSucceeded( exclusiveLockAcquisition );
     }
 
@@ -220,15 +214,14 @@ public class TxTerminationCompatibility extends LockingCompatibilityTestSuite.Co
     {
         acquireExclusiveLockInThisThread();
 
-        TxTerminationImpl txTermination = new TxTerminationImpl();
         CountDownLatch firstLockAcquired = new CountDownLatch( 1 );
-        Future<?> acquisition = tryAcquireTwoLocksLockInAnotherThread( shared, txTermination, firstLockAcquired );
+        LockAcquisition acquisition = tryAcquireTwoLocksLockInAnotherThread( shared, firstLockAcquired );
 
         await( firstLockAcquired );
         assertThreadIsWaitingForLock( acquisition );
         assertLocksHeld( RESOURCE_ID, OTHER_RESOURCE_ID );
 
-        txTermination.markForTermination();
+        acquisition.terminate();
         assertLockAcquisitionFailed( acquisition );
         assertLocksHeld( RESOURCE_ID );
 
@@ -241,21 +234,19 @@ public class TxTerminationCompatibility extends LockingCompatibilityTestSuite.Co
     {
         acquireExclusiveLockInThisThread();
 
-        TxTerminationImpl txTermination = new TxTerminationImpl();
         CountDownLatch firstLockFailed = new CountDownLatch( 1 );
         CountDownLatch startSecondLock = new CountDownLatch( 1 );
 
-        Future<?> locking = acquireTwoLocksInAnotherThread( firstLockShared, secondLockShared, txTermination,
+        LockAcquisition lockAcquisition = acquireTwoLocksInAnotherThread( firstLockShared, secondLockShared,
                 firstLockFailed, startSecondLock );
-        assertThreadIsWaitingForLock( locking );
+        assertThreadIsWaitingForLock( lockAcquisition );
 
-        txTermination.markForTermination();
+        lockAcquisition.terminate();
         await( firstLockFailed );
-        txTermination.reset();
         releaseAllLocksInThisThread();
         startSecondLock.countDown();
 
-        assertLockAcquisitionSucceeded( locking );
+        assertLockAcquisitionSucceeded( lockAcquisition );
     }
 
     private void acquireExclusiveLockInThisThread()
@@ -269,24 +260,26 @@ public class TxTerminationCompatibility extends LockingCompatibilityTestSuite.Co
         client.releaseAll();
     }
 
-    private Future<?> acquireSharedLockInAnotherThread( TxTermination txTermination )
+    private LockAcquisition acquireSharedLockInAnotherThread()
     {
-        return acquireLockInAnotherThread( true, txTermination );
+        return acquireLockInAnotherThread( true );
     }
 
-    private Future<?> acquireExclusiveLockInAnotherThread( TxTermination txTermination )
+    private LockAcquisition acquireExclusiveLockInAnotherThread()
     {
-        return acquireLockInAnotherThread( false, txTermination );
+        return acquireLockInAnotherThread( false );
     }
 
-    private Future<?> acquireLockInAnotherThread( final boolean shared, final TxTermination txTermination )
+    private LockAcquisition acquireLockInAnotherThread( final boolean shared )
     {
-        return executor.submit( new Callable<Void>()
+        final LockAcquisition lockAcquisition = new LockAcquisition();
+
+        Future<Void> future = executor.submit( new Callable<Void>()
         {
             @Override
             public Void call() throws Exception
             {
-                Client client = locks.newClient( txTermination );
+                Client client = newLockClient( lockAcquisition );
                 if ( shared )
                 {
                     client.acquireShared( RESOURCE_TYPE, RESOURCE_ID );
@@ -298,18 +291,22 @@ public class TxTerminationCompatibility extends LockingCompatibilityTestSuite.Co
                 return null;
             }
         } );
+        lockAcquisition.setFuture( future );
+
+        return lockAcquisition;
     }
 
-    private Future<?> acquireTwoLocksInAnotherThread( final boolean firstShared, final boolean secondShared,
-            final TxTermination txTermination, final CountDownLatch firstLockFailed,
-            final CountDownLatch startSecondLock )
+    private LockAcquisition acquireTwoLocksInAnotherThread( final boolean firstShared, final boolean secondShared,
+            final CountDownLatch firstLockFailed, final CountDownLatch startSecondLock )
     {
-        return executor.submit( new Callable<Void>()
+        final LockAcquisition lockAcquisition = new LockAcquisition();
+
+        Future<Void> future = executor.submit( new Callable<Void>()
         {
             @Override
             public Void call() throws Exception
             {
-                try ( Client client = locks.newClient( txTermination ) )
+                try ( Client client = newLockClient( lockAcquisition ) )
                 {
                     try
                     {
@@ -327,10 +324,14 @@ public class TxTerminationCompatibility extends LockingCompatibilityTestSuite.Co
                     {
                         assertThat( e, instanceOf( TransactionTerminatedException.class ) );
                     }
+                }
 
-                    firstLockFailed.countDown();
-                    await( startSecondLock );
+                lockAcquisition.setClient( null );
+                firstLockFailed.countDown();
+                await( startSecondLock );
 
+                try ( Client client = newLockClient( lockAcquisition ) )
+                {
                     if ( secondShared )
                     {
                         client.acquireShared( RESOURCE_TYPE, RESOURCE_ID );
@@ -343,17 +344,22 @@ public class TxTerminationCompatibility extends LockingCompatibilityTestSuite.Co
                 return null;
             }
         } );
+        lockAcquisition.setFuture( future );
+
+        return lockAcquisition;
     }
 
-    private Future<?> tryAcquireTwoLocksLockInAnotherThread( final boolean shared, final TxTermination txTermination,
+    private LockAcquisition tryAcquireTwoLocksLockInAnotherThread( final boolean shared,
             final CountDownLatch firstLockAcquired )
     {
-        return executor.submit( new Callable<Void>()
+        final LockAcquisition lockAcquisition = new LockAcquisition();
+
+        Future<Void> future = executor.submit( new Callable<Void>()
         {
             @Override
             public Void call() throws Exception
             {
-                try ( Client client = locks.newClient( txTermination ) )
+                try ( Client client = newLockClient( lockAcquisition ) )
                 {
                     if ( shared )
                     {
@@ -378,6 +384,16 @@ public class TxTerminationCompatibility extends LockingCompatibilityTestSuite.Co
                 return null;
             }
         } );
+        lockAcquisition.setFuture( future );
+
+        return lockAcquisition;
+    }
+
+    private Client newLockClient( LockAcquisition lockAcquisition )
+    {
+        Client client = locks.newClient();
+        lockAcquisition.setClient( client );
+        return client;
     }
 
     private void assertLocksHeld( final Long... expectedResourceIds )
@@ -411,30 +427,30 @@ public class TxTerminationCompatibility extends LockingCompatibilityTestSuite.Co
         } );
     }
 
-    private void assertThreadIsWaitingForLock( Future<?> lockAcquisition ) throws Exception
+    private void assertThreadIsWaitingForLock( LockAcquisition lockAcquisition ) throws Exception
     {
         for ( int i = 0; i < 20; i++ )
         {
             try
             {
-                lockAcquisition.get( 50, TimeUnit.MILLISECONDS );
+                lockAcquisition.result();
                 fail( "Timeout expected" );
             }
             catch ( TimeoutException ignore )
             {
             }
         }
-        assertFalse( "locking thread completed", lockAcquisition.isDone() );
+        assertFalse( "locking thread completed", lockAcquisition.completed() );
     }
 
-    private void assertLockAcquisitionSucceeded( Future<?> lockAcquisition ) throws Exception
+    private void assertLockAcquisitionSucceeded( LockAcquisition lockAcquisition ) throws Exception
     {
         boolean completed = false;
         for ( int i = 0; i < 20; i++ )
         {
             try
             {
-                assertNull( lockAcquisition.get( 50, TimeUnit.MILLISECONDS ) );
+                assertNull( lockAcquisition.result() );
                 completed = true;
             }
             catch ( TimeoutException ignore )
@@ -442,17 +458,17 @@ public class TxTerminationCompatibility extends LockingCompatibilityTestSuite.Co
             }
         }
         assertTrue( "lock was not acquired in time", completed );
-        assertTrue( "locking thread seem to be still in progress", lockAcquisition.isDone() );
+        assertTrue( "locking thread seem to be still in progress", lockAcquisition.completed() );
     }
 
-    private void assertLockAcquisitionFailed( Future<?> lockAcquisition ) throws Exception
+    private void assertLockAcquisitionFailed( LockAcquisition lockAcquisition ) throws Exception
     {
         ExecutionException executionException = null;
         for ( int i = 0; i < 20; i++ )
         {
             try
             {
-                lockAcquisition.get( 50, TimeUnit.MILLISECONDS );
+                lockAcquisition.result();
                 fail( "Transaction termination expected" );
             }
             catch ( ExecutionException e )
@@ -465,7 +481,7 @@ public class TxTerminationCompatibility extends LockingCompatibilityTestSuite.Co
         }
         assertNotNull( "execution should fail", executionException );
         assertThat( executionException.getCause(), instanceOf( TransactionTerminatedException.class ) );
-        assertTrue( "locking thread seem to be still in progress", lockAcquisition.isDone() );
+        assertTrue( "locking thread seem to be still in progress", lockAcquisition.completed() );
     }
 
     private static void await( CountDownLatch latch ) throws InterruptedException
@@ -476,24 +492,46 @@ public class TxTerminationCompatibility extends LockingCompatibilityTestSuite.Co
         }
     }
 
-    private static class TxTerminationImpl implements TxTermination
+    private static class LockAcquisition
     {
-        volatile boolean terminated;
+        volatile Future<?> future;
+        volatile Locks.Client client;
 
-        @Override
-        public boolean shouldBeTerminated()
+        Future<?> getFuture()
         {
-            return terminated;
+            Objects.requireNonNull( future, "lock acquisition was not initialized with future" );
+            return future;
         }
 
-        void markForTermination()
+        void setFuture( Future<?> future )
         {
-            terminated = true;
+            this.future = future;
         }
 
-        void reset()
+        Client getClient()
         {
-            terminated = false;
+            Objects.requireNonNull( client, "lock acquisition was not initialized with client" );
+            return client;
+        }
+
+        void setClient( Client client )
+        {
+            this.client = client;
+        }
+
+        Object result() throws InterruptedException, ExecutionException, TimeoutException
+        {
+            return getFuture().get( 50, TimeUnit.MILLISECONDS );
+        }
+
+        boolean completed()
+        {
+            return getFuture().isDone();
+        }
+
+        void terminate()
+        {
+            getClient().markForTermination();
         }
     }
 }

@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.kernel.api.index.ParameterizedSuiteRunner;
-import org.neo4j.kernel.impl.api.tx.TxTermination;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.OtherThreadRule;
 
@@ -48,7 +47,7 @@ import static org.neo4j.test.OtherThreadRule.isWaiting;
         LockReentrancyCompatibility.class,
         RWLockCompatibility.class,
         CloseCompatibility.class,
-        TxTerminationCompatibility.class
+        TerminationCompatibility.class
 })
 public abstract class LockingCompatibilityTestSuite
 {
@@ -75,9 +74,9 @@ public abstract class LockingCompatibilityTestSuite
         public Compatibility( LockingCompatibilityTestSuite suite )
         {
             this.locks = suite.createLockManager();
-            clientA = this.locks.newClient( TxTermination.NONE );
-            clientB = this.locks.newClient( TxTermination.NONE );
-            clientC = this.locks.newClient( TxTermination.NONE );
+            clientA = this.locks.newClient();
+            clientB = this.locks.newClient();
+            clientC = this.locks.newClient();
 
             clientToThreadMap.put( clientA, threadA );
             clientToThreadMap.put( clientB, threadB );

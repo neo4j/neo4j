@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import org.neo4j.kernel.impl.api.tx.TxTermination;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class NoOpLocks extends LifecycleAdapter implements Locks
@@ -33,7 +32,7 @@ public class NoOpLocks extends LifecycleAdapter implements Locks
     }
 
     @Override
-    public Client newClient( TxTermination txTermination )
+    public Client newClient()
     {
         if ( closed )
         {

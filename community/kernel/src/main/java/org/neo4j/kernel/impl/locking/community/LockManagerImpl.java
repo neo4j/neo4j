@@ -24,7 +24,6 @@ import java.util.Map;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.impl.api.tx.TxTermination;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
@@ -44,10 +43,10 @@ public class LockManagerImpl
         return ragManager.getDeadlockCount();
     }
 
-    public void getReadLock( Object resource, Object tx, TxTermination txTermination )
+    public void getReadLock( Object resource, Object tx, CommunityLockClientTermination termination )
         throws DeadlockDetectedException, IllegalResourceException
     {
-        getRWLockForAcquiring( resource, tx ).acquireReadLock( tx, txTermination );
+        getRWLockForAcquiring( resource, tx ).acquireReadLock( tx, termination );
     }
 
     public boolean tryReadLock( Object resource, Object tx )
@@ -56,10 +55,10 @@ public class LockManagerImpl
         return getRWLockForAcquiring( resource, tx ).tryAcquireReadLock( tx );
     }
 
-    public void getWriteLock( Object resource, Object tx, TxTermination txTermination )
+    public void getWriteLock( Object resource, Object tx, CommunityLockClientTermination termination )
         throws DeadlockDetectedException, IllegalResourceException
     {
-        getRWLockForAcquiring( resource, tx ).acquireWriteLock( tx, txTermination );
+        getRWLockForAcquiring( resource, tx ).acquireWriteLock( tx, termination );
     }
 
     public boolean tryWriteLock( Object resource, Object tx )

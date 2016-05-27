@@ -40,7 +40,6 @@ import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.lock.forseti.ForsetiLockManager;
-import org.neo4j.kernel.impl.api.tx.TxTermination;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 
@@ -112,7 +111,7 @@ public class SlaveLocksClientConcurrentTest
 
     private SlaveLocksClient createClient()
     {
-        return new SlaveLocksClient( master, lockManager.newClient( TxTermination.NONE ), lockManager,
+        return new SlaveLocksClient( master, lockManager.newClient(), lockManager,
                 requestContextFactory, availabilityGuard, availabilityTimeoutMillis );
     }
 
