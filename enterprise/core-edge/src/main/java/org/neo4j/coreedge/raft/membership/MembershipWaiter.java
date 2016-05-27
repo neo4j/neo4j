@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.raft.membership;
 
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
@@ -27,7 +28,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
 
 /**
@@ -89,7 +89,7 @@ public class MembershipWaiter<MEMBER>
 
         public void run()
         {
-            if ( iAmAVotingMember() && caughtUpWithLeader())
+            if ( iAmAVotingMember() && caughtUpWithLeader() )
             {
                 catchUpFuture.complete( true );
             }
@@ -97,7 +97,13 @@ public class MembershipWaiter<MEMBER>
 
         private boolean iAmAVotingMember()
         {
-            return raftState.votingMembers().contains( myself );
+            Set<MEMBER> votingMembers = raftState.votingMembers();
+            boolean votingMember = votingMembers.contains( myself );
+            if ( !votingMember )
+            {
+                log.debug( "I (%s) am not a voting member: [%s]", myself, votingMembers );
+            }
+            return votingMember;
         }
 
         private boolean caughtUpWithLeader()
