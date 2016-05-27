@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel;
 
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+
 /**
  * @deprecated This will be moved to internal packages in the next major release.
  */
@@ -26,7 +28,7 @@ package org.neo4j.kernel;
 public enum IdType
 {
     NODE( 35, false ),
-    RELATIONSHIP( 35, false ),
+    RELATIONSHIP( 35, FeatureToggles.flag( "unsupported.dbms.relationships.ids.reuse", false ) ),
     PROPERTY( 36, true ),
     STRING_BLOCK( 36, true ),
     ARRAY_BLOCK( 36, true ),
