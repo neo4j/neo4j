@@ -45,7 +45,7 @@
     "karma-sauce-launcher": "^0.2.11",
     "matchdep": "^0.3.0",
     "nib": "^1.1.0",
-    "phantomjs": "^1.9.16",
+    "phantomjs-prebuilt": "^2.1.7",
     "requirejs": "^2.1.17",
     "semver": "^4.3.4",
     "shelljs": "^0.5.0"
