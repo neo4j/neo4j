@@ -354,6 +354,9 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
      * for this node is returned, otherwise if the node is dense the count for the chain for the specific
      * direction is returned.
      *
+     * For dense nodes the count will be reset after returned here. This is so that the same memory area
+     * can be used for the next type import.
+     *
      * @param nodeId node to get count for.
      * @param direction {@link Direction} to get count for.
      * @return count (degree) of the requested relationship chain.
@@ -364,7 +367,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
         if ( isDense( array, nodeId ) )
         {   // Indirection into rel group cache
             long id = getRelationshipId( array, nodeId );
-            return id == EMPTY ? 0 : relGroupCache.getCount( id, direction );
+            return id == EMPTY ? 0 : relGroupCache.getAndResetCount( id, direction );
         }
 
         return getCount( array, nodeId, SPARSE_COUNT_OFFSET );
@@ -403,7 +406,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
             this.base = base;
             assert chunkSize > 0;
             this.array = arrayFactory.newDynamicByteArray( chunkSize,
-                    minusOneBytes( ID_SIZE/*next*/ + (ID_SIZE + COUNT_SIZE) * Direction.values().length ) );
+                    minusOneBytes( ID_SIZE/*next*/ + (ID_AND_COUNT_SIZE) * Direction.values().length ) );
             this.nextFreeId = new AtomicLong( base );
         }
 
@@ -414,9 +417,25 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
             array.set6ByteLong( relGroupId, directionOffset( Direction.BOTH ), EMPTY );
         }
 
-        int getCount( long id, Direction direction )
+        /**
+         * For dense nodes we <strong>reset</strong> count after reading because we only ever need
+         * that value once and the piece of memory holding this value will be reused for another
+         * relationship chain for this node after this point in time, where the count should
+         * restart from 0.
+         */
+        int getAndResetCount( long id, Direction direction )
         {
-            return id == EMPTY ? 0 : NodeRelationshipCache.getCount( array, rebase( id ), countOffset( direction ) );
+            id = rebase( id );
+            ByteArray array = this.array.at( id );
+            if ( id == EMPTY )
+            {
+                return 0;
+            }
+
+            int offset = countOffset( direction );
+            int count = NodeRelationshipCache.getCount( array, id, offset );
+            array.setInt( id, offset, 0 );
+            return count;
         }
 
         /**
