@@ -107,7 +107,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
             relationshipStore.fillRecord( relationshipId, relationshipRecord, RecordLoad.FORCE );
 
             // If we end up on a relationship record that isn't in use there's a good chance there
-            // have been a concurrent transaction deleting this record under or feet. Since we don't
+            // have been a concurrent transaction deleting this record under our feet. Since we don't
             // reuse relationship ids we can still trust the pointers in this unused record and try
             // to chase a used record down the line.
             try
