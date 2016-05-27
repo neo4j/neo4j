@@ -66,7 +66,7 @@ public class ConfigLoaderTest
                 .build();
 
         // when
-        Config config = configLoader.loadConfig( configFile, log );
+        Config config = configLoader.loadConfig( Optional.of( folder.getRoot() ), configFile, log );
 
         // then
         assertNotNull( config );
@@ -81,11 +81,40 @@ public class ConfigLoaderTest
                 .build();
 
         // when
-        Config testConf = configLoader.loadConfig( configFile, log );
+        Config testConf = configLoader.loadConfig( Optional.of( folder.getRoot() ), configFile, log );
 
         // then
         final String EXPECTED_VALUE = "bar";
         assertEquals( EXPECTED_VALUE, testConf.get( setting( "foo", STRING, NO_DEFAULT ) ) );
+    }
+
+    @Test
+    public void shouldUseSpecifiedHomeDir() throws Exception
+    {
+        // given
+        Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
+                .build();
+
+        // when
+        Config testConf = configLoader.loadConfig( Optional.of( folder.getRoot() ), configFile, log );
+
+        // then
+        assertEquals( folder.getRoot(), testConf.get( GraphDatabaseSettings.neo4j_home ) );
+    }
+
+    @Test
+    public void shouldUseWorkingDirForHomeDirIfUnspecified() throws Exception
+    {
+        // given
+        Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
+                .build();
+
+        // when
+        Config testConf = configLoader.loadConfig( Optional.empty(), configFile, log );
+
+        // then
+        assertEquals( new File( System.getProperty("user.dir") ),
+                testConf.get( GraphDatabaseSettings.neo4j_home ) );
     }
 
     @Test
@@ -98,7 +127,7 @@ public class ConfigLoaderTest
                 .build();
 
         // when
-        Config testConf = configLoader.loadConfig( configFile, log );
+        Config testConf = configLoader.loadConfig( Optional.of( folder.getRoot() ), configFile, log );
 
         // then
         assertNotNull( testConf );
@@ -123,7 +152,7 @@ public class ConfigLoaderTest
         }
 
         // when
-        Config config = configLoader.loadConfig( Optional.of( file ), log );
+        Config config = configLoader.loadConfig( Optional.of( folder.getRoot() ), Optional.of( file ), log );
 
         // then
         List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = config.get( ServerSettings.third_party_packages );
@@ -142,7 +171,7 @@ public class ConfigLoaderTest
                 .build();
 
         // when
-        Config config = configLoader.loadConfig( configFile, log );
+        Config config = configLoader.loadConfig( Optional.of( folder.getRoot() ), configFile, log );
 
         // then
         List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = config.get( ServerSettings.third_party_packages );
@@ -161,7 +190,7 @@ public class ConfigLoaderTest
         Optional<File> nonExistentConfigFile = Optional.of( new File( "/tmp/" + System.currentTimeMillis() ) );
 
         // When
-        Config config = configLoader.loadConfig( nonExistentConfigFile, log );
+        Config config = configLoader.loadConfig( Optional.of( folder.getRoot() ), nonExistentConfigFile, log );
 
         // Then
         assertNotNull( config );
@@ -174,10 +203,10 @@ public class ConfigLoaderTest
                 .builder( folder.getRoot() )
                 .withoutSetting( DatabaseManagementSystemSettings.data_directory )
                 .build();
-        Config config = configLoader.loadConfig( configFile, log );
+        Config config = configLoader.loadConfig( Optional.of( folder.getRoot() ), configFile, log );
 
         assertThat( config.get( GraphDatabaseSettings.auth_store ),
-                is( new File( "data/dbms/auth" ).getAbsoluteFile() ) );
+                is( new File( folder.getRoot(), "data/dbms/auth" ).getAbsoluteFile() ) );
     }
 
     @Test
@@ -186,10 +215,10 @@ public class ConfigLoaderTest
         Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
                 .withSetting( DatabaseManagementSystemSettings.data_directory, "the-data-dir" )
                 .build();
-        Config config = configLoader.loadConfig( configFile, log );
+        Config config = configLoader.loadConfig( Optional.of( folder.getRoot() ), configFile, log );
 
         assertThat( config.get( GraphDatabaseSettings.auth_store ),
-                is( new File( "the-data-dir/dbms/auth" ).getAbsoluteFile() ) );
+                is( new File( folder.getRoot(), "the-data-dir/dbms/auth" ).getAbsoluteFile() ) );
     }
 
     @Test
@@ -199,10 +228,10 @@ public class ConfigLoaderTest
                 .withSetting( DatabaseManagementSystemSettings.data_directory, "the-data-dir" )
                 .withSetting( GraphDatabaseSettings.auth_store, "foo/bar/auth" )
                 .build();
-        Config config = configLoader.loadConfig( configFile, log );
+        Config config = configLoader.loadConfig( Optional.of( folder.getRoot() ), configFile, log );
 
         assertThat( config.get( GraphDatabaseSettings.auth_store ),
-                is( new File( "foo/bar/auth" ).getAbsoluteFile() ) );
+                is( new File( folder.getRoot(), "foo/bar/auth" ).getAbsoluteFile() ) );
     }
 
 }

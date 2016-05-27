@@ -25,7 +25,6 @@ import java.util.Optional;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.desktop.Parameters;
 import org.neo4j.desktop.config.Installation;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLog;
@@ -55,9 +54,9 @@ public class DesktopConfigurator
     public void refresh()
     {
         config = new ConfigLoader( CommunityBootstrapper.settingsClasses).loadConfig(
+                Optional.of( dbDir.getAbsoluteFile() ),
                 Optional.of( getConfigurationsFile() ),
                 FormattedLog.toOutputStream( System.out ),
-                (settings) -> settings.put( GraphDatabaseSettings.neo4j_home.name(), dbDir.getAbsolutePath() ),
                 pair( DatabaseManagementSystemSettings.database_path.name(), dbDir.getAbsolutePath() ) );
     }
 

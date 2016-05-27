@@ -57,12 +57,18 @@ public abstract class ServerBootstrapper implements Bootstrapper
     public static int start( Bootstrapper boot, String... argv )
     {
         ServerCommandLineArgs args = ServerCommandLineArgs.parse( argv );
-        return boot.start( args.configFile(), args.configOverrides() );
+
+        if ( args.homeDir() == null )
+        {
+            throw new ServerStartupException( "Argument --home-dir is required and was not provided." );
+        }
+
+        return boot.start( args.homeDir(), args.configFile(), args.configOverrides() );
     }
 
     @Override
     @SafeVarargs
-    public final int start( Optional<File> configFile, Pair<String, String>... configOverrides )
+    public final int start( File homeDir, Optional<File> configFile, Pair<String, String>... configOverrides )
     {
         LogProvider userLogProvider = setupLogging();
         dependencies = dependencies.userLogProvider( userLogProvider );
@@ -70,7 +76,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
 
         try
         {
-            Config config = createConfig( log, configFile, configOverrides );
+            Config config = createConfig( log, homeDir, configFile, configOverrides );
             serverAddress = ServerSettings.httpConnector( config, ServerSettings.HttpConnector.Encryption.NONE )
                     .map( ( connector ) -> connector.address.toString() )
                     .orElse( serverAddress );
@@ -150,9 +156,11 @@ public abstract class ServerBootstrapper implements Bootstrapper
         return userLogProvider;
     }
 
-    private Config createConfig( Log log, Optional<File> file, Pair<String, String>[] configOverrides ) throws IOException
+    private Config createConfig( Log log, File homeDir, Optional<File> file, Pair<String, String>[] configOverrides )
+            throws IOException
     {
-        return new ConfigLoader( this::settingsClasses ).loadConfig( file, log, configOverrides );
+        return new ConfigLoader( this::settingsClasses ).loadConfig( Optional.of( homeDir ), file, log,
+                configOverrides );
     }
 
     private void addShutdownHook()
