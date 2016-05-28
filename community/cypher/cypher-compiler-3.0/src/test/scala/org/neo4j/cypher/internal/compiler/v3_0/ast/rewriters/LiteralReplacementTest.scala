@@ -44,6 +44,7 @@ class LiteralReplacementTest extends CypherFunSuite  {
     assertRewrite(s"RETURN false as result", s"RETURN {`  AUTOBOOL0`} as result", Map("  AUTOBOOL0" -> false))
     assertRewrite("RETURN 'apa' as result", "RETURN {`  AUTOSTRING0`} as result", Map("  AUTOSTRING0" -> "apa"))
     assertRewrite("RETURN \"apa\" as result", "RETURN {`  AUTOSTRING0`} as result", Map("  AUTOSTRING0" -> "apa"))
+    assertRewrite("RETURN [1, 2, 3] as result", "RETURN {`  AUTOLIST0`} as result", Map("  AUTOLIST0" -> Seq(1, 2, 3)))
   }
 
   test("should extract literals in match clause") {
@@ -53,6 +54,7 @@ class LiteralReplacementTest extends CypherFunSuite  {
     assertRewrite(s"MATCH ({a:false})", s"MATCH ({a:{`  AUTOBOOL0`}})", Map("  AUTOBOOL0" -> false))
     assertRewrite("MATCH ({a:'apa'})", "MATCH ({a:{`  AUTOSTRING0`}})", Map("  AUTOSTRING0" -> "apa"))
     assertRewrite("MATCH ({a:\"apa\"})", "MATCH ({a:{`  AUTOSTRING0`}})", Map("  AUTOSTRING0" -> "apa"))
+    assertRewrite("MATCH (n) WHERE ID(n) IN [1, 2, 3]", "MATCH (n) WHERE ID(n) IN {`  AUTOLIST0`}", Map("  AUTOLIST0" -> Seq(1, 2, 3)))
   }
 
   test("should extract literals in skip clause") {
@@ -123,5 +125,6 @@ class LiteralReplacementTest extends CypherFunSuite  {
     case p@Parameter(name, _) if name.startsWith("  AUTOINT") => p.copy(parameterType = CTInteger)(p.position)
     case p@Parameter(name, _) if name.startsWith("  AUTOBOOL") => p.copy(parameterType = CTBoolean)(p.position)
     case p@Parameter(name, _) if name.startsWith("  AUTODOUBLE") => p.copy(parameterType = CTFloat)(p.position)
+    case p@Parameter(name, _) if name.startsWith("  AUTOLIST") => p.copy(parameterType = CTList(CTAny))(p.position)
   })
 }

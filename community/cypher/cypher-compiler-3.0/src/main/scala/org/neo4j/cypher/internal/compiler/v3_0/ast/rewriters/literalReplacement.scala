@@ -72,6 +72,11 @@ object literalReplacement {
       acc =>
         val parameter = ast.Parameter(s"  AUTOBOOL${acc.size}", CTBoolean)(l.position)
         (acc + (l -> LiteralReplacement(parameter, l.value)), None)
+    case l: ast.Collection if l.expressions.forall(_.isInstanceOf[Literal])=>
+      acc =>
+        val parameter = ast.Parameter(s"  AUTOLIST${acc.size}", CTList(CTAny))(l.position)
+        val values: Seq[AnyRef] = l.expressions.map(_.asInstanceOf[Literal].value)
+        (acc + (l -> LiteralReplacement(parameter, values)), None)
   }
 
   def apply(term: ASTNode): (Rewriter, Map[String, Any]) = {
