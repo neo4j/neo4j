@@ -24,14 +24,15 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.{IdentityMap, Rewriter, ast, bottomUp}
 
 object literalReplacement {
-  type LiteralReplacements = IdentityMap[Literal, Parameter]
+
+  case class LiteralReplacement(parameter: Parameter, value: AnyRef)
+  type LiteralReplacements = IdentityMap[Expression, LiteralReplacement]
 
   case class ExtractParameterRewriter(replaceableLiterals: LiteralReplacements) extends Rewriter {
     def apply(that: AnyRef): AnyRef = rewriter.apply(that)
 
     private val rewriter: Rewriter = bottomUp(Rewriter.lift {
-      case l: Literal =>
-        replaceableLiterals.getOrElse(l, l)
+      case l: Expression if replaceableLiterals.contains(l) => replaceableLiterals(l).parameter
     })
   }
 
@@ -56,13 +57,21 @@ object literalReplacement {
     case ast.ContainerIndex(_, _: ast.StringLiteral) =>
       acc => (acc, None)
     case l: ast.StringLiteral =>
-      acc => (acc + (l -> ast.Parameter(s"  AUTOSTRING${acc.size}", CTString)(l.position)), None)
+      acc =>
+        val parameter = ast.Parameter(s"  AUTOSTRING${acc.size}", CTString)(l.position)
+        (acc + (l -> LiteralReplacement(parameter, l.value)), None)
     case l: ast.IntegerLiteral =>
-      acc => (acc + (l -> ast.Parameter(s"  AUTOINT${acc.size}", CTInteger)(l.position)), None)
+      acc =>
+        val parameter = ast.Parameter(s"  AUTOINT${acc.size}", CTInteger)(l.position)
+        (acc + (l -> LiteralReplacement(parameter, l.value)), None)
     case l: ast.DoubleLiteral =>
-      acc => (acc + (l -> ast.Parameter(s"  AUTODOUBLE${acc.size}", CTFloat)(l.position)), None)
+      acc =>
+        val parameter = ast.Parameter(s"  AUTODOUBLE${acc.size}", CTFloat)(l.position)
+        (acc + (l -> LiteralReplacement(parameter, l.value)), None)
     case l: ast.BooleanLiteral =>
-      acc => (acc + (l -> ast.Parameter(s"  AUTOBOOL${acc.size}", CTBoolean)(l.position)), None)
+      acc =>
+        val parameter = ast.Parameter(s"  AUTOBOOL${acc.size}", CTBoolean)(l.position)
+        (acc + (l -> LiteralReplacement(parameter, l.value)), None)
   }
 
   def apply(term: ASTNode): (Rewriter, Map[String, Any]) = {
@@ -80,7 +89,7 @@ object literalReplacement {
       val replaceableLiterals = term.treeFold(IdentityMap.empty: LiteralReplacements)(literalMatcher)
 
       val extractedParams: Map[String, AnyRef] = replaceableLiterals.map {
-        case (l, p) => (p.name, l.value)
+        case (_, LiteralReplacement(parameter, value)) => (parameter.name, value)
       }
 
       (ExtractParameterRewriter(replaceableLiterals), extractedParams)
