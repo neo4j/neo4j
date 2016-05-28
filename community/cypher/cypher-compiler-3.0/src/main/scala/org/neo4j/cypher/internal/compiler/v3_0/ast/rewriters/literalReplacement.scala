@@ -75,12 +75,8 @@ object literalReplacement {
   }
 
   def apply(term: ASTNode): (Rewriter, Map[String, Any]) = {
-    // TODO: Replace with .exists
-    val containsParameter: Boolean = term.treeFold(false) {
-      case term: Parameter =>
-        acc => (true, None)
-      case _ =>
-        acc => (acc, if (acc) None else Some(identity))
+    val containsParameter: Boolean = term.exists {
+      case _:Parameter => true
     }
 
     if (containsParameter) {
