@@ -22,7 +22,6 @@ package org.neo4j.cypher
 import java.io.{File, PrintWriter}
 import java.util.concurrent.TimeUnit
 
-import jdk.nashorn.internal.runtime.ScriptRuntime
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.compiler.v3_1.test_helpers.CreateTempFileTestSupport
@@ -33,13 +32,11 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.io.fs.FileUtils
-import org.neo4j.kernel.api.security.AccessMode
-import org.neo4j.kernel.api.KernelTransaction.Type
-import org.neo4j.kernel.{NeoStoreDataSource}
-import org.neo4j.test.TestGraphDatabaseFactory
 import org.neo4j.kernel.NeoStoreDataSource
+import org.neo4j.kernel.api.KernelTransaction.Type
+import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction
-import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory}
+import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -75,7 +72,7 @@ with QueryStatisticsTestSupport with CreateTempFileTestSupport with NewPlannerTe
   test("shouldGetOtherNode") {
     val node: Node = createNode()
 
-    val result = executeWithAllPlannersAndCompatibilityMode(s"match (node) where id(node) = ${node.getId} return node")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(s"match (node) where id(node) = ${node.getId} return node")
 
     result.columnAs[Node]("node").toList should equal(List(node))
   }
@@ -102,7 +99,7 @@ with QueryStatisticsTestSupport with CreateTempFileTestSupport with NewPlannerTe
     val name = "Andres"
     val node: Node = createNode(Map("name" -> name))
 
-    val result = executeWithAllPlannersAndCompatibilityMode(s"match (node) where id(node) = ${node.getId} return node.name")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(s"match (node) where id(node) = ${node.getId} return node.name")
 
     result.columnAs[String]("node.name").toList should equal(List(name))
   }
@@ -111,7 +108,7 @@ with QueryStatisticsTestSupport with CreateTempFileTestSupport with NewPlannerTe
     val n1: Node = createNode()
     val n2: Node = createNode()
 
-    val result = executeWithAllPlannersAndCompatibilityMode(
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
       s"match (n1), (n2) where id(n1) = ${n1.getId} and id(n2) = ${n2.getId} return n1, n2"
     )
 
@@ -125,7 +122,7 @@ with QueryStatisticsTestSupport with CreateTempFileTestSupport with NewPlannerTe
     relate(n1, n2, "KNOWS")
     relate(n1, n3, "KNOWS")
 
-    val result = executeWithAllPlannersAndCompatibilityMode(
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
       s"match (node)-[rel:KNOWS]->(x) where id(node) = ${n1.getId} return x, node"
     )
     result.dumpToString()
@@ -227,7 +224,7 @@ with QueryStatisticsTestSupport with CreateTempFileTestSupport with NewPlannerTe
 
   test("shouldBeAbleToOutputNullForMissingProperties") {
     createNode()
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n) where id(n) = 0 return n.name")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n) where id(n) = 0 return n.name")
     result.toList should equal(List(Map("n.name" -> null)))
   }
 
@@ -236,7 +233,7 @@ with QueryStatisticsTestSupport with CreateTempFileTestSupport with NewPlannerTe
     relate("A" -> "KNOWS" -> "B")
     relate("A" -> "HATES" -> "C")
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n)-[r]->(x) where id(n) = 0 return type(r)")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n)-[r]->(x) where id(n) = 0 return type(r)")
 
     result.columnAs[String]("type(r)").toList should equal(List("HATES", "KNOWS"))
   }
@@ -292,7 +289,7 @@ with QueryStatisticsTestSupport with CreateTempFileTestSupport with NewPlannerTe
     for (i <- 1 to 10) createNode()
     val query = "match (pA) where id(pA) = {a} return pA"
 
-    executeWithAllPlannersAndCompatibilityMode(query, "a" -> "Andres") should be (empty)
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode(query, "a" -> "Andres") should be (empty)
   }
 
   test("shouldBeAbleToTakeParamsFromParsedStuff") {
@@ -309,8 +306,8 @@ with QueryStatisticsTestSupport with CreateTempFileTestSupport with NewPlannerTe
 
     val query = "match (a) where id(a) = 0 and a.name = {name} return a"
 
-    executeWithAllPlannersAndCompatibilityMode(query, "name" -> "Tobias").toList shouldBe empty
-    executeWithAllPlannersAndCompatibilityMode(query, "name" -> "Andres").toList should have size 1
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode(query, "name" -> "Tobias").toList shouldBe empty
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode(query, "name" -> "Andres").toList should have size 1
   }
 
   test("shouldHandlePatternMatchingWithParameters") {
@@ -318,7 +315,7 @@ with QueryStatisticsTestSupport with CreateTempFileTestSupport with NewPlannerTe
     val b = createNode(Map("name" -> "you"))
     relate(a, b, "KNOW")
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (x)-[r]-(friend) where x = {startId} and friend.name = {name} return TYPE(r)", "startId" -> a, "name" -> "you")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (x)-[r]-(friend) where x = {startId} and friend.name = {name} return TYPE(r)", "startId" -> a, "name" -> "you")
 
     result.toList should equal(List(Map("TYPE(r)" -> "KNOW")))
   }
@@ -398,7 +395,7 @@ order by a.COL1""")
   test("shouldBeAbleToCompareWithTrue") {
     val a = createNode("first" -> true)
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (a) where id(a) = 0 and a.first = true return a")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (a) where id(a) = 0 and a.first = true return a")
 
     result.toList should equal(List(Map("a" -> a)))
   }
@@ -406,7 +403,7 @@ order by a.COL1""")
   test("shouldToStringArraysPrettily") {
     createNode("foo" -> Array("one", "two"))
 
-    val string = executeWithAllPlannersAndCompatibilityMode( """match (n) where id(n) = 0 return n.foo""").dumpToString()
+    val string = executeWithAllPlannersAndRuntimesAndCompatibilityMode( """match (n) where id(n) = 0 return n.foo""").dumpToString()
 
     string should include("""["one","two"]""")
   }
@@ -416,7 +413,7 @@ order by a.COL1""")
     val a = createNode()
     relate(x, a, "X")
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (c) where id(c) = 0 match (n)--(c) return n")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (c) where id(c) = 0 match (n)--(c) return n")
     result should have size 1
   }
 
@@ -436,7 +433,7 @@ order by a.COL1""")
   test("should handle parameters names as variables") {
     createNode("bar" -> "Andres")
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (foo) where id(foo) = 0 and foo.bar = {foo} return foo.bar", "foo" -> "Andres")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (foo) where id(foo) = 0 and foo.bar = {foo} return foo.bar", "foo" -> "Andres")
     result.toList should equal(List(Map("foo.bar" -> "Andres")))
   }
 
@@ -564,7 +561,7 @@ order by a.COL1""")
   test("shouldAllowArrayComparison") {
     val node = createNode("lotteryNumbers" -> Array(42, 87))
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n) where id(n) = 0 and n.lotteryNumbers = [42, 87] return n")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n) where id(n) = 0 and n.lotteryNumbers = [42, 87] return n")
 
     result.toList should equal(List(Map("n" -> node)))
   }
@@ -592,7 +589,7 @@ order by a.COL1""")
     relate(a,r)
     relate(r,b)
 
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a)-->(r)-->(b) WHERE id(a) = 0 AND r.foo = 'bar' RETURN b")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)-->(r)-->(b) WHERE id(a) = 0 AND r.foo = 'bar' RETURN b")
 
     result.toList should equal(List(Map("b" -> b)))
   }
@@ -622,7 +619,7 @@ order by a.COL1""")
   test("filtering in match should not fail") {
     val n = createNode()
     relate(n, createNode("name" -> "Neo"))
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n)-->(me) WHERE id(n) = 0 AND me.name IN ['Neo'] RETURN me.name")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n)-->(me) WHERE id(n) = 0 AND me.name IN ['Neo'] RETURN me.name")
 
     result.toList should equal(List(Map("me.name"->"Neo")))
   }
@@ -785,7 +782,7 @@ order by a.COL1""")
     relate(p4, red, "ap_has_value")
 
     //WHEN
-    val result = executeWithAllPlannersAndCompatibilityMode("""
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("""
        MATCH (advertiser) -[:adv_has_product] ->(out) -[:ap_has_value] ->(red)<-[:aa_has_value]- (a)
        WHERE red.name = 'red' AND out.name = 'product1'
        AND id(advertiser) = {1} AND id(a) = {2}
@@ -818,7 +815,7 @@ order by a.COL1""")
     createNode()
 
     //WHEN
-    val result = executeWithAllPlannersAndCompatibilityMode(
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
       """MATCH (p) WHERE id(p) = 0
         WITH p
         MATCH (a) WHERE id(a) = 0

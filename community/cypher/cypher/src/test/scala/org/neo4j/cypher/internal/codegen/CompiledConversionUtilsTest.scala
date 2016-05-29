@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.codegen
 
+import java.util
+
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
@@ -53,7 +55,7 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
 
     val col = CompiledConversionUtils.toCollection(List("a", "b", "c").asJava)
 
-    col shouldBe a [java.util.Collection[_]]
+    col shouldBe a[java.util.Collection[_]]
     col.asScala.toSeq should equal(Seq("a", "b", "c"))
   }
 
@@ -84,7 +86,23 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
     ("foo", "foo") -> true,
     ("foo", "bar") -> false,
     (42L, 42) -> true,
-    (42, 43) -> false)
+    (42, 43) -> false,
+    (Array(42, 43), Array(42, 43)) -> true,
+    (Array(42, 43), Array(42, 41)) -> false,
+    (Array(42, 43), Array(42, 43, 44)) -> false,
+
+    (Array(42, 43), util.Arrays.asList(42, 43)) -> true,
+    (Array(42, 43), util.Arrays.asList(42, 41)) -> false,
+    (Array(42, 43), util.Arrays.asList(42, 43, 44)) -> false,
+
+    (util.Arrays.asList(42, 43), Array(42, 43)) -> true,
+    (util.Arrays.asList(42, 43), Array(42, 41)) -> false,
+    (util.Arrays.asList(42, 43), Array(42, 43, 44)) -> false,
+
+    (util.Arrays.asList(42, 43), util.Arrays.asList(42, 43)) -> true,
+    (util.Arrays.asList(42, 43), util.Arrays.asList(42, 41)) -> false,
+    (util.Arrays.asList(42, 43), util.Arrays.asList(42, 43, 44)) -> false
+    )
 
   testEquality.foreach {
     case (v, expected) =>
@@ -110,7 +128,7 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
       }
   }
 
-  val testNot= Seq(
+  val testNot = Seq(
     (null, null),
     (false, true),
     (true, false)

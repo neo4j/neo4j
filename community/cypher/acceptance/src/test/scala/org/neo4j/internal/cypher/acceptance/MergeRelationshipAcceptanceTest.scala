@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport, SyntaxException}
-import org.neo4j.graphdb.{Path, Relationship, Result}
+import org.neo4j.graphdb.{Path, Relationship}
 
 class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
@@ -36,7 +36,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     // then
     assertStats(result, relationshipsCreated = 1)
     result.toList should equal(List(Map("count(*)" -> 1)))
-    executeWithAllPlannersAndCompatibilityMode("MATCH (a {name: 'A'})-[:TYPE]->(b {name: 'B'}) RETURN a.name").toList should have size 1
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a {name: 'A'})-[:TYPE]->(b {name: 'B'}) RETURN a.name").toList should have size 1
   }
 
   // TCK'd
@@ -99,7 +99,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     // then
     assertStats(result, relationshipsCreated = 1, propertiesWritten = 1)
     result.toList should equal(List(Map("count(r)" -> 1)))
-    executeWithAllPlannersAndCompatibilityMode("MATCH (a {name: 'A'})-[r:TYPE {name: 'r2'}]->(b {name: 'B'}) RETURN a.name, b.name, r.name")
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a {name: 'A'})-[r:TYPE {name: 'r2'}]->(b {name: 'B'}) RETURN a.name, b.name, r.name")
       .toList should equal(
       List(Map("a.name" -> "A", "b.name" -> "B", "r.name" -> "r2"))
     )
@@ -133,7 +133,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     // then
     assertStats(result, relationshipsCreated = 1, propertiesWritten = 1)
     result.toList should equal(List(Map("count(r)" -> 1)))
-    executeWithAllPlannersAndCompatibilityMode("MATCH (a {name:'A'})-[r:TYPE {name:'Lola'}]->(b {name:'B'}) RETURN a, b").toList should equal(
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a {name:'A'})-[r:TYPE {name:'Lola'}]->(b {name:'B'}) RETURN a, b").toList should equal(
       List(Map("a" -> a, "b" -> b)))
   }
 
@@ -150,7 +150,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
 
     assertStats(result, relationshipsCreated = 1, propertiesWritten = 1)
     result.toList should equal(List(Map("count(r)" -> 1)))
-    executeWithAllPlannersAndCompatibilityMode("MATCH (a {name:'A'})-[r]->(b) RETURN r.name").toList should equal(List(Map("r.name" -> "Lola")))
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a {name:'A'})-[r]->(b) RETURN r.name").toList should equal(List(Map("r.name" -> "Lola")))
   }
 
   // TCK'd
@@ -183,7 +183,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     // then
     assertStats(result, relationshipsCreated = 3, propertiesWritten = 4)
     result.toList should equal(List(Map("count(r)" -> 4)))
-    executeWithAllPlannersAndCompatibilityMode("MATCH (a {name: 'A'})-[r]->(b) RETURN a.id, r.name, b.id").toSet should equal(Set(
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a {name: 'A'})-[r]->(b) RETURN a.id, r.name, b.id").toSet should equal(Set(
       Map("a.id" -> 1, "b.id" -> 2, "r.name" -> "RUN"),
       Map("a.id" -> 3, "b.id" -> 2, "r.name" -> "Lola"),
       Map("a.id" -> 1, "b.id" -> 4, "r.name" -> "Lola"),
@@ -202,7 +202,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     // then
     assertStats(result, relationshipsCreated = 1, nodesCreated = 1)
     result.toList should equal(List(Map("count(r)" -> 1)))
-    executeWithAllPlannersAndCompatibilityMode("MATCH (a)-[r:TYPE]->() RETURN a").toList should equal(List(Map("a" -> a)))
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)-[r:TYPE]->() RETURN a").toList should equal(List(Map("a" -> a)))
   }
 
   // TCK'd
@@ -216,7 +216,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     // then
     assertStats(result, relationshipsCreated = 2, nodesCreated = 2)
     result.toList should equal(List(Map("count(r)" -> 1)))
-    executeWithAllPlannersAndCompatibilityMode("MATCH (a {name: 'A'})-[r:TYPE]->()<-[:TYPE]-(b) RETURN a").toList should equal(List(Map("a" -> a)))
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a {name: 'A'})-[r:TYPE]->()<-[:TYPE]-(b) RETURN a").toList should equal(List(Map("a" -> a)))
   }
 
   // TCK'd

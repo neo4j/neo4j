@@ -30,14 +30,14 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
   test("make sure non-existing nodes are not returned") {
     executeWithAllPlannersAndCompatibilityMode("match (n) where id(n) = 10 return n") should be(empty)
-    executeWithAllPlannersAndCompatibilityMode("match ()-[r]->() where id(r) = 10 return r") should be(empty)
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("match ()-[r]->() where id(r) = 10 return r") should be(empty)
   }
 
   test("should fail if columnAs refers to unknown column") {
     val n1 = createNode()
     val n2 = createNode()
     val r = relate(n1, n2)
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n)-[r]->() RETURN n, r")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n)-[r]->() RETURN n, r")
     a[NotFoundException] should be thrownBy result.columnAs("m")
   }
 
@@ -571,7 +571,7 @@ RETURN x0.name""")
     val c = createNode("C")
     relate(a, b)
     relate(a, c)
-    val result = executeWithAllPlannersAndCompatibilityMode( s"""
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode( s"""
 MATCH (a)-->(b)
 WHERE id(b) = ${b.getId}
 OPTIONAL MATCH (a)-->(c)
@@ -584,7 +584,7 @@ RETURN a.name""")
     val n = createNode()
     val a = createNode()
     relate(a, n, "Admin")
-    val result = executeWithAllPlannersAndCompatibilityMode( "match (n) -[:Admin]- (b) where id(n) = 0 return id(n), id(b)")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode( "match (n) -[:Admin]- (b) where id(n) = 0 return id(n), id(b)")
     result.toSet should equal (Set(Map("id(n)" -> 0, "id(b)" -> 1)))
   }
 
@@ -785,7 +785,7 @@ return b
 
   test("can handle paths with multiple unnamed nodes") {
     createNode()
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a)<--()<--(b)-->()-->(c) WHERE id(a) = 0 RETURN c")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)<--()<--(b)-->()-->(c) WHERE id(a) = 0 RETURN c")
 
     result shouldBe 'isEmpty
   }
@@ -876,7 +876,7 @@ return b
     val thing = m("thing").asInstanceOf[Node]
 
     // when
-    val result = executeWithAllPlannersAndCompatibilityMode(
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
       """MATCH (advertiser) -[:adv_has_product] ->(out) -[:ap_has_value] -> (red) <-[:aa_has_value]- (a)
        WHERE id(advertiser) = {1} AND id(a) = {2}
        AND red.name = 'red' and out.name = 'product1'
@@ -900,7 +900,7 @@ return b
 
     // then
     result.toList should equal (List(Map("n" -> jake)))
-    result.executionPlanDescription.toString should include("IndexSeek")
+    result.executionPlanDescription().toString should include("IndexSeek")
   }
 
   test("should be able to use index hints with STARTS WITH predicates") {
@@ -917,7 +917,7 @@ return b
 
     // then
     result.toList should equal (List(Map("n" -> jake)))
-    result.executionPlanDescription.toString should include("IndexSeek")
+    result.executionPlanDescription().toString should include("IndexSeek")
   }
 
   test("should be able to use index hints with inequality/range predicates") {
@@ -934,7 +934,7 @@ return b
 
     // then
     result.toList should equal (List(Map("n" -> jake)))
-    result.executionPlanDescription.toString should include("IndexSeek")
+    result.executionPlanDescription().toString should include("IndexSeek")
   }
 
   test("should be able to use label as start point") {
@@ -1853,9 +1853,9 @@ return b
   }
 
   test("should return empty result when there are no relationship with the given id") {
-    executeWithAllPlannersAndCompatibilityMode("MATCH ()-[r]->() WHERE id(r) = 42 RETURN r") shouldBe empty
-    executeWithAllPlannersAndCompatibilityMode("MATCH ()<-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
-    executeWithAllPlannersAndCompatibilityMode("MATCH ()-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH ()-[r]->() WHERE id(r) = 42 RETURN r") shouldBe empty
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH ()<-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH ()-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
   }
 
   test("should use NodeByIdSeek for id array in variables") {
@@ -2093,7 +2093,7 @@ return b
     relate(start, end, "REL")
 
     //when
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n:A:B:C:D:E:F:G:H:I:J:K:L:M)-[:REL]->(m:Z:Y:X:W:V:U) return n,m")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n:A:B:C:D:E:F:G:H:I:J:K:L:M)-[:REL]->(m:Z:Y:X:W:V:U) return n,m")
 
     //then
     result.toList should equal(List(Map("n" -> start, "m" -> end)))
@@ -2157,7 +2157,7 @@ return b
     val node = createNode()
     relate(node, node)
 
-    val result = executeWithAllPlanners("MATCH ()-[r]-() RETURN id(r) as r").columnAs[Long]("r")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH ()-[r]-() RETURN id(r) as r").columnAs[Long]("r")
 
     result.toList should equal(List(0))
   }

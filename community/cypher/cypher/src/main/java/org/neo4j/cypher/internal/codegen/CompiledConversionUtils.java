@@ -19,16 +19,18 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
+import java.lang.reflect.Array;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
 import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException;
 import org.neo4j.cypher.internal.frontend.v3_1.IncomparableValuesException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.MathUtil;
-
-import java.lang.reflect.Array;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 
 // Class with static methods used by compiled execution plans
 public abstract class CompiledConversionUtils
@@ -144,9 +146,71 @@ public abstract class CompiledConversionUtils
             long right = ((Number) rhs).longValue();
             return left == right;
         }
+        else if (lhs.getClass().isArray() && rhs.getClass().isArray() )
+        {
+            int length = Array.getLength( lhs );
+            if ( length != Array.getLength( rhs ) )
+            {
+                return false;
+            }
+            for ( int i = 0; i < length; i++ )
+            {
+                if (!equals( Array.get( lhs, i ), Array.get(rhs, i) ))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        else if (lhs.getClass().isArray() && rhs instanceof List<?> )
+        {
+            return compareArrayAndList( lhs, (List<?>) rhs );
+        }
+        else if (lhs instanceof List<?> && rhs.getClass().isArray())
+        {
+            return compareArrayAndList( rhs, (List<?>) lhs );
+        }
+        else if (lhs instanceof List<?> && rhs instanceof List<?>)
+        {
+            List<?> lhsList = (List<?>) lhs;
+            List<?> rhsList = (List<?>) rhs;
+            if (lhsList.size() != rhsList.size())
+            {
+                return false;
+            }
+            Iterator<?> lhsIterator = lhsList.iterator();
+            Iterator<?> rhsIterator = rhsList.iterator();
+            while (lhsIterator.hasNext())
+            {
+                if (!equals( lhsIterator.next(), rhsIterator.next() ))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
 
         //for everything else call equals
         return lhs.equals( rhs );
+    }
+
+    private static Boolean compareArrayAndList(Object array, List<?> list)
+    {
+        int length = Array.getLength( array );
+        if ( length != list.size() )
+        {
+            return false;
+        }
+
+        int i = 0;
+        for ( Object o : list )
+        {
+            if (!equals( o, Array.get(array, i++) ))
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static Boolean or( Object lhs, Object rhs )

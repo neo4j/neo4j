@@ -24,10 +24,11 @@ import org.neo4j.cypher.internal.frontend.v3_1.symbols.CTBoolean
 
 case class Or(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExpression {
 
-  override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
+  override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable ||
+    lhs.codeGenType.ct != CTBoolean || rhs.codeGenType.ct != CTBoolean
 
   override def codeGenType(implicit context: CodeGenContext) =
-    if (!nullable && lhs.codeGenType.ct == CTBoolean && rhs.codeGenType.ct == CTBoolean)
+    if (!nullable)
       CodeGenType(CTBoolean, BoolType)
     else CodeGenType(CTBoolean, ReferenceType)
 
@@ -37,7 +38,7 @@ case class Or(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExp
   }
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext): E =
-    if (!nullable && lhs.codeGenType.ct == CTBoolean && rhs.codeGenType.ct == CTBoolean)
+    if (!nullable)
       structure.orExpression(lhs.generateExpression(structure), rhs.generateExpression(structure))
     else structure.threeValuedOrExpression(structure.box(lhs.generateExpression(structure), lhs.codeGenType),
                                            structure.box(rhs.generateExpression(structure), rhs.codeGenType))
