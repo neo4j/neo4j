@@ -50,7 +50,7 @@ public class InputEntityDeserializer<ENTITY extends InputEntity>
     private final Function<ENTITY,ENTITY> decorator;
     private final Deserialization<ENTITY> deserialization;
     private final Validator<ENTITY> validator;
-    private final Extractors.StringExtractor stringExtractor = new Extractors.StringExtractor( false );
+    private final Extractors.StringExtractor stringExtractor = new Extractors.StringExtractor( false, false );
     private final Collector badCollector;
 
     InputEntityDeserializer( Header header, CharSeeker data, int delimiter,
