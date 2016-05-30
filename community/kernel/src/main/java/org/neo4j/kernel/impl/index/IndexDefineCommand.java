@@ -131,10 +131,10 @@ public class IndexDefineCommand extends Command
         }
 
         int nextIdInt = nextId.incrementAndGet();
-        if ( nextIdInt > HIGHEST_POSSIBLE_ID ) // >= since the actual value -1 is reserved for all-ones
+        if ( nextIdInt > HIGHEST_POSSIBLE_ID || stringToId.size() >= HIGHEST_POSSIBLE_ID )
         {
             throw new IllegalStateException( format(
-                    "Modifying more than %d indexes in a single transaction is not supported",
+                    "Modifying more than %d indexes or keys in a single transaction is not supported",
                     HIGHEST_POSSIBLE_ID + 1 ) );
         }
         id = nextIdInt;
@@ -219,11 +219,15 @@ public class IndexDefineCommand extends Command
 
     private void writeMap( WritableChannel channel, Map<String,Integer> map ) throws IOException
     {
-        channel.put( (byte) map.size() );
+        assert map.size() <= IndexDefineCommand.HIGHEST_POSSIBLE_ID :
+            "Can not write map with size larger than 2 bytes. Actual size " + map.size();
+        channel.putShort( (short) map.size() );
         for ( Map.Entry<String,Integer> entry : map.entrySet() )
         {
             write2bLengthAndString( channel, entry.getKey() );
             int id = entry.getValue();
+            assert id <= IndexDefineCommand.HIGHEST_POSSIBLE_ID :
+                "Can not write id larger than 2 bytes. Actual value " + id;
             channel.putShort( (short) id );
         }
     }
