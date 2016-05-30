@@ -21,32 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{ExecutionEngineFunSuite, SyntaxException}
 
-class SkipLimitAcceptanceTest extends ExecutionEngineFunSuite {
-  test("SKIP should not allow variables") {
-    intercept[SyntaxException](execute("MATCH (n) RETURN n SKIP n.count"))
-  }
-
-  test("LIMIT should not allow variables") {
-    intercept[SyntaxException](execute("MATCH (n) RETURN n LIMIT n.count"))
-  }
-
-  test("SKIP with an expression that does not depend on variables should work") {
-    1 to 10 foreach { _ => createNode() }
-
-    val query = "MATCH (n) RETURN n SKIP toInt(rand()*9)"
-    val result = execute(query)
-
-    result.toList should not be empty
-  }
-
-  test("LIMIT with an expression that does not depend on variables should work") {
-    1 to 3 foreach { _ => createNode() }
-
-    val query = "MATCH (n) RETURN n LIMIT toInt(ceil(1.7))"
-    val result = execute(query)
-
-    result.toList should have size 2
-  }
+class OrderByLimitAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("ORDER BY LIMIT should use a TopPipe") {
     1 to 3 foreach { _ => createNode() }
