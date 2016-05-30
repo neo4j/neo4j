@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.raft.roles;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.neo4j.coreedge.raft.Followers;
 import org.neo4j.coreedge.raft.RaftMessageHandler;
@@ -214,6 +215,14 @@ public class Leader implements RaftMessageHandler
                 RaftMessages.NewEntry.Request<MEMBER> req = (RaftMessages.NewEntry.Request<MEMBER>) message;
                 ReplicatedContent content = req.content();
                 Appending.appendNewEntry( ctx, outcome, content );
+                break;
+            }
+
+            case NEW_BATCH_REQUEST:
+            {
+                RaftMessages.NewEntry.Batch<MEMBER> req = (RaftMessages.NewEntry.Batch<MEMBER>) message;
+                List<ReplicatedContent> contents = req.contents();
+                Appending.appendNewEntries( ctx, outcome, contents );
                 break;
             }
         }

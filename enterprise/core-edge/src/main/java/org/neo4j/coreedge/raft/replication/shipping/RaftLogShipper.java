@@ -238,7 +238,7 @@ public class RaftLogShipper<MEMBER>
         lastLeaderContext = leaderContext;
     }
 
-    public synchronized void onNewEntry( long prevLogIndex, long prevLogTerm, RaftLogEntry newLogEntry, LeaderContext leaderContext )
+    public synchronized void onNewEntries( long prevLogIndex, long prevLogTerm, RaftLogEntry[] newLogEntries, LeaderContext leaderContext )
     {
         switch ( mode )
         {
@@ -247,7 +247,7 @@ public class RaftLogShipper<MEMBER>
             {
                 if ( prevLogIndex - matchIndex <= maxAllowedShippingLag )
                 {
-                    sendNewEntry( prevLogIndex, prevLogTerm, newLogEntry, leaderContext ); // all sending functions update lastSentIndex
+                    sendNewEntries( prevLogIndex, prevLogTerm, newLogEntries, leaderContext ); // all sending functions update lastSentIndex
                 }
                 else
                 {
@@ -423,14 +423,14 @@ public class RaftLogShipper<MEMBER>
         }
     }
 
-    private void sendNewEntry( long prevLogIndex, long prevLogTerm, RaftLogEntry newEntry, LeaderContext leaderContext )
+    private void sendNewEntries( long prevLogIndex, long prevLogTerm, RaftLogEntry[] newEntries, LeaderContext leaderContext )
     {
         scheduleTimeout( retryTimeMillis );
 
         lastSentIndex = prevLogIndex + 1;
 
         RaftMessages.AppendEntries.Request<MEMBER> appendRequest = new RaftMessages.AppendEntries.Request<>(
-                leader, leaderContext.term, prevLogIndex, prevLogTerm, new RaftLogEntry[] { newEntry }, leaderContext.commitIndex );
+                leader, leaderContext.term, prevLogIndex, prevLogTerm, newEntries, leaderContext.commitIndex );
 
         outbound.send( follower, appendRequest );
 

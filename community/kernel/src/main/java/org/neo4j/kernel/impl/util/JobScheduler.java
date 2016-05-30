@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.util;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -170,6 +171,8 @@ public interface JobScheduler extends Lifecycle
     interface JobHandle
     {
         void cancel( boolean mayInterruptIfRunning );
+
+        void waitTermination() throws InterruptedException, ExecutionException;
     }
 
     /** Expose a group scheduler as an {@link Executor} */

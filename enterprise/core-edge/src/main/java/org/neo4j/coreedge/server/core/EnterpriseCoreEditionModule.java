@@ -44,6 +44,8 @@ import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.RaftDiscoveryServiceConnector;
+import org.neo4j.coreedge.raft.BatchingMessageHandler;
+import org.neo4j.coreedge.raft.ContinuousJob;
 import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.RaftInstance;
@@ -145,6 +147,7 @@ import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
@@ -159,6 +162,7 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.udc.UsageData;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
 
 /**
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
@@ -360,7 +364,7 @@ public class EnterpriseCoreEditionModule
 
             raft = createRaft( life, loggingOutbound, discoveryService, config, messageLogger, raftLog,
                     coreState, fileSystem, clusterStateDirectory, myself, logProvider, raftServer,
-                    raftTimeoutService, databaseHealthSupplier, platformModule.monitors );
+                    raftTimeoutService, databaseHealthSupplier, platformModule.monitors, platformModule.jobScheduler );
 
             life.add( new PruningScheduler( coreState, platformModule.jobScheduler,
                     config.get( CoreEdgeClusterSettings.raft_log_pruning_frequency ) ) );
@@ -608,7 +612,7 @@ public class EnterpriseCoreEditionModule
                                                         RaftServer<CoreMember> raftServer,
                                                         DelayedRenewableTimeoutService raftTimeoutService,
                                                         Supplier<DatabaseHealth> databaseHealthSupplier,
-                                                        Monitors monitors )
+                                                        Monitors monitors, JobScheduler jobScheduler )
     {
         StateStorage<TermState> termState;
         try
@@ -678,9 +682,18 @@ public class EnterpriseCoreEditionModule
 
         RaftInstance<CoreMember> raftInstance = new RaftInstance<>(
                 myself, termState, voteState, raftLog, raftStateMachine, electionTimeout, heartbeatInterval,
-                raftTimeoutService, loggingRaftInbound,
+                raftTimeoutService,
                 new RaftOutbound( outbound ), logProvider,
                 raftMembershipManager, logShipping, databaseHealthSupplier, monitors );
+
+        int queueSize = config.get( CoreEdgeClusterSettings.raft_in_queue_size );
+        int maxBatch = config.get( CoreEdgeClusterSettings.raft_in_queue_max_batch );
+        BatchingMessageHandler<CoreMember> batchingMessageHandler =
+                new BatchingMessageHandler<>( raftInstance, logProvider, queueSize, maxBatch );
+
+        life.add( new ContinuousJob( jobScheduler, new JobScheduler.Group( "raft-batch-handler", NEW_THREAD ), batchingMessageHandler ) );
+
+        loggingRaftInbound.registerHandler( batchingMessageHandler );
 
         life.add( new RaftDiscoveryServiceConnector( discoveryService, raftInstance ) );
 

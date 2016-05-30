@@ -88,9 +88,11 @@ public class RaftInstanceBuilder<MEMBER>
         RaftLogShippingManager<MEMBER> logShipping = new RaftLogShippingManager<>( outbound, logProvider, raftLog,
                 clock, member, membershipManager, retryTimeMillis, catchupBatchSize, maxAllowedShippingLag );
 
-        return new RaftInstance<>( member, termState, voteState, raftLog, raftStateMachine, electionTimeout,
-                heartbeatInterval, renewableTimeoutService, inbound, outbound, logProvider,
+        RaftInstance<MEMBER> raft = new RaftInstance<>( member, termState, voteState, raftLog, raftStateMachine, electionTimeout,
+                heartbeatInterval, renewableTimeoutService, outbound, logProvider,
                 membershipManager, logShipping, databaseHealthSupplier, monitors );
+        inbound.registerHandler( raft );
+        return raft;
     }
 
     public RaftInstanceBuilder<MEMBER> electionTimeout( long electionTimeout )

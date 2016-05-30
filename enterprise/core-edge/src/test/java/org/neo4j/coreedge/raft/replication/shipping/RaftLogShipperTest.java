@@ -176,9 +176,9 @@ public class RaftLogShipperTest
         outbound.clear();
 
         raftLog.append( entry1 );
-        logShipper.onNewEntry( 0, 0, entry1, new LeaderContext( 0, 0 ) );
+        logShipper.onNewEntries( 0, 0, new RaftLogEntry[]{ entry1 }, new LeaderContext( 0, 0 ) );
         raftLog.append( entry2 );
-        logShipper.onNewEntry( 1, 0, entry2, new LeaderContext( 0, 0 ) );
+        logShipper.onNewEntries( 1, 0, new RaftLogEntry[]{ entry2 }, new LeaderContext( 0, 0 ) );
 
         // then
         assertTrue( outbound.hasEntriesTo( follower, entry1, entry2 ) );
@@ -193,8 +193,8 @@ public class RaftLogShipperTest
 
         // when
         outbound.clear();
-        logShipper.onNewEntry( 0, 0, entry1, new LeaderContext( 0, 0 ) );
-        logShipper.onNewEntry( 1, 0, entry2, new LeaderContext( 0, 0 ) );
+        logShipper.onNewEntries( 0, 0, new RaftLogEntry[]{ entry1 }, new LeaderContext( 0, 0 ) );
+        logShipper.onNewEntries( 1, 0, new RaftLogEntry[]{ entry2 }, new LeaderContext( 0, 0 ) );
 
         // then
         assertEquals( outbound.sentTo( follower ).size(), 0 );
@@ -210,8 +210,8 @@ public class RaftLogShipperTest
         raftLog.append( entry2 );
 
         logShipper.onMatch( 0, new LeaderContext( 0, 0 ) );
-        logShipper.onNewEntry( 0, 0, entry1, new LeaderContext( 0, 0 ) );
-        logShipper.onNewEntry( 1, 0, entry2, new LeaderContext( 0, 0 ) );
+        logShipper.onNewEntries( 0, 0, new RaftLogEntry[]{ entry1 }, new LeaderContext( 0, 0 ) );
+        logShipper.onNewEntries( 1, 0, new RaftLogEntry[]{ entry2 }, new LeaderContext( 0, 0 ) );
 
         // when
         outbound.clear();
