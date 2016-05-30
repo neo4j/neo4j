@@ -21,12 +21,13 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2_4;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.WritableChannel;
 
 import static java.lang.String.format;
 
 /**
  * Main entry point into log entry versions and parsers and all that. A {@link LogEntryVersion} can be retrieved
- * by using {@link #byVersion(byte, byte)} and from there get a hold of
+ * by using {@link #byVersion(byte)} and from there get a hold of
  * {@link LogEntryParser} using {@link #entryParser(byte)}.
  *
  * Here follows an explanation how log entry versioning in Neo4j works:
@@ -52,13 +53,15 @@ import static java.lang.String.format;
  * the 16 bytes header size of a log for backwards compatibility. The log entry version controls everything
  * about versioning of log entries and commands, such that if either log entry format (such as log entry types,
  * such as START, COMMIT and the likes, or data within them) change, or one or more command format change
- * the log entry verision will be bumped.
+ * the log entry version will be bumped.
  * The process of making an update to log entry or command format is to:
  * <ol>
  * <li>Copy {@link PhysicalLogCommandReaderV2_2_4} or similar and modify the new copy</li>
- * <li>Copy {@link LogEntryParsersV2_3} or similar and modify the new copy</li>
+ * <li>Copy {@link LogEntryParsersV2_3} or similar and modify the new copy if entry layout has changed</li>
  * <li>Add an entry in this enum, like {@link #V2_2_4} pointing to the above new classes</li>
- * <li>Modify the appropriate {@link StorageCommand} and {@link LogEntryWriter} with required changes</li>
+ * <li>Modify {@link StorageCommand#serialize(WritableChannel)}.
+ * Also {@link LogEntryWriter} (if log entry layout has changed) with required changes</li>
+ * <li>Change {@link #CURRENT} to point to the newly created version</li>
  * </ol>
  * Everything apart from that should just work and Neo4j should automatically support the new version as well.
  *
@@ -78,9 +81,21 @@ public enum LogEntryVersion
     // -4 is correct, -3 can be found in some 2.3 milestones that's why we play it safe
     V2_2_4( -4, LogEntryParsersV2_2_4.class ),
     V2_3( -5, LogEntryParsersV2_3.class ),
-    V3_0( -6, LogEntryParsersV2_3.class );
+    V3_0( -6, LogEntryParsersV2_3.class ),
+    // as of 2016-05-27: neo4j 2.2.10 legacy index IndexDefineCommand maps write size as short instead of byte
+    // -7 is picked, -5 and -6 can be found in the future (2.3 and 3.0)
+    // log entry layout hasn't changed since 2_2_4 so just use that one
+    V2_2_10( -7, LogEntryParsersV2_2_4.class ),
+    // as of 2016-05-30: neo4j 2.3.5 legacy index IndexDefineCommand maps write size as short instead of byte
+    // See comment for V2.2.10 for version number explanation
+    // log entry layout hasn't changed since 2_3 so just use that one
+    V2_3_5( -8, LogEntryParsersV2_3.class ),
+    // as of 2016-05-30: neo4j 3.0.2 legacy index IndexDefineCommand maps write size as short instead of byte
+    // See comment for V2.2.10 for version number explanation
+    // log entry layout hasn't changed since 2_3 so just use that one
+    V3_0_2( -9, LogEntryParsersV2_3.class );
 
-    public static final LogEntryVersion CURRENT = V3_0;
+    public static final LogEntryVersion CURRENT = V3_0_2;
     private static final LogEntryVersion[] ALL = values();
     private static final LogEntryVersion[] LOOKUP_BY_VERSION = new LogEntryVersion[ALL.length + 1]; // pessimistic size
     static

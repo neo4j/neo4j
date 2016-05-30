@@ -22,8 +22,10 @@ package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_0;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_1;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2_10;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2_4;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0_2;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.CommandReaderFactory;
@@ -44,6 +46,9 @@ public class RecordStorageCommandReaderFactory implements CommandReaderFactory
         readers[-LogEntryVersion.V2_2_4.byteCode()] = new PhysicalLogCommandReaderV2_2_4();
         readers[-LogEntryVersion.V2_3.byteCode()] = new PhysicalLogCommandReaderV2_2_4();
         readers[-LogEntryVersion.V3_0.byteCode()] = new PhysicalLogCommandReaderV3_0();
+        readers[-LogEntryVersion.V2_2_10.byteCode()] = new PhysicalLogCommandReaderV2_2_10();
+        readers[-LogEntryVersion.V2_3_5.byteCode()] = new PhysicalLogCommandReaderV2_2_10();
+        readers[-LogEntryVersion.V3_0_2.byteCode()] = new PhysicalLogCommandReaderV3_0_2();
 
         // A little extra safety check so that we got 'em all
         LogEntryVersion[] versions = LogEntryVersion.values();
