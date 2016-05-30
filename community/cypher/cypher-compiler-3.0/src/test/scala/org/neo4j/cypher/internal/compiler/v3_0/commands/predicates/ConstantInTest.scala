@@ -45,4 +45,25 @@ class ConstantInTest extends CypherFunSuite {
     predicate.isMatch(vNull) should equal(None)
     predicate.isMatch(v14) should equal(Some(false))
   }
+
+  test("check null") {
+    // given
+    val predicate = ConstantIn(Variable("x"), Collection(Literal(1), Literal(2), Literal(null)))
+
+    implicit val state = QueryStateHelper.empty
+
+    val v1 = ExecutionContext.empty.newWith("x" -> 1)
+    val vNull = ExecutionContext.empty.newWith("x" -> null)
+    val v14 = ExecutionContext.empty.newWith("x" -> 14)
+
+    // then when
+    predicate.isMatch(v1) should equal(Some(true))
+    predicate.isMatch(vNull) should equal(None)
+    predicate.isMatch(v14) should equal(None)
+
+    // and twice, just to check that the cache does not mess things up
+    predicate.isMatch(v1) should equal(Some(true))
+    predicate.isMatch(vNull) should equal(None)
+    predicate.isMatch(v14) should equal(None)
+  }
 }

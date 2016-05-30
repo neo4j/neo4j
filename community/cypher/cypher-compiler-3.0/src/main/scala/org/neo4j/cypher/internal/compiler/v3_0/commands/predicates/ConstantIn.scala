@@ -33,10 +33,17 @@ case class ConstantIn(value: Expression, list: Expression) extends Predicate wit
   override def isMatch(ctx: ExecutionContext)(implicit state: QueryState) = {
     val setToCheck: Set[Any] = state.constantInCache.getOrElseUpdate(list, {
       val set = makeTraversable(list(ctx)).toSet
-      assert(!set.contains(null), "should never be used with null values in set")
       set
     })
-    Option(value(ctx)) map setToCheck.apply
+
+    val result = Option(value(ctx)) map setToCheck.apply
+
+    // When checking if a value is contained in a collection that contains null, the result is null, and not false if
+    // the value is not present in the collection
+    if (result.contains(false) && setToCheck.contains(null))
+      None
+    else
+      result
   }
 
   override def containsIsNull = false

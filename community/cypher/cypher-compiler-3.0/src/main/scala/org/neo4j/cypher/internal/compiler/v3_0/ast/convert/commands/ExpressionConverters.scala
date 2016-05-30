@@ -334,7 +334,10 @@ object ExpressionConverters {
   }
 
   private def in(e: ast.In) = e.rhs match {
-    case ConstantExpression(value) =>
+    case value: Parameter =>
+      predicates.ConstantIn(toCommandExpression(e.lhs), toCommandExpression(value))
+
+    case value@Collection(expressions) if expressions.forall(_.isInstanceOf[Literal]) =>
       predicates.ConstantIn(toCommandExpression(e.lhs), toCommandExpression(value))
 
     case _ =>
