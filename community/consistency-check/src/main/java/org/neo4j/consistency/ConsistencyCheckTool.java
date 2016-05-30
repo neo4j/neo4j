@@ -174,7 +174,7 @@ public class ConsistencyCheckTool
         );
     }
 
-    static class ToolFailureException extends Exception
+    public static class ToolFailureException extends Exception
     {
         ToolFailureException( String message )
         {
@@ -186,13 +186,13 @@ public class ConsistencyCheckTool
             super( message, cause );
         }
 
-        void exitTool()
+        public void exitTool()
         {
-            printMessage();
+            printErrorMessage();
             exit();
         }
 
-        void printMessage()
+        public void printErrorMessage()
         {
             System.err.println( getMessage() );
             if ( getCause() != null )
