@@ -210,6 +210,27 @@ public class TerminationCompatibility extends LockingCompatibilityTestSuite.Comp
         closeClientAfterLockFailureOnTransactionTermination( false );
     }
 
+    @Test
+    public void acquireExclusiveLockWhileHoldingSharedLockCanBeTerminated() throws Exception
+    {
+        acquireSharedLockInThisThread();
+
+        CountDownLatch sharedLockAcquired = new CountDownLatch( 1 );
+        CountDownLatch startExclusiveLock = new CountDownLatch( 1 );
+        LockAcquisition acquisition = acquireSharedAndExclusiveLocksInAnotherThread( sharedLockAcquired,
+                startExclusiveLock );
+
+        await( sharedLockAcquired );
+        startExclusiveLock.countDown();
+        assertThreadIsWaitingForLock( acquisition );
+
+        acquisition.terminate();
+        assertLockAcquisitionFailed( acquisition );
+
+        releaseAllLocksInThisThread();
+        assertNoLocksHeld();
+    }
+
     private void closeClientAfterLockFailureOnTransactionTermination( boolean shared ) throws Exception
     {
         acquireExclusiveLockInThisThread();
@@ -247,6 +268,12 @@ public class TerminationCompatibility extends LockingCompatibilityTestSuite.Comp
         startSecondLock.countDown();
 
         assertLockAcquisitionSucceeded( lockAcquisition );
+    }
+
+    private void acquireSharedLockInThisThread()
+    {
+        client.acquireShared( RESOURCE_TYPE, RESOURCE_ID );
+        assertLocksHeld( RESOURCE_ID );
     }
 
     private void acquireExclusiveLockInThisThread()
@@ -340,6 +367,33 @@ public class TerminationCompatibility extends LockingCompatibilityTestSuite.Comp
                     {
                         client.acquireExclusive( RESOURCE_TYPE, RESOURCE_ID );
                     }
+                }
+                return null;
+            }
+        } );
+        lockAcquisition.setFuture( future );
+
+        return lockAcquisition;
+    }
+
+    private LockAcquisition acquireSharedAndExclusiveLocksInAnotherThread( final CountDownLatch sharedLockAcquired,
+            final CountDownLatch startExclusiveLock )
+    {
+        final LockAcquisition lockAcquisition = new LockAcquisition();
+
+        Future<Void> future = executor.submit( new Callable<Void>()
+        {
+            @Override
+            public Void call() throws Exception
+            {
+                try ( Client client = newLockClient( lockAcquisition ) )
+                {
+                    client.acquireShared( RESOURCE_TYPE, RESOURCE_ID );
+
+                    sharedLockAcquired.countDown();
+                    await( startExclusiveLock );
+
+                    client.acquireExclusive( RESOURCE_TYPE, RESOURCE_ID );
                 }
                 return null;
             }

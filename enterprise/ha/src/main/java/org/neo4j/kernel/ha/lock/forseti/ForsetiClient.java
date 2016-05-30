@@ -615,19 +615,31 @@ public class ForsetiClient implements Locks.Client
                 return true;
 
             }
-            catch(DeadlockDetectedException e)
+            catch ( DeadlockDetectedException e )
             {
-                sharedLock.releaseUpdateLock(this);
+                sharedLock.releaseUpdateLock( this );
+                // wait list is not cleared here as in other catch blocks because it is cleared in
+                // markAsWaitingFor() before throwing DeadlockDetectedException
                 throw e;
             }
-            catch(Throwable e)
+            catch ( TransactionTerminatedException e )
             {
-                sharedLock.releaseUpdateLock(this);
-                clearWaitList();
+                handleUpgradeToExclusiveFailure( sharedLock );
+                throw e;
+            }
+            catch ( Throwable e )
+            {
+                handleUpgradeToExclusiveFailure( sharedLock );
                 throw new RuntimeException( e );
             }
         }
         return false;
+    }
+
+    private void handleUpgradeToExclusiveFailure( SharedLock sharedLock )
+    {
+        sharedLock.releaseUpdateLock( this );
+        clearWaitList();
     }
 
     private void clearWaitList()
