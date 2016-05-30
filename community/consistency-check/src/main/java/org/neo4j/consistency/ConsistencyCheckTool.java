@@ -52,16 +52,22 @@ public class ConsistencyCheckTool
 
     public static void main( String[] args ) throws IOException
     {
-        ConsistencyCheckTool tool = new ConsistencyCheckTool( new ConsistencyCheckService(),
-                new DefaultFileSystemAbstraction(), System.err );
         try
         {
-            tool.run( args );
+            runConsistencyCheckTool( args );
         }
         catch ( ToolFailureException e )
         {
             e.exitTool();
         }
+    }
+
+    public static ConsistencyCheckService.Result runConsistencyCheckTool( String[] args )
+            throws ToolFailureException, IOException
+    {
+        ConsistencyCheckTool tool = new ConsistencyCheckTool( new ConsistencyCheckService(),
+                new DefaultFileSystemAbstraction(), System.err );
+        return tool.run( args );
     }
 
     private final ConsistencyCheckService consistencyCheckService;
@@ -76,7 +82,7 @@ public class ConsistencyCheckTool
         this.systemError = systemError;
     }
 
-    void run( String... args ) throws ToolFailureException, IOException
+    ConsistencyCheckService.Result run( String... args ) throws ToolFailureException, IOException
     {
         Args arguments = Args.withFlags( PROP_OWNER, VERBOSE ).parse( args );
 
@@ -89,7 +95,7 @@ public class ConsistencyCheckTool
         LogProvider logProvider = FormattedLogProvider.toOutputStream( System.out );
         try
         {
-            consistencyCheckService.runFullConsistencyCheck( storeDir, tuningConfiguration,
+            return consistencyCheckService.runFullConsistencyCheck( storeDir, tuningConfiguration,
                     ProgressMonitorFactory.textual( System.err ), logProvider, fs, verbose );
         }
         catch ( ConsistencyCheckIncompleteException e )
@@ -103,18 +109,16 @@ public class ConsistencyCheckTool
         return arguments.getBoolean( VERBOSE, false, true );
     }
 
-    private void checkDbState( File storeDir, Config tuningConfiguration )
+    private void checkDbState( File storeDir, Config tuningConfiguration ) throws ToolFailureException
     {
         try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, tuningConfiguration ) )
         {
             if ( new RecoveryRequiredChecker( fs, pageCache ).isRecoveryRequiredAt( storeDir ) )
             {
-                systemError.print( Strings.joinAsLines(
+                throw new ToolFailureException( Strings.joinAsLines(
                         "Active logical log detected, this might be a source of inconsistencies.",
                         "Please recover database before running the consistency check.",
                         "To perform recovery please start database and perform clean shutdown." ) );
-
-                exit();
             }
         }
         catch ( IOException e )
@@ -172,7 +176,7 @@ public class ConsistencyCheckTool
         );
     }
 
-    class ToolFailureException extends Exception
+    static class ToolFailureException extends Exception
     {
         ToolFailureException( String message )
         {
@@ -186,13 +190,17 @@ public class ConsistencyCheckTool
 
         void exitTool()
         {
+            printMessage();
+            exit();
+        }
+
+        void printMessage()
+        {
             System.err.println( getMessage() );
             if ( getCause() != null )
             {
                 getCause().printStackTrace( System.err );
             }
-
-            exit();
         }
     }
 
