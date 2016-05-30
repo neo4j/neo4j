@@ -239,6 +239,21 @@ public class ShiroAuthManagerTest
     }
 
     @Test
+    public void shouldNotRequestPasswordChangeWithInvalidCredentials() throws Throwable
+    {
+        // Given
+        users.create( new User( "neo", Credential.forPassword( "abc123" ), true ) );
+        manager.start();
+        when( authStrategy.isAuthenticationPermitted( "neo" )).thenReturn( true );
+
+        // When
+        AuthSubject authSubject = manager.login( "neo", "wrong" );
+
+        // Then
+        assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.FAILURE ) );
+    }
+
+    @Test
     public void shouldReturnNullWhenSettingPasswordForUnknownUser() throws Throwable
     {
         // Given

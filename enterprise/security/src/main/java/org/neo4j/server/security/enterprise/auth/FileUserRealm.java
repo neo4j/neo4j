@@ -123,15 +123,21 @@ public class FileUserRealm extends AuthorizingRealm
             throw new AuthenticationException( "User " + usernamePasswordToken.getUsername() + " does not exist" );
         }
 
+        SimpleAuthenticationInfo authenticationInfo =
+                new SimpleAuthenticationInfo( user.name(), user.credentials(), getName() );
+
         // TODO: This will not work if AuthenticationInfo is cached,
         // unless you always do SecurityManager.logout properly (which will invalidate the cache)
         // For REST we may need to connect HttpSessionListener.sessionDestroyed with logout
         if ( user.passwordChangeRequired() )
         {
+            // We need to assert that the credentials match ourselves before requesting the user to change password
+            // (normally this assertion is done by Shiro after we return from this method)
+            assertCredentialsMatch( token, authenticationInfo );
             throw new ExpiredCredentialsException( "Password change required" );
         }
 
-        return new SimpleAuthenticationInfo( user.name(), user.credentials(), getName() );
+        return authenticationInfo;
     }
 
     int numberOfUsers()
