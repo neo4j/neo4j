@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.function.BiConsumer;
 
@@ -39,7 +40,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.store.StorePropertyCursor;
-import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -597,10 +597,9 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     public void rebuildCounts( File storeDir, String versionToMigrateFrom, String versionToMigrateTo ) throws
             IOException
     {
-        switch ( versionToMigrateFrom )
+        if ( Objects.equals( versionToMigrateFrom, StandardV2_1.STORE_VERSION ) ||
+             Objects.equals( versionToMigrateFrom, StandardV2_2.STORE_VERSION ) )
         {
-        case StandardV2_1.STORE_VERSION:
-        case StandardV2_2.STORE_VERSION:
             // create counters from scratch
             Iterable<StoreFile> countsStoreFiles =
                     Iterables.iterable( StoreFile.COUNTS_STORE_LEFT, StoreFile.COUNTS_STORE_RIGHT );
@@ -609,9 +608,6 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             File neoStore = new File( storeDir, DEFAULT_NAME );
             long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
             rebuildCountsFromScratch( storeDir, lastTxId, pageCache, selectForVersion( versionToMigrateTo ) );
-            break;
-        default:
-            // OK, don't rebuild for other versions
         }
     }
 

@@ -26,10 +26,11 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 @RunWith( Parameterized.class )
-public class StoreVersionsTest
+public class StoreVersionTest
 {
     @Parameterized.Parameter( 0 )
     public String version;
@@ -37,20 +38,24 @@ public class StoreVersionsTest
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<String> versions()
     {
-        return Arrays.asList( StoreVersions.STANDARD_V2_0, StoreVersions.STANDARD_V2_1, StoreVersions.STANDARD_V2_2,
-                StoreVersions.STANDARD_V2_3, StoreVersions.STANDARD_V3_0 );
+        return Arrays.asList(
+                StoreVersion.STANDARD_V2_0.string(),
+                StoreVersion.STANDARD_V2_1.string(),
+                StoreVersion.STANDARD_V2_2.string(),
+                StoreVersion.STANDARD_V2_3.string(),
+                StoreVersion.STANDARD_V3_0.string() );
     }
 
     @Test
     public void shouldBeCommunityFormat()
     {
-        assertTrue( "Expected community format", StoreVersions.isCommunityStoreVersion( version ) );
+        assertTrue( "Expected community format", StoreVersion.isCommunityStoreVersion( version ) );
     }
 
     @Test
     public void shouldNotBeLabeledEnterpriseFormat()
     {
-        assertFalse( "Expected non-enterprise format", StoreVersions.isEnterpriseStoreVersion( version ) );
+        assertFalse( "Expected non-enterprise format", StoreVersion.isEnterpriseStoreVersion( version ) );
     }
 
     @RunWith( Parameterized.class )
@@ -62,19 +67,19 @@ public class StoreVersionsTest
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<String> versions()
         {
-            return Arrays.asList( StoreVersions.HIGH_LIMIT_V3_0 );
+            return Arrays.asList( StoreVersion.HIGH_LIMIT_V3_0.string() );
         }
 
         @Test
         public void shouldBeCommunityFormat()
         {
-            assertFalse( "Expected non-community format", StoreVersions.isCommunityStoreVersion( version ) );
+            assertFalse( "Expected non-community format", StoreVersion.isCommunityStoreVersion( version ) );
         }
 
         @Test
         public void shouldNotBeLabeledEnterpriseFormat()
         {
-            assertTrue( "Expected enterprise format", StoreVersions.isEnterpriseStoreVersion( version ) );
+            assertTrue( "Expected enterprise format", StoreVersion.isEnterpriseStoreVersion( version ) );
         }
     }
 }

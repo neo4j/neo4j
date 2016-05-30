@@ -23,7 +23,7 @@ import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
 import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.StoreVersions;
+import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -35,12 +35,12 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 public class StandardV2_2 extends BaseRecordFormats
 {
+    public static final String STORE_VERSION = StoreVersion.STANDARD_V2_2.string();
     public static final RecordFormats RECORD_FORMATS = new StandardV2_2();
-    public static final String STORE_VERSION = StoreVersions.STANDARD_V2_2;
 
     public StandardV2_2()
     {
-        super( STORE_VERSION, 5, Capability.SCHEMA, Capability.DENSE_NODES, Capability.LUCENE_3,
+        super( STORE_VERSION, 4, Capability.SCHEMA, Capability.DENSE_NODES, Capability.LUCENE_3,
                 Capability.VERSION_TRAILERS );
     }
 
