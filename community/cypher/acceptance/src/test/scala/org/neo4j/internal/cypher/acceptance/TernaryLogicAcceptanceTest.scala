@@ -23,35 +23,35 @@ import org.neo4j.cypher.ExecutionEngineFunSuite
 
 class TernaryLogicAcceptanceTest extends ExecutionEngineFunSuite {
 
-    "not null" =>> null
-    "null IS NULL" =>> true
+  "not null" =>> null
+  "null IS NULL" =>> true
 
-    "null = null" =>> null
-    "null <> null" =>> null
+  "null = null" =>> null
+  "null <> null" =>> null
 
-    "null and null" =>> null
-    "null and true" =>> null
-    "true and null" =>> null
-    "false and null" =>> false
-    "null and false" =>> false
+  "null and null" =>> null
+  "null and true" =>> null
+  "true and null" =>> null
+  "false and null" =>> false
+  "null and false" =>> false
 
-    "null or null" =>> null
-    "null or true" =>> true
-    "true or null" =>> true
-    "false or null" =>> null
-    "null or false" =>> null
+  "null or null" =>> null
+  "null or true" =>> true
+  "true or null" =>> true
+  "false or null" =>> null
+  "null or false" =>> null
 
-    "null xor null" =>> null
-    "null xor true" =>> null
-    "true xor null" =>> null
-    "false xor null" =>> null
-    "null xor false" =>> null
+  "null xor null" =>> null
+  "null xor true" =>> null
+  "true xor null" =>> null
+  "false xor null" =>> null
+  "null xor false" =>> null
 
-    "null in [1,2,3]" =>> null
-    "null in [1,2,3,null]" =>> null
-    "null in []" =>> false
-    "1 in [1,2,3, null]" =>> true
-    "5 in [1,2,3, null]" =>> null
+  "null in [1,2,3]" =>> null
+  "null in [1,2,3,null]" =>> null
+  "null in []" =>> false
+  "1 in [1,2,3, null]" =>> true
+  "5 in [1,2,3, null]" =>> null
 
 
   implicit class Evaluate(comparison: String) {
@@ -61,4 +61,5 @@ class TernaryLogicAcceptanceTest extends ExecutionEngineFunSuite {
       output should equal(expectedResult)
     }
   }
+
 }
