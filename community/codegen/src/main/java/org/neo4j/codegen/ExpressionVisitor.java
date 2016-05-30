@@ -49,6 +49,8 @@ public interface ExpressionVisitor
 
     void or( Expression lhs, Expression rhs );
 
+    void and( Expression lhs, Expression rhs );
+
     void addInts( Expression lhs, Expression rhs );
 
     void addLongs( Expression lhs, Expression rhs );

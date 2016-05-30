@@ -154,9 +154,9 @@ public class CodeBlock implements AutoCloseable
         return block;
     }
 
-    public CodeBlock whileLoop( Expression test )
+    public CodeBlock whileLoop( Expression...tests )
     {
-        emitter.beginWhile( test );
+        emitter.beginWhile( tests );
         return new CodeBlock( this );
     }
 

@@ -89,7 +89,7 @@ class InvalidState implements MethodEmitter
     }
 
     @Override
-    public void beginWhile( Expression test )
+    public void beginWhile( Expression...tests )
     {
         throw new IllegalStateException( reason );
     }

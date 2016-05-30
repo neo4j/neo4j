@@ -171,13 +171,16 @@ class MethodByteCodeEmitter implements MethodEmitter
     }
 
     @Override
-    public void beginWhile( Expression test )
+    public void beginWhile( Expression...tests )
     {
         Label l0 = new Label();
         methodVisitor.visitLabel( l0 );
-        test.accept( expressionVisitor );
         Label l1 = new Label();
-        methodVisitor.visitJumpInsn( IFEQ, l1 );
+        for ( Expression test : tests )
+        {
+            test.accept( expressionVisitor );
+            methodVisitor.visitJumpInsn( IFEQ, l1 );
+        }
 
         stateStack.push( new While( methodVisitor, l0, l1  ) );
     }

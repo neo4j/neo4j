@@ -59,6 +59,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.codegen.Expression.addDoubles;
 import static org.neo4j.codegen.Expression.addInts;
 import static org.neo4j.codegen.Expression.addLongs;
+import static org.neo4j.codegen.Expression.and;
 import static org.neo4j.codegen.Expression.constant;
 import static org.neo4j.codegen.Expression.invoke;
 import static org.neo4j.codegen.Expression.newArray;
@@ -482,6 +483,49 @@ public class CodeGenerationTest
         verifyNoMoreInteractions( a, b, c );
     }
 
+
+    @Test
+    public void shouldGenerateWhileLoopWithMultipleTestExpressions() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock callEach = simple.generateMethod( void.class, "check",
+                    param( boolean.class, "a"), param( boolean.class, "b"), param(Runnable.class, "runner") ) )
+            {
+                try ( CodeBlock loop = callEach.whileLoop( callEach.load("a"), callEach.load("b") ))
+                {
+                    loop.expression( invoke(
+                            loop.load("runner"),
+                            methodReference( Runnable.class, void.class, "run" ) ) );
+                    loop.returns();
+                }
+            }
+
+            handle = simple.handle();
+        }
+        Runnable a = mock( Runnable.class );
+        Runnable b = mock( Runnable.class );
+        Runnable c = mock( Runnable.class );
+        Runnable d = mock( Runnable.class );
+
+        // when
+        MethodHandle callEach = instanceMethod( handle.newInstance(), "check", boolean.class, boolean.class, Runnable.class );
+        callEach.invoke( true, true, a);
+        callEach.invoke( true, false, b);
+        callEach.invoke( false, true, c);
+        callEach.invoke( false, false, d);
+
+        // then
+        verify( a ).run();
+        verifyNoMoreInteractions( a );
+        verifyZeroInteractions( b );
+        verifyZeroInteractions( c );
+        verifyZeroInteractions( d );
+
+    }
+
     @Test
     public void shouldGenerateNestedWhileLoop() throws Throwable
     {
@@ -899,6 +943,76 @@ public class CodeGenerationTest
         assertThat( conditional.invoke( true, true ), equalTo( true ) );
         assertThat( conditional.invoke( true, false ), equalTo( true ) );
         assertThat( conditional.invoke( false, true ), equalTo( true ) );
+        assertThat( conditional.invoke( false, false ), equalTo( false ) );
+    }
+
+
+    @Test
+    public void shouldGenerateAnd() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock conditional = simple.generateMethod( void.class, "conditional",
+                    param( boolean.class, "test1" ), param( boolean.class, "test2" ),
+                    param( Runnable.class, "runner" ) ) )
+            {
+                try ( CodeBlock doStuff = conditional.ifStatement( and( conditional.load( "test1" ),
+                        conditional.load( "test2" ) ) ) )
+                {
+                    doStuff.expression(
+                            invoke( doStuff.load( "runner" ), RUN ) );
+                }
+            }
+
+            handle = simple.handle();
+        }
+
+        Runnable runner1 = mock( Runnable.class );
+        Runnable runner2 = mock( Runnable.class );
+        Runnable runner3 = mock( Runnable.class );
+        Runnable runner4 = mock( Runnable.class );
+
+        // when
+        MethodHandle conditional =
+                instanceMethod( handle.newInstance(), "conditional", boolean.class, boolean.class, Runnable.class );
+        conditional.invoke( true, true, runner1 );
+        conditional.invoke( true, false, runner2 );
+        conditional.invoke( false, true, runner3 );
+        conditional.invoke( false, false, runner4 );
+
+        // then
+        verify( runner1 ).run();
+        verifyZeroInteractions( runner2 );
+        verifyZeroInteractions( runner3 );
+        verifyZeroInteractions( runner4 );
+    }
+
+    @Test
+    public void shouldGenerateMethodUsingAnd() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock conditional = simple.generateMethod( boolean.class, "conditional",
+                    param( boolean.class, "test1" ), param( boolean.class, "test2" ) ) )
+            {
+                conditional.returns( and( conditional.load( "test1" ), conditional.load( "test2" ) ) );
+            }
+
+            handle = simple.handle();
+        }
+
+        // when
+        MethodHandle conditional =
+                instanceMethod( handle.newInstance(), "conditional", boolean.class, boolean.class );
+
+        // then
+        assertThat( conditional.invoke( true, true ), equalTo( true ) );
+        assertThat( conditional.invoke( true, false ), equalTo( false ) );
+        assertThat( conditional.invoke( false, true ), equalTo( false ) );
         assertThat( conditional.invoke( false, false ), equalTo( false ) );
     }
 

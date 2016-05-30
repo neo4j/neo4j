@@ -166,6 +166,17 @@ class ExpressionToString implements ExpressionVisitor
         rhs.accept( this );
         result.append( ")" );
     }
+
+    @Override
+    public void and( Expression lhs, Expression rhs )
+    {
+        result.append( "and(" );
+        lhs.accept( this );
+        result.append( ", " );
+        rhs.accept( this );
+        result.append( ")" );
+    }
+
     @Override
     public void addInts( Expression lhs, Expression rhs )
     {

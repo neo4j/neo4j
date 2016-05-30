@@ -133,10 +133,16 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
-    public void beginWhile( Expression test )
+    public void beginWhile( Expression...tests )
     {
         indent().append( "while( " );
-        test.accept( this );
+        String sep = "";
+        for (Expression test: tests)
+        {
+            append( sep );
+            test.accept( this );
+            sep = " && ";
+        }
         append( " )\n" );
         indent().append( "{\n" );
         level.push( LEVEL );
@@ -355,6 +361,15 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
         lhs.accept( this );
         append( " || " );
         rhs.accept( this );
+    }
+
+    @Override
+    public void and( Expression lhs, Expression rhs )
+    {
+        lhs.accept( this );
+        append( " && " );
+        rhs.accept( this );
+
     }
 
     @Override
