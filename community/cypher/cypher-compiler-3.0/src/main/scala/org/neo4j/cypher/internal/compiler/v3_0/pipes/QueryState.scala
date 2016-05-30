@@ -23,7 +23,7 @@ import java.util.UUID
 
 import org.neo4j.collection.primitive.PrimitiveLongSet
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.PathValueBuilder
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, PathValueBuilder}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_0.ParameterNotFoundException
 
@@ -40,7 +40,8 @@ class QueryState(val query: QueryContext,
                  val queryId: AnyRef = UUID.randomUUID().toString,
                  val triadicState: mutable.Map[String, PrimitiveLongSet] = mutable.Map.empty,
                  val repeatableReads: mutable.Map[Pipe, Seq[ExecutionContext]] = mutable.Map.empty,
-                 val publicTypeConverter: Any => Any = identity) {
+                 val publicTypeConverter: Any => Any = identity,
+                 val constantInCache: mutable.Map[Expression, Set[Any]] = mutable.Map.empty) {
   private var _pathValueBuilder: PathValueBuilder = null
 
   def clearPathValueBuilder = {
@@ -58,13 +59,13 @@ class QueryState(val query: QueryContext,
   def getStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
 
   def withDecorator(decorator: PipeDecorator) =
-    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads)
+    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads, publicTypeConverter, constantInCache)
 
   def withInitialContext(initialContext: ExecutionContext) =
-    new QueryState(query, resources, params, decorator, timeReader, Some(initialContext), queryId, triadicState, repeatableReads)
+    new QueryState(query, resources, params, decorator, timeReader, Some(initialContext), queryId, triadicState, repeatableReads, publicTypeConverter, constantInCache)
 
   def withQueryContext(query: QueryContext) =
-    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads)
+    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads, publicTypeConverter, constantInCache)
 }
 
 object QueryState {
