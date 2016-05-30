@@ -29,8 +29,8 @@ import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -60,7 +60,9 @@ public class NeoStoresRule extends ExternalResource
 
     public NeoStores open( String... config )
     {
-        return open( StandardV3_0.RECORD_FORMATS, config );
+        Config configuration = new Config( stringMap( config ) );
+        RecordFormats formats = RecordFormatSelector.selectForConfig( configuration, NullLogProvider.getInstance() );
+        return open( formats, config );
     }
 
     public NeoStores open( RecordFormats format, String... config )

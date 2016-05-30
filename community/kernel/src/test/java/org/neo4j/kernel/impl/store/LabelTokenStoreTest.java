@@ -28,7 +28,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -73,7 +73,7 @@ public class LabelTokenStoreTest
         public UnusedLabelTokenStore() throws IOException
         {
             super( file, config, generatorFactory, cache, logProvider, dynamicStringStore,
-                    StandardV3_0.RECORD_FORMATS );
+                    RecordFormatSelector.defaultFormat() );
             storeFile = mock( PagedFile.class );
 
             when( storeFile.io( any( Long.class ), any( Integer.class ) ) ).thenReturn( pageCursor );
