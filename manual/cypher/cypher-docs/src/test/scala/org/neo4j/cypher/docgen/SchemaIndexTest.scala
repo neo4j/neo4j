@@ -122,6 +122,16 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
   }
 
   @Test def use_index_with_in() {
+
+    executePreparationQueries(
+      List(
+        "FOREACH(x in range(0,100) | CREATE (:Person) )",
+        "FOREACH(x in range(0,400) | CREATE (:Person {name: x}) )"
+      )
+    )
+
+    sampleAllIndicesAndWait()
+
     profileQuery(
       title = "Use index with IN",
       text =
