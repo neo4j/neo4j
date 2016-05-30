@@ -24,6 +24,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -83,7 +84,8 @@ public class StoreIteratorRelationshipCursorTest
         StoreStatement storeStatement = mock( StoreStatement.class );
         when( neoStores.getRelationshipStore() ).thenReturn( relationshipStore );
         InstanceCache<StoreIteratorRelationshipCursor> instanceCache = new TestCursorCache();
-        return new StoreIteratorRelationshipCursor( relationshipRecord, neoStores, storeStatement, instanceCache );
+        return new StoreIteratorRelationshipCursor( relationshipRecord, neoStores, storeStatement, instanceCache,
+                LockService.NO_LOCK_SERVICE );
     }
 
     private static class RelationshipAnswer implements Answer<Boolean>
