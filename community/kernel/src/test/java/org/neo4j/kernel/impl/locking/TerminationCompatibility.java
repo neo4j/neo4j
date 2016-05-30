@@ -483,7 +483,7 @@ public class TerminationCompatibility extends LockingCompatibilityTestSuite.Comp
 
     private void assertThreadIsWaitingForLock( LockAcquisition lockAcquisition ) throws Exception
     {
-        for ( int i = 0; i < 20; i++ )
+        for ( int i = 0; i < 30; i++ )
         {
             try
             {
@@ -500,7 +500,7 @@ public class TerminationCompatibility extends LockingCompatibilityTestSuite.Comp
     private void assertLockAcquisitionSucceeded( LockAcquisition lockAcquisition ) throws Exception
     {
         boolean completed = false;
-        for ( int i = 0; i < 20; i++ )
+        for ( int i = 0; i < 30; i++ )
         {
             try
             {
@@ -518,7 +518,7 @@ public class TerminationCompatibility extends LockingCompatibilityTestSuite.Comp
     private void assertLockAcquisitionFailed( LockAcquisition lockAcquisition ) throws Exception
     {
         ExecutionException executionException = null;
-        for ( int i = 0; i < 20; i++ )
+        for ( int i = 0; i < 30; i++ )
         {
             try
             {
@@ -575,7 +575,7 @@ public class TerminationCompatibility extends LockingCompatibilityTestSuite.Comp
 
         Object result() throws InterruptedException, ExecutionException, TimeoutException
         {
-            return getFuture().get( 50, TimeUnit.MILLISECONDS );
+            return getFuture().get( 100, TimeUnit.MILLISECONDS );
         }
 
         boolean completed()
