@@ -33,6 +33,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 /**
  * A read {@linkplain PageCursor page cursor} that wraps another page cursor and an {@linkplain Adversary adversary}
@@ -58,6 +59,9 @@ import org.neo4j.io.pagecache.PageCursor;
 @SuppressWarnings( "unchecked" )
 class AdversarialReadPageCursor extends PageCursor
 {
+    private static final boolean enableInconsistencyTracing = FeatureToggles.flag(
+            AdversarialReadPageCursor.class, "enableInconsistencyTracing", false );
+
     private static class State implements Adversary
     {
         private final Adversary adversary;
@@ -73,7 +77,7 @@ class AdversarialReadPageCursor extends PageCursor
         private State( Adversary adversary )
         {
             this.adversary = adversary;
-            inconsistentReadHistory = new ArrayList<>();
+            inconsistentReadHistory = new ArrayList<>( 32 );
         }
 
         private <T extends Number> Number inconsistently( T value, PageCursor delegate )
@@ -470,18 +474,28 @@ class AdversarialReadPageCursor extends PageCursor
     private static class NumberValue
     {
         private final Class<? extends Number> type;
-        private final Long value;
+        private final long value;
         private final int offset;
         private final Number insteadOf;
-        private final Exception trace;
+        private Exception trace;
 
-        NumberValue( Class<? extends Number> type, Long value, int offset, Number insteadOf )
+        NumberValue( Class<? extends Number> type, long value, int offset, Number insteadOf )
         {
             this.type = type;
             this.value = value;
             this.offset = offset;
             this.insteadOf = insteadOf;
-            trace = new Exception( toString() );
+            if ( enableInconsistencyTracing )
+            {
+                trace = new Exception()
+                {
+                    @Override
+                    public String getMessage()
+                    {
+                        return NumberValue.this.toString();
+                    }
+                };
+            }
         }
 
         @Override
@@ -490,9 +504,9 @@ class AdversarialReadPageCursor extends PageCursor
             String typeName = type.getCanonicalName();
             switch ( typeName )
             {
-            case "java.lang.Byte": return "(byte)" + value.byteValue() + " at offset " + offset + " (instead of " + insteadOf + ")";
-            case "java.lang.Short": return "(short)" + value.shortValue() + " at offset " + offset + " (instead of " + insteadOf + ")";
-            case "java.lang.Integer": return "(int)" + value.intValue() + " at offset " + offset + " (instead of " + insteadOf + ")";
+            case "java.lang.Byte": return "(byte)" + value + " at offset " + offset + " (instead of " + insteadOf + ")";
+            case "java.lang.Short": return "(short)" + value + " at offset " + offset + " (instead of " + insteadOf + ")";
+            case "java.lang.Integer": return "(int)" + value + " at offset " + offset + " (instead of " + insteadOf + ")";
             case "java.lang.Long": return "(long)" + value + " at offset " + offset + " (instead of " + insteadOf + ")";
             }
             return "(" + typeName + ")" + value + " at offset " + offset + " (instead of " + insteadOf + ")";
@@ -502,7 +516,10 @@ class AdversarialReadPageCursor extends PageCursor
         {
             StringWriter w = new StringWriter();
             PrintWriter pw = new PrintWriter( w );
-            trace.printStackTrace( pw );
+            if ( trace != null )
+            {
+                trace.printStackTrace( pw );
+            }
             pw.flush();
             sb.append( w );
             sb.append( '\n' );
