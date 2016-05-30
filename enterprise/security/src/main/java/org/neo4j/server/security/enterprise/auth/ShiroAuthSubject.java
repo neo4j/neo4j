@@ -27,6 +27,7 @@ import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+import org.neo4j.server.security.auth.UserManager;
 
 public class ShiroAuthSubject implements AuthSubject
 {
@@ -72,6 +73,21 @@ public class ShiroAuthSubject implements AuthSubject
         authManager.setPassword( this, (String) subject.getPrincipal(), password );
     }
 
+    public RoleManager getRoleManager()
+    {
+        return authManager;
+    }
+
+    public UserManager getUserManager()
+    {
+        return authManager;
+    }
+
+    public boolean isAdmin()
+    {
+        return subject.isPermitted( "*" );
+    }
+
     public boolean doesUsernameMatch( String username )
     {
         Object principal = subject.getPrincipal();
@@ -99,7 +115,7 @@ public class ShiroAuthSubject implements AuthSubject
     @Override
     public String name()
     {
-        return "AUTH";
+        return subject.getPrincipal().toString();
     }
 
     Subject getSubject()
