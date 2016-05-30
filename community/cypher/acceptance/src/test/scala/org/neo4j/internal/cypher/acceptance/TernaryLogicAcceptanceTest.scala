@@ -23,7 +23,6 @@ import org.neo4j.cypher.ExecutionEngineFunSuite
 
 class TernaryLogicAcceptanceTest extends ExecutionEngineFunSuite {
 
-  test("test") {
     "not null" =>> null
     "null IS NULL" =>> true
 
@@ -53,10 +52,10 @@ class TernaryLogicAcceptanceTest extends ExecutionEngineFunSuite {
     "null in []" =>> false
     "1 in [1,2,3, null]" =>> true
     "5 in [1,2,3, null]" =>> null
-  }
+
 
   implicit class Evaluate(comparison: String) {
-    def =>>(expectedResult: Any) = {
+    def =>>(expectedResult: Any) = test(comparison + " should equal " + expectedResult) {
       val output = executeScalar[Any]("RETURN " + comparison)
 
       output should equal(expectedResult)

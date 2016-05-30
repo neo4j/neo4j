@@ -577,14 +577,6 @@ order by a.COL1""")
     result.toList should equal(List(Map("n" -> node)))
   }
 
-  test("shouldSupportArrayOfArrayOfPrimitivesAsParameterForInKeyword") {
-    val node = createNode("lotteryNumbers" -> Array(42, 87))
-
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n) where id(n) in [1, 2, 3, null] return n")
-
-    result.toList should equal(List(Map("n" -> node)))
-  }
-
   test("params should survive with") {
     val n = createNode()
     val result = executeWithAllPlannersAndCompatibilityMode("match (n) where id(n) = 0 WITH collect(n) as coll where length(coll)={id} RETURN coll", "id"->1)
