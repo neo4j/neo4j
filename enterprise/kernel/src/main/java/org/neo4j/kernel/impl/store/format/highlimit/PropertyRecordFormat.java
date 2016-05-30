@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.store.format.highlimit;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -63,7 +62,7 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
     }
 
     @Override
-    public void read( PropertyRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
+    public void read( PropertyRecord record, PageCursor cursor, RecordLoad mode, int recordSize )
             throws IOException
     {
         int offset = cursor.getOffset();
@@ -89,7 +88,7 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
     }
 
     @Override
-    public void write( PropertyRecord record, PageCursor cursor, int recordSize, PagedFile storeFile )
+    public void write( PropertyRecord record, PageCursor cursor, int recordSize )
             throws IOException
     {
         if ( record.inUse() )
