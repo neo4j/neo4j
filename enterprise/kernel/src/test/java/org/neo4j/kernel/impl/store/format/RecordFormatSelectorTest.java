@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.PageCacheRule;
+import org.neo4j.test.rule.PageCacheRule;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertNull;
@@ -191,7 +191,7 @@ public class RecordFormatSelectorTest
         PageCache pageCache = getPageCache();
         prepareNeoStoreFile( StandardV3_0.STORE_VERSION, pageCache );
 
-        Config config = config( HighLimit.STORE_VERSION );
+        Config config = config( HighLimit.NAME );
 
         try
         {

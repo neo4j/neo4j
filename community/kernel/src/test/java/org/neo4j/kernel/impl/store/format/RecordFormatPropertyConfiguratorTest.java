@@ -97,12 +97,6 @@ public class RecordFormatPropertyConfiguratorTest
         }
 
         @Override
-        public String name()
-        {
-            return "resizable";
-        }
-
-        @Override
         public String storeVersion()
         {
             return null;

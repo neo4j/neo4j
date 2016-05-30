@@ -143,7 +143,6 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -249,7 +248,6 @@ public class EnterpriseCoreEditionModule
                                         DiscoveryServiceFactory discoveryServiceFactory )
     {
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
-        formats = StandardV3_0.RECORD_FORMATS;
 
         final Dependencies dependencies = platformModule.dependencies;
         final Config config = platformModule.config;

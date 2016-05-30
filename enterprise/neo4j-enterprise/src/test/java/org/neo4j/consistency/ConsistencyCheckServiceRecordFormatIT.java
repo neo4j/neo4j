@@ -46,12 +46,12 @@ import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLogProvider;
-import org.neo4j.test.EmbeddedDatabaseRule;
-import org.neo4j.test.SuppressOutput;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.test.TargetDirectory.testDirForTest;
+import static org.neo4j.test.rule.TargetDirectory.testDirForTest;
 
 @RunWith( Parameterized.class )
 public class ConsistencyCheckServiceRecordFormatIT

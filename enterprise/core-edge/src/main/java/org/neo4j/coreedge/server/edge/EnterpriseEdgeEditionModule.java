@@ -112,7 +112,6 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         }
 
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
-        formats = StandardV3_0.RECORD_FORMATS;
 
         org.neo4j.kernel.impl.util.Dependencies dependencies = platformModule.dependencies;
         Config config = platformModule.config;

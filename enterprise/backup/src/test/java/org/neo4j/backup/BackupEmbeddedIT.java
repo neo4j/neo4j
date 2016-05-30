@@ -52,7 +52,7 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.TargetDirectory.testDirForTest;
+import static org.neo4j.test.rule.TargetDirectory.testDirForTest;
 
 @RunWith( Parameterized.class )
 public class BackupEmbeddedIT

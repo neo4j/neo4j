@@ -95,12 +95,16 @@ public class StoreMigratorFrom20IT
     private LabelScanStoreProvider labelScanStoreProvider;
 
     @Parameter
+    public String recordFormatName;
+    @Parameter( 1 )
     public RecordFormats recordFormat;
 
     @Parameters( name = "{0}" )
-    public static List<RecordFormats> recordFormats()
+    public static List<Object[]> recordFormats()
     {
-        return Arrays.asList( StandardV3_0.RECORD_FORMATS, HighLimit.RECORD_FORMATS );
+        return Arrays.asList(
+                new Object[]{StandardV3_0.NAME, StandardV3_0.RECORD_FORMATS},
+                new Object[]{HighLimit.NAME, HighLimit.RECORD_FORMATS} );
     }
 
     @Before
@@ -244,7 +248,7 @@ public class StoreMigratorFrom20IT
 
     private Config getConfig()
     {
-        return new Config( stringMap( GraphDatabaseSettings.record_format.name(), recordFormat.name() ),
+        return new Config( stringMap( GraphDatabaseSettings.record_format.name(), recordFormatName ),
                 GraphDatabaseSettings.class );
     }
 }
