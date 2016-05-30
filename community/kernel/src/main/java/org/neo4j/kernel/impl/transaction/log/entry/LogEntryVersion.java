@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import org.neo4j.kernel.impl.transaction.command.CommandReader;
 import org.neo4j.kernel.impl.transaction.command.CommandHandler;
+import org.neo4j.kernel.impl.transaction.command.CommandReader;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV1_9;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_0;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_1;
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV2_2;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2_10;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2_4;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV2_2;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 
 import static java.lang.String.format;
@@ -63,9 +64,11 @@ import static java.lang.String.format;
  *   The process of making an update to log entry or command format is to NOT change any existing class, but to:
  * <ol>
  * <li>Copy {@link PhysicalLogCommandReaderV2_2_4} or similar and modify the new copy</li>
- * <li>Copy {@link LogEntryParsersV2_2_4} or similar and modify the new copy</li>
+ * <li>Copy {@link LogEntryParsersV2_2_4} or similar and modify the new copy if entry layout has changed</li>
  * <li>Add an entry in this enum, like {@link #V2_2_4} pointing to the above new classes</li>
- * <li>Modify {@link CommandWriter} and {@link LogEntryWriter} with required changes</li>
+ * <li>Modify {@link CommandWriter}. Also {@link LogEntryWriter} (if log entry layout has changed)
+ * with required changes</li>
+ * <li>Change {@link #CURRENT} to point to the newly created version</li>
  * </ol>
  * Everything apart from that should just work and Neo4j should automatically support the new version as well.
  *
@@ -134,13 +137,35 @@ public enum LogEntryVersion
         {
             return new PhysicalLogCommandReaderV2_2_4();
         }
+    },
+    // as of 2016-05-27: neo4j 2.2.10 legacy index IndexDefineCommand maps write size as short instead of byte
+    // -7 is picked, -5 and -6 can be found in the future (2.3 and 3.0)
+    // log entry layout hasn't changed since 2_2_4 so just use that one
+    V2_2_10( -7, LogEntryParsersV2_2_4.class )
+    {
+        @Override
+        public CommandReader newCommandReader()
+        {
+            return new PhysicalLogCommandReaderV2_2_10();
+        }
+    },
+    // as of 2016-05-30: neo4j 2.3.5 legacy index IndexDefineCommand maps write size as short instead of byte
+    // See comment for V2.2.10 for version number explanation
+    // log entry layout hasn't changed since 2_3 so just use that one
+    V2_3_5( -8, LogEntryParsersV2_3.class )
+    {
+        @Override
+        public CommandReader newCommandReader()
+        {
+            return new PhysicalLogCommandReaderV2_2_10();
+        }
     };
 
-    public static final LogEntryVersion CURRENT = V2_3;
+    public static final LogEntryVersion CURRENT = V2_3_5;
     public static final byte NO_PARTICULAR_LOG_HEADER_FORMAT_VERSION = -1;
     private static final LogEntryVersion[] ALL = values();
-    private static final LogEntryVersion[] NEGATIVE = new LogEntryVersion[ALL.length+1]; // pessimistic size
-    private static final LogEntryVersion[] POSITIVE = new LogEntryVersion[ALL.length]; // pessimistic size
+    private static final LogEntryVersion[] NEGATIVE = new LogEntryVersion[ALL.length+5]; // pessimistic size
+    private static final LogEntryVersion[] POSITIVE = new LogEntryVersion[ALL.length+5]; // pessimistic size
     static
     {
         for ( LogEntryVersion version : ALL )
