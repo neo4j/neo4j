@@ -191,7 +191,7 @@ public class RecordFormatSelectorTest
         PageCache pageCache = getPageCache();
         prepareNeoStoreFile( StandardV3_0.STORE_VERSION, pageCache );
 
-        Config config = config( HighLimit.STORE_VERSION );
+        Config config = config( HighLimit.NAME );
 
         try
         {

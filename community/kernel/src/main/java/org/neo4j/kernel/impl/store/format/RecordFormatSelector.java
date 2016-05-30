@@ -118,11 +118,11 @@ public class RecordFormatSelector
         String recordFormat = configuredRecordFormat( config );
         if ( StringUtils.isEmpty( recordFormat ) )
         {
-            info( logProvider, "Record format not configured, selected default: " + defaultFormat().name() );
+            info( logProvider, "Record format not configured, selected default: " + defaultFormat() );
             return defaultFormat();
         }
         RecordFormats format = selectSpecificFormat( recordFormat );
-        info( logProvider, "Selected record format based on config: " + format.name() );
+        info( logProvider, "Selected record format based on config: " + format );
         return format;
     }
 
@@ -155,7 +155,7 @@ public class RecordFormatSelector
                     {
                         if ( format.storeVersion().equals( storeVersion ) )
                         {
-                            info( logProvider, "Selected " + format.name() + " record format from store " + storeDir );
+                            info( logProvider, "Selected " + format + " record format from store " + storeDir );
                             return format;
                         }
                     }
@@ -184,38 +184,33 @@ public class RecordFormatSelector
     public static RecordFormats selectForStoreOrConfig( Config config, File storeDir, FileSystemAbstraction fs,
             PageCache pageCache, LogProvider logProvider )
     {
-        String configFormatName = configuredRecordFormat( config );
-        boolean formatConfigured = StringUtils.isNotEmpty( configFormatName );
+        RecordFormats configuredFormat = loadRecordFormat( configuredRecordFormat( config ) );
+        boolean formatConfigured = configuredFormat != null;
 
         RecordFormats currentFormat = selectForStore( storeDir, fs, pageCache, NullLogProvider.getInstance() );
         boolean storeWithFormatExists = currentFormat != null;
 
         if ( formatConfigured && storeWithFormatExists )
         {
-            if ( currentFormat.name().equals( configFormatName ) )
+            if ( currentFormat.generation() == configuredFormat.generation() )
             {
-                info( logProvider, "Configured format matches format in the store. Selected: " + currentFormat.name() );
+                info( logProvider, "Configured format matches format in the store. Selected: " + currentFormat );
                 return currentFormat;
             }
             throw new IllegalArgumentException( String.format(
                     "Configured format '%s' is different from the actual format in the store '%s'",
-                    configFormatName, currentFormat.name() ) );
+                    configuredFormat, currentFormat ) );
         }
 
         if ( !formatConfigured && storeWithFormatExists )
         {
-            info( logProvider, "Format not configured. Selected format from the store: " + currentFormat.name() );
+            info( logProvider, "Format not configured. Selected format from the store: " + currentFormat );
             return currentFormat;
         }
 
         if ( formatConfigured )
         {
-            RecordFormats configuredFormat = loadRecordFormat( configFormatName );
-            if ( configuredFormat == null )
-            {
-                throw new IllegalArgumentException( "Unable to load configured format '" + configFormatName + "'" );
-            }
-            info( logProvider, "Selected configured format: " + configFormatName );
+            info( logProvider, "Selected configured format: " + configuredFormat );
             return configuredFormat;
         }
 

@@ -37,11 +37,10 @@ public class StandardV2_3 extends BaseRecordFormats
 {
     public static final String STORE_VERSION = StoreVersion.STANDARD_V2_3.versionString();
     public static final RecordFormats RECORD_FORMATS = new StandardV2_3();
-    private static final String NAME = "standard_v2.3";
 
     public StandardV2_3()
     {
-        super( NAME, STORE_VERSION, 5, Capability.SCHEMA, Capability.DENSE_NODES, Capability.LUCENE_3 );
+        super( STORE_VERSION, 5, Capability.SCHEMA, Capability.DENSE_NODES, Capability.LUCENE_3 );
     }
 
     @Override

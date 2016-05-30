@@ -467,11 +467,16 @@ public class StoreUpgraderTest
 
     private Config getTuningConfig()
     {
-        return new Config( MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), getRecordFormats().name() ) );
+        return new Config( MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), getRecordFormatsName() ) );
     }
 
     protected RecordFormats getRecordFormats()
     {
         return StandardV3_0.RECORD_FORMATS;
+    }
+
+    protected String getRecordFormatsName()
+    {
+        return StandardV3_0.NAME;
     }
 }

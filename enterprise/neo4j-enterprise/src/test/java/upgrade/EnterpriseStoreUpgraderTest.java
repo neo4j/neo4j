@@ -37,4 +37,10 @@ public class EnterpriseStoreUpgraderTest extends StoreUpgraderTest
     {
         return HighLimit.RECORD_FORMATS;
     }
+
+    @Override
+    protected String getRecordFormatsName()
+    {
+        return HighLimit.NAME;
+    }
 }

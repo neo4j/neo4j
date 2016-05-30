@@ -43,12 +43,6 @@ public class HighLimitWithSmallRecords extends HighLimit
     }
 
     @Override
-    public String name()
-    {
-        return NAME;
-    }
-
-    @Override
     public String storeVersion()
     {
         return STORE_VERSION;
