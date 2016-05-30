@@ -46,7 +46,7 @@ import static org.neo4j.collection.primitive.Primitive.intObjectMap;
  */
 public class IndexDefineCommand extends Command
 {
-    static final int HIGHEST_POSSIBLE_ID = 0xFFFF - 1; // -1 since the actual value -1 is reserved for all-ones
+    public static final int HIGHEST_POSSIBLE_ID = 0xFFFF - 1; // -1 since the actual value -1 is reserved for all-ones
     private final AtomicInteger nextIndexNameId = new AtomicInteger();
     private final AtomicInteger nextKeyId = new AtomicInteger();
     private Map<String,Integer> indexNameIdRange;
@@ -129,10 +129,10 @@ public class IndexDefineCommand extends Command
         }
 
         int nextIdInt = nextId.incrementAndGet();
-        if ( nextIdInt > HIGHEST_POSSIBLE_ID ) // >= since the actual value -1 is reserved for all-ones
+        if ( nextIdInt > HIGHEST_POSSIBLE_ID || stringToId.size() >= HIGHEST_POSSIBLE_ID )
         {
             throw new IllegalStateException( format(
-                    "Modifying more than %d indexes in a single transaction is not supported",
+                    "Modifying more than %d indexes or keys in a single transaction is not supported",
                     HIGHEST_POSSIBLE_ID + 1 ) );
         }
         id = nextIdInt;
