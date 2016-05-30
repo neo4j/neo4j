@@ -61,6 +61,7 @@ import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputIdException;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
+import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.MissingRelationshipDataException;
@@ -552,6 +553,10 @@ public class ImportTool
                                Options.MULTILINE_FIELDS.argument() + "=false. If you know that your input data " +
                                "include fields containing new-line characters then import with this option set to " +
                                "true.", e, stackTrace );
+        }
+        else if ( Exceptions.contains( e, InputException.class ) )
+        {
+            printErrorMessage( "Error in input data", e, stackTrace );
         }
         // Fallback to printing generic error and stack trace
         else
