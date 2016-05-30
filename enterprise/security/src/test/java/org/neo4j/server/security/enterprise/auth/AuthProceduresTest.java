@@ -31,9 +31,11 @@ import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
@@ -41,6 +43,7 @@ import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.time.Clock.systemUTC;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -49,6 +52,8 @@ import static org.junit.Assert.fail;
 public class AuthProceduresTest
 {
     private AuthSubject adminSubject;
+    private AuthSubject schemaSubject;
+    private AuthSubject writeSubject;
     private AuthSubject readSubject;
 
     private GraphDatabaseAPI db;
@@ -62,11 +67,18 @@ public class AuthProceduresTest
         manager = new EnterpriseAuthManager( new InMemoryUserRepository(), new InMemoryRoleRepository(),
                 new BasicPasswordPolicy(), systemUTC(), true );
         manager.newUser( "admin", "abc", false );
+        manager.newUser( "schema", "abc", false );
+        manager.newUser( "writer", "abc", false );
         manager.newUser( "reader", "123", false );
         manager.newRole( PredefinedRolesBuilder.ADMIN, "admin" );
+        manager.newRole( PredefinedRolesBuilder.ARCHITECT, "architect" );
+        manager.newRole( PredefinedRolesBuilder.PUBLISHER, "publisher" );
         manager.newRole( PredefinedRolesBuilder.READER, "reader" );
         readSubject = manager.login( "reader", "123" );
+        writeSubject = manager.login( "publisher", "abc" );
+        schemaSubject = manager.login( "architect", "abc" );
         adminSubject = manager.login( "admin", "abc" );
+        db.execute( "UNWIND range(0,2) AS number CREATE (:Node {number:number})" );
     }
 
     @After
@@ -78,18 +90,18 @@ public class AuthProceduresTest
     @Test
     public void shouldCreateUser() throws Exception
     {
-        testCallEmpty( db, adminSubject, "call dbms.createUser('craig', '1234', true)", null );
+        testCallEmpty( db, adminSubject, "CALL dbms.createUser('craig', '1234', true)", null );
         assertNotNull( "User craig should exist", manager.getUser( "craig" ) );
     }
 
     @Test
     public void shouldNotCreateExistingUser() throws Exception
     {
-        testCallEmpty( db, adminSubject, "call dbms.createUser('craig', '1234', true)", null );
+        testCallEmpty( db, adminSubject, "CALL dbms.createUser('craig', '1234', true)", null );
         assertNotNull( "User craig should exist", manager.getUser( "craig" ) );
         try
         {
-            testCallEmpty( db, adminSubject, "call dbms.createUser('craig', '1234', true)", null );
+            testCallEmpty( db, adminSubject, "CALL dbms.createUser('craig', '1234', true)", null );
             fail( "Expected exception to be thrown" );
         }
         catch ( QueryExecutionException e )
@@ -102,15 +114,200 @@ public class AuthProceduresTest
     @Test
     public void shouldNotAllowNonAdminCreateUser() throws Exception
     {
+        testFailCreateUser( readSubject );
+        testFailCreateUser( writeSubject );
+        testFailCreateUser( schemaSubject );
+    }
+
+    @Test
+    public void shouldAllowUserChangePassword() throws Exception
+    {
+        testCallEmpty( db, readSubject, "CALL dbms.changePassword( '321' )", null );
+        AuthSubject subject = manager.login( "reader", "321" );
+        assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
+    }
+
+    //----------User creation scenarios-----------
+
+    /*
+    Admin creates user Henrik with password bar
+    Admin adds user Henrik to group read-only
+    Henrik logs in with incorrect password → fail
+    Henrik logs in with correct password → gets prompted to change
+    Henrik starts read transaction → permission denied
+    Henrik changes password to foo → ok
+    Henrik starts write transaction → permission denied
+    Henrik starts read transaction → ok
+    Henrik logs off
+    */
+    @Test
+    public void userCreation1() throws Exception
+    {
+        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Henrik', 'bar', true)", null );
+        manager.addUserToRole( "Henrik", PredefinedRolesBuilder.READER ); // TODO: use procedure when implemented
+        AuthSubject subject = manager.login( "Henrik", "foo" );
+        assertEquals( AuthenticationResult.FAILURE, subject.getAuthenticationResult() );
+        subject = manager.login( "Henrik", "bar" );
+        assertEquals( AuthenticationResult.PASSWORD_CHANGE_REQUIRED, subject.getAuthenticationResult() );
+        testFailRead( subject, 3L );
+        testCallEmpty( db, subject, "CALL dbms.changePassword( 'foo' )", null );
+        subject = manager.login( "Henrik", "foo" );
+        assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
+        testFailWrite( subject );
+        testSuccessfulRead( subject, 3L );
+    }
+
+    /*
+    Admin creates user Henrik with password bar
+    Henrik logs in with correct password (gets prompted to change - change to foo)
+    Henrik starts read transaction → permission denied
+    Admin adds user Henrik to group read-only
+    Henrik starts write transaction → permission denied
+    Henrik starts read transaction → ok
+    Henrik logs off
+    */
+    @Test
+    public void userCreation2() throws Exception
+    {
+        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Henrik', 'bar', true)", null );
+        AuthSubject subject = manager.login( "Henrik", "bar" );
+        assertEquals( AuthenticationResult.PASSWORD_CHANGE_REQUIRED, subject.getAuthenticationResult() );
+        testCallEmpty( db, subject, "CALL dbms.changePassword( 'foo' )", null );
+        subject = manager.login( "Henrik", "foo" );
+        assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
+        testFailRead( subject, 3L );
+        manager.addUserToRole( "Henrik", PredefinedRolesBuilder.READER ); // TODO: use procedure when implemented
+        testFailWrite( subject );
+        testSuccessfulRead( subject, 3L );
+    }
+
+    /*
+    Admin creates user Henrik with password bar
+    Henrik logs in with correct password
+    Henrik starts read transaction → permission denied
+    Admin adds user Henrik to group read-write
+    Henrik starts write transaction → ok
+    Henrik starts read transaction → ok
+    Henrik starts schema transaction → permission denied
+    Henrik logs off
+    */
+    @Test
+    public void userCreation3() throws Exception
+    {
+        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)", null );
+        AuthSubject subject = manager.login( "Henrik", "bar" );
+        assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
+        testFailRead( subject, 3L );
+        manager.addUserToRole( "Henrik", PredefinedRolesBuilder.PUBLISHER );
+        testSuccessfulWrite( subject );
+        testSuccessfulRead( subject, 4L );
+        testFailSchema( subject );
+    }
+
+    /*
+    Admin creates user Henrik with password bar
+    Henrik logs in with correct password
+    Henrik starts read transaction → permission denied
+    Henrik starts write transaction → permission denied
+    Henrik starts schema transaction → permission denied
+    Henrik creates user Craig → permission denied
+    Admin adds user Henrik to group Architect
+    Henrik starts write transaction → ok
+    Henrik starts read transaction → ok
+    Henrik starts schema transaction → ok
+    Henrik creates user Craig → permission denied
+    Henrik logs off
+    */
+    @Test
+    public void userCreation4() throws Exception
+    {
+        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)", null );
+        AuthSubject subject = manager.login( "Henrik", "bar" );
+        assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
+        testFailRead( subject, 3L );
+        testFailWrite( subject );
+        testFailSchema( subject );
+        testFailCreateUser( subject );
+        manager.addUserToRole( "Henrik", PredefinedRolesBuilder.ARCHITECT );
+        testSuccessfulWrite( subject );
+        testSuccessfulRead( subject, 4L );
+        testSuccessfulSchema( subject );
+        testFailCreateUser( subject );
+    }
+
+    //-------------Helper functions---------------
+
+    private void testSuccessfulRead( AuthSubject subject, Long count )
+    {
+        testCall( db, subject, "MATCH (n) RETURN count(n)", ( r ) -> assertEquals( r.get( "count(n)" ), count ) );
+    }
+
+    private void testFailRead( AuthSubject subject, Long count )
+    {
         try
         {
-            testCallEmpty( db, readSubject, "call dbms.createUser('craig', '1234', true)", null );
+            testSuccessfulRead( subject, count );
             fail( "Expected exception to be thrown" );
         }
         catch ( AuthorizationViolationException e )
         {
-            assertTrue( "Exception should contain 'Permission Denied'",
-                    e.getMessage().contains( "Permission Denied" ) );
+            // TODO: this should be permission denied instead
+            assertTrue( "Exception should contain 'Read operations are not allowed'",
+                    e.getMessage().contains( "Read operations are not allowed" ) );
+        }
+    }
+
+    private void testSuccessfulWrite( AuthSubject subject )
+    {
+        testCallEmpty( db, subject, "CREATE (:Node)", null );
+    }
+
+    private void testFailWrite( AuthSubject subject )
+    {
+        try
+        {
+            testSuccessfulWrite( subject );
+            fail( "Expected exception to be thrown" );
+        }
+        catch ( AuthorizationViolationException e )
+        {
+            // TODO: this should be permission denied instead
+            assertTrue( "Exception should contain 'Write operations are not allowed'",
+                    e.getMessage().contains( "Write operations are not allowed" ) );
+        }
+    }
+
+    private void testSuccessfulSchema( AuthSubject subject )
+    {
+        testCallEmpty( db, subject, "CREATE INDEX ON :Node(number)", null );
+    }
+
+    private void testFailSchema( AuthSubject subject )
+    {
+        try
+        {
+            testSuccessfulSchema( subject );
+            fail( "Expected exception to be thrown" );
+        }
+        catch ( AuthorizationViolationException e )
+        {
+            // TODO: this should be permission denied instead
+            assertTrue( "Exception should contain 'Schema operations are not allowed'",
+                    e.getMessage().contains( "Schema operations are not allowed" ) );
+        }
+    }
+
+    private void testFailCreateUser( AuthSubject subject )
+    {
+        try
+        {
+            testCallEmpty( db, subject, "CALL dbms.createUser('Craig', 'foo', false)", null );
+            fail( "Expected exception to be thrown" );
+        }
+        catch ( QueryExecutionException e )
+        {
+            assertTrue( "Exception should contain '" + AuthProcedures.PERMISSION_DENIED + "'",
+                    e.getMessage().contains( AuthProcedures.PERMISSION_DENIED ) );
         }
     }
 

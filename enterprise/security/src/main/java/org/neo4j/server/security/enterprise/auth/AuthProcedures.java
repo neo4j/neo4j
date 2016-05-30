@@ -31,6 +31,8 @@ import org.neo4j.procedure.Procedure;
 
 public class AuthProcedures
 {
+    public static final String PERMISSION_DENIED = "Permission denied";
+
     @Context
     public AuthSubject authSubject;
 
@@ -43,7 +45,7 @@ public class AuthProcedures
         ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
         if ( !shiroSubject.isAdmin() )
         {
-            throw new AuthorizationViolationException( "Permission Denied" );
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
         }
         shiroSubject.getUserManager().newUser( username, password, requirePasswordChange );
     }
