@@ -337,6 +337,9 @@ object ExpressionConverters {
     case value: Parameter =>
       predicates.ConstantIn(toCommandExpression(e.lhs), toCommandExpression(value))
 
+    case value@Collection(expressions) if expressions.isEmpty =>
+      predicates.Not(predicates.True())
+
     case value@Collection(expressions) if expressions.forall(_.isInstanceOf[Literal]) =>
       predicates.ConstantIn(toCommandExpression(e.lhs), toCommandExpression(value))
 
