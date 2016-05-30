@@ -244,7 +244,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
         return true;
     }
 
-    private static enum GroupChain
+    private enum GroupChain
     {
         OUT
                 {
