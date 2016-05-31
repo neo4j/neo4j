@@ -48,6 +48,7 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
     private final SecurityManager securityManager;
     private final EhCacheManager cacheManager;
     private final FileUserRealm realm;
+    private final RoleRepository roleRepository;
 
     public ShiroAuthManager( UserRepository userRepository, RoleRepository roleRepository,
             PasswordPolicy passwordPolicy, AuthenticationStrategy authStrategy, boolean authEnabled )
@@ -61,6 +62,7 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
         // glue code or use the HazelcastCacheManager from the Shiro Support repository.
         cacheManager = new EhCacheManager();
         securityManager = new DefaultSecurityManager( realm );
+        this.roleRepository = roleRepository;
     }
 
     public ShiroAuthManager( UserRepository userRepository, RoleRepository roleRepository,
@@ -81,6 +83,7 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
     {
         super.init();
 
+        roleRepository.init();
         cacheManager.init();
         realm.setCacheManager( cacheManager );
         realm.init();
@@ -90,6 +93,7 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
     public void start() throws Throwable
     {
         users.start();
+        roleRepository.start();
 
         if ( authEnabled && realm.numberOfUsers() == 0 )
         {
@@ -104,10 +108,19 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
     }
 
     @Override
+    public void stop() throws Throwable
+    {
+        super.stop();
+
+        roleRepository.stop();
+    }
+
+    @Override
     public void shutdown() throws Throwable
     {
         super.shutdown();
 
+        roleRepository.shutdown();
         realm.setCacheManager( null );
         cacheManager.destroy();
     }
