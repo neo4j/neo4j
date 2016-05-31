@@ -46,7 +46,7 @@ import scala.collection.JavaConverters
 
 class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private val generator = new CodeGenerator(GeneratedQueryStructure, CodeGenConfiguration(mode = ByteCodeMode))
+  private val generator = new CodeGenerator(GeneratedQueryStructure, CodeGenConfiguration(mode = SourceCodeMode))
 
   test("all nodes scan") { // MATCH a RETURN a
     //given
@@ -690,6 +690,16 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("number equality, double and long") {
     val equals = Equals(SignedDecimalIntegerLiteral("9007199254740993")(pos), DecimalDoubleLiteral("9007199254740992")(pos))(pos)
+    val plan = ProduceResult(List("result"), Projection(SingleRow()(solved), Map("result" -> equals))(solved))
+    val compiled = compileAndExecute(plan)
+
+    //then
+    val result = getResult(compiled, "result")
+    result.toSet should equal(Set(Map("result" -> false)))
+  }
+
+  test("number equality, long and long") {
+    val equals = Equals(SignedDecimalIntegerLiteral("9007199254740993")(pos), SignedDecimalIntegerLiteral("9007199254740992")(pos))(pos)
     val plan = ProduceResult(List("result"), Projection(SingleRow()(solved), Map("result" -> equals))(solved))
     val compiled = compileAndExecute(plan)
 

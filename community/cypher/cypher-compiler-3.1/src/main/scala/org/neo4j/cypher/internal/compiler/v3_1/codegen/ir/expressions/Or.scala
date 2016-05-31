@@ -24,12 +24,10 @@ import org.neo4j.cypher.internal.frontend.v3_1.symbols.CTBoolean
 
 case class Or(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExpression {
 
-  override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable ||
-    lhs.codeGenType.ct != CTBoolean || rhs.codeGenType.ct != CTBoolean
+  override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
 
   override def codeGenType(implicit context: CodeGenContext) =
-    if (!nullable)
-      CodeGenType(CTBoolean, BoolType)
+    if (!nullable) CodeGenType.primitiveBool
     else CodeGenType(CTBoolean, ReferenceType)
 
   override final def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
@@ -38,8 +36,19 @@ case class Or(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExp
   }
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext): E =
-    if (!nullable)
-      structure.orExpression(lhs.generateExpression(structure), rhs.generateExpression(structure))
+    if (!nullable) (lhs.codeGenType, rhs.codeGenType) match {
+      case (t1, t2) if t1.isPrimitive && t2.isPrimitive =>
+        structure.orExpression(lhs.generateExpression(structure), rhs.generateExpression(structure))
+      case (t1, t2) if t1.isPrimitive =>
+        structure.orExpression(lhs.generateExpression(structure), structure.unbox(rhs.generateExpression(structure), t2))
+      case (t1, t2) if t2.isPrimitive =>
+        structure.orExpression(structure.unbox(lhs.generateExpression(structure), t1), rhs.generateExpression(structure))
+      case _ =>
+        structure.unbox(
+          structure.threeValuedOrExpression(structure.box(lhs.generateExpression(structure), lhs.codeGenType),
+                                                  structure.box(rhs.generateExpression(structure), rhs.codeGenType)),
+          CodeGenType(CTBoolean, ReferenceType))
+    }
     else structure.threeValuedOrExpression(structure.box(lhs.generateExpression(structure), lhs.codeGenType),
                                            structure.box(rhs.generateExpression(structure), rhs.codeGenType))
 }

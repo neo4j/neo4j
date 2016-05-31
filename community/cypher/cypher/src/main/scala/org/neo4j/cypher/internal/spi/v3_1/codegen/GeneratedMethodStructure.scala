@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v3_1.codegen._
-import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions.{BoolType, CodeGenType, FloatType, IntType}
+import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions.{BoolType, CodeGenType, FloatType, IntType, ReferenceType}
 import org.neo4j.cypher.internal.compiler.v3_1.helpers._
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_1.symbols.{CTNode, CTRelationship}
@@ -295,7 +295,9 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
 
   override def threeValuedEqualsExpression(lhs: Expression, rhs: Expression) = invoke(Methods.ternaryEquals, lhs, rhs)
 
-  override def equalityExpression(lhs: Expression, rhs: Expression, codeGenType: CodeGenType) = equal(lhs, rhs, lowerType(codeGenType))
+  override def equalityExpression(lhs: Expression, rhs: Expression, codeGenType: CodeGenType) =
+    if (codeGenType.isPrimitive) equal(lhs, rhs, lowerType(codeGenType))
+    else invoke(lhs, Methods.equals, rhs)
 
   override def orExpression(lhs: Expression, rhs: Expression) = or(lhs, rhs)
 
@@ -315,6 +317,16 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
     case CodeGenType(symbols.CTInteger, IntType) => invoke(Methods.boxLong, expression)
     case CodeGenType(symbols.CTFloat, FloatType) => invoke(Methods.boxDouble, expression)
     case _ => expression
+  }
+
+  override def unbox(expression: Expression, cType: CodeGenType) = cType match {
+    case c if c.isPrimitive => expression
+    case CodeGenType(symbols.CTBoolean, ReferenceType) => invoke(expression, Methods.unboxBoolean)
+    case CodeGenType(symbols.CTInteger, ReferenceType) => invoke(expression, Methods.unboxLong)
+    case CodeGenType(symbols.CTFloat, ReferenceType) => invoke(expression, Methods.unboxDouble)
+    case CodeGenType(symbols.CTNode, ReferenceType) => invoke(expression, Methods.unboxNode)
+    case CodeGenType(symbols.CTRelationship, ReferenceType) => invoke(expression, Methods.unboxRel)
+    case _ => throw new IllegalStateException(s"$expression cannot be unboxed")
   }
 
   override def toFloat(expression: Expression) = toDouble(expression)
