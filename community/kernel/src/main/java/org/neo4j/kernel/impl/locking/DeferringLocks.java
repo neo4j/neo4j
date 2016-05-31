@@ -89,9 +89,12 @@ public class DeferringLocks extends Lifecycle.Delegate implements Locks
         }
 
         @Override
-        public void acquireShared( ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException
+        public void acquireShared( ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
         {
-            queueLock( resourceType, resourceId, shared );
+            for ( long resourceId : resourceIds )
+            {
+                queueLock( resourceType, resourceId, shared );
+            }
         }
 
         private boolean queueLock( ResourceType resourceType, long resourceId, Set<Resource> lockSet )
@@ -105,9 +108,12 @@ public class DeferringLocks extends Lifecycle.Delegate implements Locks
         }
 
         @Override
-        public void acquireExclusive( ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException
+        public void acquireExclusive( ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
         {
-            queueLock( resourceType, resourceId, exclusive );
+            for ( long resourceId : resourceIds )
+            {
+                queueLock( resourceType, resourceId, exclusive );
+            }
         }
 
         @Override

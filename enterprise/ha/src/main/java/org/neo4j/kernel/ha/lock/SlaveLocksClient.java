@@ -100,54 +100,60 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
-    public void acquireShared( Locks.ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException
+    public void acquireShared( Locks.ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
     {
         assertNotStopped();
 
         Map<Long, AtomicInteger> lockMap = getLockMap( sharedLocks, resourceType );
-        AtomicInteger preExistingLock = lockMap.get( resourceId );
-        if ( preExistingLock != null )
+        for ( long resourceId : resourceIds )
         {
-            // We already hold this lock, just increment the local reference count
-            preExistingLock.incrementAndGet();
-        }
-        else if ( getReadLockOnMaster( resourceType, resourceId ) )
-        {
-            if ( client.trySharedLock( resourceType, resourceId ) )
+            AtomicInteger preExistingLock = lockMap.get( resourceId );
+            if ( preExistingLock != null )
             {
-                lockMap.put( resourceId, new AtomicInteger( 1 ) );
+                // We already hold this lock, just increment the local reference count
+                preExistingLock.incrementAndGet();
             }
-            else
+            else if ( getReadLockOnMaster( resourceType, resourceId ) )
             {
-                throw new LocalDeadlockDetectedException( client, localLockManager, resourceType, resourceId, READ );
+                if ( client.trySharedLock( resourceType, resourceId ) )
+                {
+                    lockMap.put( resourceId, new AtomicInteger( 1 ) );
+                }
+                else
+                {
+                    throw new LocalDeadlockDetectedException( client, localLockManager, resourceType, resourceId, READ );
 
+                }
             }
         }
     }
 
     @Override
-    public void acquireExclusive( Locks.ResourceType resourceType, long resourceId ) throws
+    public void acquireExclusive( Locks.ResourceType resourceType, long... resourceIds ) throws
             AcquireLockTimeoutException
     {
         assertNotStopped();
 
         Map<Long, AtomicInteger> lockMap = getLockMap( exclusiveLocks, resourceType );
 
-        AtomicInteger preExistingLock = lockMap.get( resourceId );
-        if ( preExistingLock != null )
+        for ( long resourceId : resourceIds )
         {
-            // We already hold this lock, just increment the local reference count
-            preExistingLock.incrementAndGet();
-        }
-        else if ( acquireExclusiveOnMaster( resourceType, resourceId ) )
-        {
-            if ( client.tryExclusiveLock( resourceType, resourceId ) )
+            AtomicInteger preExistingLock = lockMap.get( resourceId );
+            if ( preExistingLock != null )
             {
-                lockMap.put( resourceId, new AtomicInteger( 1 ) );
+                // We already hold this lock, just increment the local reference count
+                preExistingLock.incrementAndGet();
             }
-            else
+            else if ( acquireExclusiveOnMaster( resourceType, resourceId ) )
             {
-                throw new LocalDeadlockDetectedException( client, localLockManager, resourceType, resourceId, WRITE );
+                if ( client.tryExclusiveLock( resourceType, resourceId ) )
+                {
+                    lockMap.put( resourceId, new AtomicInteger( 1 ) );
+                }
+                else
+                {
+                    throw new LocalDeadlockDetectedException( client, localLockManager, resourceType, resourceId, WRITE );
+                }
             }
         }
     }

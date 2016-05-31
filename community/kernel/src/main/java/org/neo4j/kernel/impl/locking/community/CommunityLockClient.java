@@ -60,27 +60,30 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public void acquireShared( Locks.ResourceType resourceType, long resourceId )
+    public void acquireShared( Locks.ResourceType resourceType, long... resourceIds )
     {
         stateHolder.incrementActiveClients( this );
         try
         {
             PrimitiveLongObjectMap<LockResource> localLocks = localShared( resourceType );
-            LockResource resource = localLocks.get( resourceId );
-            if ( resource != null )
+            for ( long resourceId : resourceIds )
             {
-                resource.acquireReference();
-            }
-            else
-            {
-                resource = new LockResource( resourceType, resourceId );
-                if ( manager.getReadLock( resource, lockTransaction ) )
+                LockResource resource = localLocks.get( resourceId );
+                if ( resource != null )
                 {
-                    localLocks.put( resourceId, resource );
+                    resource.acquireReference();
                 }
                 else
                 {
-                    throw new LockClientStoppedException( this );
+                    resource = new LockResource( resourceType, resourceId );
+                    if ( manager.getReadLock( resource, lockTransaction ) )
+                    {
+                        localLocks.put( resourceId, resource );
+                    }
+                    else
+                    {
+                        throw new LockClientStoppedException( this );
+                    }
                 }
             }
         }
@@ -93,27 +96,30 @@ public class CommunityLockClient implements Locks.Client
 
 
     @Override
-    public void acquireExclusive( Locks.ResourceType resourceType, long resourceId )
+    public void acquireExclusive( Locks.ResourceType resourceType, long... resourceIds )
     {
         stateHolder.incrementActiveClients( this );
         try
         {
             PrimitiveLongObjectMap<LockResource> localLocks = localExclusive( resourceType );
-            LockResource resource = localLocks.get( resourceId );
-            if ( resource != null )
+            for ( long resourceId : resourceIds )
             {
-                resource.acquireReference();
-            }
-            else
-            {
-                resource = new LockResource( resourceType, resourceId );
-                if ( manager.getWriteLock( resource, lockTransaction ) )
+                LockResource resource = localLocks.get( resourceId );
+                if ( resource != null )
                 {
-                    localLocks.put( resourceId, resource );
+                    resource.acquireReference();
                 }
                 else
                 {
-                    throw new LockClientStoppedException( this );
+                    resource = new LockResource( resourceType, resourceId );
+                    if ( manager.getWriteLock( resource, lockTransaction ) )
+                    {
+                        localLocks.put( resourceId, resource );
+                    }
+                    else
+                    {
+                        throw new LockClientStoppedException( this );
+                    }
                 }
             }
         }

@@ -118,7 +118,7 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
-    public void acquireShared( Locks.ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException
+    public void acquireShared( Locks.ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
     {
         stateHolder.incrementActiveClients( this );
 
@@ -131,87 +131,85 @@ public class ForsetiClient implements Locks.Client
             PrimitiveLongIntMap heldShareLocks = sharedLockCounts[resourceType.typeId()];
             PrimitiveLongIntMap heldExclusiveLocks = exclusiveLockCounts[resourceType.typeId()];
 
-            // First, check if we already hold this as a shared lock
-            int heldCount = heldShareLocks.get( resourceId );
-            if(heldCount != -1)
+            for ( long resourceId : resourceIds )
             {
-                // We already have a lock on this, just increment our local reference counter.
-                heldShareLocks.put( resourceId, heldCount + 1 );
-                return;
-            }
-
-            // Second, check if we hold it as an exclusive lock
-            if( heldExclusiveLocks.containsKey( resourceId ) )
-            {
-                // We already have an exclusive lock, so just leave that in place. When the exclusive lock is released,
-                // it will be automatically downgraded to a shared lock, since we bumped the share lock reference count.
-                heldShareLocks.put( resourceId, 1 );
-                return;
-            }
-
-            // We don't hold the lock, so we need to grab it via the global lock map
-            int tries = 0;
-            SharedLock mySharedLock = null;
-
-            // Retry loop
-            while(true)
-            {
-                assertNotStopped();
-
-                // Check if there is a lock for this entity in the map
-                ForsetiLockManager.Lock existingLock = lockMap.get( resourceId );
-
-                // No lock
-                if(existingLock == null)
+                // First, check if we already hold this as a shared lock
+                int heldCount = heldShareLocks.get( resourceId );
+                if(heldCount != -1)
                 {
-                    // Try to create a new shared lock
-                    if(mySharedLock == null)
+                    // We already have a lock on this, just increment our local reference counter.
+                    heldShareLocks.put( resourceId, heldCount + 1 );
+                    return;
+                }
+                // Second, check if we hold it as an exclusive lock
+                if( heldExclusiveLocks.containsKey( resourceId ) )
+                {
+                    // We already have an exclusive lock, so just leave that in place. When the exclusive lock is released,
+                    // it will be automatically downgraded to a shared lock, since we bumped the share lock reference count.
+                    heldShareLocks.put( resourceId, 1 );
+                    return;
+                }
+                // We don't hold the lock, so we need to grab it via the global lock map
+                int tries = 0;
+                SharedLock mySharedLock = null;
+                // Retry loop
+                while(true)
+                {
+                    assertNotStopped();
+
+                    // Check if there is a lock for this entity in the map
+                    ForsetiLockManager.Lock existingLock = lockMap.get( resourceId );
+
+                    // No lock
+                    if(existingLock == null)
                     {
-                        mySharedLock = new SharedLock( this );
+                        // Try to create a new shared lock
+                        if(mySharedLock == null)
+                        {
+                            mySharedLock = new SharedLock( this );
+                        }
+
+                        if(lockMap.putIfAbsent( resourceId, mySharedLock ) == null)
+                        {
+                            // Success, we now hold the shared lock.
+                            break;
+                        }
+                        else
+                        {
+                            continue;
+                        }
                     }
 
-                    if(lockMap.putIfAbsent( resourceId, mySharedLock ) == null)
+                    // Someone holds shared lock on this entity, try and get in on that action
+                    else if(existingLock instanceof SharedLock)
                     {
-                        // Success, we now hold the shared lock.
-                        break;
+                        if(((SharedLock)existingLock).acquire(this))
+                        {
+                            // Success!
+                            break;
+                        }
+                    }
+
+                    // Someone holds an exclusive lock on this entity
+                    else if(existingLock instanceof ExclusiveLock)
+                    {
+                        // We need to wait, just let the loop run.
                     }
                     else
                     {
-                        continue;
+                        throw new UnsupportedOperationException( "Unknown lock type: " + existingLock );
                     }
-                }
 
-                // Someone holds shared lock on this entity, try and get in on that action
-                else if(existingLock instanceof SharedLock)
-                {
-                    if(((SharedLock)existingLock).acquire(this))
-                    {
-                        // Success!
-                        break;
-                    }
-                }
+                    applyWaitStrategy( resourceType, tries++ );
 
-                // Someone holds an exclusive lock on this entity
-                else if(existingLock instanceof ExclusiveLock)
-                {
-                    // We need to wait, just let the loop run.
+                    // And take note of who we are waiting for. This is used for deadlock detection.
+                    markAsWaitingFor( existingLock, resourceType, resourceId );
                 }
-                else
-                {
-                    throw new UnsupportedOperationException( "Unknown lock type: " + existingLock );
-                }
-
-                applyWaitStrategy( resourceType, tries++ );
-
-                // And take note of who we are waiting for. This is used for deadlock detection.
-                markAsWaitingFor( existingLock, resourceType, resourceId );
+                // Got the lock, no longer waiting for anyone.
+                clearWaitList();
+                // Make a local note about the fact that we now hold this lock
+                heldShareLocks.put( resourceId, 1 );
             }
-
-            // Got the lock, no longer waiting for anyone.
-            clearWaitList();
-
-            // Make a local note about the fact that we now hold this lock
-            heldShareLocks.put( resourceId, 1 );
         }
         finally
         {
@@ -220,7 +218,7 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
-    public void acquireExclusive( Locks.ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException
+    public void acquireExclusive( Locks.ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
     {
         // For details on how this works, refer to the acquireShared method call, as the two are very similar
 
@@ -231,40 +229,40 @@ public class ForsetiClient implements Locks.Client
             ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap = lockMaps[resourceType.typeId()];
             PrimitiveLongIntMap heldLocks = exclusiveLockCounts[resourceType.typeId()];
 
-            int heldCount = heldLocks.get( resourceId );
-            if(heldCount != -1)
+            for ( long resourceId : resourceIds )
             {
-                // We already have a lock on this, just increment our local reference counter.
-                heldLocks.put( resourceId, heldCount + 1 );
-                return;
-            }
-
-            // Grab the global lock
-            ForsetiLockManager.Lock existingLock;
-            int tries = 0;
-            while( (existingLock = lockMap.putIfAbsent( resourceId, myExclusiveLock )) != null)
-            {
-                assertNotStopped();
-
-                // If this is a shared lock:
-                // Given a grace period of tries (to try and not starve readers), grab an update lock and wait for it
-                // to convert to an exclusive lock.
-                if( tries > 50 && existingLock instanceof SharedLock)
+                int heldCount = heldLocks.get( resourceId );
+                if(heldCount != -1)
                 {
-                    // Then we should upgrade that lock
-                    SharedLock sharedLock = (SharedLock) existingLock;
-                    if ( tryUpgradeSharedToExclusive( resourceType, lockMap, resourceId, sharedLock ) )
-                    {
-                        break;
-                    }
+                    // We already have a lock on this, just increment our local reference counter.
+                    heldLocks.put( resourceId, heldCount + 1 );
+                    return;
                 }
+                // Grab the global lock
+                ForsetiLockManager.Lock existingLock;
+                int tries = 0;
+                while( (existingLock = lockMap.putIfAbsent( resourceId, myExclusiveLock )) != null)
+                {
+                    assertNotStopped();
 
-                applyWaitStrategy( resourceType, tries++ );
-                markAsWaitingFor( existingLock, resourceType, resourceId );
+                    // If this is a shared lock:
+                    // Given a grace period of tries (to try and not starve readers), grab an update lock and wait for it
+                    // to convert to an exclusive lock.
+                    if( tries > 50 && existingLock instanceof SharedLock)
+                    {
+                        // Then we should upgrade that lock
+                        SharedLock sharedLock = (SharedLock) existingLock;
+                        if ( tryUpgradeSharedToExclusive( resourceType, lockMap, resourceId, sharedLock ) )
+                        {
+                            break;
+                        }
+                    }
+                    applyWaitStrategy( resourceType, tries++ );
+                    markAsWaitingFor( existingLock, resourceType, resourceId );
+                }
+                clearWaitList();
+                heldLocks.put( resourceId, 1 );
             }
-
-            clearWaitList();
-            heldLocks.put( resourceId, 1 );
         }
         finally
         {
