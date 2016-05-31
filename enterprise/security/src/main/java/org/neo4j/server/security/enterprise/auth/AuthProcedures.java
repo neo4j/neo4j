@@ -49,4 +49,16 @@ public class AuthProcedures
         }
         shiroSubject.getUserManager().newUser( username, password, requirePasswordChange );
     }
+
+    @PerformsDBMS
+    @Procedure( "dbms.addUserToRole" )
+    public void addUserToRole( @Name( "username" ) String username, @Name( "role" ) String role ) throws IOException
+    {
+        ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
+        if ( !shiroSubject.isAdmin() )
+        {
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
+        }
+        shiroSubject.getRoleManager().addUserToRole( username, role );
+    }
 }

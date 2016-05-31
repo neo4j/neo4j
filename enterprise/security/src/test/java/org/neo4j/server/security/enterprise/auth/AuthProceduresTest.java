@@ -31,7 +31,6 @@ import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.security.AuthSubject;
@@ -125,6 +124,56 @@ public class AuthProceduresTest
         testCallEmpty( db, readSubject, "CALL dbms.changePassword( '321' )", null );
         AuthSubject subject = manager.login( "reader", "321" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
+    }
+
+    @Test
+    public void shouldAllowAddingUserToGroup() throws Exception
+    {
+        assertFalse( "Should not have role publisher",
+                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( "publisher" ) );
+        testCallEmpty( db, adminSubject, "CALL dbms.addUserToRole('reader', 'publisher')", null );
+        assertTrue( "Should have role publisher",
+                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( "publisher" ) );
+    }
+
+    @Test
+    public void shouldAllowAddingUserToGroupMultipleTimes() throws Exception
+    {
+        assertFalse( "Should not have role publisher",
+                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( "publisher" ) );
+        testCallEmpty( db, adminSubject, "CALL dbms.addUserToRole('reader', 'publisher')", null );
+        testCallEmpty( db, adminSubject, "CALL dbms.addUserToRole('reader', 'publisher')", null );
+        assertTrue( "Should have role publisher",
+                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( "publisher" ) );
+    }
+
+    @Test
+    public void shouldAllowAddingUserToMultipleGroups() throws Exception
+    {
+        assertFalse( "Should not have role publisher",
+                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( "publisher" ) );
+        assertFalse( "Should not have role architect",
+                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( "architect" ) );
+        testCallEmpty( db, adminSubject, "CALL dbms.addUserToRole('reader', 'publisher')", null );
+        testCallEmpty( db, adminSubject, "CALL dbms.addUserToRole('reader', 'architect')", null );
+        assertTrue( "Should have role publisher",
+                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( "publisher" ) );
+        assertTrue( "Should have role architect",
+                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( "architect" ) );
+    }
+
+    @Test
+    public void shouldNotAllowNonAdminAddingUserToGroup() throws Exception
+    {
+        try
+        {
+            testCallEmpty( db, readSubject, "CALL dbms.addUserToRole('reader', 'admin')", null );
+        }
+        catch ( QueryExecutionException e )
+        {
+            assertTrue( "Exception should contain '" + AuthProcedures.PERMISSION_DENIED + "'",
+                    e.getMessage().contains( AuthProcedures.PERMISSION_DENIED ) );
+        }
     }
 
     //----------User creation scenarios-----------
