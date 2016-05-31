@@ -50,8 +50,7 @@ public class SchemaIndexWaitingAcceptanceTest
         protected void configure( GraphDatabaseFactory databaseFactory )
         {
             List<KernelExtensionFactory<?>> extensions;
-            extensions = Collections.<KernelExtensionFactory<?>>singletonList( singleInstanceSchemaIndexProviderFactory(
-                    "test", provider ) );
+            extensions = Collections.<KernelExtensionFactory<?>>singletonList( singleInstanceSchemaIndexProviderFactory( "test", provider ) );
             ((TestGraphDatabaseFactory) databaseFactory).addKernelExtensions( extensions );
         }
     };

@@ -50,7 +50,7 @@ public class CommitProcessStateMachineCollaborationTest
         int finalLockSessionId = 24;
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
         ReplicatedTransactionStateMachine<RaftTestMember> stateMachine = new ReplicatedTransactionStateMachine<>(
-                lockState( finalLockSessionId ), NullLogProvider.getInstance() );
+                lockState( finalLockSessionId ), 16, NullLogProvider.getInstance() );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         DirectReplicator<ReplicatedTransaction> replicator = new DirectReplicator<>( stateMachine );

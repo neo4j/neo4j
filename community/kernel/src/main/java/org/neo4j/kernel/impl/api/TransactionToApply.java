@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -65,6 +66,8 @@ public class TransactionToApply implements CommandsToApply
 
     // These fields are provided by commit process/storage engine
     private Commitment commitment;
+
+    private Consumer<Long> callback;
 
     /**
      * Used when committing a transaction that hasn't already gotten a transaction id assigned.
@@ -123,11 +126,20 @@ public class TransactionToApply implements CommandsToApply
     {
         this.commitment = commitment;
         this.transactionId = transactionId;
+        if ( callback != null )
+        {
+            commitment.onClosed( callback );
+        }
     }
 
     @Override
     public TransactionToApply next()
     {
         return nextTransactionInBatch;
+    }
+
+    public void onClose( Consumer<Long> callback )
+    {
+        this.callback = callback;
     }
 }

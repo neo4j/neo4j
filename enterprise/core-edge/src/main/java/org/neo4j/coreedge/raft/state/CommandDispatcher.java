@@ -17,15 +17,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.replication.tx;
+package org.neo4j.coreedge.raft.state;
 
 import java.util.function.Consumer;
 
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.state.CommandDispatcher;
-import org.neo4j.coreedge.raft.state.Result;
+import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
+import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequest;
+import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
+import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
 
-public interface CoreReplicatedContent extends ReplicatedContent
+public interface CommandDispatcher extends AutoCloseable
 {
-    void dispatch( CommandDispatcher commandDispatcher, long commandIndex, Consumer<Result> callback );
+    void dispatch( ReplicatedTransaction transaction, long commandIndex, Consumer<Result> callback );
+
+    void dispatch( ReplicatedIdAllocationRequest idAllocation, long commandIndex, Consumer<Result> callback );
+
+    void dispatch( ReplicatedTokenRequest tokenRequest, long commandIndex, Consumer<Result> callback );
+
+    void dispatch( ReplicatedLockTokenRequest lockRequest, long commandIndex, Consumer<Result> callback );
+
+    @Override
+    void close();
 }

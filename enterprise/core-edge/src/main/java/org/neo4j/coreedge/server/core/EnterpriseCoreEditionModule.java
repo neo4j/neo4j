@@ -359,7 +359,8 @@ public class EnterpriseCoreEditionModule
             InFlightMap<Long,RaftLogEntry> inFlightMap = new InFlightMap<>();
 
             coreState = new CoreState(
-                    raftLog, config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),
+                    raftLog, config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
+                    config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),
                     databaseHealthSupplier, logProvider, progressTracker, lastFlushedStorage, lastApplyingStorage,
                     sessionTrackerStorage, new NotMyselfSelectionStrategy( discoveryService, myself ), applier,
                     downloader, inFlightMap, platformModule.monitors );
@@ -463,6 +464,7 @@ public class EnterpriseCoreEditionModule
 
         ReplicatedTransactionStateMachine<CoreMember> replicatedTxStateMachine =
                 new ReplicatedTransactionStateMachine<>( replicatedLockTokenStateMachine,
+                        config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
                         logging.getInternalLogProvider() );
 
         dependencies.satisfyDependencies( replicatedTxStateMachine );

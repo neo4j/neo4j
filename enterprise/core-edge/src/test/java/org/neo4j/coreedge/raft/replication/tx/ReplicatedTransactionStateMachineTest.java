@@ -20,7 +20,10 @@
 package org.neo4j.coreedge.raft.replication.tx;
 
 import junit.framework.TestCase;
+import org.apache.commons.lang3.ObjectUtils;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,13 +38,17 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -50,6 +57,9 @@ import static org.mockito.Mockito.when;
 
 public class ReplicatedTransactionStateMachineTest
 {
+    private final NullLogProvider logProvider = NullLogProvider.getInstance();
+    private final int batchSize = 16;
+
     @Test
     public void shouldCommitTransaction() throws Exception
     {
@@ -62,12 +72,12 @@ public class ReplicatedTransactionStateMachineTest
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
         ReplicatedTransactionStateMachine stateMachine =
-                new ReplicatedTransactionStateMachine<>( lockState( lockSessionId ), NullLogProvider.getInstance() );
+                new ReplicatedTransactionStateMachine<>( lockState( lockSessionId ), batchSize, logProvider );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         // when
-        stateMachine.applyCommand( tx, 0, r -> {
-        } );
+        stateMachine.applyCommand( tx, 0, r -> {} );
+        stateMachine.ensuredApplied();
 
         // then
         verify( localCommitProcess, times( 1 ) ).commit( any( TransactionToApply.class ), any( CommitEvent.class ),
@@ -87,10 +97,8 @@ public class ReplicatedTransactionStateMachineTest
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
         final ReplicatedTransactionStateMachine<RaftTestMember> stateMachine =
-                new ReplicatedTransactionStateMachine<>( lockState( currentLockSessionId ),
-                        NullLogProvider.getInstance() );
+                new ReplicatedTransactionStateMachine<>( lockState( currentLockSessionId ), batchSize, logProvider );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
-
 
         AtomicBoolean called = new AtomicBoolean();
         // when
@@ -100,6 +108,7 @@ public class ReplicatedTransactionStateMachineTest
             try
             {
                 result.consume();
+                fail( "should have thrown" );
             }
             catch ( TransactionFailureException tfe )
             {
@@ -110,6 +119,7 @@ public class ReplicatedTransactionStateMachineTest
                 throw new RuntimeException( e );
             }
         } );
+        stateMachine.ensuredApplied();
 
         assertTrue( called.get() );
     }
@@ -120,15 +130,15 @@ public class ReplicatedTransactionStateMachineTest
         // given
         int txLockSessionId = Locks.Client.NO_LOCK_SESSION_ID;
         int currentLockSessionId = 24;
+        long txId = 42L;
 
         ReplicatedTransaction tx = ReplicatedTransactionFactory.
                 createImmutableReplicatedTransaction( physicalTx( txLockSessionId ) );
 
-        TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
+        TransactionCommitProcess localCommitProcess = createFakeTransactionCommitProcess( txId );
 
         ReplicatedTransactionStateMachine<RaftStateMachine> stateMachine =
-                new ReplicatedTransactionStateMachine<>( lockState( currentLockSessionId ),
-                        NullLogProvider.getInstance() );
+                new ReplicatedTransactionStateMachine<>( lockState( currentLockSessionId ), batchSize, logProvider );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         AtomicBoolean called = new AtomicBoolean();
@@ -139,15 +149,31 @@ public class ReplicatedTransactionStateMachineTest
             called.set( true );
             try
             {
-                assertEquals( 0L, (long) result.consume() );
+                assertEquals( txId, (long) result.consume() );
             }
             catch ( Exception e )
             {
                 throw new RuntimeException( e );
             }
         } );
+        stateMachine.ensuredApplied();
 
         assertTrue( called.get() );
+    }
+
+    private TransactionCommitProcess createFakeTransactionCommitProcess( long txId ) throws TransactionFailureException
+    {
+        TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
+        when( localCommitProcess.commit(
+                any( TransactionToApply.class), any( CommitEvent.class ), any( TransactionApplicationMode.class ) )
+        ).thenAnswer( (Answer<Long>) invocation -> {
+            TransactionToApply txToApply = (TransactionToApply) invocation.getArguments()[0];
+            txToApply.commitment( new FakeCommitment( txId, mock( TransactionIdStore.class ) ), txId );
+            txToApply.commitment().publishAsCommitted();
+            txToApply.commitment().publishAsClosed();
+            return txId;
+        } );
+        return localCommitProcess;
     }
 
     private PhysicalTransactionRepresentation physicalTx( int lockSessionId )

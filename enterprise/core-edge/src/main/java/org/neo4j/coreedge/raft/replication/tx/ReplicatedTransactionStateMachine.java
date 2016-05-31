@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.raft.replication.tx;
 
 import java.io.IOException;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 import org.neo4j.coreedge.raft.state.Result;
@@ -28,6 +27,7 @@ import org.neo4j.coreedge.raft.state.StateMachine;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -44,29 +44,32 @@ import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionExpi
 public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine<ReplicatedTransaction>
 {
     private final ReplicatedLockTokenStateMachine<MEMBER> lockTokenStateMachine;
-    private TransactionCommitProcess commitProcess;
+    private final int maxBatchSize;
     private final Log log;
 
+    private TransactionQueue queue;
     private long lastCommittedIndex = -1;
 
     public ReplicatedTransactionStateMachine( ReplicatedLockTokenStateMachine<MEMBER> lockStateMachine,
-                                              LogProvider logProvider )
+            int maxBatchSize, LogProvider logProvider )
     {
         this.lockTokenStateMachine = lockStateMachine;
+        this.maxBatchSize = maxBatchSize;
         this.log = logProvider.getLog( getClass() );
     }
 
     public synchronized void installCommitProcess( TransactionCommitProcess commitProcess, long lastCommittedIndex )
     {
-        this.commitProcess = commitProcess;
         this.lastCommittedIndex = lastCommittedIndex;
         log.info( format("Updated lastCommittedIndex to %d", lastCommittedIndex) );
+        this.queue = new TransactionQueue( maxBatchSize,  txs ->
+            commitProcess.commit( txs, CommitEvent.NULL, TransactionApplicationMode.EXTERNAL ) );
     }
 
     @Override
-    public synchronized void flush() throws IOException
+    public void flush() throws IOException
     {
-        // implicity flushed
+        // implicitly flushed
     }
 
     @Override
@@ -96,15 +99,33 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine<R
         {
             try
             {
-                long txId = commitProcess.commit( new TransactionToApply( tx ), CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
-                callback.accept( Result.of( txId ) );
+                TransactionToApply transaction = new TransactionToApply( tx );
+                transaction.onClose( txId -> callback.accept( Result.of( txId ) ) );
+                queue.queue( transaction );
             }
-            catch ( TransactionFailureException e )
+            catch ( Exception e )
             {
-                throw new IllegalStateException( "Failed to locally commit a transaction that has already been " +
-                        "committed to the RAFT log. This server cannot process later transactions and needs to be " +
-                        "restarted once the underlying cause has been addressed.", e );
+                throw panicException( e );
             }
         }
+    }
+
+    public synchronized void ensuredApplied()
+    {
+        try
+        {
+            queue.empty();
+        }
+        catch ( Exception e )
+        {
+            throw panicException( e );
+        }
+    }
+
+    private IllegalStateException panicException( Exception e )
+    {
+        return new IllegalStateException( "Failed to locally commit a transaction that has already been " +
+                "committed to the RAFT log. This server cannot process later transactions and needs to be " +
+                "restarted once the underlying cause has been addressed.", e );
     }
 }

@@ -20,6 +20,8 @@
 package org.neo4j.coreedge.raft.state;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
@@ -50,35 +52,47 @@ import static java.lang.String.format;
 public class CoreState extends LifecycleAdapter implements RaftStateMachine, LogPruner
 {
     private static final long NOTHING = -1;
-    private CoreStateMachines coreStateMachines;
     private final RaftLog raftLog;
+    private final int maxBatchSize;
     private final StateStorage<Long> lastFlushedStorage;
     private final int flushEvery;
     private final ProgressTracker progressTracker;
-    private GlobalSessionTrackerState<CoreMember> sessionState = new GlobalSessionTrackerState<>();
     private final StateStorage<Long> lastApplyingStorage;
     private final StateStorage<GlobalSessionTrackerState<CoreMember>> sessionStorage;
     private final Supplier<DatabaseHealth> dbHealth;
     private final InFlightMap<Long,RaftLogEntry> inFlightMap;
     private final Log log;
+    private final CoreStateApplier applier;
+    private final CoreServerSelectionStrategy selectionStrategy;
+    private final CoreStateDownloader downloader;
+    private final RaftLogCommitIndexMonitor commitIndexMonitor;
+    private final List<DistributedOperation> distributedOperations;
+
+    private GlobalSessionTrackerState<CoreMember> sessionState = new GlobalSessionTrackerState<>();
+    private CoreStateMachines coreStateMachines;
 
     private long lastApplied = NOTHING;
     private long lastSeenCommitIndex = NOTHING;
-
     private long lastFlushed = NOTHING;
-    private final CoreStateApplier applier;
-    private final CoreServerSelectionStrategy selectionStrategy;
 
-    private final CoreStateDownloader downloader;
-    private final RaftLogCommitIndexMonitor commitIndexMonitor;
-
-    public CoreState( RaftLog raftLog, int flushEvery, Supplier<DatabaseHealth> dbHealth, LogProvider logProvider,
-            ProgressTracker progressTracker, StateStorage<Long> lastFlushedStorage,
-            StateStorage<Long> lastApplyingStorage, StateStorage<GlobalSessionTrackerState<CoreMember>> sessionStorage,
-            CoreServerSelectionStrategy selectionStrategy, CoreStateApplier applier, CoreStateDownloader downloader,
-            InFlightMap<Long,RaftLogEntry> inFlightMap, Monitors monitors )
+    public CoreState(
+            RaftLog raftLog,
+            int maxBatchSize,
+            int flushEvery,
+            Supplier<DatabaseHealth> dbHealth,
+            LogProvider logProvider,
+            ProgressTracker progressTracker,
+            StateStorage<Long> lastFlushedStorage,
+            StateStorage<Long> lastApplyingStorage,
+            StateStorage<GlobalSessionTrackerState<CoreMember>> sessionStorage,
+            CoreServerSelectionStrategy selectionStrategy,
+            CoreStateApplier applier,
+            CoreStateDownloader downloader,
+            InFlightMap<Long,RaftLogEntry> inFlightMap,
+            Monitors monitors )
     {
         this.raftLog = raftLog;
+        this.maxBatchSize = maxBatchSize;
         this.lastFlushedStorage = lastFlushedStorage;
         this.flushEvery = flushEvery;
         this.progressTracker = progressTracker;
@@ -91,6 +105,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
         this.dbHealth = dbHealth;
         this.inFlightMap = inFlightMap;
         this.commitIndexMonitor = monitors.newMonitor( RaftLogCommitIndexMonitor.class, getClass() );
+        this.distributedOperations = new ArrayList<>( maxBatchSize );
     }
 
     synchronized void setStateMachine( CoreStateMachines coreStateMachines )
@@ -123,7 +138,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
                     LogEntrySupplier cursorLogEntrySupplier = new CursorApplier() )
             {
                 LogEntrySupplier currentLogEntrySupplier = cacheLogEntrySupplier;
-                for ( long i = lastApplied + 1; i <= lastToApply; i++ )
+                for ( long i = lastApplied + 1; !status.isCancelled() &&  i <= lastToApply; i++ )
                 {
                     lastApplyingStorage.persistStoreData( lastToApply );
                     RaftLogEntry raftLogEntry = currentLogEntrySupplier.get( i );
@@ -151,17 +166,27 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
                         throw new IllegalStateException( failureMessage );
                     }
 
-                    applyEntry( raftLogEntry, i );
+                    if ( raftLogEntry.content() instanceof DistributedOperation )
+                    {
+                        DistributedOperation distributedOperation = (DistributedOperation) raftLogEntry.content();
+                        progressTracker.trackReplication( distributedOperation );
+                        distributedOperations.add( distributedOperation );
+
+                        if ( distributedOperations.size() >= maxBatchSize )
+                        {
+                            handleBatch( i, distributedOperations );
+                        }
+                    }
+                    else
+                    {
+                        handleBatch( i - 1 /* ignore the current entry */, distributedOperations );
+                        assertIndexIsValidAndIncrementLastApplied( i, 1 );
+                    }
 
                     // no matter what, we need to purge the inflight cache from applied entries
                     inFlightMap.unregister( i );
-                    lastApplied = i;
-
-                    if ( status.isCancelled() )
-                    {
-                        return;
-                    }
                 }
+                handleBatch( lastToApply, distributedOperations );
             }
             catch ( Throwable e )
             {
@@ -223,15 +248,22 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
         }
     }
 
-    private void applyEntry( RaftLogEntry raftLogEntry, long logIndex ) throws IOException
+    private void handleBatch( long lastIndex, List<DistributedOperation> distributedOperations ) throws Exception
     {
-        if ( raftLogEntry.content() instanceof DistributedOperation )
+        if ( !distributedOperations.isEmpty() )
         {
-            DistributedOperation distributedOperation = (DistributedOperation) raftLogEntry.content();
-            progressTracker.trackReplication( distributedOperation );
-            handleOperation( logIndex, distributedOperation );
+            long startIndex = lastIndex - distributedOperations.size() + 1;
+            handleOperations( startIndex, distributedOperations );
+            assertIndexIsValidAndIncrementLastApplied( lastIndex, distributedOperations.size() );
+            distributedOperations.clear();
             maybeFlush();
         }
+    }
+
+    private void assertIndexIsValidAndIncrementLastApplied( long index, int increment )
+    {
+        assert index == (lastApplied + increment);
+        lastApplied = index;
     }
 
     @Override
@@ -269,22 +301,30 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
         downloader.downloadSnapshot( source, this );
     }
 
-    private void handleOperation( long commandIndex, DistributedOperation operation ) throws IOException
+    private void handleOperations( long commandIndex, List<DistributedOperation> operations )
     {
-        if ( !sessionState.validateOperation( operation.globalSession(), operation.operationId() ) )
+        try ( CommandDispatcher dispatcher = coreStateMachines.commandDispatcher() )
         {
-            return;
+            for ( DistributedOperation operation : operations )
+            {
+                if ( !sessionState.validateOperation( operation.globalSession(), operation.operationId() ) )
+                {
+                    continue;
+                }
+
+                CoreReplicatedContent command = (CoreReplicatedContent) operation.content();
+                command.dispatch( dispatcher, commandIndex,
+                        result -> progressTracker.trackResult( operation, result ) );
+
+                sessionState.update( operation.globalSession(), operation.operationId(), commandIndex );
+                commandIndex++;
+            }
         }
-
-        CoreReplicatedContent command = (CoreReplicatedContent) operation.content();
-        command.dispatch( coreStateMachines, commandIndex, result -> progressTracker.trackResult( operation, result ) );
-
-        sessionState.update( operation.globalSession(), operation.operationId(), commandIndex );
     }
 
     private void maybeFlush() throws IOException
     {
-        if ( lastApplied % this.flushEvery == 0 )
+        if ( (lastApplied - lastFlushed) > flushEvery )
         {
             flush();
         }

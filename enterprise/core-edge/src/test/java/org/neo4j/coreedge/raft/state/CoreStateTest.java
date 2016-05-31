@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.raft.state;
 
 import org.junit.Test;
+import org.mockito.InOrder;
 
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -27,8 +28,8 @@ import java.util.function.Consumer;
 import org.neo4j.coreedge.raft.NewLeaderBarrier;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.log.monitoring.RaftLogCommitIndexMonitor;
+import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.replication.DistributedOperation;
 import org.neo4j.coreedge.raft.replication.ProgressTrackerImpl;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
@@ -45,14 +46,14 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
 import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -74,50 +75,41 @@ public class CoreStateTest
 
     private final GlobalSession<CoreMember> globalSession = new GlobalSession<>( UUID.randomUUID(), null );
     private final int flushEvery = 10;
+    private final int batchSize = 16;
 
     private final CoreStateApplier applier = new CoreStateApplier( NullLogProvider.getInstance() );
     private InFlightMap<Long,RaftLogEntry> inFlightMap = spy( new InFlightMap<>() );
     private final Monitors monitors = new Monitors();
-    private final CoreState coreState = new CoreState( raftLog, flushEvery, () -> dbHealth, NullLogProvider.getInstance(),
-            new ProgressTrackerImpl( globalSession ), lastFlushedStorage, lastApplyingStorage, sessionStorage,
-            mock( CoreServerSelectionStrategy.class ), applier, mock( CoreStateDownloader.class ), inFlightMap,
-            monitors );
+    private final CoreState coreState = new CoreState( raftLog, batchSize, flushEvery, () -> dbHealth,
+            NullLogProvider.getInstance(), new ProgressTrackerImpl( globalSession ), lastFlushedStorage,
+            lastApplyingStorage, sessionStorage, mock( CoreServerSelectionStrategy.class ), applier,
+            mock( CoreStateDownloader.class ), inFlightMap, monitors );
 
     private ReplicatedTransaction nullTx = new ReplicatedTransaction( null );
 
-    private final CoreStateMachines txStateMachine = txStateMachinesMock();
+    private final CommandDispatcher commandDispatcher = mock( CommandDispatcher.class );
+    private final CoreStateMachines txStateMachine = mock( CoreStateMachines.class );
 
-    private CoreStateMachines txStateMachinesMock()
     {
-        return mock( CoreStateMachines.class );
-    }
-
-    private final CoreStateMachines failingTxStateMachine = failingTxStateMachinesMock();
-
-    private CoreStateMachines failingTxStateMachinesMock()
-    {
-        CoreStateMachines stateMachines = mock( CoreStateMachines.class );
-
-        doThrow( new IllegalStateException( "This is a failing tx state machine and it's supposed to fail" ) )
-                .when( stateMachines ).dispatch( any( ReplicatedTransaction.class ), anyLong(), anyCallback() );
-        return stateMachines;
+        when( txStateMachine.commandDispatcher() ).thenReturn( commandDispatcher );
     }
 
     private int sequenceNumber = 0;
-
     private synchronized ReplicatedContent operation( CoreReplicatedContent tx )
     {
         return new DistributedOperation( tx, globalSession, new LocalOperationId( 0, sequenceNumber++ ) );
     }
 
     @Test
-    public void shouldApplyCommittedCommand() throws Exception
+    public void shouldApplyCommittedCommand() throws Throwable
     {
         // given
         RaftLogCommitIndexMonitor listener = mock( RaftLogCommitIndexMonitor.class );
         monitors.addMonitorListener( listener );
         coreState.setStateMachine( txStateMachine );
         coreState.start();
+
+        InOrder inOrder = inOrder( txStateMachine, commandDispatcher );
 
         // when
         raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
@@ -127,14 +119,17 @@ public class CoreStateTest
         applier.sync( false );
 
         // then
-        verify( txStateMachine ).dispatch( eq( nullTx ), eq( 0L ), anyCallback() );
-        verify( txStateMachine ).dispatch( eq( nullTx ), eq( 1L ), anyCallback() );
-        verify( txStateMachine ).dispatch( eq( nullTx ), eq( 2L ), anyCallback() );
+        inOrder.verify( txStateMachine ).commandDispatcher();
+        inOrder.verify( commandDispatcher ).dispatch( eq( nullTx ), eq( 0L ), anyCallback() );
+        inOrder.verify( commandDispatcher ).dispatch( eq( nullTx ), eq( 1L ), anyCallback() );
+        inOrder.verify( commandDispatcher ).dispatch( eq( nullTx ), eq( 2L ), anyCallback() );
+        inOrder.verify( commandDispatcher ).close();
+
         verify( listener).commitIndex( 2 );
     }
 
     @Test
-    public void shouldNotApplyUncommittedCommands() throws Exception
+    public void shouldNotApplyUncommittedCommands() throws Throwable
     {
         // given
         coreState.setStateMachine( txStateMachine );
@@ -147,11 +142,11 @@ public class CoreStateTest
         applier.sync( false );
 
         // then
-        verify( txStateMachine, times( 0 ) ).dispatch( any( ReplicatedTransaction.class ), anyInt(), anyCallback() );
+        verifyZeroInteractions( commandDispatcher );
     }
 
     @Test
-    public void entriesThatAreNotStateMachineCommandsShouldStillIncreaseCommandIndex() throws Exception
+    public void entriesThatAreNotStateMachineCommandsShouldStillIncreaseCommandIndex() throws Throwable
     {
         // given
         coreState.setStateMachine( txStateMachine );
@@ -163,39 +158,44 @@ public class CoreStateTest
         coreState.notifyCommitted( 1 );
         applier.sync( false );
 
+        InOrder inOrder = inOrder( txStateMachine, commandDispatcher );
+
         // then
-        verify( txStateMachine ).dispatch( eq( nullTx ), eq( 1L ), anyCallback() );
+        inOrder.verify( txStateMachine ).commandDispatcher();
+        inOrder.verify( commandDispatcher ).dispatch( eq( nullTx ), eq( 1L ), anyCallback() );
+        inOrder.verify( commandDispatcher ).close();
     }
 
     // TODO: Test recovery, see CoreState#start().
 
     @Test
-    public void shouldPeriodicallyFlushState() throws Exception
+    public void shouldPeriodicallyFlushState() throws Throwable
     {
         // given
         coreState.setStateMachine( txStateMachine );
         coreState.start();
 
-        int TIMES = 5;
-        for ( int i = 0; i < flushEvery * TIMES; i++ )
+        int interactions = flushEvery * 5;
+        for ( int i = 0; i < interactions; i++ )
         {
             raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
         }
 
         // when
-        coreState.notifyCommitted( flushEvery * TIMES );
+        coreState.notifyCommitted( interactions );
         applier.sync( false );
 
         // then
-        verify( txStateMachine, times( TIMES ) ).flush();
-        assertEquals( flushEvery * (TIMES - 1), (long) lastFlushedStorage.getInitialState() );
+        verify( txStateMachine, times( interactions / batchSize ) ).flush();
+        assertEquals( interactions - ( interactions % batchSize) - 1, (long) lastFlushedStorage.getInitialState() );
     }
 
     @Test
-    public void shouldPanicIfUnableToApply() throws Exception
+    public void shouldPanicIfUnableToApply() throws Throwable
     {
         // given
-        coreState.setStateMachine( failingTxStateMachine );
+        doThrow( IllegalStateException.class ).when( commandDispatcher )
+                .dispatch( any( ReplicatedTransaction.class ), anyLong(), anyCallback() );
         coreState.start();
 
         raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
@@ -257,7 +257,6 @@ public class CoreStateTest
     {
         // if the cache does not contain all things to be applied, make sure we fall back to the log
         // should only happen in recovery, otherwise this is probably a bug.
-
         coreState.setStateMachine( txStateMachine );
         coreState.start();
 
@@ -282,15 +281,15 @@ public class CoreStateTest
         verify( inFlightMap, times( 0 ) ).retrieve( 2L );
         verify( inFlightMap, times( 3 ) ).unregister( anyLong() ); //everything is cleaned up
 
-        verify( txStateMachine, times( 1 ) ).dispatch( eq( nullTx ), eq( 0L ), anyCallback() );
-        verify( txStateMachine, times( 1 ) ).dispatch( eq( nullTx ), eq( 1L ), anyCallback() );
-        verify( txStateMachine, times( 1 ) ).dispatch( eq( nullTx ), eq( 2L ), anyCallback() );
+        verify( commandDispatcher, times( 1 ) ).dispatch( eq( nullTx ), eq( 0L ), anyCallback() );
+        verify( commandDispatcher, times( 1 ) ).dispatch( eq( nullTx ), eq( 1L ), anyCallback() );
+        verify( commandDispatcher, times( 1 ) ).dispatch( eq( nullTx ), eq( 2L ), anyCallback() );
 
         verify( raftLog, times( 1 ) ).getEntryCursor( 1 );
     }
 
     @Test
-    public void shouldFailWhenCacheAndLogMiss() throws Exception
+    public void shouldFailWhenCacheAndLogMiss() throws Throwable
     {
         //When an entry is not in the log, we must fail.
 

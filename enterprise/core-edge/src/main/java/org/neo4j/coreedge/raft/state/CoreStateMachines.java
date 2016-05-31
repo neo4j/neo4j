@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.raft.state;
 
 import java.io.IOException;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 import org.neo4j.coreedge.catchup.storecopy.core.CoreStateType;
@@ -53,6 +52,9 @@ public class CoreStateMachines
     private final RecoverTransactionLogState txLogState;
     private final MonitoredRaftLog raftLog;
 
+    private final CommandDispatcher currentBatch = new StateMachineCommandDispatcher();
+    private volatile boolean runningBatch;
+
     public CoreStateMachines(
             ReplicatedTransactionStateMachine<CoreMember> replicatedTxStateMachine,
             ReplicatedTokenStateMachine<Token> labelTokenStateMachine,
@@ -75,42 +77,17 @@ public class CoreStateMachines
         this.raftLog = raftLog;
     }
 
-    public void dispatch( ReplicatedTransaction transaction, long commandIndex, Consumer<Result> callback )
+    CommandDispatcher commandDispatcher()
     {
-        replicatedTxStateMachine.applyCommand( transaction, commandIndex, callback );
-    }
-
-    public void dispatch( ReplicatedIdAllocationRequest idRequest, long commandIndex, Consumer<Result> callback )
-    {
-        idAllocationStateMachine.applyCommand( idRequest, commandIndex, callback );
-    }
-
-    public void dispatch( ReplicatedTokenRequest tokenRequest, long commandIndex, Consumer<Result> callback )
-    {
-        switch ( tokenRequest.type() )
-        {
-        case PROPERTY:
-            propertyKeyTokenStateMachine.applyCommand( tokenRequest, commandIndex, callback );
-            break;
-        case RELATIONSHIP:
-            relationshipTypeTokenStateMachine.applyCommand( tokenRequest, commandIndex, callback );
-            break;
-        case LABEL:
-            labelTokenStateMachine.applyCommand( tokenRequest, commandIndex, callback );
-            break;
-        default:
-            throw new IllegalStateException();
-        }
-    }
-
-    public void dispatch( ReplicatedLockTokenRequest lockRequest, long commandIndex,
-            Consumer<Result> callback )
-    {
-        replicatedLockTokenStateMachine.applyCommand( lockRequest, commandIndex, callback );
+        assert !runningBatch;
+        runningBatch = true;
+        return currentBatch;
     }
 
     public void flush() throws IOException
     {
+        assert !runningBatch;
+
         replicatedTxStateMachine.flush();
 
         labelTokenStateMachine.flush();
@@ -121,8 +98,10 @@ public class CoreStateMachines
         idAllocationStateMachine.flush();
     }
 
-    public void addSnapshots( CoreSnapshot coreSnapshot )
+    void addSnapshots( CoreSnapshot coreSnapshot )
     {
+        assert !runningBatch;
+
         coreSnapshot.add( CoreStateType.ID_ALLOCATION, idAllocationStateMachine.snapshot() );
         coreSnapshot.add( CoreStateType.LOCK_TOKEN, replicatedLockTokenStateMachine.snapshot() );
         // transactions and tokens live in the store
@@ -130,6 +109,8 @@ public class CoreStateMachines
 
     void installSnapshots( CoreSnapshot coreSnapshot )
     {
+        assert !runningBatch;
+
         idAllocationStateMachine.installSnapshot( coreSnapshot.get( CoreStateType.ID_ALLOCATION ) );
         replicatedLockTokenStateMachine.installSnapshot( coreSnapshot.get( CoreStateType.LOCK_TOKEN ) );
         // transactions and tokens live in the store
@@ -151,6 +132,8 @@ public class CoreStateMachines
 
     public void refresh( TransactionRepresentationCommitProcess localCommit )
     {
+        assert !runningBatch;
+
         long lastAppliedIndex = txLogState.findLastAppliedIndex();
         replicatedTxStateMachine.installCommitProcess( localCommit, lastAppliedIndex );
 
@@ -159,5 +142,55 @@ public class CoreStateMachines
         propertyKeyTokenStateMachine.installCommitProcess( localCommit, lastAppliedIndex );
 
         coreState.setStateMachine( this );
+    }
+
+    private class StateMachineCommandDispatcher implements CommandDispatcher
+    {
+        @Override
+        public void dispatch( ReplicatedTransaction transaction, long commandIndex, Consumer<Result> callback )
+        {
+            replicatedTxStateMachine.applyCommand( transaction, commandIndex, callback );
+        }
+
+        @Override
+        public void dispatch( ReplicatedIdAllocationRequest idRequest, long commandIndex, Consumer<Result> callback )
+        {
+            replicatedTxStateMachine.ensuredApplied();
+            idAllocationStateMachine.applyCommand( idRequest, commandIndex, callback );
+        }
+
+        @Override
+        public void dispatch( ReplicatedTokenRequest tokenRequest, long commandIndex, Consumer<Result> callback )
+        {
+            replicatedTxStateMachine.ensuredApplied();
+            switch ( tokenRequest.type() )
+            {
+            case PROPERTY:
+                propertyKeyTokenStateMachine.applyCommand( tokenRequest, commandIndex, callback );
+                break;
+            case RELATIONSHIP:
+                relationshipTypeTokenStateMachine.applyCommand( tokenRequest, commandIndex, callback );
+                break;
+            case LABEL:
+                labelTokenStateMachine.applyCommand( tokenRequest, commandIndex, callback );
+                break;
+            default:
+                throw new IllegalStateException();
+            }
+        }
+
+        @Override
+        public void dispatch( ReplicatedLockTokenRequest lockRequest, long commandIndex, Consumer<Result> callback )
+        {
+            replicatedTxStateMachine.ensuredApplied();
+            replicatedLockTokenStateMachine.applyCommand( lockRequest, commandIndex, callback );
+        }
+
+        @Override
+        public void close()
+        {
+            replicatedTxStateMachine.ensuredApplied();
+            runningBatch = false;
+        }
     }
 }
