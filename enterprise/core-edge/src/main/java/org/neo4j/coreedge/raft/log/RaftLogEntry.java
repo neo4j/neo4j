@@ -28,6 +28,7 @@ import static java.lang.String.format;
 public class RaftLogEntry
 {
     public static final RaftLogEntry[] empty = new RaftLogEntry[0];
+
     private final long term;
     private final ReplicatedContent content;
 

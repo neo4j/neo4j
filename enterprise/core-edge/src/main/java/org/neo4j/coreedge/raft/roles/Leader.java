@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.raft.roles;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.neo4j.coreedge.raft.Followers;
 import org.neo4j.coreedge.raft.RaftMessageHandler;
@@ -42,12 +43,13 @@ import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 
 public class Leader implements RaftMessageHandler
 {
-    public static <MEMBER> Iterable<MEMBER> replicationTargets( final ReadableRaftState<MEMBER> ctx )
+    private static <MEMBER> Iterable<MEMBER> replicationTargets( final ReadableRaftState<MEMBER> ctx )
     {
         return new FilteringIterable<>( ctx.replicationMembers(), member -> !member.equals( ctx.myself() ) );
     }
 
-    static <MEMBER> void sendHeartbeats( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome ) throws IOException, RaftLogCompactedException
+    private static <MEMBER> void sendHeartbeats( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome )
+            throws IOException, RaftLogCompactedException
     {
         long commitIndex = ctx.leaderCommit();
         long commitIndexTerm = ctx.entryLog().readEntryTerm( commitIndex );
@@ -59,8 +61,8 @@ public class Leader implements RaftMessageHandler
     }
 
     @Override
-    public <MEMBER> Outcome<MEMBER> handle( RaftMessages.RaftMessage<MEMBER> message,
-                                            ReadableRaftState<MEMBER> ctx, Log log ) throws IOException, RaftLogCompactedException
+    public <MEMBER> Outcome<MEMBER> handle( RaftMessages.RaftMessage<MEMBER> message, ReadableRaftState<MEMBER> ctx, Log log )
+            throws IOException, RaftLogCompactedException
     {
         Outcome<MEMBER> outcome = new Outcome<>( LEADER, ctx );
 
@@ -94,8 +96,8 @@ public class Leader implements RaftMessageHandler
                 if ( req.leaderTerm() < ctx.term() )
                 {
                     RaftMessages.AppendEntries.Response<MEMBER> appendResponse =
-                            new RaftMessages.AppendEntries.Response<>(
-                                    ctx.myself(), ctx.term(), false, req.prevLogIndex(), ctx.entryLog().appendIndex() );
+                            new RaftMessages.AppendEntries.Response<>( ctx.myself(), ctx.term(), false, req.prevLogIndex(),
+                                    ctx.entryLog().appendIndex() );
 
                     outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(), appendResponse ) );
                     break;
@@ -116,7 +118,8 @@ public class Leader implements RaftMessageHandler
 
             case APPEND_ENTRIES_RESPONSE:
             {
-                RaftMessages.AppendEntries.Response<MEMBER> response = (RaftMessages.AppendEntries.Response<MEMBER>) message;
+                RaftMessages.AppendEntries.Response<MEMBER> response =
+                        (RaftMessages.AppendEntries.Response<MEMBER>) message;
 
                 if ( response.term() < ctx.term() )
                 {
@@ -140,8 +143,8 @@ public class Leader implements RaftMessageHandler
 
                     boolean followerProgressed = response.matchIndex() > follower.getMatchIndex();
 
-                    outcome.replaceFollowerStates( outcome.getFollowerStates().onSuccessResponse( response.from(),
-                            max( response.matchIndex(), follower.getMatchIndex() ) ) );
+                    outcome.replaceFollowerStates( outcome.getFollowerStates()
+                            .onSuccessResponse( response.from(), max( response.matchIndex(), follower.getMatchIndex() ) ) );
 
                     outcome.addShipCommand( new ShipCommand.Match( response.matchIndex(), response.from() ) );
 
@@ -161,7 +164,8 @@ public class Leader implements RaftMessageHandler
                     {
                         // TODO: Test that mismatch between voting and participating members affects commit outcome
 
-                        long quorumAppendIndex = Followers.quorumAppendIndex( ctx.votingMembers(), outcome.getFollowerStates() );
+                        long quorumAppendIndex =
+                                Followers.quorumAppendIndex( ctx.votingMembers(), outcome.getFollowerStates() );
                         if ( quorumAppendIndex > ctx.commitIndex() )
                         {
                             outcome.setLeaderCommit( quorumAppendIndex );
@@ -172,7 +176,7 @@ public class Leader implements RaftMessageHandler
                 }
                 else // Response indicated failure.
                 {
-                    if( response.appendIndex() >= ctx.entryLog().prevIndex() )
+                    if ( response.appendIndex() >= ctx.entryLog().prevIndex() )
                     {
                         // Signal a mismatch to the log shipper, which will serve an earlier entry.
                         outcome.addShipCommand( new ShipCommand.Mismatch( response.appendIndex(), response.from() ) );
@@ -182,7 +186,8 @@ public class Leader implements RaftMessageHandler
                         // There are no earlier entries, message the follower that we have compacted so that
                         // it can take appropriate action.
                         outcome.addOutgoingMessage( new RaftMessages.Directed<>( response.from(),
-                                new RaftMessages.LogCompactionInfo<>( ctx.myself(), ctx.term(), ctx.entryLog().prevIndex() ) ) );
+                                new RaftMessages.LogCompactionInfo<>( ctx.myself(), ctx.term(),
+                                        ctx.entryLog().prevIndex() ) ) );
                     }
                 }
                 break;
@@ -200,7 +205,8 @@ public class Leader implements RaftMessageHandler
                     break;
                 }
 
-                outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(), new RaftMessages.Vote.Response<>( ctx.myself(), ctx.term(), false ) ) );
+                outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(),
+                        new RaftMessages.Vote.Response<>( ctx.myself(), ctx.term(), false ) ) );
                 break;
             }
 
@@ -209,6 +215,14 @@ public class Leader implements RaftMessageHandler
                 RaftMessages.NewEntry.Request<MEMBER> req = (RaftMessages.NewEntry.Request<MEMBER>) message;
                 ReplicatedContent content = req.content();
                 Appending.appendNewEntry( ctx, outcome, content );
+                break;
+            }
+
+            case NEW_BATCH_REQUEST:
+            {
+                RaftMessages.NewEntry.Batch<MEMBER> req = (RaftMessages.NewEntry.Batch<MEMBER>) message;
+                List<ReplicatedContent> contents = req.contents();
+                Appending.appendNewEntries( ctx, outcome, contents );
                 break;
             }
         }

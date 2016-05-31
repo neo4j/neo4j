@@ -19,7 +19,10 @@
  */
 package org.neo4j.coreedge.raft;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 import org.neo4j.coreedge.network.Message;
@@ -48,6 +51,7 @@ public interface RaftMessages
         // TODO: Refactor, these are client-facing messages / api. Perhaps not public and instantiated through an api
         // TODO: method instead?
         NEW_ENTRY_REQUEST,
+        NEW_BATCH_REQUEST,
         NEW_MEMBERSHIP_TARGET,
     }
 
@@ -578,6 +582,54 @@ public interface RaftMessages
             public ReplicatedContent content()
             {
                 return content;
+            }
+        }
+
+        class Batch<MEMBER> extends BaseMessage<MEMBER>
+        {
+            private List<ReplicatedContent> list;
+
+            public Batch( int batchSize )
+            {
+                super( null, Type.NEW_BATCH_REQUEST );
+                list = new ArrayList<>( batchSize );
+            }
+
+            public void add( ReplicatedContent content )
+            {
+                list.add( content );
+            }
+
+            @Override
+            public boolean equals( Object o )
+            {
+                if ( this == o )
+                { return true; }
+                if ( o == null || getClass() != o.getClass() )
+                { return false; }
+                if ( !super.equals( o ) )
+                { return false; }
+                Batch<?> batch = (Batch<?>) o;
+                return Objects.equals( list, batch.list );
+            }
+
+            @Override
+            public int hashCode()
+            {
+                return Objects.hash( super.hashCode(), list );
+            }
+
+            @Override
+            public String toString()
+            {
+                return "Batch{" +
+                       "list=" + list +
+                       '}';
+            }
+
+            public List<ReplicatedContent> contents()
+            {
+                return Collections.unmodifiableList( list );
             }
         }
     }

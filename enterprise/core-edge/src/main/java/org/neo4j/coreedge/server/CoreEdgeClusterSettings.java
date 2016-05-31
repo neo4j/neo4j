@@ -93,9 +93,13 @@ public class CoreEdgeClusterSettings
     public static final Setting<Integer> log_shipping_max_lag =
             setting( "core_edge.log_shipping_max_lag", INTEGER, "256" );
 
-    @Description("The time between successive retries of replicating a transaction")
-    public static final Setting<Long> tx_replication_retry_interval =
-            setting( "core_edge.tx_replication_retry_interval", DURATION, "1s" );
+    @Description("Size of the RAFT in queue")
+    public static final Setting<Integer> raft_in_queue_size =
+            setting( "core_edge.raft_in_queue_size", INTEGER, "64" );
+
+    @Description("Largest batch processed by RAFT")
+    public static final Setting<Integer> raft_in_queue_max_batch =
+            setting( "core_edge.raft_in_queue_max_batch", INTEGER, "16" );
 
     @Description("Time out for a token to be replicated")
     public static final Setting<Long> token_creation_timeout =

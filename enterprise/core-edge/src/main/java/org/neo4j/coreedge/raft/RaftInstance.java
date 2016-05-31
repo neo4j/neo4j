@@ -110,7 +110,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>,
                          StateStorage<VoteState<MEMBER>> voteStorage, RaftLog entryLog,
                          RaftStateMachine raftStateMachine, long electionTimeout, long heartbeatInterval,
                          RenewableTimeoutService renewableTimeoutService,
-                         final Inbound<RaftMessages.RaftMessage<MEMBER>> inbound, final Outbound<MEMBER> outbound,
+                         final Outbound<MEMBER> outbound,
                          LogProvider logProvider, RaftMembershipManager<MEMBER> membershipManager,
                          RaftLogShippingManager<MEMBER> logShipping,
                          Supplier<DatabaseHealth> databaseHealthSupplier,
@@ -136,8 +136,6 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>,
         leaderNotFoundMonitor = monitors.newMonitor( LeaderNotFoundMonitor.class );
 
         initTimers();
-
-        inbound.registerHandler( this );
     }
 
     private void initTimers()

@@ -27,6 +27,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.RaftMessages.AppendEntries;
 import org.neo4j.coreedge.raft.RaftMessages.Timeout.Heartbeat;
+import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
@@ -35,6 +36,7 @@ import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
+import org.neo4j.coreedge.raft.outcome.BatchAppendLogEntries;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.outcome.ShipCommand;
 import org.neo4j.coreedge.raft.state.RaftState;
@@ -393,9 +395,47 @@ public class LeaderTest
         assertEquals( 0, logCommand.index );
         assertEquals( 0, logCommand.entry.term() );
 
-        ShipCommand.NewEntry shipCommand = (ShipCommand.NewEntry) single( outcome.getShipCommands() );
+        ShipCommand.NewEntries shipCommand = (ShipCommand.NewEntries) single( outcome.getShipCommands() );
 
-        assertEquals( shipCommand, new ShipCommand.NewEntry( -1, -1, new RaftLogEntry( 0, CONTENT ) ) );
+        assertEquals( shipCommand, new ShipCommand.NewEntries( -1, -1, new RaftLogEntry[]{ new RaftLogEntry( 0, CONTENT ) } ) );
+    }
+
+    @Test
+    public void leaderShouldHandleBatch() throws Exception
+    {
+        // given
+        RaftState<RaftTestMember> state = raftState()
+                .votingMembers( asSet( myself, member1, member2 ) )
+                .build();
+
+        Leader leader = new Leader();
+
+        int BATCH_SIZE = 3;
+        RaftMessages.NewEntry.Batch<RaftTestMember> batchRequest = new RaftMessages.NewEntry.Batch<>( BATCH_SIZE );
+        batchRequest.add( valueOf( 0 ) );
+        batchRequest.add( valueOf( 1 ) );
+        batchRequest.add( valueOf( 2 ) );
+
+        // when
+        Outcome<RaftTestMember> outcome = leader.handle( batchRequest, state, log() );
+
+        // then
+        BatchAppendLogEntries logCommand = (BatchAppendLogEntries) single( outcome.getLogCommands() );
+
+        assertEquals( 0, logCommand.baseIndex );
+        for ( int i = 0; i < BATCH_SIZE; i++ )
+        {
+            assertEquals( 0, logCommand.entries[i].term() );
+            assertEquals( i, ((ReplicatedInteger)logCommand.entries[i].content()).get() );
+        }
+
+        ShipCommand.NewEntries shipCommand = (ShipCommand.NewEntries) single( outcome.getShipCommands() );
+
+        assertEquals( shipCommand, new ShipCommand.NewEntries( -1, -1, new RaftLogEntry[]{
+                new RaftLogEntry( 0, valueOf( 0 ) ),
+                new RaftLogEntry( 0, valueOf( 1 ) ),
+                new RaftLogEntry( 0, valueOf( 2 ) )
+        } ) );
     }
 
     @Test

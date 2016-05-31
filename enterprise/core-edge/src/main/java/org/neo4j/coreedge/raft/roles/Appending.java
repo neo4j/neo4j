@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.raft.roles;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
@@ -122,7 +123,23 @@ public class Appending
 
         RaftLogEntry newLogEntry = new RaftLogEntry( ctx.term(), content );
 
-        outcome.addShipCommand( new ShipCommand.NewEntry( prevLogIndex, prevLogTerm, newLogEntry ) );
+        outcome.addShipCommand( new ShipCommand.NewEntries( prevLogIndex, prevLogTerm, new RaftLogEntry[]{ newLogEntry } ) );
         outcome.addLogCommand( new AppendLogEntry( prevLogIndex + 1, newLogEntry ) );
+    }
+
+    public static <MEMBER> void appendNewEntries( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome,
+            List<ReplicatedContent> contents ) throws IOException, RaftLogCompactedException
+    {
+        long prevLogIndex = ctx.entryLog().appendIndex();
+        long prevLogTerm = prevLogIndex == -1 ? -1 :
+                prevLogIndex > ctx.lastLogIndexBeforeWeBecameLeader() ?
+                        ctx.term() :
+                        ctx.entryLog().readEntryTerm( prevLogIndex );
+
+        RaftLogEntry[] raftLogEntries = contents.stream().map( content -> new RaftLogEntry( ctx.term(), content ) )
+                .toArray( RaftLogEntry[]::new );
+
+        outcome.addShipCommand( new ShipCommand.NewEntries( prevLogIndex, prevLogTerm, raftLogEntries ) );
+        outcome.addLogCommand( new BatchAppendLogEntries( prevLogIndex + 1, 0, raftLogEntries ) );
     }
 }

@@ -26,6 +26,7 @@ import org.neo4j.coreedge.raft.replication.shipping.RaftLogShipper;
 import static java.lang.String.format;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 public abstract class ShipCommand
 {
@@ -146,23 +147,23 @@ public abstract class ShipCommand
         }
     }
 
-    public static class NewEntry extends ShipCommand
+    public static class NewEntries extends ShipCommand
     {
         private final long prevLogIndex;
         private final long prevLogTerm;
-        private final RaftLogEntry newLogEntry;
+        private final RaftLogEntry[] newLogEntries;
 
-        public NewEntry( long prevLogIndex, long prevLogTerm, RaftLogEntry newLogEntry )
+        public NewEntries( long prevLogIndex, long prevLogTerm, RaftLogEntry[] newLogEntries )
         {
             this.prevLogIndex = prevLogIndex;
             this.prevLogTerm = prevLogTerm;
-            this.newLogEntry = newLogEntry;
+            this.newLogEntries = newLogEntries;
         }
 
         @Override
         public <MEMBER> void applyTo( RaftLogShipper<MEMBER> raftLogShipper, LeaderContext leaderContext ) throws IOException
         {
-            raftLogShipper.onNewEntry( prevLogIndex, prevLogTerm, newLogEntry, leaderContext );
+            raftLogShipper.onNewEntries( prevLogIndex, prevLogTerm, newLogEntries, leaderContext );
         }
 
         @Override
@@ -177,17 +178,17 @@ public abstract class ShipCommand
                 return false;
             }
 
-            NewEntry newEntry = (NewEntry) o;
+            NewEntries newEntries = (NewEntries) o;
 
-            if ( prevLogIndex != newEntry.prevLogIndex )
+            if ( prevLogIndex != newEntries.prevLogIndex )
             {
                 return false;
             }
-            if ( prevLogTerm != newEntry.prevLogTerm )
+            if ( prevLogTerm != newEntries.prevLogTerm )
             {
                 return false;
             }
-            return newLogEntry.equals( newEntry.newLogEntry );
+            return Arrays.equals( newLogEntries, newEntries.newLogEntries );
 
         }
 
@@ -196,7 +197,7 @@ public abstract class ShipCommand
         {
             int result = (int) (prevLogIndex ^ (prevLogIndex >>> 32));
             result = 31 * result + (int) (prevLogTerm ^ (prevLogTerm >>> 32));
-            result = 31 * result + newLogEntry.hashCode();
+            result = 31 * result + Arrays.hashCode( newLogEntries );
             return result;
         }
 
@@ -204,7 +205,7 @@ public abstract class ShipCommand
         public String toString()
         {
             return format( "NewEntry{prevLogIndex=%d, prevLogTerm=%d, newLogEntry=%s}", prevLogIndex, prevLogTerm,
-                    newLogEntry );
+                    Arrays.toString( newLogEntries ) );
         }
     }
 
