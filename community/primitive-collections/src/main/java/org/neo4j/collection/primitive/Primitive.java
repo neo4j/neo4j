@@ -19,17 +19,13 @@
  */
 package org.neo4j.collection.primitive;
 
-import org.neo4j.collection.primitive.hopscotch.IntKeyLongValueTable;
 import org.neo4j.collection.primitive.hopscotch.IntKeyObjectValueTable;
 import org.neo4j.collection.primitive.hopscotch.IntKeyTable;
-import org.neo4j.collection.primitive.hopscotch.IntKeyUnsafeTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyLongValueUnsafeTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyObjectValueTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyTable;
-import org.neo4j.collection.primitive.hopscotch.LongKeyUnsafeTable;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveIntHashSet;
-import org.neo4j.collection.primitive.hopscotch.PrimitiveIntLongHashMap;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveIntObjectHashMap;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongHashSet;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongIntHashMap;
@@ -67,17 +63,6 @@ public class Primitive
                 VALUE_MARKER, NO_MONITOR );
     }
 
-    public static PrimitiveLongSet offHeapLongSet()
-    {
-        return offHeapLongSet( DEFAULT_OFFHEAP_CAPACITY );
-    }
-
-    public static PrimitiveLongSet offHeapLongSet( int initialCapacity )
-    {
-        return new PrimitiveLongHashSet( new LongKeyUnsafeTable<>( initialCapacity, VALUE_MARKER ),
-                VALUE_MARKER, NO_MONITOR );
-    }
-
     public static PrimitiveLongIntMap longIntMap()
     {
         return longIntMap( DEFAULT_HEAP_CAPACITY );
@@ -86,11 +71,6 @@ public class Primitive
     public static PrimitiveLongIntMap longIntMap( int initialCapacity )
     {
         return new PrimitiveLongIntHashMap( new LongKeyIntValueTable( initialCapacity ), NO_MONITOR );
-    }
-
-    public static PrimitiveLongLongMap offHeapLongLongMap()
-    {
-        return offHeapLongLongMap( DEFAULT_OFFHEAP_CAPACITY );
     }
 
     public static PrimitiveLongLongMap offHeapLongLongMap( int initialCapacity )
@@ -119,18 +99,6 @@ public class Primitive
                 VALUE_MARKER, NO_MONITOR );
     }
 
-    public static PrimitiveIntSet offHeapIntSet()
-    {
-        return new PrimitiveIntHashSet( new IntKeyUnsafeTable<>( 1 << 20, VALUE_MARKER ),
-                VALUE_MARKER, NO_MONITOR );
-    }
-
-    public static PrimitiveIntSet offHeapIntSet( int initialCapacity )
-    {
-        return new PrimitiveIntHashSet( new IntKeyUnsafeTable<>( initialCapacity, VALUE_MARKER ),
-                VALUE_MARKER, NO_MONITOR );
-    }
-
     public static <VALUE> PrimitiveIntObjectMap<VALUE> intObjectMap()
     {
         return intObjectMap( DEFAULT_HEAP_CAPACITY );
@@ -139,35 +107,5 @@ public class Primitive
     public static <VALUE> PrimitiveIntObjectMap<VALUE> intObjectMap( int initialCapacity )
     {
         return new PrimitiveIntObjectHashMap<>( new IntKeyObjectValueTable<VALUE>( initialCapacity ), NO_MONITOR );
-    }
-
-    public static PrimitiveIntLongMap intLongMap()
-    {
-        return intLongMap( DEFAULT_HEAP_CAPACITY );
-    }
-
-    public static PrimitiveIntLongMap intLongMap( int initialCapacity )
-    {
-        return new PrimitiveIntLongHashMap( new IntKeyLongValueTable( initialCapacity ), NO_MONITOR );
-    }
-
-    public static PrimitiveLongIterator iterator( final long... longs )
-    {
-        return new PrimitiveLongIterator()
-        {
-            int i;
-
-            @Override
-            public boolean hasNext()
-            {
-                return i < longs.length;
-            }
-
-            @Override
-            public long next()
-            {
-                return longs[i++];
-            }
-        };
     }
 }

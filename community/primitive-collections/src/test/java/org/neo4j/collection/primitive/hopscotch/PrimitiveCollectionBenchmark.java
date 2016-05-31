@@ -19,14 +19,14 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-
-import org.junit.Ignore;
-import org.junit.Test;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
@@ -353,7 +353,7 @@ public class PrimitiveCollectionBenchmark
 
     private static class HopScotchSet implements MapInterface
     {
-        private final PrimitiveLongSet set = Primitive.offHeapLongSet();
+        private final PrimitiveLongSet set = Primitive.longSet();
 
         @Override
         public void put( long key, int value )
