@@ -247,7 +247,7 @@ public class DataFactories
             {
                 headerSeeker = headerCharSeekerFactory.open( dataSeeker, config );
                 Mark mark = new Mark();
-                Extractors extractors = new Extractors( config.arrayDelimiter(), config.emptyQuotedStringsAsNull() );
+                Extractors extractors = new Extractors( config.arrayDelimiter(), config.emptyQuotedStringsAsNull(), config.trimStrings() );
                 Extractor<?> idExtractor = idType.extractor( extractors );
                 int delimiter = config.delimiter();
                 List<Header.Entry> columns = new ArrayList<>();

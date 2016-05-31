@@ -134,6 +134,10 @@ public class ImportTool
                 "<true/false>",
                 "Whether or not fields from input source can span multiple lines, i.e. contain newline characters." ),
 
+        TRIM_STRINGS( "trim-strings", org.neo4j.csv.reader.Configuration.DEFAULT.trimStrings(),
+                "<true/false>",
+                "Whether or not strings should be trimmed for whitespaces."),
+
         INPUT_ENCODING( "input-encoding", null,
                 "<character set>",
                 "Character set that input data is encoded in. Provided value must be one out of the available "
@@ -673,6 +677,7 @@ public class ImportTool
                 CHARACTER_CONVERTER );
         final Boolean multiLineFields = args.getBoolean( Options.MULTILINE_FIELDS.key(), null );
         final Boolean emptyStringsAsNull = args.getBoolean( Options.IGNORE_EMPTY_STRINGS.key(), null );
+        final Boolean trimStrings = args.getBoolean( Options.TRIM_STRINGS.key(), null);
         return new Configuration.Default()
         {
             @Override
@@ -719,6 +724,14 @@ public class ImportTool
             public int bufferSize()
             {
                 return defaultSettingsSuitableForTests ? 10_000 : super.bufferSize();
+            }
+
+            @Override
+            public boolean trimStrings()
+            {
+                return trimStrings != null
+                        ? trimStrings.booleanValue()
+                        : defaultConfiguration.trimStrings();
             }
         };
     }

@@ -1104,6 +1104,59 @@ public class ImportToolTest
     }
 
     @Test
+    public void shouldNotTrimStringsByDefault() throws Exception
+    {
+        // GIVEN
+        String name = "  This is a line with leading and trailing whitespaces   ";
+        File data = data( ":ID,name", "1,\"" + name + "\"");
+
+        // WHEN
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--nodes", data.getAbsolutePath() );
+
+        // THEN
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        try ( Transaction tx = db.beginTx() )
+        {
+            ResourceIterator<Node> allNodes = db.getAllNodes().iterator();
+            Node node = Iterators.single( allNodes );
+            allNodes.close();
+
+            assertEquals( name, node.getProperty( "name" ) );
+
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldTrimStringsIfConfiguredTo() throws Exception
+    {
+        // GIVEN
+        String name = "  This is a line with leading and trailing whitespaces   ";
+        File data = data( ":ID,name", "1,\"" + name + "\"");
+
+        // WHEN
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--nodes", data.getAbsolutePath(),
+                "--trim-strings", "true" );
+
+        // THEN
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        try ( Transaction tx = db.beginTx() )
+        {
+            ResourceIterator<Node> allNodes = db.getAllNodes().iterator();
+            Node node = Iterators.single( allNodes );
+            allNodes.close();
+
+            assertEquals( name.trim(), node.getProperty( "name" ) );
+
+            tx.success();
+        }
+    }
+
+    @Test
     public void shouldPrintReferenceLinkOnDataImportErrors() throws Exception
     {
         String[] versionParts = Version.getKernel().getReleaseVersion().split("-");

@@ -49,6 +49,8 @@ object CSVResources {
     override def multilineFields(): Boolean = true
 
     override def emptyQuotedStringsAsNull(): Boolean = true
+
+    override def trimStrings(): Boolean = false
   }
 }
 
