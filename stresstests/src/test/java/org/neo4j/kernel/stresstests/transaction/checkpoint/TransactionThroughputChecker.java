@@ -22,6 +22,7 @@ package org.neo4j.kernel.stresstests.transaction.checkpoint;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.stresstests.transaction.checkpoint.workload.Workload;
 
@@ -32,9 +33,10 @@ public class TransactionThroughputChecker implements Workload.TransactionThrough
     private final List<Double> reports = new ArrayList<>();
 
     @Override
-    public void report( long transactions, long elapsedTime)
+    public void report( long transactions, long timeSlotMillis )
     {
-        reports.add( ((double) transactions / (double) elapsedTime) );
+        long elapsedSeconds = TimeUnit.MILLISECONDS.toSeconds( timeSlotMillis );
+        reports.add( ((double) transactions / (double) elapsedSeconds) );
     }
 
     public void assertThroughput( PrintStream out )
@@ -45,7 +47,7 @@ public class TransactionThroughputChecker implements Workload.TransactionThrough
             return;
         }
 
-        out.println( "Throughput reports (tx/ms):" );
+        out.println( "Throughput reports (tx/s):" );
         double sum = 0;
         for ( double report : reports )
         {
@@ -55,7 +57,7 @@ public class TransactionThroughputChecker implements Workload.TransactionThrough
         out.println();
 
         double average = sum / (double) reports.size();
-        out.println( "Average throughput (tx/ms): " + average );
+        out.println( "Average throughput (tx/s): " + average );
 
         double powerSum = 0.0;
         for ( double report : reports )
@@ -64,9 +66,9 @@ public class TransactionThroughputChecker implements Workload.TransactionThrough
         }
 
         double stdDeviation = Math.sqrt( powerSum / (double) reports.size() );
-        out.println( "Standard deviation (tx/ms): " + stdDeviation );
+        out.println( "Standard deviation (tx/s): " + stdDeviation );
         double twoStdDeviations = stdDeviation * 2.0;
-        out.println( "Two standard deviations (tx/ms): " + twoStdDeviations );
+        out.println( "Two standard deviations (tx/s): " + twoStdDeviations );
 
         int inOneStdDeviationRange = 0;
         int inTwoStdDeviationRange = 0;
@@ -79,12 +81,12 @@ public class TransactionThroughputChecker implements Workload.TransactionThrough
             }
             else if ( Math.abs( average - report ) <= twoStdDeviations )
             {
-                System.err.println( "Outside _one_ std deviation range: " + report );
+                out.println( "Outside _one_ std deviation range: " + report );
                 inTwoStdDeviationRange++;
             }
             else
             {
-                System.err.println( "Outside _two_ std deviation range: " + report );
+                out.println( "Outside _two_ std deviation range: " + report );
             }
         }
 
