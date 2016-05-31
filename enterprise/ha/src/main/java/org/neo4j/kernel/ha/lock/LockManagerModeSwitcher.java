@@ -31,6 +31,8 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.kernel.impl.factory.CommunityEditionModule.maybeWrapWithDeferringLockManager;
+
 public class LockManagerModeSwitcher extends AbstractModeSwitcher<Locks>
 {
     private final DelegateInvocationHandler<Master> master;
@@ -57,13 +59,15 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<Locks>
     @Override
     protected Locks getMasterImpl( LifeSupport life )
     {
-        return life.add( locksFactory.newInstance() );
+        return life.add( maybeWrapWithDeferringLockManager( config, locksFactory.newInstance() ) );
     }
 
     @Override
     protected Locks getSlaveImpl( LifeSupport life )
     {
-        return life.add( new SlaveLockManager( locksFactory.newInstance(), requestContextFactory, master.cement(),
-                availabilityGuard, logProvider, config ) );
+        SlaveLockManager lockManager =
+                new SlaveLockManager( locksFactory.newInstance(), requestContextFactory, master.cement(),
+                        availabilityGuard, logProvider, config );
+        return life.add( maybeWrapWithDeferringLockManager( config, lockManager ) );
     }
 }

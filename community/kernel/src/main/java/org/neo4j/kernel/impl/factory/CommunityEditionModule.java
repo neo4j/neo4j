@@ -49,7 +49,9 @@ import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
+import org.neo4j.kernel.impl.locking.DeferringLocks;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.NoOpLocks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -84,7 +86,8 @@ public class CommunityEditionModule
         LifeSupport life = platformModule.life;
         GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 
-        lockManager = dependencies.satisfyDependency( createLockManager( config, logging ) );
+        lockManager = dependencies.satisfyDependency(
+                maybeWrapWithDeferringLockManager( config, createLockManager( config, logging ) ) );
         idTypeConfigurationProvider = createIdTypeConfigurationProvider( config );
         idGeneratorFactory = dependencies.satisfyDependency( createIdGeneratorFactory( fileSystem, idTypeConfigurationProvider ) );
 
@@ -249,8 +252,21 @@ public class CommunityEditionModule
                     .info( "No locking implementation specified, defaulting to 'community'" );
             return new CommunityLockManger();
         }
+        else if ( key.equals( "none" ) )
+        {
+            return new NoOpLocks();
+        }
 
         throw new IllegalArgumentException( "No lock manager found with the name '" + key + "'." );
+    }
+
+    public static Locks maybeWrapWithDeferringLockManager( Config config, Locks delegate )
+    {
+        if ( config.get( GraphDatabaseFacadeFactory.Configuration.deferred_locking ) )
+        {
+            return new DeferringLocks( delegate );
+        }
+        return delegate;
     }
 
     protected TransactionHeaderInformationFactory createHeaderInformationFactory()
