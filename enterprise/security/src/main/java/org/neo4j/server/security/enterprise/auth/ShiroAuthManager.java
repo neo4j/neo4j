@@ -190,6 +190,9 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
         }
 
         setUserPassword( username, password );
+
+        // This will invalidate the auth cache
+        authSubject.logout();
     }
 
     @Override
