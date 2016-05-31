@@ -118,7 +118,10 @@ public interface Locks extends Lifecycle
         /** For slave transactions, this tracks an identifier for the lock session running on the master */
         int getLockSessionId();
 
-        /** Get a potential delegate */
+        /**
+         * Get a potential delegate to this client.
+         * NOTE this is a hack to get {@link DeferringLocks} to work. Do no take seriously.
+         */
         Client delegate();
     }
 

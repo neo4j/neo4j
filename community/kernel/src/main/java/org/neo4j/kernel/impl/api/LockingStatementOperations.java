@@ -534,21 +534,21 @@ public class LockingStatementOperations implements
     @Override
     public void acquireShared(KernelStatement state, Locks.ResourceType resourceType, long resourceId )
     {
-        state.locks().acquireShared( resourceType, resourceId );
+        state.locks().delegate().acquireShared( resourceType, resourceId );
         state.assertOpen();
     }
 
     @Override
     public void releaseExclusive( KernelStatement state, Locks.ResourceType type, long resourceId )
     {
-        state.locks().releaseExclusive( type, resourceId );
+        state.locks().delegate().releaseExclusive( type, resourceId );
         state.assertOpen();
     }
 
     @Override
     public void releaseShared( KernelStatement state, Locks.ResourceType type, long resourceId )
     {
-        state.locks().releaseShared( type, resourceId );
+        state.locks().delegate().releaseShared( type, resourceId );
         state.assertOpen();
     }
 

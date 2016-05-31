@@ -51,7 +51,6 @@ import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.locking.DeferringLocks;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.NoOpLocks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -251,10 +250,6 @@ public class CommunityEditionModule
             logging.getInternalLog( CommunityFacadeFactory.class )
                     .info( "No locking implementation specified, defaulting to 'community'" );
             return new CommunityLockManger();
-        }
-        else if ( key.equals( "none" ) )
-        {
-            return new NoOpLocks();
         }
 
         throw new IllegalArgumentException( "No lock manager found with the name '" + key + "'." );

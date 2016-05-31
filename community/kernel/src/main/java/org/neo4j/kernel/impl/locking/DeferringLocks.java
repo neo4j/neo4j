@@ -7,7 +7,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class DeferringLocks extends Lifecycle.Delegate implements Locks
 {
-
     private final Locks delegate;
 
     public DeferringLocks( Locks delegate )
@@ -25,7 +24,7 @@ public class DeferringLocks extends Lifecycle.Delegate implements Locks
     @Override
     public void accept( Visitor visitor )
     {
-
+        delegate.accept( visitor );
     }
 
     private static class Resource implements Comparable<Resource>
@@ -43,16 +42,19 @@ public class DeferringLocks extends Lifecycle.Delegate implements Locks
         public boolean equals( Object o )
         {
             if ( this == o )
-            { return true; }
+            {
+                return true;
+            }
             if ( o == null || getClass() != o.getClass() )
-            { return false; }
-
+            {
+                return false;
+            }
             Resource resource = (Resource) o;
-
             if ( resourceId != resource.resourceId )
-            { return false; }
+            {
+                return false;
+            }
             return resourceType.equals( resource.resourceType );
-
         }
 
         @Override
@@ -66,11 +68,14 @@ public class DeferringLocks extends Lifecycle.Delegate implements Locks
         @Override
         public int compareTo( Resource o )
         {
+            // The important thing isn't the order itself, it's the presence of an order
+            // so that all lock clients gets the same order
             return resourceType.typeId() == o.resourceType.typeId() ? Long.compare( resourceId, o.resourceId )
                                                                     : resourceType.typeId() - o.resourceType.typeId();
         }
     }
 
+    // TODO the state in this class is quite unoptimized, please do so
     private static class DeferringLockClient implements Client
     {
         private final Client clientDelegate;
@@ -91,6 +96,7 @@ public class DeferringLocks extends Lifecycle.Delegate implements Locks
 
         private boolean queueLock( ResourceType resourceType, long resourceId, Set<Resource> lockSet )
         {
+            // The contract is that after calling stop() no more locks should be acquired
             if ( !shouldStop )
             {
                 lockSet.add( new Resource( resourceType, resourceId ) );
@@ -131,7 +137,7 @@ public class DeferringLocks extends Lifecycle.Delegate implements Locks
         @Override
         public void releaseAll()
         {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException( "Should not be needed" );
         }
 
         @Override

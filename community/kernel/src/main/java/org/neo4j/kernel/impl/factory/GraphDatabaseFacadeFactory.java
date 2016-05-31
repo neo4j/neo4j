@@ -76,16 +76,6 @@ public abstract class GraphDatabaseFacadeFactory
         Iterable<QueryEngineProvider> executionEngines();
     }
 
-    /*
-
-      # Deferred alt1
-      deferred_locking = true
-
-      # No locking alt1
-      lock_manager = none
-
-     */
-
     public static class Configuration
     {
         public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
@@ -100,7 +90,7 @@ public abstract class GraphDatabaseFacadeFactory
         // Kept here to have it not be publicly documented. community none
         public static final Setting<String> lock_manager = setting( "lock_manager", Settings.STRING, "" );
         public static final Setting<Boolean> deferred_locking =
-                setting( "deferred_locking", Settings.BOOLEAN, Settings.FALSE );
+                setting( "deferred_locking", Settings.BOOLEAN, Settings.TRUE );
         public static final Setting<String> tracer =
                 setting( "dbms.tracer", Settings.STRING, (String) null ); // 'null' default.
 
