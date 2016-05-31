@@ -74,7 +74,7 @@ object LogicalPlanConverter {
                                                (e: ast.Expression) => ExpressionConverter.createProjection(e)(context))
       val vars = columns.map {
         case (name, expr) =>
-          val variable = Variable(context.namer.newVarName(), symbols.CTAny, expr.nullable(context))
+          val variable = Variable(context.namer.newVarName(), CodeGenType(symbols.CTAny, ReferenceType), expr.nullable(context))
           context.addVariable(name, variable)
           variable -> expr
       }
@@ -109,7 +109,7 @@ object LogicalPlanConverter {
     override val logicalPlan: LogicalPlan = allNodesScan
 
     override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
-      val variable = Variable(context.namer.newVarName(), symbols.CTNode)
+      val variable = Variable(context.namer.newVarName(), CodeGenType.primitiveNode)
       context.addVariable(allNodesScan.idName.name, variable)
       val (methodHandle, actions) = context.popParent().consume(context, this)
       val opName = context.registerOperator(logicalPlan)
@@ -121,7 +121,7 @@ object LogicalPlanConverter {
     override val logicalPlan: LogicalPlan = nodeByLabelScan
 
     override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
-      val nodeVar = Variable(context.namer.newVarName(), symbols.CTNode)
+      val nodeVar = Variable(context.namer.newVarName(), CodeGenType.primitiveNode)
       val labelVar = context.namer.newVarName()
       context.addVariable(nodeByLabelScan.idName.name, nodeVar)
       val (methodHandle, actions) = context.popParent().consume(context, this)
@@ -138,7 +138,7 @@ object LogicalPlanConverter {
       override val logicalPlan: LogicalPlan = indexSeek
 
       override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
-        val nodeVar = Variable(context.namer.newVarName(), symbols.CTNode)
+        val nodeVar = Variable(context.namer.newVarName(), CodeGenType.primitiveNode)
         context.addVariable(idName, nodeVar)
 
         val (methodHandle, actions) = context.popParent().consume(context, this)
@@ -151,14 +151,14 @@ object LogicalPlanConverter {
           //collection, create set and for each element of the set do an index lookup
           case ManyQueryExpression(e: ast.Collection) =>
             val expression = ToSet(ExpressionConverter.createExpression(e)(context))
-            val expressionVar = Variable(context.namer.newVarName(), symbols.CTAny, nullable = false)
+            val expressionVar = Variable(context.namer.newVarName(), CodeGenType(symbols.CTAny, ReferenceType), nullable = false)
 
             ForEachExpression(expressionVar, expression,
               indexSeekFun(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar, actions))
           //Unknown, try to cast to collection and then same as above
           case ManyQueryExpression(e) =>
             val expression = ToSet(CastToCollection(ExpressionConverter.createExpression(e)(context)))
-            val expressionVar = Variable(context.namer.newVarName(), symbols.CTAny, nullable = false)
+            val expressionVar = Variable(context.namer.newVarName(), CodeGenType(symbols.CTAny, ReferenceType), nullable = false)
             ForEachExpression(expressionVar, expression,
               indexSeekFun(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar, actions))
 
@@ -253,8 +253,8 @@ object LogicalPlanConverter {
 
     private def expandAllConsume(context: CodeGenContext,
                                  child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
-      val relVar = Variable(context.namer.newVarName(), symbols.CTRelationship)
-      val toNodeVar = Variable(context.namer.newVarName(), symbols.CTNode)
+      val relVar = Variable(context.namer.newVarName(), CodeGenType.primitiveRel)
+      val toNodeVar = Variable(context.namer.newVarName(), CodeGenType.primitiveNode)
       context.addVariable(expand.relName.name, relVar)
       context.addVariable(expand.to.name, toNodeVar)
 
@@ -269,7 +269,7 @@ object LogicalPlanConverter {
 
     private def expandIntoConsume(context: CodeGenContext,
                                   child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
-      val relVar = Variable(context.namer.newVarName(), symbols.CTRelationship)
+      val relVar = Variable(context.namer.newVarName(), CodeGenType.primitiveRel)
       context.addVariable(expand.relName.name, relVar)
 
       val (methodHandle, action) = context.popParent().consume(context, this)
@@ -301,8 +301,8 @@ object LogicalPlanConverter {
     private def expandAllConsume(context: CodeGenContext,
                                  child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
       //mark relationship and node to visit as nullable
-      val relVar = Variable(context.namer.newVarName(), symbols.CTRelationship, nullable = true)
-      val toNodeVar = Variable(context.namer.newVarName(), symbols.CTNode, nullable = true)
+      val relVar = Variable(context.namer.newVarName(), CodeGenType.primitiveRel, nullable = true)
+      val toNodeVar = Variable(context.namer.newVarName(), CodeGenType.primitiveNode, nullable = true)
       context.addVariable(optionalExpand.relName.name, relVar)
       context.addVariable(optionalExpand.to.name, toNodeVar)
 
@@ -337,7 +337,7 @@ object LogicalPlanConverter {
     private def expandIntoConsume(context: CodeGenContext,
                                   child: CodeGenPlan): (Option[JoinTableMethod], Instruction) = {
       //mark relationship  to visit as nullable
-      val relVar = Variable(context.namer.newVarName(), symbols.CTRelationship, nullable = true)
+      val relVar = Variable(context.namer.newVarName(), CodeGenType.primitiveRel, nullable = true)
       context.addVariable(optionalExpand.relName.name, relVar)
 
       val (methodHandle, action) = context.popParent().consume(context, this)

@@ -28,8 +28,8 @@ class CodeGenExpressionTypesTest extends CypherFunSuite {
   val int = Literal(1: java.lang.Integer)
   val double = Literal(1.1: java.lang.Double)
   val string = Literal("apa")
-  val node = NodeProjection(Variable("a", CTNode))
-  val rel = RelationshipProjection(Variable("a", CTRelationship))
+  val node = NodeProjection(Variable("a", CodeGenType(CTNode, ReferenceType)))
+  val rel = RelationshipProjection(Variable("a", CodeGenType(CTRelationship, ReferenceType)))
   val intCollection = Collection(Seq(int))
   val doubleCollection = Collection(Seq(double))
   val stringCollection = Collection(Seq(string))
@@ -48,14 +48,14 @@ class CodeGenExpressionTypesTest extends CypherFunSuite {
 
   test("add") {
     implicit val context: CodeGenContext = null
-//
-//    Addition(int, double).codeGenType should equal(CodeGenType(CTFloat, ObjectType))
-//    Addition(string, int).codeGenType should equal(CodeGenType(CTString, ObjectType))
-//    Addition(string, string).codeGenType should equal(CodeGenType(CTString, ObjectType))
-//    Addition(intCollection, int).codeGenType should equal(CodeGenType(CTList(CTInteger), ObjectType))
-//    Addition(int, intCollection).codeGenType should equal(CodeGenType(CTList(CTInteger), ObjectType))
-//    Addition(double, intCollection).codeGenType should equal(CodeGenType(CTList(CTNumber), ObjectType))
-//    Addition(doubleCollection, intCollection).codeGenType should equal(CodeGenType(CTList(CTNumber), ObjectType))
+
+    Addition(int, double).codeGenType should equal(CodeGenType(CTFloat, ReferenceType))
+    Addition(string, int).codeGenType should equal(CodeGenType(CTString, ReferenceType))
+    Addition(string, string).codeGenType should equal(CodeGenType(CTString, ReferenceType))
+    Addition(intCollection, int).codeGenType should equal(CodeGenType(CTList(CTInteger), ReferenceType))
+    Addition(int, intCollection).codeGenType should equal(CodeGenType(CTList(CTInteger), ReferenceType))
+    Addition(double, intCollection).codeGenType should equal(CodeGenType(CTList(CTNumber), ReferenceType))
+    Addition(doubleCollection, intCollection).codeGenType should equal(CodeGenType(CTList(CTNumber), ReferenceType))
     Addition(stringCollection, string).codeGenType should equal(CodeGenType(CTList(CTString), ReferenceType))
     Addition(string, stringCollection).codeGenType should equal(CodeGenType(CTList(CTString), ReferenceType))
   }

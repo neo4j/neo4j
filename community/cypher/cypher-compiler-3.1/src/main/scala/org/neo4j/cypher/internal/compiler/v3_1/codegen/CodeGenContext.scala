@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v3_1.codegen
 
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.JoinData
+import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions.CodeGenType
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticTable
 
 import scala.collection.mutable
 
-case class Variable(name: String, cypherType: CypherType, nullable: Boolean = false)
+case class Variable(name: String, codeGenType: CodeGenType, nullable: Boolean = false)
 
 class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, Id], val namer: Namer = Namer()) {
 

@@ -93,7 +93,7 @@ object ExpressionConverter {
 
     val variable = context.getVariable(variableQueryVariable)
 
-    variable.cypherType match {
+    variable.codeGenType.ct match {
       case CTNode => NodeProjection(variable)
       case CTRelationship => RelationshipProjection(variable)
       case _ => throw new InternalException("The compiled runtime only handles variables pointing to rels and nodes at this time")
