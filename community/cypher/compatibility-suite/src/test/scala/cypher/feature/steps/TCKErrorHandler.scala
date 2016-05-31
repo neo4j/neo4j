@@ -68,6 +68,10 @@ case class TCKErrorHandler(typ: String, phase: String, detail: String) extends M
           detail should equal("InvalidArgumentType")
         else if (e.getMessage.matches("Only directed relationships are supported in .+"))
           detail should equal(REQUIRES_DIRECTED_RELATIONSHIP)
+        else if (e.getMessage.matches(s"${DOTALL}Invalid input '.*': expected an identifier character, whitespace, '\\|', a length specification, a property map or '\\]' \\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*"))
+          detail should equal("InvalidRelationshipPattern")
+        else if (e.getMessage.matches(s"${DOTALL}Invalid input '.*': expected whitespace, RangeLiteral, a property map or '\\]' \\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*"))
+          detail should equal("InvalidRelationshipPattern")
 
         // Runtime errors
         else if (e.getMessage.matches("Expected .+ to be a java.lang.String, but it was a .+"))
