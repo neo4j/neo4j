@@ -25,6 +25,8 @@ import java.util.Map;
 
 import org.neo4j.graphdb.Result;
 
+import static cypher.feature.parser.matchers.UnorderedListMatcher.findMatch;
+
 public class ResultMatcher implements Matcher<Result>
 {
     private final List<RowMatcher> rowMatchers;
@@ -48,19 +50,12 @@ public class ResultMatcher implements Matcher<Result>
         while ( value.hasNext() && !mutableCopy.isEmpty() )
         {
             Map<String,Object> nextRow = value.next();
-            for ( int i = 0; i < mutableCopy.size(); ++i )
+            int index = findMatch( mutableCopy, nextRow );
+            if ( index < 0 )
             {
-                if ( mutableCopy.get( i ).matches( nextRow ) )
-                {
-                    mutableCopy.remove( i );
-                    break;
-                }
-                else if ( i == mutableCopy.size() - 1 )
-                {
-                    // no row matcher did match
-                    return false;
-                }
+                return false;
             }
+            mutableCopy.remove( index );
         }
 
         boolean nothingLeftInReal = !value.hasNext();

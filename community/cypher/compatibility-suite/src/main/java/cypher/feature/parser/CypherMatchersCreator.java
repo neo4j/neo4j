@@ -29,6 +29,7 @@ import cypher.feature.parser.matchers.PathLinkMatcher;
 import cypher.feature.parser.matchers.PathMatcher;
 import cypher.feature.parser.matchers.RelationshipMatcher;
 import cypher.feature.parser.matchers.StringMatcher;
+import cypher.feature.parser.matchers.UnorderedListMatcher;
 import cypher.feature.parser.matchers.ValueMatcher;
 import org.opencypher.tools.tck.parsing.generated.FeatureResultsBaseListener;
 import org.opencypher.tools.tck.parsing.generated.FeatureResultsParser;
@@ -50,6 +51,8 @@ class CypherMatchersCreator extends FeatureResultsBaseListener
     private final Deque<String> names;
     private final Deque<PathLinkMatcher> pathElements;
 
+    private boolean unorderedLists;
+
     private static final String INFINITY = "Inf";
 
     CypherMatchersCreator()
@@ -60,11 +63,18 @@ class CypherMatchersCreator extends FeatureResultsBaseListener
         this.mapCounters = new LinkedList<>();
         this.names = new LinkedList<>();
         this.pathElements = new LinkedList<>();
+        this.unorderedLists = false;
     }
 
     ValueMatcher parsed()
     {
         return workload.pop();
+    }
+
+    CypherMatchersCreator setLists( boolean unordered )
+    {
+        unorderedLists = unordered;
+        return this;
     }
 
     @Override
@@ -131,7 +141,14 @@ class CypherMatchersCreator extends FeatureResultsBaseListener
         {
             temp.addFirst( workload.pop() );
         }
-        workload.push( new ListMatcher( temp ) );
+        if ( unorderedLists )
+        {
+            workload.push( new UnorderedListMatcher( temp ) );
+        }
+        else
+        {
+            workload.push( new ListMatcher( temp ) );
+        }
     }
 
     @Override

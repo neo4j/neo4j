@@ -115,6 +115,17 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     }
   }
 
+  Then(EXPECT_RESULT_UNORDERED_LISTS) { (expectedTable: DataTable) =>
+    ifEnabled {
+      val matcher = constructResultMatcher(expectedTable, unorderedLists = true)
+
+      inTx {
+        matcher should accept(successful(result))
+      }
+    }
+  }
+
+
   Then(EXPECT_ERROR) { (typ: String, phase: String, detail: String) =>
     ifEnabled {
       TCKErrorHandler(typ, phase, detail).check(result)
