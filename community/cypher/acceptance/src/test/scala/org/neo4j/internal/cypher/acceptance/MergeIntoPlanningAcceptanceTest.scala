@@ -22,7 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
-class MergeIntoAcceptanceTest extends ExecutionEngineFunSuite{
+class MergeIntoPlanningAcceptanceTest extends ExecutionEngineFunSuite{
 
   test("ON CREATE with update one property") {
     //given
@@ -35,8 +35,6 @@ class MergeIntoAcceptanceTest extends ExecutionEngineFunSuite{
 
     //then
     update should use("Merge(Into)")
-    val res = execute("MATCH ()-[r:TYPE]->() RETURN extract(key IN keys(r)| key + '->' + r[key]) as keyValue")
-    res.toList should equal(List(Map("keyValue" -> Seq("name->foo"))))
   }
 
   test("ON CREATE with deleting one property") {
@@ -50,8 +48,6 @@ class MergeIntoAcceptanceTest extends ExecutionEngineFunSuite{
 
     //then
     update should use("Merge(Into)")
-    val res = execute("MATCH ()-[r:TYPE]->() RETURN extract(key IN keys(r)| key + '->' + r[key]) as keyValue")
-    res.toList should equal(List(Map("keyValue" -> Seq.empty)))
   }
 
   test("ON CREATE with update all properties from node") {
@@ -64,8 +60,6 @@ class MergeIntoAcceptanceTest extends ExecutionEngineFunSuite{
 
     //then
     update should use("Merge(Into)")
-    val res = execute("MATCH ()-[r:TYPE]->() RETURN extract(key IN keys(r)| key + '->' + r[key]) as keyValue")
-    res.toList should equal(List(Map("keyValue" -> Seq("name->A"))))
   }
 
   test("ON MATCH with update all properties from node") {
@@ -77,8 +71,6 @@ class MergeIntoAcceptanceTest extends ExecutionEngineFunSuite{
 
     //then
     update should use("Merge(Into)")
-    val res = execute("MATCH ()-[r:TYPE]->() RETURN extract(key IN keys(r)| key + '->' + r[key]) as keyValue")
-    res.toList should equal(List(Map("keyValue" -> Seq("name->A"))))
   }
 
   test("ON CREATE with update properties from literal map") {
@@ -92,10 +84,7 @@ class MergeIntoAcceptanceTest extends ExecutionEngineFunSuite{
 
     //then
     update should use("Merge(Into)")
-    val res = execute("MATCH ()-[r:TYPE]->() RETURN extract(key IN keys(r)| key + '->' + r[key]) as keyValue")
-    res.toList should equal(List(Map("keyValue" -> Seq("foo->bar", "bar->baz"))))
   }
-
 
   test("ON MATCH with update properties from literal map") {
     //given
@@ -107,10 +96,7 @@ class MergeIntoAcceptanceTest extends ExecutionEngineFunSuite{
 
     //then
     update should use("Merge(Into)")
-    val res = execute("MATCH ()-[r:TYPE]->() RETURN extract(key IN keys(r)| key + '->' + r[key]) as keyValue")
-    res.toList should equal(List(Map("keyValue" -> Seq("foo->baz", "bar->baz"))))
   }
-
 
   //MERGE INTO is only used by the rule planner
   override def execute(q: String, params: (String, Any)*): InternalExecutionResult= super.execute(s"CYPHER planner=rule $q", params:_*)
