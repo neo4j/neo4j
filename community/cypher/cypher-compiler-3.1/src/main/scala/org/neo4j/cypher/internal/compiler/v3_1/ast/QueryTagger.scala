@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.ast.functions._
 import org.neo4j.cypher.internal.frontend.v3_1.parser.CypherParser
 
 import scala.annotation.tailrec
+import scala.util.{Failure, Success, Try}
 
 sealed class QueryTag(aName: String) {
   val name = aName.trim.toLowerCase
@@ -193,7 +194,10 @@ case object AggregationTag extends QueryTag("aggregation")
 
 object QueryTagger extends QueryTagger[String] {
 
-  def apply(input: String) = default(input)
+  def apply(input: String) = Try(default(input)) match {
+    case Success(set) => set
+    case Failure(exception) => Set.empty // in case there was a syntax error
+  }
 
   val default: QueryTagger[String] = fromString(forEachChild(
     // Clauses

@@ -23,6 +23,11 @@ import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 
 class QueryTaggerTest extends CypherFunSuite {
 
+  test("should return no tags on syntax error") {
+    QueryTagger("foo") shouldBe empty
+    QueryTagger("MATCH (a:A) MATCH (a)-[:LIKES..]->(c) RETURN c.name") shouldBe empty
+  }
+
   test(queryTag(MatchTag)) {
     QueryTagger("MATCH n RETURN n") should contain(MatchTag)
   }
