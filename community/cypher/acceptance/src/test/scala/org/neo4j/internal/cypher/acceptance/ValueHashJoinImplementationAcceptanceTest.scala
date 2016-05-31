@@ -21,7 +21,8 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
-class ValueHashJoinAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class ValueHashJoinImplementationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+
   test("find friends of others") {
     // given
     createLabeledNode(Map("id" -> 1), "A")
@@ -33,7 +34,6 @@ class ValueHashJoinAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A), (b:B) WHERE a.id = b.id RETURN a, b")
 
     // then
-    result.toSet should equal(Set(Map("a" -> a, "b" -> b)))
     result should use("ValueHashJoin")
   }
 
@@ -51,7 +51,6 @@ class ValueHashJoinAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A), (b:B) WHERE a.id = b.id RETURN a, b")
 
     // then
-    result.size should equal(11)
     result should use("ValueHashJoin")
   }
 }
