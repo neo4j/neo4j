@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature.FieldSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.impl.proc.OutputMappers.OutputMapper;
+import org.neo4j.procedure.PerformsDBMS;
 import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
 
@@ -108,9 +109,13 @@ public class ReflectiveProcedureCompiler
         List<FieldInjections.FieldSetter> setters = fieldInjections.setters( procDefinition );
 
         ProcedureSignature.Mode mode = ProcedureSignature.Mode.READ_ONLY;
-        if( method.isAnnotationPresent( PerformsWrites.class ) )
+        if ( method.isAnnotationPresent( PerformsWrites.class ) )
         {
             mode = ProcedureSignature.Mode.READ_WRITE;
+        }
+        else if ( method.isAnnotationPresent( PerformsDBMS.class ) )
+        {
+            mode = ProcedureSignature.Mode.DBMS;
         }
 
         ProcedureSignature signature = new ProcedureSignature( procName, inputSignature, outputMapper.signature(), mode );
