@@ -23,50 +23,14 @@ import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.PathImpl
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.{EstimatedRows, ExpandExpression}
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.graphdb.Node
 import org.scalatest.Matchers
 
-class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Matchers with NewPlannerTestSupport {
+// TCK'd
+// All test cases in this class have TCK representations
+class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSuite with Matchers with NewPlannerTestSupport {
 
-  test("match (n) return (n)-->()") {
-    val start = createNode()
-    relate(start, createNode())
-    relate(start, createNode())
-
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n) return (n)-->() as p").toList.head("p").asInstanceOf[Seq[_]]
-
-    result should have size 2
-  }
-
-  test("should handle path predicates with labels") {
-    // GIVEN
-    val a = createLabeledNode("Start")
-
-    val b1 = createLabeledNode("A")
-    val b2 = createLabeledNode("B")
-    val b3 = createLabeledNode("C")
-
-    relate(a, b1)
-    relate(a, b2)
-    relate(a, b3)
-
-    // WHEN
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:Start) RETURN (n)-->(:A)")
-      .toList.head("(n)-->(:A)").asInstanceOf[Seq[_]]
-
-    result should have size 1
-  }
-
-  test("match (a:Start), (b:End) RETURN (a)-[*]->(b) as path") {
-    val a = createLabeledNode("Start")
-    val b = createLabeledNode("End")
-    relate(a, b)
-
-    val resultPath = executeWithAllPlannersAndCompatibilityMode("match (a:Start), (b:End) RETURN (a)-[*]->(b) as path")
-      .toList.head("path").asInstanceOf[Seq[_]]
-
-    resultPath should have size 1
-  }
+  // TESTS WITH CASE EXPRESSION
 
   test("match (n) return case when id(n) >= 0 then (n)-->() otherwise 42 as p") {
     val start = createNode()
@@ -88,16 +52,6 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
 
     result.toList.head("p").asInstanceOf[Long] should equal(42)
     result shouldNot use("Expand(All)")
-  }
-
-  test("match (n) return extract(x IN (n)-->() | head(nodes(x)) )  as p") {
-    val start = createNode()
-    relate(start, createNode())
-    relate(start, createNode())
-
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n) return extract(x IN (n)-->() | head(nodes(x)) )  as p")
-
-    result.toList.head("p").asInstanceOf[Seq[_]] should equal(List(start, start))
   }
 
   test("match (n) return case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p") {
@@ -126,28 +80,6 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     }
   }
 
-  test("match (n)-->(b) with (n)-->() as p, count(b) as c return p, c") {
-    val start = createNode()
-    relate(start, createNode())
-    relate(start, createNode())
-
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n)-->(b) with (n)-->() as p, count(b) as c return p, c")
-
-    result.toList.head("p").asInstanceOf[Seq[_]] should have size 2
-    result should use("Expand(All)")
-  }
-
-  test("match (a:Start), (b:End) with (a)-[*]->(b) as path, count(a) as c return path, c") {
-    val a = createLabeledNode("Start")
-    val b = createLabeledNode("End")
-    relate(a, b)
-
-    val result = executeWithAllPlannersAndCompatibilityMode("match (a:Start), (b:End) with (a)-[*]->(b) as path, count(a) as c return path, c")
-
-    result.toList.head("path").asInstanceOf[Seq[_]] should have size 1
-    result should use("VarLengthExpand(Into)")
-  }
-
   test("match (n) with case when id(n) >= 0 then (n)-->() else 42 end as p, count(n) as c return p, c") {
     val start = createNode()
     relate(start, createNode())
@@ -168,17 +100,6 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
       .toList.head("p").asInstanceOf[Long]
 
     result should equal(42)
-  }
-
-  test("match (n:A) with extract(x IN (n)-->() | head(nodes(x)) ) as p, count(n) as c return p, c") {
-    val start = createLabeledNode("A")
-    relate(start, createNode())
-    relate(start, createNode())
-
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n:A) with extract(x IN (n)-->() | head(nodes(x)) ) as p, count(n) as c return p, c")
-      .toList.head("p").asInstanceOf[Seq[_]]
-
-    result should equal(List(start, start))
   }
 
   test("match (n) with case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p, count(n) as c return p, c") {
@@ -250,19 +171,6 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     result shouldNot use("RollUpApply")
   }
 
-  test("match (n) where n IN extract(x IN (n)-->() | head(nodes(x)) ) return n") {
-    val start = createNode()
-    relate(start, createNode())
-    relate(start, createNode())
-
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n) where n IN extract(x IN (n)-->() | head(nodes(x)) ) return n")
-      .toList
-
-    result should equal(List(
-      Map("n" -> start)
-    ))
-  }
-
   test("match (n) where (case when n:A then length((n)-->(:C)) when n:B then length((n)-->(:D)) else 42 end) > 1 return n") {
     val start = createLabeledNode("A")
     relate(start, createLabeledNode("C"))
@@ -283,73 +191,116 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     }
   }
 
-  test("MATCH (owner) WITH owner, COUNT(*) > 0 AS collected WHERE (owner)--() RETURN *") {
-    val a = createNode()
-    relate(a, createNode())
+  test("case expressions and pattern expressions") {
+    val n1 = createLabeledNode(Map("prop" -> 42), "A")
 
-    val result = executeWithAllPlannersAndCompatibilityMode(
-      """MATCH (owner)
-        |WITH owner, COUNT(*) > 0 AS collected
-        |WHERE (owner)-->()
-        |RETURN owner""".stripMargin)
+    relate(n1, createNode())
+    relate(n1, createNode())
+    relate(n1, createNode())
+
+    val result = executeWithAllPlanners(
+      """match (a:A)
+        |return case
+        |         WHEN a.prop = 42 THEN []
+        |         ELSE (a)-->()
+        |       END as X
+        |         """.stripMargin)
+
+    result shouldNot use("RollUpApply")
+
+    result.toList should equal(List(Map("X" -> Seq())))
+  }
+
+  test("should not use full expand 1") {
+    val start = createNode()
+    relate(start, createNode())
+    relate(start, createNode())
+
+    val result = executeWithAllPlannersAndCompatibilityMode("match (n) return case when id(n) >= 0 then (n)-->() else 42 end as p")
+
+    result shouldNot use("Expand(All)")
+  }
+
+  test("should not use full expand 2") {
+    val start = createNode()
+    relate(start, createNode())
+    relate(start, createNode())
+
+    val result = executeWithAllPlannersAndCompatibilityMode("match (n) return case when id(n) < 0 then (n)-->() else 42 end as p")
+
+    result shouldNot use("Expand(All)")
+  }
+
+  // TESTS WITH EXTRACT
+
+  test("match (n) return extract(x IN (n)-->() | head(nodes(x)) )  as p") {
+    val start = createNode()
+    relate(start, createNode())
+    relate(start, createNode())
+
+    val result = executeWithAllPlannersAndCompatibilityMode("match (n) return extract(x IN (n)-->() | head(nodes(x)) )  as p")
+
+    result.toList.head("p").asInstanceOf[Seq[_]] should equal(List(start, start))
+  }
+
+  test("match (n:A) with extract(x IN (n)-->() | head(nodes(x)) ) as p, count(n) as c return p, c") {
+    val start = createLabeledNode("A")
+    relate(start, createNode())
+    relate(start, createNode())
+
+    val result = executeWithAllPlannersAndCompatibilityMode("match (n:A) with extract(x IN (n)-->() | head(nodes(x)) ) as p, count(n) as c return p, c")
+      .toList.head("p").asInstanceOf[Seq[_]]
+
+    result should equal(List(start, start))
+  }
+
+  test("match (n) where n IN extract(x IN (n)-->() | head(nodes(x)) ) return n") {
+    val start = createNode()
+    relate(start, createNode())
+    relate(start, createNode())
+
+    val result = executeWithAllPlannersAndCompatibilityMode("match (n) where n IN extract(x IN (n)-->() | head(nodes(x)) ) return n")
       .toList
 
     result should equal(List(
-      Map("owner" -> a)
+      Map("n" -> start)
     ))
   }
 
-  test("MATCH (owner) WITH owner, COUNT(*) AS collected WHERE (owner)--() RETURN *") {
-    val a = createNode()
-    relate(a, createNode())
+  // TESTS WITH PLANNING ASSERTIONS
 
-    val result = executeWithAllPlannersAndCompatibilityMode(
-      """MATCH (owner)
-        |WITH owner, COUNT(*) AS collected
-        |WHERE (owner)-->()
-        |RETURN owner""".stripMargin)
-      .toList
+  test("should use full expand") {
+    val start = createNode()
+    relate(start, createNode())
+    relate(start, createNode())
 
-    result should equal(List(
-      Map("owner" -> a)
-    ))
+    val result = executeWithAllPlannersAndCompatibilityMode("match (n)-->(b) with (n)-->() as p, count(b) as c return p, c")
+
+    result should use("Expand(All)")
   }
 
-  test("MATCH ()-[r]->() WHERE ()-[r]-(:A) RETURN r") {
+  test("should use varlength expand into when variables are bound") {
+    val a = createLabeledNode("Start")
+    val b = createLabeledNode("End")
+    relate(a, b)
+
+    val result = executeWithAllPlannersAndCompatibilityMode("match (a:Start), (b:End) with (a)-[*]->(b) as path, count(a) as c return path, c")
+
+    result should use("VarLengthExpand(Into)")
+  }
+
+  test("should not use a label scan as starting point when statistics are bad") {
     graph.inTx {
       (1 to 10000).foreach { i =>
         createLabeledNode("A")
         createNode()
       }
     }
-
-    val r = relate(createNode(), createLabeledNode("A"), "T")
+    relate(createNode(), createLabeledNode("A"), "T")
 
     val result = executeWithAllPlannersAndCompatibilityMode("PROFILE MATCH ()-[r]->() WHERE ()-[r]-(:A) RETURN r")
 
-    result.columnAs[Relationship]("r").toList should equal(List(r))
-    result.executionPlanDescription().toString should not include "NodeByLabelScan"
-  }
-
-  test("pattern expression should ensure to plan for the unique relationship constraint") {
-    val nodeA = createLabeledNode("Foo")
-    val nodeB = createLabeledNode("Bar")
-    val nodeC = createLabeledNode("Foo")
-    val nodeD = createLabeledNode("Foo")
-    val nodeE = createLabeledNode("Bar")
-    createLabeledNode("Bar")
-    createLabeledNode("Bar")
-    relate(nodeA, nodeB, "HAS")
-    relate(nodeC, nodeB, "HAS")
-    relate(nodeD, nodeE, "HAS")
-
-    val query = "PROFILE MATCH (a:Foo) OPTIONAL MATCH (a)--(b:Bar) WHERE (a)--(b:Bar)--() RETURN b"
-    val results = executeWithAllPlannersAndCompatibilityMode(query).toList
-    results should equal(List(Map("b" -> nodeB), Map("b" -> nodeB), Map("b" -> null)))
-
-    val queryNot = "PROFILE MATCH (a:Foo) OPTIONAL MATCH (a)--(b:Bar) WHERE NOT((a)--(b:Bar)--()) RETURN b"
-    val resultsNot = executeWithAllPlannersAndCompatibilityMode(queryNot).toList
-    resultsNot should equal(List(Map("b" -> null), Map("b" -> null), Map("b" -> nodeE)))
+    result shouldNot use("NodeByLabelScan")
   }
 
   test("should consider cardinality input when planning pattern expression in where clause") {
@@ -361,7 +312,6 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
 
     val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:A) WHERE (n)-[:HAS]->() RETURN n")
 
-    result.toList should equal(Seq(Map("n" -> node)))
     val argumentPLan = result.executionPlanDescription().cd("Argument")
     val estimatedRows = argumentPLan.arguments.collect { case n: EstimatedRows => n }.head
     estimatedRows should equal(EstimatedRows(3.0))
@@ -376,14 +326,6 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     val rel = relate(node, endNode, "HAS")
 
     val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:A) RETURN (n)-[:HAS]->() as p")
-
-    graph.inTx {
-      result.toList should equal(Seq(
-        Map("p" -> Seq(PathImpl(node, rel, endNode))),
-        Map("p" -> Seq()),
-        Map("p" -> Seq()))
-      )
-    }
 
     val executionPlanDescription = result.executionPlanDescription()
 
@@ -403,111 +345,39 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
 
     val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:A) RETURN count((n)-[:HAS]->()) as c")
 
-    result.toList should equal(List(Map("c" -> 3)))
     result should use("Expand(All)")
   }
 
   test("use getDegree for simple pattern expression with length clause, outgoing") {
-    val (n1, _) = setup()
+    setup()
 
     val result = executeWithAllPlanners("MATCH (n:X) WHERE LENGTH((n)-->()) > 2 RETURN n")
+
     result shouldNot use("RollUpApply")
-    result.toList should equal(List(Map("n" -> n1)))
   }
 
   test("use getDegree for simple pattern expression with length clause, incoming") {
-    val (_, n2) = setup()
+    setup()
 
     val result = executeWithAllPlanners("MATCH (n:X) WHERE LENGTH((n)<--()) > 2 RETURN n")
+
     result shouldNot use("RollUpApply")
-    result.toList should equal(List(Map("n" -> n2)))
   }
 
   test("use getDegree for simple pattern expression with length clause, both") {
-    val (n1, n2) = setup()
+    setup()
 
     val result = executeWithAllPlanners("MATCH (n:X) WHERE LENGTH((n)--()) > 2 RETURN n")
+
     result shouldNot use("RollUpApply")
-    result.toList should equal(List(Map("n" -> n1), Map("n" -> n2)))
   }
 
   test("use getDegree for simple pattern expression with rel-type ORs") {
     setup()
 
     val result = executeWithAllPlanners("MATCH (n) WHERE length((n)-[:X|Y]->()) > 2 RETURN n")
-    result shouldNot use("RollUpApply")
-    result should be (empty)
-  }
-
-  test("match (n:X) return n, EXISTS( (n)--() ) AS b") {
-    val n1 = createLabeledNode(Map("prop" -> 42), "X")
-    val n2 = createLabeledNode(Map("prop" -> 42), "X")
-
-    relate(n1, createNode())
-
-    val result = executeWithAllPlanners("match (n:X) return n, EXISTS( (n)--() ) AS b")
-
-    result.toList should equal(List(
-      Map("n" -> n1, "b" -> true),
-      Map("n" -> n2, "b" -> false)))
-  }
-
-  test("match (n:X) return n, exists( (n)--() ) AS b, not uppercase") {
-    val n1 = createLabeledNode(Map("prop" -> 42), "X")
-    val n2 = createLabeledNode(Map("prop" -> 42), "X")
-
-    relate(n1, createNode())
-
-    val result = executeWithAllPlanners("match (n:X) return n, exists( (n)--() ) AS b")
-
-    result.toList should equal(List(
-      Map("n" -> n1, "b" -> true),
-      Map("n" -> n2, "b" -> false)))
-  }
-
-  test("pattern expression inside list comprehension") {
-    val n1 = createLabeledNode("X")
-    val m1 = createLabeledNode("Y")
-    val i1 = createLabeledNode("Y")
-    val i2 = createLabeledNode("Y")
-    relate(n1, m1)
-    relate(m1, i1)
-    relate(m1, i2)
-
-    val n2 = createLabeledNode("X")
-    val m2 = createNode()
-    val i3 = createLabeledNode()
-    val i4 = createLabeledNode("Y")
-
-    relate(n2, m2)
-    relate(m2, i3)
-    relate(m2, i4)
-
-    val result = executeWithAllPlanners("match p = (n:X)-->(b) return n, [x in nodes(p) | length( (x)-->(:Y) ) ] as coll")
-
-    result.toList should equal(List(
-      Map("n" -> n1, "coll" -> Seq(1, 2)),
-      Map("n" -> n2, "coll" -> Seq(0, 1))))
-  }
-
-  test("case expressions and pattern expressions") {
-    val n1 = createLabeledNode(Map("prop" -> 42), "A")
-
-    relate(n1, createNode())
-    relate(n1, createNode())
-    relate(n1, createNode())
-
-    val result = executeWithAllPlanners(
-      """match (a:A)
-        |return case
-        |         WHEN a.prop = 42 THEN []
-        |         ELSE (a)-->()
-        |       END as X
-        |         """.stripMargin)
 
     result shouldNot use("RollUpApply")
-
-    result.toList should equal(List(Map("X" -> Seq())))
   }
 
   private def setup(): (Node, Node) = {

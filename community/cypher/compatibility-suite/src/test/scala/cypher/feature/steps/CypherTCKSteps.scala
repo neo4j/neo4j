@@ -153,16 +153,16 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     }
   }
 
+  When(EXECUTING_CONTROL_QUERY) { (query: String) =>
+    result = Try {
+      graph.execute(query, params)
+    }
+  }
+
   private def ifEnabled(f: => Unit): Unit = {
     val blacklist = unsupportedScenarios.map(_.toLowerCase)
     if (!blacklist(currentScenarioName) && (requiredScenarioName.isEmpty || currentScenarioName.contains(requiredScenarioName))) {
       f
-    }
-  }
-
-  When(EXECUTING_CONTROL_QUERY) { (query: String) =>
-    result = Try {
-      graph.execute(query, params)
     }
   }
 
