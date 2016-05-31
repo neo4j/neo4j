@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-public class NoOpClient implements Locks.Client
+public class NoOpClient extends Locks.ClientAdapter
 {
     public static final Locks.Client NO_LOCKS = new NoOpClient();
 
@@ -61,11 +61,6 @@ public class NoOpClient implements Locks.Client
     }
 
     @Override
-    public void prepare()
-    {
-    }
-
-    @Override
     public void stop()
     {
     }
@@ -79,11 +74,5 @@ public class NoOpClient implements Locks.Client
     public int getLockSessionId()
     {
         return -1;
-    }
-
-    @Override
-    public Locks.Client delegate()
-    {
-        return this;
     }
 }

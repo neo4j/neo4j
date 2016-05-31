@@ -94,7 +94,7 @@ public class DeferringLocks extends Lifecycle.Delegate implements Locks
         }
     }
 
-    // TODO the state in this class is quite unoptimized, please do so
+    // TODO the state keeping in this class is quite unoptimized, please do so
     private static class DeferringLockClient implements Client
     {
         private final Client clientDelegate;

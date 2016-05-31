@@ -135,4 +135,19 @@ public interface Locks extends Lifecycle
 
     /** Visit all held locks. */
     void accept(Visitor visitor);
+
+    public abstract class ClientAdapter implements Client
+    {
+        @Override
+        public void prepare()
+        {
+            // Nothing to prepare
+        }
+
+        @Override
+        public Client delegate()
+        {
+            return this;
+        }
+    }
 }

@@ -38,7 +38,7 @@ import static java.lang.String.format;
 // Please note. Except separate test cases for particular classes related to community locking
 // see also org.neo4j.kernel.impl.locking.community.CommunityLocksCompatibility test suite
 
-public class CommunityLockClient implements Locks.Client
+public class CommunityLockClient extends Locks.ClientAdapter
 {
     private final LockManagerImpl manager;
     private final LockTransaction lockTransaction = new LockTransaction();
@@ -255,12 +255,6 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public void prepare()
-    {
-        // Do nothing
-    }
-
-    @Override
     public void stop()
     {
         // closing client to prevent any new client to come
@@ -310,12 +304,6 @@ public class CommunityLockClient implements Locks.Client
     public int getLockSessionId()
     {
         return lockTransaction.getId();
-    }
-
-    @Override
-    public Locks.Client delegate()
-    {
-        return this;
     }
 
     private PrimitiveLongObjectMap<LockResource> localShared( Locks.ResourceType resourceType )

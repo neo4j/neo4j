@@ -47,7 +47,7 @@ import static java.lang.String.format;
  * local fields how many times the lock has been grabbed, such that it will only grab and release the lock once from the
  * global lock manager.
  */
-public class ForsetiClient implements Locks.Client
+public class ForsetiClient extends Locks.ClientAdapter
 {
     /** Id for this client */
     private final int clientId;
@@ -484,12 +484,6 @@ public class ForsetiClient implements Locks.Client
         }
     }
 
-    @Override
-    public void prepare()
-    {
-        // Do nothing
-    }
-
     private void releaseAllClientLocks()
     {
         // Force the release of all locks held.
@@ -570,12 +564,6 @@ public class ForsetiClient implements Locks.Client
     public int getLockSessionId()
     {
         return clientId;
-    }
-
-    @Override
-    public Locks.Client delegate()
-    {
-        return this;
     }
 
     public int waitListSize()
