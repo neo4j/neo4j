@@ -344,6 +344,7 @@
           <classpathScope>test</classpathScope>
           <arguments>
             <argument>--config-dir=${basedir}/neo4j-home/conf</argument>
+            <argument>--home-dir=${basedir}/neo4j-home</argument>
           </arguments>
         </configuration>
       </plugin>
