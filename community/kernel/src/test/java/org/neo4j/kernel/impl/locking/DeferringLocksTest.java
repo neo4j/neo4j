@@ -24,14 +24,13 @@ import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;
+
+import org.neo4j.kernel.impl.locking.DeferringLocks.Resource;
 import org.neo4j.kernel.impl.locking.Locks.ResourceType;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.test.RandomRule;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-
+import static org.junit.Assert.assertEquals;
 import static java.lang.Math.abs;
 
 public class DeferringLocksTest
@@ -43,76 +42,115 @@ public class DeferringLocksTest
     public void shouldDeferAllLocks() throws Exception
     {
         // GIVEN
-        Locks actualLocks = mock( Locks.class );
-        Locks.Client actualClient = mock( Locks.Client.class );
-        when( actualLocks.newClient() ).thenReturn( actualClient );
+        TestLocks actualLocks = new TestLocks();
         DeferringLocks locks = new DeferringLocks( actualLocks );
         Locks.Client client = locks.newClient();
+        TestLocksClient actualClient = actualLocks.client;
 
         // WHEN
         Set<Resource> expected = new HashSet<>();
         ResourceType[] types = ResourceTypes.values();
-        System.out.println( "1" );
-        for ( int i = 0; i < 10_000; i++ )
+        for ( int i = 0; i < 10; i++ )
         {
-            Resource resource = new Resource( random.among( types ), abs( random.nextLong() ) );
-            client.acquireExclusive( resource.type, resource.id );
+            Resource resource = new Resource( random.among( types ), abs( random.nextLong() ), true );
+            client.acquireExclusive( resource.resourceType, resource.resourceId );
             expected.add( resource );
         }
-        System.out.println( "2" );
-        verifyNoMoreInteractions( actualClient );
+        actualClient.assertRegisteredLocks( new HashSet<Resource>() );
         client.prepare();
-        System.out.println( "3" );
 
         // THEN
-        for ( Resource resource : expected )
-        {
-            verify( actualClient ).acquireExclusive( resource.type, resource.id );
-        }
-        System.out.println( "4" );
+        actualClient.assertRegisteredLocks( expected );
     }
 
-    private static class Resource
+    private static class TestLocks extends LifecycleAdapter implements Locks
     {
-        private final ResourceType type;
-        private final long id;
+        private TestLocksClient client;
 
-        public Resource( ResourceType type, long id )
+        @Override
+        public Client newClient()
         {
-            this.type = type;
-            this.id = id;
+            return client = new TestLocksClient();
         }
 
         @Override
-        public int hashCode()
+        public void accept( Visitor visitor )
         {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + (int) (id ^ (id >>> 32));
-            result = prime * result + ((type == null) ? 0 : type.hashCode());
-            return result;
         }
+    }
+
+    private static class TestLocksClient extends Locks.ClientAdapter
+    {
+        private final Set<Resource> actualResources = new HashSet<>();
 
         @Override
-        public boolean equals( Object obj )
+        public void acquireShared( ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
         {
-            if ( this == obj )
-                return true;
-            if ( obj == null )
-                return false;
-            if ( getClass() != obj.getClass() )
-                return false;
-            Resource other = (Resource) obj;
-            if ( id != other.id )
-                return false;
-            if ( type == null )
+            register( resourceType, false, resourceIds );
+        }
+
+       void assertRegisteredLocks( Set<Resource> expectedLocks )
+       {
+           assertEquals( expectedLocks, actualResources );
+       }
+
+       private boolean register( ResourceType resourceType, boolean exclusive, long... resourceIds )
+        {
+            for ( long resourceId : resourceIds )
             {
-                if ( other.type != null )
-                    return false;
+                actualResources.add( new Resource( resourceType, resourceId, exclusive ) );
             }
-            else if ( !type.equals( other.type ) )
-                return false;
             return true;
+        }
+
+        @Override
+        public void acquireExclusive( ResourceType resourceType, long... resourceIds )
+                throws AcquireLockTimeoutException
+        {
+            register( resourceType, true, resourceIds );
+        }
+
+        @Override
+        public boolean tryExclusiveLock( ResourceType resourceType, long resourceId )
+        {
+            return register( resourceType, true, resourceId );
+        }
+
+        @Override
+        public boolean trySharedLock( ResourceType resourceType, long resourceId )
+        {
+            return register( resourceType, false, resourceId );
+        }
+
+        @Override
+        public void releaseShared( ResourceType resourceType, long resourceId )
+        {
+        }
+
+        @Override
+        public void releaseExclusive( ResourceType resourceType, long resourceId )
+        {
+        }
+
+        @Override
+        public void releaseAll()
+        {
+        }
+
+        @Override
+        public void stop()
+        {
+        }
+
+        @Override
+        public void close()
+        {
+        }
+
+        @Override
+        public int getLockSessionId()
+        {
+            return 0;
         }
     }
 }

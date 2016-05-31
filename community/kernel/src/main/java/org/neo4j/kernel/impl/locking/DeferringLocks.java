@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -46,42 +47,47 @@ public class DeferringLocks extends Lifecycle.Delegate implements Locks
         delegate.accept( visitor );
     }
 
-    private static class Resource implements Comparable<Resource>
+    static class Resource implements Comparable<Resource>
     {
-        private final ResourceType resourceType;
-        private final long resourceId;
+        final ResourceType resourceType;
+        final long resourceId;
+        final boolean exclusive;
 
-        public Resource( ResourceType resourceType, long resourceId )
+        Resource( ResourceType resourceType, long resourceId, boolean exclusive )
         {
             this.resourceType = resourceType;
             this.resourceId = resourceId;
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
-                return true;
-            }
-            if ( o == null || getClass() != o.getClass() )
-            {
-                return false;
-            }
-            Resource resource = (Resource) o;
-            if ( resourceId != resource.resourceId )
-            {
-                return false;
-            }
-            return resourceType.equals( resource.resourceType );
+            this.exclusive = exclusive;
         }
 
         @Override
         public int hashCode()
         {
-            int result = resourceType.hashCode();
-            result = 31 * result + (int) (resourceId ^ (resourceId >>> 32));
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + (exclusive ? 1231 : 1237);
+            result = prime * result + (int) (resourceId ^ (resourceId >>> 32));
+            result = prime * result + resourceType.hashCode();
             return result;
+        }
+
+        @Override
+        public boolean equals( Object obj )
+        {
+            if ( this == obj )
+                return true;
+            if ( obj == null )
+                return false;
+            if ( getClass() != obj.getClass() )
+                return false;
+            Resource other = (Resource) obj;
+            if ( exclusive != other.exclusive )
+                return false;
+            if ( resourceId != other.resourceId )
+                return false;
+            else if ( resourceType.typeId() != other.resourceType.typeId() )
+                return false;
+            return true;
         }
 
         @Override
@@ -89,8 +95,25 @@ public class DeferringLocks extends Lifecycle.Delegate implements Locks
         {
             // The important thing isn't the order itself, it's the presence of an order
             // so that all lock clients gets the same order
+            if ( exclusive != o.exclusive )
+            {
+                return intOf( exclusive ) - intOf( o.exclusive );
+            }
+
             return resourceType.typeId() == o.resourceType.typeId() ? Long.compare( resourceId, o.resourceId )
                                                                     : resourceType.typeId() - o.resourceType.typeId();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Resource [resourceType=" + resourceType + ", resourceId=" + resourceId + ", exclusive=" + exclusive
+                    + "]";
+        }
+
+        private static int intOf( boolean value )
+        {
+            return value ? 1 : 0;
         }
     }
 
@@ -98,8 +121,7 @@ public class DeferringLocks extends Lifecycle.Delegate implements Locks
     private static class DeferringLockClient implements Client
     {
         private final Client clientDelegate;
-        private final Set<Resource> shared = new TreeSet<>();
-        private final Set<Resource> exclusive = new TreeSet<>();
+        private final Set<Resource> locks = new TreeSet<>();
         private boolean shouldStop;
 
         public DeferringLockClient( Client clientDelegate )
@@ -112,16 +134,16 @@ public class DeferringLocks extends Lifecycle.Delegate implements Locks
         {
             for ( long resourceId : resourceIds )
             {
-                queueLock( resourceType, resourceId, shared );
+                queueLock( resourceType, resourceId, false );
             }
         }
 
-        private boolean queueLock( ResourceType resourceType, long resourceId, Set<Resource> lockSet )
+        private boolean queueLock( ResourceType resourceType, long resourceId, boolean exclusive )
         {
             // The contract is that after calling stop() no more locks should be acquired
             if ( !shouldStop )
             {
-                lockSet.add( new Resource( resourceType, resourceId ) );
+                locks.add( new Resource( resourceType, resourceId, exclusive ) );
             }
             return !shouldStop;
         }
@@ -131,32 +153,32 @@ public class DeferringLocks extends Lifecycle.Delegate implements Locks
         {
             for ( long resourceId : resourceIds )
             {
-                queueLock( resourceType, resourceId, exclusive );
+                queueLock( resourceType, resourceId, true );
             }
         }
 
         @Override
         public boolean tryExclusiveLock( ResourceType resourceType, long resourceId )
         {
-            return queueLock( resourceType, resourceId, exclusive );
+            return queueLock( resourceType, resourceId, true );
         }
 
         @Override
         public boolean trySharedLock( ResourceType resourceType, long resourceId )
         {
-            return queueLock( resourceType, resourceId, shared );
+            return queueLock( resourceType, resourceId, false );
         }
 
         @Override
         public void releaseShared( ResourceType resourceType, long resourceId )
         {
-            shared.remove( new Resource( resourceType, resourceId ) );
+            locks.remove( new Resource( resourceType, resourceId, false ) );
         }
 
         @Override
         public void releaseExclusive( ResourceType resourceType, long resourceId )
         {
-            exclusive.remove( new Resource( resourceType, resourceId ) );
+            locks.remove( new Resource( resourceType, resourceId, true ) );
         }
 
         @Override
@@ -168,28 +190,56 @@ public class DeferringLocks extends Lifecycle.Delegate implements Locks
         @Override
         public void prepare()
         {
-            for ( Resource resource : shared )
+            long[] current = new long[10];
+            int cursor = 0;
+            ResourceType currentType = null;
+            boolean currentExclusive = false;
+            for ( Resource resource : locks )
             {
-                if ( !shouldStop )
+                // TODO perhaps also add a condition which sends batches over a certain size threshold
+                if ( currentType == null ||
+                        (currentType.typeId() != resource.resourceType.typeId() || currentExclusive != resource.exclusive) )
                 {
-                    clientDelegate.acquireShared( resource.resourceType, resource.resourceId );
+                    // New type, i.e. flush the current array down to delegate in one call
+                    if ( !flushLocks( current, cursor, currentType, currentExclusive ) )
+                    {
+                        break;
+                    }
+
+                    cursor = 0;
+                    currentType = resource.resourceType;
+                    currentExclusive = resource.exclusive;
+                }
+
+                // Queue into current batch
+                if ( cursor == current.length )
+                {
+                    current = Arrays.copyOf( current, cursor*2 );
+                }
+                current[cursor++] = resource.resourceId;
+            }
+            flushLocks( current, cursor, currentType, currentExclusive );
+        }
+
+        private boolean flushLocks( long[] current, int cursor, ResourceType currentType, boolean currentExclusive )
+        {
+            if ( shouldStop )
+            {
+                return false;
+            }
+            if ( cursor > 0 )
+            {
+                long[] resourceIds = Arrays.copyOf( current, cursor );
+                if ( currentExclusive )
+                {
+                    clientDelegate.acquireExclusive( currentType, resourceIds );
                 }
                 else
                 {
-                    break;
+                    clientDelegate.acquireShared( currentType, resourceIds );
                 }
             }
-            for ( Resource resource : exclusive )
-            {
-                if ( !shouldStop )
-                {
-                    clientDelegate.acquireExclusive( resource.resourceType, resource.resourceId );
-                }
-                else
-                {
-                    break;
-                }
-            }
+            return true;
         }
 
         @Override
