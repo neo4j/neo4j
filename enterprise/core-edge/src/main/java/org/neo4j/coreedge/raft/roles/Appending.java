@@ -127,7 +127,7 @@ public class Appending
     }
 
     public static <MEMBER> void appendNewEntries( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome,
-            List<ReplicatedContent> contents ) throws IOException, RaftLogCompactedException
+            List<ReplicatedContent> contents ) throws IOException
     {
         long prevLogIndex = ctx.entryLog().appendIndex();
         long prevLogTerm = prevLogIndex == -1 ? -1 :
