@@ -50,7 +50,7 @@ public class DeferringLocksTest
         // WHEN
         Set<Resource> expected = new HashSet<>();
         ResourceType[] types = ResourceTypes.values();
-        for ( int i = 0; i < 10; i++ )
+        for ( int i = 0; i < 10_000; i++ )
         {
             Resource resource = new Resource( random.among( types ), abs( random.nextLong() ), true );
             client.acquireExclusive( resource.resourceType, resource.resourceId );
