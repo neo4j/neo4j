@@ -117,6 +117,12 @@ class StandardStateMachineSPI implements SessionStateMachine.SPI
     }
 
     @Override
+    public void logout( AccessMode accessMode )
+    {
+        authentication.logout( accessMode );
+    }
+
+    @Override
     public void udcRegisterClient( String clientName )
     {
         usageData.get( UsageDataKeys.clientNames ).add( clientName );

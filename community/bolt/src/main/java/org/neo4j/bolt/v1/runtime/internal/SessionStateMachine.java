@@ -455,6 +455,10 @@ public class SessionStateMachine implements Session, SessionState
                     ctx.error( Neo4jError.from( e ) );
                 }
             }
+            if ( ctx.accessMode != null )
+            {
+                ctx.spi.logout( ctx.accessMode );
+            }
             return STOPPED;
         }
 
@@ -595,6 +599,7 @@ public class SessionStateMachine implements Session, SessionState
         RecordStream run( SessionStateMachine ctx, String statement, Map<String, Object> params )
                 throws KernelException;
         AuthenticationResult authenticate( Map<String, Object> authToken ) throws AuthenticationException;
+        void logout( AccessMode accessMode );
         void udcRegisterClient( String clientName );
         Statement currentStatement();
     }

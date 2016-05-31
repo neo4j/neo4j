@@ -209,6 +209,12 @@ public class ResetFuzzTest
         }
 
         @Override
+        public void logout( AccessMode accessMode )
+        {
+
+        }
+
+        @Override
         public void udcRegisterClient( String clientName )
         {
 

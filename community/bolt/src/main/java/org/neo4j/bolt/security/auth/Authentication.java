@@ -48,20 +48,40 @@ public interface Authentication
     AuthenticationResult authenticate( Map<String,Object> authToken ) throws AuthenticationException;
 
     /**
+     * Logout from the authenticated state.
+     *
+     * @param accessMode The authentication state from the {@link AuthenticationResult} as returned by
+     *                   {@link #authenticate(Map)}.
+     */
+    void logout( AccessMode accessMode );
+
+    /**
      * Allows all tokens to authenticate.
      */
-    Authentication NONE = authToken -> new AuthenticationResult()
+    Authentication NONE = new Authentication()
     {
         @Override
-        public AccessMode getAccessMode()
+        public AuthenticationResult authenticate( Map<String,Object> authToken ) throws AuthenticationException
         {
-            return AccessMode.Static.FULL;
+            return new AuthenticationResult()
+            {
+                @Override
+                public AccessMode getAccessMode()
+                {
+                    return AccessMode.Static.FULL;
+                }
+
+                @Override
+                public boolean credentialsExpired()
+                {
+                    return false;
+                }
+            };
         }
 
         @Override
-        public boolean credentialsExpired()
+        public void logout( AccessMode accessMode )
         {
-            return false;
         }
     };
 

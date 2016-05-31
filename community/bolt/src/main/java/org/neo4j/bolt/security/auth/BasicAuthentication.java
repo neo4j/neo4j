@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.api.security.AuthSubject;
@@ -40,7 +41,6 @@ public class BasicAuthentication implements Authentication
     private static final String SCHEME = "basic";
     private final Log log;
     private final Supplier<String> identifier;
-    private AuthSubject authSubject;
 
     public BasicAuthentication( AuthManager authManager, LogProvider logProvider, Supplier<String> identifier )
     {
@@ -70,9 +70,19 @@ public class BasicAuthentication implements Authentication
         }
     }
 
+    @Override
+    public void logout( AccessMode accessMode )
+    {
+        if ( accessMode instanceof AuthSubject )
+        {
+            AuthSubject authSubject = (AuthSubject) accessMode;
+            authSubject.logout();
+        }
+    }
+
     private AuthenticationResult authenticate( String user, String password ) throws AuthenticationException
     {
-        authSubject = authManager.login( user, password );
+        AuthSubject authSubject = authManager.login( user, password );
         boolean credentialsExpired = false;
         switch ( authSubject.getAuthenticationResult() )
         {
@@ -92,7 +102,7 @@ public class BasicAuthentication implements Authentication
 
     private AuthenticationResult update( String user, String password, String newPassword ) throws AuthenticationException
     {
-        authSubject = authManager.login( user, password );
+        AuthSubject authSubject = authManager.login( user, password );
         switch ( authSubject.getAuthenticationResult() )
         {
         case SUCCESS:
