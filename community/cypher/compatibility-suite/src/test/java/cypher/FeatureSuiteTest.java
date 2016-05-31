@@ -37,7 +37,6 @@ public class FeatureSuiteTest
     @RunWith( Cucumber.class )
     @CucumberOptions(
             plugin = {
-                    "pretty",
                     "html:target/rule-interpreted",
                     "cypher.feature.reporting.CypherResultReporter:target/rule-interpreted",
                     "cypher.cucumber.db.DatabaseProvider:target/dbs",
@@ -54,7 +53,6 @@ public class FeatureSuiteTest
     @RunWith( Cucumber.class )
     @CucumberOptions(
             plugin = {
-                    "pretty",
                     "html:target/cost-interpreted",
                     "cypher.feature.reporting.CypherResultReporter:target/cost-interpreted",
                     "cypher.cucumber.db.DatabaseProvider:target/dbs",
