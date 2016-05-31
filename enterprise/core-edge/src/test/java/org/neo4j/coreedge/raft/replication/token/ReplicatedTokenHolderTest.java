@@ -156,7 +156,7 @@ public class ReplicatedTokenHolderTest
         }
     }
 
-    static class DropAllTheThingsReplicator implements Replicator
+    private static class DropAllTheThingsReplicator implements Replicator<ReplicatedContent>
     {
         @Override
         public Future<Object> replicate( final ReplicatedContent content, boolean trackResult )
@@ -165,6 +165,7 @@ public class ReplicatedTokenHolderTest
         }
     }
 
+    @SuppressWarnings( "unchecked" )
     private StorageEngine mockedStorageEngine() throws Exception
     {
         StorageEngine storageEngine = mock( StorageEngine.class );

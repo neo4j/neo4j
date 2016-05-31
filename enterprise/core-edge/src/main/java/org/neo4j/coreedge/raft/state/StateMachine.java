@@ -21,16 +21,18 @@ package org.neo4j.coreedge.raft.state;
 
 import java.io.IOException;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 public interface StateMachine<Command>
 {
     /**
      * Apply command to state machine, modifying its internal state.
      * Implementations should be idempotent, so that the caller is free to replay commands from any point in the log.
-     *  @param command Command to the state machine.
+     * @param command Command to the state machine.
      * @param commandIndex The index of the command.
+     * @param callback To be called when a result is produced.
      */
-    Optional<Result> applyCommand( Command command, long commandIndex );
+    void applyCommand( Command command, long commandIndex, Consumer<Result> callback );
 
     /**
      * Flushes state to durable storage.

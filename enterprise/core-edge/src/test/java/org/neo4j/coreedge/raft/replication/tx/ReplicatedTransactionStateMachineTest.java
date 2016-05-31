@@ -19,14 +19,15 @@
  */
 package org.neo4j.coreedge.raft.replication.tx;
 
+import junit.framework.TestCase;
 import org.junit.Test;
 
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.state.Result;
 import org.neo4j.coreedge.server.RaftTestMember;
-import org.neo4j.coreedge.server.core.RecoverTransactionLogState;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -39,8 +40,8 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
-import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -60,16 +61,17 @@ public class ReplicatedTransactionStateMachineTest
 
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
-        ReplicatedTransactionStateMachine stateMachine = new ReplicatedTransactionStateMachine<>(
-                lockState( lockSessionId ), NullLogProvider.getInstance() );
+        ReplicatedTransactionStateMachine stateMachine =
+                new ReplicatedTransactionStateMachine<>( lockState( lockSessionId ), NullLogProvider.getInstance() );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         // when
-        stateMachine.applyCommand( tx, 0 );
+        stateMachine.applyCommand( tx, 0, r -> {
+        } );
 
         // then
-        verify( localCommitProcess, times( 1 ) ).commit( any( TransactionToApply.class ),
-                any( CommitEvent.class ), any( TransactionApplicationMode.class ) );
+        verify( localCommitProcess, times( 1 ) ).commit( any( TransactionToApply.class ), any( CommitEvent.class ),
+                any( TransactionApplicationMode.class ) );
     }
 
     @Test
@@ -79,28 +81,37 @@ public class ReplicatedTransactionStateMachineTest
         int txLockSessionId = 23;
         int currentLockSessionId = 24;
 
-        ReplicatedTransaction tx = ReplicatedTransactionFactory.createImmutableReplicatedTransaction(
-                physicalTx( txLockSessionId ) );
+        ReplicatedTransaction tx =
+                ReplicatedTransactionFactory.createImmutableReplicatedTransaction( physicalTx( txLockSessionId ) );
 
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
-        final ReplicatedTransactionStateMachine<RaftTestMember> stateMachine = new ReplicatedTransactionStateMachine<>(
-                lockState( currentLockSessionId ), NullLogProvider.getInstance() );
+        final ReplicatedTransactionStateMachine<RaftTestMember> stateMachine =
+                new ReplicatedTransactionStateMachine<>( lockState( currentLockSessionId ),
+                        NullLogProvider.getInstance() );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
-        // when
-        Optional<Result> result = stateMachine.applyCommand( tx, 0 );
 
-        // then
-        try
-        {
-            assertTrue( result.isPresent() );
-            result.get().consume();
-        }
-        catch( TransactionFailureException tfe )
-        {
-            assertEquals( Status.Transaction.LockSessionExpired, tfe.status() );
-        }
+        AtomicBoolean called = new AtomicBoolean();
+        // when
+        stateMachine.applyCommand( tx, 0, result -> {
+            // then
+            called.set( true );
+            try
+            {
+                result.consume();
+            }
+            catch ( TransactionFailureException tfe )
+            {
+                assertEquals( Status.Transaction.LockSessionExpired, tfe.status() );
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+        } );
+
+        assertTrue( called.get() );
     }
 
     @Test
@@ -115,27 +126,40 @@ public class ReplicatedTransactionStateMachineTest
 
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
-        ReplicatedTransactionStateMachine<RaftStateMachine> stateMachine = new ReplicatedTransactionStateMachine<>(
-                lockState( currentLockSessionId ), NullLogProvider.getInstance() );
+        ReplicatedTransactionStateMachine<RaftStateMachine> stateMachine =
+                new ReplicatedTransactionStateMachine<>( lockState( currentLockSessionId ),
+                        NullLogProvider.getInstance() );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
-        // when
-        Optional<Result> result = stateMachine.applyCommand( tx, 0 );
+        AtomicBoolean called = new AtomicBoolean();
 
-        // then
-        assertTrue( result.isPresent() );
-        assertEquals( 0L, (long) result.get().consume() );
+        // when
+        stateMachine.applyCommand( tx, 0, result -> {
+            // then
+            called.set( true );
+            try
+            {
+                assertEquals( 0L, (long) result.consume() );
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+        } );
+
+        assertTrue( called.get() );
     }
 
-    public PhysicalTransactionRepresentation physicalTx( int lockSessionId )
+    private PhysicalTransactionRepresentation physicalTx( int lockSessionId )
     {
         PhysicalTransactionRepresentation physicalTx = mock( PhysicalTransactionRepresentation.class );
         when( physicalTx.getLockSessionId() ).thenReturn( lockSessionId );
         return physicalTx;
     }
 
-    public <MEMBER> ReplicatedLockTokenStateMachine<MEMBER> lockState( int lockSessionId )
+    private <MEMBER> ReplicatedLockTokenStateMachine<MEMBER> lockState( int lockSessionId )
     {
+        @SuppressWarnings( "unchecked" )
         ReplicatedLockTokenStateMachine<MEMBER> lockState = mock( ReplicatedLockTokenStateMachine.class );
         when( lockState.currentToken() ).thenReturn( new ReplicatedLockTokenRequest<>( null, lockSessionId ) );
         return lockState;

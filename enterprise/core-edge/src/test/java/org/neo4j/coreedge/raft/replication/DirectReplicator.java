@@ -19,14 +19,14 @@
  */
 package org.neo4j.coreedge.raft.replication;
 
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.coreedge.raft.state.Result;
 import org.neo4j.coreedge.raft.state.StateMachine;
 
-public class DirectReplicator<Command> implements Replicator
+public class DirectReplicator<Command extends ReplicatedContent> implements Replicator<Command>
 {
     private final StateMachine<Command> stateMachine;
     private long commandIndex = 0;
@@ -37,19 +37,23 @@ public class DirectReplicator<Command> implements Replicator
     }
 
     @Override
-    public synchronized Future<Object> replicate( ReplicatedContent content, boolean trackResult )
+    public synchronized Future<Object> replicate( Command content, boolean trackResult )
     {
-        Optional<Result> result = stateMachine.applyCommand( (Command) content, commandIndex++ );
+        AtomicBoolean called = new AtomicBoolean();
+        AtomicReference<CompletableFuture<Object>> futureResult = new AtomicReference<>( new CompletableFuture<>() );
+        stateMachine.applyCommand( content, commandIndex++, result -> {
+            if ( trackResult )
+            {
+                called.set( true );
+                futureResult.getAndUpdate( result::apply );
+            }
+        } );
 
-        CompletableFuture<Object> futureResult = new CompletableFuture<>();
-        if( trackResult )
+        if ( trackResult )
         {
-            assert result.isPresent();
-            return result.get().apply( futureResult );
+            assert called.get();
         }
-        else
-        {
-            return futureResult;
-        }
+
+        return futureResult.get();
     }
 }

@@ -277,8 +277,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
         }
 
         CoreReplicatedContent command = (CoreReplicatedContent) operation.content();
-        command.dispatch( coreStateMachines, commandIndex )
-                .ifPresent( result -> progressTracker.trackResult( operation, result ) );
+        command.dispatch( coreStateMachines, commandIndex, result -> progressTracker.trackResult( operation, result ) );
 
         sessionState.update( operation.globalSession(), operation.operationId(), commandIndex );
     }

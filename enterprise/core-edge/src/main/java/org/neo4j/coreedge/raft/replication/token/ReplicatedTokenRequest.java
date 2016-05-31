@@ -21,6 +21,7 @@ package org.neo4j.coreedge.raft.replication.token;
 
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.tx.CoreReplicatedContent;
@@ -90,8 +91,8 @@ public class ReplicatedTokenRequest implements CoreReplicatedContent
     }
 
     @Override
-    public Optional<Result> dispatch( CoreStateMachines coreStateMachines, long commandIndex )
+    public void dispatch( CoreStateMachines coreStateMachines, long commandIndex, Consumer<Result> callback )
     {
-        return coreStateMachines.dispatch( this, commandIndex );
+        coreStateMachines.dispatch( this, commandIndex, callback );
     }
 }

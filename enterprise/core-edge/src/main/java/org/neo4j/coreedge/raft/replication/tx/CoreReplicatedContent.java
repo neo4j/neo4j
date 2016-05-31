@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.raft.replication.tx;
 
-import java.util.Optional;
+import java.util.function.Consumer;
 
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.CoreStateMachines;
@@ -27,5 +27,5 @@ import org.neo4j.coreedge.raft.state.Result;
 
 public interface CoreReplicatedContent extends ReplicatedContent
 {
-    Optional<Result> dispatch( CoreStateMachines coreStateMachines, long commandIndex );
+    void dispatch( CoreStateMachines coreStateMachines, long commandIndex, Consumer<Result> callback );
 }

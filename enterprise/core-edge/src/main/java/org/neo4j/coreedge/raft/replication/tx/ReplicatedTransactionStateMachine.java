@@ -21,6 +21,7 @@ package org.neo4j.coreedge.raft.replication.tx;
 
 import java.io.IOException;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import org.neo4j.coreedge.raft.state.Result;
 import org.neo4j.coreedge.raft.state.StateMachine;
@@ -69,12 +70,12 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine<R
     }
 
     @Override
-    public synchronized Optional<Result> applyCommand( ReplicatedTransaction replicatedTx, long commandIndex )
+    public synchronized void applyCommand( ReplicatedTransaction replicatedTx, long commandIndex, Consumer<Result> callback )
     {
         if ( commandIndex <= lastCommittedIndex )
         {
             log.debug( "Ignoring transaction at log index %d since already committed up to %d", commandIndex, lastCommittedIndex );
-            return Optional.empty();
+            return;
         }
 
         TransactionRepresentation tx;
@@ -87,21 +88,23 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine<R
 
         if ( currentTokenId != txLockSessionId && txLockSessionId != Locks.Client.NO_LOCK_SESSION_ID )
         {
-            return Optional.of( Result.of( new TransactionFailureException(
-                    LockSessionExpired, "The lock session in the cluster has changed: [current lock session id:%d, tx lock session id:%d]",
+            callback.accept( Result.of( new TransactionFailureException( LockSessionExpired,
+                    "The lock session in the cluster has changed: [current lock session id:%d, tx lock session id:%d]",
                     currentTokenId, txLockSessionId ) ) );
         }
-
-        try
+        else
         {
-            long txId = commitProcess.commit( new TransactionToApply( tx ), CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
-            return Optional.of( Result.of( txId ) );
-        }
-        catch ( TransactionFailureException e )
-        {
-            throw new IllegalStateException( "Failed to locally commit a transaction that has already been " +
-                                             "committed to the RAFT log. This server cannot process later transactions and needs to be " +
-                                             "restarted once the underlying cause has been addressed.", e );
+            try
+            {
+                long txId = commitProcess.commit( new TransactionToApply( tx ), CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
+                callback.accept( Result.of( txId ) );
+            }
+            catch ( TransactionFailureException e )
+            {
+                throw new IllegalStateException( "Failed to locally commit a transaction that has already been " +
+                        "committed to the RAFT log. This server cannot process later transactions and needs to be " +
+                        "restarted once the underlying cause has been addressed.", e );
+            }
         }
     }
 }

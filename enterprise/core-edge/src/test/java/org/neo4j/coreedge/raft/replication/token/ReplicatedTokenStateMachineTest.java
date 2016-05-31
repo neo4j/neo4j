@@ -66,8 +66,8 @@ public class ReplicatedTokenStateMachineTest
         stateMachine.installCommitProcess( mock( TransactionCommitProcess.class ), -1 );
 
         // when
-        stateMachine.applyCommand( new ReplicatedTokenRequest( LABEL, "Person",
-                commandBytes( tokenCommands( EXPECTED_TOKEN_ID ) ) ), 1 );
+        byte[] commandBytes = commandBytes( tokenCommands( EXPECTED_TOKEN_ID ) );
+        stateMachine.applyCommand( new ReplicatedTokenRequest( LABEL, "Person", commandBytes ), 1, r -> {} );
 
         // then
         assertEquals( EXPECTED_TOKEN_ID, (int) registry.getId( "Person" ) );
@@ -89,8 +89,8 @@ public class ReplicatedTokenStateMachineTest
                 new ReplicatedTokenRequest( LABEL, "Person", commandBytes( tokenCommands( UNEXPECTED_TOKEN_ID ) ) );
 
         // when
-        stateMachine.applyCommand( winningRequest, 1 );
-        stateMachine.applyCommand( losingRequest, 2 );
+        stateMachine.applyCommand( winningRequest, 1, r -> {} );
+        stateMachine.applyCommand( losingRequest, 2, r -> {} );
 
         // then
         assertEquals( EXPECTED_TOKEN_ID, (int) registry.getId( "Person" ) );
@@ -109,9 +109,8 @@ public class ReplicatedTokenStateMachineTest
         stateMachine.installCommitProcess( commitProcess, -1 );
 
         // when
-        ReplicatedTokenRequest tokenRequest = new ReplicatedTokenRequest( LABEL, "Person",
-                commandBytes( tokenCommands( EXPECTED_TOKEN_ID ) ) );
-        stateMachine.applyCommand( tokenRequest, logIndex );
+        byte[] commandBytes = commandBytes( tokenCommands( EXPECTED_TOKEN_ID ) );
+        stateMachine.applyCommand( new ReplicatedTokenRequest( LABEL, "Person", commandBytes ), logIndex, r -> {} );
 
         // then
         List<TransactionRepresentation> transactions = commitProcess.transactionsToApply;
@@ -131,7 +130,7 @@ public class ReplicatedTokenStateMachineTest
     {
         private final List<TransactionRepresentation> transactionsToApply = new ArrayList<>();
 
-        public StubTransactionCommitProcess( TransactionAppender appender, StorageEngine storageEngine )
+        StubTransactionCommitProcess( TransactionAppender appender, StorageEngine storageEngine )
         {
             super( appender, storageEngine );
         }

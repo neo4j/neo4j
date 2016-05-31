@@ -21,8 +21,8 @@ package org.neo4j.coreedge.raft.state;
 
 import org.junit.Test;
 
-import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import org.neo4j.coreedge.raft.NewLeaderBarrier;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
@@ -51,6 +51,8 @@ import static org.junit.Assert.assertNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -87,9 +89,7 @@ public class CoreStateTest
 
     private CoreStateMachines txStateMachinesMock()
     {
-        CoreStateMachines stateMachines = mock( CoreStateMachines.class );
-        when( stateMachines.dispatch( any( ReplicatedTransaction.class ), anyLong() ) ).thenReturn( Optional.empty() );
-        return stateMachines;
+        return mock( CoreStateMachines.class );
     }
 
     private final CoreStateMachines failingTxStateMachine = failingTxStateMachinesMock();
@@ -97,8 +97,9 @@ public class CoreStateTest
     private CoreStateMachines failingTxStateMachinesMock()
     {
         CoreStateMachines stateMachines = mock( CoreStateMachines.class );
-        when( stateMachines.dispatch( any( ReplicatedTransaction.class ), anyLong() ) ).thenThrow(
-                new IllegalStateException( "This is a failing tx state machine and it's supposed to fail" ) );
+
+        doThrow( new IllegalStateException( "This is a failing tx state machine and it's supposed to fail" ) )
+                .when( stateMachines ).dispatch( any( ReplicatedTransaction.class ), anyLong(), anyCallback() );
         return stateMachines;
     }
 
@@ -126,9 +127,9 @@ public class CoreStateTest
         applier.sync( false );
 
         // then
-        verify( txStateMachine ).dispatch( nullTx, 0 );
-        verify( txStateMachine ).dispatch( nullTx, 1 );
-        verify( txStateMachine ).dispatch( nullTx, 2 );
+        verify( txStateMachine ).dispatch( eq( nullTx ), eq( 0L ), anyCallback() );
+        verify( txStateMachine ).dispatch( eq( nullTx ), eq( 1L ), anyCallback() );
+        verify( txStateMachine ).dispatch( eq( nullTx ), eq( 2L ), anyCallback() );
         verify( listener).commitIndex( 2 );
     }
 
@@ -146,7 +147,7 @@ public class CoreStateTest
         applier.sync( false );
 
         // then
-        verify( txStateMachine, times( 0 ) ).dispatch( any( ReplicatedTransaction.class ), anyInt() );
+        verify( txStateMachine, times( 0 ) ).dispatch( any( ReplicatedTransaction.class ), anyInt(), anyCallback() );
     }
 
     @Test
@@ -163,7 +164,7 @@ public class CoreStateTest
         applier.sync( false );
 
         // then
-        verify( txStateMachine ).dispatch( nullTx, 1L );
+        verify( txStateMachine ).dispatch( eq( nullTx ), eq( 1L ), anyCallback() );
     }
 
     // TODO: Test recovery, see CoreState#start().
@@ -281,9 +282,9 @@ public class CoreStateTest
         verify( inFlightMap, times( 0 ) ).retrieve( 2L );
         verify( inFlightMap, times( 3 ) ).unregister( anyLong() ); //everything is cleaned up
 
-        verify( txStateMachine, times( 1 ) ).dispatch( nullTx, 0L );
-        verify( txStateMachine, times( 1 ) ).dispatch( nullTx, 1L );
-        verify( txStateMachine, times( 1 ) ).dispatch( nullTx, 2L );
+        verify( txStateMachine, times( 1 ) ).dispatch( eq( nullTx ), eq( 0L ), anyCallback() );
+        verify( txStateMachine, times( 1 ) ).dispatch( eq( nullTx ), eq( 1L ), anyCallback() );
+        verify( txStateMachine, times( 1 ) ).dispatch( eq( nullTx ), eq( 2L ), anyCallback() );
 
         verify( raftLog, times( 1 ) ).getEntryCursor( 1 );
     }
@@ -306,5 +307,12 @@ public class CoreStateTest
 
         //then
         assertFalse( dbHealth.isHealthy() );
+    }
+
+    private Consumer<Result> anyCallback()
+    {
+        @SuppressWarnings( "unchecked" )
+        Consumer<Result> anyCallback = any( Consumer.class );
+        return anyCallback;
     }
 }

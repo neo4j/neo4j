@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.util.Listener;
 /**
  * A replicator implementation suitable in a RAFT context. Will handle resending due to timeouts and leader switches.
  */
-public class RaftReplicator<MEMBER> implements Replicator, Listener<MEMBER>
+public class RaftReplicator<MEMBER> implements Replicator<ReplicatedContent>, Listener<MEMBER>
 {
     private final MEMBER me;
     private final Outbound<MEMBER> outbound;

@@ -21,6 +21,7 @@ package org.neo4j.coreedge.server.core.locks;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import org.neo4j.coreedge.raft.replication.tx.CoreReplicatedContent;
 import org.neo4j.coreedge.raft.state.CoreStateMachines;
@@ -81,8 +82,8 @@ public class ReplicatedLockTokenRequest<MEMBER> implements CoreReplicatedContent
     }
 
     @Override
-    public Optional<Result> dispatch( CoreStateMachines coreStateMachines, long commandIndex )
+    public void dispatch( CoreStateMachines coreStateMachines, long commandIndex, Consumer<Result> callback )
     {
-        return coreStateMachines.dispatch( this, commandIndex );
+        coreStateMachines.dispatch( this, commandIndex, callback );
     }
 }
