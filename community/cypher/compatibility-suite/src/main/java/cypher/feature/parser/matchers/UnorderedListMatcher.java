@@ -19,57 +19,55 @@
  */
 package cypher.feature.parser.matchers;
 
-import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-public class ListMatcher implements ValueMatcher
+public class UnorderedListMatcher extends ListMatcher
 {
-    protected final List<ValueMatcher> list;
-
-    public ListMatcher( List<ValueMatcher> list )
+    public UnorderedListMatcher( List<ValueMatcher> list )
     {
-        this.list = list;
+        super( list );
     }
 
     @Override
-    public boolean matches( Object value )
-    {
-        if ( value == null )
-        {
-            return false;
-        }
-        else if ( value instanceof List )
-        {
-            List realList = (List) value;
-            return sizeAndElements( realList.size(), realList::get );
-        }
-        else if ( value.getClass().isArray() )
-        {
-            return sizeAndElements( Array.getLength( value ), integer -> Array.get( value, integer ) );
-        }
-        return false;
-    }
-
     protected boolean sizeAndElements( int length, Function<Integer,Object> resultList )
     {
         if ( list.size() == length )
         {
+            List<ValueMatcher> mutableCopy = new ArrayList<>( list );
             for ( int i = 0; i < length; ++i )
             {
-                if ( !list.get( i ).matches( resultList.apply( i ) ) )
+                Object value = resultList.apply( i );
+                int index = findMatch( mutableCopy, value );
+                if ( index < 0 )
                 {
                     return false;
                 }
+                mutableCopy.remove( index );
             }
             return true;
         }
         return false;
     }
 
-    @Override
-    public String toString()
+    /**
+     * Searches the input list for a matcher that matches the input value.
+     *
+     * @param list the list of matchers to match the value against.
+     * @param value the value to match.
+     * @param <T> the type of the value.
+     * @return the index of the first found matcher that matched the value, or -1 if none was found.
+     */
+    static <T> int findMatch( List<? extends Matcher<T>> list, T value )
     {
-        return list.toString();
+        for ( int j = 0; j < list.size(); ++j )
+        {
+            if ( list.get( j ).matches( value ) )
+            {
+                return j;
+            }
+        }
+        return -1;
     }
 }

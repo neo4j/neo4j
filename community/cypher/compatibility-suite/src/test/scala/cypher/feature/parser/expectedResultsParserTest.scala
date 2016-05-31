@@ -24,9 +24,7 @@ import java.lang.Long
 import java.util.Collections.emptyList
 import java.{lang, util}
 
-import cypher.feature.parser.matchers.ValueMatcher
 import org.neo4j.graphdb.Relationship
-import org.scalatest.matchers.Matcher
 
 class expectedResultsParserTest extends ParsingTestSupport {
 
@@ -91,6 +89,16 @@ class expectedResultsParserTest extends ParsingTestSupport {
   test("should parse nested list") {
     parse("[[]]") should accept(List(List.empty.asJava).asJava)
     parse("[[[0]], [0], 0]") should accept(List(List(List(0L).asJava).asJava, List(0L).asJava, 0L).asJava)
+  }
+
+  test("should parse and match unordered lists") {
+    val matcher = parse("[null, 0, true]", unorderedLists = true)
+    matcher should accept(List(null, 0L, TRUE).asJava)
+    matcher should accept(List(null, TRUE, 0L).asJava)
+    matcher should accept(List(0L, null, TRUE).asJava)
+    matcher should accept(List(0L, TRUE, null).asJava)
+    matcher should accept(List(TRUE, null, 0L).asJava)
+    matcher should accept(List(TRUE, 0L, null).asJava)
   }
 
   test("should parse maps") {
@@ -175,8 +183,8 @@ class expectedResultsParserTest extends ParsingTestSupport {
     parse(value) should accept(path(link1, link2))
   }
 
-  private def parse(value: String): cypher.feature.parser.matchers.Matcher[AnyRef] = {
-    matcherParser(value)
+  private def parse(value: String, unorderedLists: Boolean = false): cypher.feature.parser.matchers.Matcher[AnyRef] = {
+    matcherParser(value, unorderedLists)
   }
 
   private def asMap(scalaMap: Map[String, AnyRef]): util.Map[String, AnyRef] = {

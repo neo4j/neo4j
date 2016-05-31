@@ -63,4 +63,9 @@ class ListMatcherTest extends ParsingTestSupport {
     new ListMatcher(asList(new IntegerMatcher(-1L))) shouldNot accept(Array(1L))
   }
 
+  test("should only match lists in the same order") {
+    new ListMatcher(asList(new IntegerMatcher(1L), new IntegerMatcher(2L))) should accept(asList(1L, 2L))
+    new ListMatcher(asList(new IntegerMatcher(1L), new IntegerMatcher(2L))) shouldNot accept(asList(2L, 1L))
+  }
+
 }

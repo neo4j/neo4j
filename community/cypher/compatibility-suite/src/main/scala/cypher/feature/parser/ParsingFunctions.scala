@@ -32,15 +32,15 @@ import scala.collection.JavaConverters._
   * Parses the expected results of the Cucumber features and constructs a matcher
   * that can be used to match on a {@link org.neo4j.graphdb.Result Result} object.
   */
-object constructResultMatcher extends (DataTable => ResultMatcher) {
+object constructResultMatcher extends ((DataTable, Boolean) => ResultMatcher) {
 
-  override def apply(table: DataTable): ResultMatcher = {
+  override def apply(table: DataTable, unorderedLists: Boolean = false): ResultMatcher = {
     val keys = table.topCells().asScala
     val cells = table.cells(1).asScala
 
     new ResultMatcher(cells.map { list =>
       new RowMatcher(list.asScala.zipWithIndex.map { case (value, index) =>
-        (keys(index), matcherParser(value))
+        (keys(index), matcherParser(value, unorderedLists))
       }.toMap.asJava)
     }.toList.asJava)
   }
@@ -50,14 +50,14 @@ object constructResultMatcher extends (DataTable => ResultMatcher) {
   * Parses one cell of the expected results in Cucumber feature files and constructs
   * a matcher than can be used to match a certain Cypher value.
   */
-object matcherParser extends (String => ValueMatcher) {
+object matcherParser extends ((String, Boolean) => ValueMatcher) {
 
   // has to be a def to renew the instance
   private def parser = new ResultsParser
   private val listener = new CypherMatchersCreator
 
-  def apply(input: String): ValueMatcher = {
-    parser.matcherParse(input, listener)
+  def apply(input: String, unorderedLists: Boolean): ValueMatcher = {
+    parser.matcherParse(input, listener.setLists(unorderedLists))
   }
 }
 

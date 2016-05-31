@@ -37,34 +37,41 @@ public class FeatureSuiteTest
     @RunWith( Cucumber.class )
     @CucumberOptions(
             plugin = {
-                    "pretty",
-                    "html:target/rule-interpreted",
-                    "cypher.feature.reporting.CypherResultReporter:target/rule-interpreted",
-                    "cypher.cucumber.db.DatabaseProvider:target/dbs",
-                    "cypher.cucumber.db.DatabaseConfigProvider:/cypher/db/config/rule.json"
+                    NAMED_GRAPHS_DBS,
+                    DB_CONFIG + "rule.json",
+                    HTML_REPORT + "rule",
+                    JSON_REPORT + "rule"
             },
-            glue = { "classpath:cypher/feature/steps" },
-            features = { "target/features/" + FEATURE_TO_RUN },
+            glue = { GLUE_PATH },
+            features = { FEATURE_PATH + FEATURE_TO_RUN },
             strict = true
     )
-    public static class RuleInterpreted
+    public static class Rule
     {
     }
 
     @RunWith( Cucumber.class )
     @CucumberOptions(
             plugin = {
-                    "pretty",
-                    "html:target/cost-interpreted",
-                    "cypher.feature.reporting.CypherResultReporter:target/cost-interpreted",
-                    "cypher.cucumber.db.DatabaseProvider:target/dbs",
-                    "cypher.cucumber.db.DatabaseConfigProvider:/cypher/db/config/cost-interpreted.json",
+                    NAMED_GRAPHS_DBS,
+                    DB_CONFIG + "cost.json",
+                    HTML_REPORT + "cost",
+                    JSON_REPORT + "cost"
             },
-            glue = { "classpath:cypher/feature/steps" },
-            features = { "target/features/" + FEATURE_TO_RUN },
+            glue = { GLUE_PATH },
+            features = { FEATURE_PATH + FEATURE_TO_RUN },
             strict = true
     )
-    public static class CostInterpreted
+    public static class Cost
     {
     }
+
+    // constants for TCK configuration
+
+    private static final String NAMED_GRAPHS_DBS = "cypher.cucumber.db.DatabaseProvider:target/dbs";
+    private static final String DB_CONFIG = "cypher.cucumber.db.DatabaseConfigProvider:/cypher/db/config/";
+    private static final String HTML_REPORT = "html:target/";
+    private static final String JSON_REPORT = "cypher.feature.reporting.CypherResultReporter:target/";
+    private static final String GLUE_PATH = "classpath:cypher/feature/steps";
+    private static final String FEATURE_PATH = "target/features/";
 }
