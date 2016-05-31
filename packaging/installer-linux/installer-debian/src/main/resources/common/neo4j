@@ -47,6 +47,8 @@ SCRIPTNAME=/etc/init.d/$NAME-service
 
 do_start()
 {
+  do_ulimit
+
   [ -d "${PIDDIR}" ] || mkdir -p "${PIDDIR}"
   chown "${NEO_USER}:" "${PIDDIR}"
 
@@ -67,7 +69,6 @@ do_ulimit()
 
 case "$1" in
   start)
-    do_ulimit
     do_start
     ;;
   stop)
