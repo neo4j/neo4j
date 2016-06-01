@@ -40,7 +40,13 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
   val requiredScenarioName = FeatureSuiteTest.SCENARIO_NAME_REQUIRED.trim.toLowerCase
 
-  val unsupportedScenarios = Set("Fail when adding new label predicate on already bound node 5")
+  val unsupportedScenarios = Set("Fail when adding new label predicate on already bound node 5",
+                                 "`toInt()` handling `Any` type",
+                                 "`toInt()` failing on invalid arguments",
+                                 "`toFloat()` handling `Any` type",
+                                 "`toFloat()` failing on invalid arguments",
+                                 "`type()` handling `Any` type",
+                                 "`type()` failing on invalid arguments")
 
   // Stateful
   var graph: GraphDatabaseService = null
