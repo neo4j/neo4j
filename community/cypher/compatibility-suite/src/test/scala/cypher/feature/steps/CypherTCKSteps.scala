@@ -109,8 +109,9 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     ifEnabled {
       val matcher = constructResultMatcher(expectedTable)
 
+      val assertedSuccessful = successful(result)
       inTx {
-        matcher should accept(successful(result))
+        matcher should accept(assertedSuccessful)
       }
     }
   }
@@ -119,8 +120,9 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     ifEnabled {
       val matcher = constructResultMatcher(expectedTable, unorderedLists = true)
 
+      val assertedSuccessful = successful(result)
       inTx {
-        matcher should accept(successful(result))
+        matcher should accept(assertedSuccessful)
       }
     }
   }
@@ -136,8 +138,9 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     ifEnabled {
       val matcher = constructResultMatcher(expectedTable)
 
+      val assertedSuccessful = successful(result)
       inTx {
-        matcher should acceptOrdered(successful(result))
+        matcher should acceptOrdered(assertedSuccessful)
       }
     }
   }
