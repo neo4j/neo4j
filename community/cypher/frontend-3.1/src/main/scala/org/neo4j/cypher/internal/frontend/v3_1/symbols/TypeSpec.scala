@@ -146,7 +146,7 @@ class TypeSpec private (private val ranges: Seq[TypeRange]) extends Equals {
     else if (rs.exists({ case TypeRange(_: AnyType, None) => true case _ => false }))
       acc :+ format("T")
     else
-      toStrings(acc ++ TypeSpec.simpleTypes.filter(contains(_, rs)).map(t => format(t.toString)), innerTypeRanges(rs), t => s"Collection<${format(t)}>")
+      toStrings(acc ++ TypeSpec.simpleTypes.filter(contains(_, rs)).map(t => format(t.toString)), innerTypeRanges(rs), t => s"List<${format(t)}>")
 
   def mkString(sep: String): String =
     mkString("", sep, sep, "")

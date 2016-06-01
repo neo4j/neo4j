@@ -35,28 +35,28 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   test("don't allow a string after IN") {
     executeAndEnsureError(
       "MATCH (n) where id(n) IN '' return 1",
-      "Type mismatch: expected Collection<T> but was String (line 1, column 26 (offset: 25))"
+      "Type mismatch: expected List<T> but was String (line 1, column 26 (offset: 25))"
     )
   }
 
   test("don't allow a integer after IN") {
     executeAndEnsureError(
       "MATCH (n) WHERE id(n) IN 1 RETURN 1",
-      "Type mismatch: expected Collection<T> but was Integer (line 1, column 26 (offset: 25))"
+      "Type mismatch: expected List<T> but was Integer (line 1, column 26 (offset: 25))"
     )
   }
 
   test("don't allow a float after IN") {
     executeAndEnsureError(
       "MATCH (n) WHERE id(n) IN 1.0 RETURN 1",
-      "Type mismatch: expected Collection<T> but was Float (line 1, column 26 (offset: 25))"
+      "Type mismatch: expected List<T> but was Float (line 1, column 26 (offset: 25))"
     )
   }
 
   test("don't allow a boolean after IN") {
     executeAndEnsureError(
       "MATCH (n) WHERE id(n) IN true RETURN 1",
-      "Type mismatch: expected Collection<T> but was Boolean (line 1, column 26 (offset: 25))"
+      "Type mismatch: expected List<T> but was Boolean (line 1, column 26 (offset: 25))"
     )
   }
 
@@ -83,7 +83,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   test("cant use LENGTH on nodes") {
     executeAndEnsureError(
       "match (n) where id(n) = 0 return length(n)",
-      "Type mismatch: expected Path, String or Collection<T> but was Node (line 1, column 41 (offset: 40))"
+      "Type mismatch: expected Path, String or List<T> but was Node (line 1, column 41 (offset: 40))"
     )
   }
 
@@ -308,37 +308,37 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should fail if old iterable separator") {
     executeAndEnsureError(
-      "match (a) where id(a) = 0 return filter(x in a.collection : x.prop = 1)",
+      "match (a) where id(a) = 0 return filter(x in a.list : x.prop = 1)",
       "filter(...) requires a WHERE predicate (line 1, column 34 (offset: 33))"
     )
 
     executeAndEnsureError(
-      "match (a) where id(a) = 0 return extract(x in a.collection : x.prop)",
+      "match (a) where id(a) = 0 return extract(x in a.list : x.prop)",
       "extract(...) requires '| expression' (an extract expression) (line 1, column 34 (offset: 33))"
     )
 
     executeAndEnsureError(
-      "match (a) where id(a) = 0 return reduce(i = 0, x in a.collection : i + x.prop)",
+      "match (a) where id(a) = 0 return reduce(i = 0, x in a.List : i + x.prop)",
       "reduce(...) requires '| expression' (an accumulation expression) (line 1, column 34 (offset: 33))"
     )
 
     executeAndEnsureError(
-      "match (a) where id(a) = 0 return any(x in a.collection : x.prop = 1)",
+      "match (a) where id(a) = 0 return any(x in a.list : x.prop = 1)",
       "any(...) requires a WHERE predicate (line 1, column 34 (offset: 33))"
     )
 
     executeAndEnsureError(
-      "match (a) where id(a) = 0 return all(x in a.collection : x.prop = 1)",
+      "match (a) where id(a) = 0 return all(x in a.list : x.prop = 1)",
       "all(...) requires a WHERE predicate (line 1, column 34 (offset: 33))"
     )
 
     executeAndEnsureError(
-      "match (a) where id(a) = 0 return single(x in a.collection : x.prop = 1)",
+      "match (a) where id(a) = 0 return single(x in a.list : x.prop = 1)",
       "single(...) requires a WHERE predicate (line 1, column 34 (offset: 33))"
     )
 
     executeAndEnsureError(
-      "match (a) where id(a) = 0 return none(x in a.collection : x.prop = 1)",
+      "match (a) where id(a) = 0 return none(x in a.list : x.prop = 1)",
       "none(...) requires a WHERE predicate (line 1, column 34 (offset: 33))"
     )
   }
@@ -470,7 +470,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("should give type error for actions on mixed collection") {
+  test("should give type error for actions on mixed list") {
     executeAndEnsureError(
       "RETURN (['a', 1][0]).prop",
       "Type mismatch: expected Map, Node or Relationship but was Any (line 1, column 19 (offset: 18))"
@@ -542,7 +542,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("Should fail when calling size on a path") {
     executeAndEnsureError("match p=(a)-[*]->(b) return size(p)",
-                          "Type mismatch: expected String or Collection<T> but was Path (line 1, column 34 (offset: 33))")
+                          "Type mismatch: expected String or List<T> but was Path (line 1, column 34 (offset: 33))")
   }
 
   test("aggregation inside looping queries is not allowed") {

@@ -259,7 +259,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
   test("type of variable is wrong") {
     expectError(
       "match (n) where id(n) = 0 with [n] as users MATCH users-->messages RETURN messages",
-      "Type mismatch: users already defined with conflicting type Collection<Node> (expected Node) (line 1, column 51 (offset: 50))"
+      "Type mismatch: users already defined with conflicting type List<Node> (expected Node) (line 1, column 51 (offset: 50))"
     )
   }
 
@@ -273,7 +273,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
   test("warn about type error") {
     expectError(
       "match (p) where id(p) = 0 MATCH (p)-[r*]->() WHERE r.foo = 'apa' RETURN r",
-      "Type mismatch: expected Map, Node or Relationship but was Collection<Relationship> (line 1, column 52 (offset: 51))"
+      "Type mismatch: expected Map, Node or Relationship but was List<Relationship> (line 1, column 52 (offset: 51))"
     )
   }
 

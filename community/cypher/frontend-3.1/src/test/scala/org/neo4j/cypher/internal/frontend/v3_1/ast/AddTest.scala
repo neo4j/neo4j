@@ -72,13 +72,13 @@ class AddTest extends InfixExpressionTestBase(Add(_, _)(DummyPosition(0))) {
 
   test("shouldFailTypeCheckForIncompatibleArguments") {
     testInvalidApplication(CTInteger, CTBoolean)(
-      "Type mismatch: expected Float, Integer, String or Collection<Integer> but was Boolean"
+      "Type mismatch: expected Float, Integer, String or List<Integer> but was Boolean"
     )
     testInvalidApplication(CTList(CTInteger), CTString)(
-      "Type mismatch: expected Integer, Collection<Integer> or Collection<Collection<Integer>> but was String"
+      "Type mismatch: expected Integer, List<Integer> or List<List<Integer>> but was String"
     )
     testInvalidApplication(CTList(CTInteger), CTList(CTString))(
-      "Type mismatch: expected Integer, Collection<Integer> or Collection<Collection<Integer>> but was Collection<String>"
+      "Type mismatch: expected Integer, List<Integer> or List<List<Integer>> but was List<String>"
     )
   }
 }
