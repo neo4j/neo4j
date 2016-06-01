@@ -50,7 +50,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
 {
     @Rule
     public TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
-    private CommunityNeoServer server;
+    protected CommunityNeoServer server;
 
     @Before
     public void setUp()
@@ -189,7 +189,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldNotAllowDataAccess() throws Exception
+    public void shouldAllowDataAccess() throws Exception
     {
         // Given
         startServerWithConfiguredUser();

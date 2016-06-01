@@ -189,9 +189,10 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
             throw new AuthorizationViolationException( "Invalid attempt to change the password for user " + username );
         }
 
-        passwordPolicy.validatePassword( password );
-
         setUserPassword( username, password );
+
+        // This will invalidate the auth cache
+        authSubject.logout();
     }
 
     @Override
