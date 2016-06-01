@@ -47,6 +47,8 @@ case class TCKErrorHandler(typ: String, phase: String, detail: String) extends M
     }
   }
 
+  private val DOTALL = "(?s)"
+
   private def checkError(result: Try[Result], typ: String, phase: String, detail: String) = {
     val statusType = if (typ == TCKErrorTypes.CONSTRAINT_VALIDATION_FAILED) "Schema" else "Statement"
     result match {
@@ -62,6 +64,8 @@ case class TCKErrorHandler(typ: String, phase: String, detail: String) extends M
           detail should equal(VARIABLE_ALREADY_BOUND)
         else if (e.getMessage.matches("Can't create `\\w+` with properties or labels here. The variable is already declared in this context"))
           detail should equal(VARIABLE_ALREADY_BOUND)
+        else if (e.getMessage.matches(s"${DOTALL}Type mismatch: expected .+ but was .+"))
+          detail should equal("InvalidArgumentType")
 
         // Runtime errors
         else if (e.getMessage.matches("Expected .+ to be a java.lang.String, but it was a .+"))
@@ -79,7 +83,12 @@ case class TCKErrorHandler(typ: String, phase: String, detail: String) extends M
         else if (e.getMessage.matches("Don't know how to compare that\\..+"))
           detail should equal(INCOMPARABLE_VALUES)
         else if (e.getMessage.startsWith("It is not allowed to refer to variables in"))
-          detail should equal("VariableUseNotAllowed")
+          detail should equal(VARIABLE_USE_NOT_ALLOWED)
+        else if (e.getMessage.matches("Invalid input '.+' is not a valid argument, must be a number in the range 0.0 to 1.0"))
+          detail should equal("NumberOutOfRange")
+        else if (e.getMessage.matches("Expected a String, Number or Boolean, got: .+"))
+          detail should equal("InvalidArgumentValue")
+
         else fail(s"Unknown $phase error: $e", e)
 
       case Failure(e) =>
