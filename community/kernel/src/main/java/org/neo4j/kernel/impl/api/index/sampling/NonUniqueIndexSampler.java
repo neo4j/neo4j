@@ -24,9 +24,7 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 
 public class NonUniqueIndexSampler
 {
-    private static final int INITIAL_SIZE = 1 << 16;
-
-    private final int bufferSizeLimit;
+    private final int sampleSizeLimit;
     private final MultiSet<String> values;
 
     private int sampledSteps = 0;
@@ -35,12 +33,12 @@ public class NonUniqueIndexSampler
 
     private long accumulatedUniqueValues = 0;
     private long accumulatedSampledSize = 0;
-    private long bufferSize = 0;
+    private long sampleSize = 0;
 
-    public NonUniqueIndexSampler( int bufferSizeLimit )
+    public NonUniqueIndexSampler( int sampleSizeLimit )
     {
-        this.bufferSizeLimit = bufferSizeLimit;
-        this.values = new MultiSet<>( INITIAL_SIZE );
+        this.values = new MultiSet<>( calculateInitialSetSize( sampleSizeLimit ) );
+        this.sampleSizeLimit = sampleSizeLimit;
     }
 
     public void include( String value )
@@ -51,14 +49,14 @@ public class NonUniqueIndexSampler
     public void include( String value, long increment )
     {
         assert increment > 0;
-        if ( bufferSize >= bufferSizeLimit )
+        if ( sampleSize >= sampleSizeLimit )
         {
             nextStep();
         }
 
         if ( values.increment( value, increment ) == increment )
         {
-            bufferSize += value.length();
+            sampleSize += value.length();
         }
     }
 
@@ -72,7 +70,7 @@ public class NonUniqueIndexSampler
         assert decrement > 0;
         if ( values.increment( value, -decrement ) == 0 )
         {
-            bufferSize -= value.length();
+            sampleSize -= value.length();
         }
     }
 
@@ -98,9 +96,24 @@ public class NonUniqueIndexSampler
     {
         accumulatedUniqueValues += values.uniqueSize();
         accumulatedSampledSize += values.size();
-        bufferSize = 0;
+        sampleSize = 0;
 
         sampledSteps++;
         values.clear();
+    }
+
+    /**
+     * Evaluate initial set size that evaluate initial set as log2(sampleSizeLimit) / 2 based on provided sample size
+     * limit.
+     * Minimum possible size is 1 << 10.
+     * Maximum possible size is 1 << 16.
+     *
+     * @param sampleSizeLimit specified sample size limit
+     * @return initial set size
+     */
+    private int calculateInitialSetSize( int sampleSizeLimit )
+    {
+        int basedOnSampleSize = Math.max( 10, (int) (Math.log( sampleSizeLimit ) / Math.log( 2 )) / 2 );
+        return (1 << Math.min( 16, basedOnSampleSize ));
     }
 }

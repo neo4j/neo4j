@@ -21,11 +21,13 @@ package org.neo4j.kernel.configuration;
 
 import org.junit.Test;
 
+import java.util.Map;
+
 import org.neo4j.logging.NullLog;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
@@ -36,7 +38,25 @@ public class TestGraphDatabaseConfigurationMigrator
     @Test
     public void testNoMigration()
     {
-        ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator(  );
+        ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
         assertThat( migrator.apply( stringMap( "foo", "bar" ), NullLog.getInstance() ), equalTo( stringMap( "foo", "bar" ) ) );
+    }
+
+    @Test
+    public void migrateIndexSamplingBufferSizeIfPresent()
+    {
+        ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
+        Map<String,String> resultConfig = migrator.apply( stringMap( "dbms.index_sampling.buffer_size", "64m" ), NullLog.getInstance() );
+        assertEquals( "Old property should be migrated to new one with correct value",
+                resultConfig, stringMap( "dbms.index_sampling.sample_size_limit", "8388608" ));
+    }
+
+    @Test
+    public void skipMigrationOfIndexSamplingBufferSizeIfNotPresent()
+    {
+        ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
+        Map<String,String> resultConfig = migrator.apply( stringMap( "dbms.index_sampling.sample_size_limit", "8388600" ), NullLog.getInstance() );
+        assertEquals( "Nothing to migrate should be the same",
+                resultConfig, stringMap( "dbms.index_sampling.sample_size_limit", "8388600" ));
     }
 }

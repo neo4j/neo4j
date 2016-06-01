@@ -24,20 +24,20 @@ import org.neo4j.kernel.configuration.Config;
 
 public class IndexSamplingConfig
 {
-    private final int bufferSize;
+    private final int sampleSizeLimit;
     private final double updateRatio;
     private final boolean backgroundSampling;
 
     public IndexSamplingConfig( Config config )
     {
-        this.bufferSize = config.get( GraphDatabaseSettings.index_sampling_buffer_size ).intValue();
+        this.sampleSizeLimit = config.get( GraphDatabaseSettings.index_sample_size_limit );
         this.updateRatio = ((double) config.get( GraphDatabaseSettings.index_sampling_update_percentage )) / 100.0d;
         this.backgroundSampling = config.get( GraphDatabaseSettings.index_background_sampling_enabled );
     }
 
-    public int bufferSize()
+    public int sampleSizeLimit()
     {
-        return bufferSize;
+        return sampleSizeLimit;
     }
 
     public double updateRatio()
@@ -71,14 +71,14 @@ public class IndexSamplingConfig
         IndexSamplingConfig that = (IndexSamplingConfig) o;
 
         return backgroundSampling == that.backgroundSampling &&
-               bufferSize == that.bufferSize &&
+               sampleSizeLimit == that.sampleSizeLimit &&
                Double.compare( that.updateRatio, updateRatio ) == 0;
     }
 
     @Override
     public int hashCode()
     {
-        int result = bufferSize;
+        int result = sampleSizeLimit;
         long temp = Double.doubleToLongBits( updateRatio );
         result = 31 * result + (int) (temp ^ (temp >>> 32));
         result = 31 * result + (backgroundSampling ? 1 : 0);

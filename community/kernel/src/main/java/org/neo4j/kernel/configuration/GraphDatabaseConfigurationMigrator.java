@@ -19,6 +19,39 @@
  */
 package org.neo4j.kernel.configuration;
 
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.Map;
+
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.ByteUnit;
+
+/**
+ * Migrations of old graph database settings.
+ */
 public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrator
 {
+    public GraphDatabaseConfigurationMigrator()
+    {
+        registerMigrations();
+    }
+
+    private void registerMigrations()
+    {
+        add( new SpecificPropertyMigration( "dbms.index_sampling.buffer_size",
+                "dbms.index_sampling.buffer_size has been replaced with dbms.index_sampling.sample_size_limit" )
+        {
+            @Override
+            public void setValueWithOldSetting( String value, Map<String,String> rawConfiguration )
+            {
+                if ( StringUtils.isNotEmpty( value ) )
+                {
+                    String oldSettingDefaultValue = GraphDatabaseSettings.index_sampling_buffer_size.getDefaultValue();
+                    Long newValue = oldSettingDefaultValue.equals( value ) ? ByteUnit.mebiBytes( 8 )
+                                                                           : Settings.BYTES.apply( value );
+                    rawConfiguration.put( "dbms.index_sampling.sample_size_limit", String.valueOf( newValue ) );
+                }
+            }
+        } );
+    }
 }
