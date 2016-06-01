@@ -303,10 +303,17 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Boolean> index_background_sampling_enabled =
             setting("dbms.index_sampling.background_enabled", BOOLEAN, TRUE );
 
-    @Description("Size of buffer used by index sampling")
-    public static final Setting<Long> index_sampling_buffer_size =
-            setting("dbms.index_sampling.buffer_size", BYTES, "64m",
+    @Description("Size of buffer used by index sampling. " +
+                 "This configuration setting is no longer applicable as from Neo4j 3.0.3." +
+                 "Please use dbms.index_sampling.sample_size_limit instead.")
+    @Deprecated
+    public static final Setting<Long> index_sampling_buffer_size = setting("dbms.index_sampling.buffer_size", BYTES, "64m",
                     min( /* 1m */ 1048576L ), max( (long) Integer.MAX_VALUE ) );
+
+    @Description("Index sampling chunk size limit")
+    public static final Setting<Integer> index_sample_size_limit = setting("dbms.index_sampling.sample_size_limit",
+            INTEGER, String.valueOf( ByteUnit.mebiBytes( 8 ) ), min( (int) ByteUnit.mebiBytes( 1 ) ),
+            max( Integer.MAX_VALUE ) );
 
     @Description("Percentage of index updates of total index size required before sampling of a given index is triggered")
     public static final Setting<Integer> index_sampling_update_percentage =
