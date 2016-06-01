@@ -43,14 +43,19 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.coreedge.ClusterRule;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.test.rule.SuppressOutput.suppress;
 
 public class BackupCoreIT
 {
+    @Rule
+    public SuppressOutput suppressOutput = suppress( SuppressOutput.System.out, SuppressOutput.System.err );
+
     @Rule
     public ClusterRule clusterRule = new ClusterRule( BackupCoreIT.class )
             .withNumberOfCoreServers( 3 )
