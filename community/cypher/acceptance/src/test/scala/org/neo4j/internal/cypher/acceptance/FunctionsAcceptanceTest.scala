@@ -24,6 +24,7 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, InvalidArgumentException, NewP
 
 class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
+  // TCK'd
   test("split should work as expected") {
     // When
     val result = executeScalarWithAllPlannersAndCompatibilityMode[Long](
@@ -34,6 +35,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result should equal(2)
   }
 
+  // TCK'd
   test("toInt should work as expected") {
     // Given
     createLabeledNode(Map("age" -> "42"), "Person")
@@ -47,6 +49,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result should equal(42)
   }
 
+  // TCK'd
   test("toInt should work on float") {
     // When
     val result = executeScalarWithAllPlannersAndCompatibilityMode[Long](
@@ -57,6 +60,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result should equal(82)
   }
 
+  // TCK'd
   test("toInt should return null on string that is not a number") {
     // When
     val result = executeWithAllPlannersAndCompatibilityMode(
@@ -67,6 +71,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("foo" -> null, "empty" -> null)))
   }
 
+  // TCK'd
   test("toInt should handle mixed number types") {
     // When
     val result = executeWithAllPlanners("WITH [2, 2.9] AS numbers RETURN [n in numbers | toInt(n)] AS int_numbers")
@@ -75,16 +80,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("int_numbers" -> List(2, 2))))
   }
 
-  test("toInt should fail on type Any") {
-    // When
-    val query = "WITH [2, 2.9, '1.7'] AS numbers RETURN [n in numbers | toInt(n)] AS int_numbers"
-    val error = intercept[SyntaxException](executeWithAllPlannersAndCompatibilityMode(query))
-
-    // Then
-    error.getMessage should (include("Type mismatch: expected Float, Integer, Number or String but was Any")
-      or include("Type mismatch: expected Float, Integer or String but was Any") )
-  }
-
+  // TCK'd
   test("toInt should work on string collection") {
     // When
     val result = executeWithAllPlannersAndCompatibilityMode("WITH ['2', '2.9', 'foo'] AS numbers RETURN [n in numbers | toInt(n)] AS int_numbers")
@@ -93,6 +89,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("int_numbers" -> List(2, 2, null))))
   }
 
+  // TCK'd
   test("toFloat should work as expected") {
     // Given
     createLabeledNode(Map("rating" -> 4), "Movie")
@@ -106,6 +103,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result should equal(4.0)
   }
 
+  // TCK'd
   test("toFloat should handle mixed number types") {
     // When
     val result = executeWithAllPlanners("WITH [3.4, 3] AS numbers RETURN [n in numbers | toFloat(n)] AS float_numbers")
@@ -114,6 +112,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("float_numbers" -> List(3.4, 3.0))))
   }
 
+  // TCK'd
   test("toFloat should return null on string that is not a number") {
     // When
     val result = executeWithAllPlannersAndCompatibilityMode(
@@ -124,16 +123,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("foo" -> null, "empty" -> null)))
   }
 
-  test("toFloat should fail on type Any") {
-    // When
-    val query = "WITH [3.4, 3, '5'] AS numbers RETURN [n in numbers | toFloat(n)] AS float_numbers"
-    val error = intercept[SyntaxException](executeWithAllPlannersAndCompatibilityMode(query))
-
-    // Then
-    error.getMessage should (include("Type mismatch: expected Float, Integer, Number or String but was Any")
-      or include("Type mismatch: expected Float, Integer or String but was Any") )
-  }
-
+  // TCK'd
   test("toFloat should work on string collection") {
     // When
     val result = executeWithAllPlannersAndCompatibilityMode("WITH ['1', '2', 'foo'] AS numbers RETURN [n in numbers | toFloat(n)] AS float_numbers")
@@ -142,6 +132,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("float_numbers" -> List(1.0, 2.0, null))))
   }
 
+  // TCK'd
   test("toString should work as expected") {
     // Given
     createLabeledNode(Map("rating" -> 4), "Movie")
@@ -155,6 +146,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result should equal("4")
   }
 
+  // TCK'd
   test("toString should handle booleans from properties") {
     // Given
     createLabeledNode(Map("watched" -> true), "Movie")
@@ -168,6 +160,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result should equal("true")
   }
 
+  // TCK'd
   test("toString should handle booleans as inlined input") {
     // Given
     val query = "RETURN toString(1 < 0)"
@@ -179,6 +172,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result should equal("false")
   }
 
+  // TCK'd
   test("toString should handle booleans directly") {
     // Given
     val query = "RETURN toString(true)"
@@ -190,16 +184,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result should equal("true")
   }
 
-  test("toString should fail on type Any") {
-    // When
-    val query = "WITH [2, 2.9, '1.7'] AS numbers RETURN [n in numbers | toString(n)] AS int_numbers"
-    val error = intercept[SyntaxException](executeWithAllPlannersAndCompatibilityMode(query))
-
-    // Then
-    error.getMessage should (include("Type mismatch: expected Boolean, Float, Integer or String but was Any")
-      or include("Type mismatch: expected Float, Integer or String but was Any") )
-  }
-
+  // TCK'd
   test("toString should work on an integer collection") {
     // When
     val result = executeWithAllPlannersAndCompatibilityMode("WITH [1, 2, 3] AS numbers RETURN [n in numbers | toString(n)] AS string_numbers")
@@ -208,6 +193,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("string_numbers" -> List("1", "2", "3"))))
   }
 
+  // TCK'd
   test("properties should work on nodes") {
 
     // When
@@ -219,6 +205,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result should equal(Map("name" -> "Popeye", "level" -> 9001))
   }
 
+  // TCK'd
   test("properties should work on relationships") {
 
     // When
@@ -230,6 +217,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result should equal(Map("name" -> "Popeye", "level" -> 9001))
   }
 
+  // TCK'd
   test("properties should work on maps") {
 
     // When
@@ -241,6 +229,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result should equal(Map("name" -> "Popeye", "level" -> 9001))
   }
 
+  // TCK'd
   test("properties should fail when called with an INTEGER argument") {
     a[SyntaxException] shouldBe thrownBy {
       executeScalarWithAllPlanners[Map[String, Any]](
@@ -249,6 +238,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     }
   }
 
+  // TCK'd
   test("properties should fail when called with a STRING argument") {
     a[SyntaxException] shouldBe thrownBy {
       executeScalarWithAllPlanners[Map[String, Any]](
@@ -257,6 +247,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     }
   }
 
+  // TCK'd
   test("properties should fail when called with a LIST OF BOOLEAN argument") {
     a[SyntaxException] shouldBe thrownBy {
       executeScalarWithAllPlanners[Map[String, Any]](
@@ -265,6 +256,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     }
   }
 
+  // TCK'd
   test("properties(null) should be null") {
 
     // When
@@ -274,30 +266,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result should be(null)
   }
 
-  test("case should handle mixed number types") {
-    val query =
-      """WITH 0.5 AS x
-        |WITH (CASE WHEN x < 1 THEN 1 ELSE 2.0 END) AS x
-        |RETURN x + 1
-      """.stripMargin
-
-    val result = executeScalarWithAllPlannersAndCompatibilityMode[Long](query)
-
-    result should equal(2)
-  }
-
-  test("case should handle mixed types") {
-    val query =
-      """WITH 0.5 AS x
-        |WITH (CASE WHEN x < 1 THEN "wow" ELSE true END) AS x
-        |RETURN x + "!"
-      """.stripMargin
-
-    val result = executeScalarWithAllPlannersAndCompatibilityMode[String](query)
-
-    result should equal("wow!")
-  }
-
+  // TCK'd
   test("reverse function should work as expected") {
     // When
     val result = executeScalarWithAllPlannersAndCompatibilityMode[String]("RETURN reverse('raksO')")
@@ -306,6 +275,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result should equal("Oskar")
   }
 
+  // TCK'd
   test("exists should work with dynamic property look up") {
     val node = createLabeledNode(Map("prop" -> "foo"), "Person")
     createLabeledNode("Person")
@@ -314,6 +284,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("n" -> node)))
   }
 
+  // TCK'd
   test("EXISTS should work with maps") {
     // GIVEN
     val query = "WITH {name: 'Mats', name2: 'Pontus'} AS map RETURN exists(map.name)"
@@ -325,6 +296,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result shouldBe true
   }
 
+  // TCK'd
   test("EXISTS should work with null in maps") {
     // GIVEN
     val query = "WITH {name: null} AS map RETURN exists(map.name)"
@@ -336,9 +308,10 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result shouldBe false
   }
 
+  // TCK'd
   test("EXISTS should work when key is missing") {
     // GIVEN
-    val query = "WITH {name: null} AS map RETURN exists(map.nonExistantKey)"
+    val query = "WITH {name: null} AS map RETURN exists(map.nonExistentKey)"
 
     // WHEN
     val result = executeScalarWithAllPlannersAndCompatibilityMode[Boolean](query)
@@ -347,6 +320,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result shouldBe false
   }
 
+  // TCK'd
   test("IS NOT NULL should work with maps") {
     // GIVEN
     val query = "WITH {name: 'Mats', name2: 'Pontus'} AS map RETURN map.name IS NOT NULL"
@@ -358,6 +332,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result shouldBe true
   }
 
+  // TCK'd
   test("IS NOT NULL should work with null in maps") {
     // GIVEN
     val query = "WITH {name: null} AS map RETURN map.name IS NOT NULL"
@@ -369,6 +344,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result shouldBe false
   }
 
+  // TCK'd
   test("IS NOT NULL should work when key is missing") {
     // GIVEN
     val query = "WITH {name: null} AS map RETURN map.nonExistantKey IS NOT NULL"
@@ -380,6 +356,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result shouldBe false
   }
 
+  // TCK'd
   test("percentileDisc should work in the valid range") {
     createNode("prop" -> 10.0)
     createNode("prop" -> 20.0)
@@ -390,6 +367,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     executeScalarWithAllPlannersAndCompatibilityMode[Double]("MATCH (n) RETURN percentileDisc(n.prop, 1.0)") should equal (30.0 +- 0.1)
   }
 
+  // TCK'd
   test("percentileCont should work in the valid range") {
     createNode("prop" -> 10.0)
     createNode("prop" -> 20.0)
@@ -400,6 +378,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     executeScalarWithAllPlannersAndCompatibilityMode[Double]("MATCH (n) RETURN percentileCont(n.prop, 1)") should equal (30.0 +- 0.1)
   }
 
+  // TCK'd
   test("percentileCont should fail nicely at runtime") {
     createNode("prop" -> 10.0)
     an [InvalidArgumentException] shouldBe thrownBy(
@@ -407,6 +386,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     )
   }
 
+  // TCK'd
   test("percentileDisc should fail nicely at runtime") {
     createNode("prop" -> 10.0)
     an [InvalidArgumentException] shouldBe thrownBy(
@@ -414,232 +394,23 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     )
   }
 
+  // TCK'd
   test("percentileDisc should fail nicely on more involved query") {
     for (i <- 1 to 10) {
       val node = createLabeledNode("START")
-      (1 to i).map(_ => relate(node, createNode()))
+      (1 to i).foreach(_ => relate(node, createNode()))
     }
-    an [InvalidArgumentException] shouldBe thrownBy(executeWithAllPlanners("MATCH (n:START) " +
-                                                         "WITH n, size( (n)-->() ) AS deg WHERE deg > 2 " +
-                                                         "WITH deg LIMIT 100 " +
-                                                         //mixing up the argument order
-                                                         "RETURN percentileDisc(0.90, deg), deg"))
-  }
 
-  test("point function should work with literal map") {
-    val result = executeWithAllPlanners("RETURN point({latitude: 12.78, longitude: 56.7}) as point")
-    result should useProjectionWith("Point")
-    result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
-  }
-
-  test("point function should work with literal map and cartesian coordinates") {
-    val result = executeWithAllPlanners("RETURN point({x: 2.3, y: 4.5, crs: 'cartesian'}) as point")
-    result should useProjectionWith("Point")
-    result.toList should equal(List(Map("point" -> CartesianPoint(2.3, 4.5, CRS.Cartesian))))
-  }
-
-  test("point function should work with literal map and geographic coordinates") {
-    val result = executeWithAllPlanners("RETURN point({longitude: 2.3, latitude: 4.5, crs: 'WGS-84'}) as point")
-    result should useProjectionWith("Point")
-    result.toList should equal(List(Map("point" -> GeographicPoint(2.3, 4.5, CRS.WGS84))))
-  }
-
-  test("point function should not work with literal map and incorrect cartesian CRS") {
-    an [InvalidArgumentException] shouldBe thrownBy(
-      executeWithAllPlanners("RETURN point({x: 2.3, y: 4.5, crs: 'cart'}) as point")
-    )
-  }
-
-  test("point function should not work with literal map and incorrect geographic CRS") {
-    an [InvalidArgumentException] shouldBe thrownBy(
-      executeWithAllPlanners("RETURN point({x: 2.3, y: 4.5, crs: 'WGS84'}) as point")
-    )
-  }
-
-  test("point function should work with integer arguments") {
-    val result = executeWithAllPlanners("RETURN point({x: 2, y: 4}) as point")
-    result should useProjectionWith("Point")
-    result.toList should equal(List(Map("point" -> CartesianPoint(2, 4, CRS.Cartesian))))
-  }
-
-  test("should fail properly if missing cartesian coordinates") {
-    an [InvalidArgumentException] shouldBe thrownBy(
-      executeWithAllPlanners("RETURN point({params}) as point", "params" -> Map("y" -> 1.0, "crs" -> "cartesian"))
-    )
-  }
-
-  test("should fail properly if missing geographic longitude") {
-    an [InvalidArgumentException] shouldBe thrownBy(
-      executeWithAllPlanners("RETURN point({params}) as point", "params" -> Map("latitude" -> 1.0, "crs" -> "WGS-84"))
-    )
-  }
-
-  test("should fail properly if missing geographic latitude") {
-    an [InvalidArgumentException] shouldBe thrownBy(
-      executeWithAllPlanners("RETURN point({params}) as point", "params" -> Map("longitude" -> 1.0, "crs" -> "WGS-84"))
-    )
-  }
-
-  test("should fail properly if unknown coordinate system") {
-    an [InvalidArgumentException] shouldBe thrownBy(
-      executeWithAllPlanners("RETURN point({params}) as point", "params" -> Map("x" -> 1, "y" -> 2, "crs" -> "WGS-1337"))
-    )
-  }
-
-  test("should default to Cartesian if missing cartesian CRS") {
-    val result = executeWithAllPlanners("RETURN point({x: 2.3, y: 4.5}) as point")
-    result should useProjectionWith("Point")
-    result.toList should equal(List(Map("point" -> CartesianPoint(2.3, 4.5, CRS.Cartesian))))
-  }
-
-  test("should default to WGS84 if missing geographic CRS") {
-    val result = executeWithAllPlanners("RETURN point({longitude: 2.3, latitude: 4.5}) as point")
-    result should useProjectionWith("Point")
-    result.toList should equal(List(Map("point" -> GeographicPoint(2.3, 4.5, CRS.WGS84))))
-  }
-
-  test("should allow Geographic CRS with x/y coordinates") {
-    val result = executeWithAllPlanners("RETURN point({x: 2.3, y: 4.5, crs: 'WGS-84'}) as point")
-    result should useProjectionWith("Point")
-    result.toList should equal(List(Map("point" -> GeographicPoint(2.3, 4.5, CRS.WGS84))))
-  }
-
-  test("should not allow Cartesian CRS with latitude/longitude coordinates") {
-    an [InvalidArgumentException] shouldBe thrownBy(
-      executeWithAllPlanners("RETURN point({longitude: 2.3, latitude: 4.5, crs: 'cartesian'}) as point")
-    )
-  }
-
-  test("point function should work with previous map") {
-    val result = executeWithAllPlanners("WITH {latitude: 12.78, longitude: 56.7} as data RETURN point(data) as point")
-    result should useProjectionWith("Point")
-    result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
-  }
-
-  test("distance function should work on co-located points") {
-    val result = executeWithAllPlanners("WITH point({latitude: 12.78, longitude: 56.7}) as point RETURN distance(point,point) as dist")
-    result should useProjectionWith("Point", "Distance")
-    result.toList should equal(List(Map("dist" -> 0.0)))
-  }
-
-  test("distance function should work on nearby cartesian points") {
-    val result = executeWithAllPlanners(
-      """
-        |WITH point({x: 2.3, y: 4.5, crs: 'cartesian'}) as p1, point({x: 1.1, y: 5.4, crs: 'cartesian'}) as p2
-        |RETURN distance(p1,p2) as dist
-      """.stripMargin)
-    result should useProjectionWith("Point", "Distance")
-    result.columnAs("dist").next().asInstanceOf[Double] should equal(1.5)
-  }
-
-  test("distance function should work on nearby points") {
-    val result = executeWithAllPlanners(
-      """
-        |WITH point({longitude: 12.78, latitude: 56.7}) as p1, point({latitude: 56.71, longitude: 12.79}) as p2
-        |RETURN distance(p1,p2) as dist
-      """.stripMargin)
-    result should useProjectionWith("Point", "Distance")
-    Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(1270)
-  }
-
-  test("distance function should work on distant points") {
-    val result = executeWithAllPlanners(
-      """
-        |WITH point({latitude: 56.7, longitude: 12.78}) as p1, point({longitude: -51.9, latitude: -16.7}) as p2
-        |RETURN distance(p1,p2) as dist
-      """.stripMargin)
-    result should useProjectionWith("Point", "Distance")
-    Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(10116214)
-  }
-
-  test("distance function should measure distance from Copenhagen train station to Neo4j in Malmö") {
-    val result = executeWithAllPlanners(
-      """
-        |WITH point({latitude: 55.672874, longitude: 12.564590}) as p1, point({latitude: 55.611784, longitude: 12.994341}) as p2
-        |RETURN distance(p1,p2) as dist
-      """.stripMargin)
-    result should useProjectionWith("Point", "Distance")
-    Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(27842)
-  }
-
-  test("distance function should work with two null inputs") {
-    val result = executeWithAllPlanners("RETURN distance(null, null) as dist")
-    result.toList should equal(List(Map("dist" -> null)))
-  }
-
-  test("distance function should return null with lhs null input") {
-    val result = executeWithAllPlanners("""WITH point({latitude: 55.672874, longitude: 12.564590}) as p1
-                                          |RETURN distance(null, p1) as dist""".stripMargin)
-    result.toList should equal(List(Map("dist" -> null)))
-  }
-
-  test("distance function should return null with rhs null input") {
-    val result = executeWithAllPlanners("""WITH point({latitude: 55.672874, longitude: 12.564590}) as p1
-                                          |RETURN distance(p1, null) as dist""".stripMargin)
-    result.toList should equal(List(Map("dist" -> null)))
-  }
-
-  test("distance function should fail on wrong type") {
-    val error = intercept[SyntaxException](executeWithAllPlanners("RETURN distance(1, 2) as dist"))
-    assert(error.getMessage.contains("Type mismatch: expected Point but was Integer"))
-  }
-
-  test("point function should work with node properties") {
-    // Given
-    createLabeledNode(Map("latitude" -> 12.78, "longitude" -> 56.7), "Place")
-
-    // When
-    val result = executeWithAllPlanners("MATCH (p:Place) RETURN point({latitude: p.latitude, longitude: p.longitude}) as point")
-
-    // Then
-    result should useProjectionWith("Point")
-    result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
-  }
-
-  test("point function should work with relationship properties") {
-    // Given
-    val r = relate(createNode(), createNode(), "PASS_THROUGH", Map("latitude" -> 12.78, "longitude" -> 56.7))
-
-    // When
-    val result = executeWithAllPlanners("MATCH ()-[r:PASS_THROUGH]->() RETURN point({latitude: r.latitude, longitude: r.longitude}) as point")
-
-    // Then
-    result should useProjectionWith("Point")
-    result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
-  }
-
-  test("point function should work with node as map") {
-    // Given
-    createLabeledNode(Map("latitude" -> 12.78, "longitude" -> 56.7), "Place")
-
-    // When
-    val result = executeWithAllPlanners("MATCH (p:Place) RETURN point(p) as point")
-
-    // Then
-    result should useProjectionWith("Point")
-    result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
-  }
-
-  test("point function should work with null input") {
-    val result = executeWithAllPlanners("RETURN point(null) as p")
-    result.toList should equal(List(Map("p" -> null)))
-  }
-
-  test("point function should fail on wrong type") {
-    val error = intercept[SyntaxException](executeWithAllPlanners("RETURN point(1) as dist"))
-    assert(error.getMessage.contains("Type mismatch: expected Map, Node or Relationship but was Integer"))
-  }
-
-  ignore("point function should be assignable to node property") {
-    // Given
-    createLabeledNode("Place")
-
-    // When
-    val result = executeWithAllPlanners("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78}) RETURN p.location")
-
-    // Then
-    result should useProjectionWith("Point")
-    result.toList should equal(List(Map("point" -> GeographicPoint(56.7, 12.78, CRS.WGS84))))
+    an [InvalidArgumentException] shouldBe thrownBy {
+      // mixing up the argument order
+      executeWithAllPlanners("""MATCH (n:START)
+                               |WITH n, size( (n)-->() ) AS deg
+                               |WHERE deg > 2
+                               |WITH deg
+                               |LIMIT 100
+                               |RETURN percentileDisc(0.90, deg), deg
+                               """.stripMargin)
+    }
   }
 
   test("id on a node should work in both runtimes")  {
@@ -665,6 +436,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("id(r)" -> expected)))
   }
 
+  // TCK'd
   test("type should work in both runtimes")  {
     // GIVEN
     relate(createNode(), createNode(), "T")
@@ -676,6 +448,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("type(r)" -> "T")))
   }
 
+  // TCK'd
   test("nested type should work in both runtimes")  {
     val intermediate = createNode()
     // GIVEN
@@ -689,6 +462,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("type(r1)" -> "T1", "type(r2)" -> "T2")))
   }
 
+  // TCK'd
   test("type should handle optional when null")  {
     // GIVEN
     createNode()
@@ -700,6 +474,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("type(r)" -> null)))
   }
 
+  // TCK'd
   test("type should handle optional when both null and match")  {
     // GIVEN
     relate(createNode(), createNode(), "T")
@@ -711,10 +486,12 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("type(r)" -> "T"), Map("type(r)" -> null)))
   }
 
+  // TCK'd
   test("type should fail nicely when not given a relationship")  {
     // GIVEN
     relate(createNode(), createNode(), "T")
-    val query: String = "MATCH (a)-[r]->() WITH [r, 1] as coll RETURN [x in coll | type(x) ]"
+
+    val query = "MATCH (a)-[r]->() WITH [r, 1] as coll RETURN [x in coll | type(x) ]"
 
     //Expect
     a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER runtime=compiled $query", Map.empty[String,Any], graph.session()))
@@ -723,7 +500,8 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER planner=rule $query", Map.empty[String,Any], graph.session()))
   }
 
-  test("should handle a collection of values that individually are OK") {
+  // TCK'd
+  test("should handle a list of values that individually are OK") {
     //"match (n) return toString(n) "
     val result = executeWithAllPlanners("RETURN [x in [1, 2.3, true, 'apa' ] | toString(x) ] as col")
     result.toList should equal(List(Map("col"-> Seq("1", "2.3", "true", "apa"))))
