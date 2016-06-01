@@ -42,10 +42,10 @@ class VerifyingRaftLog implements RaftLog
     }
 
     @Override
-    public long append( RaftLogEntry entry ) throws IOException
+    public long append( RaftLogEntry... entries ) throws IOException
     {
-        long appendIndex = expected.append( entry );
-        assertEquals( appendIndex, other.append( entry ) );
+        long appendIndex = expected.append( entries );
+        assertEquals( appendIndex, other.append( entries ) );
         return appendIndex;
     }
 

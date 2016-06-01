@@ -36,7 +36,17 @@ public class InMemoryRaftLog implements RaftLog
     private long term = -1;
 
     @Override
-    public synchronized long append( RaftLogEntry logEntry ) throws IOException
+    public synchronized long append( RaftLogEntry... entries ) throws IOException
+    {
+        long newAppendIndex = appendIndex;
+        for ( RaftLogEntry entry : entries )
+        {
+            newAppendIndex = appendSingle( entry );
+        }
+        return newAppendIndex;
+    }
+
+    private synchronized long appendSingle( RaftLogEntry logEntry ) throws IOException
     {
         Objects.requireNonNull( logEntry );
         if ( logEntry.term() >= term )

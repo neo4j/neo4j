@@ -40,7 +40,7 @@ public interface RaftLog extends ReadableRaftLog
      * @param entry The log entry.
      * @return the index at which the entry was appended.
      */
-    long append( RaftLogEntry entry ) throws IOException;
+    long append( RaftLogEntry... entry ) throws IOException;
 
     /**
      * Truncates the log starting from the supplied index. Committed
