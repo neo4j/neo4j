@@ -87,6 +87,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
 
   // No predicate
 
+  // TCK'd
   test("should handle triadic friend of a friend") {
     // Given
     val nodes = makeTriadicModel()
@@ -96,6 +97,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     result.columnAs("c.name").toSet[Node] should equal(Set("c11", "c12", "c21", "c22", "b2", "b3"))
   }
 
+  // TCK'd
   test("should handle triadic friend of a friend with no re-type") {
     // Given
     val nodes = makeTriadicModel()
@@ -107,6 +109,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
 
   // Negative predicate
 
+  // TCK'd
   test("should handle triadic friend of a friend that is not a friend") {
     // Given
     val nodes = makeTriadicModel()
@@ -116,6 +119,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     result.columnAs("c.name").toSet[Node] should equal(Set("c11", "c12", "c21", "c22", "b3"))
   }
 
+  // TCK'd
   test("should handle triadic friend of a friend that is not a friend with different rel-type") {
     // Given
     val nodes = makeTriadicModel()
@@ -125,6 +129,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     result.columnAs("c.name").toSet[Node] should equal(Set("c11", "c12", "c21", "c22", "b2"))
   }
 
+  // TCK'd
   test("should handle triadic friend of a friend that is not a friend with superset of rel-type") {
     // Given
     val nodes = makeTriadicModel()
@@ -134,6 +139,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     result.columnAs("c.name").toSet[Node] should equal(Set("c11", "c12", "c21", "c22"))
   }
 
+  // TCK'd
   test("should handle triadic friend of a friend that is not a friend with implicit subset of rel-type") {
     // Given
     val nodes = makeTriadicModel()
@@ -143,6 +149,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     result.columnAs("c.name").toSet[Node] should equal(Set("c11", "c12", "c21", "c22", "c31", "c32", "c41", "c42", "b3", "b4"))
   }
 
+  // TCK'd
   test("should handle triadic friend of a friend that is not a friend with explicit subset of rel-type") {
     // Given
     val nodes = makeTriadicModel()
@@ -152,6 +159,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     result.columnAs("c.name").toSet[Node] should equal(Set("c11", "c12", "c21", "c22", "c31", "c32", "c41", "c42", "b3", "b4"))
   }
 
+  // TCK'd
   test("should handle triadic friend of a friend that is not a friend with same labels") {
     // Given
     val nodes = makeTriadicModel(bLabel = "X", cLabel1 = "X", cLabel2 = "Y")
@@ -161,6 +169,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     result.columnAs("c.name").toSet[Node] should equal(Set("c11", "c21", "b3"))
   }
 
+  // TCK'd
   test("should handle triadic friend of a friend that is not a friend with different labels") {
     // Given
     val nodes = makeTriadicModel(bLabel = "X", cLabel1 = "X", cLabel2 = "Y")
@@ -170,6 +179,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     result.columnAs("c.name").toSet[Node] should equal(Set("c12", "c22"))
   }
 
+  // TCK'd
   test("should handle triadic friend of a friend that is not a friend with implicit subset of labels") {
     // Given
     val nodes = makeTriadicModel(bLabel = "X", cLabel1 = "X", cLabel2 = "Y")
@@ -179,6 +189,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     result.columnAs("c.name").toSet[Node] should equal(Set("c11", "c21", "b3"))
   }
 
+  // TCK'd
   test("should handle triadic friend of a friend that is not a friend with implicit superset of labels") {
     // Given
     val nodes = makeTriadicModel(bLabel = "X", cLabel1 = "X", cLabel2 = "Y")
@@ -190,6 +201,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
 
   // Positive predicate
 
+  // TCK'd
   test("should handle triadic friend of a friend that is a friend") {
     // Given
     val nodes = makeTriadicModel()
@@ -199,6 +211,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     result.columnAs("c.name").toSet[Node] should equal(Set("b2"))
   }
 
+  // TCK'd
   test("should handle triadic friend of a friend that is a friend with different rel-type") {
     // Given
     val nodes = makeTriadicModel()
@@ -208,6 +221,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     result.columnAs("c.name").toSet[Node] should equal(Set("b3"))
   }
 
+  // TCK'd
   test("should handle triadic friend of a friend that is a friend with superset of rel-type") {
     // Given
     val nodes = makeTriadicModel()
@@ -217,6 +231,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     result.columnAs("c.name").toSet[Node] should equal(Set("b2", "b3"))
   }
 
+  // TCK'd
   test("should handle triadic friend of a friend that is a friend with implicit subset of rel-type") {
     // Given
     val nodes = makeTriadicModel()
@@ -226,6 +241,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     result.columnAs("c.name").toSet[Node] should equal(Set("b1", "b2"))
   }
 
+  // TCK'd
   test("should handle triadic friend of a friend that is a friend with explicit subset of rel-type") {
     // Given
     val nodes = makeTriadicModel()
@@ -235,6 +251,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     result.columnAs("c.name").toSet[Node] should equal(Set("b1", "b2"))
   }
 
+  // TCK'd
   test("should handle triadic friend of a friend that is a friend with same labels") {
     // Given
     val nodes = makeTriadicModel(bLabel = "X", cLabel1 = "X", cLabel2 = "Y")
@@ -244,6 +261,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     result.columnAs("c.name").toSet[Node] should equal(Set("b2"))
   }
 
+  // TCK'd
   test("should handle triadic friend of a friend that is a friend with different labels") {
     // Given
     val nodes = makeTriadicModel(bLabel = "X", cLabel1 = "X", cLabel2 = "Y")
@@ -253,6 +271,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     result.columnAs("c.name").toSet[Node] should equal(Set.empty)
   }
 
+  // TCK'd
   test("should handle triadic friend of a friend that is a friend with implicit subset of labels") {
     // Given
     val nodes = makeTriadicModel(bLabel = "X", cLabel1 = "X", cLabel2 = "Y")
@@ -262,6 +281,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite
     result.columnAs("c.name").toSet[Node] should equal(Set("b2"))
   }
 
+  // TCK'd
   test("should handle triadic friend of a friend that is a friend with implicit superset of labels") {
     // Given
     val nodes = makeTriadicModel(bLabel = "X", cLabel1 = "X", cLabel2 = "Y")
