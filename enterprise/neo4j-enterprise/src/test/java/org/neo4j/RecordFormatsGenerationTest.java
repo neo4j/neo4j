@@ -62,17 +62,11 @@ public class RecordFormatsGenerationTest
 
     private static List<Integer> allGenerations()
     {
-        return allRecordFormats().stream()
-                .map( RecordFormats::generation )
-                .sorted()
-                .collect( toList() );
-    }
-
-    private static List<RecordFormats> allRecordFormats()
-    {
         return Arrays.stream( StoreVersion.values() )
                 .map( StoreVersion::string )
                 .map( RecordFormatSelector::selectForVersion )
+                .map( RecordFormats::generation )
+                .sorted()
                 .collect( toList() );
     }
 

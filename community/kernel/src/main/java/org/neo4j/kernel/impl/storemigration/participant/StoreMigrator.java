@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.Random;
 import java.util.function.BiConsumer;
 
@@ -597,8 +596,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     public void rebuildCounts( File storeDir, String versionToMigrateFrom, String versionToMigrateTo ) throws
             IOException
     {
-        if ( Objects.equals( versionToMigrateFrom, StandardV2_1.STORE_VERSION ) ||
-             Objects.equals( versionToMigrateFrom, StandardV2_2.STORE_VERSION ) )
+        if ( StandardV2_1.STORE_VERSION.equals( versionToMigrateFrom ) ||
+             StandardV2_2.STORE_VERSION.equals( versionToMigrateFrom ) )
         {
             // create counters from scratch
             Iterable<StoreFile> countsStoreFiles =
