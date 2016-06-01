@@ -157,6 +157,7 @@ public class BackupServiceIT
             // when
             backupService().doFullBackup( "", 0, backupDir.getAbsolutePath(), true, new Config(),
                     BackupClient.BIG_READ_TIMEOUT, false );
+            fail( "No exception thrown ");
         }
         catch ( RuntimeException ex )
         {
