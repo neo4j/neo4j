@@ -19,14 +19,19 @@
  */
 package org.neo4j.kernel.impl.locking.community;
 
-import org.neo4j.kernel.impl.locking.LockingCompatibilityTestSuite;
-import org.neo4j.kernel.impl.locking.Locks;
-
-public class CommunityLocksCompatibility extends LockingCompatibilityTestSuite
+/**
+ * Shows whether or not the associated {@link CommunityLockClient} should be terminated.
+ */
+public interface CommunityLockClientTermination
 {
-    @Override
-    protected Locks createLockManager()
+    CommunityLockClientTermination NONE = new CommunityLockClientTermination()
     {
-        return new CommunityLockManger();
-    }
+        @Override
+        public boolean shouldBeTerminated()
+        {
+            return false;
+        }
+    };
+
+    boolean shouldBeTerminated();
 }

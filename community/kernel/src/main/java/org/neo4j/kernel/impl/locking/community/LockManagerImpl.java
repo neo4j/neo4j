@@ -43,10 +43,10 @@ public class LockManagerImpl
         return ragManager.getDeadlockCount();
     }
 
-    public void getReadLock( Object resource, Object tx )
+    public void getReadLock( Object resource, Object tx, CommunityLockClientTermination termination )
         throws DeadlockDetectedException, IllegalResourceException
     {
-        getRWLockForAcquiring( resource, tx ).acquireReadLock( tx );
+        getRWLockForAcquiring( resource, tx ).acquireReadLock( tx, termination );
     }
 
     public boolean tryReadLock( Object resource, Object tx )
@@ -55,10 +55,10 @@ public class LockManagerImpl
         return getRWLockForAcquiring( resource, tx ).tryAcquireReadLock( tx );
     }
 
-    public void getWriteLock( Object resource, Object tx )
+    public void getWriteLock( Object resource, Object tx, CommunityLockClientTermination termination )
         throws DeadlockDetectedException, IllegalResourceException
     {
-        getRWLockForAcquiring( resource, tx ).acquireWriteLock( tx );
+        getRWLockForAcquiring( resource, tx ).acquireWriteLock( tx, termination );
     }
 
     public boolean tryWriteLock( Object resource, Object tx )

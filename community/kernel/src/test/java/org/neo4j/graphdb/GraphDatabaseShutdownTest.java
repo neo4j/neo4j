@@ -19,11 +19,11 @@
  */
 package org.neo4j.graphdb;
 
+import org.junit.Test;
+
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
-
-import org.junit.Test;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -32,12 +32,12 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-
+import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.Exceptions.rootCause;
 
@@ -130,10 +130,12 @@ public class GraphDatabaseShutdownTest
         try
         {
             secondTxResult.get( 60, SECONDS );
+            fail( "exception expected" );
         }
         catch ( Exception e )
         {
-            assertThat( rootCause( e ), instanceOf( TransactionFailureException.class ) );
+            assertThat( rootCause( e ), anyOf( instanceOf( TransactionFailureException.class ),
+                    instanceOf( TransactionTerminatedException.class ) ) );
         }
     }
 

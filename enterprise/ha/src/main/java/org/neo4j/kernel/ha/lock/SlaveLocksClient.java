@@ -237,6 +237,12 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
+    public void markForTermination()
+    {
+        client.markForTermination();
+    }
+
+    @Override
     public void close()
     {
         try

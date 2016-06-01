@@ -37,7 +37,6 @@ import org.neo4j.test.OtherThreadRule;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
-
 import static org.neo4j.test.OtherThreadRule.isWaiting;
 
 /** Base for locking tests. */
@@ -47,7 +46,8 @@ import static org.neo4j.test.OtherThreadRule.isWaiting;
         DeadlockCompatibility.class,
         LockReentrancyCompatibility.class,
         RWLockCompatibility.class,
-        CloseCompatibility.class
+        CloseCompatibility.class,
+        TerminationCompatibility.class
 })
 public abstract class LockingCompatibilityTestSuite
 {

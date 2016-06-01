@@ -101,6 +101,8 @@ public interface Locks extends Lifecycle
         /** Release all locks. */
         void releaseAll();
 
+        void markForTermination();
+
         /** Releases all locks, using the client after calling this is undefined. */
         @Override
         void close();

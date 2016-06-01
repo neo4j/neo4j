@@ -19,13 +19,12 @@
  */
 package org.neo4j.kernel.impl.locking.community;
 
-import static org.mockito.Mockito.mock;
+import org.junit.Test;
 
 import javax.transaction.Transaction;
 
 import static org.junit.Assert.assertEquals;
-
-import org.junit.Test;
+import static org.mockito.Mockito.mock;
 
 public class RWLockLeakTest
 {
@@ -38,7 +37,7 @@ public class RWLockLeakTest
         final Transaction tx1 = mock( Transaction.class );
         
         lock.mark();
-        lock.acquireWriteLock( tx1 );
+        lock.acquireWriteLock( tx1, CommunityLockClientTermination.NONE );
         lock.mark();
         
         assertEquals( 1, lock.getTxLockElementCount() );
@@ -55,7 +54,7 @@ public class RWLockLeakTest
         final Transaction tx1 = mock( Transaction.class );
         
         lock.mark();
-        lock.acquireReadLock( tx1 );
+        lock.acquireReadLock( tx1, CommunityLockClientTermination.NONE );
         lock.mark();
         
         assertEquals( 1, lock.getTxLockElementCount() );

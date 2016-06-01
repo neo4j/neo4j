@@ -28,13 +28,15 @@ import org.neo4j.kernel.impl.locking.Locks;
 
 import static java.lang.String.format;
 
-public class CommunityLockClient implements Locks.Client
+public class CommunityLockClient implements Locks.Client, CommunityLockClientTermination
 {
     private final LockManagerImpl manager;
     private final LockTransaction lockTransaction = new LockTransaction();
 
     private final PrimitiveIntObjectMap<PrimitiveLongObjectMap<LockResource>> sharedLocks = Primitive.intObjectMap();
     private final PrimitiveIntObjectMap<PrimitiveLongObjectMap<LockResource>> exclusiveLocks = Primitive.intObjectMap();
+
+    private volatile boolean markedForTermination;
 
     public CommunityLockClient( LockManagerImpl manager )
     {
@@ -55,7 +57,7 @@ public class CommunityLockClient implements Locks.Client
             }
 
             resource = new LockResource( resourceType, resourceId );
-            manager.getReadLock( resource, lockTransaction );
+            manager.getReadLock( resource, lockTransaction, this );
             localLocks.put(resourceId, resource);
         }
     }
@@ -74,7 +76,7 @@ public class CommunityLockClient implements Locks.Client
             }
 
             resource = new LockResource( resourceType, resourceId );
-            manager.getWriteLock( resource, lockTransaction );
+            manager.getWriteLock( resource, lockTransaction, this );
             localLocks.put(resourceId, resource);
         }
     }
@@ -185,8 +187,21 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
+    public void markForTermination()
+    {
+        markedForTermination = true;
+    }
+
+    @Override
+    public boolean shouldBeTerminated()
+    {
+        return markedForTermination;
+    }
+
+    @Override
     public void close()
     {
+        markedForTermination = false;
         releaseAll();
     }
 

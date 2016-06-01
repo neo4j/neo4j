@@ -27,6 +27,7 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.xa.XAResource;
 
+import org.neo4j.kernel.impl.locking.community.CommunityLockClientTermination;
 import org.neo4j.kernel.impl.locking.community.LockManagerImpl;
 import org.neo4j.kernel.impl.locking.community.RagManager;
 
@@ -275,7 +276,7 @@ public class LockServiceMicroBenchmark
         public Lock acquireNodeLock( long nodeId, LockType type )
         {
             AbstractLockService.LockedNode resource = new AbstractLockService.LockedNode( nodeId );
-            getWriteLock( resource, threadMark.get() );
+            getWriteLock( resource, threadMark.get(), CommunityLockClientTermination.NONE );
             return new WriteRelease( resource );
         }
 

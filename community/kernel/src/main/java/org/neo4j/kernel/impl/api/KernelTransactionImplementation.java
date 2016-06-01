@@ -120,6 +120,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
+    private static final boolean TX_TERMINATION_AWARE_LOCKS = Boolean.getBoolean( "tx_termination_aware_locks" );
+
     // Logic
     private final SchemaWriteGuard schemaWriteGuard;
     private final IndexingService indexService;
@@ -250,6 +252,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             failure = true;
             terminated = true;
+            if ( TX_TERMINATION_AWARE_LOCKS )
+            {
+                locks.markForTermination();
+            }
             transactionMonitor.transactionTerminated();
         }
     }

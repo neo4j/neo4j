@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.LockType;
@@ -31,7 +32,6 @@ import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
 
 import static java.lang.Thread.currentThread;
 import static java.lang.Thread.interrupted;
-
 import static org.neo4j.kernel.impl.locking.LockType.READ;
 import static org.neo4j.kernel.impl.locking.LockType.WRITE;
 
@@ -143,7 +143,8 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
      * @throws DeadlockDetectedException
      *             if a deadlock is detected
      */
-    synchronized void acquireReadLock( Object tx ) throws DeadlockDetectedException
+    synchronized void acquireReadLock( Object tx, CommunityLockClientTermination termination )
+            throws DeadlockDetectedException
     {
         TxLockElement tle = getOrCreateLockElement( tx );
 
@@ -151,30 +152,9 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
         {
             tle.movedOn = false;
 
-            boolean shouldAddWait = true;
-            Thread currentThread = currentThread();
-
             while ( totalWriteCount > tle.writeCount )
             {
-                ragManager.checkWaitOn( this, tx );
-
-                if (shouldAddWait)
-                {
-                    waitingThreadList.addFirst( new WaitElement( tle, READ, currentThread) );
-                }
-
-                try
-                {
-                    wait();
-                    shouldAddWait = false;
-                }
-                catch ( InterruptedException e )
-                {
-                    interrupted();
-
-                    shouldAddWait = true;
-                }
-                ragManager.stopWaitOn( this, tx );
+                acquireLock( READ, tx, termination, tle );
             }
 
             registerReadLockAcquired( tx, tle );
@@ -306,16 +286,6 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
     }
 
     /**
-     * Calls {@link #acquireWriteLock(Object)} with the
-     * transaction associated with the current thread.
-     * @throws DeadlockDetectedException
-     */
-    void acquireWriteLock() throws DeadlockDetectedException
-    {
-        acquireWriteLock( null );
-    }
-
-    /**
      * Tries to acquire write lock for a given transaction. If
      * <CODE>this.writeCount</CODE> is greater than the currents tx's write
      * count or the read count is greater than the currents tx's read count the
@@ -328,7 +298,8 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
      * @throws DeadlockDetectedException
      *             if a deadlock is detected
      */
-    synchronized void acquireWriteLock( Object tx ) throws DeadlockDetectedException
+    synchronized void acquireWriteLock( Object tx, CommunityLockClientTermination termination )
+            throws DeadlockDetectedException
     {
         TxLockElement tle = getOrCreateLockElement( tx );
 
@@ -336,30 +307,9 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
         {
             tle.movedOn = false;
 
-            boolean shouldAddWait = true;
-            Thread currentThread = currentThread();
-
             while ( totalWriteCount > tle.writeCount || totalReadCount > tle.readCount )
             {
-                ragManager.checkWaitOn( this, tx );
-
-                if (shouldAddWait)
-                {
-                    waitingThreadList.addFirst( new WaitElement( tle, WRITE, currentThread) );
-                }
-
-                try
-                {
-                    wait();
-                    shouldAddWait = false;
-                }
-                catch ( InterruptedException e )
-                {
-                    interrupted();
-
-                    shouldAddWait = true;
-                }
-                ragManager.stopWaitOn( this, tx );
+                acquireLock( WRITE, tx, termination, tle );
             }
 
             registerWriteLockAcquired( tx, tle );
@@ -543,6 +493,46 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
     public String toString()
     {
         return "RWLock[" + resource + ", hash="+hashCode()+"]";
+    }
+
+    private void acquireLock( LockType type, Object tx, CommunityLockClientTermination termination, TxLockElement tle )
+    {
+        ragManager.checkWaitOn( this, tx );
+        WaitElement waitElement = new WaitElement( tle, type, currentThread() );
+        waitingThreadList.addFirst( waitElement );
+
+        try
+        {
+            waitForLock( termination, waitElement );
+        }
+        finally
+        {
+            ragManager.stopWaitOn( this, tx );
+        }
+    }
+
+    private void waitForLock( CommunityLockClientTermination termination, WaitElement waitElement )
+    {
+        try
+        {
+            while ( true )
+            {
+                // we can exit from this loop only by throwing InterruptedException
+                // this is fine because current thread will be interrupted when lock in question is released
+                wait( 10 );
+                
+                if ( termination.shouldBeTerminated() )
+                {
+                    // remove all signs of our waiting
+                    waitingThreadList.remove( waitElement );
+                    throw new TransactionTerminatedException();
+                }
+            }
+        }
+        catch ( InterruptedException e )
+        {
+            interrupted();
+        }
     }
 
     private void registerReadLockAcquired( Object tx, TxLockElement tle )
