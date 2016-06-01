@@ -34,10 +34,10 @@ import static org.neo4j.unsafe.impl.batchimport.RecordIdIteration.backwards;
 public class RelationshipLinkbackStage extends Stage
 {
     public RelationshipLinkbackStage( String topic, Configuration config, RelationshipStore store,
-            NodeRelationshipCache cache, long firstRelationshipId, boolean denseNodes )
+            NodeRelationshipCache cache, long lowRelationshipId, long highRelationshipId, boolean denseNodes )
     {
         super( "Relationship --> Relationship" + topic, config );
-        add( new ReadRecordsStep<>( control(), config, store, backwards( store.getHighId(), firstRelationshipId ) ) );
+        add( new ReadRecordsStep<>( control(), config, store, backwards( highRelationshipId, lowRelationshipId ) ) );
         add( new RecordProcessorStep<>( control(), "LINK", config,
                 new RelationshipLinkbackProcessor( cache, denseNodes ), false ) );
         add( new UpdateRecordsStep<>( control(), config, store ) );
