@@ -239,11 +239,13 @@ class BackupService
     {
         if ( !directoryContainsDb( targetDirectory ) )
         {
+            logger.info( "Previous backup not found, a new full backup will be performed." );
             return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirectory, verification, config, timeout,
                     forensics );
         }
         try
         {
+            logger.info( "Previous backup found, trying incremental backup." );
             return doIncrementalBackup(
                     sourceHostNameOrIp, sourcePort, targetDirectory, verification, timeout, config );
         }

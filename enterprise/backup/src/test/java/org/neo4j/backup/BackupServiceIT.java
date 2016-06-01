@@ -72,8 +72,10 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SystemOutLogging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.Barrier;
@@ -94,6 +96,8 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.backup.BackupServiceStressTestingBuilder.untilTimeExpired;
 
 public class BackupServiceIT
@@ -143,7 +147,62 @@ public class BackupServiceIT
 
     private BackupService backupService()
     {
-        return new BackupService( fileSystem, new SystemOutLogging(), new Monitors() );
+        return backupService( new SystemOutLogging() );
+    }
+
+    private BackupService backupService( Logging logging )
+    {
+        return new BackupService( fileSystem, logging, new Monitors() );
+    }
+
+    @Test
+    public void shouldPrintThatFullBackupIsPerformed() throws Exception
+    {
+        defaultBackupPortHostParams();
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+
+        Logging logger = mock( Logging.class );
+        StringLogger stringLogger = mock( StringLogger.class );
+        when( logger.getMessagesLog( BackupService.class ) ).thenReturn( stringLogger );
+
+        backupService( logger ).doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort,
+                backupDir.getAbsolutePath(), false, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
+
+        verify( stringLogger ).info( "Previous backup not found, a new full backup will be performed." );
+    }
+
+    @Test
+    public void shouldPrintThatIncrementalBackupIsPerformedAndFallingBackToFull() throws Exception
+    {
+        defaultBackupPortHostParams();
+        Config defaultConfig = dbRule.getConfigCopy();
+        dbRule.setConfig( GraphDatabaseSettings.keep_logical_logs, "false" );
+        // have logs rotated on every transaction
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+
+        createAndIndexNode( db, 1 );
+
+        // A full backup
+        backupService().doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig,
+                BackupClient.BIG_READ_TIMEOUT, false );
+
+        // And the log the backup uses is rotated out
+        createAndIndexNode( db, 2 );
+        rotate( db );
+        createAndIndexNode( db, 3 );
+        rotate( db );
+        createAndIndexNode( db, 4 );
+        rotate( db );
+
+        Logging logger = mock( Logging.class );
+        StringLogger stringLogger = mock( StringLogger.class );
+        when( logger.getMessagesLog( BackupService.class ) ).thenReturn( stringLogger );
+
+        backupService( logger ).doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort,
+                backupDir.getAbsolutePath(), false, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
+
+        verify( stringLogger ).info( "Previous backup found, trying incremental backup." );
+        verify( stringLogger ).info( "Existing backup is too far out of date, a new full backup will be performed." );
     }
 
     @Test
