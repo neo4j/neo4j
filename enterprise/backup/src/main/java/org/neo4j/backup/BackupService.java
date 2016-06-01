@@ -22,6 +22,7 @@ package org.neo4j.backup;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -353,6 +354,10 @@ class BackupService
             if ( e.getCause() != null && e.getCause() instanceof MissingLogDataException )
             {
                 throw new IncrementalBackupNotPossibleException( TOO_OLD_BACKUP, e.getCause() );
+            }
+            if ( e.getCause() != null && e.getCause() instanceof ConnectException )
+            {
+                throw new RuntimeException( e.getMessage(), e.getCause() );
             }
             throw new RuntimeException( "Failed to perform incremental backup.", e );
         }

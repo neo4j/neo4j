@@ -28,6 +28,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -143,6 +144,47 @@ public class BackupServiceIT
     private BackupService backupService()
     {
         return new BackupService( fileSystem, new SystemOutLogging(), new Monitors() );
+    }
+
+    @Test
+    public void shouldThrowUsefulMessageWhenCannotConnectDuringFullBackup() throws Exception
+    {
+        try
+        {
+            backupService().doIncrementalBackupOrFallbackToFull( BACKUP_HOST, 56789, backupDir.getAbsolutePath(), false,
+                    dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
+            fail( "No exception thrown" );
+        }
+        catch ( RuntimeException e )
+        {
+            assertThat( e.getMessage(), containsString( "BackupClient could not connect" ) );
+            assertThat( e.getCause(), instanceOf( ConnectException.class ) );
+        }
+    }
+
+    @Test
+    public void shouldThrowUsefulMessageWhenCannotConnectDuringIncrementalBackup() throws Exception
+    {
+        defaultBackupPortHostParams();
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        BackupService backupService = backupService();
+
+        createAndIndexNode( db, 1 );
+
+        // A full backup
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
+                false, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
+        try
+        {
+            backupService().doIncrementalBackupOrFallbackToFull( BACKUP_HOST, 56789, backupDir.getAbsolutePath(), false,
+                    dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
+            fail( "No exception thrown" );
+        }
+        catch ( RuntimeException e )
+        {
+            assertThat( e.getMessage(), containsString( "BackupClient could not connect" ) );
+            assertThat( e.getCause(), instanceOf( ConnectException.class ) );
+        }
     }
 
     @Test
