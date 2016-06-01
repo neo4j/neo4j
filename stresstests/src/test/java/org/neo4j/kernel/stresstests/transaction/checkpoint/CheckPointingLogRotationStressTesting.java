@@ -56,6 +56,8 @@ public class CheckPointingLogRotationStressTesting
     private static final String DEFAULT_PAGE_CACHE_MEMORY = "2g";
     private static final String DEFAULT_PAGE_SIZE = "8k";
 
+    private static final int CHECK_POINT_INTERVAL_SECONDS = 60;
+
     @Test
     public void shouldBehaveCorrectlyUnderStress() throws Throwable
     {
@@ -81,14 +83,16 @@ public class CheckPointingLogRotationStressTesting
                 .setConfig( GraphDatabaseSettings.pagecache_memory, pageCacheMemory )
                 .setConfig( GraphDatabaseSettings.mapped_memory_page_size, pageSize )
                 .setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME )
-                .setConfig( GraphDatabaseSettings.check_point_interval_time, "1m" )
+                .setConfig( GraphDatabaseSettings.check_point_interval_time, CHECK_POINT_INTERVAL_SECONDS + "s" )
                 .setConfig( GraphDatabaseFacadeFactory.Configuration.tracer, "timer" )
                 .newGraphDatabase();
 
         System.out.println("3/6\tWarm up db...");
         try ( Workload workload = new Workload( db, defaultRandomMutation( nodeCount, db ), threads ) )
         {
-            workload.run( TimeUnit.SECONDS.toMillis( 30 ), Workload.TransactionThroughput.NONE );
+            // make sure to run at least one checkpoint during warmup
+            long warmUpTimeMillis = TimeUnit.SECONDS.toMillis( CHECK_POINT_INTERVAL_SECONDS + 30 );
+            workload.run( warmUpTimeMillis, Workload.TransactionThroughput.NONE );
         }
 
         System.out.println( "4/6\tStarting workload..." );
