@@ -51,6 +51,7 @@ import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.logging.Level;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 
 import static java.util.Collections.emptyMap;
@@ -178,6 +179,7 @@ public class Cluster
     {
         Map<String,String> params = stringMap();
         params.put( "dbms.mode", serverType );
+        params.put( GraphDatabaseSettings.store_internal_log_level.name(), Level.DEBUG.name() );
         params.put( CoreEdgeClusterSettings.cluster_name.name(), CLUSTER_NAME );
         params.put( CoreEdgeClusterSettings.server_id.name(), String.valueOf( serverId ) );
         params.put( CoreEdgeClusterSettings.initial_core_cluster_members.name(), initialHosts );
