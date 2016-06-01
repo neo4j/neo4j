@@ -19,16 +19,16 @@
  */
 package org.neo4j.coreedge.backup;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.coreedge.convert.ConvertClassicStoreCommand;
@@ -47,6 +47,7 @@ import org.neo4j.test.rule.SuppressOutput;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+
 import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.test.rule.SuppressOutput.suppress;
@@ -119,10 +120,15 @@ public class BackupCoreIT
         DbRepresentation beforeBackup = DbRepresentation.of( db );
         String[] args = backupArguments(backupAddress(db), backupPath.getPath() );
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( args ) );
+
+        // when we shutdown the cluster we lose the number of core servers so we won't go through the for loop unless
+        // we capture the count beforehand
+        int numberOfCoreServers = cluster.coreServers().size();
+
         cluster.shutdown();
 
         // when
-        for ( int i = 0; i < cluster.coreServers().size(); i++ )
+        for ( int i = 0; i < numberOfCoreServers; i++ )
         {
             File coreStoreDir = cluster.coreServerStoreDirectory( i );
             FileUtils.deleteRecursively( coreStoreDir );
