@@ -22,8 +22,6 @@ package org.neo4j.coreedge.raft.log.naive;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
-import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.log.debug.LogPrinter;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
