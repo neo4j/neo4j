@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
@@ -75,7 +76,7 @@ public class SessionStateMachine implements Session, SessionState
                         try
                         {
                             AuthenticationResult authResult = ctx.spi.authenticate( authToken );
-                            ctx.accessMode = authResult.getAccessMode();
+                            ctx.authSubject = authResult.getAuthSubject();
                             ctx.credentialsExpired = authResult.credentialsExpired();
                             ctx.result( authResult.credentialsExpired() );
                             ctx.spi.udcRegisterClient( clientName );
@@ -110,7 +111,7 @@ public class SessionStateMachine implements Session, SessionState
                     public State beginTransaction( SessionStateMachine ctx )
                     {
                         assert ctx.currentTransaction == null;
-                        ctx.currentTransaction = ctx.spi.beginTransaction( explicit, ctx.accessMode );
+                        ctx.currentTransaction = ctx.spi.beginTransaction( explicit, ctx.authSubject );
                         return IN_TRANSACTION;
                     }
 
@@ -144,7 +145,7 @@ public class SessionStateMachine implements Session, SessionState
                         // NOTE: If we move away from doing implicit transactions this
                         // way, we need a different way to kill statements running in implicit
                         // transactions, because we do that by calling #terminate() on this tx.
-                        ctx.currentTransaction = ctx.spi.beginTransaction( implicit, ctx.accessMode );
+                        ctx.currentTransaction = ctx.spi.beginTransaction( implicit, ctx.authSubject );
                         return IN_TRANSACTION;
                     }
 
@@ -455,9 +456,16 @@ public class SessionStateMachine implements Session, SessionState
                     ctx.error( Neo4jError.from( e ) );
                 }
             }
-            if ( ctx.accessMode != null )
+            if ( ctx.authSubject != null )
             {
-                ctx.spi.logout( ctx.accessMode );
+                try
+                {
+                    ctx.authSubject.logout();
+                }
+                catch ( Throwable e )
+                {
+                    ctx.error( Neo4jError.from( e ) );
+                }
             }
             return STOPPED;
         }
@@ -558,7 +566,7 @@ public class SessionStateMachine implements Session, SessionState
     private Object currentAttachment;
 
     /** The current session auth state to be used for starting transactions */
-    private AccessMode accessMode;
+    private AuthSubject authSubject;
 
     /**
      * If the current user has provided valid but needs-to-be-changed credentials,
@@ -599,7 +607,6 @@ public class SessionStateMachine implements Session, SessionState
         RecordStream run( SessionStateMachine ctx, String statement, Map<String, Object> params )
                 throws KernelException;
         AuthenticationResult authenticate( Map<String, Object> authToken ) throws AuthenticationException;
-        void logout( AccessMode accessMode );
         void udcRegisterClient( String clientName );
         Statement currentStatement();
     }
@@ -611,7 +618,7 @@ public class SessionStateMachine implements Session, SessionState
     public SessionStateMachine( SPI spi )
     {
         this.spi = spi;
-        this.accessMode = AccessMode.Static.NONE;
+        this.authSubject = AuthSubject.ANONYMOUS;
     }
 
     @Override
@@ -768,7 +775,7 @@ public class SessionStateMachine implements Session, SessionState
     @Override
     public QuerySession createSession( GraphDatabaseQueryService service, PropertyContainerLocker locker )
     {
-        InternalTransaction transaction = service.beginTransaction( implicit, accessMode );
+        InternalTransaction transaction = service.beginTransaction( implicit, authSubject );
         Neo4jTransactionalContext transactionalContext =
                 new Neo4jTransactionalContext( service, transaction, spi.currentStatement(), locker );
         return new BoltQuerySession( transactionalContext, querySource() );

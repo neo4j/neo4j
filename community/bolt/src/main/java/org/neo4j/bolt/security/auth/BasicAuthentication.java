@@ -70,16 +70,6 @@ public class BasicAuthentication implements Authentication
         }
     }
 
-    @Override
-    public void logout( AccessMode accessMode )
-    {
-        if ( accessMode instanceof AuthSubject )
-        {
-            AuthSubject authSubject = (AuthSubject) accessMode;
-            authSubject.logout();
-        }
-    }
-
     private AuthenticationResult authenticate( String user, String password ) throws AuthenticationException
     {
         AuthSubject authSubject = authManager.login( user, password );

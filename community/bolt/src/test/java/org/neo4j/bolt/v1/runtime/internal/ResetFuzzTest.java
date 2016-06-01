@@ -205,13 +205,7 @@ public class ResetFuzzTest
         @Override
         public AuthenticationResult authenticate( Map<String,Object> authToken ) throws AuthenticationException
         {
-            return new BasicAuthenticationResult( AccessMode.Static.FULL, false );
-        }
-
-        @Override
-        public void logout( AccessMode accessMode )
-        {
-
+            return AuthenticationResult.AUTH_DISABLED;
         }
 
         @Override

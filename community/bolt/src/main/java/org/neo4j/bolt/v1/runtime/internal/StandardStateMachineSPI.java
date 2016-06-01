@@ -115,13 +115,6 @@ class StandardStateMachineSPI implements SessionStateMachine.SPI
     {
         return authentication.authenticate( authToken );
     }
-
-    @Override
-    public void logout( AccessMode accessMode )
-    {
-        authentication.logout( accessMode );
-    }
-
     @Override
     public void udcRegisterClient( String clientName )
     {

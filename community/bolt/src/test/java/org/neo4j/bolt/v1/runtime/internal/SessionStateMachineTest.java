@@ -26,18 +26,12 @@ import org.junit.Test;
 import java.util.Collections;
 
 import org.neo4j.bolt.security.auth.AuthenticationException;
-import org.neo4j.bolt.security.auth.BasicAuthenticationResult;
+import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
-import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.udc.UsageData;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -265,7 +259,7 @@ public class SessionStateMachineTest
     @Before
     public void setup() throws AuthenticationException
     {
-        when( spi.authenticate( any() ) ).thenReturn( new BasicAuthenticationResult(AccessMode.Static.FULL, false) );
+        when( spi.authenticate( any() ) ).thenReturn( AuthenticationResult.AUTH_DISABLED );
         when( spi.beginTransaction( any(), any() )).thenAnswer( (inv) -> {
             // The state machine will ask for different types of transactions, we
             // modify out mock to suit it's needs. I'm not sure this is a good way

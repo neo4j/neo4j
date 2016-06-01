@@ -19,23 +19,23 @@
  */
 package org.neo4j.bolt.security.auth;
 
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.AuthSubject;
 
 public class BasicAuthenticationResult implements AuthenticationResult
 {
-    private AccessMode accessMode;
+    private AuthSubject authSubject;
     private boolean credentialsExpired;
 
-    public BasicAuthenticationResult( AccessMode accessMode, boolean credentialsExpired )
+    public BasicAuthenticationResult( AuthSubject authSubject, boolean credentialsExpired )
     {
-        this.accessMode = accessMode;
+        this.authSubject = authSubject;
         this.credentialsExpired = credentialsExpired;
     }
 
     @Override
-    public AccessMode getAccessMode()
+    public AuthSubject getAuthSubject()
     {
-        return accessMode;
+        return authSubject;
     }
 
     @Override
