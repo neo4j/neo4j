@@ -90,7 +90,7 @@ public class PrimitiveCollectionBenchmark
 
      */
 
-    private static final int RUNS = 3;
+    private static final int RUNS = 10;
 
     @Test
     public void performanceTestPrimitiveLongSet() throws Exception
@@ -417,10 +417,10 @@ public class PrimitiveCollectionBenchmark
             sleep( 1000 );
         }
         System.out.println( "  add: " + addTime + ", contains: " + containsTime +
-                ", mem: " + Runtime.getRuntime().totalMemory() + "   " + set );
+                ", mem: " + Runtime.getRuntime().totalMemory() );
     }
 
-    private static final int DATA_SIZE = 10_000_000;
+    private static final int DATA_SIZE = 1_000_000;
     private static final long[] RANDOM_DATA, SEQUENTIAL_DATA;
     static
     {

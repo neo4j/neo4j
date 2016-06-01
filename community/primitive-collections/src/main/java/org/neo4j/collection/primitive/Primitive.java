@@ -24,13 +24,12 @@ import org.neo4j.collection.primitive.hopscotch.IntKeyTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyLongValueUnsafeTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyObjectValueTable;
-import org.neo4j.collection.primitive.hopscotch.LongKeyTable;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveIntHashSet;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveIntObjectHashMap;
-import org.neo4j.collection.primitive.hopscotch.PrimitiveLongHashSet;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongIntHashMap;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongLongHashMap;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongObjectHashMap;
+import org.neo4j.collection.primitive.koloboke.PrimitiveLongSetImpl;
 
 import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.NO_MONITOR;
 
@@ -59,8 +58,9 @@ public class Primitive
 
     public static PrimitiveLongSet longSet( int initialCapacity )
     {
-        return new PrimitiveLongHashSet( new LongKeyTable<>( initialCapacity, VALUE_MARKER ),
-                VALUE_MARKER, NO_MONITOR );
+//        return new PrimitiveLongHashSet( new LongKeyTable<>( initialCapacity, VALUE_MARKER ),
+//                VALUE_MARKER, NO_MONITOR );
+        return PrimitiveLongSetImpl.withExpectedSize( initialCapacity );
     }
 
     public static PrimitiveLongIntMap longIntMap()
