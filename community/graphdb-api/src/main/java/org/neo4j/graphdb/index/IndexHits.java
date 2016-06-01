@@ -22,15 +22,13 @@ package org.neo4j.graphdb.index;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-
-import static java.util.Spliterators.spliteratorUnknownSize;
+import org.neo4j.helpers.collection.Iterators;
 
 /**
  * An {@link Iterator} with additional {@link #size()} and {@link #close()}
@@ -91,20 +89,20 @@ public interface IndexHits<T> extends ResourceIterator<T>, ResourceIterable<T>
      * through the entire result and then call this method it will silently
      * ignore any consecutive call (for convenience).
      */
+    @Override
     void close();
 
     /**
      * @return these index hits in a {@link Stream}
      */
+    @Override
     default Stream<T> stream()
     {
         // Implementation note: we need this for two reasons:
         // one, to disambiguate #stream between ResourceIterator and ResourceIterable,
         // two, because implementations of this return themselves on #iterator, so we can't
         //      use #iterator().stream(), that then causes stack overflows.
-        return StreamSupport
-                .stream( spliteratorUnknownSize( this, 0 ), false )
-                .onClose( this::close );
+        return Iterators.stream( this );
     }
 
     /**
