@@ -23,8 +23,9 @@ import org.neo4j.cypher.internal.compiler.v3_0.IDPPlannerName
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{NodeHashJoin, NodeIndexSeek}
-import org.neo4j.cypher.{ExecutionEngineFunSuite, IndexHintException, NewPlannerTestSupport, SyntaxException, _}
-import org.neo4j.graphdb.QueryExecutionException
+import org.neo4j.cypher.{ExecutionEngineFunSuite, HintException, IndexHintException, NewPlannerTestSupport, SyntaxException, _}
+import org.neo4j.graphdb.schema.Schema
+import org.neo4j.graphdb.{QueryExecutionException, Result}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api.exceptions.Status
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -197,6 +198,22 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     //THEN
     result.toList should equal(List(Map("n" -> jake)))
+  }
+
+  test("should be able to use index hints on IN an empty collections") {
+    //GIVEN
+    val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
+    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    relate(andres, createNode())
+    relate(jake, createNode())
+
+    graph.createIndex("Person", "name")
+
+    //WHEN
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN [] RETURN n")
+
+    //THEN
+    result.toList should equal(List())
   }
 
   test("should be able to use index hints on IN a null value") {

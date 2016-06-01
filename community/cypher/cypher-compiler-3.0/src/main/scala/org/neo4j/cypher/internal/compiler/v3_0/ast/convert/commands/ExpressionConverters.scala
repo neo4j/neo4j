@@ -333,19 +333,9 @@ object ExpressionConverters {
       predicates.RegularExpression(toCommandExpression(e.lhs), command)
   }
 
-  private def in(e: ast.In) = e.rhs match {
-    case value: Parameter =>
-      predicates.ConstantIn(toCommandExpression(e.lhs), toCommandExpression(value))
-
-    case value@Collection(expressions) if expressions.isEmpty =>
-      predicates.Not(predicates.True())
-
-    case value@Collection(expressions) if expressions.forall(_.isInstanceOf[Literal]) =>
-      predicates.ConstantIn(toCommandExpression(e.lhs), toCommandExpression(value))
-
-    case _ =>
-      val innerEquals = predicates.Equals(toCommandExpression(e.lhs), commandexpressions.Variable("-_-INNER-_-"))
-      commands.AnyInCollection(toCommandExpression(e.rhs), "-_-INNER-_-", innerEquals)
+  private def in(e: ast.In) = {
+    val innerEquals = predicates.Equals(toCommandExpression(e.lhs), commandexpressions.Variable("-_-INNER-_-"))
+    commands.AnyInCollection(toCommandExpression(e.rhs), "-_-INNER-_-", innerEquals)
   }
 
   private def caseExpression(e: ast.CaseExpression) = e.expression match {

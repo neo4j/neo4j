@@ -111,7 +111,6 @@ object NodeByIdStrategy extends NodeStrategy {
       case predicate @ Equals(expression, IdFunction(Variable(id))) if id == variable && computable(expression) => SolvedPredicate(expression, predicate)
 
       case predicate @ AnyInCollection(collectionExpression, _, Equals(IdFunction(Variable(id)), _)) if id == variable && computable(collectionExpression) => SolvedPredicate(collectionExpression, predicate)
-      case predicate @ ConstantIn(IdFunction(Variable(id)), collectionExpression) if id == variable && computable(collectionExpression) => SolvedPredicate(collectionExpression, predicate)
     }
   }
 }

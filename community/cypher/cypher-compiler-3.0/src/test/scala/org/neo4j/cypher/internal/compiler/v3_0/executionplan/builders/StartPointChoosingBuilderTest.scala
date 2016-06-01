@@ -24,7 +24,7 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.commands._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{ConstantIn, Equals, HasLabel}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{Equals, HasLabel}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.PartiallySolvedQuery
@@ -428,26 +428,6 @@ class StartPointChoosingBuilderTest extends BuilderTest {
 
     plan.query.start.toList should equal(List(Unsolved(NodeByIdOrEmpty(otherVariable, propertyLookup))))
     plan.query.where should equal(Seq(Solved(collectionPredicate)))
-  }
-
-  test("should identify a NodeById query even if it is encoded with the new ConstantIn-expression") {
-    // Given ... WITH n MATCH p WHERE id(p) IN n.collection
-
-    val propertyLookup: Property = Property(Variable(_var), PropertyKey("collection"))
-    val idFunction = IdFunction(Variable(otherVariable))
-    val contanstIn = ConstantIn(idFunction, propertyLookup)
-
-
-    val query = newQuery(
-      where = Seq(contanstIn),
-      patterns = Seq(SingleNode(otherVariable))
-    )
-
-    val pipe = new FakePipe(Seq.empty, _var -> CTNode)
-    val plan = assertAccepts(pipe, query)
-
-    plan.query.start.toList should equal(List(Unsolved(NodeByIdOrEmpty(otherVariable, propertyLookup))))
-    plan.query.where should equal(Seq(Solved(contanstIn)))
   }
 
   test("should_produce_label_start_points_when_no_matching_index_exist") {

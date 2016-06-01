@@ -55,6 +55,22 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     result.toList should equal (List(Map("n" -> jake)))
   }
 
+  test("should be able to use unique index on IN an empty collections") {
+    //GIVEN
+    val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
+    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    relate(andres, createNode())
+    relate(jake, createNode())
+
+    graph.createConstraint("Person", "name")
+
+    //WHEN
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN [] RETURN n")
+
+    //THEN
+    result.toList should equal (List())
+  }
+
   test("should be able to use unique index on IN a null value") {
     //GIVEN
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
