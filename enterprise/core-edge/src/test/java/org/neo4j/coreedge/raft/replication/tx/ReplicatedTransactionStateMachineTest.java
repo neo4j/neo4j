@@ -19,17 +19,12 @@
  */
 package org.neo4j.coreedge.raft.replication.tx;
 
-import junit.framework.TestCase;
-import org.apache.commons.lang3.ObjectUtils;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.coreedge.raft.RaftStateMachine;
-import org.neo4j.coreedge.raft.state.Result;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
@@ -43,7 +38,6 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.junit.Assert.assertEquals;
@@ -166,11 +160,12 @@ public class ReplicatedTransactionStateMachineTest
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
         when( localCommitProcess.commit(
                 any( TransactionToApply.class), any( CommitEvent.class ), any( TransactionApplicationMode.class ) )
-        ).thenAnswer( (Answer<Long>) invocation -> {
+        ).thenAnswer( invocation -> {
             TransactionToApply txToApply = (TransactionToApply) invocation.getArguments()[0];
             txToApply.commitment( new FakeCommitment( txId, mock( TransactionIdStore.class ) ), txId );
             txToApply.commitment().publishAsCommitted();
             txToApply.commitment().publishAsClosed();
+            txToApply.close();
             return txId;
         } );
         return localCommitProcess;

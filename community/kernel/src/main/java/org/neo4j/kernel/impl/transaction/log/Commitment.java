@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import java.util.function.Consumer;
-
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
@@ -56,12 +54,6 @@ public interface Commitment
         {
             return false;
         }
-
-        @Override
-        public void onClosed( Consumer<Long> callback )
-        {
-            throw new UnsupportedOperationException();
-        }
     };
 
     /**
@@ -83,10 +75,4 @@ public interface Commitment
      * @return whether or not this transaction contains legacy index changes.
      */
     boolean hasLegacyIndexChanges();
-
-    /**
-     * Register a callback to be triggered when the commitment has been published as closed
-     * @param callback The callback to be invoked when the commitment is published as closed
-     */
-    void onClosed( Consumer<Long> callback );
 }

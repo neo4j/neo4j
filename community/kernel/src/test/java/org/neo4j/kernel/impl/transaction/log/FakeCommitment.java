@@ -75,10 +75,4 @@ public class FakeCommitment implements Commitment
     {
         return hasLegacyIndexChanges;
     }
-
-    @Override
-    public void onClosed( Consumer<Long> callback )
-    {
-        this.callback = callback;
-    }
 }

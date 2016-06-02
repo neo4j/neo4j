@@ -92,6 +92,7 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
             {
                 batch.commitment().publishAsClosed();
             }
+            batch.close();
             batch = batch.next();
         }
     }

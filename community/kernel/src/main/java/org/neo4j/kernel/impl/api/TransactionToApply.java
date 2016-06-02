@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import java.io.IOException;
-import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -55,7 +55,7 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
  * <li>Data about the commit can now also be accessed using f.ex {@link #commitment()} or {@link #transactionId()}</li>
  * </ol>
  */
-public class TransactionToApply implements CommandsToApply
+public class TransactionToApply implements CommandsToApply, AutoCloseable
 {
     public static final long TRANSACTION_ID_NOT_SPECIFIED = 0;
 
@@ -67,7 +67,7 @@ public class TransactionToApply implements CommandsToApply
     // These fields are provided by commit process/storage engine
     private Commitment commitment;
 
-    private Consumer<Long> callback;
+    private LongConsumer closedCallback;
 
     /**
      * Used when committing a transaction that hasn't already gotten a transaction id assigned.
@@ -126,10 +126,6 @@ public class TransactionToApply implements CommandsToApply
     {
         this.commitment = commitment;
         this.transactionId = transactionId;
-        if ( callback != null )
-        {
-            commitment.onClosed( callback );
-        }
     }
 
     @Override
@@ -138,8 +134,17 @@ public class TransactionToApply implements CommandsToApply
         return nextTransactionInBatch;
     }
 
-    public void onClose( Consumer<Long> callback )
+    public void onClose( LongConsumer closedCallback )
     {
-        this.callback = callback;
+        this.closedCallback = closedCallback;
+    }
+
+    @Override
+    public void close()
+    {
+        if ( closedCallback != null )
+        {
+            closedCallback.accept( transactionId );
+        }
     }
 }
