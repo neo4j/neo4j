@@ -28,10 +28,13 @@ import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.MarshlandPool;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Clock;
+import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -52,6 +55,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 
 import static java.util.Collections.newSetFromMap;
+import static org.neo4j.helpers.Settings.setting;
 
 /**
  * Central source of transactions in the database.
@@ -63,11 +67,15 @@ import static java.util.Collections.newSetFromMap;
  */
 public class KernelTransactions extends LifecycleAdapter implements Factory<KernelTransaction>
 {
+    private static final Setting<Boolean> tx_termination_aware_locks = setting(
+            "experimental.tx_termination_aware_locks", Settings.BOOLEAN, Settings.FALSE );
+
     // Transaction dependencies
 
     private final NeoStoreTransactionContextSupplier neoStoreTransactionContextSupplier;
     private final NeoStore neoStore;
     private final Locks locks;
+    private final boolean txTerminationAwareLocks;
     private final IntegrityValidator integrityValidator;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final IndexingService indexingService;
@@ -116,11 +124,13 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
                                LegacyIndexProviderLookup legacyIndexProviderLookup,
                                TransactionHooks hooks, TransactionMonitor transactionMonitor,
                                LifeSupport dataSourceLife,
+                               Config config,
                                Tracers tracers )
     {
         this.neoStoreTransactionContextSupplier = neoStoreTransactionContextSupplier;
         this.neoStore = neoStore;
         this.locks = locks;
+        this.txTerminationAwareLocks = config.get( tx_termination_aware_locks );
         this.integrityValidator = integrityValidator;
         this.constraintIndexCreator = constraintIndexCreator;
         this.indexingService = indexingService;
@@ -162,7 +172,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
                     neoStore, locks, hooks, constraintIndexCreator, transactionHeaderInformationFactory,
                     transactionCommitProcess, transactionMonitor, persistenceCache, storeLayer,
                     legacyIndexTransactionState, localTxPool, Clock.SYSTEM_CLOCK, tracers.transactionTracer,
-                    context );
+                    context, txTerminationAwareLocks );
 
             allTransactions.add( tx );
 

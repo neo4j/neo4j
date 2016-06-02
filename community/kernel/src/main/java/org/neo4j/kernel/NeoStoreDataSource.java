@@ -1077,8 +1077,8 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
                         neoStore, locks, integrityValidator, constraintIndexCreator, indexingService, labelScanStore,
                         statementOperations, updateableSchemaState, schemaWriteGuard, schemaIndexProviderMap,
                         transactionHeaderInformationFactory, persistenceCache, storeLayer, transactionCommitProcess,
-                        indexConfigStore,
-                        legacyIndexProviderLookup, hooks, transactionMonitor, life, tracers ) );
+                        indexConfigStore, legacyIndexProviderLookup, hooks, transactionMonitor, life, config,
+                        tracers ) );
 
         final Kernel kernel = new Kernel( kernelTransactions, hooks, kernelHealth, transactionMonitor );
 

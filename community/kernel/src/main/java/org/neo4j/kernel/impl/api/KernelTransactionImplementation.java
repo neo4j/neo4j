@@ -120,8 +120,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private static final boolean TX_TERMINATION_AWARE_LOCKS = Boolean.getBoolean( "tx_termination_aware_locks" );
-
     // Logic
     private final SchemaWriteGuard schemaWriteGuard;
     private final IndexingService indexService;
@@ -147,6 +145,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionToRecordStateVisitor txStateToRecordStateVisitor = new TransactionToRecordStateVisitor();
     private final Collection<Command> extractedCommands = new ArrayCollection<>( 32 );
     private final Locks locksManager;
+    private final boolean txTerminationAwareLocks;
     private TransactionState txState;
     private LegacyIndexTransactionState legacyIndexTransactionState;
     private TransactionType transactionType = TransactionType.ANY;
@@ -185,7 +184,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             Pool<KernelTransactionImplementation> pool,
                                             Clock clock,
                                             TransactionTracer tracer,
-                                            NeoStoreTransactionContext context )
+                                            NeoStoreTransactionContext context,
+                                            boolean txTerminationAwareLocks )
     {
         this.operations = operations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -196,6 +196,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.providerMap = providerMap;
         this.schemaState = schemaState;
         this.locksManager = locks;
+        this.txTerminationAwareLocks = txTerminationAwareLocks;
         this.hooks = hooks;
         this.constraintIndexCreator = constraintIndexCreator;
         this.headerInformationFactory = headerInformationFactory;
@@ -252,7 +253,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             failure = true;
             terminated = true;
-            if ( TX_TERMINATION_AWARE_LOCKS )
+            if ( txTerminationAwareLocks && locks != null )
             {
                 locks.markForTermination();
             }

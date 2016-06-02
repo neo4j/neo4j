@@ -32,7 +32,6 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpLocks;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -66,6 +65,7 @@ public class KernelTransactionFactory
                 mock(Pool.class),
                 Clock.SYSTEM_CLOCK,
                 TransactionTracer.NULL,
-                mock( NeoStoreTransactionContext.class ) );
+                mock( NeoStoreTransactionContext.class ),
+                false );
     }
 }
