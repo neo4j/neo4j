@@ -552,6 +552,7 @@ public class AuthProceduresTest
     @Test
     public void userSuspension1() throws Exception
     {
+        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)", null );
         testCallEmpty( db, adminSubject, "CALL dbms.suspendUser('Henrik')", null );
         AuthSubject subject = manager.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.FAILURE, subject.getAuthenticationResult() );
@@ -564,6 +565,7 @@ public class AuthProceduresTest
     @Test
     public void userActivation1() throws Exception
     {
+        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)", null );
         testCallEmpty( db, adminSubject, "CALL dbms.suspendUser('Henrik')", null );
         AuthSubject subject = manager.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.FAILURE, subject.getAuthenticationResult() );

@@ -290,6 +290,11 @@ public class FileUserRealm extends AuthorizingRealm
         }
     }
 
+    User findUser( String username )
+    {
+        return userRepository.findByName( username );
+    }
+
     private void removeUserFromAllRoles( String username ) throws IOException
     {
         try

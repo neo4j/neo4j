@@ -176,6 +176,11 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
             }
             authStrategy.updateWithAuthenticationResult( result, username );
         }
+        User user = realm.findUser( username );
+        if ( user != null && user.isSuspended() )
+        {
+            result = AuthenticationResult.FAILURE;
+        }
         return new ShiroAuthSubject( this, subject, result );
     }
 
