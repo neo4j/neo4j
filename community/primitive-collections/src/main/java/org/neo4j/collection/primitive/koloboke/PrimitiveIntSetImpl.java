@@ -19,39 +19,40 @@
  */
 package org.neo4j.collection.primitive.koloboke;
 
-import com.koloboke.collect.LongCursor;
+import com.koloboke.collect.IntCursor;
 import com.koloboke.compile.ConcurrentModificationUnchecked;
 import com.koloboke.compile.KolobokeSet;
 
-import java.util.function.LongPredicate;
+import java.util.function.IntPredicate;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.collection.primitive.PrimitiveIntVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 
 import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.DEFAULT_HASHING;
 
 @SuppressWarnings( "ALL" )
 @KolobokeSet
 @ConcurrentModificationUnchecked
-public abstract class PrimitiveLongSetImpl implements PrimitiveLongSet, LongPredicate
+public abstract class PrimitiveIntSetImpl implements PrimitiveIntSet, IntPredicate
 {
-    public static PrimitiveLongSet withExpectedSize( int expectedSize )
+    public static PrimitiveIntSet withExpectedSize( int expectedSize )
     {
-        return new KolobokePrimitiveLongSetImpl( expectedSize );
+        return new KolobokePrimitiveIntSetImpl( expectedSize );
     }
 
-    public abstract LongCursor cursor();
-    public abstract boolean removeLong( long value );
+    public abstract IntCursor cursor();
+    public abstract boolean removeInt( int value );
 
     @Override
-    public final boolean test( long value )
+    public final boolean test( int value )
     {
         return contains( value );
     }
 
     @Override
-    public final boolean addAll( PrimitiveLongIterator values )
+    public final boolean addAll( PrimitiveIntIterator values )
     {
         boolean modified = false;
         while ( values.hasNext() )
@@ -67,17 +68,17 @@ public abstract class PrimitiveLongSetImpl implements PrimitiveLongSet, LongPred
     }
 
     @Override
-    public final <E extends Exception> void visitKeys( PrimitiveLongVisitor<E> visitor ) throws E
+    public final <E extends Exception> void visitKeys( PrimitiveIntVisitor<E> visitor ) throws E
     {
-        LongCursor cursor = cursor();
+        IntCursor cursor = cursor();
         while ( cursor.moveNext() && !visitor.visited( cursor.elem() ) );
     }
 
     @Override
-    public final PrimitiveLongIterator iterator()
+    public final PrimitiveIntIterator iterator()
     {
-        final LongCursor cursor = cursor();
-        return new PrimitiveLongIterator()
+        final IntCursor cursor = cursor();
+        return new PrimitiveIntIterator()
         {
             boolean hasNext = cursor.moveNext();
             @Override
@@ -87,9 +88,9 @@ public abstract class PrimitiveLongSetImpl implements PrimitiveLongSet, LongPred
             }
 
             @Override
-            public long next()
+            public int next()
             {
-                long elem = cursor.elem();
+                int elem = cursor.elem();
                 hasNext = cursor.moveNext();
                 return elem;
             }
@@ -97,9 +98,9 @@ public abstract class PrimitiveLongSetImpl implements PrimitiveLongSet, LongPred
     }
 
     @Override
-    public final boolean remove( long value )
+    public final boolean remove( int value )
     {
-        return removeLong( value );
+        return removeInt( value );
     }
 
     @Override
@@ -112,7 +113,7 @@ public abstract class PrimitiveLongSetImpl implements PrimitiveLongSet, LongPred
             {
                 return false;
             }
-            LongCursor cursor = cursor();
+            IntCursor cursor = cursor();
             while ( cursor.moveNext() )
             {
                 long value = cursor.elem();
@@ -130,7 +131,7 @@ public abstract class PrimitiveLongSetImpl implements PrimitiveLongSet, LongPred
     public int hashCode()
     {
         int hash = 1337;
-        LongCursor cursor = cursor();
+        IntCursor cursor = cursor();
         while ( cursor.moveNext() )
         {
             hash += DEFAULT_HASHING.hash( cursor.elem() );

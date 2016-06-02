@@ -19,16 +19,12 @@
  */
 package org.neo4j.collection.primitive;
 
-import org.neo4j.collection.primitive.hopscotch.IntKeyObjectValueTable;
-import org.neo4j.collection.primitive.hopscotch.IntKeyTable;
-import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyLongValueUnsafeTable;
-import org.neo4j.collection.primitive.hopscotch.LongKeyObjectValueTable;
-import org.neo4j.collection.primitive.hopscotch.PrimitiveIntHashSet;
-import org.neo4j.collection.primitive.hopscotch.PrimitiveIntObjectHashMap;
-import org.neo4j.collection.primitive.hopscotch.PrimitiveLongIntHashMap;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongLongHashMap;
-import org.neo4j.collection.primitive.hopscotch.PrimitiveLongObjectHashMap;
+import org.neo4j.collection.primitive.koloboke.PrimitiveIntObjectMapImpl;
+import org.neo4j.collection.primitive.koloboke.PrimitiveIntSetImpl;
+import org.neo4j.collection.primitive.koloboke.PrimitiveLongIntMapImpl;
+import org.neo4j.collection.primitive.koloboke.PrimitiveLongObjectMapImpl;
 import org.neo4j.collection.primitive.koloboke.PrimitiveLongSetImpl;
 
 import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.NO_MONITOR;
@@ -70,7 +66,8 @@ public class Primitive
 
     public static PrimitiveLongIntMap longIntMap( int initialCapacity )
     {
-        return new PrimitiveLongIntHashMap( new LongKeyIntValueTable( initialCapacity ), NO_MONITOR );
+        return PrimitiveLongIntMapImpl.withExceptedSize( initialCapacity );
+//        return new PrimitiveLongIntHashMap( new LongKeyIntValueTable( initialCapacity ), NO_MONITOR );
     }
 
     public static PrimitiveLongLongMap offHeapLongLongMap( int initialCapacity )
@@ -85,7 +82,8 @@ public class Primitive
 
     public static <VALUE> PrimitiveLongObjectMap<VALUE> longObjectMap( int initialCapacity )
     {
-        return new PrimitiveLongObjectHashMap<>( new LongKeyObjectValueTable<VALUE>( initialCapacity ), NO_MONITOR );
+        return PrimitiveLongObjectMapImpl.withExceptedSize( initialCapacity );
+//        return new PrimitiveLongObjectHashMap<>( new LongKeyObjectValueTable<VALUE>( initialCapacity ), NO_MONITOR );
     }
 
     public static PrimitiveIntSet intSet()
@@ -95,8 +93,9 @@ public class Primitive
 
     public static PrimitiveIntSet intSet( int initialCapacity )
     {
-        return new PrimitiveIntHashSet( new IntKeyTable<>( initialCapacity, VALUE_MARKER ),
-                VALUE_MARKER, NO_MONITOR );
+        return PrimitiveIntSetImpl.withExpectedSize( initialCapacity );
+//        return new PrimitiveIntHashSet( new IntKeyTable<>( initialCapacity, VALUE_MARKER ),
+//                VALUE_MARKER, NO_MONITOR );
     }
 
     public static <VALUE> PrimitiveIntObjectMap<VALUE> intObjectMap()
@@ -106,6 +105,7 @@ public class Primitive
 
     public static <VALUE> PrimitiveIntObjectMap<VALUE> intObjectMap( int initialCapacity )
     {
-        return new PrimitiveIntObjectHashMap<>( new IntKeyObjectValueTable<VALUE>( initialCapacity ), NO_MONITOR );
+        return PrimitiveIntObjectMapImpl.withExceptedSize( initialCapacity );
+//        return new PrimitiveIntObjectHashMap<>( new IntKeyObjectValueTable<VALUE>( initialCapacity ), NO_MONITOR );
     }
 }
