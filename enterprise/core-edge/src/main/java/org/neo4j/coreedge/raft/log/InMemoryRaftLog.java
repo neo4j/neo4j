@@ -55,7 +55,7 @@ public class InMemoryRaftLog implements RaftLog
     }
 
     @Override
-    public synchronized long prune( long safeIndex ) throws RaftLogCompactedException
+    public synchronized long prune( long safeIndex )
     {
         if( safeIndex > prevIndex )
         {
@@ -86,24 +86,8 @@ public class InMemoryRaftLog implements RaftLog
         return prevIndex;
     }
 
-    private RaftLogEntry readLogEntry( long logIndex ) throws RaftLogCompactedException
-    {
-        if ( logIndex <= prevIndex )
-        {
-            throw new RaftLogCompactedException( "Entry does not exist in log" );
-        }
-        else if ( logIndex > appendIndex )
-        {
-            throw new RaftLogCompactedException(
-                    String.format( "cannot read past last appended index (lastAppended=%d, readIndex=%d)",
-                            appendIndex, logIndex ) );
-        }
-
-        return raftLog.get( logIndex );
-    }
-
     @Override
-    public synchronized long readEntryTerm( long logIndex ) throws RaftLogCompactedException
+    public synchronized long readEntryTerm( long logIndex )
     {
         if( logIndex == prevIndex )
         {
@@ -113,11 +97,11 @@ public class InMemoryRaftLog implements RaftLog
         {
             return -1;
         }
-        return readLogEntry( logIndex ).term();
+        return raftLog.get( logIndex ).term();
     }
 
     @Override
-    public synchronized void truncate( long fromIndex ) throws RaftLogCompactedException
+    public synchronized void truncate( long fromIndex )
     {
         if ( fromIndex <= commitIndex )
         {
@@ -164,14 +148,11 @@ public class InMemoryRaftLog implements RaftLog
                     hasNext = currentIndex <= appendIndex;
                     if ( hasNext )
                     {
-                        try
+                        if ( currentIndex <= prevIndex || currentIndex > appendIndex )
                         {
-                            current = readLogEntry( currentIndex );
+                            return false;
                         }
-                        catch ( RaftLogCompactedException e )
-                        {
-                            throw new IOException( e );
-                        }
+                        current = raftLog.get( currentIndex );
                     }
                     else
                     {

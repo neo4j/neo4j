@@ -23,13 +23,12 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 
 public class Election
 {
-    public static <MEMBER> boolean start( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome ) throws IOException, RaftLogCompactedException
+    public static <MEMBER> boolean start( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome ) throws IOException
     {
         Set<MEMBER> currentMembers = ctx.votingMembers();
         if ( currentMembers == null || !currentMembers.contains( ctx.myself() ) )

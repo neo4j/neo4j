@@ -19,38 +19,26 @@
  */
 package org.neo4j.coreedge.raft.log;
 
-import java.io.IOException;
-
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
-import org.neo4j.cursor.IOCursor;
+import java.io.IOException;
 
 public class RaftLogHelper
 {
-    public static RaftLogEntry readLogEntry( ReadableRaftLog raftLog, long index ) throws RaftLogCompactedException, IOException
+    public static RaftLogEntry readLogEntry( ReadableRaftLog raftLog, long index ) throws IOException
     {
-        try
+        try ( RaftLogCursor cursor = raftLog.getEntryCursor( index ) )
         {
-            try ( RaftLogCursor cursor = raftLog.getEntryCursor( index ) )
+            if ( cursor.next() )
             {
-                if ( cursor.next() )
-                {
-                    return cursor.get();
-                }
+                return cursor.get();
             }
         }
-        // TODO: Weirdness all because of IOCursor...
-        catch ( IOException e )
-        {
-            if( e.getCause() instanceof RaftLogCompactedException )
-            {
-                throw (RaftLogCompactedException)e.getCause();
-            }
-            throw e;
-        }
-        throw new RaftLogCompactedException("Asked for raft log entry at index " + index + " but it was not found");
+
+        //todo: do not do this and update RaftLogContractTest to not depend on this exception.
+        throw new IOException("Asked for raft log entry at index " + index + " but it was not found");
     }
 
     public static Matcher<? super RaftLog> hasNoContent( long index )
@@ -63,18 +51,10 @@ public class RaftLogHelper
                 try
                 {
                     readLogEntry( log, index );
-                    return false;
                 }
                 catch ( IOException e )
                 {
-                    if( e.getCause() instanceof RaftLogCompactedException )
-                    {
-                        // expected
-                        return true;
-                    }
-                }
-                catch ( RaftLogCompactedException e )
-                {
+                    // oh well...
                     return true;
                 }
                 return false;

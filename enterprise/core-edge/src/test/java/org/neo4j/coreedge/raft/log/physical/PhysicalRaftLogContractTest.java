@@ -71,7 +71,7 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
         File directory = new File( PHYSICAL_LOG_DIRECTORY_NAME );
         fileSystem.mkdir( directory );
 
-        PhysicalRaftLog newRaftLog = new PhysicalRaftLog( fileSystem, directory, 10 * 1024, "1 files", cacheSize, 10,
+        PhysicalRaftLog newRaftLog = new PhysicalRaftLog( fileSystem, directory, 1024, "1 files", cacheSize, 10,
                 new PhysicalRaftLogFile.Monitor.Adapter(), new DummyRaftableContentSerializer(),
                 () -> mock( DatabaseHealth.class ), NullLogProvider.getInstance(), new RaftLogMetadataCache( 10 ) );
         life.add( newRaftLog );

@@ -25,7 +25,6 @@ import java.time.Clock;
 import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.raft.LeaderContext;
 import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.log.RaftLogCursor;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
@@ -36,7 +35,6 @@ import org.neo4j.logging.LogProvider;
 import static java.lang.Long.max;
 import static java.lang.Long.min;
 import static java.lang.String.format;
-
 import static org.neo4j.coreedge.raft.RenewableTimeoutService.RenewableTimeout;
 import static org.neo4j.coreedge.raft.RenewableTimeoutService.TimeoutName;
 
@@ -113,10 +111,9 @@ public class RaftLogShipper<MEMBER>
 
     private Mode mode = Mode.MISMATCH;
 
-    RaftLogShipper( Outbound<MEMBER> outbound, LogProvider logProvider, ReadableRaftLog raftLog, Clock clock, MEMBER
-            leader, MEMBER follower,
-                    long leaderTerm, long leaderCommit, long retryTimeMillis, int catchupBatchSize, int
-                            maxAllowedShippingLag )
+    RaftLogShipper( Outbound<MEMBER> outbound, LogProvider logProvider, ReadableRaftLog raftLog, Clock clock,
+            MEMBER leader, MEMBER follower, long leaderTerm, long leaderCommit, long retryTimeMillis,
+            int catchupBatchSize, int maxAllowedShippingLag )
     {
         this.outbound = outbound;
         this.catchupBatchSize = catchupBatchSize;
@@ -197,12 +194,12 @@ public class RaftLogShipper<MEMBER>
     public synchronized void onMatch( long newMatchIndex, LeaderContext leaderContext )
     {
         boolean progress = newMatchIndex > matchIndex;
-        matchIndex = max ( newMatchIndex, matchIndex );
+        matchIndex = max( newMatchIndex, matchIndex );
 
         switch ( mode )
         {
         case MISMATCH:
-            if( sendNextBatchAfterMatch( leaderContext ) )
+            if ( sendNextBatchAfterMatch( leaderContext ) )
             {
                 log.info( format( "Caught up after mismatch: %s", follower ) );
                 mode = Mode.PIPELINE;
@@ -243,7 +240,7 @@ public class RaftLogShipper<MEMBER>
         switch ( mode )
         {
         case PIPELINE:
-            while( lastSentIndex <= prevLogIndex )
+            while ( lastSentIndex <= prevLogIndex )
             {
                 if ( prevLogIndex - matchIndex <= maxAllowedShippingLag )
                 {
@@ -376,14 +373,17 @@ public class RaftLogShipper<MEMBER>
          * request to allow us to send a commit. By Raft invariants, this means that the term for the committed
          * entry is the current term.
          */
-        RaftMessages.Heartbeat<MEMBER> appendRequest = new RaftMessages.Heartbeat<>(
-                leader, leaderContext.term, leaderContext.commitIndex, leaderContext.term );
+        RaftMessages.Heartbeat<MEMBER> appendRequest =
+                new RaftMessages.Heartbeat<>( leader, leaderContext.term, leaderContext.commitIndex,
+                        leaderContext.term );
 
         outbound.send( follower, appendRequest );
     }
 
     private void sendSingle( long logIndex, LeaderContext leaderContext )
     {
+        logIndex = max( raftLog.prevIndex() + 1, logIndex );
+
         scheduleTimeout( retryTimeMillis );
 
         lastSentIndex = logIndex;
@@ -395,7 +395,8 @@ public class RaftLogShipper<MEMBER>
 
             if ( prevLogTerm > leaderContext.term )
             {
-                log.warn( format( "Aborting send. Not leader anymore? %s, prevLogTerm=%d", leaderContext, prevLogTerm ) );
+                log.warn(
+                        format( "Aborting send. Not leader anymore? %s, prevLogTerm=%d", leaderContext, prevLogTerm ) );
                 return;
             }
 
@@ -409,12 +410,13 @@ public class RaftLogShipper<MEMBER>
                 }
             }
 
-            RaftMessages.AppendEntries.Request<MEMBER> appendRequest = new RaftMessages.AppendEntries.Request<>(
-                    leader, leaderContext.term, prevLogIndex, prevLogTerm, logEntries, leaderContext.commitIndex );
+            RaftMessages.AppendEntries.Request<MEMBER> appendRequest =
+                    new RaftMessages.AppendEntries.Request<>( leader, leaderContext.term, prevLogIndex, prevLogTerm,
+                            logEntries, leaderContext.commitIndex );
 
             outbound.send( follower, appendRequest );
         }
-        catch ( RaftLogCompactedException | IOException e )
+        catch ( IOException e )
         {
             log.warn(
                     "Tried to send entry at index %d that can't be found in the raft log; it has likely been pruned. " +
@@ -439,7 +441,9 @@ public class RaftLogShipper<MEMBER>
     private void sendRange( long startIndex, long endIndex, LeaderContext leaderContext )
     {
         if ( startIndex > endIndex )
+        {
             return;
+        }
 
         lastSentIndex = endIndex;
 
@@ -453,12 +457,14 @@ public class RaftLogShipper<MEMBER>
 
             if ( prevLogTerm > leaderContext.term )
             {
-                log.warn( format( "Aborting send. Not leader anymore? %s, prevLogTerm=%d", leaderContext, prevLogTerm ) );
+                log.warn(
+                        format( "Aborting send. Not leader anymore? %s, prevLogTerm=%d", leaderContext, prevLogTerm ) );
                 return;
             }
 
-            RaftMessages.AppendEntries.Request<MEMBER> appendRequest = new RaftMessages.AppendEntries.Request<>(
-                    leader, leaderContext.term, prevLogIndex, prevLogTerm, entries, leaderContext.commitIndex );
+            RaftMessages.AppendEntries.Request<MEMBER> appendRequest =
+                    new RaftMessages.AppendEntries.Request<>( leader, leaderContext.term, prevLogIndex, prevLogTerm,
+                            entries, leaderContext.commitIndex );
 
             int offset = 0;
             try ( RaftLogCursor cursor = raftLog.getEntryCursor( startIndex ) )
@@ -466,9 +472,10 @@ public class RaftLogShipper<MEMBER>
                 while ( offset < batchSize && cursor.next() )
                 {
                     entries[offset] = cursor.get();
-                    if( entries[offset].term() > leaderContext.term )
+                    if ( entries[offset].term() > leaderContext.term )
                     {
-                        log.warn( format( "Aborting send. Not leader anymore? %s, entryTerm=%d", leaderContext, entries[offset].term() ) );
+                        log.warn( format( "Aborting send. Not leader anymore? %s, entryTerm=%d", leaderContext,
+                                entries[offset].term() ) );
                         return;
                     }
                     offset++;
@@ -477,7 +484,7 @@ public class RaftLogShipper<MEMBER>
 
             outbound.send( follower, appendRequest );
         }
-        catch ( IOException | RaftLogCompactedException e )
+        catch ( IOException e )
         {
             log.warn( "Exception during batch send", e );
         }

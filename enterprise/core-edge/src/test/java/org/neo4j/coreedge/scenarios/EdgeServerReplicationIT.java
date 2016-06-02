@@ -239,7 +239,7 @@ public class EdgeServerReplicationIT
                 CoreEdgeClusterSettings.raft_log_rotation_size.name(), "1k",
                 CoreEdgeClusterSettings.raft_log_pruning_frequency.name(), "500ms",
                 CoreEdgeClusterSettings.state_machine_flush_window_size.name(), "1",
-                CoreEdgeClusterSettings.raft_log_pruning.name(), "1 entries"
+                CoreEdgeClusterSettings.raft_log_pruning_strategy.name(), "1 entries"
         );
         cluster = Cluster.start( dir.cleanDirectory( "db" ), 3, 0, new TestOnlyDiscoveryServiceFactory(),
                 params,  emptyMap(), HighLimit.NAME );

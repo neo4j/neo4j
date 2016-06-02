@@ -28,7 +28,6 @@ import java.util.Set;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
-import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.membership.RaftMembership;
 import org.neo4j.coreedge.raft.outcome.LogCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
@@ -131,15 +130,8 @@ public class RaftStateBuilder
         Collection<RaftMessages.Directed<RaftTestMember>> noMessages = Collections.emptyList();
         List<LogCommand> noLogCommands = Collections.emptyList();
 
-        try
-        {
-            state.update( new Outcome<>( null, term, leader, leaderCommit, votedFor, votesForMe, lastLogIndexBeforeWeBecameLeader,
-                    followerStates, false, noLogCommands, noMessages, Collections.emptySet(), commitIndex ) );
-        }
-        catch ( RaftLogCompactedException e )
-        {
-            throw new RuntimeException( e );
-        }
+        state.update( new Outcome<>( null, term, leader, leaderCommit, votedFor, votesForMe, lastLogIndexBeforeWeBecameLeader,
+                followerStates, false, noLogCommands, noMessages, Collections.emptySet(), commitIndex ) );
 
         return state;
     }

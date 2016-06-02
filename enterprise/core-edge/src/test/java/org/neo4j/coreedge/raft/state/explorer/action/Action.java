@@ -21,10 +21,9 @@ package org.neo4j.coreedge.raft.state.explorer.action;
 
 import java.io.IOException;
 
-import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.state.explorer.ClusterState;
 
 public interface Action
 {
-    ClusterState advance( ClusterState clusterState ) throws IOException, RaftLogCompactedException;
+    ClusterState advance( ClusterState clusterState ) throws IOException;
 }

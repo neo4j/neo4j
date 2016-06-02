@@ -50,14 +50,16 @@ public class ThresholdConfigParser
         {
             switch ( boolOrNumber )
             {
-                case "true":
-                    return ThresholdConfigValue.NO_PRUNING;
-                case "false":
-                    return new ThresholdConfigValue( "entries", 1 );
-                default:
-                    throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue +
-                            "'. The form is 'all' or '<number><unit> <type>' for example '100k txs' " +
-                            "for the latest 100 000 transactions" );
+            case "keep_all":
+            case "true":
+                return ThresholdConfigValue.NO_PRUNING;
+            case "keep_none":
+            case "false":
+                return new ThresholdConfigValue( "entries", 1 );
+            default:
+                throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue +
+                        "'. The form is 'all' or '<number><unit> <type>' for example '100k txs' " +
+                        "for the latest 100 000 transactions" );
             }
         }
 

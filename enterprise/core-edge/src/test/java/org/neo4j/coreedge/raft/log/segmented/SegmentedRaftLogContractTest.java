@@ -81,7 +81,7 @@ public class SegmentedRaftLogContractTest extends RaftLogContractTest
 
         SegmentedRaftLog newRaftLog = new SegmentedRaftLog( fileSystem, directory, 1024,
                 new DummyRaftableContentSerializer(),
-                NullLogProvider.getInstance(), cacheSize, "1 size");
+                NullLogProvider.getInstance(), cacheSize, "1 entries");
         life.add( newRaftLog );
         life.init();
         life.start();

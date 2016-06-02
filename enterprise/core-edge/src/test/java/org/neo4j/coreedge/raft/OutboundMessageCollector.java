@@ -19,7 +19,6 @@
  */
 package org.neo4j.coreedge.raft;
 
-import org.neo4j.coreedge.network.Message;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,9 +26,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.raft.net.Outbound;
+import org.neo4j.coreedge.server.RaftTestMember;
 
 public class OutboundMessageCollector implements Outbound<RaftTestMember>
 {
@@ -63,6 +63,12 @@ public class OutboundMessageCollector implements Outbound<RaftTestMember>
         }
 
         return messages;
+    }
+
+    public boolean hasAnyEntriesTo( RaftTestMember member )
+    {
+        List<Message> messages = sentMessages.get( member );
+        return messages != null && messages.size() != 0;
     }
 
     public boolean hasEntriesTo( RaftTestMember member, RaftLogEntry... expectedMessages )

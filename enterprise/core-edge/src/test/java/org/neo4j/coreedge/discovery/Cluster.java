@@ -62,7 +62,7 @@ import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionExpired;
 
-public class Cluster
+public class Cluster implements AutoCloseable
 {
     private static final String CLUSTER_NAME = "core-neo4j";
     private static final int DEFAULT_TIMEOUT_MS = 15_000;
@@ -591,5 +591,11 @@ public class Cluster
                 e.getCause() instanceof org.neo4j.kernel.api.exceptions.TransactionFailureException &&
                 ((org.neo4j.kernel.api.exceptions.TransactionFailureException) e.getCause()).status() ==
                         LockSessionExpired;
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        shutdown();
     }
 }

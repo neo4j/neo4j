@@ -34,18 +34,18 @@ import org.neo4j.test.coreedge.ClusterRule;
 import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
 import static org.neo4j.coreedge.scenarios.CoreToCoreCopySnapshotIT.createData;
+import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning_strategy;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class CorePruningIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
-            .withNumberOfCoreServers( 3 )
-            .withNumberOfEdgeServers( 0 )
-            .withSharedCoreParam( CoreEdgeClusterSettings.state_machine_flush_window_size, "1" )
-            .withSharedCoreParam( CoreEdgeClusterSettings.raft_log_pruning, "1 entries" )
-            .withSharedCoreParam( CoreEdgeClusterSettings.raft_log_rotation_size, "1K" )
-            .withSharedCoreParam( CoreEdgeClusterSettings.raft_log_pruning_frequency, "100ms" );
+    public final ClusterRule clusterRule =
+            new ClusterRule( getClass() ).withNumberOfCoreServers( 3 ).withNumberOfEdgeServers( 0 )
+                    .withSharedCoreParam( CoreEdgeClusterSettings.state_machine_flush_window_size, "1" )
+                    .withSharedCoreParam( raft_log_pruning_strategy, "keep_none" )
+                    .withSharedCoreParam( CoreEdgeClusterSettings.raft_log_rotation_size, "1K" )
+                    .withSharedCoreParam( CoreEdgeClusterSettings.raft_log_pruning_frequency, "100ms" );
 
     @Test
     public void actuallyDeletesTheFiles() throws Exception
@@ -60,6 +60,29 @@ public class CorePruningIT
             coreGraphDatabase = cluster.coreTx( ( db, tx ) -> {
                 createData( db, 1 );
                 tx.success();
+            } );
+        }
+
+        // when pruning kicks in then some files are actually deleted
+        File storeDir = new File( coreGraphDatabase.getStoreDir() );
+        int expectedNumberOfLogFilesAfterPruning = 2;
+        assertEventually( "raft logs eventually pruned", () -> numberOfFiles( storeDir ),
+                equalTo( expectedNumberOfLogFilesAfterPruning ), 1, TimeUnit.SECONDS );
+    }
+
+    @Test
+    public void shouldNotPruneUncommittedEntries() throws Exception
+    {
+
+        // given
+        Cluster cluster = clusterRule.startCluster();
+
+        CoreGraphDatabase coreGraphDatabase = null;
+        int txs = 1000;
+        for ( int i = 0; i < txs; i++ )
+        {
+            coreGraphDatabase = cluster.coreTx( ( db, tx ) -> {
+                createData( db, 1 );
             } );
         }
 

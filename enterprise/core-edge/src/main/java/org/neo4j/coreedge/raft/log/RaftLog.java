@@ -48,7 +48,7 @@ public interface RaftLog extends ReadableRaftLog
      *
      * @param fromIndex The start index (inclusive).
      */
-    void truncate( long fromIndex ) throws IOException, RaftLogCompactedException;
+    void truncate( long fromIndex ) throws IOException;
 
     /**
      * Attempt to prune (delete) a prefix of the log, no further than the safeIndex.
@@ -60,7 +60,7 @@ public interface RaftLog extends ReadableRaftLog
      *
      * @return The new prevIndex for the log, which will be at most safeIndex.
      */
-    long prune( long safeIndex ) throws IOException, RaftLogCompactedException;
+    long prune( long safeIndex ) throws IOException;
 
     /**
      * Skip up to the supplied index if it is not already present.

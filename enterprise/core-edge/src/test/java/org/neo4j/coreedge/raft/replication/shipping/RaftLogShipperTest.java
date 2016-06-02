@@ -19,13 +19,14 @@
  */
 package org.neo4j.coreedge.raft.replication.shipping;
 
-import java.time.Clock;
-import java.util.ArrayList;
-import java.util.Collection;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.time.Clock;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import org.neo4j.coreedge.raft.LeaderContext;
 import org.neo4j.coreedge.raft.OutboundMessageCollector;
@@ -37,10 +38,13 @@ import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class RaftLogShipperTest
 {
@@ -54,6 +58,8 @@ public class RaftLogShipperTest
     private long retryTimeMillis;
     private int catchupBatchSize = 64;
     private int maxAllowedShippingLag = 256;
+    private LogProvider logProvider;
+    private Log log;
 
     private RaftLogShipper<RaftTestMember> logShipper;
 
@@ -74,6 +80,9 @@ public class RaftLogShipperTest
         leaderTerm = 0;
         leaderCommit = 0;
         retryTimeMillis = 100000;
+        logProvider = mock( LogProvider.class );
+        log = mock( Log.class );
+        when( logProvider.getLog( RaftLogShipper.class ) ).thenReturn( log );
     }
 
     @After
@@ -88,9 +97,9 @@ public class RaftLogShipperTest
 
     private void startLogShipper()
     {
-        logShipper = new RaftLogShipper<>( outbound, NullLogProvider.getInstance(), raftLog,
-                clock, leader, follower, leaderTerm, leaderCommit, retryTimeMillis,
-                catchupBatchSize, maxAllowedShippingLag );
+        logShipper =
+                new RaftLogShipper<>( outbound, logProvider, raftLog, clock, leader, follower, leaderTerm, leaderCommit,
+                        retryTimeMillis, catchupBatchSize, maxAllowedShippingLag );
         logShipper.start();
     }
 
@@ -260,6 +269,27 @@ public class RaftLogShipperTest
         }
         while ( outbound.sentTo( follower ).size() > 0 );
 
-        assertEquals( ENTRY_COUNT-1, matchIndex );
+        assertEquals( ENTRY_COUNT - 1, matchIndex );
+    }
+
+    @Test
+    public void shouldSendMostRecentlyAvailableEntryIfPruningHappened() throws IOException
+    {
+        //given
+        raftLog.append( entry0 );
+        raftLog.append( entry1 );
+        raftLog.append( entry2 );
+        raftLog.append( entry3 );
+
+        startLogShipper();
+
+        //when
+        raftLog.prune( 2 );
+        outbound.clear();
+        logShipper.onMismatch( 0, new LeaderContext( 0, 0 ) );
+
+        //then
+        assertTrue( outbound.hasAnyEntriesTo( follower ) );
+        assertTrue( outbound.hasEntriesTo( follower, entry3) );
     }
 }

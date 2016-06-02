@@ -21,11 +21,14 @@ package org.neo4j.coreedge.raft.log;
 
 import org.junit.Test;
 
+import java.io.IOException;
+
 import org.neo4j.coreedge.raft.ReplicatedString;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -350,7 +353,7 @@ public abstract class RaftLogContractTest
             readLogEntry( log, skipIndex );
             fail( "Should have thrown exception" );
         }
-        catch ( RaftLogCompactedException e )
+        catch ( IOException e )
         {
             // expected
         }
@@ -381,11 +384,44 @@ public abstract class RaftLogContractTest
                 readLogEntry( log, i );
                 fail( "Should have thrown exception at index " + i );
             }
-            catch ( RaftLogCompactedException e )
+            catch ( IOException e )
             {
                 // expected
             }
         }
+    }
+
+    @Test
+    public void shouldThrowExceptionIfReadingAnEntryThatDoesNotExist() throws Exception
+    {
+        RaftLog log = createRaftLog();
+        log.append( new RaftLogEntry( 0, string( 1024 ) ) );
+        log.append( new RaftLogEntry( 1, string( 1024 ) ) );
+        log.append( new RaftLogEntry( 2, string( 1024 ) ) );
+        log.append( new RaftLogEntry( 3, string( 1024 ) ) );
+        log.append( new RaftLogEntry( 4, string( 1024 ) ) );
+
+        long pruneIndex = log.prune( 4 );
+        assertThat( pruneIndex, greaterThanOrEqualTo( 2L ) );
+
+        long term = log.readEntryTerm( 1 );
+
+        RaftLogCursor cursor = log.getEntryCursor( 1 );
+        if ( cursor.next() )
+        {
+            fail(); //the cursor should return false since this has been pruned.
+        }
+
+        assertEquals( -1L, term );
+    }
+
+    private ReplicatedString string(int numberOfCharacters) {
+        StringBuffer s = new StringBuffer(  );
+        for ( int i = 0; i < numberOfCharacters; i++ )
+        {
+             s.append( String.valueOf( i ) );
+        }
+        return ReplicatedString.valueOf( s.toString() ) ;
     }
 
     // TODO: Test what happens when the log has rotated, *not* pruned and then skipping happens which causes

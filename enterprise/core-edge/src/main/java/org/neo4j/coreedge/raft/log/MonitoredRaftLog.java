@@ -22,8 +22,6 @@ package org.neo4j.coreedge.raft.log;
 import java.io.IOException;
 
 import org.neo4j.coreedge.raft.log.monitoring.RaftLogAppendIndexMonitor;
-import org.neo4j.coreedge.raft.log.monitoring.RaftLogCommitIndexMonitor;
-import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.monitoring.Monitors;
 
 public class MonitoredRaftLog implements RaftLog
@@ -46,14 +44,14 @@ public class MonitoredRaftLog implements RaftLog
     }
 
     @Override
-    public void truncate( long fromIndex ) throws IOException, RaftLogCompactedException
+    public void truncate( long fromIndex ) throws IOException
     {
         delegate.truncate( fromIndex );
         appendIndexMonitor.appendIndex( delegate.appendIndex() );
     }
 
     @Override
-    public long prune( long safeIndex ) throws IOException, RaftLogCompactedException
+    public long prune( long safeIndex ) throws IOException
     {
         return delegate.prune( safeIndex );
     }
@@ -71,13 +69,13 @@ public class MonitoredRaftLog implements RaftLog
     }
 
     @Override
-    public long readEntryTerm( long logIndex ) throws IOException, RaftLogCompactedException
+    public long readEntryTerm( long logIndex ) throws IOException
     {
         return delegate.readEntryTerm( logIndex );
     }
 
     @Override
-    public RaftLogCursor getEntryCursor( long fromIndex ) throws IOException, RaftLogCompactedException
+    public RaftLogCursor getEntryCursor( long fromIndex ) throws IOException
     {
         return delegate.getEntryCursor( fromIndex );
     }

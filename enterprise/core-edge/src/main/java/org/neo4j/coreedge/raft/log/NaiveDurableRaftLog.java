@@ -181,7 +181,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     }
 
     @Override
-    public void truncate( long fromIndex ) throws IOException, RaftLogCompactedException
+    public void truncate( long fromIndex ) throws IOException
     {
         if ( appendIndex >= fromIndex )
         {
@@ -202,7 +202,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     }
 
     @Override
-    public long prune( long safeIndex ) throws IOException, RaftLogCompactedException
+    public long prune( long safeIndex ) throws IOException
     {
         try
         {
@@ -279,7 +279,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         return prevIndex;
     }
 
-    private RaftLogEntry readLogEntry( long logIndex ) throws IOException, RaftLogCompactedException
+    private RaftLogEntry readLogEntry( long logIndex ) throws IOException
     {
         Entry entry = readEntry( logIndex );
         ReplicatedContent content;
@@ -296,7 +296,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     }
 
     @Override
-    public long readEntryTerm( long logIndex ) throws IOException, RaftLogCompactedException
+    public long readEntryTerm( long logIndex ) throws IOException
     {
         if( logIndex == prevIndex )
         {
@@ -349,7 +349,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
                     current.set( readLogEntry( currentIndex ) );
                     return true;
                 }
-                catch ( RaftLogCompactedException e )
+                catch ( IllegalArgumentException e )
                 {
                     current.invalidate();
                 }
@@ -387,11 +387,11 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         entriesChannel.force( false );
     }
 
-    private Entry readEntry( long logIndex ) throws RaftLogCompactedException, IOException
+    private Entry readEntry( long logIndex ) throws IOException
     {
         if ( logIndex <= prevIndex || logIndex > appendIndex )
         {
-            throw new RaftLogCompactedException();
+            throw new IllegalArgumentException("compaction exception");
         }
 
         ByteBuffer buffer = ByteBuffer.allocate( ENTRY_RECORD_LENGTH );

@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.coreedge.raft.log.RaftLog;
-import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.membership.RaftMembership;
 import org.neo4j.coreedge.raft.outcome.LogCommand;
@@ -133,7 +132,7 @@ public class RaftState<MEMBER> implements ReadableRaftState<MEMBER>
         return commitIndex;
     }
 
-    public void update( Outcome<MEMBER> outcome ) throws IOException, RaftLogCompactedException
+    public void update( Outcome<MEMBER> outcome ) throws IOException
     {
         if ( termState.update( outcome.getTerm() ) )
         {

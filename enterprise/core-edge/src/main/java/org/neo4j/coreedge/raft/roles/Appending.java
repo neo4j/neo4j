@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.List;
 
 import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
 import org.neo4j.coreedge.raft.outcome.BatchAppendLogEntries;
@@ -37,7 +36,7 @@ public class Appending
 {
     public static <MEMBER> void handleAppendEntriesRequest(
             ReadableRaftState<MEMBER> state, Outcome<MEMBER> outcome, RaftMessages.AppendEntries.Request<MEMBER> request )
-            throws IOException, RaftLogCompactedException
+            throws IOException
     {
         if ( request.leaderTerm() < state.term() )
         {
@@ -113,7 +112,7 @@ public class Appending
     }
 
     public static <MEMBER> void appendNewEntry( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome, ReplicatedContent
-            content ) throws IOException, RaftLogCompactedException
+            content ) throws IOException
     {
         long prevLogIndex = ctx.entryLog().appendIndex();
         long prevLogTerm = prevLogIndex == -1 ? -1 :
@@ -128,7 +127,7 @@ public class Appending
     }
 
     public static <MEMBER> void appendNewEntries( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome,
-            List<ReplicatedContent> contents ) throws IOException, RaftLogCompactedException
+            List<ReplicatedContent> contents ) throws IOException
     {
         long prevLogIndex = ctx.entryLog().appendIndex();
         long prevLogTerm = prevLogIndex == -1 ? -1 :

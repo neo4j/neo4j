@@ -32,7 +32,6 @@ import org.neo4j.coreedge.raft.RaftInstanceBuilder;
 import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.RaftTestNetwork;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
-import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
@@ -93,14 +92,7 @@ public class Fixture
     void boot() throws BootstrapException
     {
         net.start();
-        try
-        {
-            Iterables.first( rafts ).bootstrapWithInitialMembers( new RaftTestGroup( members ) );
-        }
-        catch ( RaftLogCompactedException e )
-        {
-            throw new BootstrapException( e );
-        }
+        Iterables.first( rafts ).bootstrapWithInitialMembers( new RaftTestGroup( members ) );
     }
 
     public void teardown() throws InterruptedException

@@ -19,10 +19,11 @@
  */
 package org.neo4j.coreedge.raft.roles;
 
+import java.io.IOException;
+
+import org.neo4j.coreedge.raft.NewLeaderBarrier;
 import org.neo4j.coreedge.raft.RaftMessageHandler;
 import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.NewLeaderBarrier;
-import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.logging.Log;
@@ -32,13 +33,11 @@ import static org.neo4j.coreedge.raft.roles.Role.CANDIDATE;
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 
-import java.io.IOException;
-
 public class Candidate implements RaftMessageHandler
 {
     @Override
     public <MEMBER> Outcome<MEMBER> handle( RaftMessages.RaftMessage<MEMBER> message,
-                                            ReadableRaftState<MEMBER> ctx, Log log ) throws IOException, RaftLogCompactedException
+                                            ReadableRaftState<MEMBER> ctx, Log log ) throws IOException
     {
         Outcome<MEMBER> outcome = new Outcome<>( CANDIDATE, ctx );
 
