@@ -50,6 +50,18 @@ import static org.junit.Assert.assertThat;
 
 public class BatchInsertDocTest
 {
+    @Rule
+    public DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private DefaultFileSystemAbstraction fileSystem;
+
+    @Before
+    public void before() throws Exception
+    {
+        fileSystem = fileSystemRule.get();
+        fileSystem.mkdirs( new File( "target" ) );
+        fileSystem.mkdirs( new File( "target/docs" ) );
+    }
+
     @Test
     public void insert() throws Exception
     {
@@ -86,8 +98,7 @@ public class BatchInsertDocTest
         // END SNIPPET: insert
 
         // try it out from a normal db
-        GraphDatabaseService db =
-                new GraphDatabaseFactory()
+        GraphDatabaseService db = new GraphDatabaseFactory()
                         .newEmbeddedDatabaseBuilder( new File("target/batchinserter-example") )
                         .newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
@@ -99,7 +110,7 @@ public class BatchInsertDocTest
             Label personLabelForTesting = Label.label( "Person" );
             Node mNode = db.findNode( personLabelForTesting, "name", "Mattias" );
             Node cNode = mNode.getSingleRelationship( RelationshipType.withName( "KNOWS" ), Direction.OUTGOING ).getEndNode();
-            assertThat( (String) cNode.getProperty( "name" ), is( "Chris" ) );
+            assertThat( cNode.getProperty( "name" ), is( "Chris" ) );
             assertThat( db.schema()
                     .getIndexes( personLabelForTesting )
                     .iterator()
@@ -148,6 +159,7 @@ public class BatchInsertDocTest
         // END SNIPPET: configFileInsert
     }
 
+
     private File clean( String fileName ) throws IOException
     {
         File directory = new File( fileName );
@@ -155,15 +167,4 @@ public class BatchInsertDocTest
         return directory;
     }
 
-    @Rule
-    public DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    private DefaultFileSystemAbstraction fileSystem;
-
-    @Before
-    public void before() throws Exception
-    {
-        fileSystem = fileSystemRule.get();
-        fileSystem.mkdirs( new File( "target" ) );
-        fileSystem.mkdirs( new File( "target/docs" ) );
-    }
 }

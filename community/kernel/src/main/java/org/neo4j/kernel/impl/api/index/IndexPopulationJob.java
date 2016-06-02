@@ -35,8 +35,8 @@ import static java.lang.Thread.currentThread;
 import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
 
 /**
- * A background job fir initially populating one or more index over existing data in the database.
- * Scans the store directly. Participating {@link IndexPopulator} are added with
+ * A background job for initially populating one or more index over existing data in the database.
+ * Use provided store view to scan store. Participating {@link IndexPopulator} are added with
  * {@link #addPopulator(IndexPopulator, IndexDescriptor, IndexConfiguration, org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor, String, FlippableIndexProxy, FailedIndexProxyFactory)}
  * before {@link #run() running} this job.
  */
@@ -88,7 +88,8 @@ public class IndexPopulationJob implements Runnable
     }
 
     /**
-     * Scans the store and populates all participating {@link IndexPopulator} with data relevant to each index.
+     * Scans the store using store view and populates all participating {@link IndexPopulator} with data relevant to
+     * each index.
      * The scan continues as long as there's at least one non-failed populator.
      */
     @Override

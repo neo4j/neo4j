@@ -48,26 +48,25 @@ import static java.lang.String.format;
  * Label scan store Lucene index writer implementation that supports writing into multiple partitions and creates
  * partitions on-demand if needed.
  * <p>
- * Writer chooses writable partition based on the given nodeId and configured parameter
- * {@link #MAXIMUM_PARTITION_SIZE}.
+ * Writer chooses writable partition based on the given nodeId and provided maximum partition size.
  * Additional partitions are created on-demand, if needed.
  */
 public class PartitionedLuceneLabelScanWriter implements LabelScanWriter
 {
 
-    private final Integer MAXIMUM_PARTITION_SIZE =
-            Integer.getInteger( "labelScanStore.maxPartitionSize", IndexWriter.MAX_DOCS );
-
     private final BitmapDocumentFormat format;
+    private Integer maximumPartitionSize;
 
     private final List<NodeLabelUpdate> updates;
     private long currentRange;
     private LuceneLabelScanIndex index;
 
-    public PartitionedLuceneLabelScanWriter( LuceneLabelScanIndex index, BitmapDocumentFormat format)
+    public PartitionedLuceneLabelScanWriter( LuceneLabelScanIndex index, BitmapDocumentFormat format,
+            Integer maximumPartitionSize )
     {
         this.index = index;
         this.format = format;
+        this.maximumPartitionSize = maximumPartitionSize;
         currentRange = -1;
         updates = new ArrayList<>( format.bitmapFormat().rangeSize() );
     }
@@ -181,7 +180,7 @@ public class PartitionedLuceneLabelScanWriter implements LabelScanWriter
 
     private int getPartitionForRange()
     {
-        return Math.toIntExact( currentRange / MAXIMUM_PARTITION_SIZE );
+        return Math.toIntExact( currentRange / maximumPartitionSize );
     }
 
     private boolean isEmpty( Document document )

@@ -46,10 +46,11 @@ public abstract class UniquePropertyIndexUpdater implements IndexUpdater
         switch ( update.getUpdateMode() )
         {
             case ADDED:
-                propertyValueDiffSet( update.getValueAfter() ).add( update.getNodeId() );
-                break;
             case CHANGED:
-                propertyValueDiffSet( update.getValueBefore() ).remove( update.getNodeId() );
+                if (update.getValueBefore() != null)
+                {
+                    propertyValueDiffSet( update.getValueBefore() ).remove( update.getNodeId() );
+                }
                 propertyValueDiffSet( update.getValueAfter() ).add( update.getNodeId() );
                 break;
             case REMOVED:

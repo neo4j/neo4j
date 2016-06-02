@@ -264,10 +264,11 @@ class InMemoryIndex
             switch ( update.getUpdateMode() )
             {
             case ADDED:
-                InMemoryIndex.this.add( update.getNodeId(), update.getValueAfter(), applyIdempotently );
-                break;
             case CHANGED:
-                InMemoryIndex.this.remove( update.getNodeId(), update.getValueBefore() );
+                if (update.getValueBefore() != null)
+                {
+                    InMemoryIndex.this.remove( update.getNodeId(), update.getValueBefore() );
+                }
                 add( update.getNodeId(), update.getValueAfter(), applyIdempotently );
                 break;
             case REMOVED:

@@ -43,9 +43,9 @@ public interface IndexStoreView extends PropertyAccessor
      * @return a {@link StoreScan} to start and to stop the scan.
      */
     <FAILURE extends Exception> StoreScan<FAILURE> visitNodes(
-            IntPredicate labelIdFilter, IntPredicate propertyKeyIdFilter,
+            int[] labelIds, IntPredicate propertyKeyIdFilter,
             Visitor<NodePropertyUpdates, FAILURE> propertyUpdateVisitor,
-            Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor );
+            Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor);
 
     /**
      * Produces {@link NodePropertyUpdate} objects from reading node {@code nodeId}, its labels and properties
@@ -63,6 +63,14 @@ public interface IndexStoreView extends PropertyAccessor
     void replaceIndexCounts( IndexDescriptor descriptor, long uniqueElements, long maxUniqueElements, long indexSize );
 
     void incrementIndexUpdates( IndexDescriptor descriptor, long updatesDelta );
+
+    /**
+     * Check if provided node update is applicable in a context of current store view.
+     * @param update update to check
+     * @param currentlyIndexedNodeId id of currently indexed node
+     * @return true if update is acceptable
+     */
+    boolean isAcceptableUpdate(NodePropertyUpdate update, long currentlyIndexedNodeId);
 
     StoreScan EMPTY_SCAN = new StoreScan()
     {
@@ -92,7 +100,7 @@ public interface IndexStoreView extends PropertyAccessor
         }
 
         @Override
-        public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( IntPredicate labelIdFilter,
+        public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
                 IntPredicate propertyKeyIdFilter, Visitor<NodePropertyUpdates,FAILURE> propertyUpdateVisitor,
                 Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor )
         {
@@ -125,6 +133,12 @@ public interface IndexStoreView extends PropertyAccessor
         @Override
         public void incrementIndexUpdates( IndexDescriptor descriptor, long updatesDelta )
         {
+        }
+
+        @Override
+        public boolean isAcceptableUpdate( NodePropertyUpdate update, long currentlyIndexedNodeId )
+        {
+            return false;
         }
     };
 }

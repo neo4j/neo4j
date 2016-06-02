@@ -31,7 +31,7 @@ include::{importdir}/neo4j-lucene-index-docs-jar/dev/index.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-kernel-docs-jar/dev/batchinsert.asciidoc[]
+include::{importdir}/neo4j-lucene-index-docs-jar/dev/batchinsert.asciidoc[]
 
 :leveloffset: 2
 

@@ -21,15 +21,18 @@ package org.neo4j.index.lucene;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.function.Supplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanIndex;
 import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanIndexBuilder;
 import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
+import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.logging.LogProvider;
+
+import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
+import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.getStoreDirectory;
 
 /**
  * Means of obtaining a {@link LabelScanStore}, independent of the {@link org.neo4j.kernel.extension.KernelExtensions}
@@ -41,17 +44,23 @@ import org.neo4j.logging.LogProvider;
 public class LuceneLabelScanStoreBuilder
 {
     private final File storeDir;
-    private final FullStoreChangeStream fullStoreStream;
+    private Supplier<IndexStoreView> storeViewSupplier;
     private final FileSystemAbstraction fileSystem;
     private final LogProvider logProvider;
 
     private LuceneLabelScanStore labelScanStore;
 
-    public LuceneLabelScanStoreBuilder( File storeDir, FullStoreChangeStream fullStoreStream,
+    public LuceneLabelScanStoreBuilder( File storeDir, IndexStoreView storeView,
+            FileSystemAbstraction fileSystem, LogProvider logProvider )
+    {
+        this (storeDir, () -> storeView, fileSystem, logProvider);
+    }
+
+    public LuceneLabelScanStoreBuilder( File storeDir, Supplier<IndexStoreView> storeViewSupplier,
             FileSystemAbstraction fileSystem, LogProvider logProvider )
     {
         this.storeDir = storeDir;
-        this.fullStoreStream = fullStoreStream;
+        this.storeViewSupplier = storeViewSupplier;
         this.fileSystem = fileSystem;
         this.logProvider = logProvider;
     }
@@ -63,9 +72,9 @@ public class LuceneLabelScanStoreBuilder
             // TODO: Replace with kernel extension based lookup
             LuceneLabelScanIndex index = LuceneLabelScanIndexBuilder.create()
                     .withFileSystem( fileSystem )
-                    .withIndexRootFolder( LabelScanStoreProvider.getStoreDirectory( storeDir ) )
+                    .withIndexRootFolder( getStoreDirectory( storeDir ) )
                     .build();
-            labelScanStore = new LuceneLabelScanStore( index, fullStoreStream,
+            labelScanStore = new LuceneLabelScanStore( index, fullStoreLabelUpdateStream( storeViewSupplier ),
                     logProvider, LuceneLabelScanStore.Monitor.EMPTY );
 
             try

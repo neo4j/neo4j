@@ -95,12 +95,14 @@ public class BatchingMultipleIndexPopulatorTest
     {
         setProperty( QUEUE_THRESHOLD_NAME, 2 );
 
+        IndexStoreView storeView = mock( IndexStoreView.class );
         BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator(
-                mock( IndexStoreView.class ), mock( ExecutorService.class ), NullLogProvider.getInstance() );
+                storeView, mock( ExecutorService.class ), NullLogProvider.getInstance() );
 
         IndexPopulator populator1 = addPopulator( batchingPopulator, 1 );
         IndexUpdater updater1 = mock( IndexUpdater.class );
         when( populator1.newPopulatingUpdater( any() ) ).thenReturn( updater1 );
+        when( storeView.isAcceptableUpdate( any(NodePropertyUpdate.class), anyLong() ) ).thenReturn( true );
 
         IndexPopulator populator2 = addPopulator( batchingPopulator, 2 );
         IndexUpdater updater2 = mock( IndexUpdater.class );

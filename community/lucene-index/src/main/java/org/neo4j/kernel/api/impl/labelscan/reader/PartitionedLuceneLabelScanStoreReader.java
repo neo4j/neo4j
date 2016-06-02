@@ -42,18 +42,20 @@ public class PartitionedLuceneLabelScanStoreReader implements LabelScanReader
 {
 
     private final List<LabelScanReader> storeReaders;
+    private long nodesInPartition;
 
-    public PartitionedLuceneLabelScanStoreReader( List<PartitionSearcher> searchers,
-            LabelScanStorageStrategy storageStrategy )
+    public PartitionedLuceneLabelScanStoreReader( List<PartitionSearcher> searchers, LabelScanStorageStrategy
+            storageStrategy, long nodesInPartition )
     {
         this( searchers.stream()
                 .map( searcher -> new SimpleLuceneLabelScanStoreReader( searcher, storageStrategy ) )
-                .collect( Collectors.toList() ) );
+                .collect( Collectors.toList() ), nodesInPartition );
     }
 
-    PartitionedLuceneLabelScanStoreReader(List<LabelScanReader> readers)
+    PartitionedLuceneLabelScanStoreReader(List<LabelScanReader> readers, long nodesInPartition)
     {
         this.storeReaders = readers;
+        this.nodesInPartition = nodesInPartition;
     }
 
     @Override
@@ -63,9 +65,32 @@ public class PartitionedLuceneLabelScanStoreReader implements LabelScanReader
     }
 
     @Override
+    public PrimitiveLongIterator nodesWithAnyOfLabels( int... labelIds )
+    {
+        return partitionedOperation( storeReader -> storeReader.nodesWithAnyOfLabels( labelIds ) );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesWithAllLabels( int... labelIds )
+    {
+        return partitionedOperation( storeReader -> storeReader.nodesWithAllLabels( labelIds ) );
+    }
+
+    @Override
     public PrimitiveLongIterator labelsForNode( long nodeId )
     {
         return partitionedOperation( storeReader -> storeReader.labelsForNode( nodeId ) );
+    }
+
+    @Override
+
+    public long getMinIndexedNodeId()
+    {
+        int partitions = storeReaders.size();
+        LabelScanReader lastPartitionReader = storeReaders.get( partitions - 1 );
+        long highestPartitionIndexedNodes = lastPartitionReader.getMinIndexedNodeId();
+        long nodesInFullPartitions = (partitions - 1) * nodesInPartition;
+        return nodesInFullPartitions + highestPartitionIndexedNodes;
     }
 
     @Override
@@ -81,11 +106,10 @@ public class PartitionedLuceneLabelScanStoreReader implements LabelScanReader
         }
     }
 
-    private PrimitiveLongIterator partitionedOperation(
-            Function<LabelScanReader,PrimitiveLongIterator> readerFunction )
+    private PrimitiveLongIterator partitionedOperation( Function<LabelScanReader,PrimitiveLongIterator> readerFunction )
     {
         return PrimitiveLongCollections.concat( storeReaders.parallelStream()
-                .map( readerFunction::apply )
+                .map( readerFunction )
                 .iterator() );
     }
 }

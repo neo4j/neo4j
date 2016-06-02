@@ -63,6 +63,28 @@ public class LuceneLabelScanStoreIT extends LabelScanStoreIT
     }
 
     @Test
+    public void highestIndexedNodeId() throws IOException
+    {
+        LabelScanStore labelScanStore = getLabelScanStore();
+        populateIndex( labelScanStore );
+        try ( LabelScanReader labelScanReader = labelScanStore.newReader() )
+        {
+            assertEquals( 1057L, labelScanReader.getMinIndexedNodeId() );
+        }
+    }
+
+    private void populateIndex( LabelScanStore labelScanStore ) throws IOException
+    {
+        try ( LabelScanWriter labelScanWriter = labelScanStore.newWriter() )
+        {
+            labelScanWriter.write( NodeLabelUpdate.labelChanges( 1L, new long[]{}, new long[]{1L} ) );
+            labelScanWriter.write( NodeLabelUpdate.labelChanges( 110L, new long[]{}, new long[]{1L} ) );
+            labelScanWriter.write( NodeLabelUpdate.labelChanges( 123L, new long[]{}, new long[]{1L} ) );
+            labelScanWriter.write( NodeLabelUpdate.labelChanges( 1076L, new long[]{}, new long[]{1L} ) );
+        }
+    }
+
+    @Test
     public void scanStoreRecreateCorruptedIndexOnStartup() throws IOException
     {
         NeoStoreDataSource dataSource = getDataSource();

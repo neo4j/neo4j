@@ -128,17 +128,22 @@ public class LuceneIndexAccessor implements IndexAccessor
             switch ( update.getUpdateMode() )
             {
             case ADDED:
-                if ( isRecovery )
+            case CHANGED:
+                if ( update.getValueBefore() == null )
                 {
-                    addRecovered( update.getNodeId(), update.getValueAfter() );
+                    if ( isRecovery )
+                    {
+                        addRecovered( update.getNodeId(), update.getValueAfter() );
+                    }
+                    else
+                    {
+                        add( update.getNodeId(), update.getValueAfter() );
+                    }
                 }
                 else
                 {
-                    add( update.getNodeId(), update.getValueAfter() );
+                    change( update.getNodeId(), update.getValueAfter() );
                 }
-                break;
-            case CHANGED:
-                change( update.getNodeId(), update.getValueAfter() );
                 break;
             case REMOVED:
                 remove( update.getNodeId() );

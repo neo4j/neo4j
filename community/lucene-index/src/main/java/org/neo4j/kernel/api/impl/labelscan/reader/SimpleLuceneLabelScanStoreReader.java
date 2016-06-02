@@ -48,9 +48,27 @@ public class SimpleLuceneLabelScanStoreReader implements LabelScanReader
     }
 
     @Override
+    public PrimitiveLongIterator nodesWithAnyOfLabels( int... labelIds )
+    {
+        return strategy.nodesWithAnyOfLabels( partitionSearcher.getIndexSearcher(), labelIds );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesWithAllLabels( int... labelIds )
+    {
+        return strategy.nodesWithAllLabels( partitionSearcher.getIndexSearcher(), labelIds );
+    }
+
+    @Override
     public PrimitiveLongIterator labelsForNode( long nodeId )
     {
         return strategy.labelsForNode( partitionSearcher.getIndexSearcher(), nodeId );
+    }
+
+    @Override
+    public long getMinIndexedNodeId()
+    {
+        return strategy.getMinRangeIndexedNodeId( partitionSearcher.getIndexSearcher() );
     }
 
     @Override

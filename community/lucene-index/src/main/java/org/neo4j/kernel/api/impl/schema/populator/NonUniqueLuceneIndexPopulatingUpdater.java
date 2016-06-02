@@ -47,8 +47,11 @@ public class NonUniqueLuceneIndexPopulatingUpdater extends LuceneIndexPopulating
     @Override
     protected void changed( NodePropertyUpdate update )
     {
-        String encodedValueBefore = LuceneDocumentStructure.encodedStringValue( update.getValueBefore() );
-        sampler.exclude( encodedValueBefore );
+        if ( update.getValueBefore() != null)
+        {
+            String encodedValueBefore = LuceneDocumentStructure.encodedStringValue( update.getValueBefore() );
+            sampler.exclude( encodedValueBefore );
+        }
 
         String encodedValueAfter = LuceneDocumentStructure.encodedStringValue( update.getValueAfter() );
         sampler.include( encodedValueAfter );

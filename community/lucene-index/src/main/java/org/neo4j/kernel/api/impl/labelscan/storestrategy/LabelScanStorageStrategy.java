@@ -29,7 +29,18 @@ public interface LabelScanStorageStrategy
 {
     PrimitiveLongIterator nodesWithLabel( IndexSearcher searcher, int labelId );
 
+    PrimitiveLongIterator nodesWithAnyOfLabels( IndexSearcher indexSearcher, int[] labelIds );
+
+    PrimitiveLongIterator nodesWithAllLabels( IndexSearcher indexSearcher, int[] labelIds );
+
     AllEntriesLabelScanReader newNodeLabelReader( LuceneAllDocumentsReader allDocumentsReader );
 
     PrimitiveLongIterator labelsForNode( IndexSearcher searcher, long nodeId );
+
+    /**
+     * Return minimal node id that is indexed by highest range in underlying index
+     * @param indexSearcher index searcher
+     * @return minimal node id that is covered by highest available index range
+     */
+    long getMinRangeIndexedNodeId( IndexSearcher indexSearcher );
 }

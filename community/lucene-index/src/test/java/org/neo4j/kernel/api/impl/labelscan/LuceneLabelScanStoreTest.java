@@ -69,6 +69,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.Iterators.single;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
@@ -108,7 +109,7 @@ public class LuceneLabelScanStoreTest
     }
 
     @After
-    public void shutdown() throws IOException
+    public void shutdown()
     {
         life.shutdown();
     }
@@ -386,6 +387,89 @@ public class LuceneLabelScanStoreTest
         // THEN
         assertThat( PrimitiveLongCollections.toSet( reader.labelsForNode( nodeId ) ), hasItems( labelId1, labelId2 ) );
         reader.close();
+    }
+
+    @Test
+    public void shouldFindNodesWithAnyOfGivenLabels() throws Exception
+    {
+        // GIVEN
+        int labelId1 = 3, labelId2 = 5, labelId3 = 13;
+        start();
+
+        // WHEN
+        write( iterator(
+                labelChanges( 1, EMPTY_LONG_ARRAY, new long[] {labelId1} ),
+                labelChanges( 2, EMPTY_LONG_ARRAY, new long[] {labelId1, labelId2} ),
+                labelChanges( 3, EMPTY_LONG_ARRAY, new long[] {labelId1} ),
+                labelChanges( 4, EMPTY_LONG_ARRAY, new long[] {labelId1,           labelId3} ),
+                labelChanges( 5, EMPTY_LONG_ARRAY, new long[] {labelId1, labelId2, labelId3} ),
+                labelChanges( 6, EMPTY_LONG_ARRAY, new long[] {          labelId2} ),
+                labelChanges( 7, EMPTY_LONG_ARRAY, new long[] {          labelId2} ),
+                labelChanges( 8, EMPTY_LONG_ARRAY, new long[] {                    labelId3} ),
+                labelChanges( 9, EMPTY_LONG_ARRAY, new long[] {                    labelId3} ) ) );
+
+        // THEN
+        try ( LabelScanReader reader = store.newReader() )
+        {
+            assertArrayEquals(
+                    new long[] {1, 2, 3, 4, 5, 6, 7},
+                    PrimitiveLongCollections.asArray( reader.nodesWithAnyOfLabels( labelId1, labelId2 ) ) );
+            assertArrayEquals(
+                    new long[] {1, 2, 3, 4, 5, 8, 9},
+                    PrimitiveLongCollections.asArray( reader.nodesWithAnyOfLabels( labelId1, labelId3 ) ) );
+            assertArrayEquals(
+                    new long[] {1, 2, 3, 4, 5, 6, 7, 8, 9},
+                    PrimitiveLongCollections.asArray( reader.nodesWithAnyOfLabels( labelId1, labelId2, labelId3 ) ) );
+        }
+    }
+
+    @Test
+    public void shouldFindNodesWithAllGivenLabels() throws Exception
+    {
+        // GIVEN
+        int labelId1 = 3, labelId2 = 5, labelId3 = 13;
+        start();
+
+        // WHEN
+        write( iterator(
+                labelChanges( 1, EMPTY_LONG_ARRAY, new long[] {labelId1} ),
+                labelChanges( 2, EMPTY_LONG_ARRAY, new long[] {labelId1, labelId2} ),
+                labelChanges( 3, EMPTY_LONG_ARRAY, new long[] {labelId1} ),
+                labelChanges( 4, EMPTY_LONG_ARRAY, new long[] {labelId1,           labelId3} ),
+                labelChanges( 5, EMPTY_LONG_ARRAY, new long[] {labelId1, labelId2, labelId3} ),
+                labelChanges( 6, EMPTY_LONG_ARRAY, new long[] {          labelId2} ),
+                labelChanges( 7, EMPTY_LONG_ARRAY, new long[] {          labelId2} ),
+                labelChanges( 8, EMPTY_LONG_ARRAY, new long[] {                    labelId3} ),
+                labelChanges( 9, EMPTY_LONG_ARRAY, new long[] {                    labelId3} ) ) );
+
+        // THEN
+        try ( LabelScanReader reader = store.newReader() )
+        {
+            assertArrayEquals(
+                    new long[] {2, 5},
+                    PrimitiveLongCollections.asArray( reader.nodesWithAllLabels( labelId1, labelId2 ) ) );
+            assertArrayEquals(
+                    new long[] {4, 5},
+                    PrimitiveLongCollections.asArray( reader.nodesWithAllLabels( labelId1, labelId3 ) ) );
+            assertArrayEquals(
+                    new long[] {5},
+                    PrimitiveLongCollections.asArray( reader.nodesWithAllLabels( labelId1, labelId2, labelId3 ) ) );
+        }
+    }
+
+    private Iterator<NodeLabelUpdate> additions( int labelId, long... nodeIds )
+    {
+        return new PrefetchingIterator<NodeLabelUpdate>()
+        {
+            private final long[] labelIds = new long[] {labelId};
+            private int cursor;
+
+            @Override
+            protected NodeLabelUpdate fetchNextOrNull()
+            {
+                return cursor >= nodeIds.length ? null : labelChanges( nodeIds[cursor++], NO_LABELS, labelIds );
+            }
+        };
     }
 
     private Set<Long> gaps( Set<Long> ids, int expectedCount )

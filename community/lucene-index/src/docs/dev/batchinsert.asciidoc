@@ -38,7 +38,7 @@ Here's an example of the batch inserter in use:
 
 [snippet,java]
 ----
-component=neo4j-kernel
+component=neo4j-lucene-index
 source=examples/BatchInsertDocTest.java
 tag=insert
 ----
@@ -50,7 +50,7 @@ If he batch inserter isn't cleanly shutdown then the consistency of the store is
 
 [TIP]
 The source code for the examples on this page can be found here:
-https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/kernel/src/test/java/examples/BatchInsertDocTest.java[BatchInsertDocTest.java]
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/lucene-index/src/test/java/examples/BatchInsertDocTest.java[BatchInsertDocTest.java]
 
 === Setting configuration options ===
 
@@ -59,7 +59,7 @@ e.g.
 
 [snippet,java]
 ----
-component=neo4j-kernel
+component=neo4j-lucene-index
 source=examples/BatchInsertDocTest.java
 tag=configuredInsert
 ----
@@ -76,7 +76,7 @@ You can then refer to that file when initializing +BatchInserter+:
 
 [snippet,java]
 ----
-component=neo4j-kernel
+component=neo4j-lucene-index
 source=examples/BatchInsertDocTest.java
 tag=configFileInsert
 ----

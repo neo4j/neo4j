@@ -43,6 +43,7 @@ import static org.mockito.Mockito.when;
 public class PartitionedLuceneLabelScanStoreReaderTest
 {
 
+    private static final long NODES_IN_PARTITION = 10L;
     @Mock
     private LabelScanStorageStrategy scanStorageStrategy;
     @Mock
@@ -96,6 +97,15 @@ public class PartitionedLuceneLabelScanStoreReaderTest
         verifyResult( result );
     }
 
+    @Test
+    public void highestIndexedNodeId()
+    {
+        PartitionedLuceneLabelScanStoreReader storeReader = createPartitionedReaderWithReaders();
+        when( indexReader3.getMinIndexedNodeId() ).thenReturn( 8L );
+
+        assertEquals( 28, storeReader.getMinIndexedNodeId() );
+    }
+
     private void verifyResult( PrimitiveLongSet results )
     {
         assertEquals( 3, results.size() );
@@ -106,7 +116,7 @@ public class PartitionedLuceneLabelScanStoreReaderTest
 
     private PartitionedLuceneLabelScanStoreReader createPartitionedReaderWithReaders()
     {
-        return new PartitionedLuceneLabelScanStoreReader( getLabelScanReaders() );
+        return new PartitionedLuceneLabelScanStoreReader( getLabelScanReaders(), NODES_IN_PARTITION );
     }
 
     private List<LabelScanReader> getLabelScanReaders()
@@ -116,7 +126,7 @@ public class PartitionedLuceneLabelScanStoreReaderTest
 
     private PartitionedLuceneLabelScanStoreReader createPartitionedReader()
     {
-        return new PartitionedLuceneLabelScanStoreReader( getPartitionSearchers(), scanStorageStrategy );
+        return new PartitionedLuceneLabelScanStoreReader( getPartitionSearchers(), scanStorageStrategy, NODES_IN_PARTITION );
     }
 
     private List<PartitionSearcher> getPartitionSearchers()

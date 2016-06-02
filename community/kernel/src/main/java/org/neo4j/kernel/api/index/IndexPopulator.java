@@ -85,11 +85,6 @@ public interface IndexPopulator
      */
     IndexUpdater newPopulatingUpdater( PropertyAccessor accessor ) throws IOException;
 
-    // void update( Iterable<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException;
-
-    // TODO instead of this flag, we should store if population fails and mark indexes as failed internally
-    // Rationale: Users should be required to explicitly drop failed indexes
-
     /**
      * Close this populator and releases any resources related to it.
      * If {@code populationCompletedSuccessfully} is {@code true} then it must mark this index
