@@ -21,8 +21,6 @@ package org.neo4j.bolt.security.auth;
 
 import java.util.Map;
 
-import org.neo4j.kernel.api.security.AccessMode;
-
 /**
  * Authenticate a given token.
  * <p>
@@ -50,20 +48,7 @@ public interface Authentication
     /**
      * Allows all tokens to authenticate.
      */
-    Authentication NONE = authToken -> new AuthenticationResult()
-    {
-        @Override
-        public AccessMode getAccessMode()
-        {
-            return AccessMode.Static.FULL;
-        }
-
-        @Override
-        public boolean credentialsExpired()
-        {
-            return false;
-        }
-    };
+    Authentication NONE = authToken -> AuthenticationResult.AUTH_DISABLED;
 
     String SCHEME_KEY = "scheme";
     String PRINCIPAL = "principal";

@@ -37,4 +37,98 @@ public interface AuthSubject extends AccessMode
      * @throws IllegalCredentialsException If the new password is invalid.
      */
     void setPassword( String password ) throws IOException, IllegalCredentialsException;
+
+    /**
+     * Implementation to use when authentication has not yet been performed. Allows nothing.
+     */
+    AuthSubject ANONYMOUS = new AuthSubject()
+    {
+        @Override
+        public void logout()
+        {
+        }
+
+        @Override
+        public AuthenticationResult getAuthenticationResult()
+        {
+            return AuthenticationResult.FAILURE;
+        }
+
+        @Override
+        public void setPassword( String password ) throws IOException, IllegalCredentialsException
+        {
+            throw new IllegalCredentialsException( "Anonymous cannot change password" );
+        }
+
+        @Override
+        public boolean allowsReads()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean allowsWrites()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean allowsSchemaWrites()
+        {
+            return false;
+        }
+
+        @Override
+        public String name()
+        {
+            return "<anonymous>";
+        }
+    };
+
+    /**
+     * Implementation to use when authentication is disabled. Allows everything.
+     */
+    AuthSubject AUTH_DISABLED = new AuthSubject()
+    {
+        @Override
+        public boolean allowsReads()
+        {
+            return true;
+        }
+
+        @Override
+        public boolean allowsWrites()
+        {
+            return true;
+        }
+
+        @Override
+        public boolean allowsSchemaWrites()
+        {
+            return true;
+        }
+
+        @Override
+        public String name()
+        {
+            return "<auth disabled>";
+        }
+
+        @Override
+        public void logout()
+        {
+        }
+
+        @Override
+        public AuthenticationResult getAuthenticationResult()
+        {
+            return AuthenticationResult.SUCCESS;
+        }
+
+        @Override
+        public void setPassword( String password ) throws IOException, IllegalCredentialsException
+        {
+        }
+    };
+
 }

@@ -78,48 +78,7 @@ public interface AuthManager extends Lifecycle
         @Override
         public AuthSubject login( String username, String password )
         {
-            return new AuthSubject()
-            {
-                @Override
-                public void logout()
-                {
-                }
-
-                @Override
-                public AuthenticationResult getAuthenticationResult()
-                {
-                    return AuthenticationResult.SUCCESS;
-                }
-
-                @Override
-                public void setPassword( String password ) throws IOException, IllegalCredentialsException
-                {
-                }
-
-                @Override
-                public boolean allowsReads()
-                {
-                    return true;
-                }
-
-                @Override
-                public boolean allowsWrites()
-                {
-                    return true;
-                }
-
-                @Override
-                public boolean allowsSchemaWrites()
-                {
-                    return true;
-                }
-
-                @Override
-                public String name()
-                {
-                    return "";
-                }
-            };
+            return AuthSubject.AUTH_DISABLED;
         }
     };
 }

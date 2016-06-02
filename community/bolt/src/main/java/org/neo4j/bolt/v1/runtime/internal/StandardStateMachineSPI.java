@@ -115,7 +115,6 @@ class StandardStateMachineSPI implements SessionStateMachine.SPI
     {
         return authentication.authenticate( authToken );
     }
-
     @Override
     public void udcRegisterClient( String clientName )
     {
