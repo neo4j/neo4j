@@ -66,6 +66,8 @@ case class TCKErrorHandler(typ: String, phase: String, detail: String) extends M
           detail should equal(VARIABLE_ALREADY_BOUND)
         else if (e.getMessage.matches(s"${DOTALL}Type mismatch: expected .+ but was .+"))
           detail should equal("InvalidArgumentType")
+        else if (e.getMessage.matches("Only directed relationships are supported in .+"))
+          detail should equal(REQUIRES_DIRECTED_RELATIONSHIP)
 
         // Runtime errors
         else if (e.getMessage.matches("Expected .+ to be a java.lang.String, but it was a .+"))
