@@ -98,47 +98,11 @@ cmd_import() {
   esac
 }
 
-cmd_core_convert_args() {
-  declare database=''
-
-  while [[ -n "${1:-}" ]]; do
-    declare arg="$1"
-    shift
-    case "${arg}" in
-      -h|--help)
-        usage
-        ;;
-      -d)
-        if [[ -n "${1:-}" ]]; then
-          database="${1}"
-          shift
-        fi
-        ;;
-      --database=*)
-        set -- "-d" "${arg#*=}" "$@"
-        ;;
-      --database)
-        ;;
-      *)
-        bad_usage "unrecognized core-convert argument '${arg}'"
-        ;;
-    esac
-  done
-
-  [[ -z "${database}" ]] && bad_usage "you must provide the --database option with an argument"
-
-  retval=${database}
-}
-
 cmd_core_convert() {
-  cmd_core_convert_args "$@"
-  declare -r database="${retval}"
-
   setup_environment
-
   check_java
   build_classpath
-  exec "${JAVA_CMD}" -cp "${CLASSPATH}" -Dfile.encoding=UTF-8 "org.neo4j.coreedge.convert.ConvertNonCoreEdgeStoreCli" --database=${database} --config=${NEO4J_CONF}
+  exec "${JAVA_CMD}" -cp "${CLASSPATH}" -Dfile.encoding=UTF-8 "org.neo4j.coreedge.convert.ConvertNonCoreEdgeStoreCli" --config=${NEO4J_CONF} "$@"
 }
 
 bad_usage() {
