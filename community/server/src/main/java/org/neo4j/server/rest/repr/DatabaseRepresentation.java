@@ -45,6 +45,7 @@ public class DatabaseRepresentation extends MappingRepresentation implements Ext
     protected void serialize( MappingSerializer serializer )
     {
         serializer.putUri( "node", "node" );
+        serializer.putUri( "relationship", "relationship" );
         try
         {
             // TODO Depracation of reference node
