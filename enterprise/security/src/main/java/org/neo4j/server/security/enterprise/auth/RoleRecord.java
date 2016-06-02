@@ -126,7 +126,7 @@ public class RoleRecord
         public Builder( RoleRecord base )
         {
             name = base.name;
-            users = base.users;
+            users = new TreeSet<>( base.users );
         }
 
         public Builder withName( String name )

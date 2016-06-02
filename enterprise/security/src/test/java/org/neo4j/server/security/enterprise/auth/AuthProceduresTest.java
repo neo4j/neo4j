@@ -65,18 +65,18 @@ public class AuthProceduresTest
         registerProcedures( db );
         manager = new EnterpriseAuthManager( new InMemoryUserRepository(), new InMemoryRoleRepository(),
                 new BasicPasswordPolicy(), systemUTC(), true );
-        manager.newUser( "admin", "abc", false );
-        manager.newUser( "schema", "abc", false );
-        manager.newUser( "writer", "abc", false );
-        manager.newUser( "reader", "123", false );
-        manager.newRole( PredefinedRolesBuilder.ADMIN, "admin" );
-        manager.newRole( PredefinedRolesBuilder.ARCHITECT, "architect" );
-        manager.newRole( PredefinedRolesBuilder.PUBLISHER, "publisher" );
-        manager.newRole( PredefinedRolesBuilder.READER, "reader" );
-        readSubject = manager.login( "reader", "123" );
-        writeSubject = manager.login( "publisher", "abc" );
-        schemaSubject = manager.login( "architect", "abc" );
-        adminSubject = manager.login( "admin", "abc" );
+        manager.newUser( "adminSubject", "abc", false );
+        manager.newUser( "schemaSubject", "abc", false );
+        manager.newUser( "readWriteSubject", "abc", false );
+        manager.newUser( "readSubject", "123", false );
+        manager.newRole( PredefinedRolesBuilder.ADMIN, "adminSubject" );
+        manager.newRole( PredefinedRolesBuilder.ARCHITECT, "schemaSubject" );
+        manager.newRole( PredefinedRolesBuilder.PUBLISHER, "readWriteSubject" );
+        manager.newRole( PredefinedRolesBuilder.READER, "readSubject" );
+        readSubject = manager.login( "readSubject", "123" );
+        writeSubject = manager.login( "readWriteSubject", "abc" );
+        schemaSubject = manager.login( "schemaSubject", "abc" );
+        adminSubject = manager.login( "adminSubject", "abc" );
         db.execute( "UNWIND range(0,2) AS number CREATE (:Node {number:number})" );
     }
 
@@ -122,65 +122,15 @@ public class AuthProceduresTest
     public void shouldAllowUserChangePassword() throws Exception
     {
         testCallEmpty( db, readSubject, "CALL dbms.changePassword( '321' )", null );
-        AuthSubject subject = manager.login( "reader", "321" );
+        AuthSubject subject = manager.login( "readSubject", "321" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
-    }
-
-    @Test
-    public void shouldAllowAddingUserToGroup() throws Exception
-    {
-        assertFalse( "Should not have role publisher",
-                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( "publisher" ) );
-        testCallEmpty( db, adminSubject, "CALL dbms.addUserToRole('reader', 'publisher')", null );
-        assertTrue( "Should have role publisher",
-                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( "publisher" ) );
-    }
-
-    @Test
-    public void shouldAllowAddingUserToGroupMultipleTimes() throws Exception
-    {
-        assertFalse( "Should not have role publisher",
-                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( "publisher" ) );
-        testCallEmpty( db, adminSubject, "CALL dbms.addUserToRole('reader', 'publisher')", null );
-        testCallEmpty( db, adminSubject, "CALL dbms.addUserToRole('reader', 'publisher')", null );
-        assertTrue( "Should have role publisher",
-                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( "publisher" ) );
-    }
-
-    @Test
-    public void shouldAllowAddingUserToMultipleGroups() throws Exception
-    {
-        assertFalse( "Should not have role publisher",
-                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( "publisher" ) );
-        assertFalse( "Should not have role architect",
-                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( "architect" ) );
-        testCallEmpty( db, adminSubject, "CALL dbms.addUserToRole('reader', 'publisher')", null );
-        testCallEmpty( db, adminSubject, "CALL dbms.addUserToRole('reader', 'architect')", null );
-        assertTrue( "Should have role publisher",
-                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( "publisher" ) );
-        assertTrue( "Should have role architect",
-                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( "architect" ) );
-    }
-
-    @Test
-    public void shouldNotAllowNonAdminAddingUserToGroup() throws Exception
-    {
-        try
-        {
-            testCallEmpty( db, readSubject, "CALL dbms.addUserToRole('reader', 'admin')", null );
-        }
-        catch ( QueryExecutionException e )
-        {
-            assertTrue( "Exception should contain '" + AuthProcedures.PERMISSION_DENIED + "'",
-                    e.getMessage().contains( AuthProcedures.PERMISSION_DENIED ) );
-        }
     }
 
     //----------User creation scenarios-----------
 
     /*
     Admin creates user Henrik with password bar
-    Admin adds user Henrik to group read-only
+    Admin adds user Henrik to role Reader
     Henrik logs in with incorrect password → fail
     Henrik logs in with correct password → gets prompted to change
     Henrik starts read transaction → permission denied
@@ -193,24 +143,25 @@ public class AuthProceduresTest
     public void userCreation1() throws Exception
     {
         testCallEmpty( db, adminSubject, "CALL dbms.createUser('Henrik', 'bar', true)", null );
-        manager.addUserToRole( "Henrik", PredefinedRolesBuilder.READER ); // TODO: use procedure when implemented
+        testCallEmpty( db, adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PredefinedRolesBuilder.READER + "')",
+                null );
         AuthSubject subject = manager.login( "Henrik", "foo" );
         assertEquals( AuthenticationResult.FAILURE, subject.getAuthenticationResult() );
         subject = manager.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.PASSWORD_CHANGE_REQUIRED, subject.getAuthenticationResult() );
-        testFailRead( subject, 3L );
+        testFailReadAction( subject, 3L );
         testCallEmpty( db, subject, "CALL dbms.changePassword( 'foo' )", null );
         subject = manager.login( "Henrik", "foo" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
-        testFailWrite( subject );
-        testSuccessfulRead( subject, 3L );
+        testFailWriteAction( subject );
+        testSuccessfulReadAction( subject, 3L );
     }
 
     /*
     Admin creates user Henrik with password bar
     Henrik logs in with correct password (gets prompted to change - change to foo)
     Henrik starts read transaction → permission denied
-    Admin adds user Henrik to group read-only
+    Admin adds user Henrik to role Reader
     Henrik starts write transaction → permission denied
     Henrik starts read transaction → ok
     Henrik logs off
@@ -224,17 +175,18 @@ public class AuthProceduresTest
         testCallEmpty( db, subject, "CALL dbms.changePassword( 'foo' )", null );
         subject = manager.login( "Henrik", "foo" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
-        testFailRead( subject, 3L );
-        manager.addUserToRole( "Henrik", PredefinedRolesBuilder.READER ); // TODO: use procedure when implemented
-        testFailWrite( subject );
-        testSuccessfulRead( subject, 3L );
+        testFailReadAction( subject, 3L );
+        testCallEmpty( db, adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PredefinedRolesBuilder.READER + "')",
+                null );
+        testFailWriteAction( subject );
+        testSuccessfulReadAction( subject, 3L );
     }
 
     /*
     Admin creates user Henrik with password bar
     Henrik logs in with correct password
     Henrik starts read transaction → permission denied
-    Admin adds user Henrik to group read-write
+    Admin adds user Henrik to role Publisher
     Henrik starts write transaction → ok
     Henrik starts read transaction → ok
     Henrik starts schema transaction → permission denied
@@ -246,10 +198,11 @@ public class AuthProceduresTest
         testCallEmpty( db, adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)", null );
         AuthSubject subject = manager.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
-        testFailRead( subject, 3L );
-        manager.addUserToRole( "Henrik", PredefinedRolesBuilder.PUBLISHER );
-        testSuccessfulWrite( subject );
-        testSuccessfulRead( subject, 4L );
+        testFailReadAction( subject, 3L );
+        testCallEmpty( db, adminSubject,
+                "CALL dbms.addUserToRole('Henrik', '" + PredefinedRolesBuilder.PUBLISHER + "')", null );
+        testSuccessfulWriteAction( subject );
+        testSuccessfulReadAction( subject, 4L );
         testFailSchema( subject );
     }
 
@@ -260,7 +213,7 @@ public class AuthProceduresTest
     Henrik starts write transaction → permission denied
     Henrik starts schema transaction → permission denied
     Henrik creates user Craig → permission denied
-    Admin adds user Henrik to group Architect
+    Admin adds user Henrik to role Architect
     Henrik starts write transaction → ok
     Henrik starts read transaction → ok
     Henrik starts schema transaction → ok
@@ -273,29 +226,198 @@ public class AuthProceduresTest
         testCallEmpty( db, adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)", null );
         AuthSubject subject = manager.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
-        testFailRead( subject, 3L );
-        testFailWrite( subject );
+        testFailReadAction( subject, 3L );
+        testFailWriteAction( subject );
         testFailSchema( subject );
         testFailCreateUser( subject );
-        manager.addUserToRole( "Henrik", PredefinedRolesBuilder.ARCHITECT );
-        testSuccessfulWrite( subject );
-        testSuccessfulRead( subject, 4L );
-        testSuccessfulSchema( subject );
+        testCallEmpty( db, adminSubject,
+                "CALL dbms.addUserToRole('Henrik', '" + PredefinedRolesBuilder.ARCHITECT + "')", null );
+        testSuccessfulWriteAction( subject );
+        testSuccessfulReadAction( subject, 4L );
+        testSuccessfulSchemaAction( subject );
         testFailCreateUser( subject );
+    }
+
+    //----------User and role management-----------
+    @Test
+    public void shouldAllowAddingAndRemovingUserFromRole() throws Exception
+    {
+        assertFalse( "Should not have role publisher",
+                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PredefinedRolesBuilder.PUBLISHER ) );
+        testCallEmpty( db, adminSubject,
+                "CALL dbms.addUserToRole('readSubject', '" + PredefinedRolesBuilder.PUBLISHER + "')", null );
+        assertTrue( "Should have role publisher",
+                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PredefinedRolesBuilder.PUBLISHER ) );
+        testCallEmpty( db, adminSubject,
+                "CALL dbms.removeUserFromRole('readSubject', '" + PredefinedRolesBuilder.PUBLISHER + "')", null );
+        assertFalse( "Should not have role publisher",
+                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PredefinedRolesBuilder.PUBLISHER ) );
+    }
+
+    @Test
+    public void shouldAllowAddingUserToRoleMultipleTimes() throws Exception
+    {
+        assertFalse( "Should not have role publisher",
+                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PredefinedRolesBuilder.PUBLISHER ) );
+        testCallEmpty( db, adminSubject,
+                "CALL dbms.addUserToRole('readSubject', '" + PredefinedRolesBuilder.PUBLISHER + "')", null );
+        testCallEmpty( db, adminSubject,
+                "CALL dbms.addUserToRole('readSubject', '" + PredefinedRolesBuilder.PUBLISHER + "')", null );
+        assertTrue( "Should have role publisher",
+                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PredefinedRolesBuilder.PUBLISHER ) );
+    }
+
+    @Test
+    public void shouldAllowRemovingUserFromRoleMultipleTimes() throws Exception
+    {
+        assertFalse( "Should not have role publisher",
+                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PredefinedRolesBuilder.PUBLISHER ) );
+        testCallEmpty( db, adminSubject,
+                "CALL dbms.addUserToRole('readSubject', '" + PredefinedRolesBuilder.PUBLISHER + "')", null );
+        assertTrue( "Should have role publisher",
+                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PredefinedRolesBuilder.PUBLISHER ) );
+        testCallEmpty( db, adminSubject,
+                "CALL dbms.removeUserFromRole('readSubject', '" + PredefinedRolesBuilder.PUBLISHER + "')", null );
+        testCallEmpty( db, adminSubject,
+                "CALL dbms.removeUserFromRole('readSubject', '" + PredefinedRolesBuilder.PUBLISHER + "')", null );
+        assertFalse( "Should not have role publisher",
+                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PredefinedRolesBuilder.PUBLISHER ) );
+    }
+
+    @Test
+    public void shouldAllowAddingAndRemovingUserFromMultipleRoles() throws Exception
+    {
+        assertFalse( "Should not have role publisher",
+                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PredefinedRolesBuilder.PUBLISHER ) );
+        assertFalse( "Should not have role architect",
+                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PredefinedRolesBuilder.ARCHITECT ) );
+        testCallEmpty( db, adminSubject,
+                "CALL dbms.addUserToRole('readSubject', '" + PredefinedRolesBuilder.PUBLISHER + "')", null );
+        testCallEmpty( db, adminSubject,
+                "CALL dbms.addUserToRole('readSubject', '" + PredefinedRolesBuilder.ARCHITECT + "')", null );
+        assertTrue( "Should have role publisher",
+                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PredefinedRolesBuilder.PUBLISHER ) );
+        assertTrue( "Should have role architect",
+                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PredefinedRolesBuilder.ARCHITECT ) );
+
+        testCallEmpty( db, adminSubject,
+                "CALL dbms.removeUserFromRole('readSubject', '" + PredefinedRolesBuilder.PUBLISHER + "')", null );
+        testCallEmpty( db, adminSubject,
+                "CALL dbms.removeUserFromRole('readSubject', '" + PredefinedRolesBuilder.ARCHITECT + "')", null );
+        assertFalse( "Should not have role publisher",
+                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PredefinedRolesBuilder.PUBLISHER ) );
+        assertFalse( "Should not have role architect",
+                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PredefinedRolesBuilder.ARCHITECT ) );
+    }
+
+    @Test
+    public void shouldNotAllowNonAdminAddingUserToRole() throws Exception
+    {
+        testFailAddUserToRoleAction( readSubject );
+        testFailAddUserToRoleAction( writeSubject );
+        testFailAddUserToRoleAction( schemaSubject );
+    }
+
+    @Test
+    public void shouldNotAllowNonAdminRemovingUserFromRole() throws Exception
+    {
+        testFailRemoveUserFromRoleAction( readSubject );
+        testFailRemoveUserFromRoleAction( writeSubject );
+        testFailRemoveUserFromRoleAction( schemaSubject );
+    }
+
+    /*
+    Admin creates user Henrik with password bar
+    Admin adds user Henrik to role Publisher
+    Henrik logs in with correct password
+    Henrik starts transaction with write query → ok
+    Admin removes user Henrik from role Publisher
+    Henrik starts transaction with read query → permission denied
+    Admin adds Henrik to role Reader
+    Henrik starts transaction with write query → permission denied
+    Henrik starts transaction with read query → ok
+    */
+    @Test
+    public void roleManagement1() throws Exception
+    {
+        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)", null );
+        testCallEmpty( db, adminSubject,
+                "CALL dbms.addUserToRole('Henrik', '" + PredefinedRolesBuilder.PUBLISHER + "')", null );
+        AuthSubject subject = manager.login( "Henrik", "bar" );
+        assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
+        testSuccessfulWriteAction( subject );
+        testCallEmpty( db, adminSubject,
+                "CALL dbms.removeUserFromRole('Henrik', '" + PredefinedRolesBuilder.PUBLISHER + "')", null );
+        testFailReadAction( subject, 4L );
+        testCallEmpty( db, adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PredefinedRolesBuilder.READER + "')",
+                null );
+        testFailWriteAction( subject );
+        testSuccessfulReadAction( subject, 4L );
+    }
+
+    /*
+    Admin creates user Henrik with password bar
+    Henrik logs in with correct password
+    Henrik starts transaction with write query → permission denied
+    Admin adds user Henrik to role Publisher → ok
+    Admin adds user Henrik to role Publisher → ok
+    Henrik starts transaction with write query → ok
+    */
+    @Test
+    public void roleManagement2() throws Exception
+    {
+        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)", null );
+        AuthSubject subject = manager.login( "Henrik", "bar" );
+        assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
+        testFailWriteAction( subject );
+        testCallEmpty( db, adminSubject,
+                "CALL dbms.addUserToRole('Henrik', '" + PredefinedRolesBuilder.PUBLISHER + "')", null );
+        testCallEmpty( db, adminSubject,
+                "CALL dbms.addUserToRole('Henrik', '" + PredefinedRolesBuilder.PUBLISHER + "')", null );
+        testSuccessfulWriteAction( subject );
+    }
+
+    /*
+    Admin creates user Henrik with password bar
+    Admin adds user Henrik to role Publisher
+    Henrik logs in with correct password
+    Admin adds user Henrik to role Reader
+    Henrik starts transaction with write query → ok
+    Henrik starts transaction with read query → ok
+    Admin removes user Henrik from role Publisher
+    Henrik starts transaction with write query → permission denied
+    Henrik starts transaction with read query → ok
+    */
+    @Test
+    public void roleManagement3() throws Exception
+    {
+        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)", null );
+        testCallEmpty( db, adminSubject,
+                "CALL dbms.addUserToRole('Henrik', '" + PredefinedRolesBuilder.PUBLISHER + "')", null );
+        AuthSubject subject = manager.login( "Henrik", "bar" );
+        assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
+        testCallEmpty( db, adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PredefinedRolesBuilder.READER + "')",
+                null );
+        testSuccessfulWriteAction( subject );
+        testSuccessfulReadAction( subject, 4L );
+        testCallEmpty( db, adminSubject,
+                "CALL dbms.removeUserFromRole('Henrik', '" + PredefinedRolesBuilder.PUBLISHER + "')", null );
+        testFailWriteAction( subject );
+        testSuccessfulReadAction( subject, 4L );
     }
 
     //-------------Helper functions---------------
 
-    private void testSuccessfulRead( AuthSubject subject, Long count )
+    private void testSuccessfulReadAction( AuthSubject subject, Long count )
     {
         testCall( db, subject, "MATCH (n) RETURN count(n)", ( r ) -> assertEquals( r.get( "count(n)" ), count ) );
     }
 
-    private void testFailRead( AuthSubject subject, Long count )
+    private void testFailReadAction( AuthSubject subject, Long count )
     {
         try
         {
-            testSuccessfulRead( subject, count );
+            testSuccessfulReadAction( subject, count );
             fail( "Expected exception to be thrown" );
         }
         catch ( AuthorizationViolationException e )
@@ -306,16 +428,16 @@ public class AuthProceduresTest
         }
     }
 
-    private void testSuccessfulWrite( AuthSubject subject )
+    private void testSuccessfulWriteAction( AuthSubject subject )
     {
         testCallEmpty( db, subject, "CREATE (:Node)", null );
     }
 
-    private void testFailWrite( AuthSubject subject )
+    private void testFailWriteAction( AuthSubject subject )
     {
         try
         {
-            testSuccessfulWrite( subject );
+            testSuccessfulWriteAction( subject );
             fail( "Expected exception to be thrown" );
         }
         catch ( AuthorizationViolationException e )
@@ -326,7 +448,7 @@ public class AuthProceduresTest
         }
     }
 
-    private void testSuccessfulSchema( AuthSubject subject )
+    private void testSuccessfulSchemaAction( AuthSubject subject )
     {
         testCallEmpty( db, subject, "CREATE INDEX ON :Node(number)", null );
     }
@@ -335,7 +457,7 @@ public class AuthProceduresTest
     {
         try
         {
-            testSuccessfulSchema( subject );
+            testSuccessfulSchemaAction( subject );
             fail( "Expected exception to be thrown" );
         }
         catch ( AuthorizationViolationException e )
@@ -351,6 +473,36 @@ public class AuthProceduresTest
         try
         {
             testCallEmpty( db, subject, "CALL dbms.createUser('Craig', 'foo', false)", null );
+            fail( "Expected exception to be thrown" );
+        }
+        catch ( QueryExecutionException e )
+        {
+            assertTrue( "Exception should contain '" + AuthProcedures.PERMISSION_DENIED + "'",
+                    e.getMessage().contains( AuthProcedures.PERMISSION_DENIED ) );
+        }
+    }
+
+    private void testFailAddUserToRoleAction( AuthSubject subject )
+    {
+        try
+        {
+            testCallEmpty( db, subject, "CALL dbms.addUserToRole('Craig', '" + PredefinedRolesBuilder.PUBLISHER + "')",
+                    null );
+            fail( "Expected exception to be thrown" );
+        }
+        catch ( QueryExecutionException e )
+        {
+            assertTrue( "Exception should contain '" + AuthProcedures.PERMISSION_DENIED + "'",
+                    e.getMessage().contains( AuthProcedures.PERMISSION_DENIED ) );
+        }
+    }
+
+    private void testFailRemoveUserFromRoleAction( AuthSubject subject )
+    {
+        try
+        {
+            testCallEmpty( db, subject,
+                    "CALL dbms.removeUserFromRole('Craig', '" + PredefinedRolesBuilder.PUBLISHER + "')", null );
             fail( "Expected exception to be thrown" );
         }
         catch ( QueryExecutionException e )
