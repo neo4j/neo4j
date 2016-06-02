@@ -17,18 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.internal.cypher.acceptance
 
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphdb.Node
 
 class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
+  // TCK'd
   test("Scan all nodes") {
     val nodes = Set(createNode("a"), createNode("b"), createNode("c"))
 
     executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n) return n").columnAs[Node]("n").toSet should equal(nodes)
   }
 
+  // TCK'd
   test("Scan labeled node") {
     createNode("a")
     createLabeledNode("Person")
@@ -36,6 +39,15 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
 
     executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n:Animal) return n").columnAs[Node]("n").toSet should equal(animals)
   }
+
+  // TCK'd
+  test("Can find nodes by property") {
+    createNode("prop"->1)
+    val n = createNode("prop"->2)
+    executeScalarWithAllPlannersAndCompatibilityMode[Node](s"match (n) where n.prop = 2 return n") should equal(n)
+  }
+
+  // Not TCK material below; use of id() or index-related
 
   test("Seek node by id given on the left") {
     createNode("a")
@@ -72,12 +84,6 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     val node = createLabeledNode("Person")
 
     executeScalarWithAllPlannersAndCompatibilityMode[Node](s"match (n) where ${node.getId} = id(n) and n:Person return n") should equal(node)
-  }
-
-  test("Can find nodes by id and apply a predicate on it") {
-    createNode("prop"->1)
-    val n = createNode("prop"->2)
-    executeScalarWithAllPlannersAndCompatibilityMode[Node](s"match (n) where n.prop = 2 return n") should equal(n)
   }
 
   test("Seek relationship by id given on the left") {
