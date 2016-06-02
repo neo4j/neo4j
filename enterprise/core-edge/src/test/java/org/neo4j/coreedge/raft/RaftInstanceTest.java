@@ -490,7 +490,7 @@ public class RaftInstanceTest
         private boolean startExploding = false;
 
         @Override
-        public long append( RaftLogEntry entry ) throws IOException
+        public long append( RaftLogEntry... entries ) throws IOException
         {
             if ( startExploding )
             {

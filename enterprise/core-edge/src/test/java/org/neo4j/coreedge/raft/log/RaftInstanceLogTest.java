@@ -205,12 +205,11 @@ public class RaftInstanceLogTest
         // when instance A as leader
         ReplicatedInteger newData = valueOf( 99 );
 
-        // Will not match as the entry at index 5 has term  2
         raft.handle( appendEntriesRequest().leaderTerm( 8 ).prevLogIndex( -1 ).prevLogTerm( -1 )
                 .logEntry( new RaftLogEntry( 1, newData ) )
                 .logEntry( new RaftLogEntry( 1, newData ) )
                 .logEntry( new RaftLogEntry( 1, newData ) )
-                .logEntry( new RaftLogEntry( 4, newData ) )
+                .logEntry( new RaftLogEntry( 4, newData ) ) // term mismatch - existing term is 2
                 .logEntry( new RaftLogEntry( 4, newData ) )
                 .logEntry( new RaftLogEntry( 5, newData ) )
                 .logEntry( new RaftLogEntry( 5, newData ) )

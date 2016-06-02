@@ -36,9 +36,9 @@ public class MonitoredRaftLog implements RaftLog
     }
 
     @Override
-    public long append( RaftLogEntry entry ) throws IOException
+    public long append( RaftLogEntry... entries ) throws IOException
     {
-        long appendIndex = delegate.append( entry );
+        long appendIndex = delegate.append( entries );
         appendIndexMonitor.appendIndex( appendIndex );
         return appendIndex;
     }

@@ -77,6 +77,7 @@ public class SegmentFileTest
         {
             // given
             segment.write( 0, entry1 );
+            segment.flush();
 
             // when
             IOCursor<EntryRecord> reader = segment.getReader( 0 );
@@ -97,6 +98,7 @@ public class SegmentFileTest
             segment.write( 1, entry2 );
             segment.write( 2, entry3 );
             segment.write( 3, entry4 );
+            segment.flush();
 
             // when
             IOCursor<EntryRecord> reader = segment.getReader( 2 );
@@ -116,6 +118,7 @@ public class SegmentFileTest
             segment.write( 0, entry1 );
             segment.write( 1, entry2 );
             segment.write( 2, entry3 );
+            segment.flush();
 
             for ( int i = 0; i < 3; i++ )
             {
@@ -161,6 +164,7 @@ public class SegmentFileTest
             // given
             Runnable onDisposeHandler = mock( Runnable.class );
             segment.write( 0, entry1 );
+            segment.flush();
 
             // when
             segment.markForDisposal( onDisposeHandler );
@@ -216,6 +220,7 @@ public class SegmentFileTest
             IOCursor<EntryRecord> reader2 = segment.getReader( 1 );
 
             segment.write( 0, entry1 );
+            segment.flush();
 
             // when
             segment.markForDisposal( onDisposeHandler );

@@ -94,12 +94,14 @@ public class CoreEdgeClusterSettings
             setting( "core_edge.log_shipping_max_lag", INTEGER, "256" );
 
     @Description("Size of the RAFT in queue")
+    @Internal
     public static final Setting<Integer> raft_in_queue_size =
             setting( "core_edge.raft_in_queue_size", INTEGER, "64" );
 
     @Description("Largest batch processed by RAFT")
+    @Internal
     public static final Setting<Integer> raft_in_queue_max_batch =
-            setting( "core_edge.raft_in_queue_max_batch", INTEGER, "16" );
+            setting( "core_edge.raft_in_queue_max_batch", INTEGER, "64" );
 
     @Description("Time out for a token to be replicated")
     public static final Setting<Long> token_creation_timeout =

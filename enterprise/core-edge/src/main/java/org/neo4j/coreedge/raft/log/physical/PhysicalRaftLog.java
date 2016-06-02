@@ -134,7 +134,17 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
     }
 
     @Override
-    public long append( RaftLogEntry entry ) throws IOException
+    public synchronized long append( RaftLogEntry... entries ) throws IOException
+    {
+        long newAppendIndex = appendIndex.get();
+        for ( RaftLogEntry entry : entries )
+        {
+            newAppendIndex = appendSingle( entry );
+        }
+        return newAppendIndex;
+    }
+
+    private long appendSingle( RaftLogEntry entry ) throws IOException
     {
         if ( entry.term() >= term )
         {

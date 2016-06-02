@@ -50,10 +50,7 @@ public class BatchAppendLogEntries implements LogCommand
             throw new IllegalStateException( "Attempted to append over an existing entry starting at index " + lastIndex );
         }
 
-        for ( int i = offset; i < entries.length; i++ )
-        {
-            raftLog.append( entries[i] );
-        }
+        raftLog.append( Arrays.copyOfRange( entries, offset, entries.length ) );
     }
 
     @Override

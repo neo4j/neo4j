@@ -157,7 +157,17 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     }
 
     @Override
-    public long append( RaftLogEntry logEntry ) throws IOException
+    public synchronized long append( RaftLogEntry... entries ) throws IOException
+    {
+        long newAppendIndex = appendIndex;
+        for ( RaftLogEntry entry : entries )
+        {
+            newAppendIndex = appendSingle( entry );
+        }
+        return newAppendIndex;
+    }
+
+    private long appendSingle( RaftLogEntry logEntry ) throws IOException
     {
         if ( logEntry.term() >= term )
         {
