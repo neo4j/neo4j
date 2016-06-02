@@ -50,6 +50,7 @@ BSD - Scala License
 
 BSD License
   ASM Core
+  JLine
   Scala Compiler
 
 MIT License
