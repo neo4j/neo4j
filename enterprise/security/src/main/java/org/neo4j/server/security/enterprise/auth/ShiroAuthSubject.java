@@ -97,19 +97,19 @@ public class ShiroAuthSubject implements AuthSubject
     @Override
     public boolean allowsReads()
     {
-        return getAccesMode().allowsReads();
+        return getAccessMode().allowsReads();
     }
 
     @Override
     public boolean allowsWrites()
     {
-        return getAccesMode().allowsWrites();
+        return getAccessMode().allowsWrites();
     }
 
     @Override
     public boolean allowsSchemaWrites()
     {
-        return getAccesMode().allowsSchemaWrites();
+        return getAccessMode().allowsSchemaWrites();
     }
 
     @Override
@@ -123,7 +123,7 @@ public class ShiroAuthSubject implements AuthSubject
         return subject;
     }
 
-    private AccessMode.Static getAccesMode()
+    private AccessMode.Static getAccessMode()
     {
         if ( subject.isAuthenticated() )
         {
