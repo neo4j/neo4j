@@ -44,11 +44,11 @@ object CypherCompiler {
 
   case class VersionProxy(graph: GraphDatabaseService, defaultVersion: CypherVersion) {
     private val queryCache = new LRUCache[(CypherVersion, Object), Object](getQueryCacheSize)
-    private val compiler2_0 = new CypherCompiler2_0(graph, (q, f) => queryCache.getOrElseUpdate((v2_0, q), f))
+    private val compiler2_0 = new CypherCompiler2_0(graph, (q, f) =>  queryCache.getOrElseUpdate((v2_0, q), f))
     private val compiler1_9 = new CypherCompiler1_9(graph, (q, f) => queryCache.getOrElseUpdate((v1_9, q), f))
 
     @throws(classOf[SyntaxException])
-    def prepare(query: String, context: GraphDatabaseService, statement: Statement): ExecutionPlan = {
+    def prepare(query: String, context: GraphDatabaseService, statement: Statement): (ExecutionPlan, Map[String,Any]) = {
       val (version, remainingQuery) = query match {
         case hasVersionDefined(versionName, remainingQuery) => (CypherVersion(versionName), remainingQuery)
         case _                                              => (defaultVersion, query)
@@ -57,11 +57,11 @@ object CypherCompiler {
       version match {
         case CypherVersion.v1_9 =>
           val plan = compiler1_9.prepare(remainingQuery)
-          new ExecutionPlanWrapperForV1_9(plan)
+          (new ExecutionPlanWrapperForV1_9(plan), Map.empty)
 
         case CypherVersion.v2_0 => 
-          val plan = compiler2_0.prepare(remainingQuery, new TransactionBoundPlanContext(statement, context))
-          new ExecutionPlanWrapperForV2_0(plan)
+          val (plan, extractedParameters) = compiler2_0.prepare(remainingQuery, new TransactionBoundPlanContext(statement, context))
+          (new ExecutionPlanWrapperForV2_0(plan), extractedParameters)
       }
     }
 

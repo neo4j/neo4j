@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0
 
 import ast.convert.StatementConverters._
+import ast.rewriters._
 import commands.AbstractQuery
 import executionplan.{ExecutionPlanBuilder, ExecutionPlan}
 import executionplan.verifiers.HintVerifier
@@ -34,17 +35,38 @@ case class CypherCompiler(graph: GraphDatabaseService, queryCache: (Object, => O
   val planBuilder = new ExecutionPlanBuilder(graph)
 
   @throws(classOf[SyntaxException])
-  def prepare(query: String, context: PlanContext): ExecutionPlan = {
-    val statement = parser.parse(query)
+  def prepare(query: String, context: PlanContext): (ExecutionPlan, Map[String,Any]) = {
 
-    queryCache(statement, {
+    def semanticCheck(statement: ast.Statement): Unit =
       statement.semanticCheck(SemanticState.clean).errors.map { error =>
         throw new SyntaxException(s"${error.msg} (${error.position})", query, error.position.offset)
       }
 
-      val parsedQuery = ReattachAliasedExpressions(statement.asQuery.setQueryText(query))
+    val statement = parser.parse(query)
+
+    val (rewrittenStatement, extractedParameters) = try {
+      rewriteStatement(statement)
+    } catch {
+      case e: Exception =>
+        // if rewriting failed, it could be due to semantic errors in the AST
+        semanticCheck(statement)
+        throw e
+    }
+
+    val plan = queryCache(rewrittenStatement, {
+      // check original statement, not rewritten one
+      semanticCheck(statement)
+      val parsedQuery = ReattachAliasedExpressions(rewrittenStatement.asQuery.setQueryText(query))
       planBuilder.build(context, verify(parsedQuery))
     }).asInstanceOf[ExecutionPlan]
+
+    (plan, extractedParameters)
+  }
+
+  def rewriteStatement(statement: ast.Statement) = {
+    val (extractParameters, extractedParameters) = literalReplacement(statement)
+    val result = statement.rewrite(bottomUpExpressions(extractParameters)).asInstanceOf[ast.Statement]
+    (result, extractedParameters)
   }
 
   def verify(query: AbstractQuery): AbstractQuery = {

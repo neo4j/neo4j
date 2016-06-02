@@ -20,41 +20,62 @@
 package org.neo4j.cypher.internal.compiler.v2_0
 
 import scala.annotation.tailrec
+import scala.collection.mutable
 
 object Foldable {
   implicit class TreeAny(val that: Any) extends AnyVal {
     def children: Iterator[AnyRef] = that match {
       case p: Product => p.productIterator.asInstanceOf[Iterator[AnyRef]]
-      case s: Seq[_] => s.toIterator.asInstanceOf[Iterator[AnyRef]]
-      case _ => Iterator.empty
+      case s: Seq[_] => s.iterator.asInstanceOf[Iterator[AnyRef]]
+      case _ => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
+    }
+
+    def reverseChildren: Iterator[AnyRef] = that match {
+      case p: Product => p.reverseProductIterator
+      case s: Seq[_] => s.reverseIterator.asInstanceOf[Iterator[AnyRef]]
+      case _ => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
+    }
+  }
+
+  implicit class ProductIteration(val p: Product) extends AnyVal {
+    def reverseProductIterator: Iterator[AnyRef] = p.productArity match {
+      case 0 => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
+      case 1 => Iterator.single[AnyRef](p.productElement(0).asInstanceOf[AnyRef])
+      case _ => new Iterator[AnyRef] {
+        private var c: Int = p.productArity - 1
+        def hasNext = c >= 0
+        def next() = { val result = p.productElement(c).asInstanceOf[AnyRef]; c -= 1; result }
+      }
     }
   }
 
   implicit class FoldableAny(val that: Any) extends AnyVal {
     def fold[R](init: R)(f: PartialFunction[Any, R => R]): R =
-      foldAcc(List(that), init, f.lift)
+      foldAcc(mutable.ArrayStack(that), init, f.lift)
 
     def foldt[R](init: R)(f: PartialFunction[Any, (R, R => R) => R]): R =
-      foldtAcc(List(that), init, f)
+      foldtAcc(mutable.ArrayStack(that), init, f)
   }
 
   @tailrec
-  private def foldAcc[R](those: List[Any], acc: R, f: Any => Option[R => R]): R = those match {
-    case Nil =>
+  private def foldAcc[R](remaining: mutable.ArrayStack[Any], acc: R, f: Any => Option[R => R]): R =
+    if (remaining.isEmpty)
       acc
-    case that :: rs =>
-      foldAcc(that.children.toList ++ rs, f(that).fold(acc)(_(acc)), f)
-  }
+    else {
+      val that = remaining.pop()
+      foldAcc(remaining ++= that.reverseChildren, f(that).fold(acc)(_(acc)), f)
+    }
 
   // partially tail-recursive (recursion is unavoidable for partial function matches)
-  private def foldtAcc[R](those: List[Any], acc: R, f: PartialFunction[Any, (R, R => R) => R]): R = those match {
-    case Nil =>
+  private def foldtAcc[R](remaining: mutable.ArrayStack[Any], acc: R, f: PartialFunction[Any, (R, R => R) => R]): R =
+    if (remaining.isEmpty)
       acc
-    case that :: rs =>
+    else {
+      val that = remaining.pop()
       if (f.isDefinedAt(that))
-        foldtAcc(rs, f(that)(acc, foldtAcc(that.children.toList, _, f)), f)
+        foldtAcc(remaining, f(that)(acc, foldtAcc(mutable.ArrayStack() ++= that.reverseChildren, _, f)), f)
       else
-        foldtAcc(that.children.toList ++ rs, acc, f)
+        foldtAcc(remaining ++= that.reverseChildren, acc, f)
   }
 }
 
