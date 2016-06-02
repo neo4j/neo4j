@@ -41,6 +41,9 @@ import org.neo4j.kernel.logging.Loggers;
 @Service.Implementation( App.class )
 public class Start extends ReadOnlyGraphDatabaseApp
 {
+
+    private ExecutionEngine engine;
+
     public Start()
     {
         super();
@@ -65,11 +68,12 @@ public class Start extends ReadOnlyGraphDatabaseApp
         {
             String queryWithoutSemicolon = query.substring(0, query.lastIndexOf(";"));
 
-            ExecutionEngine engine = new ExecutionEngine( getServer().getDb(),getCypherLogger() );
             try
             {
-                ExecutionResult result = engine.execute( queryWithoutSemicolon, getParameters( session ) );
+                long start = now();
+                ExecutionResult result = getEngine().execute( queryWithoutSemicolon, getParameters( session ) );
                 out.println( result.toString() );
+                out.println((now() - start) + " ms");
             }
             catch ( CypherException e )
             {
@@ -111,5 +115,19 @@ public class Start extends ReadOnlyGraphDatabaseApp
     private boolean isComplete(String query)
     {
         return query.trim().endsWith(";");
+    }
+
+    protected ExecutionEngine getEngine()
+    {
+        if ( engine == null )
+        {
+            engine = new ExecutionEngine( getServer().getDb(), getCypherLogger() );
+        }
+        return engine;
+    }
+
+    protected long now()
+    {
+        return System.currentTimeMillis();
     }
 }
