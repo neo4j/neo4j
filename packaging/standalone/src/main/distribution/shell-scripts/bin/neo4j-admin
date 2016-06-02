@@ -105,6 +105,14 @@ cmd_core_convert() {
   exec "${JAVA_CMD}" -cp "${CLASSPATH}" -Dfile.encoding=UTF-8 "org.neo4j.coreedge.convert.ConvertNonCoreEdgeStoreCli" --home-dir=${NEO4J_HOME} --config=${NEO4J_CONF} "$@"
 }
 
+
+cmd_restore() {
+  setup_environment
+  check_java
+  build_classpath
+  exec "${JAVA_CMD}" -cp "${CLASSPATH}" -Dfile.encoding=UTF-8 "org.neo4j.restore.RestoreDatabaseCli" --home-dir=${NEO4J_HOME} --config=${NEO4J_CONF} "$@"
+}
+
 bad_usage() {
   echo "Error: $1" >&2
   echo >&2
@@ -128,6 +136,10 @@ usage() {
 
     Converts a database created in a non core-edge Neo4j installation into one that is core format friendly.
 
+  ${PROGRAM} restore ---from <backup-directory> --database=<database-name> [--force]
+
+    Restores a database backed up using the neo4j-backup tool.
+
   ${PROGRAM} help
 
     Display this help text.
@@ -142,6 +154,7 @@ main() {
   case "${command}" in
     import)         cmd_import "$@" ;;
     core-convert)   cmd_core_convert "$@" ;;
+    restore)        cmd_restore "$@" ;;
     help|--help|-h) usage ;;
     *)              bad_usage "unrecognised command '${command}'" ;;
   esac

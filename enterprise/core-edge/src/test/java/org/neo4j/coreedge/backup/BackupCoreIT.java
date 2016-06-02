@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.backup;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,13 +35,15 @@ import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.coreedge.convert.ConvertClassicStoreCommand;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.restore.RestoreDatabaseCommand;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.coreedge.ClusterRule;
 import org.neo4j.test.rule.SuppressOutput;
@@ -50,6 +53,7 @@ import static org.junit.Assert.assertNotEquals;
 
 import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.rule.SuppressOutput.suppress;
 
 public class BackupCoreIT
@@ -131,8 +135,7 @@ public class BackupCoreIT
         for ( int i = 0; i < numberOfCoreServers; i++ )
         {
             File coreStoreDir = cluster.coreServerStoreDirectory( i );
-            FileUtils.deleteRecursively( coreStoreDir );
-            FileUtils.copyRecursively( backupPath, coreStoreDir );
+            restoreDatabase( coreStoreDir, backupPath );
             ConvertClassicStoreCommand convertCommand = new ConvertClassicStoreCommand( coreStoreDir, StandardV3_0.NAME );
             convertCommand.execute();
         }
@@ -142,6 +145,14 @@ public class BackupCoreIT
         // then
         Stream<DbRepresentation> dbRepresentations = cluster.coreServers().stream().map( DbRepresentation::of );
         dbRepresentations.forEach( afterReSeed -> assertEquals( beforeBackup, afterReSeed ) );
+    }
+
+    private void restoreDatabase( File coreStoreDir, File backupPath ) throws IOException
+    {
+        Config config = Config.empty().with(
+                stringMap( DatabaseManagementSystemSettings.database_path.name(), coreStoreDir.getAbsolutePath() ) );
+        new RestoreDatabaseCommand( new DefaultFileSystemAbstraction(),
+                backupPath, config, "graph.db", true ).execute();
     }
 
     static CoreGraphDatabase createSomeData( Cluster cluster ) throws TimeoutException, InterruptedException
