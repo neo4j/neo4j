@@ -27,10 +27,10 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.StoreVersions;
+import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.DatabaseNotCleanlyShutDownException;
-import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreVersionException;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreFormatException;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreVersionException;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradeMissingStoreFilesException;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradingStoreVersionNotFoundException;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
@@ -90,8 +90,8 @@ public class UpgradableDatabase
 
         // If we are trying to open an enterprise store when configured to use community format, then inform the user
         // of the config setting to change since downgrades aren't possible but the store can still be opened.
-        if ( StoreVersions.isEnterpriseStoreVersion( result.actualVersion ) &&
-                StoreVersions.isCommunityStoreVersion( format.storeVersion() ) )
+        if ( StoreVersion.isEnterpriseStoreVersion( result.actualVersion ) &&
+             StoreVersion.isCommunityStoreVersion( format.storeVersion() ) )
         {
             throw new StoreUpgrader.UnexpectedUpgradingStoreFormatException();
         }
