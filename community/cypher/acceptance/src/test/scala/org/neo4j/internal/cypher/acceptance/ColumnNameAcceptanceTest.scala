@@ -17,32 +17,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.internal.cypher.acceptance
 
-class ColumnNameTest extends ExecutionEngineFunSuite {
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+
+class ColumnNameAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   override def initTest() {
     super.initTest()
     createNode()
   }
 
+  // TCK'd
   test("should keep used expression 1") {
-    val result = execute("match (n) where id(n) = 0 return cOuNt( * )")
+    val result = executeWithAllPlannersAndCompatibilityMode("match (n) return cOuNt( * )")
     result.columns should equal(List("cOuNt( * )"))
   }
 
+  // TCK'd
   test("should keep used expression 2") {
-    val result = execute("match p=(n)-->(b) where id(n) = 0 return nOdEs( p )")
+    val result = executeWithAllPlannersAndCompatibilityMode("match p=(n)-->(b) return nOdEs( p )")
     result.columns should equal(List("nOdEs( p )"))
   }
 
+  // TCK'd
   test("should keep used expression 3") {
-    val result = execute("match p=(n)-->(b) where id(n) = 0 return coUnt( dIstInct p )")
+    val result = executeWithAllPlannersAndCompatibilityMode("match p=(n)-->(b) return coUnt( dIstInct p )")
     result.columns should equal(List("coUnt( dIstInct p )"))
   }
 
+  // TCK'd
   test("should keep used expression 4") {
-    val result = execute("match p=(n)-->(b) where id(n) = 0 return aVg(    n.aGe     )")
+    val result = executeWithAllPlannersAndCompatibilityMode("match p=(n)-->(b) return aVg(    n.aGe     )")
     result.columns should equal(List("aVg(    n.aGe     )"))
   }
 }
