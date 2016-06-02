@@ -183,7 +183,6 @@ import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
@@ -597,15 +596,14 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         catch ( Throwable e )
         {
             // Something unexpected happened during startup
-            msgLog.warn( "Exception occurred while setting up store modules. Attempting to close things down.",
-                    e, true );
+            msgLog.warn( "Exception occurred while setting up store modules. Attempting to close things down.", e );
             try
             { // Close the neostore, so that locks are released properly
                 neoStoreModule.neoStores().close();
             }
             catch ( Exception closeException )
             {
-                msgLog.error( "Couldn't close neostore after startup failure" );
+                msgLog.error( "Couldn't close neostore after startup failure", closeException );
             }
             throw Exceptions.launderedException( e );
         }
@@ -617,15 +615,14 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         catch ( Throwable e )
         {
             // Something unexpected happened during startup
-            msgLog.warn( "Exception occurred while starting the datasource. Attempting to close things down.",
-                    e, true );
+            msgLog.warn( "Exception occurred while starting the datasource. Attempting to close things down.", e );
             try
             { // Close the neostore, so that locks are released properly
                 neoStoreModule.neoStores().close();
             }
             catch ( Exception closeException )
             {
-                msgLog.error( "Couldn't close neostore after startup failure" );
+                msgLog.error( "Couldn't close neostore after startup failure", closeException );
             }
             throw Exceptions.launderedException( e );
         }

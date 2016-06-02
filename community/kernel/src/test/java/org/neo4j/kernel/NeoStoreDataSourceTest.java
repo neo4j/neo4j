@@ -25,7 +25,12 @@ import org.junit.Test;
 import java.io.IOException;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Exceptions;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -37,10 +42,16 @@ import org.neo4j.test.NeoStoreDataSourceRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class NeoStoreDataSourceTest
 {
@@ -133,6 +144,66 @@ public class NeoStoreDataSourceTest
         // THEN
         logProvider.assertContainsMessageContaining( "transaction " + (prevLogLastTxId + 1) );
         logProvider.assertContainsMessageContaining( "version " + (logVersion + 1) );
+    }
+
+    @Test
+    public void logModuleSetUpError() throws Exception
+    {
+        Config config = new Config( stringMap(), GraphDatabaseSettings.class );
+        StoreFactory storeFactory = mock( StoreFactory.class );
+        Throwable openStoresError = new RuntimeException( "Can't set up modules" );
+        when( storeFactory.openAllNeoStores( true ) ).thenThrow( openStoresError );
+
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+
+        NeoStoreDataSource dataSource = ds.getDataSource( dir.graphDbDir(), fs.get(), config, storeFactory,
+                new DefaultIdGeneratorFactory( fs.get() ), mock( KernelHealth.class ), logProvider );
+
+        try
+        {
+            dataSource.start();
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertEquals( openStoresError, e );
+        }
+
+        logProvider.assertAtLeastOnce( inLog( NeoStoreDataSource.class ).warn(
+                equalTo( "Exception occurred while setting up store modules. Attempting to close things down." ),
+                equalTo( openStoresError ) ) );
+    }
+
+    @Test
+    public void logStartupError() throws Exception
+    {
+        Config config = new Config( stringMap(), GraphDatabaseSettings.class );
+        StoreFactory storeFactory = mock( StoreFactory.class );
+        NeoStores neoStores = mock( NeoStores.class, RETURNS_MOCKS );
+        Throwable makeStoreOkError = new RuntimeException( "Can't make store ok" );
+        doThrow( makeStoreOkError ).when( neoStores ).makeStoreOk();
+        doReturn( neoStores ).when( storeFactory ).openAllNeoStores( true );
+
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+
+        NeoStoreDataSource dataSource = ds.getDataSource( dir.graphDbDir(), fs.get(), config, storeFactory,
+                new DefaultIdGeneratorFactory( fs.get() ), mock( KernelHealth.class ), logProvider );
+
+        Throwable dataSourceStartError = null;
+        try
+        {
+            dataSource.start();
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertEquals( makeStoreOkError, Exceptions.rootCause( e ) );
+            dataSourceStartError = e;
+        }
+
+        logProvider.assertAtLeastOnce( inLog( NeoStoreDataSource.class ).warn(
+                equalTo( "Exception occurred while starting the datasource. Attempting to close things down." ),
+                equalTo( dataSourceStartError ) ) );
     }
 
     private NeoStoreDataSource neoStoreDataSourceWithLogFilesContainingLowestTxId( PhysicalLogFiles files )
