@@ -22,7 +22,6 @@ package org.neo4j.tooling;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -573,7 +572,7 @@ public class ImportToolTest
         int extraColumns = 3;
         try
         {
-            executeImportAndCatchOutput(
+            importTool(
                     "--into", dbRule.getStoreDirAbsolutePath(),
                     "--delimiter", "TAB",
                     "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
@@ -588,6 +587,7 @@ public class ImportToolTest
         catch ( InputException e )
         {
             // THEN
+            assertFalse( suppressOutput.getErrorVoice().containsMessage( e.getClass().getName() ) );
             assertTrue( e.getMessage().contains( "Extra column not present in header on line" ) );
         }
     }
@@ -602,7 +602,7 @@ public class ImportToolTest
 
         // WHEN data file contains more columns than header file
         int extraColumns = 3;
-        executeImportAndCatchOutput(
+        importTool(
                 "--into", dbRule.getStoreDirAbsolutePath(),
                 "--bad", bad.getAbsolutePath(),
                 "--bad-tolerance", Integer.toString( nodeIds.size() * extraColumns ),
@@ -1555,6 +1555,34 @@ public class ImportToolTest
         assertEquals( stringBlockSize + headerSize, stores.getPropertyStore().getStringStore().getRecordSize() );
     }
 
+    @Test
+    public void shouldPrintStackTraceOnInputExceptionIfToldTo() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = nodeIds();
+        Configuration config = Configuration.TABS;
+
+        // WHEN data file contains more columns than header file
+        int extraColumns = 3;
+        try
+        {
+            importTool(
+                    "--into", dbRule.getStoreDirAbsolutePath(),
+                    "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                            nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns )
+                                    .getAbsolutePath(),
+                    "--stacktrace" );
+
+            fail( "Should have thrown exception" );
+        }
+        catch ( InputException e )
+        {
+            // THEN
+            assertTrue( suppressOutput.getErrorVoice().containsMessage( e.getClass().getName() ) );
+            assertTrue( e.getMessage().contains( "Extra column not present in header on line" ) );
+        }
+    }
+
     private File writeArrayCsv( String[] headers, String[] values ) throws FileNotFoundException
     {
         File data = file( fileName( "whitespace.csv" ) );
@@ -2016,22 +2044,5 @@ public class ImportToolTest
     public static void importTool( String... arguments ) throws IOException
     {
         ImportTool.main( arguments, true );
-    }
-
-    private String executeImportAndCatchOutput(String... arguments) throws IOException
-    {
-        PrintStream originalStream = System.out;
-        ByteArrayOutputStream outputStreamBuffer = new ByteArrayOutputStream();
-        PrintStream replacement = new PrintStream( outputStreamBuffer );
-        System.setOut( replacement );
-        try
-        {
-            importTool( arguments );
-            return new String( outputStreamBuffer.toByteArray() );
-        }
-        finally
-        {
-            System.setOut( originalStream );
-        }
     }
 }
