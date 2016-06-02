@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import org.apache.shiro.authc.AuthenticationException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -45,6 +46,7 @@ import static java.time.Clock.systemUTC;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -87,20 +89,30 @@ public class AuthProceduresTest
     }
 
     @Test
+    public void shouldAllowUserChangePassword() throws Exception
+    {
+        testCallEmpty( db, readSubject, "CALL dbms.changePassword( '321' )", null );
+        AuthSubject subject = manager.login( "readSubject", "321" );
+        assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
+    }
+
+    //----------User creation -----------
+
+    @Test
     public void shouldCreateUser() throws Exception
     {
-        testCallEmpty( db, adminSubject, "CALL dbms.createUser('craig', '1234', true)", null );
-        assertNotNull( "User craig should exist", manager.getUser( "craig" ) );
+        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Craig', '1234', true)", null );
+        assertNotNull( "User Craig should exist", manager.getUser( "Craig" ) );
     }
 
     @Test
     public void shouldNotCreateExistingUser() throws Exception
     {
-        testCallEmpty( db, adminSubject, "CALL dbms.createUser('craig', '1234', true)", null );
-        assertNotNull( "User craig should exist", manager.getUser( "craig" ) );
+        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Craig', '1234', true)", null );
+        assertNotNull( "User Craig should exist", manager.getUser( "Craig" ) );
         try
         {
-            testCallEmpty( db, adminSubject, "CALL dbms.createUser('craig', '1234', true)", null );
+            testCallEmpty( db, adminSubject, "CALL dbms.createUser('Craig', '1234', true)", null );
             fail( "Expected exception to be thrown" );
         }
         catch ( QueryExecutionException e )
@@ -117,16 +129,6 @@ public class AuthProceduresTest
         testFailCreateUser( writeSubject );
         testFailCreateUser( schemaSubject );
     }
-
-    @Test
-    public void shouldAllowUserChangePassword() throws Exception
-    {
-        testCallEmpty( db, readSubject, "CALL dbms.changePassword( '321' )", null );
-        AuthSubject subject = manager.login( "readSubject", "321" );
-        assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
-    }
-
-    //----------User creation scenarios-----------
 
     /*
     Admin creates user Henrik with password bar
@@ -406,6 +408,127 @@ public class AuthProceduresTest
         testSuccessfulReadAction( subject, 4L );
     }
 
+    //----------User deletion -----------
+
+    @Test
+    public void shouldDeleteUser() throws Exception
+    {
+        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Craig', '1234', true)", null );
+        assertNotNull( "User Craig should exist", manager.getUser( "Craig" ) );
+        testCallEmpty( db, adminSubject, "CALL dbms.deleteUser('Craig')", null );
+        assertNull( "User Craig should not exist", manager.getUser( "Craig" ) );
+    }
+
+    @Test
+    public void shouldNotAllowNonAdminDeleteUser() throws Exception
+    {
+        testFailDeleteUser( readSubject );
+        testFailDeleteUser( writeSubject );
+        testFailDeleteUser( schemaSubject );
+    }
+
+    @Test
+    public void shouldAllowDeletingUserMultipleTimes() throws Exception
+    {
+        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Craig', '1234', true)", null );
+        assertNotNull( "User Craig should exist", manager.getUser( "Craig" ) );
+        testCallEmpty( db, adminSubject, "CALL dbms.deleteUser('Craig')", null );
+        assertNull( "User Craig should not exist", manager.getUser( "Craig" ) );
+        testCallEmpty( db, adminSubject, "CALL dbms.deleteUser('Craig')", null );
+        assertNull( "User Craig should not exist", manager.getUser( "Craig" ) );
+    }
+
+    /*
+    Admin creates user Henrik with password bar
+    Admin deletes user Henrik
+    Henrik logs in with correct password → fail
+    */
+    @Test
+    public void userDeletion1() throws Exception
+    {
+        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)", null );
+        testCallEmpty( db, adminSubject, "CALL dbms.deleteUser('Henrik')", null );
+        AuthSubject subject = manager.login( "Henrik", "bar" );
+        assertEquals( AuthenticationResult.FAILURE, subject.getAuthenticationResult() );
+    }
+
+    /*
+    Admin creates user Henrik with password bar
+    Admin deletes user Henrik
+    Admin adds user Henrik to role Publisher → fail
+    */
+    @Test
+    public void userDeletion2() throws Exception
+    {
+        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)", null );
+        testCallEmpty( db, adminSubject, "CALL dbms.deleteUser('Henrik')", null );
+        try
+        {
+            testCallEmpty( db, adminSubject,
+                    "CALL dbms.addUserToRole('Henrik', '" + PredefinedRolesBuilder.PUBLISHER + "')", null );
+            fail( "Expected exception to be thrown" );
+        }
+        catch ( QueryExecutionException e )
+        {
+            assertTrue( "Exception should contain 'User Henrik does not exist'",
+                    e.getMessage().contains( "User Henrik does not exist" ) );
+        }
+    }
+
+    /*
+    Admin creates user Henrik with password bar
+    Admin adds user Henrik to role Publisher
+    Admin deletes user Henrik
+    Admin removes user Henrik from role Publisher → fail
+    */
+    @Test
+    public void userDeletion3() throws Exception
+    {
+        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)", null );
+        testCallEmpty( db, adminSubject,
+                "CALL dbms.addUserToRole('Henrik', '" + PredefinedRolesBuilder.PUBLISHER + "')", null );
+        testCallEmpty( db, adminSubject, "CALL dbms.deleteUser('Henrik')", null );
+        try
+        {
+            testCallEmpty( db, adminSubject,
+                    "CALL dbms.removeUserFromRole('Henrik', '" + PredefinedRolesBuilder.PUBLISHER + "')", null );
+            fail( "Expected exception to be thrown" );
+        }
+        catch ( QueryExecutionException e )
+        {
+            assertTrue( "Exception should contain 'User Henrik does not exist'",
+                    e.getMessage().contains( "User Henrik does not exist" ) );
+        }
+    }
+
+    /*
+    Admin creates user Henrik with password bar
+    Admin adds user Henrik to role Publisher
+    User Henrik logs in with correct password → ok
+    Admin deletes user Henrik
+    Henrik starts transaction with read query → fail
+    */
+    @Test
+    public void userDeletion4() throws Exception
+    {
+        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)", null );
+        testCallEmpty( db, adminSubject,
+                "CALL dbms.addUserToRole('Henrik', '" + PredefinedRolesBuilder.PUBLISHER + "')", null );
+        AuthSubject subject = manager.login( "Henrik", "bar" );
+        assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
+        testCallEmpty( db, adminSubject, "CALL dbms.deleteUser('Henrik')", null );
+        try
+        {
+            testSuccessfulReadAction( subject, 3L );
+            fail( "Expected exception to be thrown" );
+        }
+        catch ( AuthenticationException e )
+        {
+            assertTrue( "Exception should contain 'User Henrik does not exist'",
+                    e.getMessage().contains( "User Henrik does not exist" ) );
+        }
+    }
+
     //-------------Helper functions---------------
 
     private void testSuccessfulReadAction( AuthSubject subject, Long count )
@@ -503,6 +626,20 @@ public class AuthProceduresTest
         {
             testCallEmpty( db, subject,
                     "CALL dbms.removeUserFromRole('Craig', '" + PredefinedRolesBuilder.PUBLISHER + "')", null );
+            fail( "Expected exception to be thrown" );
+        }
+        catch ( QueryExecutionException e )
+        {
+            assertTrue( "Exception should contain '" + AuthProcedures.PERMISSION_DENIED + "'",
+                    e.getMessage().contains( AuthProcedures.PERMISSION_DENIED ) );
+        }
+    }
+
+    private void testFailDeleteUser( AuthSubject subject )
+    {
+        try
+        {
+            testCallEmpty( db, subject, "CALL dbms.deleteUser('Craig')", null );
             fail( "Expected exception to be thrown" );
         }
         catch ( QueryExecutionException e )

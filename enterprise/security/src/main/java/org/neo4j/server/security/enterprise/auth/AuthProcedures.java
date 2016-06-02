@@ -74,4 +74,16 @@ public class AuthProcedures
         }
         shiroSubject.getRoleManager().removeUserFromRole( username, roleName );
     }
+
+    @PerformsDBMS
+    @Procedure( "dbms.deleteUser" )
+    public void deleteUser( @Name( "username" ) String username ) throws IllegalCredentialsException, IOException
+    {
+        ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
+        if ( !shiroSubject.isAdmin() )
+        {
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
+        }
+        shiroSubject.getUserManager().deleteUser( username );
+    }
 }
