@@ -19,9 +19,9 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.PathImpl
 import org.neo4j.cypher.internal.compiler.v3_1.test_helpers.CustomMatchers
-import org.neo4j.cypher.{EntityNotFoundException, ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
 import org.neo4j.graphdb._
 
 import scala.util.Random
@@ -98,7 +98,7 @@ order by a.age""").toList)
     createNode()
     createNode()
 
-    intercept[SyntaxException](executeWithAllPlannersAndCompatibilityMode("match (n) where id(n) in [0,1] return n order by n").toList)
+    intercept[IncomparableValuesException](executeWithAllPlannersAndCompatibilityMode("match (n) where id(n) in [0,1] return n order by n").toList)
   }
 
   // EXCEPTION EXPECTED ABOVE THIS ROW
