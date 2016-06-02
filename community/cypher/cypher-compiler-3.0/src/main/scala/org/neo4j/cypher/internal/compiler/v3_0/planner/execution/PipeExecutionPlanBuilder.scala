@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, Monitors, ast 
 import org.neo4j.cypher.internal.frontend.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
-import org.neo4j.graphdb.Relationship
+import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 import scala.collection.mutable
 
@@ -250,7 +250,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       OptionalExpandIntoPipe(source, fromName, relName, toName, dir, LazyTypes(types), predicate)()
 
     case VarExpand(_, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), expansionMode, predicates) =>
-      val predicate = relationshipPredicate(predicates)
+      val predicate = varLengthPredicate(predicates)
 
       val nodeInScope = expansionMode match {
         case ExpandAll => false
@@ -396,18 +396,32 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       throw new CantHandleQueryException(x.toString)
   }
 
-  def relationshipPredicate(predicates: Seq[(Variable, Expression)]): (ExecutionContext, QueryState, Relationship) => Boolean = {
-    val (keys, exprs) = predicates.unzip
-    val commands = exprs.map(buildPredicate)
-    val predicate = (context: ExecutionContext, state: QueryState, rel: Relationship) => {
-      keys.zip(commands).forall { case (variable: Variable, expr: Predicate) =>
-        context(variable.name) = rel
-        val result = expr.isTrue(context)(state)
-        context.remove(variable.name)
-        result
+  def varLengthPredicate(predicates: Seq[(Variable, Expression)]) = {
+    //Creates commands out of the predicates
+    def asCommand(predicates: Seq[(Variable, Expression)]) = {
+      val (keys: Seq[Variable], exprs) = predicates.unzip
+      val commands = exprs.map(buildPredicate)
+      (context: ExecutionContext, state: QueryState, entity: PropertyContainer) => {
+        keys.zip(commands).forall { case (variable: Variable, expr: Predicate) =>
+          context(variable.name) = entity
+          val result = expr.isTrue(context)(state)
+          context.remove(variable.name)
+          result
+        }
       }
     }
-    predicate
+
+    //partition particate on whether they deal with nodes or rels
+    val (nodePreds, relPreds) = predicates.partition(e => table.seen(e._1) && table.isNode(e._1))
+    val nodeCommand = asCommand(nodePreds)
+    val relCommand = asCommand(relPreds)
+
+    new VarlenghtPredicate {
+
+      override def filterNode(row: ExecutionContext, state: QueryState)(node: Node) = nodeCommand(row, state, node)
+
+      override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: Relationship) = relCommand(row, state, rel)
+    }
   }
 
   def build(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): RonjaPipe = plan match {
