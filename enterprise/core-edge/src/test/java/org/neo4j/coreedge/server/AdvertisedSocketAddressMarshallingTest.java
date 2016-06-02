@@ -25,6 +25,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Test;
 
+import org.neo4j.server.AdvertisedSocketAddress;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
@@ -37,7 +39,7 @@ public class AdvertisedSocketAddressMarshallingTest
         // given
         ByteBuffer buffer = ByteBuffer.allocate( 2_000 );
         AdvertisedSocketAddress sent = new AdvertisedSocketAddress( "test-hostname:1234" );
-        AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal marshal = new AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal();
+        AdvertisedSocketAddressByteBufferMarshal marshal = new AdvertisedSocketAddressByteBufferMarshal();
 
         // when
         marshal.marshal( sent, buffer );
@@ -55,7 +57,7 @@ public class AdvertisedSocketAddressMarshallingTest
         // given
         ByteBuf buffer = Unpooled.buffer();
         AdvertisedSocketAddress sent = new AdvertisedSocketAddress( "test-hostname:1234" );
-        AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal marshal = new AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal();
+        AdvertisedSocketAddressByteBufferMarshal marshal = new AdvertisedSocketAddressByteBufferMarshal();
 
         // when
         marshal.marshal( sent, buffer );
@@ -72,7 +74,7 @@ public class AdvertisedSocketAddressMarshallingTest
         // given
         ByteBuffer buffer = ByteBuffer.allocate( 2_000 );
         AdvertisedSocketAddress sent = new AdvertisedSocketAddress( "test-hostname:1234" );
-        AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal marshal = new AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal();
+        AdvertisedSocketAddressByteBufferMarshal marshal = new AdvertisedSocketAddressByteBufferMarshal();
 
         // when
         marshal.marshal( sent, buffer );
@@ -90,7 +92,7 @@ public class AdvertisedSocketAddressMarshallingTest
         // given
         ByteBuf buffer = Unpooled.buffer();
         AdvertisedSocketAddress sent = new AdvertisedSocketAddress( "test-hostname:1234" );
-        AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal marshal = new AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal();
+        AdvertisedSocketAddressByteBufferMarshal marshal = new AdvertisedSocketAddressByteBufferMarshal();
 
         // when
         marshal.marshal( sent, buffer );

@@ -33,7 +33,7 @@ import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.discovery.HazelcastClusterTopology;
 import org.neo4j.coreedge.raft.replication.tx.ConstantTimeRetryStrategy;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.edge.AlwaysChooseFirstServer;
 import org.neo4j.coreedge.server.edge.EdgeServerStartupProcess;

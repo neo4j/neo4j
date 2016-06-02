@@ -22,7 +22,7 @@ package org.neo4j.coreedge.raft.state;
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.state.vote.VoteState;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 
 import static org.junit.Assert.assertEquals;

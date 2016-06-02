@@ -39,7 +39,7 @@ import java.util.function.IntFunction;
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
 import org.neo4j.coreedge.raft.replication.id.IdGenerationException;
 import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.coreedge.server.core.locks.LeaderOnlyLockManager;
@@ -52,6 +52,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.logging.Level;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 
 import static java.util.Collections.emptyMap;
@@ -261,7 +262,7 @@ public class Cluster implements AutoCloseable
         params.put( new GraphDatabaseSettings.BoltConnector("bolt").enabled.name(), "true" );
         params.put( new GraphDatabaseSettings.BoltConnector("bolt").address.name(), "0.0.0.0:" + boltPort );
 
-        params.put( CoreEdgeClusterSettings.bolt_advertised_address.name(), "127.0.0.1:" + boltPort );
+        params.put( ServerSettings.bolt_advertised_address.name(), "127.0.0.1:" + boltPort );
 
         params.put( CoreEdgeClusterSettings.expected_core_cluster_size.name(), String.valueOf( clusterSize ) );
         params.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
@@ -308,7 +309,7 @@ public class Cluster implements AutoCloseable
         params.put( new GraphDatabaseSettings.BoltConnector("bolt").enabled.name(), "true" );
         params.put( new GraphDatabaseSettings.BoltConnector("bolt").address.name(), "0.0.0.0:" + (9000 + serverId ));
 
-        params.put( CoreEdgeClusterSettings.bolt_advertised_address.name(), "127.0.0.1:" + (9000 + serverId) );
+        params.put( ServerSettings.bolt_advertised_address.name(), "127.0.0.1:" + (9000 + serverId) );
 
         return new EdgeGraphDatabase( storeDir, params, GraphDatabaseDependencies.newDependencies(),
                 discoveryServiceFactory );

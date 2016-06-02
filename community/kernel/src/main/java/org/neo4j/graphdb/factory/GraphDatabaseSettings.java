@@ -583,4 +583,5 @@ public abstract class GraphDatabaseSettings
     {
         return new BoltConnector( key );
     }
+
 }

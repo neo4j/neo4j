@@ -21,7 +21,7 @@ package org.neo4j.coreedge.server.edge;
 
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.server.AdvertisedSocketAddress;
 
 public class AlwaysChooseFirstServer implements CoreServerSelectionStrategy
 {

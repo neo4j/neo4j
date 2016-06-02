@@ -38,7 +38,7 @@ import org.neo4j.coreedge.raft.replication.DistributedOperation;
 import org.neo4j.coreedge.raft.replication.ProgressTracker;
 import org.neo4j.coreedge.raft.replication.session.GlobalSessionTrackerState;
 import org.neo4j.coreedge.raft.replication.tx.CoreReplicatedContent;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 import org.neo4j.kernel.internal.DatabaseHealth;

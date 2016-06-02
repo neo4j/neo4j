@@ -27,7 +27,7 @@ import org.junit.Test;
 
 import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.ReadOnlyTopologyService;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.BoltAddress;
 import org.neo4j.logging.NullLogProvider;
 

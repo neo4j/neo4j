@@ -25,9 +25,9 @@ import java.util.Set;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.Member;
 
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.BoltAddress;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.server.AdvertisedSocketAddress;
 
 import static java.util.Collections.emptySet;
 import static java.util.stream.Collectors.toSet;

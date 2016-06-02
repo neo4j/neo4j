@@ -25,9 +25,10 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.core.Member;
 
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.BoltAddress;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.server.AdvertisedSocketAddress;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;

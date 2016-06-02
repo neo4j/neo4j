@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.coreedge.discovery.ReadOnlyTopologyService;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.BoltAddress;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.ProcedureException;

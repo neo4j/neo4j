@@ -104,7 +104,7 @@ import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
 import org.neo4j.coreedge.raft.state.term.MonitoredTermStateStorage;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.CoreMember.CoreMemberMarshal;

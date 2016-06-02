@@ -25,19 +25,145 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Apache Commons Configuration
   Apache Shiro :: Core
   Apache Shiro :: Support :: EHCache
   Commons BeanUtils
+  Commons Digester
+  Commons IO
+  Commons Lang
+  Commons Logging
+  ConcurrentLinkedHashMap
+  Data Mapper for Jackson
   Ehcache Core
   hazelcast-all
+  Jackson
+  JAX-RS provider for JSON content type
+  Jetty :: Http Utility
+  Jetty :: IO Utility
+  Jetty :: Security
+  Jetty :: Server Core
+  Jetty :: Servlet Handling
+  Jetty :: Utilities
+  Jetty :: Webapp Application Support
+  Jetty :: XML utilities
+  Lucene codecs
+  Lucene Common Analyzers
   Lucene Core
   Lucene Memory
+  Lucene QueryParsers
   Netty
   Netty/All-in-One
+  opencsv
+  parboiled-core
+  parboiled-scala
+
+BSD - Scala License
+  Scala Library
 
 BSD License
+  ASM Core
   JLine
+  Scala Compiler
+
+Bouncy Castle License
+  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
+  Bouncy Castle Provider
+
+Common Development and Distribution License Version 1.1
+  Java Servlet API
+  jersey-core
+  jersey-multipart
+  jersey-server
+  jersey-servlet
+  jsr311-api
+  MIME streaming extension
+
+Eclipse Public License, Version 1.0
+  Jetty :: Http Utility
+  Jetty :: IO Utility
+  Jetty :: Security
+  Jetty :: Server Core
+  Jetty :: Servlet Handling
+  Jetty :: Utilities
+  Jetty :: Webapp Application Support
+  Jetty :: XML utilities
+
+GNU General Public License, version 2 with the Classpath Exception
+  Java Servlet API
+  jersey-core
+  jersey-multipart
+  jersey-server
+  jersey-servlet
+  jsr311-api
+  MIME streaming extension
 
 MIT License
   SLF4J API Module
+
+Mozilla Public License, Version 2.0
+  Mozilla Rhino
+
+Dependencies with multiple licenses
+-----------------------------------
+
+Java Servlet API
+  Common Development and Distribution License Version 1.1
+  GNU General Public License, version 2 with the Classpath Exception
+
+Jetty :: Http Utility
+  Apache Software License, Version 2.0
+  Eclipse Public License, Version 1.0
+
+Jetty :: IO Utility
+  Apache Software License, Version 2.0
+  Eclipse Public License, Version 1.0
+
+Jetty :: Security
+  Apache Software License, Version 2.0
+  Eclipse Public License, Version 1.0
+
+Jetty :: Server Core
+  Apache Software License, Version 2.0
+  Eclipse Public License, Version 1.0
+
+Jetty :: Servlet Handling
+  Apache Software License, Version 2.0
+  Eclipse Public License, Version 1.0
+
+Jetty :: Utilities
+  Apache Software License, Version 2.0
+  Eclipse Public License, Version 1.0
+
+Jetty :: Webapp Application Support
+  Apache Software License, Version 2.0
+  Eclipse Public License, Version 1.0
+
+Jetty :: XML utilities
+  Apache Software License, Version 2.0
+  Eclipse Public License, Version 1.0
+
+MIME streaming extension
+  Common Development and Distribution License Version 1.1
+  GNU General Public License, version 2 with the Classpath Exception
+
+jersey-core
+  Common Development and Distribution License Version 1.1
+  GNU General Public License, version 2 with the Classpath Exception
+
+jersey-multipart
+  Common Development and Distribution License Version 1.1
+  GNU General Public License, version 2 with the Classpath Exception
+
+jersey-server
+  Common Development and Distribution License Version 1.1
+  GNU General Public License, version 2 with the Classpath Exception
+
+jersey-servlet
+  Common Development and Distribution License Version 1.1
+  GNU General Public License, version 2 with the Classpath Exception
+
+jsr311-api
+  Common Development and Distribution License Version 1.1
+  GNU General Public License, version 2 with the Classpath Exception
 

@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.coreedge.raft.net.NonBlockingChannel;
+import org.neo4j.server.AdvertisedSocketAddress;
 
 public class NonBlockingChannels
 {

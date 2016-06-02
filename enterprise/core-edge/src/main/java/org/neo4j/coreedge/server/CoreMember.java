@@ -27,6 +27,7 @@ import io.netty.buffer.ByteBuf;
 
 import org.neo4j.coreedge.raft.state.ByteBufferMarshal;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.server.AdvertisedSocketAddress;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -122,10 +123,10 @@ public class CoreMember
     {
         private static final AdvertisedSocketAddress NULL_ADDRESS = new AdvertisedSocketAddress( "" );
 
-        final AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal byteBufMarshal =
-                new AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal();
-        final AdvertisedSocketAddress.AdvertisedSocketAddressChannelMarshal channelMarshal =
-                new AdvertisedSocketAddress.AdvertisedSocketAddressChannelMarshal();
+        final AdvertisedSocketAddressByteBufferMarshal byteBufMarshal =
+                new AdvertisedSocketAddressByteBufferMarshal();
+        final AdvertisedSocketAddressChannelMarshal channelMarshal =
+                new AdvertisedSocketAddressChannelMarshal();
 
         public void marshal( CoreMember member, ByteBuffer buffer )
         {

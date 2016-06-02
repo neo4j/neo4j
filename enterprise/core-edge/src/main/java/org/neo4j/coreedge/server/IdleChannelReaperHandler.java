@@ -25,6 +25,8 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleStateEvent;
 
+import org.neo4j.server.AdvertisedSocketAddress;
+
 public class IdleChannelReaperHandler extends ChannelDuplexHandler
 {
     private NonBlockingChannels nonBlockingChannels;

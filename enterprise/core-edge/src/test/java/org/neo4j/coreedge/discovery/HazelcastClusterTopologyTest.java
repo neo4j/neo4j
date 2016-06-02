@@ -28,7 +28,7 @@ import org.junit.Test;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.tx.edge.TxPollingClient;
 import org.neo4j.coreedge.raft.replication.tx.ConstantTimeRetryStrategy;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 import org.neo4j.coreedge.server.edge.EdgeServerStartupProcess;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;

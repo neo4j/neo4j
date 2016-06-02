@@ -35,7 +35,7 @@ import org.neo4j.coreedge.raft.VoteRequestBuilder;
 import org.neo4j.coreedge.raft.VoteResponseBuilder;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.ByteBufMarshal;
 import org.neo4j.coreedge.server.CoreMember;
 

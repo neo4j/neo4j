@@ -35,7 +35,6 @@ import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
 import com.hazelcast.instance.GroupProperties;
 
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.ListenSocketAddress;
 import org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule;
@@ -43,6 +42,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.AdvertisedSocketAddress;
 
 class HazelcastServerLifecycle extends LifecycleAdapter implements CoreTopologyService, ReadOnlyTopologyService
 {

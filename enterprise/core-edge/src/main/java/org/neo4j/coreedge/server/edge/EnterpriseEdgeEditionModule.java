@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.server.edge;
 
 import java.io.File;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -39,10 +38,9 @@ import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.raft.replication.tx.ExponentialBackoffStrategy;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.NonBlockingChannels;
-import org.neo4j.coreedge.server.core.NoBoltConnectivityException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
@@ -82,13 +80,11 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.udc.UsageData;
 
 import static java.util.Collections.singletonMap;
-import static java.util.stream.Collectors.toList;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
-import static org.neo4j.kernel.configuration.GroupSettingSupport.enumerate;
 import static org.neo4j.kernel.impl.factory.CommunityEditionModule.createLockManager;
 
 /**
@@ -202,7 +198,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
     public static AdvertisedSocketAddress extractBoltAddress( Config config )
     {
-        return config.get( CoreEdgeClusterSettings.bolt_advertised_address );
+        return config.get( ServerSettings.bolt_advertised_address );
     }
 
     private void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,

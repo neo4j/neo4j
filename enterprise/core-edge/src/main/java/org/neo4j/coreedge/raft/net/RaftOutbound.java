@@ -21,7 +21,7 @@ package org.neo4j.coreedge.raft.net;
 
 import org.neo4j.coreedge.network.Message;
 
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 
 public class RaftOutbound implements Outbound<CoreMember>

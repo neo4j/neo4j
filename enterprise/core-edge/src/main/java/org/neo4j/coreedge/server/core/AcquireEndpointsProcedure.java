@@ -28,9 +28,9 @@ import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.ReadOnlyTopologyService;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.BoltAddress;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.server.AdvertisedSocketAddress;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -40,10 +40,8 @@ import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toSet;
 
-import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.helpers.collection.Iterators.asRawIterator;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
