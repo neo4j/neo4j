@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{CypherTypeException, ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
+import org.neo4j.cypher._
 
 import scala.collection.JavaConverters._
 
@@ -78,6 +78,11 @@ class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatist
     a [CypherTypeException] should be thrownBy {
       executeScalarWithAllPlannersAndCompatibilityMode[String]("WITH {expr} AS expr, {idx} AS idx RETURN expr[idx]", "expr" -> List("Apa").asJava, "idx" -> "name")
     }
+  }
+
+  // TCK'd
+  test("should fail statically when trying to access an array with a non-integer index") {
+    a [SyntaxException] should be thrownBy graph.execute("WITH [1,2,3,4,5] AS array, 3.14 AS idx RETURN array[idx]")
   }
 
   test("fails at runtime when trying to index into a map with a non-int") {

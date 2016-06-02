@@ -21,6 +21,61 @@ package org.neo4j.cypher
 
 class EqualsTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
+  // TCK'd
+  test("does not lose precision") {
+    // Given
+    graph.execute("CREATE (:Label { id: 4611686018427387905 })")
+
+    // When
+    val result = executeScalarWithAllPlannersAndCompatibilityMode[Number]("match (p:Label) return p.id")
+
+    result should equal(4611686018427387905L)
+  }
+
+  // TCK'd
+  test("equality takes the full value into consideration 1") {
+    // Given
+    graph.execute("CREATE (:Label { id: 4611686018427387905 })")
+
+    // When
+    val result = executeWithAllPlannersAndCompatibilityMode("match (p:Label {id: 4611686018427387905}) return p")
+
+    result should not be empty
+  }
+
+  // TCK'd
+  test("equality takes the full value into consideration 2") {
+    // Given
+    graph.execute("CREATE (:Label { id: 4611686018427387905 })")
+
+    // When
+    val result = executeWithAllPlannersAndCompatibilityMode("match (p:Label) where p.id = 4611686018427387905 return p")
+
+    result should not be empty
+  }
+
+  // TCK'd
+  test("equality takes the full value into consideration 3") {
+    // Given
+    graph.execute("CREATE (:Label { id: 4611686018427387905 })")
+
+    // When
+    val result = executeWithAllPlannersAndCompatibilityMode("match (p:Label) where p.id = 4611686018427387900 return p")
+
+    result should be(empty)
+  }
+
+  // TCK'd
+  test("equality takes the full value into consideration 4") {
+    // Given
+    graph.execute("CREATE (:Label { id: 4611686018427387905 })")
+
+    // When
+    val result = executeWithAllPlannersAndCompatibilityMode("match (p:Label {id : 4611686018427387900}) return p")
+
+    result should be(empty)
+  }
+
   test("should not throw semantic check error for number-typed integer comparison") {
     createNode()
 
