@@ -230,6 +230,7 @@ public class ConfigureBaseUriFunctionalTest extends AbstractRestFunctionalTestBa
             String responseEntityBody = new String( data );
 
             assertFalse( responseEntityBody.contains( "https://foobar.com" ) );
+            assertFalse( responseEntityBody.contains( ":0" ) );
             assertTrue( responseEntityBody.contains( "localhost" ) );
         }
         finally
