@@ -33,6 +33,7 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -255,7 +256,9 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         }
         else if ( value instanceof Long )
         {
-            long keyAndType = keyId | (((long) PropertyType.LONG.intValue()) << 24);
+
+            long keyAndType = keyId | (((long) PropertyType.LONG.intValue()) <<
+                                       StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS);
             if ( ShortArray.LONG.getRequiredBits( (Long) value ) <= 35 )
             {   // We only need one block for this value, special layout compared to, say, an integer
                 block.setSingleBlock( keyAndType | (1L << 28) | ((Long) value << 29) );
@@ -267,8 +270,8 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         }
         else if ( value instanceof Double )
         {
-            block.setValueBlocks( new long[]{
-                    keyId | (((long) PropertyType.DOUBLE.intValue()) << 24),
+            block.setValueBlocks( new long[]{ keyId |
+                    (((long) PropertyType.DOUBLE.intValue()) << StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS),
                     Double.doubleToRawLongBits( (Double) value )} );
         }
         else if ( value instanceof Byte )
@@ -313,7 +316,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
 
     public static long singleBlockLongValue( int keyId, PropertyType type, long longValue )
     {
-        return keyId | (((long) type.intValue()) << 24) | (longValue << 28);
+        return keyId | (((long) type.intValue()) << StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS) | (longValue << 28);
     }
 
     public static byte[] encodeString( String string )

@@ -44,6 +44,7 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SAME_GROUP;
 
 /**
  * Abstract class for caching {@link InputEntity} or derivative to disk using a binary format.
+ * Currently each token type limited to have as maximum {#link Integer.MAX_VALUE} items.
  */
 abstract class InputEntityCacher<ENTITY extends InputEntity> implements Receiver<ENTITY[],IOException>
 {
@@ -54,7 +55,7 @@ abstract class InputEntityCacher<ENTITY extends InputEntity> implements Receiver
     private final int[] previousGroupIds;
 
     private final int[] nextKeyId = new int[HIGH_TOKEN_TYPE];
-    private final long[] maxKeyId = new long[HIGH_TOKEN_TYPE];
+    private final int[] maxKeyId = new int[HIGH_TOKEN_TYPE];
     @SuppressWarnings( "unchecked" )
     private final Map<String,Integer>[] tokens = new Map[HIGH_TOKEN_TYPE];
 
@@ -185,9 +186,14 @@ abstract class InputEntityCacher<ENTITY extends InputEntity> implements Receiver
 
     private void initMaxTokenKeyIds( RecordFormats recordFormats )
     {
-        maxKeyId[PROPERTY_KEY_TOKEN] = recordFormats.propertyKeyToken().getMaxId();
-        maxKeyId[LABEL_TOKEN] = recordFormats.labelToken().getMaxId();
-        maxKeyId[RELATIONSHIP_TYPE_TOKEN] = recordFormats.relationshipTypeToken().getMaxId();
-        maxKeyId[GROUP_TOKEN] = recordFormats.relationshipGroup().getMaxId();
+        maxKeyId[PROPERTY_KEY_TOKEN] = getMaxAcceptableTokenId( recordFormats.propertyKeyToken().getMaxId() );
+        maxKeyId[LABEL_TOKEN] = getMaxAcceptableTokenId( recordFormats.labelToken().getMaxId() );
+        maxKeyId[RELATIONSHIP_TYPE_TOKEN] = getMaxAcceptableTokenId( recordFormats.relationshipTypeToken().getMaxId() );
+        maxKeyId[GROUP_TOKEN] = getMaxAcceptableTokenId( recordFormats.relationshipGroup().getMaxId() );
+    }
+
+    private int getMaxAcceptableTokenId( long maxId )
+    {
+        return (int) Math.min( Integer.MAX_VALUE, maxId );
     }
 }
