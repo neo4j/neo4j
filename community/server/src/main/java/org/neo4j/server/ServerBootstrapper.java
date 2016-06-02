@@ -27,11 +27,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
+import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -70,13 +72,18 @@ public abstract class ServerBootstrapper implements Bootstrapper
     @SafeVarargs
     public final int start( File homeDir, Optional<File> configFile, Pair<String, String>... configOverrides )
     {
-        LogProvider userLogProvider = setupLogging();
-        dependencies = dependencies.userLogProvider( userLogProvider );
-        log = userLogProvider.getLog( getClass() );
-
         try
         {
-            Config config = createConfig( log, homeDir, configFile, configOverrides );
+            FormattedLog configLog = FormattedLogProvider.withoutRenderingContext()
+                                    .toOutputStream( System.out )
+                                    .getLog( getClass() );
+
+            Config config = createConfig( configLog, homeDir, configFile, configOverrides );
+
+            LogProvider userLogProvider = setupLogging( config );
+            dependencies = dependencies.userLogProvider( userLogProvider );
+            log = userLogProvider.getLog( getClass() );
+
             serverAddress = ServerSettings.httpConnector( config, ServerSettings.HttpConnector.Encryption.NONE )
                     .map( ( connector ) -> connector.address.toString() )
                     .orElse( serverAddress );
@@ -146,9 +153,11 @@ public abstract class ServerBootstrapper implements Bootstrapper
 
     protected abstract Iterable<Class<?>> settingsClasses( Map<String, String> settings );
 
-    private static LogProvider setupLogging()
+    private static LogProvider setupLogging( Config config )
     {
-        LogProvider userLogProvider = FormattedLogProvider.withoutRenderingContext().toOutputStream( System.out );
+        LogProvider userLogProvider = FormattedLogProvider.withoutRenderingContext()
+                            .withDefaultLogLevel( config.get( GraphDatabaseSettings.store_internal_log_level ) )
+                            .toOutputStream( System.out );
         JULBridge.resetJUL();
         Logger.getLogger( "" ).setLevel( Level.WARNING );
         JULBridge.forwardTo( userLogProvider );

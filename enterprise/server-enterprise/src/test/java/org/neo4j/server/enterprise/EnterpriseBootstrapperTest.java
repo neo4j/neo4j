@@ -19,27 +19,47 @@
  */
 package org.neo4j.server.enterprise;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.File;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.BaseBootstrapperTest;
+import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerBootstrapper;
+import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.configuration.ConfigLoader;
+import org.neo4j.test.CleanupRule;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
-
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
+import static org.neo4j.helpers.collection.MapUtil.store;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
 import static org.neo4j.server.configuration.ServerSettings.certificates_directory;
 import static org.neo4j.test.Assert.assertEventually;
 
 public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
 {
+    private TemporaryFolder folder = new TemporaryFolder();
+    private CleanupRule cleanupRule = new CleanupRule();
+
+    @Rule
+    public RuleChain ruleChain = RuleChain.outerRule(folder).around( cleanupRule );
+
     @Override
     protected ServerBootstrapper newBootstrapper()
     {
@@ -57,9 +77,6 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
     {
         EnterpriseEntryPoint.stop( args );
     }
-
-    @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
 
     @Test
     public void shouldBeAbleToStartInSingleMode() throws Exception
@@ -97,5 +114,73 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
         // Then
         assertEquals( ServerBootstrapper.OK, resultCode );
         assertEventually( "Server was not started", bootstrapper::isRunning, is( true ), 1, TimeUnit.MINUTES );
+    }
+
+    @Test
+    public void debugLoggingDisabledByDefault() throws Exception
+    {
+        // When
+        File configFile = tempDir.newFile( ConfigLoader.DEFAULT_CONFIG_FILE_NAME );
+
+        Map<String, String> properties = stringMap();
+        properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
+        properties.put( "dbms.connector.1.type", "HTTP" );
+        properties.put( "dbms.connector.1.enabled", "true" );
+        store( properties, configFile );
+
+        // When
+        UncoveredEnterpriseBootstrapper uncoveredEnterpriseBootstrapper = new UncoveredEnterpriseBootstrapper();
+        cleanupRule.add( uncoveredEnterpriseBootstrapper );
+        ServerBootstrapper.start( uncoveredEnterpriseBootstrapper,
+                "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
+                "--config-dir", configFile.getParentFile().getAbsolutePath() );
+
+        // Then
+        assertEventually( "Server was started", uncoveredEnterpriseBootstrapper::isRunning, is( true ), 1, TimeUnit.MINUTES );
+        LogProvider userLogProvider = uncoveredEnterpriseBootstrapper.getUserLogProvider();
+        assertFalse( "Debug logging is disabled by default", userLogProvider.getLog( getClass() ).isDebugEnabled() );
+    }
+
+    @Test
+    public void debugLoggingEnabledBySetting() throws Exception
+    {
+        // When
+        File configFile = tempDir.newFile( ConfigLoader.DEFAULT_CONFIG_FILE_NAME );
+
+        Map<String, String> properties = stringMap( GraphDatabaseSettings.store_internal_log_level.name(), "DEBUG");
+        properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
+        properties.put( "dbms.connector.1.type", "HTTP" );
+        properties.put( "dbms.connector.1.enabled", "true" );
+        store( properties, configFile );
+
+        // When
+        UncoveredEnterpriseBootstrapper uncoveredEnterpriseBootstrapper = new UncoveredEnterpriseBootstrapper();
+        cleanupRule.add( uncoveredEnterpriseBootstrapper );
+        ServerBootstrapper.start( uncoveredEnterpriseBootstrapper,
+                "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
+                "--config-dir", configFile.getParentFile().getAbsolutePath() );
+
+        // Then
+        assertEventually( "Server was started", uncoveredEnterpriseBootstrapper::isRunning, is( true ), 1, TimeUnit.MINUTES );
+        LogProvider userLogProvider = uncoveredEnterpriseBootstrapper.getUserLogProvider();
+        assertTrue( "Debug logging enabled by setting value.", userLogProvider.getLog( getClass() ).isDebugEnabled() );
+    }
+
+    private class UncoveredEnterpriseBootstrapper extends EnterpriseBootstrapper
+    {
+        private LogProvider userLogProvider;
+
+        @Override
+        protected NeoServer createNeoServer( Config configurator, GraphDatabaseDependencies dependencies,
+                LogProvider userLogProvider )
+        {
+            this.userLogProvider = userLogProvider;
+            return super.createNeoServer( configurator, dependencies, userLogProvider );
+        }
+
+        LogProvider getUserLogProvider()
+        {
+            return userLogProvider;
+        }
     }
 }
