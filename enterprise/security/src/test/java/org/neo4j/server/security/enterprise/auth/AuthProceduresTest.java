@@ -543,6 +543,35 @@ public class AuthProceduresTest
         }
     }
 
+    //----------User suspension/activation scenarios-----------
+
+    /*
+    Admin suspends user Henrik
+    User Henrik logs in with correct password → fail
+     */
+    @Test
+    public void userSuspension1() throws Exception
+    {
+        testCallEmpty( db, adminSubject, "CALL dbms.suspendUser('Henrik')", null );
+        AuthSubject subject = manager.login( "Henrik", "bar" );
+        assertEquals( AuthenticationResult.FAILURE, subject.getAuthenticationResult() );
+    }
+
+    /*
+    Admin suspends user Henrik
+    User Henrik logs in with correct password → fail
+     */
+    @Test
+    public void userActivation1() throws Exception
+    {
+        testCallEmpty( db, adminSubject, "CALL dbms.suspendUser('Henrik')", null );
+        AuthSubject subject = manager.login( "Henrik", "bar" );
+        assertEquals( AuthenticationResult.FAILURE, subject.getAuthenticationResult() );
+        testCallEmpty( db, adminSubject, "CALL dbms.activateUser('Henrik')", null );
+        subject = manager.login( "Henrik", "bar" );
+        assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
+    }
+
     //-------------Helper functions---------------
 
     private void testSuccessfulReadAction( AuthSubject subject, Long count )

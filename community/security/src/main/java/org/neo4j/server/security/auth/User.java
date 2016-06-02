@@ -38,11 +38,20 @@ public class User
     /** Whether a password change is needed */
     private final boolean passwordChangeRequired;
 
-    public User(String name, Credential credential, boolean passwordChangeRequired)
+    /** User is suspended */
+    private final boolean isSuspended;
+
+    public User( String name, Credential credential, boolean passwordChangeRequired )
+    {
+        this(name, credential, passwordChangeRequired, false);
+    }
+
+    private User( String name, Credential credential, boolean passwordChangeRequired, boolean isSuspended )
     {
         this.name = name;
         this.credential = credential;
         this.passwordChangeRequired = passwordChangeRequired;
+        this.isSuspended = isSuspended;
     }
 
     public String name()
@@ -56,6 +65,7 @@ public class User
     }
 
     public boolean passwordChangeRequired() { return passwordChangeRequired; }
+    public boolean isSuspended() { return isSuspended; }
 
     /** Use this user as a base for a new user object */
     public Builder augment() { return new Builder(this); }
@@ -78,6 +88,10 @@ public class User
         {
             return false;
         }
+        if ( isSuspended != user.isSuspended )
+        {
+            return false;
+        }
         if ( credential != null ? !credential.equals( user.credential ) : user.credential != null )
         {
             return false;
@@ -96,6 +110,7 @@ public class User
         int result = name != null ? name.hashCode() : 0;
         result = 31 * result + ( credential != null ? credential.hashCode() : 0);
         result = 31 * result + (passwordChangeRequired ? 1 : 0);
+        result = 31 * result + (isSuspended ? 1 : 0);
         return result;
     }
 
@@ -106,6 +121,7 @@ public class User
                 "name='" + name + '\'' +
                 ", credentials=" + credential +
                 ", passwordChangeRequired=" + passwordChangeRequired +
+                ", isSuspended=" + isSuspended +
                 '}';
     }
 
@@ -114,6 +130,7 @@ public class User
         private String name;
         private Credential credential = Credential.INACCESSIBLE;
         private boolean pwdChangeRequired;
+        private boolean isSuspended;
 
         public Builder() { }
 
@@ -122,15 +139,17 @@ public class User
             name = base.name;
             credential = base.credential;
             pwdChangeRequired = base.passwordChangeRequired;
+            isSuspended = base.isSuspended;
         }
 
         public Builder withName( String name ) { this.name = name; return this; }
         public Builder withCredentials( Credential creds ) { this.credential = creds; return this; }
         public Builder withRequiredPasswordChange( boolean change ) { this.pwdChangeRequired = change; return this; }
+        public Builder withIsSuspended( boolean suspended ) { this.isSuspended = suspended; return this; }
 
         public User build()
         {
-            return new User(name, credential, pwdChangeRequired );
+            return new User(name, credential, pwdChangeRequired, isSuspended );
         }
     }
 }

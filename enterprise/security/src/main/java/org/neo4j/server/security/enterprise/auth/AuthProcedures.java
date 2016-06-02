@@ -28,6 +28,7 @@ import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.PerformsDBMS;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 public class AuthProcedures
 {
@@ -85,5 +86,29 @@ public class AuthProcedures
             throw new AuthorizationViolationException( PERMISSION_DENIED );
         }
         shiroSubject.getUserManager().deleteUser( username );
+    }
+
+    @PerformsDBMS
+    @Procedure( "dbms.suspendUser" )
+    public void suspendUser( @Name( "username" ) String username ) throws IOException, ConcurrentModificationException
+    {
+        ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
+        if ( !shiroSubject.isAdmin() )
+        {
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
+        }
+        shiroSubject.getUserManager().suspendUser( username );
+    }
+
+    @PerformsDBMS
+    @Procedure( "dbms.activateUser" )
+    public void activateUser( @Name( "username" ) String username ) throws IOException, ConcurrentModificationException
+    {
+        ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
+        if ( !shiroSubject.isAdmin() )
+        {
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
+        }
+        shiroSubject.getUserManager().activateUser( username );
     }
 }

@@ -42,6 +42,7 @@ import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.auth.UserRepository;
+import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 public class ShiroAuthManager extends BasicAuthManager implements RoleManager
 {
@@ -214,6 +215,18 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
     {
         assertAuthEnabled();
         return realm.deleteUser( username );
+    }
+
+    void suspendUser( String username ) throws IOException, ConcurrentModificationException
+    {
+        assertAuthEnabled();
+        realm.suspendUser( username );
+    }
+
+    void activateUser( String username ) throws IOException, ConcurrentModificationException
+    {
+        assertAuthEnabled();
+        realm.activateUser( username );
     }
 
     private Subject buildSubject( String username )

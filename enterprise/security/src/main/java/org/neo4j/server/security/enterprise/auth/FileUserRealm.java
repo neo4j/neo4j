@@ -270,6 +270,26 @@ public class FileUserRealm extends AuthorizingRealm
         return result;
     }
 
+    void suspendUser( String username ) throws IOException, ConcurrentModificationException
+    {
+        User user = userRepository.findByName( username );
+        if ( user != null && !user.isSuspended() )
+        {
+            User suspendedUser = user.augment().withIsSuspended( true ).build();
+            userRepository.update( user, suspendedUser );
+        }
+    }
+
+    void activateUser( String username ) throws IOException, ConcurrentModificationException
+    {
+        User user = userRepository.findByName( username );
+        if ( user != null && user.isSuspended() )
+        {
+            User activatedUser = user.augment().withIsSuspended( false ).build();
+            userRepository.update( user, activatedUser );
+        }
+    }
+
     private void removeUserFromAllRoles( String username ) throws IOException
     {
         try

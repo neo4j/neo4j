@@ -73,20 +73,35 @@ public class UserSerialization
     {
         return join( userSeparator, user.name(),
                 serialize( user.credentials() ),
-                user.passwordChangeRequired() ? "password_change_required" : "" );
+                user.passwordChangeRequired() ? "password_change_required" : "",
+                user.isSuspended() ? "is_suspended" : "" );
     }
 
     private User deserializeUser( String line, int lineNumber ) throws FormatException
     {
         String[] parts = line.split( userSeparator, -1 );
-        if ( parts.length != 3 )
+        boolean isSuspended;
+        if ( parts.length == 3 ) // Before suspension impl. assume non-suspended user
         {
-            throw new FormatException( format( "wrong number of line fields [line %d]", lineNumber ) );
+            isSuspended = false;
         }
+        else if ( parts.length == 4 )
+        {
+            isSuspended = parts[3].equals( "is_suspended" );
+        }
+        else
+        {
+            throw new FormatException( format( "wrong number of line fields, expected 3 or 4, got %d [line %d]",
+                    parts.length,
+                    lineNumber
+            ) );
+        }
+
         return new User.Builder()
                 .withName( parts[0] )
                 .withCredentials( deserializeCredentials( parts[1], lineNumber ) )
                 .withRequiredPasswordChange( parts[2].equals( "password_change_required" ) )
+                .withIsSuspended( isSuspended )
                 .build();
     }
 

@@ -78,7 +78,7 @@ public class ShiroAuthSubject implements AuthSubject
         return authManager;
     }
 
-    public UserManager getUserManager()
+    public ShiroAuthManager getUserManager()
     {
         return authManager;
     }
