@@ -87,7 +87,7 @@ public class SwitchToMaster implements AutoCloseable
      */
     public URI switchToMaster( LifeSupport haCommunicationLife, URI me )
     {
-        userLog.info( "I am %s, moving to master", myId() );
+        userLog.info( "I am %s, moving to master", myId( config ) );
 
         // Do not wait for currently active transactions to complete before continuing switching.
         // - A master in a cluster is very important, without it the cluster cannot process any write requests
@@ -114,27 +114,31 @@ public class SwitchToMaster implements AutoCloseable
 
         haCommunicationLife.start();
 
-        URI masterHaURI = getMasterUri( me, masterServer );
+        URI masterHaURI = getMasterUri( me, masterServer, config );
         clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI, neoStoreXaDataSource.getStoreId() );
-        userLog.info( "I am %s, successfully moved to master", myId() );
+        userLog.info( "I am %s, successfully moved to master", myId( config ) );
 
         slaveFactorySupplier.get().setStoreId( neoStoreXaDataSource.getStoreId() );
 
         return masterHaURI;
     }
 
-    private URI getMasterUri( URI me, MasterServer masterServer )
+    static URI getMasterUri( URI me, MasterServer masterServer, Config config )
     {
-        String hostname = config.get( HaSettings.ha_server ).getHost( ServerUtil.getHostString( masterServer.getSocketAddress() ).contains( "0.0.0.0" ) ?
-                            me.getHost() :
-                            ServerUtil.getHostString( masterServer.getSocketAddress() ));
+
+        String hostname = config.get( HaSettings.ha_server ).getHost();
+        if ( hostname == null || hostname.contains( "0.0.0.0" ) )
+        {
+            String masterAddress = ServerUtil.getHostString( masterServer.getSocketAddress() );
+            hostname = masterAddress.contains( "0.0.0.0" ) ? me.getHost() : masterAddress;
+        }
 
         int port = masterServer.getSocketAddress().getPort();
 
-        return URI.create( "ha://" + hostname + ":" + port + "?serverId=" + myId() );
+        return URI.create( "ha://" + hostname + ":" + port + "?serverId=" + myId( config ) );
     }
 
-    private InstanceId myId()
+    private static InstanceId myId( Config config )
     {
         return config.get( ClusterSettings.server_id );
     }
