@@ -183,8 +183,7 @@ public class FileUserRealm extends AuthorizingRealm
 
     void addUserToRole( String username, String roleName ) throws IOException
     {
-        assertValidUsername( username );
-        assertValidRoleName( roleName );
+        checkValidityOfUsernameAndRoleName( username, roleName );
 
         synchronized ( this )
         {
@@ -193,7 +192,6 @@ public class FileUserRealm extends AuthorizingRealm
             {
                 throw new IllegalArgumentException( "User " + username + " does not exist." );
             }
-
             RoleRecord role = roleRepository.findByName( roleName );
             if ( role == null )
             {
@@ -215,10 +213,36 @@ public class FileUserRealm extends AuthorizingRealm
         }
     }
 
-    void removeUserFromRole( String username, String rolename ) throws IOException
+    void removeUserFromRole( String username, String roleName ) throws IOException
     {
-        // TODO
-        throw new UnsupportedOperationException( "Removing user from role is not implemented." );
+        checkValidityOfUsernameAndRoleName( username, roleName );
+
+        synchronized ( this )
+        {
+            User user = userRepository.findByName( username );
+            if ( user == null )
+            {
+                throw new IllegalArgumentException( "User " + username + " does not exist." );
+            }
+            RoleRecord role = roleRepository.findByName( roleName );
+            if ( role == null )
+            {
+                throw new IllegalArgumentException( "Role " + roleName + " does not exist." );
+            }
+            else
+            {
+                RoleRecord newRole = role.augment().withoutUser( username ).build();
+                try
+                {
+                    roleRepository.update( role, newRole );
+                }
+                catch ( ConcurrentModificationException e )
+                {
+                    // Try again
+                    removeUserFromRole( username, roleName );
+                }
+            }
+        }
     }
 
     boolean deleteUser( String username ) throws IOException
@@ -247,6 +271,12 @@ public class FileUserRealm extends AuthorizingRealm
             // Try again
             removeUserFromAllRoles( username );
         }
+    }
+
+    private void checkValidityOfUsernameAndRoleName( String username, String roleName ) throws IllegalArgumentException
+    {
+        assertValidUsername( username );
+        assertValidRoleName( roleName );
     }
 
     private void assertValidUsername( String name )
