@@ -5,14 +5,14 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>org.neo4j</groupId>
-        <version>3.0.2-SNAPSHOT</version>
+        <version>3.0.3-SNAPSHOT</version>
         <relativePath>../..</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.neo4j.doc</groupId>
     <artifactId>neo4j-bolt-docs</artifactId>
-    <version>3.0.2-SNAPSHOT</version>
+    <version>3.0.3-SNAPSHOT</version>
 
     <packaging>jar</packaging>
     <name>Neo4j - Bolt Documentation</name>
