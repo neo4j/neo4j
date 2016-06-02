@@ -22,11 +22,12 @@ package org.neo4j.coreedge.raft.log;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.coreedge.raft.log.naive.NaiveDurableRaftLog;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.neo4j.coreedge.raft.log.NaiveDurableRaftLog.NAIVE_LOG_DIRECTORY_NAME;
+import static org.neo4j.coreedge.raft.log.naive.NaiveDurableRaftLog.NAIVE_LOG_DIRECTORY_NAME;
 
 public class NaiveDurableRaftLogContractTest extends RaftLogContractTest
 {

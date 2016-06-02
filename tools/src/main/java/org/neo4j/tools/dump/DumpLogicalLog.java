@@ -212,7 +212,7 @@ public class DumpLogicalLog
             File dir = absoluteFile.isDirectory() ? absoluteFile : absoluteFile.getParentFile();
             if ( !dir.equals( directory ) )
             {
-                safeClose();
+                close();
                 File dumpFile = new File( dir, "dump-logical-log.txt" );
                 System.out.println( "Redirecting the output to " + dumpFile.getPath() );
                 out = new PrintStream( dumpFile );
@@ -221,18 +221,13 @@ public class DumpLogicalLog
             return out;
         }
 
-        private void safeClose()
+        @Override
+        public void close()
         {
             if ( out != null )
             {
                 out.close();
             }
-        }
-
-        @Override
-        public void close()
-        {
-            safeClose();
         }
     }
 

@@ -19,8 +19,6 @@
  */
 package org.neo4j.coreedge.raft.log.segmented;
 
-import static java.util.Collections.emptyList;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 
-import org.neo4j.coreedge.raft.log.DamagedLogStorageException;
 import org.neo4j.coreedge.raft.log.EntryRecord;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
@@ -40,6 +37,8 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+
+import static java.util.Collections.emptyList;
 
 /**
  * Recovers all the state required for operating the RAFT log and does some simple
@@ -57,7 +56,7 @@ class RecoveryProtocol
     private long expectedVersion;
 
     RecoveryProtocol( FileSystemAbstraction fileSystem, FileNames fileNames,
-                      ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider )
+            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider )
     {
         this.fileSystem = fileSystem;
         this.fileNames = fileNames;

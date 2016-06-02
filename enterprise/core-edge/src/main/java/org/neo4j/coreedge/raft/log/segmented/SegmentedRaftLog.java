@@ -22,7 +22,6 @@ package org.neo4j.coreedge.raft.log.segmented;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.coreedge.raft.log.DamagedLogStorageException;
 import org.neo4j.coreedge.raft.log.EntryRecord;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogCursor;

@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.coreedge.raft.log.EntryRecord;
-import org.neo4j.coreedge.raft.log.EntryRecordCursor;
 import org.neo4j.coreedge.raft.log.LogPosition;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
@@ -262,6 +261,11 @@ class SegmentFile implements AutoCloseable
     public long size()
     {
         return fileSystem.getFileSize( file );
+    }
+
+    public String getFilename()
+    {
+        return file.getName();
     }
 
     @Override

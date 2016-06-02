@@ -22,7 +22,7 @@ package org.neo4j.coreedge.raft.log.debug;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
+import org.neo4j.coreedge.raft.log.naive.NaiveDurableRaftLog;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;

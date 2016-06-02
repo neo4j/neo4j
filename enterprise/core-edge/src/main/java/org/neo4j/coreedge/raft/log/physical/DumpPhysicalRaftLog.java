@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.log.debug;
+package org.neo4j.coreedge.raft.log.physical;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -28,10 +28,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.TreeSet;
 
-import org.neo4j.coreedge.raft.log.physical.RaftLogAppendRecord;
-import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLogFiles;
-import org.neo4j.coreedge.raft.log.physical.SingleVersionReader;
-import org.neo4j.coreedge.raft.log.physical.VersionIndexRanges;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;

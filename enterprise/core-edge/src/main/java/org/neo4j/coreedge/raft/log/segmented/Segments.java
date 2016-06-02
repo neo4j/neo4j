@@ -249,6 +249,11 @@ class Segments implements AutoCloseable
         return segmentFiles.listIterator( segmentFiles.size() );
     }
 
+    public ListIterator<SegmentFile> getSegmentFileIteratorAtStart()
+    {
+        return segmentFiles.listIterator();
+    }
+
     @Override
     public void close() throws DisposedException
     {

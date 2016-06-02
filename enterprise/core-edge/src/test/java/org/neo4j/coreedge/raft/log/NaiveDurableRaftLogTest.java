@@ -19,14 +19,15 @@
  */
 package org.neo4j.coreedge.raft.log;
 
+import org.junit.Test;
+import org.mockito.Matchers;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.junit.Test;
-import org.mockito.Matchers;
-
 import org.neo4j.coreedge.raft.ReplicatedInteger;
+import org.neo4j.coreedge.raft.log.naive.NaiveDurableRaftLog;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.logging.NullLogProvider;

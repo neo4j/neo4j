@@ -17,19 +17,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.log;
-
-import static org.neo4j.coreedge.raft.log.EntryRecord.read;
+package org.neo4j.coreedge.raft.log.segmented;
 
 import java.io.IOException;
 import java.util.function.Consumer;
 
+import org.neo4j.coreedge.raft.log.EntryRecord;
+import org.neo4j.coreedge.raft.log.LogPosition;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.cursor.CursorValue;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
+
+import static org.neo4j.coreedge.raft.log.EntryRecord.read;
 
 /**
  * A cursor for iterating over RAFT log entries starting at an index and until the end of the segment is met.

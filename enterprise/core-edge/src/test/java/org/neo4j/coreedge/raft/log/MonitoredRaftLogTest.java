@@ -19,19 +19,20 @@
  */
 package org.neo4j.coreedge.raft.log;
 
-import java.io.File;
-
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.log.monitoring.RaftLogAppendIndexMonitor;
 import org.neo4j.coreedge.raft.log.monitoring.RaftLogCommitIndexMonitor;
+import org.neo4j.coreedge.raft.log.naive.NaiveDurableRaftLog;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class MonitoredRaftLogTest
 {
