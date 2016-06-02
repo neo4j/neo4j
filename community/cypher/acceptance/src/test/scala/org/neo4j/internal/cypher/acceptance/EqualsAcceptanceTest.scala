@@ -17,9 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.internal.cypher.acceptance
 
-class EqualsTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+import org.neo4j.cypher.{ExecutionEngineFunSuite, IncomparableValuesException, NewPlannerTestSupport}
+
+class EqualsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   // TCK'd
   test("does not lose precision") {
@@ -76,57 +78,61 @@ class EqualsTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
     result should be(empty)
   }
 
+  // TCK'd
   test("should not throw semantic check error for number-typed integer comparison") {
-    createNode()
+    createNode("id" -> 0)
 
     // the parameter is used to disable auto-parametrization
     val queryWithInt =
-      """PROFILE
-        |WITH {parameter} AS p
+      """WITH {parameter} AS p
         |WITH collect([0, 0.0]) as numbers
         |UNWIND numbers as arr
         |WITH arr[0] as expected
-        |MATCH (n) WHERE id(n)=expected
+        |MATCH (n) WHERE toInt(n.id) = expected
         |RETURN n""".stripMargin
+
     val result = executeWithAllPlannersAndCompatibilityMode(queryWithInt, "parameter" -> "placeholder")
 
     result.toList.length shouldBe 1
   }
 
+  // TCK'd
   test("should not throw semantic check error for number-typed float comparison") {
-    createNode()
+    createNode("id" -> 0)
 
     // the parameter is used to disable auto-parametrization
     val queryWithFloat =
-      """PROFILE
-        |WITH {parameter} AS p
+      """WITH {parameter} AS p
         |WITH collect([0.5, 0]) as numbers
         |UNWIND numbers as arr
         |WITH arr[0] as expected
-        |MATCH (n) WHERE id(n)=expected
+        |MATCH (n) WHERE toInt(n.id) = expected
         |RETURN n""".stripMargin
+
     val result = executeWithAllPlannersAndCompatibilityMode(queryWithFloat, "parameter" -> "placeholder")
 
     result.toList shouldBe empty
   }
 
+  // TCK'd
   test("should not throw semantic check error for any-typed string comparison") {
-    createNode()
+    createNode("id" -> 0)
 
     // the parameter is used to disable auto-parametrization
     val queryWithString =
-      """PROFILE
-        |WITH {parameter} AS p
+      """WITH {parameter} AS p
         |WITH collect(["0", 0]) as things
         |UNWIND things as arr
         |WITH arr[0] as expected
-        |MATCH (n) WHERE id(n)=expected
+        |MATCH (n) WHERE toInt(n.id) = expected
         |RETURN n""".stripMargin
+
     val result = executeWithAllPlannersAndCompatibilityMode(queryWithString, "parameter" -> "placeholder")
 
     result.toList shouldBe empty
   }
 
+  // TCK'd
   test("should prohibit equals between node and parameter") {
     // given
     createLabeledNode("Person")
@@ -135,6 +141,7 @@ class EqualsTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
       "param" -> Map("name" -> "John Silver")))
   }
 
+  // TCK'd
   test("should prohibit equals between parameter and node") {
     // given
     createLabeledNode("Person")
@@ -142,6 +149,7 @@ class EqualsTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
     intercept[IncomparableValuesException](executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (b) WHERE {param} = b RETURN b", "param" -> Map("name" -> "John Silver")))
   }
 
+  // TCK'd
   test("should allow equals between node and node") {
     // given
     createLabeledNode("Person")
@@ -153,6 +161,7 @@ class EqualsTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
     result should be (1)
   }
 
+  // TCK'd
   test("should reject equals between node and property") {
     // given
     createLabeledNode(Map("val"->17), "Person")
@@ -160,7 +169,7 @@ class EqualsTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
     intercept[IncomparableValuesException](executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE a = a.val RETURN count(a)"))
   }
 
-
+  // TCK'd
   test("should allow equals between relationship and relationship") {
     // given
     relate(createLabeledNode("Person"), createLabeledNode("Person"))
@@ -172,6 +181,7 @@ class EqualsTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
     result should be (1)
   }
 
+  // TCK'd
   test("should reject equals between node and relationship") {
     // given
     relate(createLabeledNode("Person"), createLabeledNode("Person"))
@@ -179,12 +189,15 @@ class EqualsTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
     intercept[IncomparableValuesException](executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)-[b]->() RETURN a = b"))
   }
 
+  // TCK'd
   test("should reject equals between relationship and node") {
     // given
     relate(createLabeledNode("Person"), createLabeledNode("Person"))
 
     intercept[IncomparableValuesException](executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)-[b]->() RETURN b = a"))
   }
+
+  // Not TCK material below; sending graph types or characters as parameters is not supported
 
   test("should be able to send in node via parameter") {
     // given
@@ -200,15 +213,6 @@ class EqualsTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (:Person)-[r]->(:Person) WHERE r = {param} RETURN r", "param" -> rel)
     result.toList should equal(List(Map("r" -> rel)))
-  }
-
-  test("should be able to compare two nodes") {
-    // given
-    val node = createLabeledNode("Person")
-    relate(node, node)
-
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a:Person)-->(b:Person) WHERE a = b RETURN a")
-    result.toList should equal(List(Map("a" -> node)))
   }
 
   test("should treat chars as strings in equality") {
