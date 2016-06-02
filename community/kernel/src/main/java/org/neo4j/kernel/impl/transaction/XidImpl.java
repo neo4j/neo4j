@@ -155,16 +155,13 @@ public class XidImpl implements Xid
     {
         if ( hashCode == 0 )
         {
-            int calcHash = 0;
-            for ( int i = 0; i < 3 && i < globalId.length; i++ )
-            {
-                calcHash += globalId[globalId.length - i - 1] << i * 8;
-            }
+            int calcHash = Arrays.hashCode( globalId );
+
             if ( branchId.length > 0 )
             {
-                calcHash += branchId[0] << 3 * 8;
+                calcHash ^= Arrays.hashCode( branchId );
             }
-            hashCode = 3217 * calcHash;
+            hashCode = calcHash;
         }
         return hashCode;
     }
