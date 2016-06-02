@@ -36,18 +36,18 @@ public enum StoreVersion
 
     private static final StoreVersion[] ALL_STORE_VERSIONS = values();
 
-    private final String string;
+    private final String versionString;
     private final boolean isCommunity;
 
-    StoreVersion( String string, boolean isCommunity )
+    StoreVersion( String versionString, boolean isCommunity )
     {
-        this.string = string;
+        this.versionString = versionString;
         this.isCommunity = isCommunity;
     }
 
-    public String string()
+    public String versionString()
     {
-        return string;
+        return versionString;
     }
 
     /**
@@ -58,7 +58,7 @@ public enum StoreVersion
     {
         for ( StoreVersion storeVersion : ALL_STORE_VERSIONS )
         {
-            if ( storeVersion.string.equals( version ) && storeVersion.isCommunity )
+            if ( storeVersion.versionString.equals( version ) && storeVersion.isCommunity )
             {
                 return true;
             }
@@ -74,7 +74,7 @@ public enum StoreVersion
     {
         for ( StoreVersion storeVersion : ALL_STORE_VERSIONS )
         {
-            if ( storeVersion.string.equals( version ) && !storeVersion.isCommunity )
+            if ( storeVersion.versionString.equals( version ) && !storeVersion.isCommunity )
             {
                 return true;
             }

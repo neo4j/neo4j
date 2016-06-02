@@ -63,7 +63,7 @@ public class RecordFormatsGenerationTest
     private static List<Integer> allGenerations()
     {
         return Arrays.stream( StoreVersion.values() )
-                .map( StoreVersion::string )
+                .map( StoreVersion::versionString )
                 .map( RecordFormatSelector::selectForVersion )
                 .map( RecordFormats::generation )
                 .sorted()

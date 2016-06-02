@@ -39,11 +39,11 @@ public class StoreVersionTest
     public static Collection<String> versions()
     {
         return Arrays.asList(
-                StoreVersion.STANDARD_V2_0.string(),
-                StoreVersion.STANDARD_V2_1.string(),
-                StoreVersion.STANDARD_V2_2.string(),
-                StoreVersion.STANDARD_V2_3.string(),
-                StoreVersion.STANDARD_V3_0.string() );
+                StoreVersion.STANDARD_V2_0.versionString(),
+                StoreVersion.STANDARD_V2_1.versionString(),
+                StoreVersion.STANDARD_V2_2.versionString(),
+                StoreVersion.STANDARD_V2_3.versionString(),
+                StoreVersion.STANDARD_V3_0.versionString() );
     }
 
     @Test
@@ -67,7 +67,7 @@ public class StoreVersionTest
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<String> versions()
         {
-            return Arrays.asList( StoreVersion.HIGH_LIMIT_V3_0.string() );
+            return Arrays.asList( StoreVersion.HIGH_LIMIT_V3_0.versionString() );
         }
 
         @Test

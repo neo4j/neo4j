@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 public class StandardV2_2 extends BaseRecordFormats
 {
-    public static final String STORE_VERSION = StoreVersion.STANDARD_V2_2.string();
+    public static final String STORE_VERSION = StoreVersion.STANDARD_V2_2.versionString();
     public static final RecordFormats RECORD_FORMATS = new StandardV2_2();
 
     public StandardV2_2()
