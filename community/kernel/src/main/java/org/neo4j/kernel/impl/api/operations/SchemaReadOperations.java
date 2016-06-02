@@ -88,11 +88,6 @@ public interface SchemaReadOperations
     Iterator<UniquenessConstraint> constraintsGetAll( KernelStatement state );
 
     /**
-     * Get the owning constraint for a constraint index. Returns null if the index does not have an owning constraint.
-     */
-    Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index ) throws SchemaRuleNotFoundException;
-
-    /**
      * Get the index id (the id or the schema rule record) for a committed index
      * - throws exception for indexes that aren't committed.
      */

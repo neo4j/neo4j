@@ -329,12 +329,6 @@ public class DiskLayer
         }, filtered );
     }
 
-    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
-            throws SchemaRuleNotFoundException
-    {
-        return schemaStorage.indexRule( index.getLabelId(), index.getPropertyKeyId() ).getOwningConstraint();
-    }
-
     public long indexGetCommittedId( IndexDescriptor index ) throws SchemaRuleNotFoundException
     {
         return schemaStorage.indexRule( index.getLabelId(), index.getPropertyKeyId() ).getId();

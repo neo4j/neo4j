@@ -871,13 +871,6 @@ public class StateHandlingStatementOperations implements
     //
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index )
-            throws SchemaRuleNotFoundException
-    {
-        return storeLayer.indexGetOwningUniquenessConstraintId( state, index );
-    }
-
-    @Override
     public long indexGetCommittedId( KernelStatement state, IndexDescriptor index, SchemaStorage.IndexRuleKind kind )
             throws SchemaRuleNotFoundException
     {

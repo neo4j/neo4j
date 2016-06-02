@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -55,14 +56,26 @@ public class RemoveOrphanConstraintIndexesOnStartup
                 public Void perform( Statement state )
                         throws KernelException
                 {
+                    loopThroughConstraintIndexes:
                     for ( Iterator<IndexDescriptor> indexes = state.readOperations().uniqueIndexesGetAll();
                           indexes.hasNext(); )
                     {
                         IndexDescriptor index = indexes.next();
-                        if ( state.readOperations().indexGetOwningUniquenessConstraintId( index ) == null )
+                        Iterator<UniquenessConstraint> constraints = state.readOperations()
+                                .constraintsGetForLabelAndPropertyKey( index.getLabelId(), index.getPropertyKeyId() );
+
+                        while(constraints.hasNext())
                         {
-                            state.schemaWriteOperations().uniqueIndexDrop( index );
+                            // Keep this check, since more constraint types will be added later on
+                            if(constraints.next() instanceof UniquenessConstraint)
+                            {
+                                // Found a related constraint.
+                                continue loopThroughConstraintIndexes;
+                            }
                         }
+
+                        // If we got here, there was no related constraint
+                        state.schemaWriteOperations().uniqueIndexDrop( index );
                     }
                     return null;
                 }

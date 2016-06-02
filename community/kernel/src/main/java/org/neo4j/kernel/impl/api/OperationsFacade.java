@@ -275,13 +275,6 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException
-    {
-        statement.assertOpen();
-        return schemaRead().indexGetOwningUniquenessConstraintId( statement, index );
-    }
-
-    @Override
     public Iterator<IndexDescriptor> uniqueIndexesGetAll()
     {
         statement.assertOpen();

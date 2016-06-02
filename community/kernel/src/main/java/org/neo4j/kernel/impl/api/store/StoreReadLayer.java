@@ -60,9 +60,6 @@ public interface StoreReadLayer
 
     Iterator<IndexDescriptor> uniqueIndexesGetAll( KernelStatement state );
 
-    Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index )
-            throws SchemaRuleNotFoundException;
-
     long indexGetCommittedId( KernelStatement state, IndexDescriptor index, SchemaStorage.IndexRuleKind kind ) throws SchemaRuleNotFoundException;
 
     IndexRule indexRule( IndexDescriptor index, SchemaStorage.IndexRuleKind kind );
