@@ -222,7 +222,7 @@ public interface ServerSettings
     @Description("Path of the lib directory")
     Setting<File> lib_directory = pathSetting( "dbms.directories.lib", "lib" );
 
-    @Description("Timeout for idle transactions.")
+    @Description("Timeout for idle transactions in the REST endpoint")
     Setting<Long> transaction_timeout = setting( "dbms.transaction_timeout", DURATION, "60s" );
 
     @Internal
