@@ -98,11 +98,11 @@ public class InputCache implements Closeable
 
     static final byte SAME_GROUP = 0;
     static final byte NEW_GROUP = 1;
-    static final byte PROPERTY_KEY_TOKEN = 1;
-    static final byte LABEL_TOKEN = 2;
-    static final byte RELATIONSHIP_TYPE_TOKEN = 3;
-    static final byte GROUP_TOKEN = 4;
-    static final byte HIGH_TOKEN_TYPE = 5;
+    static final byte PROPERTY_KEY_TOKEN = 0;
+    static final byte LABEL_TOKEN = 1;
+    static final byte RELATIONSHIP_TYPE_TOKEN = 2;
+    static final byte GROUP_TOKEN = 3;
+    static final byte HIGH_TOKEN_TYPE = 4;
     static final short HAS_FIRST_PROPERTY_ID = -1;
     static final byte HAS_LABEL_FIELD = 3;
     static final byte LABEL_REMOVAL = 1;
@@ -111,8 +111,8 @@ public class InputCache implements Closeable
     static final byte HAS_TYPE_ID = 2;
     static final byte SAME_TYPE = 0;
     static final byte NEW_TYPE = 1;
-    static final byte END_OF_HEADER = 0;
-    static final short END_OF_ENTITIES = -2;
+    static final byte END_OF_HEADER = -2;
+    static final short END_OF_ENTITIES = -3;
 
     private final FileSystemAbstraction fs;
     private final File cacheDirectory;
