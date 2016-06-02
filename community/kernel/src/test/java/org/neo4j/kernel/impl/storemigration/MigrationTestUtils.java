@@ -148,17 +148,24 @@ public class MigrationTestUtils
 
     public static File findFormatStoreDirectoryForVersion( String version, File targetDir ) throws IOException
     {
-        switch ( version )
+        if ( version.equals( StandardV2_3.STORE_VERSION ) )
         {
-        case StandardV2_3.STORE_VERSION:
             return find23FormatStoreDirectory( targetDir );
-        case StandardV2_2.STORE_VERSION:
+        }
+        else if ( version.equals( StandardV2_2.STORE_VERSION ) )
+        {
             return find22FormatStoreDirectory( targetDir );
-        case StandardV2_1.STORE_VERSION:
+        }
+        else if ( version.equals( StandardV2_1.STORE_VERSION ) )
+        {
             return find21FormatStoreDirectory( targetDir );
-        case StandardV2_0.STORE_VERSION:
+        }
+        else if ( version.equals( StandardV2_0.STORE_VERSION ) )
+        {
             return find20FormatStoreDirectory( targetDir );
-        default:
+        }
+        else
+        {
             throw new IllegalArgumentException( "Unknown version" );
         }
     }
