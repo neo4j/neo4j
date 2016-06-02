@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import internal.helpers.CollectionSupport
+import internal.pipes.QueryState
 import internal.StringExtras
 import internal.commands.expressions.StringHelper
 import scala.collection.JavaConverters._
@@ -27,7 +28,7 @@ import java.io.{StringWriter, PrintWriter}
 import collection.Map
 import collection.immutable.{Map => ImmutableMap}
 
-class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[String])
+class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[String], state: QueryState)
   extends ExecutionResult
   with StringExtras
   with CollectionSupport
@@ -67,18 +68,13 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[
     columnSizes.toMap
   }
 
-  protected def createTimedResults: (List[Map[String, Any]], String) = {
-    val start = System.currentTimeMillis()
-    val eagerResult = result.toList
-    val ms = System.currentTimeMillis() - start
-
-    (eagerResult, ms.toString)
-  }
+  lazy val _data = result.toList
+  def data = _data
 
   def dumpToString(writer: PrintWriter) {
-    val (eagerResult, timeTaken) = createTimedResults
-
-    val columnSizes = calculateColumnSizes(eagerResult)
+    val printData = data
+    val columnSizes = calculateColumnSizes(printData)
+    val stats = queryStatistics
 
     if (columns.nonEmpty) {
       val headers = columns.map((c) => Map[String, Any](c -> Some(c))).reduceLeft(_ ++ _)
@@ -86,26 +82,26 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[
       val lineWidth: Int = headerLine.length - 2
       val --- = "+" + repeat("-", lineWidth) + "+"
 
-      val row = if (eagerResult.size > 1) "rows" else "row"
-      val footer = "%d %s".format(eagerResult.size, row)
+      val row = if (printData.size > 1) "rows" else "row"
+      val footer = "%d %s".format(printData.size, row)
 
       writer.println(---)
       writer.println(headerLine)
       writer.println(---)
 
-      eagerResult.foreach(resultLine => writer.println(createString(columns, columnSizes, resultLine)))
+      printData.foreach(resultLine => writer.println(createString(columns, columnSizes, resultLine)))
 
       writer.println(---)
       writer.println(footer)
-      if (queryStatistics.containsUpdates) {
-        writer.print(queryStatistics.toString)
+      if (stats.containsUpdates) {
+        writer.print(stats.toString)
       }
     } else {
-      if (queryStatistics.containsUpdates) {
+      if (stats.containsUpdates) {
         writer.println("+-------------------+")
         writer.println("| No data returned. |")
         writer.println("+-------------------+")
-        writer.print(queryStatistics.toString)
+        writer.print(stats.toString)
       } else {
         writer.println("+--------------------------------------------+")
         writer.println("| No data returned, and nothing was changed. |")
@@ -115,7 +111,7 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[
 
 
 
-    writer.println("%s ms".format(timeTaken))
+    writer.println("%d ms".format(state.timeTaken))
   }
 
   lazy val dumpToString: String = {

@@ -68,13 +68,20 @@ object MutableMaps {
   }
 }
 
+trait Timed {
+  def start : Long
+
+  def timeTaken = (System.currentTimeMillis()-start).toInt
+}
+
 object QueryState {
-  def apply() = new QueryState(null, Map.empty)
+  def apply() = new QueryState(null, Map.empty, None, System.currentTimeMillis())
 }
 
 class QueryState(val db: GraphDatabaseService,
                  val params: Map[String, Any],
-                 var transaction: Option[Transaction] = None) {
+                 var transaction: Option[Transaction] = None,
+                 val start : Long = System.currentTimeMillis()) extends Timed {
   val createdNodes = new Counter
   val createdRelationships = new Counter
   val propertySet = new Counter

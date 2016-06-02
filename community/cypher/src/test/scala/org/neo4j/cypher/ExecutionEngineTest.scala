@@ -1975,8 +1975,8 @@ RETURN x0.name?
 
   @Test
   def array_prop_output() {
-    createNode("foo"->Array(1,2,3))
-    val result = parseAndExecute("start n=node(1) return n").dumpToString()
+    val n = createNode("foo" -> Array(1, 2, 3))
+    val result = parseAndExecute("start n=node("+n.getId+") return n").dumpToString()
     assertThat(result, containsString("[1,2,3]"))
   }
 

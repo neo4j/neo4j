@@ -30,9 +30,9 @@ import internal.symbols.{NodeType, RelationshipType, SymbolTable}
 class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends ExecutionPlan with PatternGraphBuilder {
   val (executionPlan, executionPlanText) = prepareExecutionPlan()
 
-  def execute(params: Map[String, Any]): ExecutionResult = executionPlan(params)
+  def execute(params: Map[String, Any], start: Long): ExecutionResult = executionPlan(params, start)
 
-  private def prepareExecutionPlan(): ((Map[String, Any]) => ExecutionResult, String) = {
+  private def prepareExecutionPlan(): ((Map[String, Any], Long) => ExecutionResult, String) = {
     var continue = true
     var planInProgress = ExecutionPlanInProgress(PartiallySolvedQuery(inputQuery), new ParameterPipe(), containsTransaction = false)
     checkFirstQueryPattern(planInProgress)
@@ -121,19 +121,19 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     columns
   }
 
-  private def getLazyReadonlyQuery(pipe: Pipe, columns: List[String]): Map[String, Any] => ExecutionResult = {
-    val func = (params: Map[String, Any]) => {
-      val state = new QueryState(graph, params)
+  private def getLazyReadonlyQuery(pipe: Pipe, columns: List[String]): (Map[String, Any], Long) => ExecutionResult = {
+    val func = (params: Map[String, Any], start : Long) => {
+      val state = new QueryState(graph, params, None, start)
       val results = pipe.createResults(state)
-      new PipeExecutionResult(results, columns)
+      new PipeExecutionResult(results, columns, state)
     }
 
     func
   }
 
-  private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): Map[String, Any] => ExecutionResult = {
-    val func = (params: Map[String, Any]) => {
-      val state = new QueryState(graph, params)
+  private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): (Map[String, Any], Long) => ExecutionResult = {
+    val func = (params: Map[String, Any], start: Long) => {
+      val state = new QueryState(graph, params, None, start)
       val results = pipe.createResults(state)
       new EagerPipeExecutionResult(results, columns, state, graph)
     }

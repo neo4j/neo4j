@@ -56,7 +56,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   @throws(classOf[SyntaxException])
   def execute(query: String, params: Map[String, Any]): ExecutionResult = {
     logger.info(query)
-    prepare(query).execute(params)
+    val start = System.currentTimeMillis()
+    prepare(query).execute(params,start)
   }
 
   @throws(classOf[SyntaxException])
@@ -79,7 +80,10 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   @throws(classOf[SyntaxException])
   @deprecated(message = "You should not parse queries manually any more. Use the execute(String) instead")
-  def execute(query: Query, params: Map[String, Any]): ExecutionResult = new ExecutionPlanImpl(query, graph).execute(params)
+  def execute(query: Query, params: Map[String, Any]): ExecutionResult = {
+    val start = System.currentTimeMillis()
+    new ExecutionPlanImpl(query, graph).execute(params,start)
+  }
 
   private def checkScalaVersion() {
     if (util.Properties.versionString.matches("^version 2.9.0")) {
