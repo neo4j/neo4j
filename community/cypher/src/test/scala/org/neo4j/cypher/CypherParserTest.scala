@@ -2159,7 +2159,7 @@ foreach(x in [1,2,3] :
       ))
   }
 
-  @Test def set_to_map() {
+  @Test def set_node_to_map() {
     val q2 = Query.
       start().
       updates(MapPropertySetAction(Identifier("n"), ParameterExpression("prop"))).
@@ -2172,6 +2172,44 @@ foreach(x in [1,2,3] :
         returns(AllIdentifiers()))
   }
 
+  @Test def set_rel_to_map() {
+    val q2 = Query.
+      start().
+      updates(MapPropertySetAction(Identifier("r"), ParameterExpression("prop"))).
+      returns()
+
+    testFrom_1_9("start r=relationship(0) set r = {prop}",
+      Query.
+        start(RelationshipById("r", 0)).
+        tail(q2).
+        returns(AllIdentifiers()))
+  }
+
+  @Test def merge_node_to_map() {
+    val q2 = Query.
+      start().
+      updates(MapPropertySetAction(Identifier("n"), ParameterExpression("prop"), mergeProperties = true)).
+      returns()
+
+    testFrom_1_9("start n=node(0) set n += {prop}",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers()))
+  }
+
+  @Test def merge_rel_to_map() {
+    val q2 = Query.
+      start().
+      updates(MapPropertySetAction(Identifier("r"), ParameterExpression("prop"), mergeProperties = true)).
+      returns()
+
+    testFrom_1_9("start r=relationship(0) set r += {prop}",
+      Query.
+        start(RelationshipById("r", 0)).
+        tail(q2).
+        returns(AllIdentifiers()))
+  }
 
   @Ignore("slow test") @Test def multi_thread_parsing() {
     val q = """start root=node(0) return x"""
