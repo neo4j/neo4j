@@ -1,20 +1,31 @@
 %table.data-table(cellspacing="0")
   %tbody
     %tr
-      :each column in result.columns
+      :each column in columns
         %th
           %h3= htmlEscape(column)
-    :each row in result.data
+    :each row in result
       %tr
         :each value in row
           %td.small
-            :if value != null && typeof(value.self) !== "undefined" && typeof(value.type) === "undefined"
-              %a.micro-button(href="#/data/search/#{htmlEscape(id(value))}/")= "Node " + htmlEscape(id(value))
-            :if value != null && typeof(value.self) !== "undefined" && typeof(value.type) !== "undefined"
-              %a.micro-button(href="#/data/search/rel:#{htmlEscape(id(value))}/")= "Rel " + htmlEscape(id(value))
-            :if value != null && typeof(value.self) === "undefined"
-              = htmlEscape(JSON.stringify(value))
             :if value == null
               null
+            :if isArray(value) || isPath(value)
+              :each cell in toArray(value)
+                :if cell == null
+                  null
+                :if isNode(cell)
+                  %a.micro-button(href="#/data/search/#{htmlEscape(id(cell))}/")= "Node " + htmlEscape(id(cell))
+                :if isRel(cell)
+                  %a.micro-button(href="#/data/search/rel:#{htmlEscape(id(cell))}/")= "Rel " + htmlEscape(id(cell))
+                :if !isNode(cell) && !isRel(cell)
+                  = htmlEscape(JSON.stringify(cell))
+
+            :if isNode(value)
+              %a.micro-button(href="#/data/search/#{htmlEscape(id(value))}/")= "Node " + htmlEscape(id(value))
+            :if isRel(value)
+              %a.micro-button(href="#/data/search/rel:#{htmlEscape(id(value))}/")= "Rel " + htmlEscape(id(value))
+            :if !isPath(value) && !isArray(value) && !isNode(value) && !isRel(value)
+              = htmlEscape(JSON.stringify(value))
 
 .break

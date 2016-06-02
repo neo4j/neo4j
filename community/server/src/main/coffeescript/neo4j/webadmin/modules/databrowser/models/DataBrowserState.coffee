@@ -24,9 +24,10 @@ define(
    './NodeList'
    './RelationshipProxy'
    './RelationshipList'
+   './RestResult'
    'ribcage/time/Timer'
    'ribcage/Model'], 
-  (QueuedSearch, NodeProxy, NodeList, RelationshipProxy, RelationshipList, Timer, Model) ->
+  (QueuedSearch, NodeProxy, NodeList, RelationshipProxy, RelationshipList, RestResult, Timer, Model) ->
   
     class DataBrowserState extends Model
 
@@ -134,8 +135,8 @@ define(
 
         else if result instanceof neo4j.cypher.QueryResult
           state = DataBrowserState.State.CYPHER_RESULT
-          data = result
-      
+          data = new RestResult(result,result.db)
+
         else if result instanceof neo4j.exceptions.NotFoundException
           state = DataBrowserState.State.EMPTY
 

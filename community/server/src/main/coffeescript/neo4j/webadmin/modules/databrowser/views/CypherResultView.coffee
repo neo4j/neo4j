@@ -28,9 +28,30 @@ define(
 
       render : =>
         $(@el).html(template(
-          result : @queryResult,
+          columns : @queryResult.getColumns(),
+          result : @queryResult.getResult(),
           id : (entity) ->
-            entity.self.substr(entity.self.lastIndexOf("/")+1)
+            value = entity
+            if entity.self
+              value=entity.self
+            value.substr(value.lastIndexOf("/")+1)
+
+          isArray : (value) ->
+            value != null && typeof(value) == "object" && typeof(value.pop) == "function"
+          isPath : (value) ->
+            value != null && typeof(value) == "object" && typeof(value.length) == "number" && typeof(value.pop) != "function"
+          isNode : (value) ->
+            value != null && (typeof(value)=="string" && value.indexOf("/node/")!=-1 || typeof(value.self) != "undefined" && typeof(value.type) == "undefined")
+          isRel : (value) ->
+            value != null && (typeof(value)=="string" && value.indexOf("/relationship/")!=-1 || typeof(value.self) != "undefined" && typeof(value.type) != "undefined")
+          toArray : (value) ->
+            if !value.nodes then return value
+            result = []
+            for i in [0..value.length-1]
+              result.push(value.nodes[i])
+              result.push(value.relationships[i])
+            result.push(value.nodes[value.length])
+            result
         ))
         return this
       
