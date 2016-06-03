@@ -27,23 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.helpers.StringHelper
 
 class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
 
-  test("fails on incorrect unicode literal") {
-    expectSyntaxError(
-      "RETURN '\\uH'",
-      "Invalid input 'H': expected four hexadecimal digits specifying a unicode character (line 1, column 11 (offset: 10))",
-      10
-    )
-  }
-
-  test("fails when merging relationship with null property") {
-    expectError("create (a) create (b) merge (a)-[r:X {p: null}]->(b) return r",
-      "Cannot merge relationship using null property value for p")
-  }
-
-  test("fails when merging node with null property") {
-    expectError("merge (n {x: null}) return n",
-      "Cannot merge node using null property value for x")
-  }
+  // pure syntax errors -- not sure if TCK material?
 
   test("noReturnColumns") {
     expectError(
@@ -63,14 +47,6 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
     expectError(
       "starta = node(0) return a",
       "Invalid input 'a' (line 1, column 6 (offset: 5))"
-    )
-  }
-
-  test("functionDoesNotExist") {
-    expectSyntaxError(
-      "match (a) where id(a) = 0 return dontDoIt(a)",
-      "Unknown function 'dontDoIt' (line 1, column 34 (offset: 33))",
-      33
     )
   }
 
@@ -110,25 +86,6 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
       "Invalid input 'n': expected whitespace, an unsigned integer, a parameter or '*' (line 1, column 16 (offset: 15))",
       15
     )
-  }
-
-  test("aggregateFunctionInWhere") {
-    expectError(
-      "match (a) where id(a) = 0 and count(a) > 10 RETURN a",
-      "Invalid use of aggregating function count(...) in this context (line 1, column 31 (offset: 30))"
-    )
-  }
-
-  test("should not allow introducing aggregation in ORDER BY - must be listed as a return item in associated RETURN") {
-    expectError(
-      "match (n) return n.prop1 order by max(n.prop2)",
-      "Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding RETURN (line 1, column 11 (offset: 10))")
-  }
-
-  test("should not allow introducing aggregation in ORDER BY - must be listed as a return item in associated WITH") {
-    expectError(
-      "match (n) with n.prop1 as foo order by max(n.prop2) return foo as foo",
-      "Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding WITH (line 1, column 11 (offset: 10))")
   }
 
   test("twoIndexQueriesInSameStart") {
@@ -214,34 +171,6 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
     )
   }
 
-  test("functions and stuff have to be renamed when sent through with") {
-    expectError(
-      "match (a) where id(a) = 0 with a, count(*) return a",
-      "Expression in WITH must be aliased (use AS) (line 1, column 35 (offset: 34))"
-    )
-  }
-
-  test("missing dependency correctly reported") {
-    expectError(
-      "match (a) where id(a) = 0 CREATE (a)-[:KNOWS]->(b {name:missing}) RETURN b",
-      "Variable `missing` not defined (line 1, column 57 (offset: 56))"
-    )
-  }
-
-  test("missing set dependency correctly reported") {
-    expectError(
-      "match (a) where id(a) = 0 SET a.name = missing RETURN a",
-      "Variable `missing` not defined (line 1, column 40 (offset: 39))"
-    )
-  }
-
-  test("create with variable already existing") {
-    expectError(
-      "match (a) where id(a) = 0 CREATE (a {name:'foo'}) RETURN a",
-      "Variable `a` already declared (line 1, column 35 (offset: 34))"
-    )
-  }
-
   test("create with variable already existing2") {
     expectError(
       "match (a) where id(a) = 0 CREATE UNIQUE (a {name:'foo'})-[:KNOWS]->() RETURN a",
@@ -249,58 +178,10 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
     )
   }
 
-  test("merge 2 nodes with same variable but different labels") {
-    expectError(
-      "MERGE (a: Foo)-[r:KNOWS]->(a: Bar)",
-      "Can't create node `a` with labels or properties here. The variable is already declared in this context"
-    )
-  }
-
-  test("type of variable is wrong") {
-    expectError(
-      "match (n) where id(n) = 0 with [n] as users MATCH users-->messages RETURN messages",
-      "Type mismatch: users already defined with conflicting type List<Node> (expected Node) (line 1, column 51 (offset: 50))"
-    )
-  }
-
-  test("warn about exclamation mark") {
+  test("fail when using exclamation mark") {
     expectError(
       "match (n) where id(n) = 0 and n.foo != 2 return n",
       "Unknown operation '!=' (you probably meant to use '<>', which is the operator for inequality testing) (line 1, column 37 (offset: 36))"
-    )
-  }
-
-  test("warn about type error") {
-    expectError(
-      "match (p) where id(p) = 0 MATCH (p)-[r*]->() WHERE r.foo = 'apa' RETURN r",
-      "Type mismatch: expected Map, Node or Relationship but was List<Relationship> (line 1, column 52 (offset: 51))"
-    )
-  }
-
-  test("missing something to delete") {
-    expectError(
-      "match (p) where id(p) = 0 DELETE x",
-      "Variable `x` not defined (line 1, column 34 (offset: 33))"
-    )
-  }
-
-  test("unions must have the same columns") {
-    expectError(
-      """MATCH (a) WHERE id(a) = 0 RETURN a
-         UNION
-         MATCH (b) WHERE id(b) = 0 RETURN b""",
-      "All sub queries in an UNION must have the same column names"
-    )
-  }
-
-  test("can not mix union and union all") {
-    expectError(
-      """match (a) where id(a) = 0 RETURN a
-         UNION
-         match (a) where id(a) = 0 RETURN a
-         UNION ALL
-         match (a) where id(a) = 0 RETURN a""",
-      "Invalid combination of UNION and UNION ALL (line 4, column 10 (offset: 103))"
     )
   }
 
@@ -345,20 +226,6 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
     )
   }
 
-  test("create without specifying direction should fail") {
-    expectError(
-      "CREATE (a)-[:FOO]-(b) RETURN a,b",
-      "Only directed relationships are supported in CREATE"
-    )
-  }
-
-  test("create without specifying direction should fail2") {
-    expectError(
-      "CREATE (a)<-[:FOO]->(b) RETURN a,b",
-      "Only directed relationships are supported in CREATE"
-    )
-  }
-
   test("report deprecated use of property name with question mark") {
     expectError(
       "match (n) where id(n) = 0 return n.title? = \"foo\"",
@@ -370,13 +237,6 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
     expectError(
       "match (n) where id(n) = 0 return n.title! = \"foo\"",
       "This syntax is no longer supported (missing properties are now returned as null)."
-    )
-  }
-
-  test("recommend using remove when user tries to delete a label") {
-    expectError(
-      "match (n) where id(n) = 0 delete n:Person",
-      "DELETE doesn't support removing labels from a node. Try REMOVE."
     )
   }
 
@@ -392,38 +252,6 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
     expectError(
       "MATCH (n) USING SCAN n:Person WHERE n:Person OR n:Bird RETURN n",
       "Cannot use label scan hint in this context. Label scan hints require using a simple label test in WHERE (either directly or as part of a top-level AND). Note that the label must be specified on a non-optional node")
-  }
-
-  test("should give nice error when setting a property to a illegal value") {
-    expectError(
-      "CYPHER 2.3 CREATE (a) SET a.foo = [{x: 1}]",
-      "Property values can only be of primitive types or arrays thereof")
-  }
-
-  test("should forbid using same introduced relationship twice in one MATCH pattern") {
-    expectError("match (a)-[r]->(b)-[r]-(c) return r",
-      "Cannot use the same relationship variable 'r' for multiple patterns (line 1, column 21 (offset: 20))")
-  }
-
-  test("should not allow binding a path name that is already bound") {
-    expectError(
-      "match p = (a) with p,a match p = (a)-->(b) return a",
-      "Variable `p` already declared (line 1, column 30 (offset: 29))"
-    )
-  }
-
-  test("should forbid using duplicate ids in return/with") {
-    expectError(
-      "return 1, 1",
-      "Multiple result columns with the same name are not supported (line 1, column 8 (offset: 7))"
-    )
-  }
-
-  test("should forbid 'RETURN *' when there are no variables in scope") {
-    expectError(
-      "match () return *",
-      "RETURN * is not allowed when there are no variables in scope"
-    )
   }
 
   test("should forbid bound relationship list in shortestPath pattern parts") {
