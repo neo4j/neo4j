@@ -61,7 +61,7 @@ public class ClusterHeartbeatTest
                 down( 100, 3 ).
                 message( 1000, "*** Should have seen failure by now" ).
                 up( 0, 3 ).
-                message( 200, "*** Should have recovered by now" ).
+                message( 2000, "*** Should have recovered by now" ).
                 verifyConfigurations( "after recovery", 0 ).
                 leave( 200, 1 ).
                 leave( 200, 2 ).
