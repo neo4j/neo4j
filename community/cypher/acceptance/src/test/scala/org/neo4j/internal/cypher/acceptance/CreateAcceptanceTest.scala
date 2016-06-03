@@ -1635,7 +1635,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, labelsAdded = 1)
   }
 
-  // TCK'd
+  //Not TCK material
   test("should have bound node recognized after projection with WITH + FOREACH") {
     val query = "CREATE (a) WITH a FOREACH (i in [] | SET a.prop = 1) CREATE (b) CREATE (a)<-[:T]-(b)"
 
