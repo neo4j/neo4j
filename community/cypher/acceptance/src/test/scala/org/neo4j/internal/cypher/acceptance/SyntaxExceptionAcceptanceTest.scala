@@ -17,11 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.internal.cypher.acceptance
+
+import org.neo4j.cypher.{CypherException, ExecutionEngineFunSuite}
 
 import scala.util.matching.Regex
 
-class SyntaxExceptionTest extends ExecutionEngineFunSuite {
+class SyntaxExceptionAcceptanceTest extends ExecutionEngineFunSuite {
+
+  // Not TCK material; START, shortestPath
+
   test("shouldRaiseErrorWhenMissingIndexValue") {
     test(
       "start s = node:index(key=) return s",
@@ -47,41 +52,6 @@ class SyntaxExceptionTest extends ExecutionEngineFunSuite {
     test(
       "start s return s",
       "Invalid input 'r': expected whitespace, comment or '=' (line 1, column 9)"
-    )
-  }
-
-  test("shouldRaiseErrorWhenMissingReturnColumns") {
-    test(
-      "match (s) where id(s) = 0 return",
-      "Unexpected end of input: expected whitespace, DISTINCT, '*' or an expression (line 1, column 33)"
-    )
-  }
-
-  test("shouldRaiseErrorWhenMissingReturn") {
-    test(
-      "match (s) where id(s) = 0",
-      "Query cannot conclude with MATCH (must be RETURN or an update clause) (line 1, column 1)"
-    )
-  }
-
-  test("shouldComplainAboutWholeNumbers") {
-    test(
-      "match (s) where id(s) = 0 return s limit -1",
-      "Invalid input '-1' is not a valid value, must be a positive integer (line 1, column 42 (offset: 41))"
-    )
-  }
-
-  test("matchWithoutVariableHasToHaveParenthesis") {
-    test(
-      "match (a) where id(a) = 0 match a--b, --> a return a",
-      "Invalid input '-': expected whitespace, comment or a pattern (line 1, column 39)"
-    )
-  }
-
-  test("matchWithoutVariableHasToHaveParenthesis2") {
-    test(
-      "match (a) where id(a) = 0 match (a) -->, a-->b return a",
-      "Invalid input ',': expected whitespace or a node pattern (line 1, column 40)"
     )
   }
 
@@ -148,27 +118,6 @@ class SyntaxExceptionTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("forgetByInOrderBy") {
-    test(
-      "match (a) where id(a) = 0 return a order a.name",
-      "Invalid input 'a': expected whitespace, comment or BY (line 1, column 42)"
-    )
-  }
-
-  test("unknownFunction") {
-    test(
-      "match (a) where id(a) = 0 return foo(a)",
-      "Unknown function 'foo' (line 1, column 34)"
-    )
-  }
-
-  test("usingRandomFunctionInAggregate") {
-    test(
-      "match (a) where id(a) = 0 return count(rand())",
-      "Can't use non-deterministic (random) functions inside of aggregate functions."
-    )
-  }
-
   test("handlesMultiLineQueries") {
     test(
       """start
@@ -199,14 +148,26 @@ class SyntaxExceptionTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("shouldRaiseErrorForInvalidHexLiteral") {
+  // pure syntax errors; are these TCK material?
+
+  test("shouldRaiseErrorWhenMissingReturnColumns") {
     test(
-      "return 0x23G34",
-      "invalid literal number (line 1, column 8)"
+      "match (s) return",
+      "Unexpected end of input: expected whitespace, DISTINCT, '*' or an expression (line 1, column 17)"
     )
+  }
+
+  test("shouldRaiseErrorWhenMissingReturn") {
     test(
-      "return 0x23j",
-      "invalid literal number (line 1, column 8)"
+      "match (s) where s.id = 0",
+      "Query cannot conclude with MATCH (must be RETURN or an update clause) (line 1, column 1)"
+    )
+  }
+
+  test("forgetByInOrderBy") {
+    test(
+      "match (a) where id(a) = 0 return a order a.name",
+      "Invalid input 'a': expected whitespace, comment or BY (line 1, column 42)"
     )
   }
 
