@@ -26,7 +26,9 @@ import java.util.HashSet;
 import java.util.Map;
 
 import org.neo4j.coreedge.raft.LeaderContext;
+import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
+import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.membership.RaftMembership;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.outcome.ShipCommand;
@@ -46,6 +48,7 @@ public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
     private final long retryTimeMillis;
     private final int catchupBatchSize;
     private final int maxAllowedShippingLag;
+    private final InFlightMap<Long,RaftLogEntry> inFlightMap;
 
     private Map<MEMBER,RaftLogShipper> logShippers = new HashMap<>();
     private LeaderContext lastLeaderContext;
@@ -55,7 +58,8 @@ public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
 
     public RaftLogShippingManager( Outbound<MEMBER> outbound, LogProvider logProvider, ReadableRaftLog raftLog,
                                    Clock clock, MEMBER myself, RaftMembership<MEMBER> membership, long retryTimeMillis,
-                                   int catchupBatchSize, int maxAllowedShippingLag )
+                                   int catchupBatchSize, int maxAllowedShippingLag, InFlightMap<Long, RaftLogEntry>
+            inFlightMap )
     {
         this.outbound = outbound;
         this.logProvider = logProvider;
@@ -66,6 +70,7 @@ public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
         this.retryTimeMillis = retryTimeMillis;
         this.catchupBatchSize = catchupBatchSize;
         this.maxAllowedShippingLag = maxAllowedShippingLag;
+        this.inFlightMap = inFlightMap;
 
         membership.registerListener( this );
     }
@@ -107,7 +112,8 @@ public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
         if ( logShipper == null && !member.equals( myself ) )
         {
             logShipper = new RaftLogShipper<>( outbound, logProvider, raftLog, clock, myself, member,
-                    leaderContext.term, leaderContext.commitIndex, retryTimeMillis, catchupBatchSize, maxAllowedShippingLag );
+                    leaderContext.term, leaderContext.commitIndex, retryTimeMillis, catchupBatchSize,
+                    maxAllowedShippingLag, inFlightMap );
 
             logShippers.put( member, logShipper );
 

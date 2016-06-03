@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.raft.state;
 
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
@@ -29,8 +28,10 @@ import org.neo4j.coreedge.discovery.CoreServerSelectionException;
 import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogCursor;
+import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.monitoring.RaftLogCommitIndexMonitor;
 import org.neo4j.coreedge.raft.log.pruning.LogPruner;
+import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.replication.DistributedOperation;
 import org.neo4j.coreedge.raft.replication.ProgressTracker;
 import org.neo4j.coreedge.raft.replication.session.GlobalSessionTrackerState;
@@ -44,6 +45,8 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.String.format;
+
 public class CoreState extends LifecycleAdapter implements RaftStateMachine, LogPruner
 {
     private static final long NOTHING = -1;
@@ -56,6 +59,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     private final StateStorage<Long> lastApplyingStorage;
     private final StateStorage<GlobalSessionTrackerState<CoreMember>> sessionStorage;
     private final Supplier<DatabaseHealth> dbHealth;
+    private final InFlightMap<Long,RaftLogEntry> inFlightMap;
     private final Log log;
 
     private long lastApplied = NOTHING;
@@ -68,19 +72,11 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     private final CoreStateDownloader downloader;
     private final RaftLogCommitIndexMonitor commitIndexMonitor;
 
-    public CoreState(
-            RaftLog raftLog,
-            int flushEvery,
-            Supplier<DatabaseHealth> dbHealth,
-            LogProvider logProvider,
-            ProgressTracker progressTracker,
-            StateStorage<Long> lastFlushedStorage,
-            StateStorage<Long> lastApplyingStorage,
-            StateStorage<GlobalSessionTrackerState<CoreMember>> sessionStorage,
-            CoreServerSelectionStrategy selectionStrategy,
-            CoreStateApplier applier,
-            CoreStateDownloader downloader,
-            Monitors monitors )
+    public CoreState( RaftLog raftLog, int flushEvery, Supplier<DatabaseHealth> dbHealth, LogProvider logProvider,
+            ProgressTracker progressTracker, StateStorage<Long> lastFlushedStorage,
+            StateStorage<Long> lastApplyingStorage, StateStorage<GlobalSessionTrackerState<CoreMember>> sessionStorage,
+            CoreServerSelectionStrategy selectionStrategy, CoreStateApplier applier, CoreStateDownloader downloader,
+            InFlightMap<Long,RaftLogEntry> inFlightMap, Monitors monitors )
     {
         this.raftLog = raftLog;
         this.lastFlushedStorage = lastFlushedStorage;
@@ -93,6 +89,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
         this.selectionStrategy = selectionStrategy;
         this.log = logProvider.getLog( getClass() );
         this.dbHealth = dbHealth;
+        this.inFlightMap = inFlightMap;
         this.commitIndexMonitor = monitors.newMonitor( RaftLogCommitIndexMonitor.class, getClass() );
     }
 
@@ -117,24 +114,43 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     private void submitApplyJob( long lastToApply )
     {
         applier.submit( ( status ) -> () -> {
-            try ( RaftLogCursor cursor = raftLog.getEntryCursor( lastApplied + 1 ) )
+            try ( LogEntrySupplier cacheLogEntrySupplier = new CacheApplier();
+                    LogEntrySupplier cursorLogEntrySupplier = new CursorApplier() )
             {
-                lastApplyingStorage.persistStoreData( lastToApply );
-
-                while ( cursor.index() < lastToApply && cursor.next() )
+                LogEntrySupplier currentLogEntrySupplier = cacheLogEntrySupplier;
+                for ( long i = lastApplied + 1; i < lastToApply; i++ )
                 {
-                    if ( cursor.get().content() instanceof DistributedOperation )
+                    lastApplyingStorage.persistStoreData( lastToApply );
+                    RaftLogEntry raftLogEntry = currentLogEntrySupplier.get( i );
+                    if ( raftLogEntry == null )
                     {
-                        DistributedOperation distributedOperation = (DistributedOperation) cursor.get().content();
-
-                        progressTracker.trackReplication( distributedOperation );
-                        handleOperation( cursor.index(), distributedOperation );
-
-                        maybeFlush();
+                        if ( currentLogEntrySupplier == cursorLogEntrySupplier )
+                        {
+                            throw new IllegalStateException(
+                                    format( "Index %d not found in the raft log. lastToApply was: %d, append index " +
+                                            "is %d", i, lastToApply, raftLog.appendIndex() ) );
+                        }
+                        currentLogEntrySupplier = cursorLogEntrySupplier;
+                        raftLogEntry = currentLogEntrySupplier.get( i );
                     }
 
-                    assert cursor.index() == (lastApplied + 1);
-                    lastApplied = cursor.index();
+                    if ( raftLogEntry == null )
+                    {
+                        String failureMessage = format(
+                                "Log entry at index %d is not present in the log. " +
+                                "Please perform recovery by restarting this database instance. " +
+                                "Indexes to be applied are from %d up to %d. " +
+                                "The append index is %d, and the prev index is %d.",
+                                i, lastApplied + 1, lastToApply, raftLog.appendIndex(), raftLog.prevIndex() );
+                        log.error( failureMessage );
+                        throw new IllegalStateException( failureMessage );
+                    }
+
+                    applyEntry( raftLogEntry, i );
+
+                    // no matter what, we need to purge the inflight cache from applied entries
+                    inFlightMap.unregister( i );
+                    lastApplied = i;
 
                     if ( status.isCancelled() )
                     {
@@ -148,6 +164,69 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
                 dbHealth.get().panic( e );
             }
         } );
+    }
+
+    private interface LogEntrySupplier extends AutoCloseable
+    {
+        RaftLogEntry get( long indexToApply ) throws IOException;
+    }
+
+    private class CacheApplier implements LogEntrySupplier
+    {
+        @Override
+        public RaftLogEntry get( long indexToApply ) throws IOException
+        {
+            return inFlightMap.retrieve( indexToApply );
+        }
+
+        @Override
+        public void close() throws Exception
+        {
+
+        }
+    }
+
+    private class CursorApplier implements LogEntrySupplier
+    {
+        RaftLogCursor cursor = null;
+
+        @Override
+        public RaftLogEntry get( long indexToApply ) throws IOException
+        {
+            if ( cursor == null )
+            {
+                cursor = raftLog.getEntryCursor( indexToApply );
+            }
+
+            if ( cursor.next() )
+            {
+                return cursor.get();
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        @Override
+        public void close() throws Exception
+        {
+            if ( cursor != null )
+            {
+                cursor.close();
+            }
+        }
+    }
+
+    private void applyEntry( RaftLogEntry raftLogEntry, long logIndex ) throws IOException
+    {
+        if ( raftLogEntry.content() instanceof DistributedOperation )
+        {
+            DistributedOperation distributedOperation = (DistributedOperation) raftLogEntry.content();
+            progressTracker.trackReplication( distributedOperation );
+            handleOperation( logIndex, distributedOperation );
+            maybeFlush();
+        }
     }
 
     @Override
@@ -178,7 +257,8 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
      *
      * @param source The source address to attempt a download of a snapshot from.
      */
-    public synchronized void downloadSnapshot( AdvertisedSocketAddress source ) throws InterruptedException, StoreCopyFailedException
+    public synchronized void downloadSnapshot( AdvertisedSocketAddress source )
+            throws InterruptedException, StoreCopyFailedException
     {
         applier.sync( true );
         downloader.downloadSnapshot( source, this );
@@ -218,6 +298,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     public synchronized void start() throws IOException, InterruptedException
     {
         lastFlushed = lastApplied = lastFlushedStorage.getInitialState();
+        log.info( format( "Restoring last applied index to %d", lastApplied ) );
         sessionState = sessionStorage.getInitialState();
 
         submitApplyJob( lastApplyingStorage.getInitialState() );

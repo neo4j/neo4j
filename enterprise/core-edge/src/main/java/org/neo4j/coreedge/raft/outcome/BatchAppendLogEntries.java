@@ -25,6 +25,7 @@ import java.util.Objects;
 
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 
 import static java.lang.String.format;
 
@@ -51,6 +52,15 @@ public class BatchAppendLogEntries implements LogCommand
         }
 
         raftLog.append( Arrays.copyOfRange( entries, offset, entries.length ) );
+    }
+
+    @Override
+    public void applyTo( InFlightMap<Long, RaftLogEntry> inFlightMap )
+    {
+        for ( int i = offset; i < entries.length; i++ )
+        {
+            inFlightMap.register( baseIndex + i , entries[i]);
+        }
     }
 
     @Override

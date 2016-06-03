@@ -22,6 +22,7 @@ package org.neo4j.coreedge.raft.state.explorer;
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
+import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
@@ -36,12 +37,12 @@ public class ComparableRaftStateTest
         ComparableRaftState state1 = new ComparableRaftState( member( 0 ),
                 asSet( member( 0 ), member( 1 ), member( 2 ) ),
                 asSet( member( 0 ), member( 1 ), member( 2 ) ),
-                new InMemoryRaftLog() );
+                new InMemoryRaftLog(), new InFlightMap<>() );
 
         ComparableRaftState state2 = new ComparableRaftState( member( 0 ),
                 asSet( member( 0 ), member( 1 ), member( 2 ) ),
                 asSet( member( 0 ), member( 1 ), member( 2 ) ),
-                new InMemoryRaftLog() );
+                new InMemoryRaftLog(), new InFlightMap<>() );
 
         // then
         assertEquals(state1, state2);

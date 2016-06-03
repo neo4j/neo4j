@@ -28,6 +28,7 @@ import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.RaftLogCursor;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
+import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -107,13 +108,15 @@ public class RaftLogShipper<MEMBER>
 
     private long matchIndex = -1;
 
+    InFlightMap<Long, RaftLogEntry> inFlightMap;
+
     private LeaderContext lastLeaderContext;
 
     private Mode mode = Mode.MISMATCH;
 
     RaftLogShipper( Outbound<MEMBER> outbound, LogProvider logProvider, ReadableRaftLog raftLog, Clock clock,
             MEMBER leader, MEMBER follower, long leaderTerm, long leaderCommit, long retryTimeMillis,
-            int catchupBatchSize, int maxAllowedShippingLag )
+            int catchupBatchSize, int maxAllowedShippingLag, InFlightMap<Long, RaftLogEntry> inFlightMap )
     {
         this.outbound = outbound;
         this.catchupBatchSize = catchupBatchSize;
@@ -126,6 +129,7 @@ public class RaftLogShipper<MEMBER>
         this.leader = leader;
         this.retryTimeMillis = retryTimeMillis;
         this.lastLeaderContext = new LeaderContext( leaderTerm, leaderCommit );
+        this.inFlightMap = inFlightMap;
     }
 
     public Object identity()
@@ -402,12 +406,20 @@ public class RaftLogShipper<MEMBER>
 
             RaftLogEntry[] logEntries = RaftLogEntry.empty;
 
-            try ( RaftLogCursor cursor = raftLog.getEntryCursor( logIndex ) )
+            RaftLogEntry toSend = inFlightMap.retrieve( logIndex );
+            if ( toSend == null ) // this is from mismatch most likely
             {
-                if ( cursor.next() )
+                try ( RaftLogCursor cursor = raftLog.getEntryCursor( logIndex ) )
                 {
-                    logEntries = new RaftLogEntry[]{cursor.get()};
+                    if ( cursor.next() )
+                    {
+                        toSend = cursor.get();
+                    }
                 }
+            }
+            if ( toSend != null )
+            {
+                logEntries = new RaftLogEntry[]{toSend};
             }
 
             RaftMessages.AppendEntries.Request<MEMBER> appendRequest =

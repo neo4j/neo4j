@@ -55,11 +55,13 @@ import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.MonitoredRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
+import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.RaftLogMetadataCache;
 import org.neo4j.coreedge.raft.log.naive.NaiveDurableRaftLog;
 import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLog;
 import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLogFile;
 import org.neo4j.coreedge.raft.log.pruning.PruningScheduler;
+import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog;
 import org.neo4j.coreedge.raft.membership.CoreMemberSetBuilder;
 import org.neo4j.coreedge.raft.membership.MembershipWaiter;
@@ -356,15 +358,18 @@ public class EnterpriseCoreEditionModule
             CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, storeFetcher, coreToCoreClient,
                     logProvider );
 
+            InFlightMap<Long,RaftLogEntry> inFlightMap = new InFlightMap<>();
+
             coreState = new CoreState(
                     raftLog, config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),
                     databaseHealthSupplier, logProvider, progressTracker, lastFlushedStorage, lastApplyingStorage,
                     sessionTrackerStorage, new NotMyselfSelectionStrategy( discoveryService, myself ), applier,
-                    downloader, platformModule.monitors );
+                    downloader, inFlightMap, platformModule.monitors );
 
             raft = createRaft( life, loggingOutbound, discoveryService, config, messageLogger, raftLog,
                     coreState, fileSystem, clusterStateDirectory, myself, logProvider, raftServer,
-                    raftTimeoutService, databaseHealthSupplier, platformModule.monitors, platformModule.jobScheduler );
+                    raftTimeoutService, databaseHealthSupplier, inFlightMap, platformModule.monitors,
+                    platformModule.jobScheduler );
 
             life.add( new PruningScheduler( coreState, platformModule.jobScheduler,
                     config.get( CoreEdgeClusterSettings.raft_log_pruning_frequency ) ) );
@@ -612,7 +617,9 @@ public class EnterpriseCoreEditionModule
                                                         RaftServer<CoreMember> raftServer,
                                                         DelayedRenewableTimeoutService raftTimeoutService,
                                                         Supplier<DatabaseHealth> databaseHealthSupplier,
-                                                        Monitors monitors, JobScheduler jobScheduler )
+                                                        InFlightMap<Long, RaftLogEntry> inFlightMap,
+                                                        Monitors monitors,
+                                                        JobScheduler jobScheduler )
     {
         StateStorage<TermState> termState;
         try
@@ -678,13 +685,14 @@ public class EnterpriseCoreEditionModule
                 logProvider, raftLog,
                 Clock.systemUTC(), myself, raftMembershipManager, electionTimeout,
                 config.get( CoreEdgeClusterSettings.catchup_batch_size ),
-                config.get( CoreEdgeClusterSettings.log_shipping_max_lag ) );
+                config.get( CoreEdgeClusterSettings.log_shipping_max_lag ),
+                inFlightMap );
 
         RaftInstance<CoreMember> raftInstance = new RaftInstance<>(
                 myself, termState, voteState, raftLog, raftStateMachine, electionTimeout, heartbeatInterval,
                 raftTimeoutService,
                 new RaftOutbound( outbound ), logProvider,
-                raftMembershipManager, logShipping, databaseHealthSupplier, monitors );
+                raftMembershipManager, logShipping, databaseHealthSupplier, inFlightMap, monitors );
 
         int queueSize = config.get( CoreEdgeClusterSettings.raft_in_queue_size );
         int maxBatch = config.get( CoreEdgeClusterSettings.raft_in_queue_max_batch );
