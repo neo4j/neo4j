@@ -56,7 +56,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.lastOrNull;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
@@ -542,7 +541,7 @@ public class IdGeneratorTest
     @Test
     public void makeSureIdCapacityCannotBeExceeded() throws Exception
     {
-        for ( IdType type : IdType.values() )
+        for ( IdType type : IdType.getAllIdTypes() )
         {
             makeSureIdCapacityCannotBeExceeded( type );
         }

@@ -129,6 +129,7 @@ import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
+import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionConfigurator;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -187,6 +188,9 @@ public class HighlyAvailableEditionModule
         final Dependencies dependencies = platformModule.dependencies;
         final LogService logging = platformModule.logging;
         final Monitors monitors = platformModule.monitors;
+
+        // configure enterprise specifics
+        new EnterpriseEditionConfigurator( config ).configure();
 
         // Set Netty logger
         InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( logging.getInternalLogProvider() ) );

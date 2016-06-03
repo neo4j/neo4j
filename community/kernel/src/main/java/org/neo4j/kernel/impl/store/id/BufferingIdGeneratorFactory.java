@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.store.id;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.function.Predicate;
 import org.neo4j.function.Supplier;
@@ -34,8 +36,7 @@ import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
  */
 public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
 {
-    private final BufferingIdGenerator[/*IdType#ordinal as key*/] overriddenIdGenerators =
-            new BufferingIdGenerator[IdType.values().length];
+    private final Map<IdType, BufferingIdGenerator> overriddenIdGenerators = new HashMap<>();
     private Supplier<KernelTransactionsSnapshot> boundaries;
     private Predicate<KernelTransactionsSnapshot> safeThreshold;
 
@@ -55,7 +56,7 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
                 return snapshot.allClosed() && eligibleForReuse.isEligible( snapshot );
             }
         };
-        for ( BufferingIdGenerator generator : overriddenIdGenerators )
+        for ( BufferingIdGenerator generator : overriddenIdGenerators.values() )
         {
             if ( generator != null )
             {
@@ -92,7 +93,7 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
             {
                 bufferingGenerator.initialize( boundaries, safeThreshold );
             }
-            overriddenIdGenerators[idType.ordinal()] = bufferingGenerator;
+            overriddenIdGenerators.put( idType, bufferingGenerator );
             generator = bufferingGenerator;
         }
         return generator;
@@ -101,13 +102,13 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
     @Override
     public IdGenerator get( IdType idType )
     {
-        IdGenerator generator = overriddenIdGenerators[idType.ordinal()];
+        IdGenerator generator = overriddenIdGenerators.get( idType );
         return generator != null ? generator : super.get( idType );
     }
 
     public void maintenance()
     {
-        for ( BufferingIdGenerator generator : overriddenIdGenerators )
+        for ( BufferingIdGenerator generator : overriddenIdGenerators.values() )
         {
             if ( generator != null )
             {
@@ -118,7 +119,7 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
 
     public void clear()
     {
-        for ( BufferingIdGenerator generator : overriddenIdGenerators )
+        for ( BufferingIdGenerator generator : overriddenIdGenerators.values() )
         {
             if ( generator != null )
             {

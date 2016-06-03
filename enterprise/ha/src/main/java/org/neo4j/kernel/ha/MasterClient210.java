@@ -135,7 +135,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
                     @Override
                     public void write( ChannelBuffer buffer ) throws IOException
                     {
-                        buffer.writeByte( idType.ordinal() );
+                        buffer.writeByte( idType.getName().ordinal() );
                     }
                 }, new Deserializer<IdAllocation>()
                 {

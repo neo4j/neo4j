@@ -21,7 +21,7 @@ package org.neo4j.kernel.ha.id;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.com.ComException;
@@ -44,7 +44,7 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG
 
 public class HaIdGeneratorFactory implements IdGeneratorFactory
 {
-    private final Map<IdType, HaIdGenerator> generators = new EnumMap<>( IdType.class );
+    private final Map<IdType,HaIdGenerator> generators = new HashMap<>();
     private final FileSystemAbstraction fs;
     private final IdGeneratorFactory localFactory;
     private final DelegateInvocationHandler<Master> master;

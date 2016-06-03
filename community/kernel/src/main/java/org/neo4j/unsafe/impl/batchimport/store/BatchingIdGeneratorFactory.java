@@ -20,7 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.store;
 
 import java.io.File;
-import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -37,7 +37,7 @@ import static org.neo4j.kernel.impl.store.id.IdGeneratorImpl.createGenerator;
  */
 public class BatchingIdGeneratorFactory implements IdGeneratorFactory
 {
-    private final Map<IdType, IdGenerator> idGenerators = new EnumMap<>( IdType.class );
+    private final Map<IdType, IdGenerator> idGenerators = new HashMap<>();
     private final FileSystemAbstraction fs;
 
     public BatchingIdGeneratorFactory( FileSystemAbstraction fs )
