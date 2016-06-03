@@ -19,73 +19,92 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{CypherTypeException, ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
+import org.neo4j.cypher._
 
 import scala.collection.JavaConverters._
 
 class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
+  // TCK'd
   test("n[0]") {
     executeScalarWithAllPlannersAndCompatibilityMode[Int]("RETURN [1, 2, 3][0]") should equal(1)
   }
 
+  // TCK'd
   test("n['name'] in read queries") {
     createNode("Apa")
     executeScalarWithAllPlannersAndCompatibilityMode[String]("MATCH (n {name: 'Apa'}) RETURN n['nam' + 'e']") should equal("Apa")
   }
 
+  // TCK'd
   test("n['name'] in update queries") {
     executeScalarWithAllPlannersAndCompatibilityMode[String]("CREATE (n {name: 'Apa'}) RETURN n['nam' + 'e']") should equal("Apa")
   }
 
+  // TCK'd
   test("Uses dynamic property lookup based on parameters when there is no type information") {
     executeScalarWithAllPlannersAndCompatibilityMode[String]("WITH {expr} AS expr, {idx} AS idx RETURN expr[idx]", "expr" -> Map("name" -> "Apa").asJava, "idx" -> "name") should equal("Apa")
   }
 
+  // TCK'd
   test("Uses dynamic property lookup based on parameters when there is lhs type information") {
     executeScalarWithAllPlannersAndCompatibilityMode[String]("CREATE (n {name: 'Apa'}) RETURN n[{idx}]", "idx" -> "name") should equal("Apa")
   }
 
+  // TCK'd
   test("Uses dynamic property lookup based on parameters when there is rhs type information") {
     executeScalarWithAllPlannersAndCompatibilityMode[String]("WITH {expr} AS expr, {idx} AS idx RETURN expr[toString(idx)]", "expr" -> Map("name" -> "Apa").asJava, "idx" -> "name") should equal("Apa")
   }
 
+  // TCK'd
   test("Uses collection lookup based on parameters when there is no type information") {
     executeScalarWithAllPlannersAndCompatibilityMode[String]("WITH {expr} AS expr, {idx} AS idx RETURN expr[idx]", "expr" -> List("Apa").asJava, "idx" -> 0) should equal("Apa")
   }
 
+  // TCK'd
   test("Uses collection lookup based on parameters when there is lhs type information") {
     executeScalarWithAllPlannersAndCompatibilityMode[String]("WITH ['Apa'] AS expr RETURN expr[{idx}]", "idx" -> 0) should equal("Apa")
   }
 
+  // TCK'd
   test("Uses collection lookup based on parameters when there is rhs type information") {
     executeScalarWithAllPlannersAndCompatibilityMode[String]("WITH {expr} AS expr, {idx} AS idx RETURN expr[toInt(idx)]", "expr" -> List("Apa").asJava, "idx" -> 0) should equal("Apa")
   }
 
+  // TCK'd
   test("Fails at runtime when attempting to index with an Int into a Map") {
     a [CypherTypeException] should be thrownBy {
       executeScalarWithAllPlannersAndCompatibilityMode[String]("WITH {expr} AS expr, {idx} AS idx RETURN expr[idx]", "expr" -> Map("name" -> "Apa").asJava, "idx" -> 0)
     }
   }
 
+  // TCK'd
   test("fails at runtime when trying to index into a map with a non-string") {
     a [CypherTypeException] should be thrownBy {
       executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN {expr}[{idx}]", "expr" -> Map("name" -> "Apa").asJava, "idx" -> 12.3)
     }
   }
 
-  test("Fails at runtime when attempting to index with a String into a Collection") {
+  // TCK'd
+  test("Fails at runtime when attempting to index with a String into a List") {
     a [CypherTypeException] should be thrownBy {
       executeScalarWithAllPlannersAndCompatibilityMode[String]("WITH {expr} AS expr, {idx} AS idx RETURN expr[idx]", "expr" -> List("Apa").asJava, "idx" -> "name")
     }
   }
 
-  test("fails at runtime when trying to index into a map with a non-int") {
+  // TCK'd
+  test("should fail statically when trying to access an array with a non-integer index") {
+    a [SyntaxException] should be thrownBy executeWithAllPlannersAndCompatibilityMode("WITH [1,2,3,4,5] AS array, 3.14 AS idx RETURN array[idx]")
+  }
+
+  // TCK'd
+  test("Fail at runtime when trying to index into a list with a list") {
     a [CypherTypeException] should be thrownBy {
       executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN {expr}[{idx}]", "expr" -> List("Apa").asJava, "idx" -> List("Apa").asJava)
     }
   }
 
+  // TCK'd
   test("fails at runtime when trying to index into something which is not a map or collection") {
     a [CypherTypeException] should be thrownBy {
       executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN {expr}[{idx}]", "expr" -> 1, "idx" -> 12.3)
