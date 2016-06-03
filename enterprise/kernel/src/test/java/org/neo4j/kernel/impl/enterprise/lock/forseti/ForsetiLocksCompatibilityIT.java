@@ -23,7 +23,7 @@ import org.neo4j.kernel.impl.locking.LockingCompatibilityTestSuite;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 
-public class ForsetiLocksCompatibility extends LockingCompatibilityTestSuite
+public class ForsetiLocksCompatibilityIT extends LockingCompatibilityTestSuite
 {
     @Override
     protected Locks createLockManager()

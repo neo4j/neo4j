@@ -19,14 +19,17 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import org.neo4j.graphdb.TransactionTerminatedException;
+
+import static java.util.Objects.requireNonNull;
+
 /**
- * Exception that will be thrown in case when closed {@link org.neo4j.kernel.impl.locking.Locks.Client}
- * will be used to acquire shared/exclusive lock
+ * Exception thrown when stopped {@link Locks.Client} used to acquire locks.
  */
-public class LockClientAlreadyClosedException extends RuntimeException
+public class LockClientStoppedException extends TransactionTerminatedException
 {
-    public LockClientAlreadyClosedException( String message )
+    public LockClientStoppedException( Locks.Client client )
     {
-        super( message );
+        super( requireNonNull( client ) + " is stopped" );
     }
 }

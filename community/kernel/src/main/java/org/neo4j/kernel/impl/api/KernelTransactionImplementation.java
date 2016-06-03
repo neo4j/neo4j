@@ -159,6 +159,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionToRecordStateVisitor txStateToRecordStateVisitor = new TransactionToRecordStateVisitor();
     private final Collection<Command> extractedCommands = new ArrayCollection<>( 32 );
     private final Locks locksManager;
+    private final boolean txTerminationAwareLocks;
     private TransactionState txState;
     private LegacyIndexTransactionState legacyIndexTransactionState;
     private TransactionType transactionType = TransactionType.ANY;
@@ -204,7 +205,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             Clock clock,
                                             TransactionTracer tracer,
                                             ProcedureCache procedureCache,
-                                            NeoStoreTransactionContext context )
+                                            NeoStoreTransactionContext context,
+                                            boolean txTerminationAwareLocks )
     {
         this.operations = operations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -214,6 +216,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.providerMap = providerMap;
         this.schemaState = schemaState;
         this.locksManager = locks;
+        this.txTerminationAwareLocks = txTerminationAwareLocks;
         this.hooks = hooks;
         this.constraintIndexCreator = constraintIndexCreator;
         this.headerInformationFactory = headerInformationFactory;
@@ -279,6 +282,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             failure = true;
             terminated = true;
+            if ( txTerminationAwareLocks && locks != null )
+            {
+                locks.stop();
+            }
             transactionMonitor.transactionTerminated();
         }
     }

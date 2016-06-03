@@ -64,6 +64,7 @@ public class KernelTransactionFactory
                 Clock.SYSTEM_CLOCK,
                 TransactionTracer.NULL,
                 new ProcedureCache(),
-                mock( NeoStoreTransactionContext.class ));
+                mock( NeoStoreTransactionContext.class ),
+                false );
     }
 }

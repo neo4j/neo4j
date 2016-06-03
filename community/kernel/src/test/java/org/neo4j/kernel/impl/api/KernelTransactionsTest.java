@@ -28,12 +28,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.api.store.ProcedureCache;
-import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -53,6 +54,8 @@ import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.NullLog;
 import org.neo4j.test.Race;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertFalse;
@@ -64,10 +67,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.locks.LockSupport.parkNanos;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 
@@ -267,8 +266,8 @@ public class KernelTransactionsTest
         return new KernelTransactions( contextSupplier, neoStores, locks,
                 mock( IntegrityValidator.class ), null, null, null, null, null, null, null,
                 TransactionHeaderInformationFactory.DEFAULT, readLayer, commitProcess, null,
-                null, new TransactionHooks(), mock( ConstraintSemantics.class ), mock( TransactionMonitor.class ), life, new ProcedureCache(),
-                new Tracers( "null", NullLog.getInstance() ));
+                null, new TransactionHooks(), mock( ConstraintSemantics.class ), mock( TransactionMonitor.class ),
+                life, new ProcedureCache(), new Config(), new Tracers( "null", NullLog.getInstance() ) );
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )

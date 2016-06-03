@@ -31,11 +31,6 @@ import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
-import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
-import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
@@ -459,7 +454,7 @@ public class KernelTransactionImplementationTest
                 null, null, null, null, null, recordState, null, neoStores, locks,
                 hooks, null, headerInformationFactory, commitProcess, transactionMonitor, storeReadLayer, legacyIndexState,
                 pool, new StandardConstraintSemantics(), clock, TransactionTracer.NULL, new ProcedureCache(), mock( NeoStoreTransactionContext
-                .class ) );
+                .class ), false );
         transaction.initialize( 0 );
         return transaction;
     }
