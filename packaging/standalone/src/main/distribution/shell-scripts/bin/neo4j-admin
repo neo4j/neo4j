@@ -102,7 +102,7 @@ cmd_core_convert() {
   setup_environment
   check_java
   build_classpath
-  exec "${JAVA_CMD}" -cp "${CLASSPATH}" -Dfile.encoding=UTF-8 "org.neo4j.coreedge.convert.ConvertNonCoreEdgeStoreCli" --config=${NEO4J_CONF} "$@"
+  exec "${JAVA_CMD}" -cp "${CLASSPATH}" -Dfile.encoding=UTF-8 "org.neo4j.coreedge.convert.ConvertNonCoreEdgeStoreCli" --home-dir=${NEO4J_HOME} --config=${NEO4J_CONF} "$@"
 }
 
 bad_usage() {

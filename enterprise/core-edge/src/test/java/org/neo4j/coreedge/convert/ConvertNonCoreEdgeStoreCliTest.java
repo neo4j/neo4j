@@ -26,13 +26,29 @@ import static org.junit.Assert.assertTrue;
 
 public class ConvertNonCoreEdgeStoreCliTest
 {
+
+    @Test
+    public void shouldIndicateMissingHomeDir() throws Throwable
+    {
+        try
+        {
+            // given
+            ConvertNonCoreEdgeStoreCli.main( new String[]{""} );
+            fail( "Should have thrown IllegalArgumentException" );
+        }
+        catch ( IllegalArgumentException exception )
+        {
+            assertTrue(exception.getMessage(), exception.getMessage().contains( "Missing argument 'home-dir'" ) );
+        }
+    }
+
     @Test
     public void shouldIndicateMissingDatabase() throws Throwable
     {
         try
         {
             // given
-            ConvertNonCoreEdgeStoreCli.main( new String[]{""} );
+            ConvertNonCoreEdgeStoreCli.main( new String[]{"--home-dir", "foo"} );
             fail( "Should have thrown IllegalArgumentException" );
         }
         catch ( IllegalArgumentException exception )
@@ -47,7 +63,7 @@ public class ConvertNonCoreEdgeStoreCliTest
         try
         {
             // given
-            ConvertNonCoreEdgeStoreCli.main( new String[]{"--database", "foo"} );
+            ConvertNonCoreEdgeStoreCli.main( new String[]{"--home-dir", "foo", "--database", "foo"} );
             fail( "Should have thrown IllegalArgumentException" );
         }
         catch ( IllegalArgumentException exception )

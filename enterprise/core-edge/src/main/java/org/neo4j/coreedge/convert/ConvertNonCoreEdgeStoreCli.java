@@ -21,17 +21,19 @@ package org.neo4j.coreedge.convert;
 
 import java.io.File;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
-import org.neo4j.dbms.ConfigFactory;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.ArrayUtil;
-import org.neo4j.helpers.Strings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Converters;
+import org.neo4j.logging.NullLog;
+import org.neo4j.server.configuration.ConfigLoader;
 
-import static org.neo4j.helpers.Strings.TAB;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ConvertNonCoreEdgeStoreCli
@@ -45,16 +47,31 @@ public class ConvertNonCoreEdgeStoreCli
             System.exit( 1 );
         }
 
+        File homeDir = args.interpretOption( "home-dir", Converters.<File>mandatory(), File::new );
         String databaseName = args.interpretOption( "database", Converters.<String>mandatory(), s -> s );
         String configPath = args.interpretOption( "config", Converters.<String>mandatory(), s -> s );
 
-        Config config = ConfigFactory.readFrom( new File( configPath, "neo4j.conf" ) )
-                .with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) );
+        Config config = createConfig( homeDir, databaseName, configPath );
 
         new ConvertClassicStoreCommand(
                 config.get( DatabaseManagementSystemSettings.database_path ),
-                config.get( GraphDatabaseSettings.record_format ))
+                config.get( GraphDatabaseSettings.record_format ) )
                 .execute();
+    }
+
+    private static Config createConfig( File homeDir, String databaseName, String configPath )
+    {
+        return new ConfigLoader( settings() ).loadConfig( Optional.of( homeDir ),
+                Optional.of( new File( configPath, "neo4j.conf" ) ), NullLog.getInstance() )
+                .with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) );
+    }
+
+    private static List<Class<?>> settings()
+    {
+        List<Class<?>> settings = new ArrayList<>();
+        settings.add( GraphDatabaseSettings.class );
+        settings.add( DatabaseManagementSystemSettings.class );
+        return settings;
     }
 
     private static void printUsage( PrintStream out )
@@ -67,7 +84,8 @@ public class ConvertNonCoreEdgeStoreCli
         }
 
         out.println( "Usage:" );
-        out.println("--database <database-name>");
-        out.println("--config <path-to-config-directory>");
+        out.println( "--home-dir <path-to-neo4j-directory>" );
+        out.println( "--database <database-name>" );
+        out.println( "--config <path-to-config-directory>" );
     }
 }
