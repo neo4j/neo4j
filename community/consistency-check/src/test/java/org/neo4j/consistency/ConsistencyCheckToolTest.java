@@ -38,6 +38,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
+
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -60,12 +61,11 @@ import static org.neo4j.test.rule.fs.EphemeralFileSystemRule.shutdownDbAction;
 
 public class ConsistencyCheckToolTest
 {
-    private SystemExitRule systemExitRule = SystemExitRule.none();
     private TargetDirectory.TestDirectory storeDirectory = TargetDirectory.testDirForTest( getClass() );
     private EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( systemExitRule ).around( storeDirectory ).around( fs );
+    public RuleChain ruleChain = RuleChain.outerRule( storeDirectory ).around( fs );
 
     @Test
     public void runsConsistencyCheck() throws Exception
@@ -176,10 +176,9 @@ public class ConsistencyCheckToolTest
         verifyZeroInteractions( service );
     }
 
-    @Test
+    @Test( expected = ToolFailureException.class )
     public void failWhenStoreWasNonCleanlyShutdown() throws Exception
     {
-        systemExitRule.expectExit( 1 );
         createGraphDbAndKillIt();
 
         runConsistencyCheckToolWith( fs.get(), storeDirectory.graphDbDir().getAbsolutePath() );
