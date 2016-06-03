@@ -118,7 +118,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
                     LogEntrySupplier cursorLogEntrySupplier = new CursorApplier() )
             {
                 LogEntrySupplier currentLogEntrySupplier = cacheLogEntrySupplier;
-                for ( long i = lastApplied + 1; i < lastToApply; i++ )
+                for ( long i = lastApplied + 1; i <= lastToApply; i++ )
                 {
                     lastApplyingStorage.persistStoreData( lastToApply );
                     RaftLogEntry raftLogEntry = currentLogEntrySupplier.get( i );
