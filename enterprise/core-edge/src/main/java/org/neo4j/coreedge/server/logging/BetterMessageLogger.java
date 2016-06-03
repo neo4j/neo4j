@@ -19,6 +19,8 @@
  */
 package org.neo4j.coreedge.server.logging;
 
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
 import java.io.PrintWriter;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -27,7 +29,7 @@ import java.util.Date;
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
 
-public class BetterMessageLogger<MEMBER> implements MessageLogger<MEMBER>
+public class BetterMessageLogger<MEMBER> extends LifecycleAdapter implements MessageLogger<MEMBER>
 {
     private final PrintWriter printWriter;
     private DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
@@ -61,5 +63,11 @@ public class BetterMessageLogger<MEMBER> implements MessageLogger<MEMBER>
         printWriter.println( format( "%s <--%s: %s",
                 dateFormat.format( new Date() ), message.getClass().getSimpleName(), valueOf( message ) ) );
         printWriter.flush();
+    }
+
+    @Override
+    public void stop()
+    {
+        printWriter.close();
     }
 }

@@ -282,7 +282,7 @@ public class EnterpriseCoreEditionModule
         final MessageLogger<AdvertisedSocketAddress> messageLogger;
         if ( config.get( CoreEdgeClusterSettings.raft_messages_log_enable ) )
         {
-            messageLogger = new BetterMessageLogger<>( myself.getRaftAddress(), raftMessagesLog( storeDir ) );
+            messageLogger = life.add(new BetterMessageLogger<>( myself.getRaftAddress(), raftMessagesLog( storeDir ) ));
         }
         else
         {
