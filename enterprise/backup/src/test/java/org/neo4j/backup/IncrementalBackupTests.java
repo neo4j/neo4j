@@ -35,10 +35,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
@@ -228,7 +225,6 @@ public class IncrementalBackupTests
                 newEmbeddedDatabaseBuilder( path ).
                 setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ).
                 setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE ).
-                setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME ).
                 newGraphDatabase();
     }
 
@@ -247,12 +243,6 @@ public class IncrementalBackupTests
 
     private DbRepresentation getBackupDbRepresentation()
     {
-        return DbRepresentation.of( backupPath, getFormatConfig() );
-    }
-
-    private Config getFormatConfig()
-    {
-        return new Config(
-                MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), StandardV3_0.NAME ) );
+        return DbRepresentation.of( backupPath );
     }
 }

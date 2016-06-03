@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Rule;
 import org.junit.Test;
@@ -58,6 +57,7 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.RandomRule;
 import org.neo4j.test.Randoms;
@@ -72,6 +72,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIterator;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -180,7 +181,6 @@ public class ParallelBatchImporterTest
             // THEN
             GraphDatabaseService db = new TestGraphDatabaseFactory()
                     .newEmbeddedDatabaseBuilder( directory.graphDbDir() )
-                    .setConfig( GraphDatabaseSettings.record_format, getFormatName() )
                     .newGraphDatabase();
             try ( Transaction tx = db.beginTx() )
             {
@@ -228,8 +228,7 @@ public class ParallelBatchImporterTest
     {
         ConsistencyCheckService consistencyChecker = new ConsistencyCheckService();
         Result result = consistencyChecker.runFullConsistencyCheck( storeDir,
-                new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m",
-                        GraphDatabaseSettings.record_format.name(), getFormatName()) ),
+                new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) ),
                 ProgressMonitorFactory.NONE,
                 NullLogProvider.getInstance(), false );
         assertTrue( "Database contains inconsistencies, there should be a report in " + storeDir,
@@ -238,7 +237,7 @@ public class ParallelBatchImporterTest
 
     protected String getFormatName()
     {
-        return StringUtils.EMPTY;
+        return StandardV3_0.NAME;
     }
 
     public static abstract class InputIdGenerator

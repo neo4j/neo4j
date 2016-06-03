@@ -19,7 +19,6 @@
  */
 package upgrade;
 
-import org.apache.commons.lang3.StringUtils;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
@@ -50,12 +49,12 @@ import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
@@ -92,7 +91,6 @@ import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allLegacyStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveNoTrailer;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasCurrentFormatVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.containsAnyStoreFiles;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.isolatedMigrationDirectoryOf;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
@@ -158,19 +156,13 @@ public class StoreUpgraderTest
         newUpgrader( upgradableDatabase, pageCache ).migrateIfNeeded( dbDirectory );
 
         // Then
-        assertTrue( checkNeoStoreHasCurrentFormatVersion( check, dbDirectory ) );
+        assertCorrectStoreVersion( getRecordFormats().storeVersion(), check, dbDirectory );
         assertTrue( allStoreFilesHaveNoTrailer( fileSystem, dbDirectory ) );
 
         // We leave logical logs in place since the new version can read the old
 
         assertFalse( containsAnyStoreFiles( fileSystem, isolatedMigrationDirectoryOf( dbDirectory ) ) );
-        assertConsistentStore( dbDirectory, getTunnningConfig() );
-    }
-
-    private Config getTunnningConfig()
-    {
-        return new Config( MapUtil.stringMap( GraphDatabaseSettings.record_format.name(),
-                getRecordFormatsName() ) );
+        assertConsistentStore( dbDirectory );
     }
 
     @Test
@@ -342,9 +334,8 @@ public class StoreUpgraderTest
         newUpgrader( upgradableDatabase, allowMigrateConfig, pageCache ).migrateIfNeeded( dbDirectory );
 
         // Then
-        StoreFactory storeFactory = new StoreFactory( fileSystem, dbDirectory, pageCache, getRecordFormats(),
-                        NullLogProvider.getInstance() );
-        try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
+        StoreFactory factory = new StoreFactory( dbDirectory, pageCache, fileSystem, NullLogProvider.getInstance() );
+        try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
             assertThat( neoStores.getMetaDataStore().getUpgradeTransaction(),
                     equalTo( neoStores.getMetaDataStore().getLastCommittedTransaction() ) );
@@ -396,6 +387,13 @@ public class StoreUpgraderTest
         assertThat( migrationHelperDirs(), is( emptyCollectionOf( File.class ) ) );
     }
 
+    private static void assertCorrectStoreVersion( String expectedStoreVersion, StoreVersionCheck check, File storeDir )
+    {
+        File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        StoreVersionCheck.Result result = check.hasVersion( neoStoreFile, expectedStoreVersion );
+        assertTrue( "Unexpected store version", result.outcome.isSuccessful() );
+    }
+
     private StoreMigrationParticipant participantThatWillFailWhenMoving( final String failureMessage )
     {
         return new AbstractStoreMigrationParticipant( "Failing" )
@@ -425,7 +423,7 @@ public class StoreUpgraderTest
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
 
         NullLogService instance = NullLogService.getInstance();
-        StoreMigrator defaultMigrator = new StoreMigrator( fileSystem, pageCache, getTunnningConfig(), instance,
+        StoreMigrator defaultMigrator = new StoreMigrator( fileSystem, pageCache, getTuningConfig(), instance,
                 schemaIndexProvider );
         SchemaIndexMigrator indexMigrator =
                 new SchemaIndexMigrator( fileSystem, schemaIndexProvider, labelScanStoreProvider );
@@ -467,13 +465,18 @@ public class StoreUpgraderTest
         }
     }
 
+    private Config getTuningConfig()
+    {
+        return new Config( MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), getRecordFormatsName() ) );
+    }
+
     protected RecordFormats getRecordFormats()
     {
-        return RecordFormatSelector.autoSelectFormat();
+        return StandardV3_0.RECORD_FORMATS;
     }
 
     protected String getRecordFormatsName()
     {
-        return StringUtils.EMPTY;
+        return StandardV3_0.NAME;
     }
 }

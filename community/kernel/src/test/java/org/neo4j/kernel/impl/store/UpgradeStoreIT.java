@@ -43,7 +43,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -65,7 +65,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
-import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.select;
 
 @Ignore
 public class UpgradeStoreIT
@@ -381,7 +380,7 @@ public class UpgradeStoreIT
         {
             super( fileName, Config.defaults(), new NoLimitIdGeneratorFactory( fs ), pageCache,
                     NullLogProvider.getInstance(), stringStore,
-                    select( Config.defaults(), NullLogService.getInstance() ) );
+                    RecordFormatSelector.defaultFormat() );
         }
 
         @Override

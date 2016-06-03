@@ -30,11 +30,11 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter.RelationshipGroupPosition;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -61,8 +61,8 @@ public class RelationshipGroupGetterTest
         // GIVEN a node with relationship group chain 2-->4-->10-->23
         File dir = new File( "dir" );
         fs.get().mkdirs( dir );
-        StoreFactory storeFactory = new StoreFactory( fs.get(), dir, pageCache.getPageCache( fs.get() ),
-                StandardV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
+        LogProvider logProvider = NullLogProvider.getInstance();
+        StoreFactory storeFactory = new StoreFactory( dir, pageCache.getPageCache( fs.get() ), fs.get(), logProvider );
         try ( NeoStores stores = storeFactory.openNeoStores( true, StoreType.RELATIONSHIP_GROUP ) )
         {
             RecordStore<RelationshipGroupRecord> store = spy( stores.getRelationshipGroupStore() );

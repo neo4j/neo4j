@@ -20,7 +20,7 @@
 package upgrade;
 
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 
 /**
  * Runs the store upgrader tests from older versions, migrating to the current enterprise version.
@@ -35,12 +35,12 @@ public class EnterpriseStoreUpgraderTest extends StoreUpgraderTest
     @Override
     protected RecordFormats getRecordFormats()
     {
-        return StandardV3_0.RECORD_FORMATS;
+        return HighLimit.RECORD_FORMATS;
     }
 
     @Override
     protected String getRecordFormatsName()
     {
-        return StandardV3_0.NAME;
+        return HighLimit.NAME;
     }
 }

@@ -26,11 +26,11 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 
 public class StoreIdTestFactory
 {
-    private static RecordFormats select = RecordFormatSelector.autoSelectFormat();
+    private static final RecordFormats format = RecordFormatSelector.defaultFormat();
 
     private static long currentStoreVersionAsLong()
     {
-        return MetaDataStore.versionStringToLong( select.storeVersion() );
+        return MetaDataStore.versionStringToLong( format.storeVersion() );
     }
 
     public static StoreId newStoreIdForCurrentVersion()
@@ -41,7 +41,7 @@ public class StoreIdTestFactory
     public static StoreId newStoreIdForCurrentVersion( long creationTime, long randomId, long upgradeTime, long
             upgradeId )
     {
-        return new StoreId( creationTime, randomId, MetaDataStore.versionStringToLong( select.storeVersion() ),
+        return new StoreId( creationTime, randomId, MetaDataStore.versionStringToLong( format.storeVersion() ),
                 upgradeTime, upgradeId );
     }
 }

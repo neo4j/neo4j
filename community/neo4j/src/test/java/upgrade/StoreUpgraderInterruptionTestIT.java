@@ -68,7 +68,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allLegacyStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveNoTrailer;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasCurrentFormatVersion;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasDefaultFormatVersion;
 
 @RunWith( Parameterized.class )
 public class StoreUpgraderInterruptionTestIT
@@ -145,7 +145,7 @@ public class StoreUpgraderInterruptionTestIT
         SchemaIndexMigrator indexMigrator = createIndexMigrator();
         newUpgrader(upgradableDatabase, progressMonitor, indexMigrator, migrator ).migrateIfNeeded( workingDirectory );
 
-        assertTrue( checkNeoStoreHasCurrentFormatVersion( check, workingDirectory ) );
+        assertTrue( checkNeoStoreHasDefaultFormatVersion( check, workingDirectory ) );
         assertTrue( allStoreFilesHaveNoTrailer( fs, workingDirectory ) );
 
         assertConsistentStore( workingDirectory );
@@ -195,7 +195,7 @@ public class StoreUpgraderInterruptionTestIT
             assertEquals( "This upgrade is failing", e.getMessage() );
         }
 
-        assertTrue( checkNeoStoreHasCurrentFormatVersion( check, workingDirectory ) );
+        assertTrue( checkNeoStoreHasDefaultFormatVersion( check, workingDirectory ) );
         assertTrue( allStoreFilesHaveNoTrailer( fs, workingDirectory ) );
 
         assertConsistentStore( workingDirectory );
@@ -205,7 +205,7 @@ public class StoreUpgraderInterruptionTestIT
         newUpgrader( upgradableDatabase, progressMonitor, createIndexMigrator(), migrator )
                 .migrateIfNeeded( workingDirectory );
 
-        assertTrue( checkNeoStoreHasCurrentFormatVersion( check, workingDirectory ) );
+        assertTrue( checkNeoStoreHasDefaultFormatVersion( check, workingDirectory ) );
         assertTrue( allStoreFilesHaveNoTrailer( fs, workingDirectory ) );
 
         pageCache.close();

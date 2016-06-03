@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -114,7 +113,7 @@ public class ApplyRecoveredTransactionsTest
         FileSystemAbstraction fs = fsr.get();
         File storeDir = new File( "dir" );
         StoreFactory storeFactory = new StoreFactory( storeDir, Config.empty(), new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), fs, StandardV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
+                pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
     }
 

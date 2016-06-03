@@ -42,8 +42,6 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
@@ -86,8 +84,7 @@ public class RecordStorageEngineRule extends ExternalResource
     }
 
     private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache, LabelScanStore labelScanStore,
-            SchemaIndexProvider schemaIndexProvider, DatabaseHealth databaseHealth, File storeDirectory,
-            RecordFormats recordFormats )
+            SchemaIndexProvider schemaIndexProvider, DatabaseHealth databaseHealth, File storeDirectory )
     {
         if ( !fs.fileExists( storeDirectory ) && !fs.mkdir( storeDirectory ) )
         {
@@ -108,7 +105,7 @@ public class RecordStorageEngineRule extends ExternalResource
                 scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(),
                 schemaIndexProvider, IndexingService.NO_MONITOR, databaseHealth,
                 labelScanStoreProvider, legacyIndexProviderLookup, indexConfigStore,
-                new SynchronizedArrayIdOrderingQueue( 20 ), txSnapshotSupplier, recordFormats ) );
+                new SynchronizedArrayIdOrderingQueue( 20 ), txSnapshotSupplier ) );
     }
 
     @Override
@@ -123,7 +120,6 @@ public class RecordStorageEngineRule extends ExternalResource
         private final FileSystemAbstraction fs;
         private final PageCache pageCache;
         private LabelScanStore labelScanStore = new InMemoryLabelScanStore();
-        private RecordFormats recordFormats = RecordFormatSelector.autoSelectFormat();
         private DatabaseHealth databaseHealth = new DatabaseHealth(
                 new DatabasePanicEventGenerator( new KernelEventHandlers( NullLog.getInstance() ) ),
                 NullLog.getInstance() );
@@ -148,12 +144,6 @@ public class RecordStorageEngineRule extends ExternalResource
             return this;
         }
 
-        public Builder recordFormats( RecordFormats recordFormats)
-        {
-            this.recordFormats = recordFormats;
-            return this;
-        }
-
         public Builder databaseHealth( DatabaseHealth databaseHealth )
         {
             this.databaseHealth = databaseHealth;
@@ -170,7 +160,7 @@ public class RecordStorageEngineRule extends ExternalResource
 
         public RecordStorageEngine build()
         {
-            return get( fs, pageCache, labelScanStore, schemaIndexProvider, databaseHealth, storeDirectory, recordFormats );
+            return get( fs, pageCache, labelScanStore, schemaIndexProvider, databaseHealth, storeDirectory );
         }
     }
 }

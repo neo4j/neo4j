@@ -74,7 +74,6 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.command.CacheInvalidationBatchTransactionApplier;
@@ -186,8 +185,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             LegacyIndexProviderLookup legacyIndexProviderLookup,
             IndexConfigStore indexConfigStore,
             IdOrderingQueue legacyIndexTransactionOrdering,
-            Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier,
-            RecordFormats recordFormats )
+            Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier )
     {
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.relationshipTypeTokenHolder = relationshipTypeTokens;
@@ -201,8 +199,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.constraintSemantics = constraintSemantics;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
 
-        final StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory,
-                pageCache, fs, recordFormats, logProvider );
         if ( safeIdBuffering )
         {
             // This buffering id generator factory will have properly buffering id generators injected into
@@ -210,9 +206,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             // so we'll initialize it below when all those components have been instantiated.
             bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory(
                     idGeneratorFactory, transactionsSnapshotSupplier );
-            storeFactory.setIdGeneratorFactory( bufferingIdGeneratorFactory );
+
+            idGeneratorFactory = bufferingIdGeneratorFactory;
         }
-        neoStores = storeFactory.openAllNeoStores( true );
+        StoreFactory factory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider );
+        neoStores = factory.openAllNeoStores( true );
 
         try
         {
