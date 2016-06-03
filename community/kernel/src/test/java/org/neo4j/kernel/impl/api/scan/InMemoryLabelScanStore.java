@@ -27,6 +27,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -47,12 +51,11 @@ import static org.neo4j.helpers.collection.Iterators.emptyIterator;
 public class InMemoryLabelScanStore implements LabelScanStore
 {
     // LabelId --> Set<NodeId>
-    private final Map<Long, Set<Long>> data = new HashMap<>();
+    private final Map<Long,Set<Long>> data = new ConcurrentHashMap<>();
 
     private Set<Long> nodeSetForRemoving( long labelId )
     {
-        Set<Long> nodes = data.get( labelId );
-        return nodes != null ? nodes : Collections.<Long>emptySet();
+        return data.getOrDefault( labelId, Collections.emptySet() );
     }
 
     private Set<Long> nodeSetForAdding( long labelId )
@@ -60,7 +63,7 @@ public class InMemoryLabelScanStore implements LabelScanStore
         Set<Long> nodes = data.get( labelId );
         if ( nodes == null )
         {
-            nodes = new HashSet<>();
+            nodes = new ConcurrentSkipListSet<>();
             data.put( labelId, nodes );
         }
         return nodes;
@@ -75,26 +78,64 @@ public class InMemoryLabelScanStore implements LabelScanStore
             public PrimitiveLongIterator nodesWithLabel( int labelId )
             {
                 Set<Long> nodes = data.get( (long) labelId );
-                if ( null == nodes )
+                return nodes != null ? PrimitiveLongCollections.toPrimitiveIterator( nodes.iterator() ) :
+                       PrimitiveLongCollections.emptyIterator();
+            }
+
+            @Override
+            public PrimitiveLongIterator nodesWithAnyOfLabels( int... labelIds )
+            {
+                SortedSet<Long> collectiveNodes = new TreeSet<>();
+                for ( long labelId : labelIds )
+                {
+                    Set<Long> set = data.get( labelId );
+                    if ( set != null )
+                    {
+                        for ( long id : set )
+                        {
+                            collectiveNodes.add( id );
+                        }
+                    }
+                }
+                return PrimitiveLongCollections.toPrimitiveIterator( collectiveNodes.iterator() );
+            }
+
+            @Override
+            public PrimitiveLongIterator nodesWithAllLabels( int... labelIds )
+            {
+                @SuppressWarnings( "unchecked" )
+                Set<Long>[] sets = new Set[labelIds.length];
+                int cursor = 0;
+                int biggestSetIndex = -1;
+                int biggestSet = -1;
+                for ( long labelId : labelIds )
+                {
+                    Set<Long> set = data.get( labelId );
+                    if ( set != null )
+                    {
+                        sets[cursor++] = set;
+                        if ( set.size() > biggestSet )
+                        {
+                            biggestSetIndex = cursor - 1;
+                            biggestSet = set.size();
+                        }
+                    }
+                }
+                if ( cursor == 0 )
                 {
                     return PrimitiveLongCollections.emptyIterator();
                 }
 
-                final Iterator<Long> nodesIterator = nodes.iterator();
-                return new PrimitiveLongIterator()
+                Set<Long> collectiveNodes = new HashSet<>( sets[biggestSetIndex] );
+                for ( int i = 0; i < cursor; i++ )
                 {
-                    @Override
-                    public long next()
+                    if ( i != biggestSetIndex )
                     {
-                        return nodesIterator.next();
+                        collectiveNodes.retainAll( sets[i] );
                     }
+                }
+                return PrimitiveLongCollections.toPrimitiveIterator( collectiveNodes.iterator() );
 
-                    @Override
-                    public boolean hasNext()
-                    {
-                        return nodesIterator.hasNext();
-                    }
-                };
             }
 
             @Override
@@ -106,7 +147,7 @@ public class InMemoryLabelScanStore implements LabelScanStore
             public PrimitiveLongIterator labelsForNode( long nodeId )
             {
                 PrimitiveLongSet nodes = Primitive.longSet();
-                for ( Map.Entry<Long, Set<Long>> entry : data.entrySet() )
+                for ( Map.Entry<Long,Set<Long>> entry : data.entrySet() )
                 {
                     if ( entry.getValue().contains( nodeId ) )
                     {
@@ -115,6 +156,7 @@ public class InMemoryLabelScanStore implements LabelScanStore
                 }
                 return nodes.iterator();
             }
+
         };
     }
 
@@ -147,48 +189,7 @@ public class InMemoryLabelScanStore implements LabelScanStore
     @Override
     public LabelScanWriter newWriter()
     {
-        return new LabelScanWriter()
-        {
-            @Override
-            public void write( NodeLabelUpdate update ) throws IOException
-            {
-                // Split up into added/removed from before/after
-                long[] added = new long[update.getLabelsAfter().length]; // pessimistic length
-                long[] removed = new long[update.getLabelsBefore().length]; // pessimistic length
-
-                int addedIndex = 0, removedIndex = 0;
-                for ( long labelAfter : update.getLabelsAfter() )
-                {
-                    if ( binarySearch( update.getLabelsBefore(), labelAfter ) < 0 )
-                    {
-                        added[addedIndex++] = labelAfter;
-                    }
-                }
-
-                for ( long labelBefore : update.getLabelsBefore() )
-                {
-                    if ( binarySearch( update.getLabelsAfter(), labelBefore ) < 0 )
-                    {
-                        removed[removedIndex++] = labelBefore;
-                    }
-                }
-
-                // Update the internal map with those changes
-                for ( int i = 0; i < addedIndex; i++ )
-                {
-                    nodeSetForAdding( added[i] ).add( update.getNodeId() );
-                }
-                for ( int i = 0; i < removedIndex; i++ )
-                {
-                    nodeSetForRemoving( removed[i] ).remove( update.getNodeId() );
-                }
-            }
-
-            @Override
-            public void close() throws IOException
-            {
-            }
-        };
+        return new InMemoryLabelScanWriter();
     }
 
     @Override
@@ -199,7 +200,9 @@ public class InMemoryLabelScanStore implements LabelScanStore
     @Override
     public AllEntriesLabelScanReader allNodeLabelRanges()
     {
+
         Map<Long,Set<Long>> nodesToLabels = new HashMap<>();
+
         for ( Map.Entry<Long,Set<Long>> labelToNodes : data.entrySet() )
         {
             for ( Long nodeId : labelToNodes.getValue() )
@@ -262,5 +265,49 @@ public class InMemoryLabelScanStore implements LabelScanStore
                 return array;
             }
         };
+    }
+
+    private class InMemoryLabelScanWriter implements LabelScanWriter
+    {
+
+        @Override
+        public void write( NodeLabelUpdate update ) throws IOException
+        {
+            // Split up into added/removed from before/after
+            long[] added = new long[update.getLabelsAfter().length]; // pessimistic length
+            long[] removed = new long[update.getLabelsBefore().length]; // pessimistic length
+
+            int addedIndex = 0, removedIndex = 0;
+            for ( long labelAfter : update.getLabelsAfter() )
+            {
+                if ( binarySearch( update.getLabelsBefore(), labelAfter ) < 0 )
+                {
+                    added[addedIndex++] = labelAfter;
+                }
+            }
+
+            for ( long labelBefore : update.getLabelsBefore() )
+            {
+                if ( binarySearch( update.getLabelsAfter(), labelBefore ) < 0 )
+                {
+                    removed[removedIndex++] = labelBefore;
+                }
+            }
+
+            // Update the internal map with those changes
+            for ( int i = 0; i < addedIndex; i++ )
+            {
+                nodeSetForAdding( added[i] ).add( update.getNodeId() );
+            }
+            for ( int i = 0; i < removedIndex; i++ )
+            {
+                nodeSetForRemoving( removed[i] ).remove( update.getNodeId() );
+            }
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+        }
     }
 }

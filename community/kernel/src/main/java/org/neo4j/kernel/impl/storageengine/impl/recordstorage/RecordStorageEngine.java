@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -86,7 +85,6 @@ import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.impl.transaction.state.Loaders;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.kernel.impl.transaction.state.PropertyDeleter;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
@@ -96,6 +94,8 @@ import org.neo4j.kernel.impl.transaction.state.RelationshipCreator;
 import org.neo4j.kernel.impl.transaction.state.RelationshipDeleter;
 import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
+import org.neo4j.kernel.impl.transaction.state.storeview.AdaptableIndexStoreView;
+import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -116,10 +116,6 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
-import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
-import static org.neo4j.kernel.configuration.Settings.TRUE;
-import static org.neo4j.kernel.configuration.Settings.setting;
-import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
 
 public class RecordStorageEngine implements StorageEngine, Lifecycle
@@ -220,8 +216,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             schemaCache = new SchemaCache( constraintSemantics, Collections.emptyList() );
             schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
 
+            labelScanStore = labelScanStoreProvider.getLabelScanStore();
+
             schemaIndexProviderMap = new DefaultSchemaIndexProviderMap( indexProvider );
-            indexStoreView = new NeoStoreIndexStoreView( lockService, neoStores );
+            indexStoreView = new AdaptableIndexStoreView( labelScanStore, lockService, neoStores );
             indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, schemaIndexProviderMap,
                     indexStoreView, tokenNameLookup,
                     Iterators.asList( new SchemaStorage( neoStores.getSchemaStore() ).allIndexRules() ), logProvider,
@@ -231,7 +229,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             cacheAccess = new BridgingCacheAccess( schemaCache, schemaStateChangeCallback,
                     propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
 
-            labelScanStore = labelScanStoreProvider.getLabelScanStore();
             storeStatementSupplier = storeStatementSupplier( neoStores );
             DiskLayer diskLayer = new DiskLayer(
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
@@ -397,7 +394,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         satisfier.satisfyDependency( indexingService );
         // providing TransactionIdStore, LogVersionRepository
         satisfier.satisfyDependency( neoStores.getMetaDataStore() );
-        satisfier.satisfyDependency( indexStoreView );
     }
 
     @Override

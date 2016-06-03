@@ -101,7 +101,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
         when( searcher.search( new TermQuery( format.rangeTerm( 0 ) ), 1 ) ).thenReturn( emptyTopDocs() );
         when( searcher.search( new TermQuery( format.rangeTerm( 1 ) ), 1 ) ).thenReturn( null );
 
-        LabelScanWriter writer = new PartitionedLuceneLabelScanWriter( index, format );
+        LabelScanWriter writer = getPartitionedLuceneLabelScanWriter( index );
 
         // when
         writer.write( labelChanges( 0, labels(), labels( 6, 7 ) ) );
@@ -147,7 +147,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
         when( index.getFirstPartition( anyList() ) ).thenReturn( partition );
         when( index.getPartitions() ).thenReturn( Collections.singletonList( partition ) );
 
-        LabelScanWriter writer = new PartitionedLuceneLabelScanWriter( index, format );
+        LabelScanWriter writer = getPartitionedLuceneLabelScanWriter( index );
 
         // when
         writer.write( labelChanges( 0, labels(), labels( 7, 8 ) ) );
@@ -171,7 +171,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
 
         LuceneLabelScanIndex index = buildLuceneIndex( partition );
 
-        LabelScanWriter writer = new PartitionedLuceneLabelScanWriter( index, format );
+        LabelScanWriter writer = getPartitionedLuceneLabelScanWriter( index );
 
         // when
         writer.write( labelChanges( 0, labels( 7, 8 ), labels( 8 ) ) );
@@ -194,7 +194,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
 
         LuceneLabelScanIndex index = buildLuceneIndex( partition );
 
-        LabelScanWriter writer = new PartitionedLuceneLabelScanWriter( index, format );
+        LabelScanWriter writer = getPartitionedLuceneLabelScanWriter( index );
 
         // when
         writer.write( labelChanges( 0, labels( 7 ), labels() ) );
@@ -214,7 +214,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
 
         LuceneLabelScanIndex index = buildLuceneIndex( partition );
 
-        LabelScanWriter writer = new PartitionedLuceneLabelScanWriter( index, format );
+        LabelScanWriter writer = getPartitionedLuceneLabelScanWriter( index );
 
         // when
         writer.write( labelChanges( 0, labels( 7 ), labels( 7, 8 ) ) );
@@ -241,7 +241,7 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
 
             LuceneLabelScanIndex index = buildLuceneIndex( partition );
 
-            LabelScanWriter writer = new PartitionedLuceneLabelScanWriter( index, format );
+            LabelScanWriter writer = getPartitionedLuceneLabelScanWriter( index );
 
             // when
             writer.write( labelChanges( i, labels(), labels( 7 ) ) );
@@ -255,6 +255,10 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
         }
     }
 
+    private PartitionedLuceneLabelScanWriter getPartitionedLuceneLabelScanWriter( LuceneLabelScanIndex index )
+    {
+        return new PartitionedLuceneLabelScanWriter( index, format, IndexWriter.MAX_DOCS );
+    }
 
     private IndexPartition newIndexPartitionMock( IndexWriter indexWriter, Document... documents ) throws IOException
     {

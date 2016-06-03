@@ -42,24 +42,38 @@ public class PartitionedLuceneLabelScanStoreReader implements LabelScanReader
 {
 
     private final List<LabelScanReader> storeReaders;
+    private long nodesInPartition;
 
-    public PartitionedLuceneLabelScanStoreReader( List<PartitionSearcher> searchers,
-            LabelScanStorageStrategy storageStrategy )
+    public PartitionedLuceneLabelScanStoreReader( List<PartitionSearcher> searchers, LabelScanStorageStrategy
+            storageStrategy, long nodesInPartition )
     {
         this( searchers.stream()
                 .map( searcher -> new SimpleLuceneLabelScanStoreReader( searcher, storageStrategy ) )
-                .collect( Collectors.toList() ) );
+                .collect( Collectors.toList() ), nodesInPartition );
     }
 
-    PartitionedLuceneLabelScanStoreReader(List<LabelScanReader> readers)
+    PartitionedLuceneLabelScanStoreReader(List<LabelScanReader> readers, long nodesInPartition)
     {
         this.storeReaders = readers;
+        this.nodesInPartition = nodesInPartition;
     }
 
     @Override
     public PrimitiveLongIterator nodesWithLabel( int labelId )
     {
         return partitionedOperation( storeReader -> storeReader.nodesWithLabel( labelId ) );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesWithAnyOfLabels( int... labelIds )
+    {
+        return partitionedOperation( storeReader -> storeReader.nodesWithAnyOfLabels( labelIds ) );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesWithAllLabels( int... labelIds )
+    {
+        return partitionedOperation( storeReader -> storeReader.nodesWithAllLabels( labelIds ) );
     }
 
     @Override
@@ -81,11 +95,10 @@ public class PartitionedLuceneLabelScanStoreReader implements LabelScanReader
         }
     }
 
-    private PrimitiveLongIterator partitionedOperation(
-            Function<LabelScanReader,PrimitiveLongIterator> readerFunction )
+    private PrimitiveLongIterator partitionedOperation( Function<LabelScanReader,PrimitiveLongIterator> readerFunction )
     {
         return PrimitiveLongCollections.concat( storeReaders.parallelStream()
-                .map( readerFunction::apply )
+                .map( readerFunction )
                 .iterator() );
     }
 }

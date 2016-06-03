@@ -43,6 +43,7 @@ import static org.mockito.Mockito.when;
 public class PartitionedLuceneLabelScanStoreReaderTest
 {
 
+    private static final long NODES_IN_PARTITION = 10L;
     @Mock
     private LabelScanStorageStrategy scanStorageStrategy;
     @Mock
@@ -106,7 +107,7 @@ public class PartitionedLuceneLabelScanStoreReaderTest
 
     private PartitionedLuceneLabelScanStoreReader createPartitionedReaderWithReaders()
     {
-        return new PartitionedLuceneLabelScanStoreReader( getLabelScanReaders() );
+        return new PartitionedLuceneLabelScanStoreReader( getLabelScanReaders(), NODES_IN_PARTITION );
     }
 
     private List<LabelScanReader> getLabelScanReaders()
@@ -116,7 +117,7 @@ public class PartitionedLuceneLabelScanStoreReaderTest
 
     private PartitionedLuceneLabelScanStoreReader createPartitionedReader()
     {
-        return new PartitionedLuceneLabelScanStoreReader( getPartitionSearchers(), scanStorageStrategy );
+        return new PartitionedLuceneLabelScanStoreReader( getPartitionSearchers(), scanStorageStrategy, NODES_IN_PARTITION );
     }
 
     private List<PartitionSearcher> getPartitionSearchers()

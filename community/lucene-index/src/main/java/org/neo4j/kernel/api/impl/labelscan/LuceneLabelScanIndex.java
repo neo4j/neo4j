@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.labelscan;
 
+import org.apache.lucene.index.IndexWriter;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
@@ -47,6 +49,9 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
  */
 public class LuceneLabelScanIndex extends AbstractLuceneIndex
 {
+    private final Integer MAXIMUM_PARTITION_SIZE =
+            Integer.getInteger( "labelScanStore.maxPartitionSize", IndexWriter.MAX_DOCS );
+
     private final BitmapDocumentFormat format;
     private final LabelScanStorageStrategy storageStrategy;
 
@@ -81,7 +86,7 @@ public class LuceneLabelScanIndex extends AbstractLuceneIndex
     public LabelScanWriter getLabelScanWriter()
     {
         ensureOpen();
-        return new PartitionedLuceneLabelScanWriter( this, format );
+        return new PartitionedLuceneLabelScanWriter( this, format, MAXIMUM_PARTITION_SIZE );
     }
 
     /**
@@ -108,6 +113,11 @@ public class LuceneLabelScanIndex extends AbstractLuceneIndex
     private LabelScanReader createPartitionedReader( List<IndexPartition> partitions ) throws IOException
     {
         List<PartitionSearcher> searchers = acquireSearchers( partitions );
-        return new PartitionedLuceneLabelScanStoreReader(searchers, storageStrategy);
+        return new PartitionedLuceneLabelScanStoreReader(searchers, storageStrategy, getNodeInPartition());
+    }
+
+    private long getNodeInPartition()
+    {
+        return MAXIMUM_PARTITION_SIZE * format.bitmapFormat().rangeSize();
     }
 }

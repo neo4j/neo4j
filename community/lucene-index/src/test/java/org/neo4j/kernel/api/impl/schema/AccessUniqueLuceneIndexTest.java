@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.test.TargetDirectory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -41,8 +42,9 @@ import static org.junit.Assert.assertEquals;
 
 public class AccessUniqueLuceneIndexTest
 {
-    private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-    private final File indexDirectory = new File( "index1" );
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    private final DirectoryFactory directoryFactory = DirectoryFactory.PERSISTENT;
 
     @Test
     public void shouldAddUniqueEntries() throws Exception
@@ -131,14 +133,15 @@ public class AccessUniqueLuceneIndexTest
                 .withIndexStorage( indexStorage )
                 .uniqueIndex()
                 .build();
+        luceneIndex.create();
         luceneIndex.open();
         return new LuceneIndexAccessor( luceneIndex );
     }
 
     private PartitionedIndexStorage getIndexStorage() throws IOException
     {
-        IndexStorageFactory storageFactory =
-                new IndexStorageFactory( directoryFactory, new EphemeralFileSystemAbstraction(), indexDirectory );
+        IndexStorageFactory storageFactory = new IndexStorageFactory( directoryFactory, new DefaultFileSystemAbstraction(),
+                testDirectory.graphDbDir() );
         return storageFactory.indexStorageOf( 1 );
     }
 
