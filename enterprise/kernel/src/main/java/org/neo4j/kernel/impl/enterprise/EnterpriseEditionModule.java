@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.enterprise;
 
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionConfigurator;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.PlatformModule;
@@ -33,6 +35,11 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     public EnterpriseEditionModule( PlatformModule platformModule )
     {
         super( platformModule );
+    }
+
+    protected void preConfigureEdition( Config config )
+    {
+        new EnterpriseEditionConfigurator( config ).configure();
     }
 
     @Override

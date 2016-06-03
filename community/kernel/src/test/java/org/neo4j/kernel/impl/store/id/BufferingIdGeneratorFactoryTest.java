@@ -88,12 +88,12 @@ public class BufferingIdGeneratorFactoryTest
 
     private static class MockedIdGeneratorFactory implements IdGeneratorFactory
     {
-        private final IdGenerator[] generators = new IdGenerator[IdType.values().length];
+        private final IdGenerator[] generators = new IdGenerator[IdType.Name.values().length];
 
         @Override
         public IdGenerator open( File filename, int grabSize, IdType idType, long highId )
         {
-            return generators[idType.ordinal()] = mock( IdGenerator.class );
+            return generators[idType.getName().ordinal()] = mock( IdGenerator.class );
         }
 
         @Override
@@ -104,7 +104,7 @@ public class BufferingIdGeneratorFactoryTest
         @Override
         public IdGenerator get( IdType idType )
         {
-            return generators[idType.ordinal()];
+            return generators[idType.getName().ordinal()];
         }
     }
 }

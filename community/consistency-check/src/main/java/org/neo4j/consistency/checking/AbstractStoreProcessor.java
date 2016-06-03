@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 import static java.lang.String.format;
-
 import static org.neo4j.consistency.checking.DynamicStore.ARRAY;
 import static org.neo4j.consistency.checking.DynamicStore.NODE_LABEL;
 import static org.neo4j.consistency.checking.DynamicStore.SCHEMA;
@@ -161,27 +160,31 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
     {
         RecordType type;
         DynamicStore dereference;
-        switch ( idType )
+        if ( IdType.STRING_BLOCK.equals( idType ) )
         {
-        case STRING_BLOCK:
             type = RecordType.STRING_PROPERTY;
             dereference = DynamicStore.STRING;
-            break;
-        case RELATIONSHIP_TYPE_TOKEN_NAME:
+        }
+        else if ( IdType.RELATIONSHIP_TYPE_TOKEN_NAME.equals( idType ) )
+        {
             type = RecordType.RELATIONSHIP_TYPE_NAME;
             dereference = DynamicStore.RELATIONSHIP_TYPE;
-            break;
-        case PROPERTY_KEY_TOKEN_NAME:
+        }
+        else if ( IdType.PROPERTY_KEY_TOKEN_NAME.equals( idType ) )
+        {
             type = RecordType.PROPERTY_KEY_NAME;
             dereference = DynamicStore.PROPERTY_KEY;
-            break;
-        case LABEL_TOKEN_NAME:
+        }
+        else if ( IdType.LABEL_TOKEN_NAME.equals( idType ) )
+        {
             type = RecordType.LABEL_NAME;
             dereference = DynamicStore.LABEL;
-            break;
-        default:
+        }
+        else
+        {
             throw new IllegalArgumentException( format( "The id type [%s] is not valid for String records.", idType ) );
         }
+
         checkDynamic( type, store, string, new DynamicRecordCheck( store, dereference ) );
     }
 
