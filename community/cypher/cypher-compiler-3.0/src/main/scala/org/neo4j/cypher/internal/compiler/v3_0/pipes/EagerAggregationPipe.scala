@@ -21,12 +21,14 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.AggregationExpression
+import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.Equivalent
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 
-import scala.collection.mutable.{Map => MutableMap}
+import scala.collection.GenTraversableOnce
+import scala.collection.mutable.{ArrayBuffer, Map => MutableMap}
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting sub graphs before starting
 // to emit aggregated results.
@@ -51,22 +53,11 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
     state.decorator.registerParentPipe(this)
 
     // This is the temporary storage used while the aggregation is going on
-    val result = MutableMap[NiceHasher, Seq[AggregationFunction]]()
-    val keyNames: Seq[String] = keyExpressions.toSeq
+    val result = MutableMap[Equals, Seq[AggregationFunction]]()
+    val keyNames = keyExpressions.toList
     val aggregationNames: Seq[String] = aggregations.keys.toSeq
-    val mapSize = keyNames.size + aggregationNames.size
-
-    def createResults(key: NiceHasher, aggregator: scala.Seq[AggregationFunction]): ExecutionContext = {
-      val newMap = MutableMaps.create(mapSize)
-
-      //add key values
-      (keyNames zip key.original).foreach(newMap += _)
-
-      //add aggregated values
-      (aggregationNames zip aggregator.map(_.result)).foreach(newMap += _)
-
-      ExecutionContext(newMap)
-    }
+    val keyNamesSize = keyNames.size
+    val mapSize = keyNamesSize + aggregationNames.size
 
     def createEmptyResult(params: Map[String, Any]): Iterator[ExecutionContext] = {
       val newMap = MutableMaps.empty
@@ -77,8 +68,44 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
       Iterator.single(ExecutionContext(newMap))
     }
 
+    // This code is not pretty. It's full of asInstanceOf calls and other things that might irk you.
+    // You'll just have to trust that the original authors spent time profiling and making sure that this
+    // code runs really fast.
+    // If you feel like cleaning it up - please make sure to not regress in performance. This is a hot spot.
+    def createResults(key: Any, aggregator: scala.Seq[AggregationFunction]): ExecutionContext = {
+      val newMap = MutableMaps.create(mapSize)
+
+      //add key values
+      keyNamesSize match {
+        case 1 =>
+          newMap += keyNames.head -> key.asInstanceOf[Equivalent].originalValue
+        case 2 =>
+          val t2 = key.asInstanceOf[(Equivalent, Equivalent)]
+          newMap += keyNames.head -> t2._1.originalValue +=
+                    keyNames.last -> t2._2.originalValue
+        case 3 =>
+          val t3 = key.asInstanceOf[(Equivalent, Equivalent, Equivalent)]
+          newMap += keyNames.head -> t3._1.originalValue +=
+                    keyNames.tail.head -> t3._2.originalValue +=
+                    keyNames.last -> t3._3.originalValue
+        case _ =>
+          val listOfValues = key.asInstanceOf[List[Equivalent]]
+          (keyNames zip listOfValues.map(_.originalValue)).foreach(newMap += _)
+      }
+
+      //add aggregated values
+      (aggregationNames zip aggregator.map(_.result)).foreach(newMap += _)
+
+      ExecutionContext(newMap)
+    }
+
     input.foreach(ctx => {
-      val groupValues: NiceHasher = new NiceHasher(keyNames.map(ctx))
+      val groupValues: Equals = keyNamesSize match {
+        case 1 => Equivalent(ctx(keyNames.head))
+        case 2 => (Equivalent(ctx(keyNames.head)),Equivalent(ctx(keyNames.last)))
+        case 3 => (Equivalent(ctx(keyNames.head)),Equivalent(ctx(keyNames.tail.head)),Equivalent(ctx(keyNames.last)))
+        case _ => keyNames.map( k => Equivalent(ctx(k)))
+      }
       val functions = result.getOrElseUpdate(groupValues, {
         val aggregateFunctions: Seq[AggregationFunction] = aggregations.map(_._2.createAggregationFunction).toSeq
         aggregateFunctions

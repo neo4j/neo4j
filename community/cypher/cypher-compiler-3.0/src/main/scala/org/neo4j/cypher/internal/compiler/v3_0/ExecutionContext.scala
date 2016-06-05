@@ -101,4 +101,3 @@ case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.empty)
     copy(m = newMap)
   }
 }
-

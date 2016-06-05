@@ -20,7 +20,6 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{SyntaxException, NewPlannerTestSupport, ExecutionEngineFunSuite}
-import org.neo4j.graphdb.Node
 
 class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -102,7 +101,8 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
       """match p = (a:Start)-[*]-> (b)
         |return b, avg(length(p))""".stripMargin)
 
-    result.columnAs[Node]("b").toSet should equal (Set(b, c))
+    result.toSet should equal(Set(Map("b" -> c, "avg(length(p))" -> 1.0),
+                                  Map("b" -> b, "avg(length(p))" -> 1.0)))
   }
 
   test("should be able to do distinct on unbound node") {
@@ -230,12 +230,13 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     // when
     val query =
       """MATCH p=(a:T {name: "a"})-[:R*]-(other: T)
-        |WHERE other <> a WITH a, other, min(length(p)) AS len
-        |RETURN a.name as name, collect(other.name) AS others, len;""".stripMargin
+        |WHERE other <> a
+        |WITH a, other, min(length(p)) AS len ORDER BY other.name
+        |RETURN a.name as name, collect(other.name) AS others, len""".stripMargin
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     //then
-    result.toList should equal(Seq(Map("name" -> "a", "others" -> Seq("c", "b"), "len" -> 1 )))
+    result.toList should equal(Seq(Map("name" -> "a", "others" -> Seq("b", "c"), "len" -> 1 )))
   }
 
   test("should handle subexpression in aggregation also occuring as standalone expression with nested aggregation in a literal map") {
