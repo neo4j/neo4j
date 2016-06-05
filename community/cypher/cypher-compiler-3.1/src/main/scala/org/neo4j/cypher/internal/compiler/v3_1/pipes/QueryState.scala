@@ -26,10 +26,13 @@ import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.PathValueBuilder
 import org.neo4j.cypher.internal.compiler.v3_1.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_1.ParameterNotFoundException
+import org.neo4j.cypher.internal.compiler.v3_1._
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.PathValueBuilder
+import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.{InCheckContainer, SingleThreadedLRUCache}
+import org.neo4j.cypher.internal.compiler.v3_1.spi.QueryContext
+import org.neo4j.cypher.internal.frontend.v3_1.ParameterNotFoundException
 
 import scala.collection.mutable
-
-
 
 class QueryState(val query: QueryContext,
                  val resources: ExternalCSVResource,
@@ -40,7 +43,9 @@ class QueryState(val query: QueryContext,
                  val queryId: AnyRef = UUID.randomUUID().toString,
                  val triadicState: mutable.Map[String, PrimitiveLongSet] = mutable.Map.empty,
                  val repeatableReads: mutable.Map[Pipe, Seq[ExecutionContext]] = mutable.Map.empty,
-                 val publicTypeConverter: Any => Any = identity) {
+                 val publicTypeConverter: Any => Any = identity,
+                 val cachedIn: SingleThreadedLRUCache[Any, InCheckContainer] =
+                   new SingleThreadedLRUCache(maxSize = 16)) {
   private var _pathValueBuilder: PathValueBuilder = null
 
   def clearPathValueBuilder = {
@@ -58,13 +63,13 @@ class QueryState(val query: QueryContext,
   def getStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
 
   def withDecorator(decorator: PipeDecorator) =
-    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads)
+    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads, publicTypeConverter, cachedIn)
 
   def withInitialContext(initialContext: ExecutionContext) =
-    new QueryState(query, resources, params, decorator, timeReader, Some(initialContext), queryId, triadicState, repeatableReads)
+    new QueryState(query, resources, params, decorator, timeReader, Some(initialContext), queryId, triadicState, repeatableReads, publicTypeConverter, cachedIn)
 
   def withQueryContext(query: QueryContext) =
-    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads)
+    new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads, publicTypeConverter, cachedIn)
 }
 
 object QueryState {
