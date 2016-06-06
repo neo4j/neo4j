@@ -93,9 +93,13 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
         this.commitIndexMonitor = monitors.newMonitor( RaftLogCommitIndexMonitor.class, getClass() );
     }
 
-    synchronized void setStateMachine( CoreStateMachines coreStateMachines, long lastApplied )
+    synchronized void setStateMachine( CoreStateMachines coreStateMachines )
     {
         this.coreStateMachines = coreStateMachines;
+    }
+
+    public void skip( long lastApplied )
+    {
         this.lastApplied = this.lastFlushed = lastApplied;
     }
 

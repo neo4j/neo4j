@@ -144,7 +144,7 @@ public class CoreToCoreCopySnapshotIT
 
         cluster = Cluster.start( dbDir, 3, 0, params, new TestOnlyDiscoveryServiceFactory() );
 
-        CoreGraphDatabase source = cluster.coreTx( ( db, tx ) -> {
+        CoreGraphDatabase leader = cluster.coreTx( ( db, tx ) -> {
             createData( db, 10000 );
             tx.success();
         } );
@@ -155,12 +155,15 @@ public class CoreToCoreCopySnapshotIT
             coreDb.compact();
         }
 
+        cluster.removeCoreServer( leader ); // to force a change of leader
+        leader = cluster.awaitLeader();
+
         int newDbId = 3;
-        cluster.addCoreServerWithServerId( newDbId, 4 );
-        CoreGraphDatabase newDb = cluster.getCoreServerById( 3 );
+        cluster.addCoreServerWithServerId( newDbId, 3 );
+        CoreGraphDatabase newDb = cluster.getCoreServerById( newDbId );
 
         // then
-        assertEquals( DbRepresentation.of( source ), DbRepresentation.of( newDb ) );
+        assertEquals( DbRepresentation.of( leader ), DbRepresentation.of( newDb ) );
     }
 
     @Test
@@ -267,7 +270,7 @@ public class CoreToCoreCopySnapshotIT
 
     private String string( int numberOfCharacters )
     {
-        StringBuffer s = new StringBuffer();
+        StringBuilder s = new StringBuilder();
         for ( int i = 0; i < numberOfCharacters; i++ )
         {
             s.append( String.valueOf( i ) );

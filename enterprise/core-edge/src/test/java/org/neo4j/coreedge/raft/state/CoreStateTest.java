@@ -115,7 +115,7 @@ public class CoreStateTest
         // given
         RaftLogCommitIndexMonitor listener = mock( RaftLogCommitIndexMonitor.class );
         monitors.addMonitorListener( listener );
-        coreState.setStateMachine( txStateMachine, -1 );
+        coreState.setStateMachine( txStateMachine );
         coreState.start();
 
         // when
@@ -136,7 +136,7 @@ public class CoreStateTest
     public void shouldNotApplyUncommittedCommands() throws Exception
     {
         // given
-        coreState.setStateMachine( txStateMachine, -1 );
+        coreState.setStateMachine( txStateMachine );
         coreState.start();
 
         // when
@@ -153,7 +153,7 @@ public class CoreStateTest
     public void entriesThatAreNotStateMachineCommandsShouldStillIncreaseCommandIndex() throws Exception
     {
         // given
-        coreState.setStateMachine( txStateMachine, -1 );
+        coreState.setStateMachine( txStateMachine );
         coreState.start();
 
         // when
@@ -172,7 +172,7 @@ public class CoreStateTest
     public void shouldPeriodicallyFlushState() throws Exception
     {
         // given
-        coreState.setStateMachine( txStateMachine, -1 );
+        coreState.setStateMachine( txStateMachine );
         coreState.start();
 
         int TIMES = 5;
@@ -194,7 +194,7 @@ public class CoreStateTest
     public void shouldPanicIfUnableToApply() throws Exception
     {
         // given
-        coreState.setStateMachine( failingTxStateMachine, -1 );
+        coreState.setStateMachine( failingTxStateMachine );
         coreState.start();
 
         raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
@@ -214,7 +214,7 @@ public class CoreStateTest
         //given n things to apply in the cache, check that they are actually applied.
 
         // given
-        coreState.setStateMachine( txStateMachine, -1 );
+        coreState.setStateMachine( txStateMachine );
         coreState.start();
 
         inFlightMap.register( 0L, new RaftLogEntry( 1, operation( nullTx ) ) );
@@ -234,7 +234,7 @@ public class CoreStateTest
         //given a cache in submitApplyJob, the contents of the cache should only contain unapplied "things"
 
         // given
-        coreState.setStateMachine( txStateMachine, -1 );
+        coreState.setStateMachine( txStateMachine );
         coreState.start();
 
         inFlightMap.register( 0L, new RaftLogEntry( 0, operation( nullTx ) ) );
@@ -257,7 +257,7 @@ public class CoreStateTest
         // if the cache does not contain all things to be applied, make sure we fall back to the log
         // should only happen in recovery, otherwise this is probably a bug.
 
-        coreState.setStateMachine( txStateMachine, -1 );
+        coreState.setStateMachine( txStateMachine );
         coreState.start();
 
         //given cache with missing entry
@@ -293,7 +293,7 @@ public class CoreStateTest
     {
         //When an entry is not in the log, we must fail.
 
-        coreState.setStateMachine( txStateMachine, -1 );
+        coreState.setStateMachine( txStateMachine );
         coreState.start();
 
         inFlightMap.register( 0L, new RaftLogEntry( 0, operation( nullTx ) ) );

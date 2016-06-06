@@ -141,6 +141,7 @@ public class CoreStateMachines
         {
             throw new RuntimeException( e );
         }
+        coreState.skip( snapshotPrevIndex );
     }
 
     public void refresh( TransactionRepresentationCommitProcess localCommit )
@@ -152,6 +153,6 @@ public class CoreStateMachines
         relationshipTypeTokenStateMachine.installCommitProcess( localCommit, lastAppliedIndex );
         propertyKeyTokenStateMachine.installCommitProcess( localCommit, lastAppliedIndex );
 
-        coreState.setStateMachine( this, lastAppliedIndex );
+        coreState.setStateMachine( this );
     }
 }
