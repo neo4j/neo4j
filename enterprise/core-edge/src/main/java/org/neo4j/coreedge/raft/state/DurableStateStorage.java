@@ -65,8 +65,7 @@ public class DurableStateStorage<STATE> extends LifecycleAdapter implements Stat
         final StateRecoveryManager.RecoveryStatus<STATE> recoveryStatus = recoveryManager.recover( fileA, fileB );
 
         this.currentStoreFile = recoveryStatus.activeFile();
-        this.currentStoreChannel = new PhysicalFlushableChannel( fileSystemAbstraction.open( currentStoreFile, "rw" ) );
-        initialiseStoreFile( currentStoreFile );
+        this.currentStoreChannel = initialiseStoreFile( currentStoreFile );
 
         this.initialState = recoveryStatus.recoveredState();
 
