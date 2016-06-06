@@ -42,6 +42,8 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.TokenFactory;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
+import static java.lang.String.format;
+
 import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader;
 
 public class ReplicatedTokenStateMachine<TOKEN extends Token> implements StateMachine<ReplicatedTokenRequest>
@@ -66,6 +68,7 @@ public class ReplicatedTokenStateMachine<TOKEN extends Token> implements StateMa
     {
         this.commitProcess = commitProcess;
         this.lastCommittedIndex = lastCommittedIndex;
+        log.info( format("Updated lastCommittedIndex to %d", lastCommittedIndex) );
     }
 
     @Override
