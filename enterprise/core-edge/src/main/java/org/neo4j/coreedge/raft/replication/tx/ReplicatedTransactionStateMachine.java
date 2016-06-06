@@ -35,6 +35,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
+import static java.lang.String.format;
+
 import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionExpired;
 
@@ -57,6 +59,7 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine<R
     {
         this.commitProcess = commitProcess;
         this.lastCommittedIndex = lastCommittedIndex;
+        log.info( format("Updated lastCommittedIndex to %d", lastCommittedIndex) );
     }
 
     @Override

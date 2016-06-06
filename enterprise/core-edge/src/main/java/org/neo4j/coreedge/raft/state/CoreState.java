@@ -101,6 +101,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     public void skip( long lastApplied )
     {
         this.lastApplied = this.lastFlushed = lastApplied;
+        log.info( format("Skipping lastApplied index forward to %d", lastApplied) );
     }
 
     @Override
