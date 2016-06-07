@@ -29,12 +29,7 @@ trait Checker {
   def contains(value: Any): (Option[Boolean], Checker)
 }
 
-// When the collection is a single NULL, the only result possible is NULL
-case object NullListChecker extends Checker {
-  override def contains(value: Any): (Option[Boolean], Checker) = (None, this)
-}
-
-class BuildUp(iterator: Iterator[Any]) extends Checker {
+§class BuildUp(iterator: Iterator[Any]) extends Checker {
   private val cachedSet: mutable.Set[Equivalent] = new mutable.HashSet[Equivalent]
   private var falseResult: Option[Boolean] = Some(false)
 
@@ -79,6 +74,10 @@ class BuildUp(iterator: Iterator[Any]) extends Checker {
 
 case object AlwaysFalseChecker extends Checker {
   override def contains(value: Any): (Option[Boolean], Checker) = (Some(false), this)
+}
+
+case object NullListChecker extends Checker {
+  override def contains(value: Any): (Option[Boolean], Checker) = (None, this)
 }
 
 class FastChecker(cachedSet: mutable.Set[Equivalent], falseResult: Option[Boolean]) extends Checker {

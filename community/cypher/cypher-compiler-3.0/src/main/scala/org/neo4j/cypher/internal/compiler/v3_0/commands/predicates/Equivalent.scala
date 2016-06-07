@@ -53,7 +53,7 @@ class Equivalent(val eagerizedValue: Any, val original: Any) {
 
   private def hashCode(o: Any): Int = o match {
     case null => 0
-    case n: Number => n.intValue()
+    case n: Number => n.longValue().hashCode()
     case n: Vector[_] =>
       val length = n.length
       if (length > 0)
@@ -82,6 +82,8 @@ object Equivalent {
     case a: Char => a.toString
 
     case a: Array[_] => a.toVector.map(eager)
+    case m: java.util.Map[_,_] => m.asScala.mapValues(eager)
+    case m: Map[_,_] => m.mapValues(eager)
     case a: TraversableOnce[_] => a.toVector.map(eager)
     case l: java.lang.Iterable[_] => l.asScala.toVector.map(eager)
     case _ => throw new ControlFlowException

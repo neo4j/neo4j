@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.commands.predicates
 
 import java.util.Arrays.asList
+import java.util.Collections.singletonMap
 
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
@@ -34,7 +35,8 @@ class EquivalentTest extends CypherFunSuite {
   shouldMatch(0, 0)
   shouldMatch(Double.NaN, Double.NaN)
   shouldMatch(Integer.MAX_VALUE.toDouble, Integer.MAX_VALUE)
-//  shouldMatch(Long.MaxValue.toDouble, Long.MaxValue)
+  shouldMatch(Long.MaxValue.toDouble, Long.MaxValue)
+  shouldMatch(Int.MaxValue.toDouble + 1, Int.MaxValue.toLong + 1)
   shouldMatch(Double.PositiveInfinity, Double.PositiveInfinity)
   shouldMatch(Double.NegativeInfinity, Double.NegativeInfinity)
   shouldMatch(true, true)
@@ -84,7 +86,7 @@ class EquivalentTest extends CypherFunSuite {
   shouldMatch(23L, 23.0)
   shouldNotMatch(23L, 23.5)
   shouldNotMatch(23L, 23.5f)
-//  shouldMatch(9007199254740992L, 9007199254740992D)
+  shouldMatch(9007199254740992L, 9007199254740992D)
   shouldMatch(11f, 11.toByte)
   shouldMatch(42f, 42.toShort)
   shouldMatch(43f, 43.toInt)
@@ -130,10 +132,16 @@ class EquivalentTest extends CypherFunSuite {
   shouldMatch(Array[String]("A", "B", "C"), asList('A', 'B', 'C'))
   shouldMatch(Array[Char]('A', 'B', 'C'), asList("A", "B", "C"))
 
+  shouldMatch(Map("a" -> 42), Map("a" -> 42))
+  shouldMatch(Map("a" -> 42), Map("a" -> 42.0))
+  shouldMatch(Map("a" -> 42), singletonMap("a", 42.0))
+  shouldMatch(singletonMap("a", asList(41.0, 42.0)), Map("a" -> List(41,42)))
+  shouldMatch(Map("a" -> singletonMap("x", asList(41.0, 'c'.asInstanceOf[Character]))), singletonMap("a", Map("x" -> List(41, "c"))))
+
   private def shouldMatch(v1: Any, v2: Any) {
     test(testName(v1, v2, "=")) {
-      val eq1 = Equivalent.tryBuild(v1).getOrElse(fail(s"failed to handle $v1"))
-      val eq2 = Equivalent.tryBuild(v2).getOrElse(fail(s"failed to handle $v2"))
+      val eq1 = Equivalent.tryBuild(v1).get
+      val eq2 = Equivalent.tryBuild(v2).get
       eq1.equals(v2) should equal(true)
       eq2.equals(v1) should equal(true)
       eq1.hashCode() should equal(eq2.hashCode())
@@ -142,8 +150,8 @@ class EquivalentTest extends CypherFunSuite {
 
   private def shouldNotMatch(v1: Any, v2: Any) {
     test(testName(v1, v2, "<>")) {
-      val eq1 = Equivalent.tryBuild(v1).getOrElse(fail(s"failed to handle $v1"))
-      val eq2 = Equivalent.tryBuild(v2).getOrElse(fail(s"failed to handle $v2"))
+      val eq1 = Equivalent.tryBuild(v1).get
+      val eq2 = Equivalent.tryBuild(v2).get
       eq1.equals(v2) should equal(false)
       eq2.equals(v1) should equal(false)
     }
