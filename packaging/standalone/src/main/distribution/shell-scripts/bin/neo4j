@@ -47,7 +47,7 @@ setup_arbiter_options() {
       echo "This instance is now joining the cluster."
     }
   else
-    SHUTDOWN_TIMEOUT=120
+    SHUTDOWN_TIMEOUT="${NEO4J_SHUTDOWN_TIMEOUT:-120}"
     MIN_ALLOWED_OPEN_FILES=40000
     MAIN_CLASS="#{neo4j.mainClass}"
 
