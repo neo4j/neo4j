@@ -24,11 +24,6 @@ import collection.mutable
 
 class CheckerTest extends CypherFunSuite {
 
-  test("empty list") {
-    val buildUp = new BuildUp(Iterator.empty)
-    buildUp.contains(42) should equal((Some(false), AlwaysFalseChecker))
-  }
-
   test("iterator gets emptied checking for a value") {
     val buildUp = new BuildUp(Iterator(42, 123))
     val (result, newChecker) = buildUp.contains("hello")
@@ -60,10 +55,6 @@ class CheckerTest extends CypherFunSuite {
     (equi(1) == equi(1.0)) should equal(true)
     (equi('a') == equi("a")) should equal(true)
     (eq(Array(1, 2, 3)) == eq(List(1.0, 2.0D, 3l))) should equal(true)
-  }
-
-  test("null in lhs on an empty list") {
-    new BuildUp(Iterator.empty).contains(null) should equal((Some(false), AlwaysFalseChecker))
   }
 
   test("null in lhs on an BuildUp") {

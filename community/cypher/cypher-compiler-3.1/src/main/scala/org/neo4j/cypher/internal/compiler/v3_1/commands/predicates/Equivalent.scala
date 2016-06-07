@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.commands.predicates
 
-import org.neo4j.cypher.internal.compiler.v3_0.GeographicPoint
+import org.neo4j.cypher.internal.compiler.v3_1.GeographicPoint
 import org.neo4j.graphdb.{Node, Path, Relationship}
 
 import collection.JavaConverters._
