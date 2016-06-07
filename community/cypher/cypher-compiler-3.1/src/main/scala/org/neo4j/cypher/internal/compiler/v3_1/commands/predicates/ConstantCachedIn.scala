@@ -29,19 +29,21 @@ import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
 /*
 This class is used for making the common <exp> IN <constant-expression> fast
 
-It uses a cache for the <constant-expression>, and turns it into a Set, for fast existence checking
+It uses a cache for the <constant-expression>, and turns it into a Set, for fast existence checking.
+The key for the cache is the expression and not the value, which saves in execution speed
  */
 case class ConstantCachedIn(value: Expression, list: Expression) extends Predicate with CollectionSupport {
 
-  var executed = 0
   // These two are here to make the fields accessible without conflicting with the case classes
   override def isMatch(ctx: ExecutionContext)(implicit state: QueryState) = {
     val inChecker = state.cachedIn.getOrElseUpdate(list, {
       val listValue = list(ctx)
       val checker = if (listValue == null)
         NullListChecker
-      else
-        new BuildUp(makeTraversable(listValue).toIterator)
+      else {
+        val input = makeTraversable(listValue).toIterator
+        if (input.isEmpty) AlwaysFalseChecker else new BuildUp(input)
+      }
       new InCheckContainer(checker)
     })
 
@@ -65,14 +67,20 @@ It uses a cache for the <rhs-expression> value, and turns it into a Set, for fas
 case class DynamicCachedIn(value: Expression, list: Expression) extends Predicate with CollectionSupport {
 
   // These two are here to make the fields accessible without conflicting with the case classes
-  override def isMatch(ctx: ExecutionContext)(implicit state: QueryState) = {
+  override def isMatch(ctx: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
     val listValue = list(ctx)
 
-    val inChecker = state.cachedIn.getOrElseUpdate(listValue, {
-      val checker = if (listValue == null)
-        NullListChecker
-      else
-        new BuildUp(makeTraversable(listValue).toIterator)
+    if(listValue == null)
+      return None
+
+    val traversable = makeTraversable(listValue)
+    val inputIterator = traversable.toIterator
+
+    if(inputIterator.isEmpty)
+      return Some(false)
+
+    val inChecker = state.cachedIn.getOrElseUpdate(traversable, {
+      val checker = new BuildUp(inputIterator)
       new InCheckContainer(checker)
     })
 

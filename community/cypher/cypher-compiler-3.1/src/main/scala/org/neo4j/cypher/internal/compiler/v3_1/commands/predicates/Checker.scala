@@ -33,11 +33,9 @@ class BuildUp(iterator: Iterator[Any]) extends Checker {
   private val cachedSet: mutable.Set[Equivalent] = new mutable.HashSet[Equivalent]
   private var falseResult: Option[Boolean] = Some(false)
 
+  assert(iterator.nonEmpty)
+
   override def contains(value: Any): (Option[Boolean], Checker) = {
-
-    if (iterator.isEmpty && cachedSet.isEmpty)
-      return (Some(false), AlwaysFalseChecker)
-
     if (value == null)
       return (None, this)
 
@@ -62,7 +60,7 @@ class BuildUp(iterator: Iterator[Any]) extends Checker {
       }
     }
 
-    (falseResult, new FastChecker(cachedSet, falseResult))
+    (falseResult, new SetChecker(cachedSet, falseResult))
   }
 }
 
@@ -74,9 +72,10 @@ case object NullListChecker extends Checker {
   override def contains(value: Any): (Option[Boolean], Checker) = (None, this)
 }
 
-class FastChecker(cachedSet: mutable.Set[Equivalent], falseResult: Option[Boolean]) extends Checker {
+// This is the final form for this cache.
+class SetChecker(cachedSet: mutable.Set[Equivalent], falseResult: Option[Boolean]) extends Checker {
 
-  assert(cachedSet.nonEmpty, "If this is empty, we should use a AlwaysNotIn instead")
+  assert(cachedSet.nonEmpty)
 
   override def contains(value: Any): (Option[Boolean], Checker) = {
     if (value == null)
