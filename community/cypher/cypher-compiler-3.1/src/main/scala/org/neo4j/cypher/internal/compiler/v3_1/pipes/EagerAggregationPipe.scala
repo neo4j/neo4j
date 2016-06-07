@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.AggregationExpression
+import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.Equivalent
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
@@ -51,16 +52,16 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
     state.decorator.registerParentPipe(this)
 
     // This is the temporary storage used while the aggregation is going on
-    val result = MutableMap[NiceHasher, Seq[AggregationFunction]]()
-    val keyNames: Seq[String] = keyExpressions.toSeq
+    val result = MutableMap[Vector[Equivalent], Seq[AggregationFunction]]()
+    val keyNames = keyExpressions.toVector
     val aggregationNames: Seq[String] = aggregations.keys.toSeq
     val mapSize = keyNames.size + aggregationNames.size
 
-    def createResults(key: NiceHasher, aggregator: scala.Seq[AggregationFunction]): ExecutionContext = {
+    def createResults(key: Vector[Equivalent], aggregator: scala.Seq[AggregationFunction]): ExecutionContext = {
       val newMap = MutableMaps.create(mapSize)
 
       //add key values
-      (keyNames zip key.original).foreach(newMap += _)
+      (keyNames zip key.map(_.eagerizedValue)).foreach(newMap += _)
 
       //add aggregated values
       (aggregationNames zip aggregator.map(_.result)).foreach(newMap += _)
@@ -78,7 +79,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
     }
 
     input.foreach(ctx => {
-      val groupValues: NiceHasher = new NiceHasher(keyNames.map(ctx))
+      val groupValues = keyNames.map(key => Equivalent(ctx.apply(key)))
       val functions = result.getOrElseUpdate(groupValues, {
         val aggregateFunctions: Seq[AggregationFunction] = aggregations.map(_._2.createAggregationFunction).toSeq
         aggregateFunctions
