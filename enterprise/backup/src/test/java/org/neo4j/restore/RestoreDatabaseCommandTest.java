@@ -126,6 +126,8 @@ public class RestoreDatabaseCommandTest
         {
             assertEquals(fromNodeCount, Iterables.count( copiedDb.getAllNodes() ) );
         }
+
+        copiedDb.shutdown();
     }
 
     private void createDbAt( File fromPath, int nodesToCreate )
