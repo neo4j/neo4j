@@ -151,7 +151,8 @@ class EquivalentTest extends CypherFunSuite {
   // There are no ready made implementations of geographic points in the core API, so we need to
   // be able to accept any implementation of the interface here
   val crs = ImplementsJavaCRS("cartesian", "http://spatialreference.org/ref/sr-org/7203/", 7203)
-//  shouldMatch(ImplementsJavaPoint(32, 43, crs), GeographicPoint(32, 43, CRS.Cartesian))
+  shouldMatch(ImplementsJavaPoint(32, 43, crs), GeographicPoint(32, 43, CRS.Cartesian))
+  shouldMatch(ImplementsJavaPoint(32, 43, crs), ImplementsJavaPoint(32.0, 43.0, crs))
 
   private def shouldMatch(v1: Any, v2: Any) {
     test(testName(v1, v2, "=")) {

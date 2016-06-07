@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.commands.predicates
 
-import org.neo4j.cypher.internal.compiler.v3_1.GeographicPoint
+import org.neo4j.cypher.internal.compiler.v3_1.{CRS, GeographicPoint}
 import org.neo4j.graphdb.{Node, Path, Relationship}
 
 import scala.collection.JavaConverters._
@@ -89,7 +89,11 @@ object Equivalent {
     case a: TraversableOnce[_] => a.toVector.map(eager)
     case l: java.lang.Iterable[_] => l.asScala.toVector.map(eager)
     case l: GeographicPoint => l
-    case x: org.neo4j.graphdb.spatial.Point => ???
-    case x => throw new IllegalStateException(s"unknown value: (${x}) of type ${x.getClass})")
+    case x: org.neo4j.graphdb.spatial.Point =>
+      val crs = CRS.fromURL(x.getCRS.getHref)
+      val coordinates = x.getCoordinate.getCoordinate.asScala
+      GeographicPoint(coordinates.head, coordinates.last, crs)
+
+    case x => throw new IllegalStateException(s"unknown value: ($x) of type ${x.getClass})")
   }
 }
