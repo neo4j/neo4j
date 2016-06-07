@@ -44,9 +44,11 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -70,6 +72,15 @@ public class NeoStoreDataSourceRule extends ExternalResource
     public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
             PageCache pageCache, Map<String,String> additionalConfig, DatabaseHealth databaseHealth )
     {
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
+        NullLogService logService = NullLogService.getInstance();
+        return getDataSource( storeDir, fs, idGeneratorFactory, pageCache, additionalConfig, databaseHealth, logService );
+    }
+
+    public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
+            IdGeneratorFactory idGeneratorFactory, PageCache pageCache, Map<String,String> additionalConfig,
+            DatabaseHealth databaseHealth, LogService logService )
+    {
         if ( dataSource != null )
         {
             dataSource.stop();
@@ -82,8 +93,8 @@ public class NeoStoreDataSourceRule extends ExternalResource
 
         JobScheduler jobScheduler = mock( JobScheduler.class, RETURNS_MOCKS );
         Monitors monitors = new Monitors();
-        dataSource = new NeoStoreDataSource( storeDir, config, new DefaultIdGeneratorFactory( fs ),
-                NullLogService.getInstance(), mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ),
+        dataSource = new NeoStoreDataSource( storeDir, config, idGeneratorFactory,
+                logService, mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ),
                 dependencyResolverForNoIndexProvider(), mock( PropertyKeyTokenHolder.class ),
                 mock( LabelTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ), locks,
                 mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR,

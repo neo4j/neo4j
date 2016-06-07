@@ -492,7 +492,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             }
             catch ( Exception closeException )
             {
-                msgLog.error( "Couldn't close neostore after startup failure" );
+                msgLog.error( "Couldn't close neostore after startup failure", closeException );
             }
             throw Exceptions.launderedException( e );
         }
@@ -513,7 +513,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             }
             catch ( Exception closeException )
             {
-                msgLog.error( "Couldn't close neostore after startup failure" );
+                msgLog.error( "Couldn't close neostore after startup failure", closeException );
             }
             throw Exceptions.launderedException( e );
         }
