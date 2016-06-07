@@ -19,6 +19,7 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -43,9 +44,9 @@ import static org.neo4j.helpers.collection.Iterables.asList;
 class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatContext
 {
     // HeartbeatContext
-    private Set<InstanceId> failed = new HashSet<InstanceId>();
+    private Set<InstanceId> failed = new HashSet<>();
 
-    private Map<InstanceId, Set<InstanceId>> nodeSuspicions = new HashMap<InstanceId, Set<InstanceId>>();
+    private Map<InstanceId, Set<InstanceId>> nodeSuspicions = new HashMap<>();
 
     private Iterable<HeartbeatListener> heartBeatListeners = Listeners.newListeners();
 
@@ -61,8 +62,8 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
     }
 
     private HeartbeatContextImpl( InstanceId me, CommonContextState commonState, LogProvider logging, Timeouts timeouts,
-                          Set<InstanceId> failed, Map<InstanceId, Set<InstanceId>> nodeSuspicions,
-                          Iterable<HeartbeatListener> heartBeatListeners, Executor executor)
+                                  Set<InstanceId> failed, Map<InstanceId, Set<InstanceId>> nodeSuspicions,
+                                  Iterable<HeartbeatListener> heartBeatListeners, Executor executor )
     {
         super( me, commonState, logging, timeouts );
         this.failed = failed;
@@ -71,7 +72,7 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
         this.executor = executor;
     }
 
-    public void setCircularDependencies( ClusterContext clusterContext, LearnerContext learnerContext )
+    void setCircularDependencies( ClusterContext clusterContext, LearnerContext learnerContext )
     {
         this.clusterContext = clusterContext;
         this.learnerContext = learnerContext;
@@ -95,14 +96,7 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
         if ( !isFailed( node ) && failed.remove( node ) )
         {
             getLog( HeartbeatContext.class ).info( "Notifying listeners that instance " + node + " is alive" );
-            Listeners.notifyListeners( heartBeatListeners, executor, new Listeners.Notification<HeartbeatListener>()
-            {
-                @Override
-                public void notify( HeartbeatListener listener )
-                {
-                    listener.alive( node );
-                }
-            } );
+            Listeners.notifyListeners( heartBeatListeners, executor, listener -> listener.alive( node ) );
         }
 
         return suspected;
@@ -124,22 +118,77 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
         {
             getLog( HeartbeatContext.class ).info( "Notifying listeners that instance " + node + " is failed" );
             failed.add( node );
-            Listeners.notifyListeners( heartBeatListeners, executor, new Listeners.Notification<HeartbeatListener>()
-            {
-                @Override
-                public void notify( HeartbeatListener listener )
-                {
-                    listener.failed( node );
-                }
-            } );
+            Listeners.notifyListeners( heartBeatListeners, executor, listener -> listener.failed( node ) );
         }
+
+        if ( checkSuspectEverybody() )
+        {
+            getLog( HeartbeatContext.class ).warn( "All other instances are being suspected. Moving on to mark all other instances as failed" );
+            markAllOtherMembersAsFailed();
+        }
+    }
+
+    /*
+     * Alters state so that all instances are marked as failed. The state is changed so that any timeouts will not
+     * reset an instance to alive, allowing only for real heartbeats from an instance to mark it again as alive. This
+     * method is expected to be called in the event where all instances are being suspected, in which case a network
+     * partition has happened and we need to set ourselves in an unavailable state.
+     * The way this method achieves its task is by introducing suspicions from everybody about everybody. This mimics
+     * the normal way of doing things, effectively faking a series of suspicion messages from every other instance
+     * before connectivity was lost. As a result, when connectivity is restored, the state will be restored properly
+     * for every instance that actually manages to reconnect.
+     */
+    private void markAllOtherMembersAsFailed()
+    {
+        Set<InstanceId> everyoneElse = new HashSet<>();
+        for ( InstanceId instanceId : getMembers().keySet() )
+        {
+            if( !isMe( instanceId ) )
+            {
+                everyoneElse.add( instanceId );
+            }
+        }
+
+        for ( InstanceId instanceId : everyoneElse )
+        {
+            Set<InstanceId> instancesThisInstanceSuspects = new HashSet<>( everyoneElse );
+            instancesThisInstanceSuspects.remove( instanceId ); // obviously an instance cannot suspect itself
+            suspicions( instanceId, instancesThisInstanceSuspects );
+        }
+    }
+
+    /**
+     * Returns true iff this instance suspects every other instance currently in the cluster, except for itself.
+     */
+    private boolean checkSuspectEverybody()
+    {
+        Map<InstanceId, URI> allClusterMembers = getMembers();
+        Set<InstanceId> suspectedInstances = getSuspicionsFor( getMyId() );
+        int suspected = 0;
+        for ( InstanceId suspectedInstance : suspectedInstances )
+        {
+            if ( allClusterMembers.containsKey( suspectedInstance ) )
+            {
+                suspected++;
+            }
+        }
+
+        return suspected == allClusterMembers.size() - 1;
     }
 
     @Override
     public void suspicions( InstanceId from, Set<InstanceId> suspicions )
     {
-        // A failed instance might suspect instances which are alive so ignore it
-        if ( isFailed( from ) )
+        /*
+         * A thing to be careful about here is the case where a cluster member is marked as failed but it's not yet
+         * in the failed set. This implies the member has gathered enough suspicions to be marked as failed but is
+         * not yet marked as such. This can happen if there is a cluster partition containing only us, in which case
+         * markAllOthersAsFailed() will suspect everyone but not add them to failed (this happens here, further down).
+         * In this case, all suspicions must be processed, since after processing half, the other half of the cluster
+         * will be marked as failed (it has gathered enough suspicions) but we still need to process their messages, in
+         * order to mark as failed the other half.
+         */
+        if ( isFailed( from ) && !failed.contains( from ) )
         {
             getLog( HeartbeatContext.class ).info(
                     "Ignoring suspicions from failed instance " + from + ": " + Iterables.toString( suspicions, "," ) );
@@ -176,14 +225,7 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
             if ( isFailed( node ) && !failed.contains( node ) )
             {
                 failed.add( node );
-                Listeners.notifyListeners( heartBeatListeners, executor, new Listeners.Notification<HeartbeatListener>()
-                {
-                    @Override
-                    public void notify( HeartbeatListener listener )
-                    {
-                        listener.failed( node );
-                    }
-                } );
+                Listeners.notifyListeners( heartBeatListeners, executor, listener -> listener.failed( node ) );
             }
         }
     }
@@ -243,20 +285,20 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
     }
 
     /**
-     * Get the suspicions as reported by a specific server.
+     * Get all of the servers which suspect a specific member.
      *
-     * @param server which might suspect someone.
-     * @return a list of those members which server suspects.
+     * @param instanceId for the member of interest.
+     * @return a set of servers which suspect the specified member.
      */
     @Override
-    public List<InstanceId> getSuspicionsOf( InstanceId server )
+    public List<InstanceId> getSuspicionsOf( InstanceId instanceId )
     {
-        List<InstanceId> suspicions = new ArrayList<InstanceId>();
+        List<InstanceId> suspicions = new ArrayList<>();
         for ( InstanceId member : commonState.configuration().getMemberIds() )
         {
             Set<InstanceId> memberSuspicions = nodeSuspicions.get( member );
             if ( memberSuspicions != null && !failed.contains( member )
-                    && memberSuspicions.contains( server ) )
+                    && memberSuspicions.contains( instanceId ) )
             {
                 suspicions.add( member );
             }
@@ -266,16 +308,16 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
     }
 
     /**
-     * Get all of the servers which suspect a specific member.
+     * Get the suspicions as reported by a specific server.
      *
-     * @param uri for the member of interest.
-     * @return a set of servers which suspect the specified member.
+     * @param instanceId which might suspect someone.
+     * @return a list of those members which server suspects.
      */
     @Override
-    public Set<InstanceId> getSuspicionsFor( InstanceId uri )
+    public Set<InstanceId> getSuspicionsFor( InstanceId instanceId )
     {
-        Set<org.neo4j.cluster.InstanceId> suspicions = suspicionsFor( uri );
-        return new HashSet<org.neo4j.cluster.InstanceId>( suspicions );
+        Set<org.neo4j.cluster.InstanceId> suspicions = suspicionsFor( instanceId );
+        return new HashSet<>( suspicions );
     }
 
     private Set<InstanceId> suspicionsFor( InstanceId uri )
@@ -283,7 +325,7 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
         Set<InstanceId> serverSuspicions = nodeSuspicions.get( uri );
         if ( serverSuspicions == null )
         {
-            serverSuspicions = new HashSet<InstanceId>();
+            serverSuspicions = new HashSet<>();
             nodeSuspicions.put( uri, serverSuspicions );
         }
         return serverSuspicions;
@@ -307,11 +349,12 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
         return learnerContext.getLastLearnedInstanceId();
     }
 
-    public HeartbeatContextImpl snapshot( CommonContextState commonStateSnapshot, LogProvider logging, Timeouts timeouts,
+    public HeartbeatContextImpl snapshot( CommonContextState commonStateSnapshot, LogProvider logging, Timeouts
+            timeouts,
                                           Executor executor )
     {
-        return new HeartbeatContextImpl( me, commonStateSnapshot, logging, timeouts, new HashSet<>(failed),
-                new HashMap<>(nodeSuspicions), new ArrayList<>( asList(heartBeatListeners)), executor );
+        return new HeartbeatContextImpl( me, commonStateSnapshot, logging, timeouts, new HashSet<>( failed ),
+                new HashMap<>( nodeSuspicions ), new ArrayList<>( asList( heartBeatListeners ) ), executor );
     }
 
     @Override

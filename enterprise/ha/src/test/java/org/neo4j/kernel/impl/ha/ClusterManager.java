@@ -1338,7 +1338,7 @@ public class ClusterManager
             }
             String state = stateToString( this );
             throw new IllegalStateException( format(
-                    "Awaited condition never met, waited %s secondes for %s:%n%s", maxSeconds, predicate, state ) );
+                    "Awaited condition never met, waited %s seconds for %s:%n%s", maxSeconds, predicate, state ) );
         }
 
         /**

@@ -274,6 +274,13 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                 log.debug( "Got memberIsFailed(" + instanceId + ") and cluster lost quorum to continue, moved to "
                         + state + " from " + oldState );
             }
+            else if ( instanceId.equals( context.getElectedMasterId() ) && state == HighAvailabilityMemberState.SLAVE )
+            {
+                HighAvailabilityMemberState oldState = state;
+                changeStateToPending();
+                log.debug( "Got memberIsFailed(" + instanceId + ") which was the master and i am a slave, moved to "
+                        + state + " from " + oldState );
+            }
             else
             {
                 log.debug( "Got memberIsFailed(" + instanceId + ")" );
