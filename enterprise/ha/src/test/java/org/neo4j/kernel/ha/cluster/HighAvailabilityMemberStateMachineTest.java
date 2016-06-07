@@ -26,8 +26,10 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -81,6 +83,8 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
@@ -185,7 +189,7 @@ public class HighAvailabilityMemberStateMachineTest
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
 
         AvailabilityGuard guard = mock( AvailabilityGuard.class );
-        ObservedClusterMembers members = mockClusterMembers( me, other );
+        ObservedClusterMembers members = mockClusterMembers( me, emptyList(), singletonList( other ) );
 
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
         ClusterMemberListenerContainer memberListenerContainer = mockAddClusterMemberListener( events );
@@ -213,14 +217,15 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void whenInSlaveStateLosingQuorumShouldPutInPending() throws Throwable
+    public void whenInSlaveStateLosingOtherSlaveShouldNotPutInPending() throws Throwable
     {
         // Given
         InstanceId me = new InstanceId( 1 );
-        InstanceId other = new InstanceId( 2 );
+        InstanceId master = new InstanceId( 2 );
+        InstanceId otherSlave = new InstanceId( 3 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
         AvailabilityGuard guard = mock( AvailabilityGuard.class );
-        ObservedClusterMembers members = mockClusterMembers( me, other );
+        ObservedClusterMembers members = mockClusterMembers( me, singletonList( master ), singletonList( otherSlave ) );
 
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
         ClusterMemberListenerContainer memberListenerContainer = mockAddClusterMemberListener( events );
@@ -233,13 +238,51 @@ public class HighAvailabilityMemberStateMachineTest
         stateMachine.addHighAvailabilityMemberListener( probe );
 
         // Send it to MASTER
-        memberListener.memberIsAvailable( MASTER, other, URI.create( "ha://whatever" ), StoreId.DEFAULT );
-        memberListener.memberIsAvailable( SLAVE, me, URI.create( "ha://whatever2" ), StoreId.DEFAULT );
+        memberListener.memberIsAvailable( MASTER, master, URI.create( "ha://whatever" ), StoreId.DEFAULT );
+        memberListener.memberIsAvailable( SLAVE, me, URI.create( "ha://whatever3" ), StoreId.DEFAULT );
+        memberListener.memberIsAvailable( SLAVE, otherSlave, URI.create( "ha://whatever2" ), StoreId.DEFAULT );
 
         assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.SLAVE ) );
 
         // When
-        memberListener.memberIsFailed( new InstanceId( 2 ) );
+        memberListener.memberIsFailed( otherSlave );
+
+        // Then
+        assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.SLAVE ) );
+        assertThat( probe.instanceStops, is( false ) );
+    }
+
+    @Test
+    public void whenInSlaveStateLosingMasterShouldPutInPending() throws Throwable
+    {
+        // Given
+        InstanceId me = new InstanceId( 1 );
+        InstanceId master = new InstanceId( 2 );
+        InstanceId otherSlave = new InstanceId( 3 );
+        HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
+        AvailabilityGuard guard = mock( AvailabilityGuard.class );
+        ObservedClusterMembers members = mockClusterMembers( me, singletonList( otherSlave ), singletonList( master ) );
+
+        ClusterMemberEvents events = mock( ClusterMemberEvents.class );
+        ClusterMemberListenerContainer memberListenerContainer = mockAddClusterMemberListener( events );
+
+        HighAvailabilityMemberStateMachine stateMachine = buildMockedStateMachine( context, events, members, guard );
+
+        stateMachine.init();
+        ClusterMemberListener memberListener = memberListenerContainer.get();
+        HAStateChangeListener probe = new HAStateChangeListener();
+        stateMachine.addHighAvailabilityMemberListener( probe );
+
+        // Send it to MASTER
+        memberListener.coordinatorIsElected( master );
+        memberListener.memberIsAvailable( MASTER, master, URI.create( "ha://whatever" ), StoreId.DEFAULT );
+        memberListener.memberIsAvailable( SLAVE, me, URI.create( "ha://whatever3" ), StoreId.DEFAULT );
+        memberListener.memberIsAvailable( SLAVE, otherSlave, URI.create( "ha://whatever2" ), StoreId.DEFAULT );
+
+        assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.SLAVE ) );
+
+        // When
+        memberListener.memberIsFailed( master );
 
         // Then
         assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
@@ -255,7 +298,7 @@ public class HighAvailabilityMemberStateMachineTest
         InstanceId other = new InstanceId( 2 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
         AvailabilityGuard guard = mock( AvailabilityGuard.class );
-        ObservedClusterMembers members = mockClusterMembers( me, other );
+        ObservedClusterMembers members = mockClusterMembers( me, emptyList(), singletonList( other ) );
 
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
         ClusterMemberListenerContainer memberListenerContainer = mockAddClusterMemberListener( events );
@@ -289,7 +332,7 @@ public class HighAvailabilityMemberStateMachineTest
         InstanceId other = new InstanceId( 2 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
         AvailabilityGuard guard = mock( AvailabilityGuard.class );
-        ObservedClusterMembers members = mockClusterMembers( me, other );
+        ObservedClusterMembers members = mockClusterMembers( me, emptyList(), singletonList( other ) );
 
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
         ClusterMemberListenerContainer memberListenerContainer = mockAddClusterMemberListener( events );
@@ -526,19 +569,39 @@ public class HighAvailabilityMemberStateMachineTest
         haModeSwitcher.shutdown();
     }
 
-    private ObservedClusterMembers mockClusterMembers( InstanceId me, InstanceId other )
+    private ObservedClusterMembers mockClusterMembers( InstanceId me, List<InstanceId> alive, List<InstanceId> failed )
     {
         ObservedClusterMembers members = mock( ObservedClusterMembers.class );
 
         // we cannot set outside of the package the isAlive to return false. So do it with a mock
-        ClusterMember otherMember = mock( ClusterMember.class );
-        when( otherMember.getInstanceId() ).thenReturn( other );
-        when( otherMember.isAlive() ).thenReturn( false );
+        List<ClusterMember> aliveMembers = new ArrayList<>( alive.size() );
+        List<ClusterMember> failedMembers = new ArrayList<>( failed.size() );
+        for ( InstanceId instanceId : alive )
+        {
+            ClusterMember otherMember = mock( ClusterMember.class );
+            when( otherMember.getInstanceId() ).thenReturn( instanceId );
+            // the failed argument tells us which instance should be marked as failed
+            when( otherMember.isAlive() ).thenReturn( true );
+            aliveMembers.add( otherMember );
+        }
+
+        for ( InstanceId instanceId : failed )
+        {
+            ClusterMember otherMember = mock( ClusterMember.class );
+            when( otherMember.getInstanceId() ).thenReturn( instanceId );
+            // the failed argument tells us which instance should be marked as failed
+            when( otherMember.isAlive() ).thenReturn( false );
+            failedMembers.add( otherMember );
+        }
 
         ClusterMember thisMember = new ClusterMember( me );
+        aliveMembers.add( thisMember );
 
-        when( members.getMembers() ).thenReturn( Arrays.asList( otherMember, thisMember ) );
-        when( members.getAliveMembers() ).thenReturn( Collections.singleton( thisMember ) );
+        List<ClusterMember> allMembers = new ArrayList<>();
+        allMembers.addAll( aliveMembers ); // thisMember is in aliveMembers
+        allMembers.addAll( failedMembers );
+        when( members.getMembers() ).thenReturn( allMembers );
+        when( members.getAliveMembers() ).thenReturn( aliveMembers );
 
         return members;
     }
@@ -556,7 +619,7 @@ public class HighAvailabilityMemberStateMachineTest
         doAnswer( invocation -> {
             listenerContainer.set( (ClusterMemberListener) invocation.getArguments()[0] );
             return null;
-        } ).when( events ).addClusterMemberListener( Matchers.<ClusterMemberListener>any() );
+        } ).when( events ).addClusterMemberListener( Matchers.any() );
         return listenerContainer;
     }
 

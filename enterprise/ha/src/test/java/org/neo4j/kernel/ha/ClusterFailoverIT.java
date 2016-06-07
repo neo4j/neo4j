@@ -36,7 +36,7 @@ import org.neo4j.test.rule.TargetDirectory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 @RunWith( Parameterized.class )
-public class TestFailover
+public class ClusterFailoverIT
 {
     @Rule
     public LoggerRule logger = new LoggerRule();
@@ -57,7 +57,7 @@ public class TestFailover
         });
     }
 
-    public TestFailover( int clusterSize )
+    public ClusterFailoverIT( int clusterSize )
     {
         this.clusterSize = clusterSize;
     }

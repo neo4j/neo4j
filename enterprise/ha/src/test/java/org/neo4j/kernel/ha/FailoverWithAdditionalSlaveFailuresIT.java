@@ -42,7 +42,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 
 @RunWith( Parameterized.class )
-public class TestFailoverWithAdditionalSlaveFailures
+public class FailoverWithAdditionalSlaveFailuresIT
 {
     @Rule
     public LoggerRule logger = new LoggerRule();
@@ -71,7 +71,7 @@ public class TestFailoverWithAdditionalSlaveFailures
         });
     }
 
-    public TestFailoverWithAdditionalSlaveFailures( int clusterSize, int[] slavesToFail )
+    public FailoverWithAdditionalSlaveFailuresIT( int clusterSize, int[] slavesToFail )
     {
         this.clusterSize = clusterSize;
         this.slavesToFail = slavesToFail;

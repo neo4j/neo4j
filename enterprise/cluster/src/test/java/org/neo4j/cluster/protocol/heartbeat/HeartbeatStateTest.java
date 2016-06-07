@@ -19,12 +19,12 @@
  */
 package org.neo4j.cluster.protocol.heartbeat;
 
+import java.net.URI;
+import java.util.concurrent.Executor;
+
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
-
-import java.net.URI;
-import java.util.concurrent.Executor;
 
 import org.neo4j.cluster.DelayedDirectExecutor;
 import org.neo4j.cluster.InstanceId;
@@ -57,6 +57,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class HeartbeatStateTest
@@ -66,26 +67,27 @@ public class HeartbeatStateTest
     {
         // Given
         InstanceId instanceId = new InstanceId( 1 );
-        HeartbeatState heartbeat= HeartbeatState.heartbeat;
-        ClusterConfiguration configuration = new ClusterConfiguration("whatever", NullLogProvider.getInstance(),
-                                                                       "cluster://1", "cluster://2" );
-        configuration.joined( instanceId, URI.create("cluster://1" ) );
-        configuration.joined( new InstanceId( 2 ), URI.create("cluster://2" ));
+        HeartbeatState heartbeat = HeartbeatState.heartbeat;
+        ClusterConfiguration configuration = new ClusterConfiguration( "whatever", NullLogProvider.getInstance(),
+                "cluster://1", "cluster://2" );
+        configuration.joined( instanceId, URI.create( "cluster://1" ) );
+        configuration.joined( new InstanceId( 2 ), URI.create( "cluster://2" ) );
 
-        MultiPaxosContext context = new MultiPaxosContext( instanceId, 10, Iterables.<ElectionRole, ElectionRole>iterable(
-                        new ElectionRole( "coordinator" ) ), configuration,
-                        Mockito.mock( Executor.class ), NullLogProvider.getInstance(),
-                        Mockito.mock( ObjectInputStreamFactory.class), Mockito.mock( ObjectOutputStreamFactory.class),
-                        Mockito.mock( AcceptorInstanceStore.class), Mockito.mock( Timeouts.class),
-                        mock( ElectionCredentialsProvider.class) );
+        MultiPaxosContext context = new MultiPaxosContext( instanceId, 10, Iterables.iterable(
+                new ElectionRole( "coordinator" ) ), configuration,
+                Mockito.mock( Executor.class ), NullLogProvider.getInstance(),
+                Mockito.mock( ObjectInputStreamFactory.class ), Mockito.mock( ObjectOutputStreamFactory.class ),
+                Mockito.mock( AcceptorInstanceStore.class ), Mockito.mock( Timeouts.class ),
+                mock( ElectionCredentialsProvider.class ) );
 
         HeartbeatContext heartbeatContext = context.getHeartbeatContext();
         Message received = Message.internal( HeartbeatMessage.suspicions,
-                new HeartbeatMessage.SuspicionsState( Iterables.asSet( Iterables.<InstanceId, InstanceId>iterable( instanceId ) ) ) );
+                new HeartbeatMessage.SuspicionsState( Iterables.asSet( Iterables.<InstanceId, InstanceId>iterable(
+                        instanceId ) ) ) );
         received.setHeader( Message.FROM, "cluster://2" ).setHeader( Message.INSTANCE_ID, "2" );
 
         // When
-        heartbeat.handle( heartbeatContext, received, mock( MessageHolder.class) );
+        heartbeat.handle( heartbeatContext, received, mock( MessageHolder.class ) );
 
         // Then
         assertThat( heartbeatContext.getSuspicionsOf( instanceId ).size(), equalTo( 0 ) );
@@ -97,26 +99,27 @@ public class HeartbeatStateTest
         // Given
         InstanceId myId = new InstanceId( 1 );
         InstanceId foreignId = new InstanceId( 3 );
-        HeartbeatState heartbeat= HeartbeatState.heartbeat;
-        ClusterConfiguration configuration = new ClusterConfiguration("whatever", NullLogProvider.getInstance(),
-                                                                      "cluster://1", "cluster://2" );
-        configuration.joined( myId, URI.create("cluster://1" ) );
-        configuration.joined( new InstanceId( 2 ), URI.create("cluster://2" ));
+        HeartbeatState heartbeat = HeartbeatState.heartbeat;
+        ClusterConfiguration configuration = new ClusterConfiguration( "whatever", NullLogProvider.getInstance(),
+                "cluster://1", "cluster://2" );
+        configuration.joined( myId, URI.create( "cluster://1" ) );
+        configuration.joined( new InstanceId( 2 ), URI.create( "cluster://2" ) );
 
-        MultiPaxosContext context = new MultiPaxosContext( myId, 10, Iterables.<ElectionRole, ElectionRole>iterable(
-                        new ElectionRole( "coordinator" ) ), configuration,
-                        Mockito.mock( Executor.class ),  NullLogProvider.getInstance(),
-                        Mockito.mock( ObjectInputStreamFactory.class), Mockito.mock( ObjectOutputStreamFactory.class),
-                        Mockito.mock( AcceptorInstanceStore.class), Mockito.mock( Timeouts.class),
-                        mock( ElectionCredentialsProvider.class) );
+        MultiPaxosContext context = new MultiPaxosContext( myId, 10, Iterables.iterable(
+                new ElectionRole( "coordinator" ) ), configuration,
+                Mockito.mock( Executor.class ), NullLogProvider.getInstance(),
+                Mockito.mock( ObjectInputStreamFactory.class ), Mockito.mock( ObjectOutputStreamFactory.class ),
+                Mockito.mock( AcceptorInstanceStore.class ), Mockito.mock( Timeouts.class ),
+                mock( ElectionCredentialsProvider.class ) );
 
         HeartbeatContext heartbeatContext = context.getHeartbeatContext();
         Message received = Message.internal( HeartbeatMessage.suspicions,
-                new HeartbeatMessage.SuspicionsState( Iterables.asSet( Iterables.<InstanceId, InstanceId>iterable( myId, foreignId ) ) ) );
+                new HeartbeatMessage.SuspicionsState( Iterables.asSet( Iterables.<InstanceId, InstanceId>iterable(
+                        myId, foreignId ) ) ) );
         received.setHeader( Message.FROM, "cluster://2" ).setHeader( Message.INSTANCE_ID, "2" );
 
         // When
-        heartbeat.handle( heartbeatContext, received, mock( MessageHolder.class) );
+        heartbeat.handle( heartbeatContext, received, mock( MessageHolder.class ) );
 
         // Then
         assertThat( heartbeatContext.getSuspicionsOf( myId ).size(), equalTo( 0 ) );
@@ -128,22 +131,22 @@ public class HeartbeatStateTest
     {
         // Given
         InstanceId instanceId = new InstanceId( 1 );
-        HeartbeatState heartbeat= HeartbeatState.heartbeat;
+        HeartbeatState heartbeat = HeartbeatState.heartbeat;
         ClusterConfiguration configuration = new ClusterConfiguration( "whatever", NullLogProvider.getInstance(),
                 "cluster://1", "cluster://2" );
-        configuration.joined( instanceId, URI.create("cluster://1" ) );
+        configuration.joined( instanceId, URI.create( "cluster://1" ) );
         InstanceId otherInstance = new InstanceId( 2 );
-        configuration.joined( otherInstance, URI.create("cluster://2" ));
+        configuration.joined( otherInstance, URI.create( "cluster://2" ) );
 
         MultiPaxosContext context = new MultiPaxosContext(
                 instanceId, 10,
-                Iterables.<ElectionRole,ElectionRole>iterable( new ElectionRole( "coordinator" ) ),
+                Iterables.iterable( new ElectionRole( "coordinator" ) ),
                 configuration,
                 Mockito.mock( Executor.class ),
                 NullLogProvider.getInstance(),
-                Mockito.mock( ObjectInputStreamFactory.class),
-                Mockito.mock( ObjectOutputStreamFactory.class),
-                Mockito.mock( AcceptorInstanceStore.class),
+                Mockito.mock( ObjectInputStreamFactory.class ),
+                Mockito.mock( ObjectOutputStreamFactory.class ),
+                Mockito.mock( AcceptorInstanceStore.class ),
                 Mockito.mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class ) );
 
@@ -182,7 +185,7 @@ public class HeartbeatStateTest
         MultiPaxosContext context = new MultiPaxosContext(
                 instanceId,
                 10,
-                Iterables.<ElectionRole,ElectionRole>iterable( new ElectionRole( "coordinator" ) ),
+                Iterables.iterable( new ElectionRole( "coordinator" ) ),
                 configuration,
                 mock( Executor.class ),
                 internalLog,
@@ -199,14 +202,7 @@ public class HeartbeatStateTest
                 mock( MessageSender.class ),
                 timeouts,
                 mock( DelayedDirectExecutor.class ),
-                new Executor()
-                {
-                    @Override
-                    public void execute( Runnable command )
-                    {
-                        command.run();
-                    }
-                },
+                command -> command.run(),
                 instanceId );
         stateMachines.addStateMachine(
                 new StateMachine( context.getHeartbeatContext(), HeartbeatMessage.class, HeartbeatState.start,

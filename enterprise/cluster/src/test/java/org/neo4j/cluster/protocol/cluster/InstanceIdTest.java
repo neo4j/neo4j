@@ -44,10 +44,10 @@ public class InstanceIdTest
     {
         testCluster( new int[] { 1, 1 }, new VerifyInstanceConfiguration[]
                 {
-                new VerifyInstanceConfiguration( Collections.<URI>emptyList(), Collections.<String, InstanceId>emptyMap(),
-                                        Collections.<InstanceId>emptySet() ),
-                new VerifyInstanceConfiguration( Collections.<URI>emptyList(), Collections.<String, InstanceId>emptyMap(),
-                                        Collections.<InstanceId>emptySet() )
+                new VerifyInstanceConfiguration( Collections.emptyList(), Collections.emptyMap(),
+                        Collections.emptySet() ),
+                new VerifyInstanceConfiguration( Collections.emptyList(), Collections.emptyMap(),
+                        Collections.emptySet() )
                 },
                 DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 600 ).
@@ -61,21 +61,21 @@ public class InstanceIdTest
     public void nodeTriesToJoinRunningClusterWithExistingServerId() throws InterruptedException, ExecutionException,
             TimeoutException, URISyntaxException
     {
-        List<URI> correctMembers = new ArrayList<URI>();
+        List<URI> correctMembers = new ArrayList<>();
         correctMembers.add( URI.create( "server1" ) );
         correctMembers.add( URI.create( "server2" ) );
         correctMembers.add( URI.create( "server3" ) );
 
-        Map<String, InstanceId> roles = new HashMap<String, InstanceId>();
+        Map<String, InstanceId> roles = new HashMap<>();
         roles.put( "coordinator", new InstanceId( 1 ) );
 
         testCluster( new int[] {1, 2, 3, 3},
                 new VerifyInstanceConfiguration[]{
-                new VerifyInstanceConfiguration( correctMembers, roles, Collections.<InstanceId>emptySet() ),
-                new VerifyInstanceConfiguration( correctMembers, roles, Collections.<InstanceId>emptySet() ),
-                new VerifyInstanceConfiguration( correctMembers, roles, Collections.<InstanceId>emptySet() ),
-                new VerifyInstanceConfiguration( Collections.<URI>emptyList(), Collections.<String, InstanceId>emptyMap(),
-                        Collections.<InstanceId>emptySet() )}, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
+                new VerifyInstanceConfiguration( correctMembers, roles, Collections.emptySet() ),
+                new VerifyInstanceConfiguration( correctMembers, roles, Collections.emptySet() ),
+                new VerifyInstanceConfiguration( correctMembers, roles, Collections.emptySet() ),
+                new VerifyInstanceConfiguration( Collections.emptyList(), Collections.emptyMap(),
+                        Collections.emptySet() )}, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 600 ).
                 join( 100, 1, 1 ).
                 join( 100, 2, 1 ).
@@ -89,34 +89,36 @@ public class InstanceIdTest
     public void substituteFailedNode() throws InterruptedException, ExecutionException, TimeoutException,
             URISyntaxException
     {
-        List<URI> correctMembers = new ArrayList<URI>();
+        List<URI> correctMembers = new ArrayList<>();
         correctMembers.add( URI.create( "server1" ) );
         correctMembers.add( URI.create( "server2" ) );
         correctMembers.add( URI.create( "server4" ) );
 
-        List<URI> wrongMembers = new ArrayList<URI>();
+        List<URI> wrongMembers = new ArrayList<>();
         wrongMembers.add( URI.create( "server1" ) );
         wrongMembers.add( URI.create( "server2" ) );
         wrongMembers.add( URI.create( "server3" ) );
 
-        Map<String, InstanceId> roles = new HashMap<String, InstanceId>();
+        Map<String, InstanceId> roles = new HashMap<>();
         roles.put( "coordinator", new InstanceId( 1 ) );
 
-        Set<InstanceId> failed = new HashSet<InstanceId>();
+        Set<InstanceId> clusterMemberFailed = new HashSet<>();
+        Set<InstanceId> isolatedMemberFailed = new HashSet<>();
+        isolatedMemberFailed.add( new InstanceId( 1 ) ); // will never receive heartbeats again from 1,2 so they are failed
+        isolatedMemberFailed.add( new InstanceId( 2 ) );
 
         testCluster( new int[]{ 1, 2, 3, 3 },
                 new VerifyInstanceConfiguration[]{
-                        new VerifyInstanceConfiguration( correctMembers, roles, failed ),
-                        new VerifyInstanceConfiguration( correctMembers, roles, failed ),
-                        new VerifyInstanceConfiguration( wrongMembers, roles, Collections.<InstanceId>emptySet() ),
-                        new VerifyInstanceConfiguration( correctMembers, roles, failed )},
+                        new VerifyInstanceConfiguration( correctMembers, roles, clusterMemberFailed ),
+                        new VerifyInstanceConfiguration( correctMembers, roles, clusterMemberFailed ),
+                        new VerifyInstanceConfiguration( wrongMembers, roles, isolatedMemberFailed ),
+                        new VerifyInstanceConfiguration( correctMembers, roles, clusterMemberFailed )},
                 DEFAULT_NETWORK(),
                 new ClusterTestScriptDSL().
                 rounds( 8000 ).
                 join( 100, 1, 1 ).
                 join( 100, 2, 1 ).
                 join( 100, 3, 1 ).
-//                        assertThat(electionHappened(1, "coordinator")).
                 down( 3000, 3 ).
                 join( 1000, 4, 1, 2, 3 )
         );
@@ -126,27 +128,30 @@ public class InstanceIdTest
     public void substituteFailedNodeAndFailedComesOnlineAgain() throws InterruptedException, ExecutionException, TimeoutException,
             URISyntaxException
     {
-        List<URI> correctMembers = new ArrayList<URI>();
+        List<URI> correctMembers = new ArrayList<>();
         correctMembers.add( URI.create( "server1" ) );
         correctMembers.add( URI.create( "server2" ) );
         correctMembers.add( URI.create( "server4" ) );
 
-        List<URI> badMembers = new ArrayList<URI>();
+        List<URI> badMembers = new ArrayList<>();
         badMembers.add( URI.create( "server1" ) );
         badMembers.add( URI.create( "server2" ) );
         badMembers.add( URI.create( "server3" ) );
 
-        Map<String, InstanceId> roles = new HashMap<String, InstanceId>();
+        Map<String, InstanceId> roles = new HashMap<>();
         roles.put( "coordinator", new InstanceId( 1 ) );
 
-        Set<InstanceId> failed = new HashSet<InstanceId>();
+        Set<InstanceId> clusterMemberFailed = new HashSet<>(); // no failures
+        Set<InstanceId> isolatedMemberFailed = new HashSet<>();
+        isolatedMemberFailed.add( new InstanceId( 1 ) ); // will never receive heartbeats again from 1,2 so they are failed
+        isolatedMemberFailed.add( new InstanceId( 2 ) );
 
         testCluster( new int[]{1, 2, 3, 3},
                 new VerifyInstanceConfiguration[]{
-                        new VerifyInstanceConfiguration( correctMembers, roles, failed ),
-                        new VerifyInstanceConfiguration( correctMembers, roles, failed ),
-                        new VerifyInstanceConfiguration( badMembers, roles, failed ),
-                        new VerifyInstanceConfiguration( correctMembers, roles, failed )},
+                        new VerifyInstanceConfiguration( correctMembers, roles, clusterMemberFailed ),
+                        new VerifyInstanceConfiguration( correctMembers, roles, clusterMemberFailed ),
+                        new VerifyInstanceConfiguration( badMembers, roles, isolatedMemberFailed ),
+                        new VerifyInstanceConfiguration( correctMembers, roles, clusterMemberFailed )},
                 DEFAULT_NETWORK(),
                 new ClusterTestScriptDSL().
                         rounds( 800 ).
