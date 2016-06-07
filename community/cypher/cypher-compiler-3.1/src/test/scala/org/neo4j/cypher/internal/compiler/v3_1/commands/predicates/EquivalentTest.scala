@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_1.commands.predicates
 import java.util.Arrays.asList
 import java.util.Collections.singletonMap
 
+import org.neo4j.cypher.internal.compiler.v3_1.{CRS, GeographicPoint}
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
-
 
 class EquivalentTest extends CypherFunSuite {
   shouldMatch(1.0, 1L)
@@ -137,6 +137,9 @@ class EquivalentTest extends CypherFunSuite {
   shouldMatch(Map("a" -> 42), singletonMap("a", 42.0))
   shouldMatch(singletonMap("a", asList(41.0, 42.0)), Map("a" -> List(41,42)))
   shouldMatch(Map("a" -> singletonMap("x", asList(41.0, 'c'.asInstanceOf[Character]))), singletonMap("a", Map("x" -> List(41, "c"))))
+
+  shouldMatch(GeographicPoint(32, 43, CRS.Cartesian), GeographicPoint(32, 43, CRS.Cartesian))
+  // We should test that GeoPoints returned by Cypher are equivalent to internal point representations
 
   private def shouldMatch(v1: Any, v2: Any) {
     test(testName(v1, v2, "=")) {
