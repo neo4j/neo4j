@@ -40,7 +40,7 @@
     "karma-jasmine": "^0.3.5",
     "karma-junit-reporter": "^0.2.2",
     "karma-ng-scenario": "^0.1.0",
-    "karma-phantomjs-launcher": "^0.1.4",
+    "karma-phantomjs-launcher": "^1.0.0",
     "karma-requirejs": "^0.2.2",
     "karma-sauce-launcher": "^0.2.11",
     "matchdep": "^0.3.0",
