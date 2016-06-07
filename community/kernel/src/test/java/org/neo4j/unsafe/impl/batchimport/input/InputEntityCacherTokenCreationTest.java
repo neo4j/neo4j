@@ -37,124 +37,128 @@ import static java.lang.Math.abs;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class InputEntityCacherTest
+public class InputEntityCacherTokenCreationTest
 {
 
+    private static final int SUPPORTED_NUMBER_OF_TOKENS = 10;
+    private static final int UNSUPPORTED_NUMER_OF_TOKENS = SUPPORTED_NUMBER_OF_TOKENS + 1;
     private static final AtomicInteger uniqueIdGenerator = new AtomicInteger( 10 );
     private final ExpectedException expectedException = ExpectedException.none();
     private final RandomRule randomRule = new RandomRule();
+
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( randomRule ).around( expectedException );
 
     @Test
     public void notAllowCreationOfUnsupportedNumberOfProperties() throws IOException
     {
-        initExpectedException();
-        cacheNodeWithProperties(10, 10);
+        initExpectedException( SUPPORTED_NUMBER_OF_TOKENS );
+        cacheNodeWithProperties( UNSUPPORTED_NUMER_OF_TOKENS, SUPPORTED_NUMBER_OF_TOKENS );
     }
 
     @Test
     public void allowCreationOfSupportedNumberOfProperties() throws IOException
     {
-        cacheNodeWithProperties(9, 10);
+        cacheNodeWithProperties( SUPPORTED_NUMBER_OF_TOKENS, SUPPORTED_NUMBER_OF_TOKENS );
     }
 
     @Test
     public void notAllowCreationOfUnsupportedNumberOfGroups() throws IOException
     {
-        initExpectedException();
-        cacheGroups(10, 10);
+        initExpectedException( SUPPORTED_NUMBER_OF_TOKENS );
+        cacheGroups( UNSUPPORTED_NUMER_OF_TOKENS, SUPPORTED_NUMBER_OF_TOKENS );
     }
 
     @Test
     public void allowCreationOfSupportedNumberOfGroups() throws IOException
     {
-        cacheGroups(9, 10);
+        cacheGroups( SUPPORTED_NUMBER_OF_TOKENS, SUPPORTED_NUMBER_OF_TOKENS );
     }
 
     @Test
     public void notAllowCreationOfUnsupportedNumberOfLabels() throws IOException
     {
-        initExpectedException();
-        cacheLabels(10, 10);
+        initExpectedException( SUPPORTED_NUMBER_OF_TOKENS );
+        cacheLabels( UNSUPPORTED_NUMER_OF_TOKENS, SUPPORTED_NUMBER_OF_TOKENS );
     }
 
     @Test
     public void allowCreationOfSupportedNumberOfLabels() throws IOException
     {
-        cacheLabels(9, 10);
+        cacheLabels( SUPPORTED_NUMBER_OF_TOKENS, SUPPORTED_NUMBER_OF_TOKENS );
     }
 
     @Test
     public void notAllowCreationOfUnsupportedNumberOfRelationshipTypes() throws IOException
     {
-        initExpectedException();
-        cacheRelationship( 10, 10 );
+        initExpectedException( SUPPORTED_NUMBER_OF_TOKENS );
+        cacheRelationship( UNSUPPORTED_NUMER_OF_TOKENS, SUPPORTED_NUMBER_OF_TOKENS );
     }
 
     @Test
     public void allowCreationOfSupportedNumberOfRelationshipTypes() throws IOException
     {
-        cacheRelationship( 9, 10 );
+        cacheRelationship( SUPPORTED_NUMBER_OF_TOKENS, SUPPORTED_NUMBER_OF_TOKENS );
     }
 
     private void cacheRelationship( int iterations, int maxNumberOfRelationshipTypes ) throws IOException
     {
         RecordFormats recordFormats = mockRecordFormats( 1000, 1000, maxNumberOfRelationshipTypes, 1000 );
 
-        try ( TestRelationshipEntityCacher cacher = getRelationshipCacher( recordFormats ) )
+        try ( InputRelationshipCacher cacher = getRelationshipCacher( recordFormats ) )
         {
-            for ( int i = 0; i <= iterations; i++ )
+            for ( int i = 0; i < iterations; i++ )
             {
                 cacher.writeEntity( generateRelationship( getRandoms() ) );
             }
         }
     }
 
-    private void cacheLabels(int iterations, int maxNumberOfLabels ) throws IOException
+    private void cacheLabels( int iterations, int maxNumberOfLabels ) throws IOException
     {
         RecordFormats recordFormats = mockRecordFormats( 1000, maxNumberOfLabels, 1000, 1000 );
 
-        try ( TestNodeEntityCacher cacher = getNodeCacher( recordFormats ) )
+        try ( InputNodeCacher cacher = getNodeCacher( recordFormats ) )
         {
-            for ( int i = 0; i <= iterations; i++ )
+            for ( int i = 0; i < iterations; i++ )
             {
-                cacher.writeLabelDiff( (byte) 0, randomLabels( ), new String[]{} );
+                cacher.writeLabelDiff( (byte) 0, randomLabels(), new String[]{} );
             }
         }
     }
 
-    private void cacheGroups(int iterations, int maxNumberOfGroups) throws IOException
+    private void cacheGroups( int iterations, int maxNumberOfGroups ) throws IOException
     {
         RecordFormats recordFormats = mockRecordFormats( 1000, 1000, 1000, maxNumberOfGroups );
 
         try ( TestInputEntityCacher cacher = getEntityCacher( recordFormats ) )
         {
-            for ( int i = 0; i <= iterations; i++ )
+            for ( int i = 0; i < iterations; i++ )
             {
                 cacher.writeGroup( generateGroup(), i );
             }
         }
     }
 
-    private void cacheNodeWithProperties(int iterations, int maxNumberOfProperties) throws IOException
+    private void cacheNodeWithProperties( int iterations, int maxNumberOfProperties ) throws IOException
     {
         RecordFormats recordFormats = mockRecordFormats( maxNumberOfProperties, 1000, 1000, 1000 );
 
         try ( TestInputEntityCacher cacher = getEntityCacher( recordFormats ) )
         {
             Randoms randoms = getRandoms();
-            for ( int i = 0; i <= iterations; i++ )
+            for ( int i = 0; i < iterations; i++ )
             {
                 cacher.writeEntity( generateNode( randoms ) );
             }
         }
     }
 
-    private void initExpectedException()
+    private void initExpectedException( int numberOfSupportedTokens )
     {
         expectedException.expect( UnsupportedOperationException.class );
-        expectedException.expectMessage( "Too many tokens. Creation of more then 10 tokens is not supported." );
+        expectedException.expectMessage( "Too many tokens. Creation of more then " + numberOfSupportedTokens + " " +
+                                         "tokens is not supported." );
     }
 
 
@@ -241,15 +245,15 @@ public class InputEntityCacherTest
                 mock( StoreChannel.class ), recordFormats, 100, 100 );
     }
 
-    private TestNodeEntityCacher getNodeCacher( RecordFormats recordFormats ) throws IOException
+    private InputNodeCacher getNodeCacher( RecordFormats recordFormats ) throws IOException
     {
-        return new TestNodeEntityCacher( mock( StoreChannel.class ),
+        return new InputNodeCacher( mock( StoreChannel.class ),
                 mock( StoreChannel.class ), recordFormats, 100 );
     }
 
-    private TestRelationshipEntityCacher getRelationshipCacher( RecordFormats recordFormats ) throws IOException
+    private InputRelationshipCacher getRelationshipCacher( RecordFormats recordFormats ) throws IOException
     {
-        return new TestRelationshipEntityCacher( mock( StoreChannel.class ),
+        return new InputRelationshipCacher( mock( StoreChannel.class ),
                 mock( StoreChannel.class ), recordFormats, 100 );
     }
 
@@ -259,24 +263,6 @@ public class InputEntityCacherTest
                 RecordFormats recordFormats, int bufferSize, int groupSlots ) throws IOException
         {
             super( channel, header, recordFormats, bufferSize, groupSlots );
-        }
-    }
-
-    private class TestNodeEntityCacher extends InputNodeCacher
-    {
-        TestNodeEntityCacher( StoreChannel channel, StoreChannel header,
-                RecordFormats recordFormats, int bufferSize ) throws IOException
-        {
-            super( channel, header, recordFormats, bufferSize );
-        }
-    }
-
-    private class TestRelationshipEntityCacher extends InputRelationshipCacher
-    {
-        TestRelationshipEntityCacher( StoreChannel channel, StoreChannel header,
-                RecordFormats recordFormats, int bufferSize ) throws IOException
-        {
-            super( channel, header, recordFormats, bufferSize );
         }
     }
 }

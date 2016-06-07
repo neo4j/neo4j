@@ -316,7 +316,8 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
 
     public static long singleBlockLongValue( int keyId, PropertyType type, long longValue )
     {
-        return keyId | (((long) type.intValue()) << StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS) | (longValue << 28);
+        return keyId | (((long) type.intValue()) << StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS) |
+               (longValue << 28);
     }
 
     public static byte[] encodeString( String string )

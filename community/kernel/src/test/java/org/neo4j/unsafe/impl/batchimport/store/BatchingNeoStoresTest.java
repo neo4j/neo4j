@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -69,8 +70,8 @@ public class BatchingNeoStoresTest
         // WHEN
         try
         {
-            RecordFormats recordFormats = RecordFormatSelector.autoSelectFormat( Config.empty(),
-                    NullLogService.getInstance() );
+            RecordFormats recordFormats = RecordFormatSelector.selectForConfig( Config.empty(),
+                    NullLogProvider.getInstance() );
             new BatchingNeoStores( fsr.get(), storeDir, recordFormats, DEFAULT, NullLogService.getInstance(), EMPTY,
                     Config.empty() );
             fail( "Should fail on existing data" );
