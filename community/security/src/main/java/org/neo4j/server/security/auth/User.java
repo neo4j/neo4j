@@ -19,6 +19,10 @@
  */
 package org.neo4j.server.security.auth;
 
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+
 /**
  * Controls authorization and authentication for an individual user.
  */
@@ -35,23 +39,16 @@ public class User
     /** Authentication credentials used by the built in username/password authentication scheme */
     private final Credential credential;
 
-    /** Whether a password change is needed */
-    private final boolean passwordChangeRequired;
+    /** Set of flags, eg. require_password_change */
+    private final HashSet<String> flags;
 
-    /** User is suspended */
-    private final boolean isSuspended;
+    public static final String PASSWORD_CHANGE_REQUIRED = "password_change_required";
 
-    public User( String name, Credential credential, boolean passwordChangeRequired )
-    {
-        this(name, credential, passwordChangeRequired, false);
-    }
-
-    private User( String name, Credential credential, boolean passwordChangeRequired, boolean isSuspended )
+    private User( String name, Credential credential, HashSet<String> flags )
     {
         this.name = name;
         this.credential = credential;
-        this.passwordChangeRequired = passwordChangeRequired;
-        this.isSuspended = isSuspended;
+        this.flags = flags;
     }
 
     public String name()
@@ -64,8 +61,10 @@ public class User
         return credential;
     }
 
-    public boolean passwordChangeRequired() { return passwordChangeRequired; }
-    public boolean isSuspended() { return isSuspended; }
+    public boolean hasFlag(String flag) { return flags.contains(flag); }
+    public Iterator<String> getFlags() { return flags.iterator(); }
+
+    public boolean passwordChangeRequired() { return flags.contains( PASSWORD_CHANGE_REQUIRED ); }
 
     /** Use this user as a base for a new user object */
     public Builder augment() { return new Builder(this); }
@@ -84,11 +83,7 @@ public class User
 
         User user = (User) o;
 
-        if ( passwordChangeRequired != user.passwordChangeRequired )
-        {
-            return false;
-        }
-        if ( isSuspended != user.isSuspended )
+        if ( !setsAreEquals( flags, user.flags ) )
         {
             return false;
         }
@@ -109,8 +104,7 @@ public class User
     {
         int result = name != null ? name.hashCode() : 0;
         result = 31 * result + ( credential != null ? credential.hashCode() : 0);
-        result = 31 * result + (passwordChangeRequired ? 1 : 0);
-        result = 31 * result + (isSuspended ? 1 : 0);
+        result = 31 * result + ( flags.hashCode() );
         return result;
     }
 
@@ -120,8 +114,7 @@ public class User
         return "User{" +
                 "name='" + name + '\'' +
                 ", credentials=" + credential +
-                ", passwordChangeRequired=" + passwordChangeRequired +
-                ", isSuspended=" + isSuspended +
+                ", flags=" + flags.toString() +
                 '}';
     }
 
@@ -129,27 +122,61 @@ public class User
     {
         private String name;
         private Credential credential = Credential.INACCESSIBLE;
-        private boolean pwdChangeRequired;
-        private boolean isSuspended;
+        private HashSet<String> flags = new HashSet<>();
 
         public Builder() { }
+
+        public Builder( String name, Credential credential )
+        {
+            this.name = name;
+            this.credential = credential;
+        }
 
         public Builder( User base )
         {
             name = base.name;
             credential = base.credential;
-            pwdChangeRequired = base.passwordChangeRequired;
-            isSuspended = base.isSuspended;
+            flags.addAll( base.flags );
         }
 
         public Builder withName( String name ) { this.name = name; return this; }
         public Builder withCredentials( Credential creds ) { this.credential = creds; return this; }
-        public Builder withRequiredPasswordChange( boolean change ) { this.pwdChangeRequired = change; return this; }
-        public Builder withIsSuspended( boolean suspended ) { this.isSuspended = suspended; return this; }
+        public Builder withFlag( String flag ) { this.flags.add(flag); return this; }
+        public Builder withoutFlag( String flag ) { this.flags.remove(flag); return this; }
+
+        public Builder withRequiredPasswordChange( boolean change )
+        {
+            if ( change )
+            {
+                withFlag( PASSWORD_CHANGE_REQUIRED );
+            }
+            else
+            {
+                withoutFlag( PASSWORD_CHANGE_REQUIRED );
+            }
+            return this;
+        }
 
         public User build()
         {
-            return new User(name, credential, pwdChangeRequired, isSuspended );
+            return new User(name, credential, flags );
         }
+    }
+
+    private static boolean setsAreEquals( Set<String> set1, Set<String> set2 )
+    {
+        if ( set1.size() != set2.size() )
+        {
+            return false;
+        }
+
+        for ( String element : set1 )
+        {
+            if ( !set2.contains( element ) )
+            {
+                return false;
+            }
+        }
+        return true;
     }
 }

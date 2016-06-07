@@ -20,7 +20,9 @@
 package org.neo4j.server.security.auth;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.string.HexString;
@@ -73,36 +75,33 @@ public class UserSerialization
     {
         return join( userSeparator, user.name(),
                 serialize( user.credentials() ),
-                user.passwordChangeRequired() ? "password_change_required" : "",
-                user.isSuspended() ? "is_suspended" : "" );
+                join( ",", user.getFlags() )
+            );
     }
 
     private User deserializeUser( String line, int lineNumber ) throws FormatException
     {
         String[] parts = line.split( userSeparator, -1 );
-        boolean isSuspended;
-        if ( parts.length == 3 ) // Before suspension impl. assume non-suspended user
+        if ( parts.length != 3 )
         {
-            isSuspended = false;
-        }
-        else if ( parts.length == 4 )
-        {
-            isSuspended = parts[3].equals( "is_suspended" );
-        }
-        else
-        {
-            throw new FormatException( format( "wrong number of line fields, expected 3 or 4, got %d [line %d]",
+            throw new FormatException( format( "wrong number of line fields, expected 3, got %d [line %d]",
                     parts.length,
                     lineNumber
             ) );
         }
 
-        return new User.Builder()
+        User.Builder b = new User.Builder()
                 .withName( parts[0] )
-                .withCredentials( deserializeCredentials( parts[1], lineNumber ) )
-                .withRequiredPasswordChange( parts[2].equals( "password_change_required" ) )
-                .withIsSuspended( isSuspended )
-                .build();
+                .withCredentials( deserializeCredentials( parts[1], lineNumber ) );
+
+        for ( String flag : parts[2].split( ",", -1 ))
+        {
+            String trimmed = flag.trim();
+            if (!trimmed.isEmpty())
+                b = b.withFlag( trimmed );
+        }
+
+        return  b.build();
     }
 
     private String serialize( Credential cred )
@@ -130,11 +129,18 @@ public class UserSerialization
 
     private String join( String separator, String... segments )
     {
+        return join(separator, Arrays.asList(segments).iterator() );
+    }
+
+    private String join( String separator, Iterator<String> segments )
+    {
         StringBuilder sb = new StringBuilder();
-        for ( int i = 0; i < segments.length; i++ )
+        boolean afterFirst = false;
+        while (segments.hasNext())
         {
-            if(i > 0) { sb.append( separator ); }
-            sb.append( segments[i] == null ? "" : segments[i] );
+            if ( afterFirst ) { sb.append( separator ); }
+            else              { afterFirst = true;      }
+            sb.append( segments.next() );
         }
         return sb.toString();
     }

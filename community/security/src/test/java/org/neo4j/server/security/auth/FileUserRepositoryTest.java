@@ -83,7 +83,7 @@ public class FileUserRepositoryTest
     {
         // Given
         FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
-        User user = new User( "jake", Credential.INACCESSIBLE, true );
+        User user = new User.Builder( "jake", Credential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
         users.create( user );
 
         // When
@@ -98,7 +98,7 @@ public class FileUserRepositoryTest
     {
         // Given
         FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
-        User user = new User( "jake", Credential.INACCESSIBLE, true );
+        User user = new User.Builder( "jake", Credential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
         users.create( user );
 
         users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
@@ -116,7 +116,7 @@ public class FileUserRepositoryTest
     {
         // Given
         FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
-        User user = new User( "jake", Credential.INACCESSIBLE, true );
+        User user = new User.Builder( "jake", Credential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
         users.create( user );
 
         // When
@@ -172,7 +172,7 @@ public class FileUserRepositoryTest
 
         FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
         users.start();
-        User user = new User( "jake", Credential.INACCESSIBLE, true );
+        User user = new User.Builder( "jake", Credential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
 
         // When
         try
@@ -194,11 +194,12 @@ public class FileUserRepositoryTest
     {
         // Given
         FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
-        User user = new User( "jake", Credential.INACCESSIBLE, true );
+        User user = new User.Builder( "jake", Credential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
         users.create( user );
 
         // When
-        User updatedUser = new User( "john", Credential.INACCESSIBLE, true );
+        User updatedUser = new User.Builder( "john", Credential.INACCESSIBLE ).withRequiredPasswordChange( true )
+                .build();
         try
         {
             users.update( user, updatedUser );
@@ -216,12 +217,12 @@ public class FileUserRepositoryTest
     {
         // Given
         FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
-        User user = new User( "jake", Credential.INACCESSIBLE, true );
+        User user = new User.Builder( "jake", Credential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
         users.create( user );
-        User modifiedUser = new User( "jake", Credential.forPassword( "foo" ), false );
+        User modifiedUser = user.augment().withCredentials( Credential.forPassword( "foo" ) ).build();
 
         // When
-        User updatedUser = new User( "jake", Credential.forPassword( "bar" ), false );
+        User updatedUser = user.augment().withCredentials( Credential.forPassword( "bar" ) ).build();
         try
         {
             users.update( modifiedUser, updatedUser );
@@ -261,7 +262,7 @@ public class FileUserRepositoryTest
             logProvider.assertExactly(
                     AssertableLogProvider.inLog( FileUserRepository.class ).error(
                             "Failed to read authentication file \"%s\" (%s)", authFile.toAbsolutePath(),
-                            "wrong number of line fields [line 2]"
+                            "wrong number of line fields, expected 3, got 4 [line 2]"
                     )
             );
             throw e;

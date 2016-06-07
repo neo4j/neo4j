@@ -161,25 +161,16 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
             try
             {
                 subject.login( token );
-            }
-            catch ( ExpiredCredentialsException e )
-            {
-                result = AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
-
-                // We have to build an identity with the given username to allow the user to change password
-                // At this point we know that the username is valid
-                subject = buildSubject( username );
+                if ( realm.findUser( username ).passwordChangeRequired() )
+                {
+                    result = AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
+                }
             }
             catch ( AuthenticationException e )
             {
                 result = AuthenticationResult.FAILURE;
             }
             authStrategy.updateWithAuthenticationResult( result, username );
-        }
-        User user = realm.findUser( username );
-        if ( user != null && user.isSuspended() )
-        {
-            result = AuthenticationResult.FAILURE;
         }
         return new ShiroAuthSubject( this, subject, result );
     }

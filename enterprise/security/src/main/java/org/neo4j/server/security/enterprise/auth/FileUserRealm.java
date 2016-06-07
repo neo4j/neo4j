@@ -57,6 +57,8 @@ public class FileUserRealm extends AuthorizingRealm
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
 
+    public static final String IS_SUSPENDED = "is_suspended";
+
     private final CredentialsMatcher credentialsMatcher =
             ( AuthenticationToken token, AuthenticationInfo info ) ->
             {
@@ -113,8 +115,15 @@ public class FileUserRealm extends AuthorizingRealm
             throw new AuthenticationException( "User " + principals.getPrimaryPrincipal() + " does not exist" );
         }
 
-        Set<String> roles = roleRepository.findByUsername( user.name() );
-        return new SimpleAuthorizationInfo( roles );
+        if ( user.passwordChangeRequired() || user.hasFlag( IS_SUSPENDED ))
+        {
+            return new SimpleAuthorizationInfo();
+        }
+        else
+        {
+            Set<String> roles = roleRepository.findByUsername( user.name() );
+            return new SimpleAuthorizationInfo( roles );
+        }
     }
 
     @Override
@@ -135,12 +144,12 @@ public class FileUserRealm extends AuthorizingRealm
         // TODO: This will not work if AuthenticationInfo is cached,
         // unless you always do SecurityManager.logout properly (which will invalidate the cache)
         // For REST we may need to connect HttpSessionListener.sessionDestroyed with logout
-        if ( user.passwordChangeRequired() )
+        if ( user.hasFlag( FileUserRealm.IS_SUSPENDED ) )
         {
-            // We need to assert that the credentials match ourselves before requesting the user to change password
+            // We don' want un-authenticated users to learn anything about user suspension state
             // (normally this assertion is done by Shiro after we return from this method)
             assertCredentialsMatch( token, authenticationInfo );
-            throw new ExpiredCredentialsException( "Password change required" );
+            throw new AuthenticationException( "User " + user.name() + " is suspended" );
         }
 
         return authenticationInfo;
@@ -273,9 +282,9 @@ public class FileUserRealm extends AuthorizingRealm
     void suspendUser( String username ) throws IOException, ConcurrentModificationException
     {
         User user = userRepository.findByName( username );
-        if ( user != null && !user.isSuspended() )
+        if ( user != null && !user.hasFlag( IS_SUSPENDED ) )
         {
-            User suspendedUser = user.augment().withIsSuspended( true ).build();
+            User suspendedUser = user.augment().withFlag( IS_SUSPENDED ).build();
             userRepository.update( user, suspendedUser );
         }
     }
@@ -283,9 +292,9 @@ public class FileUserRealm extends AuthorizingRealm
     void activateUser( String username ) throws IOException, ConcurrentModificationException
     {
         User user = userRepository.findByName( username );
-        if ( user != null && user.isSuspended() )
+        if ( user != null && user.hasFlag( IS_SUSPENDED ) )
         {
-            User activatedUser = user.augment().withIsSuspended( false ).build();
+            User activatedUser = user.augment().withoutFlag( IS_SUSPENDED ).build();
             userRepository.update( user, activatedUser );
         }
     }
