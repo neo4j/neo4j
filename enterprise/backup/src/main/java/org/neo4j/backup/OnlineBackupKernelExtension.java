@@ -99,7 +99,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
                         {
                             return graphDatabaseAPI.storeId();
                         }
-                    } );
+                    }, logProvider );
         }, monitors, logProvider );
     }
 

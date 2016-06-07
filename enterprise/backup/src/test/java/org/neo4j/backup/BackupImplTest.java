@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
@@ -50,7 +51,8 @@ public class BackupImplTest
                 .thenReturn( RequestContext.EMPTY );
 
         BackupImpl backup = new BackupImpl( storeCopyServer, new Monitors(), mock( LogicalTransactionStore.class ),
-                mock( TransactionIdStore.class ), mock( LogFileInformation.class ), defaultStoreIdSupplier() );
+                mock( TransactionIdStore.class ), mock( LogFileInformation.class ), defaultStoreIdSupplier(),
+                NullLogProvider.getInstance() );
 
         backup.fullBackup( mock( StoreWriter.class ), false ).close();
 
