@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.commands.predicates
 
+import org.neo4j.cypher.internal.compiler.v3_0.GeographicPoint
 import org.neo4j.graphdb.{Node, Path, Relationship}
+
 import collection.JavaConverters._
 
 class Equivalent(val eagerizedValue: Any) {
@@ -81,6 +83,7 @@ object Equivalent {
     case m: Map[_,_] => m.mapValues(eager)
     case a: TraversableOnce[_] => a.toVector.map(eager)
     case l: java.lang.Iterable[_] => l.asScala.toVector.map(eager)
+    case l: GeographicPoint => l
     case x => throw new IllegalStateException(s"unknown value: (${x}) of type ${x.getClass})")
   }
 }
