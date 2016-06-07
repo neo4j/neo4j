@@ -56,6 +56,7 @@ public class AuthProceduresTest
     private AuthSubject schemaSubject;
     private AuthSubject writeSubject;
     private AuthSubject readSubject;
+    private AuthSubject noneSubject;
 
     private GraphDatabaseAPI db;
     private ShiroAuthManager manager;
@@ -67,6 +68,7 @@ public class AuthProceduresTest
         registerProcedures( db );
         manager = new EnterpriseAuthManager( new InMemoryUserRepository(), new InMemoryRoleRepository(),
                 new BasicPasswordPolicy(), systemUTC(), true );
+        manager.newUser( "noneSubject", "abc", false );
         manager.newUser( "adminSubject", "abc", false );
         manager.newUser( "schemaSubject", "abc", false );
         manager.newUser( "readWriteSubject", "abc", false );
@@ -75,6 +77,7 @@ public class AuthProceduresTest
         manager.newRole( PredefinedRolesBuilder.ARCHITECT, "schemaSubject" );
         manager.newRole( PredefinedRolesBuilder.PUBLISHER, "readWriteSubject" );
         manager.newRole( PredefinedRolesBuilder.READER, "readSubject" );
+        noneSubject = manager.login( "noneSubject", "abc" );
         readSubject = manager.login( "readSubject", "123" );
         writeSubject = manager.login( "readWriteSubject", "abc" );
         schemaSubject = manager.login( "schemaSubject", "abc" );
@@ -125,6 +128,7 @@ public class AuthProceduresTest
     @Test
     public void shouldNotAllowNonAdminCreateUser() throws Exception
     {
+        testFailCreateUser( noneSubject );
         testFailCreateUser( readSubject );
         testFailCreateUser( writeSubject );
         testFailCreateUser( schemaSubject );
@@ -315,6 +319,7 @@ public class AuthProceduresTest
     @Test
     public void shouldNotAllowNonAdminAddingUserToRole() throws Exception
     {
+        testFailAddUserToRoleAction( noneSubject );
         testFailAddUserToRoleAction( readSubject );
         testFailAddUserToRoleAction( writeSubject );
         testFailAddUserToRoleAction( schemaSubject );
@@ -323,6 +328,7 @@ public class AuthProceduresTest
     @Test
     public void shouldNotAllowNonAdminRemovingUserFromRole() throws Exception
     {
+        testFailRemoveUserFromRoleAction( noneSubject );
         testFailRemoveUserFromRoleAction( readSubject );
         testFailRemoveUserFromRoleAction( writeSubject );
         testFailRemoveUserFromRoleAction( schemaSubject );
@@ -422,6 +428,7 @@ public class AuthProceduresTest
     @Test
     public void shouldNotAllowNonAdminDeleteUser() throws Exception
     {
+        testFailDeleteUser( noneSubject );
         testFailDeleteUser( readSubject );
         testFailDeleteUser( writeSubject );
         testFailDeleteUser( schemaSubject );
@@ -434,8 +441,16 @@ public class AuthProceduresTest
         assertNotNull( "User Craig should exist", manager.getUser( "Craig" ) );
         testCallEmpty( db, adminSubject, "CALL dbms.deleteUser('Craig')", null );
         assertNull( "User Craig should not exist", manager.getUser( "Craig" ) );
-        testCallEmpty( db, adminSubject, "CALL dbms.deleteUser('Craig')", null );
-        assertNull( "User Craig should not exist", manager.getUser( "Craig" ) );
+        try
+        {
+            testCallEmpty( db, adminSubject, "CALL dbms.deleteUser('Craig')", null );
+            fail( "Expected exception to be thrown" );
+        }
+        catch ( QueryExecutionException e )
+        {
+            assertTrue( "Exception should contain 'The user 'Craig' does not exist''",
+                    e.getMessage().contains( "The user 'Craig' does not exist" ) );
+        }
     }
 
     /*

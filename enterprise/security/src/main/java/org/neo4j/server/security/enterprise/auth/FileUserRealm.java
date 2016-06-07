@@ -262,6 +262,10 @@ public class FileUserRealm extends AuthorizingRealm
                 removeUserFromAllRoles( username );
                 result = true;
             }
+            else
+            {
+                throw new IllegalArgumentException( "The user '" + username + "' does not exist" );
+            }
         }
         return result;
     }
