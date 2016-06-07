@@ -140,8 +140,8 @@ class EquivalentTest extends CypherFunSuite {
 
   private def shouldMatch(v1: Any, v2: Any) {
     test(testName(v1, v2, "=")) {
-      val eq1 = Equivalent.tryBuild(v1).get
-      val eq2 = Equivalent.tryBuild(v2).get
+      val eq1 = Equivalent(v1)
+      val eq2 = Equivalent(v2)
       eq1.equals(v2) should equal(true)
       eq2.equals(v1) should equal(true)
       eq1.hashCode() should equal(eq2.hashCode())
@@ -150,8 +150,8 @@ class EquivalentTest extends CypherFunSuite {
 
   private def shouldNotMatch(v1: Any, v2: Any) {
     test(testName(v1, v2, "<>")) {
-      val eq1 = Equivalent.tryBuild(v1).get
-      val eq2 = Equivalent.tryBuild(v2).get
+      val eq1 = Equivalent(v1)
+      val eq2 = Equivalent(v2)
       eq1.equals(v2) should equal(false)
       eq2.equals(v1) should equal(false)
     }

@@ -29,7 +29,7 @@ trait Checker {
   def contains(value: Any): (Option[Boolean], Checker)
 }
 
-§class BuildUp(iterator: Iterator[Any]) extends Checker {
+class BuildUp(iterator: Iterator[Any]) extends Checker {
   private val cachedSet: mutable.Set[Equivalent] = new mutable.HashSet[Equivalent]
   private var falseResult: Option[Boolean] = Some(false)
 
@@ -41,14 +41,11 @@ trait Checker {
     if (value == null)
       return (None, this)
 
-    Equivalent.tryBuild(value) match {
-      case None => ???
-      case Some(equivalent) =>
-        if (cachedSet.contains(equivalent))
-          (Some(true), this)
-        else
-          checkAndBuildUpCache(value)
-    }
+    val eqValue = Equivalent(value)
+    if (cachedSet.contains(eqValue))
+      (Some(true), this)
+    else
+      checkAndBuildUpCache(value)
   }
 
   private def checkAndBuildUpCache(value: Any): (Option[Boolean], Checker) = {
@@ -58,13 +55,10 @@ trait Checker {
       if (nextValue == null) {
         falseResult = None
       } else {
-        Equivalent.tryBuild(nextValue) match {
-          case None => ???
-          case Some(next) =>
-            cachedSet.add(next)
-            val result = next == value
-            if (result) return (Some(true), this)
-        }
+        val next = Equivalent(nextValue)
+        cachedSet.add(next)
+        val result = next == value
+        if (result) return (Some(true), this)
       }
     }
 
@@ -88,13 +82,11 @@ class FastChecker(cachedSet: mutable.Set[Equivalent], falseResult: Option[Boolea
     if (value == null)
       return (None, this)
 
-    Equivalent.tryBuild(value) match {
-      case Some(sameOther) =>
-        val exists = cachedSet.contains(sameOther)
-        val result = if (exists) Some(true) else falseResult
-        (result, this)
-      case None =>
-        (falseResult, this)
-    }
+    val eqValue = Equivalent(value)
+
+    val exists = cachedSet.contains(eqValue)
+    val result = if (exists) Some(true) else falseResult
+    (result, this)
   }
 }
+
