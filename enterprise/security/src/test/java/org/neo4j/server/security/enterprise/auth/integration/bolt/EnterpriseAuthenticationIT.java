@@ -25,9 +25,17 @@ import java.util.function.Consumer;
 import org.neo4j.bolt.v1.transport.integration.AuthenticationIT;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class EnterpriseAuthenticationIT extends AuthenticationIT
 {
+    @Override
+    protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
+    {
+        return new TestEnterpriseGraphDatabaseFactory();
+    }
+
     @Override
     protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
     {
