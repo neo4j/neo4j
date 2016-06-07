@@ -62,17 +62,20 @@ public class AuthProceduresTest
     private ShiroAuthManager manager;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp() throws Throwable
     {
         db = (GraphDatabaseAPI) new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase();
         manager = new EnterpriseAuthManager( new InMemoryUserRepository(), new InMemoryRoleRepository(),
                 new BasicPasswordPolicy(), systemUTC(), true );
+        manager.init();
+        manager.start();
         manager.newUser( "noneSubject", "abc", false );
         manager.newUser( "adminSubject", "abc", false );
         manager.newUser( "schemaSubject", "abc", false );
         manager.newUser( "readWriteSubject", "abc", false );
         manager.newUser( "readSubject", "123", false );
-        manager.newRole( PredefinedRolesBuilder.ADMIN, "adminSubject" );
+        // Currently admin role is created by default
+        manager.addUserToRole( "adminSubject", PredefinedRolesBuilder.ADMIN );
         manager.newRole( PredefinedRolesBuilder.ARCHITECT, "schemaSubject" );
         manager.newRole( PredefinedRolesBuilder.PUBLISHER, "readWriteSubject" );
         manager.newRole( PredefinedRolesBuilder.READER, "readSubject" );
@@ -85,9 +88,11 @@ public class AuthProceduresTest
     }
 
     @After
-    public void tearDown()
+    public void tearDown() throws Throwable
     {
         db.shutdown();
+        manager.stop();
+        manager.shutdown();
     }
 
     @Test
