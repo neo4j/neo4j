@@ -63,22 +63,25 @@ object helpersv3_0 {
     case other => other
   }
 
-  private def wrapPoint(point: Point) = new graphdb.spatial.Point {
-    override def getGeometryType = "Point"
-
-    override def getCRS: graphdb.spatial.CRS = new graphdb.spatial.CRS {
-
-      override def getType: String = point.crs.name
-
-      override def getHref: String = point.crs.url
-
-      override def getCode: Int = point.crs.code
-    }
-
-    override def getCoordinates: java.util.List[graphdb.spatial.Coordinate] = Collections
-      .singletonList(new graphdb.spatial.Coordinate(point.coordinates:_*))
-  }
+  private def wrapPoint(point: Point) = new SpatialPoint(point)
 }
+
+class SpatialPoint(point: Point) extends graphdb.spatial.Point{
+  override def getGeometryType = "Point"
+
+  override def getCRS: graphdb.spatial.CRS = new graphdb.spatial.CRS {
+
+    override def getType: String = point.crs.name
+
+    override def getHref: String = point.crs.url
+
+    override def getCode: Int = point.crs.code
+  }
+
+  override def getCoordinates: java.util.List[graphdb.spatial.Coordinate] = Collections
+    .singletonList(new graphdb.spatial.Coordinate(point.coordinates:_*))
+}
+
 
 object exceptionHandlerFor3_0 extends MapToPublicExceptions[CypherException] {
   def syntaxException(message: String, query: String, offset: Option[Int], cause: Throwable) = new SyntaxException(message, query, offset, cause)
