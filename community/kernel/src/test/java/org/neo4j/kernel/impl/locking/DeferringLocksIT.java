@@ -24,6 +24,8 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -37,12 +39,19 @@ import static org.neo4j.helpers.collection.Iterables.count;
 public class DeferringLocksIT
 {
     @Rule
-    public final DatabaseRule db = new ImpermanentDatabaseRule();
+    public final DatabaseRule db = new ImpermanentDatabaseRule()
+    {
+        @Override
+        protected void configure( GraphDatabaseBuilder builder )
+        {
+            builder.setConfig( GraphDatabaseFacadeFactory.Configuration.deferred_locking, "true" );
+        }
+    };
     @Rule
     public final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
 
     @Test
-    public void shouldFreakOutIfTwoTransactionsDecideToEachAddTheSameProperty() throws Exception
+    public void shouldNotFreakOutIfTwoTransactionsDecideToEachAddTheSameProperty() throws Exception
     {
         // GIVEN
         final Barrier.Control barrier = new Barrier.Control();
