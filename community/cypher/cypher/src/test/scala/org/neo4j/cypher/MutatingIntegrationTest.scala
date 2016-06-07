@@ -317,7 +317,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
   }
 
   test("failed query should not leave dangling transactions") {
-    intercept[RuntimeException](executeWithAllPlannersAndRuntimesAndCompatibilityMode("RETURN 1 / 0"))
+    intercept[RuntimeException](executeWithAllPlannersAndCompatibilityMode("RETURN 1 / 0"))
 
     val contextBridge : ThreadToStatementContextBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
     contextBridge.getTopLevelTransactionBoundToThisThread( false ) should be(null)

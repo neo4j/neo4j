@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
-import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundPlanContext, TransactionBoundQueryContext}
+import org.neo4j.cypher.internal.spi.v3_0.{TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
@@ -304,7 +304,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
       plannerName = Some(plannerName),
       rewriterSequencer = rewriterSequencer,
       queryPlanner = queryPlanner,
-      runtimeBuilder = SilentFallbackRuntimeBuilder(InterpretedPlanBuilder(clock, monitors, identity), CompiledPlanBuilder(clock,GeneratedQueryStructure)),
+      runtimeBuilder = InterpretedRuntimeBuilder(InterpretedPlanBuilder(clock, monitors, identity)),
       semanticChecker = checker,
       config = config,
       updateStrategy = None,

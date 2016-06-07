@@ -97,23 +97,6 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .shouldHaveRuntime(InterpretedRuntimeName)
   }
 
-  test("query that lacks support from the compiled runtime") {
-    given("CREATE ()")
-      .withCypherVersion(CypherVersion.v3_0)
-      .withRuntime(CompiledRuntimeName)
-      .shouldHaveCypherVersion(CypherVersion.v3_0)
-      .shouldHaveRuntime(InterpretedRuntimeName)
-  }
-
-  test("query that should go through the compiled runtime") {
-    given("MATCH (a)-->(b) RETURN a")
-      .withCypherVersion(CypherVersion.v3_0)
-      .withRuntime(CompiledRuntimeName)
-      .shouldHaveCypherVersion(CypherVersion.v3_0)
-      .shouldHaveRuntime(CompiledRuntimeName)
-      .shouldHavePlanner(CostBasedPlannerName.default)
-  }
-
   test("AllNodesScan should be the only child of the plan") {
     val description = given("match (n) return n").planDescription
     var children = description.getChildren
@@ -124,22 +107,6 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
     }
 
     children.get(0).getName should be("AllNodesScan")
-  }
-
-  test("DbHits should contain proper values in compiled runtime") {
-    val description = given("match (n) return n")
-      .withRuntime(CompiledRuntimeName)
-      .planDescription
-    val children = description.getChildren
-    children should have size 1
-    description.getArguments.get("DbHits") should equal(0) // ProduceResults has no hits
-    children.get(0).getArguments.get("DbHits") should equal(1) // AllNodesScan has 1 hit
-  }
-
-  test("Rows should be properly formatted in compiled runtime") {
-    given("match (n) return n")
-      .withRuntime(CompiledRuntimeName)
-      .planDescription.getArguments.get("Rows") should equal(0)
   }
 
   test("DbHits should contain proper values in interpreted runtime") {
@@ -163,8 +130,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   for(planner <- Seq(IDPPlannerName, DPPlannerName, RulePlannerName);
-      runtime <- Seq(CompiledRuntimeName, InterpretedRuntimeName)
-      if !(planner == RulePlannerName && runtime == CompiledRuntimeName)) {
+      runtime <- Seq(InterpretedRuntimeName)) {
 
     test(s"Should report correct planner and runtime used $planner + $runtime") {
       given("match (n) return n")

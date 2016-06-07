@@ -647,7 +647,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     val expected = createNode().getId
 
     // WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n) RETURN id(n)")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n) RETURN id(n)")
 
     // THEN
     result.toList should equal(List(Map("id(n)" -> expected)))
@@ -659,7 +659,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     val expected = relate(createNode(), createNode()).getId
 
     // WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH ()-[r]->() RETURN id(r)")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH ()-[r]->() RETURN id(r)")
 
     // THEN
     result.toList should equal(List(Map("id(r)" -> expected)))
@@ -670,7 +670,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     relate(createNode(), createNode(), "T")
 
     // WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH ()-[r]->() RETURN type(r)")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH ()-[r]->() RETURN type(r)")
 
     // THEN
     result.toList should equal(List(Map("type(r)" -> "T")))
@@ -683,7 +683,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     relate(intermediate, createNode(), "T2")
 
     // WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH ()-[r1]->()-[r2]->() RETURN type(r1), type(r2)")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH ()-[r1]->()-[r2]->() RETURN type(r1), type(r2)")
 
     // THEN
     result.toList should equal(List(Map("type(r1)" -> "T1", "type(r2)" -> "T2")))
@@ -694,7 +694,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     createNode()
 
     // WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a) OPTIONAL MATCH (a)-[r:NOT_THERE]->() RETURN type(r)")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) OPTIONAL MATCH (a)-[r:NOT_THERE]->() RETURN type(r)")
 
     // THEN
     result.toList should equal(List(Map("type(r)" -> null)))
@@ -705,7 +705,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     relate(createNode(), createNode(), "T")
 
     // WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a) OPTIONAL MATCH (a)-[r:T]->() RETURN type(r)")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) OPTIONAL MATCH (a)-[r:T]->() RETURN type(r)")
 
     // THEN
     result.toList should equal(List(Map("type(r)" -> "T"), Map("type(r)" -> null)))
@@ -717,7 +717,6 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     val query: String = "MATCH (a)-[r]->() WITH [r, 1] as coll RETURN [x in coll | type(x) ]"
 
     //Expect
-    a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER runtime=compiled $query", Map.empty[String,Any], graph.session()))
     a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER runtime=interpreted $query", Map.empty[String,Any], graph.session()))
     a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER planner=cost $query", Map.empty[String,Any], graph.session()))
     a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER planner=rule $query", Map.empty[String,Any], graph.session()))

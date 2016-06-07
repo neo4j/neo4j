@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_0.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_0.notification.CartesianProductNotification
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure
 import org.neo4j.logging.NullLog
 
 class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
@@ -114,11 +113,10 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
         nonIndexedLabelWarningThreshold = 10000L
       ),
       Clock.systemUTC(),
-      GeneratedQueryStructure,
       new WrappedMonitors3_0(kernelMonitors),
       new StringInfoLogger3_0(NullLog.getInstance),
       plannerName = Some(IDPPlannerName),
-      runtimeName = Some(CompiledRuntimeName),
+      runtimeName = Some(InterpretedRuntimeName),
       updateStrategy = None,
       rewriterSequencer = RewriterStepSequencer.newValidating,
       publicTypeConverter = identity

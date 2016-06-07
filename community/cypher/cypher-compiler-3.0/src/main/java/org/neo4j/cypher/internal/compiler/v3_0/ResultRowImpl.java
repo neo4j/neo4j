@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_0.codegen;
+package org.neo4j.cypher.internal.compiler.v3_0;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -109,3 +109,4 @@ public class ResultRowImpl implements InternalResultRow
     }
 
 }
+

@@ -527,7 +527,6 @@ case class CompatibilityFor3_0Cost(graph: GraphDatabaseQueryService,
     val runtimeName = runtime match {
       case CypherRuntime.default => None
       case CypherRuntime.interpreted => Some(InterpretedRuntimeName)
-      case CypherRuntime.compiled => Some(CompiledRuntimeName)
     }
     val updateStrategy = strategy match {
       case CypherUpdateStrategy.eager => Some(eagerUpdateStrategy)
@@ -536,7 +535,7 @@ case class CompatibilityFor3_0Cost(graph: GraphDatabaseQueryService,
 
     val logger = new StringInfoLogger3_0(log)
     val monitors = new WrappedMonitors3_0(kernelMonitors)
-    CypherCompilerFactory.costBasedCompiler(graph, config, clock, GeneratedQueryStructure,
+    CypherCompilerFactory.costBasedCompiler(graph, config, clock,
                                             monitors, logger, rewriterSequencer, plannerName, runtimeName,
                                             updateStrategy, helpersv3_0.asPublicType)
   }

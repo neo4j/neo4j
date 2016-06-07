@@ -30,7 +30,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     setUpDatabaseForTests()
 
     // When
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n")
 
     // Then
     result should (use("NodeIndexSeek") and be(empty))
@@ -73,7 +73,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     graph.createIndex("L", "l")
     graph.createIndex("R", "r")
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (l:L {l: 9})-[:REL]->(r:R {r: 23}) RETURN l, r")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (l:L {l: 9})-[:REL]->(r:R {r: 23}) RETURN l, r")
     result should (use("NodeIndexSeek") and have size 100)
   }
 

@@ -23,7 +23,6 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_0.CompilationPhaseTracer.CompilationPhase.{AST_REWRITE, PARSING, SEMANTIC_CHECK}
 import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
-import org.neo4j.cypher.internal.compiler.v3_0.codegen.CodeStructure
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.procs.DelegatingProcedureExecutablePlanBuilder
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.closing
@@ -72,7 +71,7 @@ case class CypherCompilerConfiguration(queryCacheSize: Int,
 object CypherCompilerFactory {
   val monitorTag = "cypher3.0"
 
-  def costBasedCompiler(graph: GraphDatabaseQueryService, config: CypherCompilerConfiguration, clock: Clock, structure: CodeStructure[GeneratedQuery],
+  def costBasedCompiler(graph: GraphDatabaseQueryService, config: CypherCompilerConfiguration, clock: Clock,
                         monitors: Monitors, logger: InfoLogger,
                         rewriterSequencer: (String) => RewriterStepSequencer,
                         plannerName: Option[CostBasedPlannerName],
@@ -86,11 +85,10 @@ object CypherCompilerFactory {
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
     val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
 
-    val compiledPlanBuilder = CompiledPlanBuilder(clock, structure)
     val interpretedPlanBuilder = InterpretedPlanBuilder(clock, monitors, publicTypeConverter)
 
     // Pick runtime based on input
-    val runtimeBuilder = RuntimeBuilder.create(runtimeName, interpretedPlanBuilder, compiledPlanBuilder, config.useErrorsOverWarnings)
+    val runtimeBuilder = RuntimeBuilder.create(runtimeName, interpretedPlanBuilder)
 
     val costPlanProducer = CostBasedPipeBuilderFactory.create(
       monitors = monitors,

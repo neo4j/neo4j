@@ -252,21 +252,6 @@ trait NewPlannerTestSupport extends CypherTestSupport {
   def executeWithCostPlannerOnly(queryText: String, params: (String, Any)*): InternalExecutionResult =
     monitoringNewPlanner(innerExecute(queryText, params: _*))(failedToUseNewPlanner(queryText))(unexpectedlyUsedNewRuntime(queryText))
 
-  def executeWithAllPlannersAndRuntimesAndCompatibilityMode(queryText: String, params: (String, Any)*): InternalExecutionResult = {
-    val compatibilityResult = innerExecute(s"CYPHER 2.3 $queryText", params: _*)
-    val ruleResult = innerExecute(s"CYPHER planner=rule $queryText", params: _*)
-    val interpretedResult = innerExecute(s"CYPHER runtime=interpreted $queryText", params: _*)
-    val compiledResult = monitoringNewPlanner(innerExecute(s"CYPHER runtime=compiled $queryText", params: _*))(failedToUseNewPlanner(queryText))(failedToUseNewRuntime(queryText))
-
-    assertResultsAreSame(interpretedResult, compiledResult, queryText, "Diverging results between interpreted and compiled runtime")
-    assertResultsAreSame(compatibilityResult, interpretedResult, queryText, "Diverging results between compatibility and current")
-    assertResultsAreSame(ruleResult, interpretedResult, queryText, "Diverging results between rule planner and interpreted runtime")
-    compatibilityResult.close()
-    ruleResult.close()
-    interpretedResult.close()
-    compiledResult
-  }
-
   private def assertResultsAreSame(result1: InternalExecutionResult, result2: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false) {
     withClue(errorMsg) {
       if (queryText.toLowerCase contains "order by") {

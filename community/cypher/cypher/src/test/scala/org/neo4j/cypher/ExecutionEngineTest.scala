@@ -22,7 +22,6 @@ package org.neo4j.cypher
 import java.io.{File, PrintWriter}
 import java.util.concurrent.TimeUnit
 
-import jdk.nashorn.internal.runtime.ScriptRuntime
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.compiler.v3_0.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CreateTempFileTestSupport
@@ -33,13 +32,11 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.io.fs.FileUtils
-import org.neo4j.kernel.api.security.AccessMode
-import org.neo4j.kernel.api.KernelTransaction.Type
-import org.neo4j.kernel.{NeoStoreDataSource}
-import org.neo4j.test.TestGraphDatabaseFactory
 import org.neo4j.kernel.NeoStoreDataSource
+import org.neo4j.kernel.api.KernelTransaction.Type
+import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction
-import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory}
+import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -429,8 +426,8 @@ order by a.COL1""")
 
     relate(refNode, a, "X")
 
-    executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (a)-->(b) where a = {a} return b", "a" -> a) should have size 1
-    executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (a)-->(b) where a = {a} return b", "a" -> b) shouldBe empty
+    executeWithAllPlannersAndCompatibilityMode("match (a)-->(b) where a = {a} return b", "a" -> a) should have size 1
+    executeWithAllPlannersAndCompatibilityMode("match (a)-->(b) where a = {a} return b", "a" -> b) shouldBe empty
   }
 
   test("should handle parameters names as variables") {
@@ -635,7 +632,7 @@ order by a.COL1""")
     relate(a, b)
     relate(b, c)
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n)-[r]->(m) WHERE n = {a} AND m = {b} RETURN *", "a"->a, "b"->c)
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n)-[r]->(m) WHERE n = {a} AND m = {b} RETURN *", "a"->a, "b"->c)
 
     result.toList shouldBe empty
   }
@@ -934,7 +931,7 @@ order by a.COL1""")
     createNode("coll" -> Array(1, 2, 3), "bool" -> true)
     createLabeledNode("LABEL")
 
-    val foundNode = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n:LABEL) where n.coll and n.bool return n").columnAs[Node]("n").next()
+    val foundNode = executeWithAllPlannersAndCompatibilityMode("match (n:LABEL) where n.coll and n.bool return n").columnAs[Node]("n").next()
 
     foundNode should equal(n)
   }
