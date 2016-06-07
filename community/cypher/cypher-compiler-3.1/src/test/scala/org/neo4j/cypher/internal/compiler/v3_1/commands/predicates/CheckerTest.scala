@@ -57,9 +57,9 @@ class CheckerTest extends CypherFunSuite {
   }
 
   test("type tests") {
-    (equivalent(1) == equivalent(1.0)) should equal(true)
-    (equivalent('a') == equivalent("a")) should equal(true)
-    (equivalent(Array(1, 2, 3)) == equivalent(List(1.0, 2.0D, 3l))) should equal(true)
+    (eq(1) == eq(1.0)) should equal(true)
+    (eq('a') == eq("a")) should equal(true)
+    (eq(Array(1, 2, 3)) == eq(List(1.0, 2.0D, 3l))) should equal(true)
   }
 
   test("null in lhs on an empty list") {
@@ -72,12 +72,12 @@ class CheckerTest extends CypherFunSuite {
   }
 
   test("null in lhs on an FastChecker") {
-    val fastChecker = new FastChecker(mutable.Set(equivalent(42)), Some(false))
+    val fastChecker = new FastChecker(mutable.Set(eq(42)), Some(false))
     fastChecker.contains(null) should equal((None, fastChecker))
   }
 
   test("null in rhs on an FastChecker") {
-    val fastChecker = new FastChecker(mutable.Set(equivalent(42)), None)
+    val fastChecker = new FastChecker(mutable.Set(eq(42)), None)
     fastChecker.contains(4) should equal((None, fastChecker))
     fastChecker.contains(42) should equal((Some(true), fastChecker))
     fastChecker.contains(null) should equal((None, fastChecker))
@@ -92,26 +92,26 @@ class CheckerTest extends CypherFunSuite {
     newChecker shouldBe a[FastChecker]
   }
 
-  ignore("buildUp can handle maps on the lhs") {
+  test("buildUp can handle maps on the lhs") {
     val buildUp = new BuildUp(Iterator(1,2,3))
     val (result, newChecker) = buildUp.contains(Map("a" -> 42))
     result should equal(Some(false))
     newChecker shouldBe a [FastChecker]
   }
 
-  ignore("fastChecker can handle maps on the lhs") {
-    val buildUp = new FastChecker(mutable.Set(equivalent(1),equivalent(2),equivalent(3)), Some(false))
+  test("fastChecker can handle maps on the lhs") {
+    val buildUp = new FastChecker(mutable.Set(eq(1),eq(2),eq(3)), Some(false))
     val (result, newChecker) = buildUp.contains(Map("a" -> 42))
     result should equal(Some(false))
     newChecker shouldBe a [FastChecker]
   }
 
-  ignore("buildUp can handle maps on the rhs") {
+  test("buildUp can handle maps on the rhs") {
     val buildUp = new BuildUp(Iterator(1,2,3, Map("a" -> 42)))
     val (result, newChecker) = buildUp.contains("apa")
     result should equal(Some(false))
     newChecker shouldBe a [FastChecker]
   }
 
-  private def equivalent(x: Any) = Equivalent.tryBuild(42).get
+  private def eq(x: Any) = Equivalent(x)
 }

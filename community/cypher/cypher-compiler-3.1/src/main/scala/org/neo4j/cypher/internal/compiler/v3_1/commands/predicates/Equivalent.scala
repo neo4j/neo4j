@@ -22,8 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.commands.predicates
 import org.neo4j.graphdb.{Node, Path, Relationship}
 import collection.JavaConverters._
 
-class Equivalent(val eagerizedValue: Any, val original: Any) {
-
+class Equivalent(val eagerizedValue: Any) {
   override def equals(in: Any): Boolean = {
     val eagerOther = in match {
       case s: Equivalent => s.eagerizedValue
@@ -65,11 +64,7 @@ class Equivalent(val eagerizedValue: Any, val original: Any) {
 }
 
 object Equivalent {
-  def tryBuild(x: Any): Option[Equivalent] = try {
-    Some(new Equivalent(eager(x), x))
-  } catch {
-    case _: ControlFlowException => None
-  }
+  def apply(x: Any): Equivalent = new Equivalent(eager(x))
 
   private def eager(v: Any): Any = v match {
     case x: Number => x
@@ -86,9 +81,6 @@ object Equivalent {
     case m: Map[_,_] => m.mapValues(eager)
     case a: TraversableOnce[_] => a.toVector.map(eager)
     case l: java.lang.Iterable[_] => l.asScala.toVector.map(eager)
-    case _ => throw new ControlFlowException
+    case x => throw new IllegalStateException(s"unknown value: (${x}) of type ${x.getClass})")
   }
-
 }
-
-class ControlFlowException extends RuntimeException
