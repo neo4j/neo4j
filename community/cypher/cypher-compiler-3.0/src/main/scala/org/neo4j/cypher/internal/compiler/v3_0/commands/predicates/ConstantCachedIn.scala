@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.commands.predicates
 
-import java.util.Map.Entry
-
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
+
+import scala.collection.mutable.ArrayBuffer
 
 /*
 This class is used for making the common <exp> IN <constant-expression> fast
@@ -115,22 +115,19 @@ class InCheckContainer(var checker: Checker) {
   }
 }
 
-class Wrapper[K](val key : K) {
-  override def hashCode = System.identityHashCode(key)
-  override def equals(other: Any) = other == key || key.equals(other)
-}
-
-class SingleThreadedLRUCache[K,V](maxSize: Int) extends java.util.LinkedHashMap[Wrapper[K],V](maxSize, 0.75f, true) {
-  override def removeEldestEntry(eldest: Entry[Wrapper[K], V]): Boolean = size() > maxSize
+class SingleThreadedLRUCache[K, V](maxSize: Int) {
+  val cache: ArrayBuffer[(K, V)] = new ArrayBuffer[(K, V)](maxSize)
 
   def getOrElseUpdate(key: K, f: => V): V = {
-    val wrapper = new Wrapper[K](key)
-    val v = get(wrapper)
-    Option(v).getOrElse {
-      val value = f
-      put(wrapper, value)
-      value
-    }
+    val idx = cache.indexWhere(_._1 == key)
+    val entry =
+      if (idx == -1) {
+        if (cache.size == maxSize) cache.remove(maxSize - 1)
+        (key, f)
+      } else {
+        cache.remove(idx)
+      }
+    cache.insert(0, entry)
+    entry._2
   }
 }
-
