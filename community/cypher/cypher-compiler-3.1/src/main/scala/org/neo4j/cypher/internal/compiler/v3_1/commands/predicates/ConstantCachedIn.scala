@@ -107,14 +107,20 @@ class InCheckContainer(var checker: Checker) {
   }
 }
 
-class SingleThreadedLRUCache[K,V](maxSize: Int) extends java.util.LinkedHashMap[K,V](maxSize, 0.75f, true) {
-  override def removeEldestEntry(eldest: Entry[K, V]): Boolean = size() > maxSize
+class Wrapper[K](val key : K) {
+  override def hashCode = System.identityHashCode(key)
+  override def equals(other: Any) = other == key || key.equals(other)
+}
+
+class SingleThreadedLRUCache[K,V](maxSize: Int) extends java.util.LinkedHashMap[Wrapper[K],V](maxSize, 0.75f, true) {
+  override def removeEldestEntry(eldest: Entry[Wrapper[K], V]): Boolean = size() > maxSize
 
   def getOrElseUpdate(key: K, f: => V): V = {
-    val v = get(key)
+    val wrapper = new Wrapper[K](key)
+    val v = get(wrapper)
     Option(v).getOrElse {
       val value = f
-      put(key, value)
+      put(wrapper, value)
       value
     }
   }
