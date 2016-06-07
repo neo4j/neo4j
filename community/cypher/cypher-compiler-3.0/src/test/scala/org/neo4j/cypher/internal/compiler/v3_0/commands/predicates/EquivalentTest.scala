@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.commands.predicates
 
+import java.util
 import java.util.Arrays.asList
 import java.util.Collections.singletonMap
 
@@ -115,6 +116,8 @@ class EquivalentTest extends CypherFunSuite {
   shouldNotMatch("A", "a")
   shouldNotMatch("0", 0)
   shouldNotMatch('0', 0)
+
+  // Lists and arrays
   shouldMatch(Array[Int](1, 2, 3), Array[Int](1, 2, 3))
   shouldMatch(Array[Array[Int]](Array(1), Array(2, 2), Array(3, 3, 3)), Array[Array[Double]](Array(1.0), Array(2.0, 2.0), Array(3.0, 3.0, 3.0)))
   shouldMatch(Array[Int](1, 2, 3), Array[Long](1, 2, 3))
@@ -132,13 +135,17 @@ class EquivalentTest extends CypherFunSuite {
   shouldMatch(Array[String]("A", "B", "C"), asList("A", "B", "C"))
   shouldMatch(Array[String]("A", "B", "C"), asList('A', 'B', 'C'))
   shouldMatch(Array[Char]('A', 'B', 'C'), asList("A", "B", "C"))
+  shouldMatch(new util.ArrayList[AnyRef](), List.empty[AnyRef])
+  shouldMatch(Array[Int](), List.empty[AnyRef])
 
+  // Maps
   shouldMatch(Map("a" -> 42), Map("a" -> 42))
   shouldMatch(Map("a" -> 42), Map("a" -> 42.0))
   shouldMatch(Map("a" -> 42), singletonMap("a", 42.0))
   shouldMatch(singletonMap("a", asList(41.0, 42.0)), Map("a" -> List(41,42)))
   shouldMatch(Map("a" -> singletonMap("x", asList(41.0, 'c'.asInstanceOf[Character]))), singletonMap("a", Map("x" -> List(41, "c"))))
 
+  // Geographic Values
   shouldMatch(GeographicPoint(32, 43, CRS.Cartesian), GeographicPoint(32, 43, CRS.Cartesian))
   // We should test that GeoPoints returned by Cypher are equivalent to internal point representations
 
