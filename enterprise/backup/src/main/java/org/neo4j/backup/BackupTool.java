@@ -101,11 +101,7 @@ public class BackupTool
         }
         catch ( ToolFailureException e )
         {
-            if ( e.getCause() != null )
-            {
-                e.getCause().printStackTrace( System.out );
-            }
-
+            System.out.println( "Backup failed." );
             exitFailure( e.getMessage() );
         }
     }
@@ -242,12 +238,15 @@ public class BackupTool
         }
         catch ( MismatchingStoreIdException e )
         {
-            systemOut.println( "Backup failed." );
             throw new ToolFailureException( String.format( MISMATCHED_STORE_ID, e.getExpected(), e.getEncountered() ) );
         }
         catch ( ComException e )
         {
             throw new ToolFailureException( "Couldn't connect to '" + hostnamePort + "'", e );
+        }
+        catch ( IncrementalBackupNotPossibleException e )
+        {
+            throw new ToolFailureException( e.getMessage(), e );
         }
     }
 

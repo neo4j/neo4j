@@ -91,15 +91,15 @@ public class OnlineBackupKernelExtension implements Lifecycle
                         monitors.newMonitor( StoreCopyServer.Monitor.class ) );
                 LogicalTransactionStore logicalTransactionStore = resolver.resolveDependency( LogicalTransactionStore.class );
                 LogFileInformation logFileInformation = resolver.resolveDependency( LogFileInformation.class );
-                return new BackupImpl( copier, monitors,
-                        logicalTransactionStore, transactionIdStore, logFileInformation, new Provider<StoreId>()
+                return new BackupImpl( copier, monitors, logicalTransactionStore, transactionIdStore,
+                        logFileInformation, new Provider<StoreId>()
                         {
                             @Override
                             public StoreId instance()
                             {
                                 return graphDatabaseAPI.storeId();
                             }
-                        } );
+                        }, logging );
             }
         }, monitors, logging );
     }

@@ -29,6 +29,8 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.com.RequestContext.anonymous;
@@ -41,16 +43,18 @@ class BackupImpl implements TheBackupInterface
     private final Provider<StoreId> storeId;
     private final TransactionIdStore transactionIdStore;
     private final LogFileInformation logFileInformation;
+    private final ConsoleLogger logger;
 
     public BackupImpl( StoreCopyServer storeCopyServer, Monitors monitors,
-                       LogicalTransactionStore logicalTransactionStore, TransactionIdStore transactionIdStore,
-                       LogFileInformation logFileInformation, Provider<StoreId> storeId )
+            LogicalTransactionStore logicalTransactionStore, TransactionIdStore transactionIdStore,
+            LogFileInformation logFileInformation, Provider<StoreId> storeId, Logging logging )
     {
         this.storeCopyServer = storeCopyServer;
         this.logicalTransactionStore = logicalTransactionStore;
         this.transactionIdStore = transactionIdStore;
         this.logFileInformation = logFileInformation;
         this.storeId = storeId;
+        this.logger = logging.getConsoleLog( getClass() );
         this.incrementalResponsePacker = new ResponsePacker( logicalTransactionStore, transactionIdStore, storeId );
     }
 
@@ -59,6 +63,7 @@ class BackupImpl implements TheBackupInterface
     {
         try ( StoreWriter storeWriter = writer )
         {
+            logger.log( "Full backup started..." );
             RequestContext copyStartContext = storeCopyServer.flushStoresAndStreamStoreFiles( storeWriter, forensics );
             ResponsePacker responsePacker = new StoreCopyResponsePacker( logicalTransactionStore,
                     transactionIdStore, logFileInformation, storeId,
@@ -66,11 +71,21 @@ class BackupImpl implements TheBackupInterface
             long optionalTransactionId = copyStartContext.lastAppliedTransaction();
             return responsePacker.packTransactionStreamResponse( anonymous( optionalTransactionId ), null/*no response object*/ );
         }
+        finally
+        {
+            logger.log( "Full backup finished." );
+        }
     }
 
     @Override
     public Response<Void> incrementalBackup( RequestContext context )
     {
-        return incrementalResponsePacker.packTransactionStreamResponse( context, null );
+        try
+        {
+            logger.log("Incremental backup started...");
+            return incrementalResponsePacker.packTransactionStreamResponse( context, null );
+        } finally {
+            logger.log("Incremental backup finished.");
+        }
     }
 }
