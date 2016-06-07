@@ -22,8 +22,10 @@ package org.neo4j.cypher.internal.compiler.v3_1.commands.predicates
 import org.neo4j.cypher.internal.compiler.v3_1.GeographicPoint
 import org.neo4j.graphdb.{Node, Path, Relationship}
 
-import collection.JavaConverters._
+import scala.collection.JavaConverters._
 
+// Class that calculates if two values are equivalent or not.
+// Does not handle NULL values - that must be handled outside!
 class Equivalent(val eagerizedValue: Any) {
   override def equals(in: Any): Boolean = {
     val eagerOther = in match {
@@ -33,14 +35,17 @@ class Equivalent(val eagerizedValue: Any) {
 
     (eagerizedValue, eagerOther) match {
       case (null, null) => true
-      case (n1: Number, n2: Number) =>
-        n1.doubleValue() == n2.doubleValue() ||
-          (Math.rint(n1.doubleValue()).toLong == n2.longValue() &&
-            Math.rint(n2.doubleValue()).toLong == n1.longValue())
+      case (n1: Double, n2: Float) => mixedFloatEquality(n2, n1)
+      case (n1: Float, n2: Double) => mixedFloatEquality(n1, n2)
       case (a, b) => a == b
       case _ => false
     }
   }
+
+  private def mixedFloatEquality(a: Float, b: Double) =
+    a.doubleValue() == b.doubleValue() ||
+    (Math.rint(a.doubleValue()).toLong == b.longValue() &&
+     Math.rint(b.doubleValue()).toLong == a.longValue())
 
   private var hash: Option[Int] = None
 
@@ -84,6 +89,7 @@ object Equivalent {
     case a: TraversableOnce[_] => a.toVector.map(eager)
     case l: java.lang.Iterable[_] => l.asScala.toVector.map(eager)
     case l: GeographicPoint => l
+    case x: org.neo4j.graphdb.spatial.Point => ???
     case x => throw new IllegalStateException(s"unknown value: (${x}) of type ${x.getClass})")
   }
 }

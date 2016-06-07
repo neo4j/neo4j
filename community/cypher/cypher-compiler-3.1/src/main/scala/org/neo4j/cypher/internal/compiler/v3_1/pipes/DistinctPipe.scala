@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.Equivalent
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.Effects._
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
@@ -50,11 +51,11 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])(val 
      * The filtering is done by extracting from the context the values of all return expressions, and keeping them
      * in a set.
      */
-    var seen = mutable.Set[NiceHasher]()
+    var seen = mutable.Set[Equivalent]()
 
     result.filter {
        case ctx =>
-         val values = new NiceHasher(keyNames.map(ctx))
+         val values = Equivalent(keyNames.map(ctx))
 
          if (seen.contains(values)) {
            false
