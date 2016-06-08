@@ -24,7 +24,7 @@ import java.time.Clock
 import org.neo4j.cypher.internal.compatibility.exceptionHandlerFor3_0
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.InputPosition
-import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, _}
+import org.neo4j.cypher.{SyntaxException, _}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelAPI
@@ -91,9 +91,6 @@ class CypherCompiler(graph: GraphDatabaseQueryService,
   private val factory = new PlannerFactory(graph, kernelAPI, kernelMonitors, log, config)
   private val planners: PlannerCache = new PlannerCache(factory)
 
-
-  private final val ILLEGAL_PLANNER_RUNTIME_COMBINATIONS: Set[(CypherPlanner, CypherRuntime)] = Set((CypherPlanner.rule, CypherRuntime.compiled))
-
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String): PreParsedQuery = exceptionHandlerFor3_0.runSafely{
     val preParsedStatement = CypherPreParser(queryText)
@@ -107,8 +104,6 @@ class CypherCompiler(graph: GraphDatabaseQueryService,
     val pickedRuntime = pick(runtime, CypherRuntime, if (cypherVersion == configuredVersion) Some(configuredRuntime) else None)
     val pickedUpdateStrategy = pick(updateStrategy, CypherUpdateStrategy, None)
 
-    assertValidOptions(CypherStatementWithOptions(preParsedStatement), cypherVersion, pickedExecutionMode, pickedPlanner, pickedRuntime)
-
     PreParsedQuery(statement, queryText, cypherVersion, pickedExecutionMode,
       pickedPlanner, pickedRuntime, pickedUpdateStrategy)(offset)
   }
@@ -118,12 +113,6 @@ class CypherCompiler(graph: GraphDatabaseQueryService,
     if (specified == companion.default) configured.getOrElse(specified) else specified
   }
 
-  private def assertValidOptions(statementWithOption: CypherStatementWithOptions,
-                                 cypherVersion: CypherVersion, executionMode: CypherExecutionMode,
-                                 planner: CypherPlanner, runtime: CypherRuntime) {
-    if (ILLEGAL_PLANNER_RUNTIME_COMBINATIONS((planner, runtime)))
-      throw new InvalidArgumentException(s"Unsupported PLANNER - RUNTIME combination: ${planner.name} - ${runtime.name}")
-  }
 
   @throws(classOf[SyntaxException])
   def parseQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer): ParsedQuery = {

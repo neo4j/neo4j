@@ -17,23 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_0.executionplan;
+package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 
-import java.util.Map;
-
-import org.neo4j.cypher.internal.compiler.v3_0.ExecutionMode;
-import org.neo4j.cypher.internal.compiler.v3_0.TaskCloser;
-import org.neo4j.cypher.internal.compiler.v3_0.codegen.QueryExecutionTracer;
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription;
-import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext;
-
-public interface GeneratedQuery
-{
-    GeneratedQueryExecution execute(
-            TaskCloser closer,
-            QueryContext queryContext,
-            ExecutionMode executionMode,
-            Provider<InternalPlanDescription> description,
-            QueryExecutionTracer tracer,
-            Map<String,Object> params );
+trait SuccessfulCloseable {
+  def success(): Unit
+  def close(): Unit
 }

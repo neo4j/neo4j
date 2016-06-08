@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.CypherCompiler.{CLOCK, DEFAULT_QUERY_PLAN_TTL, 
 import org.neo4j.cypher.internal.compatibility.WrappedMonitors3_0
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v3_0.{CypherCompilerFactory, InfoLogger, _}
-import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure
 
 import scala.concurrent.duration._
 
@@ -181,12 +180,11 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
         nonIndexedLabelWarningThreshold = 10000L
       ),
       clock = CLOCK,
-      structure = GeneratedQueryStructure,
       monitors = new WrappedMonitors3_0(kernelMonitors),
       logger = DEV_NULL,
       rewriterSequencer = RewriterStepSequencer.newPlain,
       plannerName = Some(IDPPlannerName),
-      runtimeName = Some(CompiledRuntimeName),
+      runtimeName = Some(InterpretedRuntimeName),
       updateStrategy = None,
       publicTypeConverter = identity
     )

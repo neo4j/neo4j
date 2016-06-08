@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{NewPlannerTestSupport, ExecutionEngineFunSuite}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphdb._
 
 class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
@@ -52,12 +52,12 @@ class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
   }
 
   test("predicates on optional matches should be respected") {
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n:Single) optional match (n)-[r]-(m) where m.prop = 42 return m")
+    val result = executeWithAllPlannersAndCompatibilityMode("match (n:Single) optional match (n)-[r]-(m) where m.prop = 42 return m")
     assert(result.toList === List(Map("m" -> nodeA)))
   }
 
   test("has label on null should evaluate to null") {
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n:Single) optional match (n)-[r:TYPE]-(m) return m:TYPE")
+    val result = executeWithAllPlannersAndCompatibilityMode("match (n:Single) optional match (n)-[r:TYPE]-(m) return m:TYPE")
     assert(result.toList === List(Map("m:TYPE" -> null)))
   }
 
@@ -84,7 +84,7 @@ class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
   }
 
   test("optional matching between two found nodes behaves as expected") {
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
+    val result = executeWithAllPlannersAndCompatibilityMode(
       """match (a:A), (b:C)
         |optional match (x)-->(b)
         |return x""".stripMargin)
@@ -103,7 +103,7 @@ class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     relate(x2, b1)
     relate(x2, b2)
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a:X) OPTIONAL MATCH (a)-->(b:Y) RETURN b")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:X) OPTIONAL MATCH (a)-->(b:Y) RETURN b")
     result.toSet should equal(Set(Map("b" -> null), Map("b" -> b1), Map("b" -> b2)))
   }
 

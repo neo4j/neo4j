@@ -28,7 +28,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     val b = createNode()
     relate(a, b)
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
+    val result = executeWithAllPlannersAndCompatibilityMode(
       "MATCH (a) WITH a MATCH (a)-->(b) RETURN *"
     )
     result.toList should equal(List(Map("a" -> a, "b" -> b)))
@@ -51,7 +51,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     val a = createNode()
     val b = createNode()
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
+    val result = executeWithAllPlannersAndCompatibilityMode(
       "MATCH (a) WITH a MATCH (b) RETURN *"
     )
     result.toSet should equal(Set(

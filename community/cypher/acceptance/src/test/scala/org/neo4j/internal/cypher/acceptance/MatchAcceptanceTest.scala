@@ -197,7 +197,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createNodes("A", "B", "C")
     relate("A" -> "KNOWS" -> "B")
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a {name:'A'}),(c {name:'C'}) match (a)-->(b) return a,b,c").toSet
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a {name:'A'}),(c {name:'C'}) match (a)-->(b) return a,b,c").toSet
 
     result should equal (Set(Map("a" -> node("A"), "b" -> node("B"), "c" -> node("C"))))
   }
@@ -323,7 +323,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate(b, x1, "REL", "BX1")
     relate(b, x2, "REL", "BX2")
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode( """
+    val result = executeWithAllPlannersAndCompatibilityMode( """
 MATCH (a {name:'A'}), (b {name:'B'})
 MATCH (a)-[rA]->(x)<-[rB]->(b)
 return x""")
@@ -347,7 +347,7 @@ return x""")
     relate(c, x1, "REL", "CX1")
     relate(c, x2, "REL", "CX2")
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode( """
+    val result = executeWithAllPlannersAndCompatibilityMode( """
 MATCH (a {name:'A'}), (b {name:'B'}), (c {name:'C'})
 match (a)-[rA]->(x), (b)-[rB]->(x), (c)-[rC]->(x)
 return x""")
@@ -386,7 +386,7 @@ return x""")
     relate(c, g)
     relate(c, j)
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode( """
+    val result = executeWithAllPlannersAndCompatibilityMode( """
 MATCH (a {name:'a'}), (b {name:'b'}), (c {name:'c'})
 match (a)-->(x), (b)-->(x), (c)-->(x)
 return x""")
@@ -557,7 +557,7 @@ RETURN other""")
     val a = createNode()
     val b = createNode("Mark")
     relate(a, b)
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode( """
+    val result = executeWithAllPlannersAndCompatibilityMode( """
 MATCH (n)-->(x0)
 OPTIONAL MATCH (x0)-->(x1)
 WHERE x1.foo = 'bar'
@@ -592,7 +592,7 @@ RETURN a.name""")
     val a = createNode()
     val b = createNode()
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n) return n")
+    val result = executeWithAllPlannersAndCompatibilityMode("match (n) return n")
     result.columnAs[Node]("n").toSet should equal (Set(a, b))
   }
 
@@ -600,7 +600,7 @@ RETURN a.name""")
     val a = createNode()
     val b = createNode()
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a), (b) where a <> b return a,b")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a), (b) where a <> b return a,b")
     result.toSet should equal (Set(Map("a" -> b, "b" -> a), Map("b" -> b, "a" -> a)))
   }
 
@@ -612,7 +612,7 @@ RETURN a.name""")
     relate(a, b)
     relate(b, c)
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (a)-->(b), (b)-->(b) return b")
+    val result = executeWithAllPlannersAndCompatibilityMode("match (a)-->(b), (b)-->(b) return b")
 
     result shouldBe 'isEmpty
   }
@@ -625,7 +625,7 @@ RETURN a.name""")
     relate(a, b)
 
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (a)-[r]->(a) return r")
+    val result = executeWithAllPlannersAndCompatibilityMode("match (a)-[r]->(a) return r")
     result.toList should equal (List(Map("r" -> r)))
   }
 
@@ -671,7 +671,7 @@ return b
     val b = createNode()
     relate(a, b, "REL")
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (a)-[:REL|:REL]->(b) return b").toList
+    val result = executeWithAllPlannersAndCompatibilityMode("match (a)-[:REL|:REL]->(b) return b").toList
 
     result should equal (List(Map("b" -> b)))
   }
@@ -699,7 +699,7 @@ return b
     val n = createNode("foo" -> "bar")
 
     // when
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n) where n.foo = 'bar' return n")
+    val result = executeWithAllPlannersAndCompatibilityMode("match (n) where n.foo = 'bar' return n")
 
     // then
     result.toList should equal (List(Map("n" -> n)))
@@ -755,7 +755,7 @@ return b
 
   test("should preserve the original matched values if optional match matches nothing") {
     val n = createNode()
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n) OPTIONAL MATCH (n)-[:NOT_EXIST]->(x) RETURN n, x")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n) OPTIONAL MATCH (n)-[:NOT_EXIST]->(x) RETURN n, x")
 
     result.toList should equal (List(Map("n" -> n, "x" -> null)))
   }
@@ -808,7 +808,7 @@ return b
     relate(a, b2)
 
     // when
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(s"MATCH (a)-->(b:foo) RETURN b")
+    val result = executeWithAllPlannersAndCompatibilityMode(s"MATCH (a)-->(b:foo) RETURN b")
 
     // THEN
     result.toList should equal (List(Map("b" -> b1)))
@@ -822,7 +822,7 @@ return b
     relate(createLabeledNode("A"), createLabeledNode("A"))
 
     // when
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(s"MATCH (a:A)-[r]->(b:B) RETURN r")
+    val result = executeWithAllPlannersAndCompatibilityMode(s"MATCH (a:A)-[r]->(b:B) RETURN r")
 
     // THEN
     result.toSet should equal (Set(Map("r" -> r)))
@@ -839,7 +839,7 @@ return b
     createLabeledNode("C")
 
     // when
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(s"MATCH (a:A:B:C) RETURN a")
+    val result = executeWithAllPlannersAndCompatibilityMode(s"MATCH (a:A:B:C) RETURN a")
 
     // THEN
     result.toList should equal (List(Map("a" -> n)))
@@ -851,7 +851,7 @@ return b
     createLabeledNode("Foo")
 
     // when
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(s"MATCH (n) RETURN (n:Foo)")
+    val result = executeWithAllPlannersAndCompatibilityMode(s"MATCH (n) RETURN (n:Foo)")
 
     // THEN
     result.toSet should equal (Set(Map("(n:Foo)" -> true), Map("(n:Foo)" -> false)))
@@ -896,7 +896,7 @@ return b
     graph.createIndex("Person", "name")
 
     // when
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
 
     // then
     result.toList should equal (List(Map("n" -> jake)))
@@ -945,7 +945,7 @@ return b
     relate(jake, createNode())
 
     // when
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() WHERE n.name = 'Jacob' RETURN n")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:Person)-->() WHERE n.name = 'Jacob' RETURN n")
 
     // then
     result.toList should equal (List(Map("n" -> jake)))
@@ -968,7 +968,7 @@ return b
     relate(a, c)
 
     // when asked for a cartesian product of the same match twice
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (a)-->(b) match (c)-->(d) return a,b,c,d")
+    val result = executeWithAllPlannersAndCompatibilityMode("match (a)-->(b) match (c)-->(d) return a,b,c,d")
 
     // then we should find 2 x 2 = 4 result matches
 
@@ -1031,7 +1031,7 @@ return b
     graph.createIndex("Label", "property")
 
     // when
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (a:Label)-->(b:Label) where a.property = b.property return a, b")
+    val result = executeWithAllPlannersAndCompatibilityMode("match (a:Label)-->(b:Label) where a.property = b.property return a, b")
 
     // then does not throw exceptions
     result.toList should equal (List(Map("a" -> a, "b" -> b)))
@@ -1176,7 +1176,7 @@ return b
     relate(b, c, "B")
 
     // when
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (a)-[r1:A]->(x)-[r2:B]->(a) return a.name")
+    val result = executeWithAllPlannersAndCompatibilityMode("match (a)-[r1:A]->(x)-[r2:B]->(a) return a.name")
 
     // then does not throw exceptions
     assert(result.toList === List(
@@ -1194,7 +1194,7 @@ return b
     relate(b, c, "B")
 
     // when
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (a)-[:A]->(b), (b)-[:B]->(a) return a.name")
+    val result = executeWithAllPlannersAndCompatibilityMode("match (a)-[:A]->(b), (b)-[:B]->(a) return a.name")
 
     // then does not throw exceptions
     assert(result.toList === List(
@@ -1675,7 +1675,7 @@ return b
     //WHEN
     val first = updateWithBothPlannersAndCompatibilityMode(query).length
     val second = updateWithBothPlannersAndCompatibilityMode(query).length
-    val check = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (f:Folder) RETURN f.name").toSet
+    val check = executeWithAllPlannersAndCompatibilityMode("MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
     first should equal(second)
@@ -1708,7 +1708,7 @@ return b
 
     val first = updateWithBothPlannersAndCompatibilityMode(query).length
     val second = updateWithBothPlannersAndCompatibilityMode(query).length
-    val check = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (f:Folder) RETURN f.name").toSet
+    val check = executeWithAllPlannersAndCompatibilityMode("MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
     first should equal(second)
@@ -1878,7 +1878,7 @@ return b
 
     val query = "MATCH (a) RETURN a.bar"
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(query).toList
+    val result = executeWithAllPlannersAndCompatibilityMode(query).toList
     result should equal(List(Map("a.bar" -> null)))
   }
 
@@ -1888,7 +1888,7 @@ return b
 
     val query = "MATCH (a) RETURN a.prop"
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(query).toComparableResult
+    val result = executeWithAllPlannersAndCompatibilityMode(query).toComparableResult
     result should equal(List(asResult(props, "a")))
   }
 
@@ -1897,7 +1897,7 @@ return b
 
     val query = "MATCH (a)-[r]->(b) RETURN r.prop"
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(query).toComparableResult
+    val result = executeWithAllPlannersAndCompatibilityMode(query).toComparableResult
     result should equal(List(asResult(Map("prop" -> 1), "r")))
   }
 
@@ -1907,7 +1907,7 @@ return b
 
     val query = "MATCH (a)-[r]->(b) RETURN a.nodeProp, r.relProp"
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(query).toComparableResult
+    val result = executeWithAllPlannersAndCompatibilityMode(query).toComparableResult
     result should equal(List(asResult(Map("nodeProp" -> 1), "a") ++ asResult(Map("relProp" -> 2), "r")))
   }
 
@@ -1917,7 +1917,7 @@ return b
 
     val query = "MATCH (a)-[r]->(b) RETURN a AS FOO, r AS BAR"
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(query).toComparableResult
+    val result = executeWithAllPlannersAndCompatibilityMode(query).toComparableResult
     result should equal(List(Map("FOO" -> a, "BAR" -> r)))
   }
 
@@ -1926,7 +1926,7 @@ return b
 
     val query = "MATCH (a)-[r]->(b) RETURN r.foo"
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(query).toComparableResult
+    val result = executeWithAllPlannersAndCompatibilityMode(query).toComparableResult
     result should equal(List(Map("r.foo" -> null)))
   }
 
@@ -1940,14 +1940,14 @@ return b
 
     val query = "MATCH (a) RETURN a.name, a.age, a.seasons"
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(query).toComparableResult
+    val result = executeWithAllPlannersAndCompatibilityMode(query).toComparableResult
     result should equal(List(asResult(props, "a")))
   }
 
   test("adding a property and a literal is supported in new runtime") {
     val props = Map("prop" -> 1)
     createNode(props)
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a) RETURN a.prop + 1 AS FOO").toComparableResult
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) RETURN a.prop + 1 AS FOO").toComparableResult
 
     result should equal(List(Map("FOO" -> 2)))
   }
@@ -1955,7 +1955,7 @@ return b
   test("adding arrays is supported in new runtime") {
     val props = Map("prop1" -> Array(1,2,3), "prop2" -> Array(4, 5))
     createNode(props)
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a) RETURN a.prop1 + a.prop2 AS FOO").toComparableResult
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) RETURN a.prop1 + a.prop2 AS FOO").toComparableResult
 
     result should equal(List(Map("FOO" -> List(1, 2, 3, 4, 5))))
   }
@@ -2007,7 +2007,7 @@ return b
     val node1 = createNode()
     val node2 = createNode()
     val rel = relate(node1, node2)
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n)-[r]->(m) return [n, r, m] as r").toComparableResult
+    val result = executeWithAllPlannersAndCompatibilityMode("match (n)-[r]->(m) return [n, r, m] as r").toComparableResult
 
     result should equal(Seq(Map("r" -> Seq(node1, rel, node2))))
   }
@@ -2016,7 +2016,7 @@ return b
     val node1 = createNode()
     val node2 = createNode()
     val rel = relate(node1, node2)
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n)-[r]->(m) return {node1: n, rel: r, node2: m} as m").toComparableResult
+    val result = executeWithAllPlannersAndCompatibilityMode("match (n)-[r]->(m) return {node1: n, rel: r, node2: m} as m").toComparableResult
 
     result should equal(Seq(Map("m" -> Map("node1" -> node1, "rel" -> rel, "node2" -> node2))))
   }
@@ -2081,7 +2081,7 @@ return b
   }
 
   test("columns should be in the provided order") {
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (p),(o),(n),(t),(u),(s) RETURN p,o,n,t,u,s")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (p),(o),(n),(t),(u),(s) RETURN p,o,n,t,u,s")
 
     result.columns should equal(List("p", "o", "n", "t", "u", "s"))
   }

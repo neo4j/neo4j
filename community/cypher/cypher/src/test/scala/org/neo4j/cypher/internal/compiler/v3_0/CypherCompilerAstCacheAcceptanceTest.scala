@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.logging.AssertableLogProvider.inLog
@@ -51,11 +50,11 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
         errorIfShortestPathFallbackUsedAtRuntime = false,
         nonIndexedLabelWarningThreshold = 10000L
       ),
-      clock, GeneratedQueryStructure,
+      clock,
       new WrappedMonitors3_0(kernelMonitors),
       new StringInfoLogger3_0(log),
       plannerName = Some(IDPPlannerName),
-      runtimeName = Some(CompiledRuntimeName),
+      runtimeName = Some(InterpretedRuntimeName),
       updateStrategy = None,
       rewriterSequencer = RewriterStepSequencer.newValidating,
       publicTypeConverter = identity
