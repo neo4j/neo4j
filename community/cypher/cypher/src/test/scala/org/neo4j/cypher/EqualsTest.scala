@@ -38,7 +38,7 @@ class EqualsTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
     graph.execute("CREATE (:Label { id: 4611686018427387905 })")
 
     // When
-    val result = executeWithAllPlannersAndCompatibilityMode("match (p:Label {id: 4611686018427387905}) return p")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (p:Label {id: 4611686018427387905}) return p")
 
     result should not be empty
   }
@@ -49,7 +49,7 @@ class EqualsTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
     graph.execute("CREATE (:Label { id: 4611686018427387905 })")
 
     // When
-    val result = executeWithAllPlannersAndCompatibilityMode("match (p:Label) where p.id = 4611686018427387905 return p")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (p:Label) where p.id = 4611686018427387905 return p")
 
     result should not be empty
   }
@@ -60,7 +60,7 @@ class EqualsTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
     graph.execute("CREATE (:Label { id: 4611686018427387905 })")
 
     // When
-    val result = executeWithAllPlannersAndCompatibilityMode("match (p:Label) where p.id = 4611686018427387900 return p")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (p:Label) where p.id = 4611686018427387900 return p")
 
     result should be(empty)
   }
@@ -71,7 +71,7 @@ class EqualsTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
     graph.execute("CREATE (:Label { id: 4611686018427387905 })")
 
     // When
-    val result = executeWithAllPlannersAndCompatibilityMode("match (p:Label {id : 4611686018427387900}) return p")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (p:Label {id : 4611686018427387900}) return p")
 
     result should be(empty)
   }
