@@ -27,7 +27,7 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     given()
 
     // When
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:Crew) WHERE n.name = 'Neo' RETURN n")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Crew) WHERE n.name = 'Neo' RETURN n")
 
     // Then
     result.executionPlanDescription().toString should include("NodeUniqueIndexSeek")
@@ -39,7 +39,7 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     given()
 
     // When
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n")
 
     // Then
     result shouldBe empty
@@ -51,7 +51,7 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     given()
 
     // When
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:Matrix:Crew) WHERE n.name = 'Cypher' RETURN n")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Matrix:Crew) WHERE n.name = 'Cypher' RETURN n")
 
     // Then
     result.executionPlanDescription().toString should include("NodeUniqueIndexSeek")
@@ -117,7 +117,7 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
         |RETURN m""".stripMargin
 
     // When
-    val result = executeWithAllPlannersAndCompatibilityMode(query)
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(query)
 
     // Then
     result.toList should equal(List(

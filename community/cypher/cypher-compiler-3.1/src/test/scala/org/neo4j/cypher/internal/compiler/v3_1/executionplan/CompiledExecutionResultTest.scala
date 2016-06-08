@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultRow, InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.NotFoundException
 import org.neo4j.helpers.collection.Iterators
 
 import scala.collection.JavaConverters._
@@ -44,6 +45,12 @@ class CompiledExecutionResultTest extends CypherFunSuite {
     val result = newCompiledExecutionResult(javaMap("foo" -> "bar"))
 
     result.columnAs[String]("foo").toList should equal(List("bar"))
+  }
+
+  test("should throw if non-existing column") {
+    val result = newCompiledExecutionResult(javaMap("foo" -> "bar"))
+
+    a [NotFoundException] shouldBe thrownBy(result.columnAs[String]("baz"))
   }
 
   test("should return scala objects for list") {

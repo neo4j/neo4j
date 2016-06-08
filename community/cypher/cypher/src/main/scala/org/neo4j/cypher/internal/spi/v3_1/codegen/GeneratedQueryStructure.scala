@@ -60,7 +60,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     }
 
     try {
-      CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, mode, option)
+      CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, mode, option, SourceCode.PRINT_SOURCE)
     } catch {
       case e: Exception => throw new CantCompileQueryException(e.getMessage, e)
     }

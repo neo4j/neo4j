@@ -27,10 +27,9 @@ import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultRow, InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_1.{TaskCloser, _}
-import org.neo4j.cypher.internal.frontend.v3_1.EntityNotFoundException
 import org.neo4j.cypher.internal.frontend.v3_1.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_1.notification.InternalNotification
-import org.neo4j.graphdb.ResourceIterator
+import org.neo4j.graphdb.{NotFoundException, ResourceIterator}
 
 import scala.collection.{Map, mutable}
 
@@ -58,7 +57,9 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
   override def javaColumns: util.List[String] = columns.asJava
   override def columns: List[String] = javaColumns.asScala.toList
 
-  override def columnAs[T](column: String): Iterator[T] = map { case m => extractScalaColumn(column, m).asInstanceOf[T] }
+  override def columnAs[T](column: String): Iterator[T] =
+    if (this.columns.contains(column)) map (m => extractScalaColumn(column, m).asInstanceOf[T])
+    else throw columnNotFound(column, columns)
 
   override def javaIterator: ResourceIterator[util.Map[String, Any]] = new ClosingJavaIterator[util.Map[String, Any]] {
     override def next(): util.Map[String, Any] = inner.next()
@@ -158,20 +159,20 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
 
   private def extractScalaColumn(column: String, data: Map[String, Any]): Any = {
     data.getOrElse(column, {
-      throw columnNotFound(column, data)
+      throw columnNotFound(column, data.keys)
     })
   }
 
   private def extractJavaColumn(column: String, data: util.Map[String, Any]): Any = {
     val value = data.get(column)
     if (value == null) {
-      throw columnNotFound(column, data.asScala)
+      throw columnNotFound(column, columns)
     }
     value
   }
 
-  private def columnNotFound(column: String, data: Map[_, _]) =
-    new EntityNotFoundException(s"No column named '$column' was found. Found: ${data.keys.mkString("(\"", "\", \"", "\")")}")
+  private def columnNotFound(column: String, expected: Iterable[String]) =
+    new NotFoundException(s"No column named '$column' was found. Found: ${expected.mkString("(\"", "\", \"", "\")")}")
 
   private abstract class ClosingJavaIterator[A] extends ResourceIterator[A] {
       def hasNext = self.hasNext

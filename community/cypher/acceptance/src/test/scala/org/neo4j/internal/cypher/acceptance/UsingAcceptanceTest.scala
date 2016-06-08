@@ -23,9 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_1.IDPPlannerName
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{NodeHashJoin, NodeIndexSeek}
-import org.neo4j.cypher.{ExecutionEngineFunSuite, HintException, IndexHintException, NewPlannerTestSupport, SyntaxException, _}
-import org.neo4j.graphdb.schema.Schema
-import org.neo4j.graphdb.{QueryExecutionException, Result}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, IndexHintException, NewPlannerTestSupport, SyntaxException, _}
+import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api.exceptions.Status
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -677,7 +676,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
   test("USING INDEX hint should not clash with used variables") {
     graph.createIndex("PERSON", "id")
 
-    val result = executeWithAllPlannersAndCompatibilityMode(
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
       """MATCH (actor:PERSON {id: 1})
         |USING INDEX actor:PERSON(id)
         |WITH 14 as id

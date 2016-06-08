@@ -24,6 +24,7 @@ import org.mockito.Mockito._
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compiler.v3_1.ProfileMode
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.Variable
+import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions.CodeGenType
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.Provider
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
@@ -33,7 +34,6 @@ import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{Cardinality, pla
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.frontend.v3_1.ast.SignedDecimalIntegerLiteral
-import org.neo4j.cypher.internal.frontend.v3_1.symbols
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
@@ -49,7 +49,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     val id1 = new Id()
     val id2 = new Id()
 
-    val variable = Variable("name", symbols.CTNode)
+    val variable = Variable("name", CodeGenType.primitiveNode)
     val projectNode = expressions.NodeProjection(variable)
     val compiled = compile(Seq(WhileLoop(variable,
       ScanAllNodes("OP1"), AcceptVisitor("OP2", Map("n" -> projectNode)))),

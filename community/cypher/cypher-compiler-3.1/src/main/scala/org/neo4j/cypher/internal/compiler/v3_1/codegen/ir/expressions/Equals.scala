@@ -29,30 +29,58 @@ case class Equals(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGe
 
   override def codeGenType(implicit context: CodeGenContext) =
     if (nullable) CodeGenType(CTBoolean, ReferenceType)
-    else (lhs, rhs) match {
-    case (_:NodeExpression, _:NodeExpression) => CodeGenType(CTBoolean, BoolType)
-    case (_:RelationshipExpression, _:RelationshipExpression) => CodeGenType(CTBoolean, BoolType)
-    case _ => CodeGenType(CTBoolean, ReferenceType)
-  }
+    else CodeGenType.primitiveBool
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     lhs.init(generator)
     rhs.init(generator)
   }
 
+  /*
+   * This looks somewhat complicated since it is doing a couple of optimizations:
+   * - If we are comparing (non-nullable) nodes and relationships we do it by comparing ids directly
+   * - If we are comparing two primitives we use: `a == b`
+   * - If we are comparing one primitive with one reference type we unbox the reference, e.g.
+   *   `a == b.longValue`
+   * - For (non-nullable) strings we directly use `a.equals(b)`
+   * - For other cases we resort to `threeValuedEqualsExpression` which has the correct `null`, `list/array`
+   *   semantics
+   */
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
     if (nullable) structure.threeValuedEqualsExpression(structure.box(lhs.generateExpression(structure), lhs.codeGenType),
                                                         structure.box(rhs.generateExpression(structure), rhs.codeGenType))
     else (lhs, rhs) match {
-      case (NodeExpression(v1), NodeExpression(v2)) => structure.equalityExpression(structure.loadVariable(v1.name), structure.loadVariable(v2.name), CodeGenType.primitiveNode)
-      case (RelationshipExpression(v1), RelationshipExpression(v2)) => structure.equalityExpression(structure.loadVariable(v1.name), structure.loadVariable(v2.name),
-                                                                                                    CodeGenType.primitiveRel)
+      case (NodeExpression(v1), NodeExpression(v2)) =>
+        structure.equalityExpression(structure.loadVariable(v1.name), structure.loadVariable(v2.name), CodeGenType.primitiveNode)
+      case (RelationshipExpression(v1), RelationshipExpression(v2)) =>
+        structure.equalityExpression(structure.loadVariable(v1.name), structure.loadVariable(v2.name),
+                                     CodeGenType.primitiveRel)
       case (NodeExpression(_), RelationshipExpression(_)) => throw new
           IncomparableValuesException(symbols.CTNode.toString, symbols.CTRelationship.toString)
       case (RelationshipExpression(_), NodeExpression(_)) => throw new
           IncomparableValuesException(symbols.CTNode.toString, symbols.CTRelationship.toString)
-      case _ => structure.threeValuedEqualsExpression(structure.box(lhs.generateExpression(structure), lhs. codeGenType),
-                                                      structure.box(rhs.generateExpression(structure), rhs.codeGenType))
-    }
+
+      //both are primitive
+      case (t1, t2) if t1.codeGenType == t2.codeGenType && t1.codeGenType.isPrimitive =>
+        structure.equalityExpression(lhs.generateExpression(structure), rhs.generateExpression(structure), t1.codeGenType)
+      //t1 is primitive
+      case (t1, t2) if t1.codeGenType.ct == t2.codeGenType.ct && t1.codeGenType.isPrimitive =>
+        structure.equalityExpression(
+          lhs.generateExpression(structure), structure.unbox(rhs.generateExpression(structure), t2.codeGenType),
+          t1.codeGenType)
+      //t2 is primitive
+      case (t1, t2) if t1.codeGenType.ct == t2.codeGenType.ct && t2.codeGenType.isPrimitive =>
+        structure.equalityExpression(
+          structure.unbox(lhs.generateExpression(structure), t1.codeGenType), rhs.generateExpression(structure), t1.codeGenType)
+
+      //both are strings
+      case (t1, t2) if t1.codeGenType.ct == t2.codeGenType.ct && t1.codeGenType.ct == symbols.CTString =>
+        structure.equalityExpression(lhs.generateExpression(structure), rhs.generateExpression(structure), t1.codeGenType)
+      case _ =>
+        structure.unbox(
+          structure.threeValuedEqualsExpression(structure.box(lhs.generateExpression(structure), lhs.codeGenType),
+                                                              structure.box(rhs.generateExpression(structure), rhs.codeGenType)),
+          CodeGenType(CTBoolean, ReferenceType))
+      }
   }
 }

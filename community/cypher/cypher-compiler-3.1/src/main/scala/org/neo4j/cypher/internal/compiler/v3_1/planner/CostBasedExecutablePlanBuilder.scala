@@ -70,8 +70,8 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
         val (periodicCommit, logicalPlan, pipeBuildContext) = closing(tracer.beginPhase(LOGICAL_PLANNING)) {
           produceLogicalPlan(ast, rewrittenSemanticTable)(planContext, inputQuery.notificationLogger)
         }
-        runtimeBuilder(periodicCommit, logicalPlan, pipeBuildContext, planContext, tracer, rewrittenSemanticTable,
-          planBuilderMonitor, plannerName, inputQuery, createFingerprintReference, config)
+          runtimeBuilder(periodicCommit, logicalPlan, pipeBuildContext, planContext, tracer, rewrittenSemanticTable,
+                         planBuilderMonitor, plannerName, inputQuery, createFingerprintReference, config)
       case x =>
         throw new CantHandleQueryException(x.toString())
     }

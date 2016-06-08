@@ -275,19 +275,19 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("LIMIT should influence cardinality estimation even when parameterized") {
     (0 until 100).map(i => createLabeledNode("Person"))
-    val result = executeWithAllPlannersAndCompatibilityMode(s"PROFILE MATCH (p:Person) RETURN p LIMIT {limit}", "limit" -> 10)
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(s"PROFILE MATCH (p:Person) RETURN p LIMIT {limit}", "limit" -> 10)
     assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(result)("Limit")
   }
 
   test("LIMIT should influence cardinality estimation with literal") {
     (0 until 100).map(i => createLabeledNode("Person"))
-    val result = executeWithAllPlannersAndCompatibilityMode(s"PROFILE MATCH (p:Person) RETURN p LIMIT 10")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(s"PROFILE MATCH (p:Person) RETURN p LIMIT 10")
     assertEstimatedRows(10)(result)("Limit")
   }
 
   test("LIMIT should influence cardinality estimation with literal and parameters") {
     (0 until 100).map(i => createLabeledNode("Person"))
-    val result = executeWithAllPlannersAndCompatibilityMode(s"PROFILE MATCH (p:Person) WHERE 50 = {fifty} RETURN p LIMIT 10", "fifty" -> 50)
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(s"PROFILE MATCH (p:Person) WHERE 50 = {fifty} RETURN p LIMIT 10", "fifty" -> 50)
     assertEstimatedRows(10)(result)("Limit")
   }
 
@@ -379,7 +379,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   }
 
   test("reports RULE planner when showing plan description") {
-    val executionPlanDescription = graph.execute("CYPHER planner=rule create ()").getExecutionPlanDescription()
+    val executionPlanDescription = graph.execute("CYPHER planner=rule create ()").getExecutionPlanDescription
 
     executionPlanDescription.toString should not include "Planner COST"
     executionPlanDescription.toString should include("Planner RULE" + System.lineSeparator())

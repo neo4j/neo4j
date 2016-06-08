@@ -179,7 +179,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
 
-    executeWithAllPlannersAndCompatibilityMode("MATCH (a)<-[r1:R]-(b) RETURN *").toList should have size 1
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)<-[r1:R]-(b) RETURN *").toList should have size 1
   }
 
   test("create relationship with multiple hops") {
@@ -187,7 +187,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     assertStats(result, nodesCreated = 3, relationshipsCreated = 2)
 
-    executeWithAllPlannersAndCompatibilityMode("MATCH (a)-[r1:R]->(b)-[r2:R]->(c) RETURN *").toList should have size 1
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)-[r1:R]->(b)-[r2:R]->(c) RETURN *").toList should have size 1
   }
 
   test("create relationship with multiple hops and reversed direction") {
@@ -195,7 +195,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     assertStats(result, nodesCreated = 3, relationshipsCreated = 2)
 
-    executeWithAllPlannersAndCompatibilityMode("MATCH (a)<-[r1:R]-(b)<-[r2:R]-(c) RETURN *").toList should have size 1
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)<-[r1:R]-(b)<-[r2:R]-(c) RETURN *").toList should have size 1
   }
 
   test("create relationship with multiple hops and changing directions") {
@@ -203,7 +203,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     assertStats(result, nodesCreated = 3, relationshipsCreated = 2, labelsAdded = 3)
 
-    executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-[r1:R]->(b:B)<-[r2:R]-(c:C) RETURN *").toList should have size 1
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a:A)-[r1:R]->(b:B)<-[r2:R]-(c:C) RETURN *").toList should have size 1
   }
 
   test("create relationship with multiple hops and changing directions 2") {
@@ -211,7 +211,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     assertStats(result, nodesCreated = 3, relationshipsCreated = 2, labelsAdded = 3)
 
-    executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)<-[r1:R]-(b:B)-[r2:R]->(c:C) RETURN *").toList should have size 1
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a:A)<-[r1:R]-(b:B)-[r2:R]->(c:C) RETURN *").toList should have size 1
   }
 
   test("create relationship with multiple hops and varying directions and types") {
@@ -219,7 +219,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     assertStats(result, nodesCreated = 4, relationshipsCreated = 3)
 
-    executeWithAllPlannersAndCompatibilityMode("MATCH (a)-[r1:R1]->(b)<-[r2:R2]-(c)-[r3:R3]->(d) RETURN *").toList should have size 1
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)-[r1:R1]->(b)<-[r2:R2]-(c)-[r3:R3]->(d) RETURN *").toList should have size 1
   }
 
   test("should be possible to generate the movie graph") {

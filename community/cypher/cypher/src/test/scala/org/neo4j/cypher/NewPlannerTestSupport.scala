@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import org.neo4j.cypher.NewPlannerMonitor.{NewPlannerMonitorCall, NewQuerySeen, UnableToHandleQuery}
 import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, NewRuntimeMonitorCall, UnableToCompileQuery}
 import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.compatibility.{ExecutionResultWrapperFor3_1, ExecutionResultWrapperFor2_3, ExecutionResultWrapperFor3_0}
+import org.neo4j.cypher.internal.compatibility.{ExecutionResultWrapperFor2_3, ExecutionResultWrapperFor3_1}
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{InternalExecutionResult, NewLogicalPlanSuccessRateMonitor, NewRuntimeSuccessRateMonitor}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{CantCompileQueryException, CantHandleQueryException}
@@ -99,8 +99,6 @@ class NewRuntimeMonitor extends NewRuntimeSuccessRateMonitor {
 trait NewPlannerTestSupport extends CypherTestSupport {
   self: ExecutionEngineFunSuite =>
 
-  //todo once the compiled runtime handles dumpToString and plan descriptions, we should enable it by default here
-  //in that way we will notice when we support new queries
   override def databaseConfig(): Map[Setting[_], String] =
     Map(GraphDatabaseSettings.cypher_parser_version -> CypherVersion.v3_1.name,
       GraphDatabaseSettings.query_non_indexed_label_warning_threshold -> "10")
@@ -178,7 +176,9 @@ trait NewPlannerTestSupport extends CypherTestSupport {
       null
     }
     val ruleResult = innerExecute(s"CYPHER planner=rule $queryText", params: _*)
-    val idpResult = executeWithCostPlannerOnly(queryText, params: _*)
+    //run with compiled to find new queries that are able to run with compiled runtime
+    //we cannot set it to default at the db-level since we cannot combine compiled and rule
+    val idpResult = executeWithCostPlannerOnly(s"CYPHER runtime=compiled $queryText", params: _*)
 
     if (enableCompatibility) {
       assertResultsAreSame(compatibilityResult, idpResult, queryText, "Diverging results between compatibility and current")
@@ -331,12 +331,10 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     def toCompararableSeq(replaceNaNs: Boolean): Seq[Map[String, Any]] = {
       def convert(v: Any): Any = v match {
         case a: Array[_] => a.toList.map(convert)
-        case m: Map[_, _] => {
+        case m: Map[_, _] =>
           Eagerly.immutableMapValues(m, convert)
-        }
-        case m: java.util.Map[_, _] => {
+        case m: java.util.Map[_, _] =>
           Eagerly.immutableMapValues(m.asScala, convert)
-        }
         case l: java.util.List[_] => l.asScala.map(convert)
         case d: java.lang.Double if replaceNaNs && java.lang.Double.isNaN(d) => NanReplacement
         case m => m

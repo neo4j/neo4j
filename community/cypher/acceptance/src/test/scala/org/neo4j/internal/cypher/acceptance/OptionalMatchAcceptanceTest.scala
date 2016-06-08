@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{NewPlannerTestSupport, ExecutionEngineFunSuite}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphdb._
 
 class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
@@ -142,14 +142,14 @@ class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
 
   // TCK'd
   test("should support optional match to find self loops") {
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:B) OPTIONAL MATCH (a)-[r]-(a) RETURN r")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a:B) OPTIONAL MATCH (a)-[r]-(a) RETURN r")
 
     assert(result.toSet === Set(Map("r" -> selfRel)))
   }
 
   // TCK'd
   test("should support optional match to not find self loops") {
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE NOT (a:B) OPTIONAL MATCH (a)-[r]->(a) RETURN r")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a) WHERE NOT (a:B) OPTIONAL MATCH (a)-[r]->(a) RETURN r")
 
     assert(result.toSet === Set(Map("r" -> null)))
   }
@@ -210,7 +210,7 @@ class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
 
   // TCK'd
   test("should handle correlated optional matches - the first does not match, and the second must not match") {
-    val result = executeWithAllPlannersAndCompatibilityMode(
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
       """MATCH (a:A), (b:B)
         |OPTIONAL MATCH (a)-->(x)
         |OPTIONAL MATCH (x)-[r]->(b)

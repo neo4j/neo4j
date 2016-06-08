@@ -33,7 +33,7 @@ object ExpressionConverter {
     def asPredicate = new CodeGenExpression {
 
       override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
-        if (expression.nullable) structure.coerceToBoolean(expression.generateExpression(structure))
+        if (expression.nullable || !expression.codeGenType.isPrimitive) structure.coerceToBoolean(expression.generateExpression(structure))
         else expression.generateExpression(structure)
       }
 
@@ -43,7 +43,7 @@ object ExpressionConverter {
 
       override def codeGenType(implicit context: CodeGenContext) =
         if (nullable) CodeGenType(CTBoolean, ReferenceType)
-        else CodeGenType(CTBoolean, BoolType)
+        else expression.codeGenType
     }
   }
 
@@ -93,7 +93,7 @@ object ExpressionConverter {
 
     val variable = context.getVariable(variableQueryVariable)
 
-    variable.cypherType match {
+    variable.codeGenType.ct match {
       case CTNode => NodeProjection(variable)
       case CTRelationship => RelationshipProjection(variable)
       case _ => throw new InternalException("The compiled runtime only handles variables pointing to rels and nodes at this time")

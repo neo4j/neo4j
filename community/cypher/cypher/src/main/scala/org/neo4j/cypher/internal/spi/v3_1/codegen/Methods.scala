@@ -98,4 +98,9 @@ object Methods {
   val boxInteger = method[java.lang.Integer, java.lang.Integer]("valueOf", typeRef[Int])
   val boxDouble = method[java.lang.Double, java.lang.Double]("valueOf", typeRef[Double])
   val unboxInteger = method[java.lang.Integer, Int]("intValue")
+  val unboxBoolean = method[java.lang.Boolean, Boolean]("booleanValue")
+  val unboxLong = method[java.lang.Long, Long]("longValue")
+  val unboxDouble = method[java.lang.Double, Double]("doubleValue")
+  val unboxNode = method[NodeProxy, Long]("getNodeId")
+  val unboxRel = method[RelationshipProxy, Long]("getRelationshipId")
 }

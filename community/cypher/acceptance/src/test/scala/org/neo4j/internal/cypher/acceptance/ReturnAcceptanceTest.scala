@@ -69,7 +69,7 @@ class ReturnAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers w
   test("should accept a valid unicode literal") {
     val query = "RETURN '\\uf123' AS a"
 
-    val result = executeWithAllPlannersAndCompatibilityMode(query)
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(query)
 
     result.toList should equal(List(Map("a" -> "\uF123")))
   }
