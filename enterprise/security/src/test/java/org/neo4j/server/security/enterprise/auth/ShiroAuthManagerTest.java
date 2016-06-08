@@ -173,7 +173,9 @@ public class ShiroAuthManagerTest
 
         // Given
         final User user = new User( "jake", Credential.forPassword( "abc123" ), true );
+        final User user2 = new User( "craig", Credential.forPassword( "321cba" ), true );
         users.create( user );
+        users.create( user2 );
         manager.start();
 
         // When
@@ -181,10 +183,11 @@ public class ShiroAuthManagerTest
 
         // Then
         assertNull( users.findByName( "jake" ) );
+        assertNotNull( users.findByName( "craig" ) );
     }
 
     @Test
-    public void shouldDeleteUnknownUser() throws Throwable
+    public void shouldFailDeletingUnknownUser() throws Throwable
     {
         // Given
         final User user = new User( "jake", Credential.forPassword( "abc123" ), true );
@@ -192,7 +195,15 @@ public class ShiroAuthManagerTest
         manager.start();
 
         // When
-        manager.deleteUser( "unknown" );
+        try
+        {
+            manager.deleteUser( "unknown" );
+            fail("Should throw exception on deleting unknown user");
+        }
+        catch ( IllegalArgumentException e )
+        {
+            e.getMessage().equals( "User 'unknown' does not exist" );
+        }
 
         // Then
         assertNotNull( users.findByName( "jake" ) );

@@ -77,11 +77,11 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
     }
 
     @Override
-    public void create( User user ) throws IllegalCredentialsException, IOException
+    public void create( User user ) throws IllegalArgumentException, IOException
     {
         if ( !isValidName( user.name() ) )
         {
-            throw new IllegalCredentialsException( "'" + user.name() + "' is not a valid user name." );
+            throw new IllegalArgumentException( "'" + user.name() + "' is not a valid user name." );
         }
 
         synchronized (this)
@@ -91,7 +91,7 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
             {
                 if ( other.name().equals( user.name() ) )
                 {
-                    throw new IllegalCredentialsException( "The specified user already exists" );
+                    throw new IllegalArgumentException( "The specified user already exists" );
                 }
             }
 

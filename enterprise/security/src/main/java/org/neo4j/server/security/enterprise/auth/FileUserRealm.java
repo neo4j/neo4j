@@ -103,9 +103,15 @@ public class FileUserRealm extends AuthorizingRealm
     }
 
     @Override
-    protected AuthorizationInfo doGetAuthorizationInfo( PrincipalCollection principals )
+    protected AuthorizationInfo doGetAuthorizationInfo( PrincipalCollection principals ) throws AuthenticationException
     {
         User user = userRepository.findByName( (String) principals.getPrimaryPrincipal() );
+
+        //TODO: perhaps a more informative message here - this happens if the user has been deleted
+        if ( user == null )
+        {
+            throw new AuthenticationException( "User " + principals.getPrimaryPrincipal() + " does not exist" );
+        }
 
         Set<String> roles = roleRepository.findByUsername( user.name() );
         return new SimpleAuthorizationInfo( roles );
@@ -255,6 +261,10 @@ public class FileUserRealm extends AuthorizingRealm
             {
                 removeUserFromAllRoles( username );
                 result = true;
+            }
+            else
+            {
+                throw new IllegalArgumentException( "The user '" + username + "' does not exist" );
             }
         }
         return result;
