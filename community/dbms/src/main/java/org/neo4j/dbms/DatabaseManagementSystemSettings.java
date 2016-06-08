@@ -45,4 +45,10 @@ public interface DatabaseManagementSystemSettings
             data_directory, active_database,
             ( data, current ) -> new File( new File( data, "databases" ), current ),
             PATH );
+
+    @Internal
+    Setting<File> auth_store_directory = derivedSetting( "unsupported.dbms.directories.auth",
+            data_directory,
+            ( data ) -> new File( data, "dbms" ),
+            PATH );
 }
