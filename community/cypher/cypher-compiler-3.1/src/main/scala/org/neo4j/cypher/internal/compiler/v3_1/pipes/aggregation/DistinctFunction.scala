@@ -20,26 +20,30 @@
 package org.neo4j.cypher.internal.compiler.v3_1.pipes.aggregation
 
 import org.neo4j.cypher.internal.compiler.v3_1._
-import commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_1.pipes.{NiceHasherValue, QueryState}
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.Equivalent
+import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
 
 class DistinctFunction(value: Expression, inner: AggregationFunction) extends AggregationFunction {
-  val seen = scala.collection.mutable.Set[NiceHasherValue]()
-  var seenNull = false
+  private val seen = scala.collection.mutable.Set[Equivalent]()
+  private var seenNull = false
 
-  def apply(ctx: ExecutionContext)(implicit state: QueryState) {
-    val data = new NiceHasherValue(value(ctx))
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState) {
+    val data = value(ctx)
 
     if (data == null) {
       if (!seenNull) {
         seenNull = true
         inner(ctx)
       }
-    } else if (!seen.contains(data)) {
-      seen += data
-      inner(ctx)
+    } else {
+      val equiValue = Equivalent(data)
+      if (!seen.contains(equiValue)) {
+        seen += equiValue
+        inner(ctx)
+      }
     }
   }
 
-  def result: Any = inner.result
+  override def result = inner.result
 }

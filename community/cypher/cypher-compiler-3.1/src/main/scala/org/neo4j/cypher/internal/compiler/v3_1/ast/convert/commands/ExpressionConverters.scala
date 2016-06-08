@@ -334,7 +334,6 @@ object ExpressionConverters {
     commandexpressions.GetDegree(toCommandExpression(original.node), typ, original.dir)
   }
 
-
   private def regexMatch(e: ast.RegexMatch) = toCommandExpression(e.rhs) match {
     case literal: commandexpressions.Literal =>
       predicates.LiteralRegularExpression(toCommandExpression(e.lhs), literal)
@@ -342,9 +341,18 @@ object ExpressionConverters {
       predicates.RegularExpression(toCommandExpression(e.lhs), command)
   }
 
-  private def in(e: ast.In) = {
-    val innerEquals = predicates.Equals(toCommandExpression(e.lhs), commandexpressions.Variable("-_-INNER-_-"))
-    commands.AnyInCollection(toCommandExpression(e.rhs), "-_-INNER-_-", innerEquals)
+  private def in(e: ast.In) = e.rhs match {
+    case value: Parameter =>
+      predicates.ConstantCachedIn(toCommandExpression(e.lhs), toCommandExpression(value))
+
+    case value@Collection(expressions) if expressions.isEmpty =>
+      predicates.Not(predicates.True())
+
+    case value@Collection(expressions) if expressions.forall(_.isInstanceOf[Literal]) =>
+      predicates.ConstantCachedIn(toCommandExpression(e.lhs), toCommandExpression(value))
+
+    case _ =>
+      predicates.DynamicCachedIn(toCommandExpression(e.lhs), toCommandExpression(e.rhs))
   }
 
   private def caseExpression(e: ast.CaseExpression) = e.expression match {

@@ -67,6 +67,23 @@ class EagerAggregationPipeTest extends CypherFunSuite {
     )
   }
 
+  test("should handle grouping on null") {
+    val source = new FakePipe(List(
+      Map[String, Any]("name" -> "Apa"),
+      Map[String, Any]("name" -> "Apa"),
+      Map[String, Any]("name" -> null),
+      Map[String, Any]("name" -> null)), createSymbolTableFor("name"))
+
+    val returnItems = createReturnItemsFor("name")
+    val grouping = Map("count(*)" -> CountStar())
+    val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)()
+
+    getResults(aggregationPipe) should contain allOf(
+      Map[String, Any]("name" -> "Apa", "count(*)" -> 2),
+      Map[String, Any]("name" -> null, "count(*)" -> 2)
+    )
+  }
+
   test("shouldReturnZeroForEmptyInput") {
     val source = new FakePipe(List(), createSymbolTableFor("name"))
 

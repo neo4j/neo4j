@@ -199,22 +199,6 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     result.toList should equal(List(Map("n" -> jake)))
   }
 
-  test("should be able to use index hints on IN an empty collections") {
-    //GIVEN
-    val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
-    relate(andres, createNode())
-    relate(jake, createNode())
-
-    graph.createIndex("Person", "name")
-
-    //WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN [] RETURN n")
-
-    //THEN
-    result.toList should equal(List())
-  }
-
   test("should be able to use index hints on IN a null value") {
     //GIVEN
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")

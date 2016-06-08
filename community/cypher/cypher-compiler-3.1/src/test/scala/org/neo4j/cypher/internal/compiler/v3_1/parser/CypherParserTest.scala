@@ -1526,7 +1526,7 @@ class CypherParserTest extends CypherFunSuite {
       "start x = NODE(1) where x.prop in ['a','b'] return x",
       Query.
         start(NodeById("x", 1)).
-        where(AnyInCollection(Collection(Literal("a"), Literal("b")), "-_-INNER-_-", Equals(Property(Variable("x"), PropertyKey("prop")), Variable("-_-INNER-_-")))).
+        where(ConstantCachedIn(Property(Variable("x"), PropertyKey("prop")), Collection(Literal("a"), Literal("b")))).
         returns(ReturnItem(Variable("x"), "x"))
     )
   }
@@ -1536,7 +1536,7 @@ class CypherParserTest extends CypherFunSuite {
       "start x = NODE(1) where x.prop in x.props return x",
       Query.
         start(NodeById("x", 1)).
-        where(AnyInCollection(Property(Variable("x"), PropertyKey("props")), "-_-INNER-_-", Equals(Property(Variable("x"), PropertyKey("prop")), Variable("-_-INNER-_-")))).
+        where(DynamicCachedIn(Property(Variable("x"), PropertyKey("prop")), Property(Variable("x"), PropertyKey("props")))).
         returns(ReturnItem(Variable("x"), "x"))
     )
   }
@@ -2712,7 +2712,7 @@ class CypherParserTest extends CypherFunSuite {
     expectQuery(
       "match (n:Person)-->() using index n:Person(name) where n.name IN ['Andres'] return n",
       Query.matches(RelatedTo(SingleNode("n", Seq(UnresolvedLabel("Person"))), SingleNode("  UNNAMED19"), "  UNNAMED16", Seq(), SemanticDirection.OUTGOING, Map.empty)).
-        where(AnyInCollection(Collection(Literal("Andres")), "-_-INNER-_-",  Equals(Property(Variable("n"), PropertyKey("name")), Variable("-_-INNER-_-")))).
+        where(ConstantCachedIn(Property(Variable("n"), PropertyKey("name")), Collection(Literal("Andres")))).
         using(SchemaIndex("n", "Person", "name", AnyIndex, None)).
         returns(ReturnItem(Variable("n"), "n"))
     )

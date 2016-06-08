@@ -24,16 +24,16 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_1.commands._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions._
-import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.{Equals, HasLabel}
+import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.{ConstantCachedIn, Equals, HasLabel}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.FakePipe
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection, ast}
 import org.neo4j.cypher.internal.frontend.v3_1.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_1.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
+import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection, ast}
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
 
@@ -428,6 +428,26 @@ class StartPointChoosingBuilderTest extends BuilderTest {
 
     plan.query.start.toList should equal(List(Unsolved(NodeByIdOrEmpty(otherVariable, propertyLookup))))
     plan.query.where should equal(Seq(Solved(collectionPredicate)))
+  }
+
+  test("should identify a NodeById query even if it is encoded with the CachedIn-expression") {
+    // Given ... WITH n MATCH p WHERE id(p) IN n.collection
+
+    val propertyLookup: Property = Property(Variable(_var), PropertyKey("collection"))
+    val idFunction = IdFunction(Variable(otherVariable))
+    val contanstIn = ConstantCachedIn(idFunction, propertyLookup)
+
+
+    val query = newQuery(
+      where = Seq(contanstIn),
+      patterns = Seq(SingleNode(otherVariable))
+    )
+
+    val pipe = new FakePipe(Seq.empty, _var -> CTNode)
+    val plan = assertAccepts(pipe, query)
+
+    plan.query.start.toList should equal(List(Unsolved(NodeByIdOrEmpty(otherVariable, propertyLookup))))
+    plan.query.where should equal(Seq(Solved(contanstIn)))
   }
 
   test("should_produce_label_start_points_when_no_matching_index_exist") {

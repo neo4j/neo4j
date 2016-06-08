@@ -1335,13 +1335,13 @@ return b
     actual should equal(expected)
   }
 
-  test("MATCH (a)-[r]->(b) WITH a, r, b, count(*) AS c ORDER BY c MATCH (a)-[r]->(b) RETURN r AS rel") {
+  test("MATCH (a)-[r]->(b) WITH a, r, b, count(*) AS c ORDER BY c MATCH (a)-[r]->(b) RETURN r AS rel ORDER BY id(rel)") {
     // given two disconnected rels
     val rel1 = relate(createNode(), createNode())
     val rel2 = relate(createNode(), createNode())
 
     // when
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a)-[r]->(b) WITH a, r, b, count(*) AS c ORDER BY c MATCH (a)-[r]->(b) RETURN r AS rel")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a)-[r]->(b) WITH a, r, b, count(*) AS c ORDER BY c MATCH (a)-[r]->(b) RETURN r AS rel ORDER BY id(rel)")
 
     // should give us all rels
     val actual = relsById(result.columnAs[Relationship]("rel").toList)
