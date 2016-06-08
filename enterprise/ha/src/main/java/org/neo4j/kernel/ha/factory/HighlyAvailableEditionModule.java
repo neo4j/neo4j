@@ -59,6 +59,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdReuseEligibility;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelAPI;
@@ -115,6 +116,7 @@ import org.neo4j.kernel.ha.management.HighlyAvailableKernelData;
 import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
+import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
@@ -545,6 +547,17 @@ public class HighlyAvailableEditionModule
         upgradeConfiguration = new HAUpgradeConfiguration();
 
         constraintSemantics = new EnterpriseConstraintSemantics();
+
+        // Only buffer ids for reuse when we're the master. This is mostly an optimization since
+        // when in slave role the ids are thrown away anyway.
+        eligibleForIdReuse = new IdReuseEligibility()
+        {
+            @Override
+            public boolean test( KernelTransactionsSnapshot snapshot )
+            {
+                return HighAvailabilityModeSwitcher.MASTER.equals( members.getCurrentMemberRole() );
+            }
+        };
 
         registerRecovery( config.get( GraphDatabaseFacadeFactory.Configuration.editionName ), dependencies, logging );
 

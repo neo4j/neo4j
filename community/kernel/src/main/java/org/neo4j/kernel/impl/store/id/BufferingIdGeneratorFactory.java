@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.function.Supplier;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdReuseEligibility;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 
@@ -41,6 +42,7 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
             new BufferingIdGenerator[IdType.values().length];
     private final Clock clock;
     private Supplier<KernelTransactionsSnapshot> boundaries;
+    private IdReuseEligibility eligibleForReuse;
 
     public BufferingIdGeneratorFactory( IdGeneratorFactory delegate, Clock clock )
     {
@@ -48,14 +50,15 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
         this.clock = clock;
     }
 
-    public void initialize( Supplier<KernelTransactionsSnapshot> boundaries )
+    public void initialize( Supplier<KernelTransactionsSnapshot> boundaries, IdReuseEligibility eligibleForReuse )
     {
         this.boundaries = boundaries;
+        this.eligibleForReuse = eligibleForReuse;
         for ( BufferingIdGenerator generator : overriddenIdGenerators )
         {
             if ( generator != null )
             {
-                generator.initialize( boundaries );
+                generator.initialize( boundaries, eligibleForReuse );
             }
         }
     }
@@ -87,7 +90,7 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
             //   = that is why this if-statement is here
             if ( boundaries != null )
             {
-                bufferingGenerator.initialize( boundaries );
+                bufferingGenerator.initialize( boundaries, eligibleForReuse );
             }
             overriddenIdGenerators[idType.ordinal()] = bufferingGenerator;
             generator = bufferingGenerator;

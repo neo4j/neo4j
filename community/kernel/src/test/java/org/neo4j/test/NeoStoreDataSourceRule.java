@@ -29,6 +29,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdReuseEligibility;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.TransactionEventHandlers;
@@ -102,7 +103,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 new StartupStatisticsProvider(), mock( NodeManager.class ), null, null,
                 new CommunityCommitProcessFactory(), mock( PageCache.class ),
                 mock( ConstraintSemantics.class), new Monitors(), new Tracers( "null", NullLog.getInstance() ),
-                idGeneratorFactory );
+                idGeneratorFactory, IdReuseEligibility.ALWAYS );
 
         return dataSource;
     }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.id;
 
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.LinkedList;
 
@@ -48,6 +49,12 @@ public class DelayedBuffer<T>
         {
             this.threshold = threshold;
             this.values = values;
+        }
+
+        @Override
+        public String toString()
+        {
+            return Arrays.toString( values );
         }
     }
 

@@ -30,6 +30,7 @@ import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdReuseEligibility;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.Version;
@@ -110,6 +111,13 @@ public class CommunityEditionModule
         registerRecovery( config.get( GraphDatabaseFacadeFactory.Configuration.editionName), life, dependencies );
 
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ) );
+
+        eligibleForIdReuse = createEligibleForIdReuseFilter();
+    }
+
+    protected IdReuseEligibility createEligibleForIdReuseFilter()
+    {
+        return IdReuseEligibility.ALWAYS;
     }
 
     protected ConstraintSemantics createSchemaRuleVerifier()

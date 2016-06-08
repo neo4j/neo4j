@@ -23,9 +23,11 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+
 import org.neo4j.function.Supplier;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdReuseEligibility;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -50,7 +52,7 @@ public class BufferingIdGeneratorFactoryTest
         ControllableSnapshotSupplier boundaries = new ControllableSnapshotSupplier();
         IdGenerator idGenerator = bufferingIdGeneratorFactory.open(
                 new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, 0 );
-        bufferingIdGeneratorFactory.initialize( boundaries );
+        bufferingIdGeneratorFactory.initialize( boundaries, IdReuseEligibility.ALWAYS );
 
         // WHEN
         idGenerator.freeId( 7 );

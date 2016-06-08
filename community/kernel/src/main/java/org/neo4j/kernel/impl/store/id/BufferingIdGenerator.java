@@ -23,6 +23,7 @@ import org.neo4j.function.Consumer;
 import org.neo4j.function.Predicate;
 import org.neo4j.function.Supplier;
 import org.neo4j.helpers.Clock;
+import org.neo4j.kernel.IdReuseEligibility;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 
 class BufferingIdGenerator extends IdGenerator.Delegate
@@ -38,14 +39,14 @@ class BufferingIdGenerator extends IdGenerator.Delegate
         this.clock = clock;
     }
 
-    void initialize( Supplier<KernelTransactionsSnapshot> boundaries )
+    void initialize( Supplier<KernelTransactionsSnapshot> boundaries, final IdReuseEligibility eligibleForReuse )
     {
         buffer = new DelayedBuffer<>( boundaries, new Predicate<KernelTransactionsSnapshot>()
         {
             @Override
             public boolean test( KernelTransactionsSnapshot snapshot )
             {
-                return snapshot.allClosed() &&
+                return snapshot.allClosed() && eligibleForReuse.test( snapshot ) &&
                        clock.currentTimeMillis() - snapshot.snapshotTime() > atLeastTimeBuffered;
             }
         }, 10_000, new Consumer<long[]>()
