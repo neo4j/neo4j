@@ -38,11 +38,10 @@ class CheckerTest extends CypherFunSuite {
     buildUp.contains(42) should equal((Some(true), buildUp))
     buildUp.contains(42) should equal((Some(true), buildUp))
     input should not be 'empty
-    buildUp.contains("123") should equal((Some(true), buildUp))
+    val (result, newChecker) = buildUp.contains("123")
     input shouldBe 'empty
-    val (result, newChecker) = buildUp.contains("hullo")
-    result should equal(Some(false))
-    newChecker shouldBe a[SetChecker]
+    newChecker shouldBe a [SetChecker]
+    result should equal(Some(true))
   }
 
   test("checking for lists in lists") {

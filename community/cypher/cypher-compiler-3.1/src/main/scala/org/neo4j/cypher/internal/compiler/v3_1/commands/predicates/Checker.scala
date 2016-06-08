@@ -36,18 +36,19 @@ class BuildUp(iterator: Iterator[Any]) extends Checker {
   assert(iterator.nonEmpty)
 
   override def contains(value: Any): (Option[Boolean], Checker) = {
-    if (value == null)
-      return (None, this)
-
-    val eqValue = Equivalent(value)
-    if (cachedSet.contains(eqValue))
-      (Some(true), this)
-    else
-      checkAndBuildUpCache(value)
+    if (value == null) (None, this)
+    else {
+      val eqValue = Equivalent(value)
+      if (cachedSet.contains(eqValue))
+        (Some(true), this)
+      else
+        checkAndBuildUpCache(value)
+    }
   }
 
   private def checkAndBuildUpCache(value: Any): (Option[Boolean], Checker) = {
-    while (iterator.nonEmpty) {
+    var foundMatch = false
+    while (iterator.nonEmpty && !foundMatch) {
       val nextValue = iterator.next()
 
       if (nextValue == null) {
@@ -55,12 +56,14 @@ class BuildUp(iterator: Iterator[Any]) extends Checker {
       } else {
         val next = Equivalent(nextValue)
         cachedSet.add(next)
-        val result = next == value
-        if (result) return (Some(true), this)
+        foundMatch = next == value
       }
     }
 
-    (falseResult, new SetChecker(cachedSet, falseResult))
+    val nextState = if(iterator.nonEmpty) this else new SetChecker(cachedSet, falseResult)
+    val result = if(foundMatch) Some(true) else falseResult
+
+    (result, nextState)
   }
 }
 
@@ -79,13 +82,13 @@ class SetChecker(cachedSet: mutable.Set[Equivalent], falseResult: Option[Boolean
 
   override def contains(value: Any): (Option[Boolean], Checker) = {
     if (value == null)
-      return (None, this)
+      (None, this)
+    else {
+      val eqValue = Equivalent(value)
 
-    val eqValue = Equivalent(value)
-
-    val exists = cachedSet.contains(eqValue)
-    val result = if (exists) Some(true) else falseResult
-    (result, this)
+      val exists = cachedSet.contains(eqValue)
+      val result = if (exists) Some(true) else falseResult
+      (result, this)
+    }
   }
 }
-
