@@ -96,8 +96,8 @@ public class FileUserRealmTest
 
         // When
         RunResult result = InterleavedRunner.interleave(
-                new AdminMain( realm, addUserToRoleOp ),
-                new AdminSecond( deleteUserOp ),
+                new AddUserToRoleInMain( realm ),
+                new DeleteUserInSecondary(),
                 Arrays.asList( codePosition ) );
         result.throwExceptionsIfAny();
 
@@ -118,8 +118,8 @@ public class FileUserRealmTest
 
         // When
         RunResult result = InterleavedRunner.interleave(
-                new AdminMain( realm, deleteUserOp ),
-                new AdminSecond( addUserToRoleOp ),
+                new DeleteUserInMain( realm ),
+                new AddUserToRoleInSecondary(),
                 Arrays.asList( codePosition ) );
 
         // Then
@@ -135,15 +135,14 @@ public class FileUserRealmTest
         return codePosition;
     }
 
+    // Base class for the main thread
     private class AdminMain extends MainRunnableImpl<FileUserRealm>
     {
-        private FileUserRealm realm;
-        private RealmOperation op;
+        protected FileUserRealm realm;
 
-        public AdminMain( FileUserRealm realm, RealmOperation op )
+        public AdminMain( FileUserRealm realm )
         {
             this.realm = realm;
-            this.op = op;
         }
 
         @Override
@@ -161,19 +160,13 @@ public class FileUserRealmTest
         @Override
         public void run() throws Exception
         {
-            op.doOp( realm );
         }
     }
 
-    private class AdminSecond extends SecondaryRunnableImpl<FileUserRealm,AdminMain>
+    // Base class for the secondary thread
+    private class AdminSecondary extends SecondaryRunnableImpl<FileUserRealm,AdminMain>
     {
-        private FileUserRealm realm;
-        private RealmOperation op;
-
-        public AdminSecond( RealmOperation op )
-        {
-            this.op = op;
-        }
+        protected FileUserRealm realm;
 
         @Override
         public void initialize( AdminMain main ) throws Exception
@@ -184,15 +177,59 @@ public class FileUserRealmTest
         @Override
         public void run() throws Exception
         {
-            op.doOp( realm );
         }
     }
 
-    private interface RealmOperation
+    // NOTE: We avoid parameterizing the operation using lambdas because it seemed to cause stability problems
+    // with the instrumentation/reflection.
+
+    //-----------------
+    // Add user to role
+    private class AddUserToRoleInMain extends AdminMain
     {
-        void doOp( FileUserRealm realm ) throws Exception;
+        public AddUserToRoleInMain( FileUserRealm realm )
+        {
+            super( realm );
+        }
+
+        @Override
+        public void run() throws Exception
+        {
+            realm.addUserToRole( USERNAME, ROLE );
+        }
     }
 
-    private RealmOperation addUserToRoleOp = ( realm ) -> realm.addUserToRole( USERNAME, ROLE );
-    private RealmOperation deleteUserOp = ( realm ) -> realm.deleteUser( USERNAME );
+    private class AddUserToRoleInSecondary extends AdminSecondary
+    {
+        @Override
+        public void run() throws Exception
+        {
+            realm.addUserToRole( USERNAME, ROLE );
+        }
+    }
+
+    //-----------------
+    // Delete user
+    private class DeleteUserInMain extends AdminMain
+    {
+        public DeleteUserInMain( FileUserRealm realm )
+        {
+            super( realm );
+        }
+
+        @Override
+        public void run() throws Exception
+        {
+            realm.deleteUser( ROLE );
+        }
+    }
+
+    private class DeleteUserInSecondary extends AdminSecondary
+    {
+        @Override
+        public void run() throws Exception
+        {
+            realm.deleteUser( USERNAME );
+        }
+    }
 }
