@@ -33,16 +33,10 @@ class BufferingIdGenerator extends IdGenerator.Delegate
         super( delegate );
     }
 
-    void initialize( Supplier<KernelTransactionsSnapshot> boundaries )
+    void initialize( Supplier<KernelTransactionsSnapshot> boundaries,
+            Predicate<KernelTransactionsSnapshot> safeThreshold )
     {
-        buffer = new DelayedBuffer<>( boundaries, new Predicate<KernelTransactionsSnapshot>()
-        {
-            @Override
-            public boolean test( KernelTransactionsSnapshot snapshot )
-            {
-                return snapshot.allClosed();
-            }
-        }, 10_000, new Consumer<long[]>()
+        buffer = new DelayedBuffer<>( boundaries, safeThreshold, 10_000, new Consumer<long[]>()
         {
             @Override
             public void accept( long[] freedIds )

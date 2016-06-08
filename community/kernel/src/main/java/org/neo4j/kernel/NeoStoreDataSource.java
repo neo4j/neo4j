@@ -392,6 +392,8 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     private KernelModule kernelModule;
     private BufferingIdGeneratorFactory bufferingIdGeneratorFactory;
 
+    private final IdReuseEligibility eligibleForReuse;
+
     /**
      * Creates a <CODE>NeoStoreXaDataSource</CODE> using configuration from
      * <CODE>params</CODE>. First the map is checked for the parameter
@@ -427,7 +429,8 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             ConstraintSemantics constraintSemantics,
             Monitors monitors,
             Tracers tracers,
-            IdGeneratorFactory idGeneratorFactory )
+            IdGeneratorFactory idGeneratorFactory,
+            IdReuseEligibility eligibleForReuse )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -456,6 +459,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         this.monitors = monitors;
         this.tracers = tracers;
         this.idGeneratorFactory = idGeneratorFactory;
+        this.eligibleForReuse = eligibleForReuse;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = logProvider.getLog( getClass() );
@@ -579,7 +583,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             {
                 // Now that we've instantiated the component which can keep track of transaction boundaries
                 // we let the id generator know about it.
-                bufferingIdGeneratorFactory.initialize( kernelModule.kernelTransactions() );
+                bufferingIdGeneratorFactory.initialize( kernelModule.kernelTransactions(), eligibleForReuse );
                 life.add( freeIdMaintenance( bufferingIdGeneratorFactory ) );
             }
 
