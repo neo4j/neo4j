@@ -76,4 +76,9 @@ class BufferingIdGenerator extends IdGenerator.Delegate
     {
         buffer.maintenance();
     }
+
+    void clear()
+    {
+        buffer.clear();
+    }
 }

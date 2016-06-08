@@ -112,4 +112,15 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
             }
         }
     }
+
+    public void clear()
+    {
+        for ( BufferingIdGenerator generator : overriddenIdGenerators )
+        {
+            if ( generator != null )
+            {
+                generator.clear();
+            }
+        }
+    }
 }

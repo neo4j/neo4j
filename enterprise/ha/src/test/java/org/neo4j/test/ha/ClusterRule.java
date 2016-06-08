@@ -139,6 +139,12 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
         return set( clusterManagerBuilder.withAvailabilityChecks( checks ) );
     }
 
+    @Override
+    public final ClusterRule withConsistencyCheckAfterwards()
+    {
+        return set( clusterManagerBuilder.withConsistencyCheckAfterwards() );
+    }
+
     private ClusterRule set( Builder builder )
     {
         clusterManagerBuilder = builder;

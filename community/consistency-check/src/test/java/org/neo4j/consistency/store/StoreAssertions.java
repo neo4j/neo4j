@@ -28,6 +28,7 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertTrue;
@@ -39,14 +40,15 @@ public class StoreAssertions
     {
     }
 
-    public static void assertConsistentStore( File dir ) throws ConsistencyCheckIncompleteException, IOException
+    public static void assertConsistentStore( File storeDir ) throws ConsistencyCheckIncompleteException, IOException
     {
-        final Config configuration = new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ),
+        Config configuration = new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ),
                 GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        AssertableLogProvider logger = new AssertableLogProvider();
+        ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
+                storeDir, configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );
 
-        final ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
-                dir, configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );
-
-        assertTrue( result.isSuccessful() );
+        assertTrue( "Consistency check for " + storeDir + " found inconsistencies:\n\n" + logger.serialize(),
+                result.isSuccessful() );
     }
 }
