@@ -19,7 +19,9 @@
  */
 package org.neo4j.server.security.auth;
 
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -103,5 +105,11 @@ public class InMemoryUserRepository extends LifecycleAdapter implements UserRepo
     {
         // This repo can store any name
         return true;
+    }
+
+    @Override
+    public Set<String> getAllUsernames()
+    {
+        return users.values().stream().map( User::name ).collect( Collectors.toSet() );
     }
 }

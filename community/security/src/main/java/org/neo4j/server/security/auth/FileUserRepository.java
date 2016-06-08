@@ -25,9 +25,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
-import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -183,6 +184,12 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
     public boolean isValidName( String name )
     {
         return name.matches( "^[a-zA-Z0-9_]+$" );
+    }
+
+    @Override
+    public Set<String> getAllUsernames()
+    {
+        return users.stream().map( User::name ).collect( Collectors.toSet() );
     }
 
     private void saveUsersToFile() throws IOException

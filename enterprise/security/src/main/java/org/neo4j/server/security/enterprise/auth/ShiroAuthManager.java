@@ -20,7 +20,6 @@
 package org.neo4j.server.security.enterprise.auth;
 
 import org.apache.shiro.authc.AuthenticationException;
-import org.apache.shiro.authc.ExpiredCredentialsException;
 import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.cache.ehcache.EhCacheManager;
 import org.apache.shiro.mgt.DefaultSecurityManager;
@@ -32,6 +31,7 @@ import org.apache.shiro.subject.Subject;
 import java.io.IOException;
 import java.time.Clock;
 import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.AuthSubject;
@@ -45,7 +45,6 @@ import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.auth.UserRepository;
-import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 public class ShiroAuthManager extends BasicAuthManager implements RoleManager
 {
@@ -230,6 +229,12 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
     {
         assertAuthEnabled();
         realm.activateUser( username );
+    }
+
+    public Set<String> getAllUsernames()
+    {
+        assertAuthEnabled();
+        return realm.getAllUsernames();
     }
 
     private Subject buildSubject( String username )

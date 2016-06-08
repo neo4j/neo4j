@@ -21,12 +21,15 @@ package org.neo4j.server.security.enterprise.auth;
 
 import org.apache.shiro.authc.AuthenticationException;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
@@ -43,6 +46,7 @@ import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 import static java.time.Clock.systemUTC;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -647,6 +651,69 @@ public class AuthProceduresTest
         subject = manager.login( authToken( "Henrik", "bar" ) );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
     }
+    //----------List users/roles-----------
+
+    @Test
+    public void shouldReturnUsers() throws Exception
+    {
+        testResult( db, adminSubject, "CALL dbms.listUsers() YIELD value AS users RETURN users", r -> {
+            List<Object> names = getObjectsAsList( r, "users" );
+            Assert.assertThat( names,
+                    containsInAnyOrder( "adminSubject", "readSubject", "schemaSubject", "readWriteSubject",
+                            "noneSubject", "neo4j" ) );
+            assertEquals( 6, names.size() );
+        } );
+    }
+
+    @Test
+    public void shouldNotAllowNonAdminListUsers() throws Exception
+    {
+        testFailListUsers( noneSubject, 5L );
+        testFailListUsers( readSubject, 5L );
+        testFailListUsers( writeSubject, 5L );
+        testFailListUsers( schemaSubject, 5L );
+    }
+
+    /*
+    Admin lists all users → ok
+    Admin creates user Henrik with password bar
+    Admin lists all users → ok
+    Henrik logs in with correct password → ok
+    Henrik lists all users → permission denied
+    Admin adds user Henrik to role Admin
+    Henrik lists all users → ok
+    */
+    @Test
+    public void userListing() throws Exception
+    {
+        testResult( db, adminSubject, "CALL dbms.listUsers() YIELD value AS users RETURN users", r -> {
+            List<Object> names = getObjectsAsList( r, "users" );
+            Assert.assertThat( names,
+                    containsInAnyOrder( "adminSubject", "readSubject", "schemaSubject", "readWriteSubject",
+                            "noneSubject", "neo4j" ) );
+            assertEquals( 6, names.size() );
+        } );
+        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)", null );
+        testResult( db, adminSubject, "CALL dbms.listUsers() YIELD value AS users RETURN users", r -> {
+            List<Object> names = getObjectsAsList( r, "users" );
+            Assert.assertThat( names,
+                    containsInAnyOrder( "Henrik", "adminSubject", "readSubject", "schemaSubject", "readWriteSubject",
+                            "noneSubject", "neo4j" ) );
+            assertEquals( 7, names.size() );
+        } );
+        AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
+        assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
+        testFailListUsers( subject, 6L );
+        testCallEmpty( db, adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PredefinedRolesBuilder.ADMIN + "')",
+                null );
+        testResult( db, subject, "CALL dbms.listUsers() YIELD value AS users RETURN users", r -> {
+            List<Object> names = getObjectsAsList( r, "users" );
+            Assert.assertThat( names,
+                    containsInAnyOrder( "Henrik", "adminSubject", "readSubject", "schemaSubject", "readWriteSubject",
+                            "noneSubject", "neo4j" ) );
+            assertEquals( 7, names.size() );
+        } );
+    }
 
     //-------------Helper functions---------------
 
@@ -766,6 +833,30 @@ public class AuthProceduresTest
             assertTrue( "Exception should contain '" + AuthProcedures.PERMISSION_DENIED + "'",
                     e.getMessage().contains( AuthProcedures.PERMISSION_DENIED ) );
         }
+    }
+
+    private void testSuccessfulListUsersAction( AuthSubject subject, Long count )
+    {
+        testCall( db, subject, "CALL dbms.listUsers() YIELD value AS users RETURN count(users)",
+                ( r ) -> assertEquals( r.get( "count(users)" ), count ) );
+    }
+
+    private void testFailListUsers( AuthSubject subject, Long count )
+    {
+        try
+        {
+            testSuccessfulListUsersAction( subject, count );
+        }
+        catch ( QueryExecutionException e )
+        {
+            assertTrue( "Exception should contain '" + AuthProcedures.PERMISSION_DENIED + "'",
+                    e.getMessage().contains( AuthProcedures.PERMISSION_DENIED ) );
+        }
+    }
+
+    private List<Object> getObjectsAsList( Result r, String key )
+    {
+        return r.stream().map( s -> s.get( key ) ).collect( Collectors.toList() );
     }
 
     private static void testCall( GraphDatabaseAPI db, AuthSubject subject, String call,

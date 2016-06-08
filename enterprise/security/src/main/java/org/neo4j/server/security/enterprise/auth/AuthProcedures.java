@@ -20,6 +20,8 @@
 package org.neo4j.server.security.enterprise.auth;
 
 import java.io.IOException;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.AuthSubject;
@@ -28,7 +30,6 @@ import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.PerformsDBMS;
 import org.neo4j.procedure.Procedure;
-import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 public class AuthProcedures
 {
@@ -110,5 +111,25 @@ public class AuthProcedures
             throw new AuthorizationViolationException( PERMISSION_DENIED );
         }
         shiroSubject.getUserManager().activateUser( username );
+    }
+
+    @PerformsDBMS
+    @Procedure( "dbms.listUsers" )
+    public Stream<StringResult> listUsers() throws IllegalCredentialsException, IOException
+    {
+        ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
+        if ( !shiroSubject.isAdmin() )
+        {
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
+        }
+        return shiroSubject.getUserManager().getAllUsernames().stream().map( StringResult::new );
+    }
+
+    public class StringResult {
+        public final String value;
+
+        public StringResult(String value) {
+            this.value = value;
+        }
     }
 }

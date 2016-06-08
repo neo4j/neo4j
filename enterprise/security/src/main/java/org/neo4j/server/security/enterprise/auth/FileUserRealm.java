@@ -22,7 +22,6 @@ package org.neo4j.server.security.enterprise.auth;
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
-import org.apache.shiro.authc.ExpiredCredentialsException;
 import org.apache.shiro.authc.SimpleAuthenticationInfo;
 import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.authc.credential.CredentialsMatcher;
@@ -353,6 +352,11 @@ public class FileUserRealm extends AuthorizingRealm
             // Try again
             removeUserFromAllRoles( username );
         }
+    }
+
+    public Set<String> getAllUsernames()
+    {
+        return userRepository.getAllUsernames();
     }
 
     private void checkValidityOfUsernameAndRoleName( String username, String roleName ) throws IllegalArgumentException
