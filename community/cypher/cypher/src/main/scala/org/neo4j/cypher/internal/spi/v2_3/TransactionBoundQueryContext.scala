@@ -156,6 +156,15 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     new BeansAPIRelationshipIterator(relationships, nodeManager)
   }
 
+  override def detachDeleteNode(node: Node): Int = {
+    try {
+      statement.dataWriteOperations().nodeDetachDelete(node.getId)
+    } catch {
+      case _: exceptions.EntityNotFoundException => // the node has been deleted by another transaction, oh well...
+        0
+    }
+  }
+
   def indexSeek(index: IndexDescriptor, value: Any) =
     JavaConversionSupport.mapToScalaENFXSafe(statement.readOperations().nodesGetFromIndexSeek(index, value))(nodeOps.getById)
 
@@ -319,15 +328,6 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       }
     }
 
-    def detachDelete(obj: Node): Int = {
-      try {
-        statement.dataWriteOperations().nodeDetachDelete(obj.getId)
-      } catch {
-        case _: exceptions.EntityNotFoundException => // the node has been deleted by another transaction, oh well...
-        0
-      }
-    }
-
     def propertyKeyIds(id: Long): Iterator[Int] = try {
       JavaConversionSupport.asScalaENFXSafe(statement.readOperations().nodeGetPropertyKeys(id))
     } catch {
@@ -384,8 +384,6 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
         case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
       }
     }
-
-    override def detachDelete(obj: Relationship): Int = ??? // not supported for relationships
 
     def propertyKeyIds(id: Long): Iterator[Int] = try {
       JavaConversionSupport.asScalaENFXSafe(statement.readOperations().relationshipGetPropertyKeys(id))

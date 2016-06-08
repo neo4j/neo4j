@@ -31,6 +31,7 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   protected def singleDbHit[A](value: A): A = value
   protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
+  protected def manyDbHits(count: Int): Int = count
 
   def isOpen: Boolean = inner.isOpen
 
@@ -73,6 +74,8 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
   def getPropertiesForNode(node: Long): Iterator[Int] = singleDbHit(inner.getPropertiesForNode(node))
 
   def getPropertiesForRelationship(relId: Long): Iterator[Int] = singleDbHit(inner.getPropertiesForRelationship(relId))
+
+  def detachDeleteNode(obj: Node): Int = manyDbHits(inner.detachDeleteNode(obj))
 
   def getPropertyKeyName(propertyKeyId: Int): String = singleDbHit(inner.getPropertyKeyName(propertyKeyId))
 
@@ -161,11 +164,8 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
 
   protected def singleDbHit[A](value: A): A = value
   protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
-  protected def manyDbHits(count: Int): Int = count
 
   def delete(obj: T): Unit = singleDbHit(inner.delete(obj))
-
-  def detachDelete(obj: T): Int = manyDbHits(inner.detachDelete(obj))
 
   def setProperty(obj: Long, propertyKey: Int, value: Any): Unit = singleDbHit(inner.setProperty(obj, propertyKey, value))
 

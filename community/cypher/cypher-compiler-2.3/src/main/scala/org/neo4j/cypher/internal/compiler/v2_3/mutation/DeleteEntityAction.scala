@@ -47,7 +47,7 @@ case class DeleteEntityAction(elementToDelete: Expression, forced: Boolean)
   private def delete(x: graphdb.PropertyContainer, state: QueryState, forced: Boolean) {
     x match {
       case n: graphdb.Node if !state.query.nodeOps.isDeleted(n) =>
-        if (forced) state.query.nodeOps.detachDelete(n)
+        if (forced) state.query.detachDeleteNode(n)
         else state.query.nodeOps.delete(n)
 
       case r: graphdb.Relationship if !state.query.relationshipOps.isDeleted(r) =>
