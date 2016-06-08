@@ -65,7 +65,8 @@ public class UserServiceTest
             return "neo4j";
         }
     };
-    private static final User NEO4J_USER = new User( "neo4j", Credential.forPassword( "neo4j" ), true );
+    private static final User NEO4J_USER = new User.Builder( "neo4j", Credential.forPassword( "neo4j" ))
+            .withRequiredPasswordChange( true ).build();
 
     private final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
     private final InMemoryUserRepository userRepository = new InMemoryUserRepository();
