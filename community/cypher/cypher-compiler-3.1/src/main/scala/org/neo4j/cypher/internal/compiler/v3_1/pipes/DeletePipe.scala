@@ -52,7 +52,7 @@ case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)(val es
   }
 
   private def deleteNode(n: Node)(implicit state: QueryState) = if (!state.query.nodeOps.isDeletedInThisTx(n)) {
-    if (forced) state.query.detachDelete(n)
+    if (forced) state.query.detachDeleteNode(n)
     else state.query.nodeOps.delete(n)
   }
 

@@ -136,9 +136,9 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection): Int = super.nodeGetDegree(node, dir)
 
-  override def detachDelete(node: Node): Int = {
+  override def detachDeleteNode(node: Node): Int = {
     nodesDeleted.increase()
-    val count = inner.detachDelete(node)
+    val count = inner.detachDeleteNode(node)
     relationshipsDeleted.increase(count)
     count
   }

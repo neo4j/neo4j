@@ -193,7 +193,7 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
   override def isGraphKernelResultValue(v: Any): Boolean =
     inner.isGraphKernelResultValue(v)
 
-  override def detachDelete(node: Node): Int = manyDbHits(inner.detachDelete(node))
+  override def detachDeleteNode(node: Node): Int = manyDbHits(inner.detachDeleteNode(node))
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

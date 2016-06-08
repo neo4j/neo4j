@@ -638,7 +638,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
   }
 
-  override def detachDelete(node: Node): Int = {
+  override def detachDeleteNode(node: Node): Int = {
     try {
       transactionalContext.statement.dataWriteOperations().nodeDetachDelete(node.getId)
     } catch {

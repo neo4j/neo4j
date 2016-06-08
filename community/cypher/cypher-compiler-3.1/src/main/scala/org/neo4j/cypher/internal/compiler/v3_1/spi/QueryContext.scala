@@ -166,7 +166,7 @@ trait QueryContext extends TokenContext {
   // other query context values by calling down to the underlying database
   def isGraphKernelResultValue(v: Any): Boolean
 
-  def detachDelete(node: Node): Int
+  def detachDeleteNode(node: Node): Int
 }
 
 trait Operations[T <: PropertyContainer] {
