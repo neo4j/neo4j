@@ -20,9 +20,7 @@
 package org.neo4j.server.security.auth;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.string.HexString;
@@ -73,9 +71,10 @@ public class UserSerialization
 
     private String serialize( User user )
     {
-        return join( userSeparator, user.name(),
+        return String.join( userSeparator,
+                user.name(),
                 serialize( user.credentials() ),
-                join( ",", user.getFlags() )
+                String.join( ",", user.getFlags() )
             );
     }
 
@@ -108,7 +107,7 @@ public class UserSerialization
     {
         String encodedSalt = HexString.encodeHexString( cred.salt() );
         String encodedPassword = HexString.encodeHexString( cred.passwordHash() );
-        return join( credentialSeparator, Credential.DIGEST_ALGO, encodedPassword, encodedSalt );
+        return String.join( credentialSeparator, Credential.DIGEST_ALGO, encodedPassword, encodedSalt );
     }
 
     private Credential deserializeCredentials( String part, int lineNumber ) throws FormatException
@@ -125,23 +124,5 @@ public class UserSerialization
         byte[] decodedPassword = HexString.decodeHexString( split[1] );
         byte[] decodedSalt = HexString.decodeHexString( split[2] );
         return new Credential( decodedSalt, decodedPassword );
-    }
-
-    private String join( String separator, String... segments )
-    {
-        return join(separator, Arrays.asList(segments).iterator() );
-    }
-
-    private String join( String separator, Iterator<String> segments )
-    {
-        StringBuilder sb = new StringBuilder();
-        boolean afterFirst = false;
-        while (segments.hasNext())
-        {
-            if ( afterFirst ) { sb.append( separator ); }
-            else              { afterFirst = true;      }
-            sb.append( segments.next() );
-        }
-        return sb.toString();
     }
 }

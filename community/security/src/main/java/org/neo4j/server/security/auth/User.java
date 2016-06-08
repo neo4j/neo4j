@@ -19,9 +19,8 @@
  */
 package org.neo4j.server.security.auth;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 /**
  * Controls authorization and authentication for an individual user.
@@ -39,12 +38,12 @@ public class User
     /** Authentication credentials used by the built in username/password authentication scheme */
     private final Credential credential;
 
-    /** Set of flags, eg. require_password_change */
-    private final HashSet<String> flags;
+    /** Set of flags, eg. password_change_required */
+    private final SortedSet<String> flags;
 
     public static final String PASSWORD_CHANGE_REQUIRED = "password_change_required";
 
-    private User( String name, Credential credential, HashSet<String> flags )
+    private User( String name, Credential credential, SortedSet<String> flags )
     {
         this.name = name;
         this.credential = credential;
@@ -62,7 +61,7 @@ public class User
     }
 
     public boolean hasFlag(String flag) { return flags.contains(flag); }
-    public Iterator<String> getFlags() { return flags.iterator(); }
+    public Iterable<String> getFlags() { return flags; }
 
     public boolean passwordChangeRequired() { return flags.contains( PASSWORD_CHANGE_REQUIRED ); }
 
@@ -83,7 +82,7 @@ public class User
 
         User user = (User) o;
 
-        if ( !setsAreEquals( flags, user.flags ) )
+        if ( !flags.equals( user.flags ) )
         {
             return false;
         }
@@ -122,7 +121,7 @@ public class User
     {
         private String name;
         private Credential credential = Credential.INACCESSIBLE;
-        private HashSet<String> flags = new HashSet<>();
+        private TreeSet<String> flags = new TreeSet<>();
 
         public Builder() { }
 
@@ -161,22 +160,5 @@ public class User
         {
             return new User(name, credential, flags );
         }
-    }
-
-    private static boolean setsAreEquals( Set<String> set1, Set<String> set2 )
-    {
-        if ( set1.size() != set2.size() )
-        {
-            return false;
-        }
-
-        for ( String element : set1 )
-        {
-            if ( !set2.contains( element ) )
-            {
-                return false;
-            }
-        }
-        return true;
     }
 }

@@ -90,7 +90,7 @@ public class AuthProcedures
 
     @PerformsDBMS
     @Procedure( "dbms.suspendUser" )
-    public void suspendUser( @Name( "username" ) String username ) throws IOException, ConcurrentModificationException
+    public void suspendUser( @Name( "username" ) String username ) throws IOException
     {
         ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
         if ( !shiroSubject.isAdmin() )
@@ -102,7 +102,7 @@ public class AuthProcedures
 
     @PerformsDBMS
     @Procedure( "dbms.activateUser" )
-    public void activateUser( @Name( "username" ) String username ) throws IOException, ConcurrentModificationException
+    public void activateUser( @Name( "username" ) String username ) throws IOException
     {
         ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
         if ( !shiroSubject.isAdmin() )

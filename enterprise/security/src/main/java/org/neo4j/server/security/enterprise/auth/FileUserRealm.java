@@ -57,6 +57,10 @@ public class FileUserRealm extends AuthorizingRealm
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
 
+    /**
+     * This flag is used in the same way as User.PASSWORD_CHANGE_REQUIRED, but it's
+     * placed here because of user suspension not being a part of community edition
+     */
     public static final String IS_SUSPENDED = "is_suspended";
 
     private final CredentialsMatcher credentialsMatcher =
@@ -279,23 +283,55 @@ public class FileUserRealm extends AuthorizingRealm
         return result;
     }
 
-    void suspendUser( String username ) throws IOException, ConcurrentModificationException
+    void suspendUser( String username ) throws IOException
     {
-        User user = userRepository.findByName( username );
-        if ( user != null && !user.hasFlag( IS_SUSPENDED ) )
+        synchronized ( this )
         {
-            User suspendedUser = user.augment().withFlag( IS_SUSPENDED ).build();
-            userRepository.update( user, suspendedUser );
+            User user = userRepository.findByName( username );
+            if ( user == null )
+            {
+                throw new IllegalArgumentException( "User " + username + " does not exist." );
+            }
+            if ( !user.hasFlag( IS_SUSPENDED ) )
+            {
+                User suspendedUser = user.augment().withFlag( IS_SUSPENDED ).build();
+                try
+                {
+                    userRepository.update( user, suspendedUser );
+                }
+                catch ( ConcurrentModificationException e )
+                {
+                    // Due to the synchronized (this) we should never get this exception unless the user repository
+                    // is modified outside this neo instance. In that case we do not know how to proceed.
+                    throw new RuntimeException( "Unexpected failure", e );
+                }
+            }
         }
     }
 
-    void activateUser( String username ) throws IOException, ConcurrentModificationException
+    void activateUser( String username ) throws IOException
     {
-        User user = userRepository.findByName( username );
-        if ( user != null && user.hasFlag( IS_SUSPENDED ) )
+        synchronized ( this )
         {
-            User activatedUser = user.augment().withoutFlag( IS_SUSPENDED ).build();
-            userRepository.update( user, activatedUser );
+            User user = userRepository.findByName( username );
+            if ( user == null )
+            {
+                throw new IllegalArgumentException( "User " + username + " does not exist." );
+            }
+            if ( user.hasFlag( IS_SUSPENDED ) )
+            {
+                User activatedUser = user.augment().withoutFlag( IS_SUSPENDED ).build();
+                try
+                {
+                    userRepository.update( user, activatedUser );
+                }
+                catch ( ConcurrentModificationException e )
+                {
+                    // Due to the synchronized (this) we should never get this exception unless the user repository
+                    // is modified outside this neo instance. In that case we do not know how to proceed.
+                    throw new RuntimeException( "Unexpected failure", e );
+                }
+            }
         }
     }
 

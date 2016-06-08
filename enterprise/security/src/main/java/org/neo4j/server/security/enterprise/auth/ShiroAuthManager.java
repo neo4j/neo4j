@@ -213,13 +213,13 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
         return realm.deleteUser( username );
     }
 
-    void suspendUser( String username ) throws IOException, ConcurrentModificationException
+    void suspendUser( String username ) throws IOException
     {
         assertAuthEnabled();
         realm.suspendUser( username );
     }
 
-    void activateUser( String username ) throws IOException, ConcurrentModificationException
+    void activateUser( String username ) throws IOException
     {
         assertAuthEnabled();
         realm.activateUser( username );

@@ -569,7 +569,9 @@ public class AuthProceduresTest
 
     /*
     Admin creates user Henrik with password bar
+    Admin adds user Henrik to role Reader
     Henrik logs in with correct password → ok
+    Henrik starts and completes transaction with read query → ok
     Admin suspends user Henrik
     Henrik’s session is terminated
     Henrik logs in with correct password → fail
@@ -584,7 +586,7 @@ public class AuthProceduresTest
         testSuccessfulReadAction( subject, 3L );
         testCallEmpty( db, adminSubject, "CALL dbms.suspendUser('Henrik')" );
         testFailReadAction( subject, 3L );
-        // TODO: Check that user session is terminated
+        // TODO: Check that user session is terminated instead of checking failed read
         subject = manager.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.FAILURE, subject.getAuthenticationResult() );
     }
