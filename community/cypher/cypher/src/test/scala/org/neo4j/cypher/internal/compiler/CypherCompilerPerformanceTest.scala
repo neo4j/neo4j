@@ -26,21 +26,20 @@ import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSeq
 import org.neo4j.cypher.internal.compiler.v3_1.{CypherCompilerFactory, InfoLogger, _}
 import org.neo4j.cypher.internal.spi.v3_1.codegen.GeneratedQueryStructure
 
+import scala.concurrent.duration._
+
 class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
 
-  import org.scalatest.prop.TableDrivenPropertyChecks._
+  val NUMBER_OF_RUNS = 5
 
-  val VERBOSE = false
-  val NO_RUNS = 5
-
-  val warmup = "warmup" ->
+  val warmup =
     """MATCH (n:Person)-[:KNOWS]->(c:City)
       |WITH DISTINCT n, count(*) AS count
       |MATCH (n)-[:KNOWS*..5]->(f:Person)-[:LIVES_IN]->(:City {name: "Berlin"})
       |WHERE (f)-[:LOVES]->(:Girl)
       |RETURN n, count, collect(f) AS friends""".stripMargin
 
-  val foo1 = "foo1" ->
+  val foo1 =
     """match
       |  (toFrom:Duck{Id:{duckId}}),
       |  (brook)-[:precedes|is]->(startbrook),
@@ -53,7 +52,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
       |RETURN Duck.Id as Id, Duck.Name as Name, Duck.Type as Type, Duck.MentionNames as Mentions, count(distinct brook) as brookCount
       |order by brookCount desc skip 0 limit 51""".stripMargin
 
-  val foo2 = "foo2" ->
+  val foo2 =
     """match
       |  (toFrom:Duck{Id:{duckId}}),
       |  (toFrom)-[toFrom_rel:wiggle|quack]->(brook:brook),
@@ -64,7 +63,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
       |return count(distinct thicket) as ThicketCount, count(distinct brook) as brookCount
       |skip 0""".stripMargin
 
-  val socnet1 = "socnet1" ->
+  val socnet1 =
     """MATCH (subject:User {name:{name}})
       |MATCH p=(subject)-[:WORKED_ON]->()<-[:WORKED_ON]-(person)-[:INTERESTED_IN]->(interest)
       |WHERE person<>subject AND interest.name={topic}
@@ -84,7 +83,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
       |ORDER BY pathLength ASC LIMIT 10
       |RETURN name, pathLength""".stripMargin
 
-  val socnet9 = "socnet9" ->
+  val socnet9 =
     """MATCH (subject:User {name:{name}})
       |MATCH p=(subject)-[:WORKED_WITH*0..1]-()-[:WORKED_WITH]-(person)-[:INTERESTED_IN]->(interest)
       |WHERE person<>subject AND interest.name IN {interests}
@@ -92,35 +91,32 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
       |RETURN person.name AS name, count(interest) AS score, collect(interest.name) AS interests, (pathLength - 1) AS distance
       |ORDER BY score DESC LIMIT 20""".stripMargin
 
-  val qmul1 = "qmul1" ->
+  val qmul1 =
     """MATCH (a:Person)-->(m)-[r]->(n)-->(a)
       |WHERE a.uid IN ['1195630902','1457065010'] AND exists(m.location_lat) AND exists(n.location_lat)
       |RETURN count(r)""".stripMargin
 
   test("plans are built fast enough") {
-    val queries = Table("query", foo1, foo2, socnet1, socnet9, qmul1)
+    val queries = List(foo1, foo2, socnet1, socnet9, qmul1)
     plan(10)(warmup)
 
-    forAll(queries) {
-      (query: (String, String)) =>
-        assertIsPlannedTimely(query)
+    queries.foreach(assertIsPlannedTimely)
+  }
+
+  def assertIsPlannedTimely(query: String) = {
+    val result = plan(NUMBER_OF_RUNS)(query)
+
+    withClue("Planning of the first query took too long:\n" + result.description) {
+      result.prepareAndPlanFirstNanos shouldBe <(1.second.toNanos)
+    }
+
+    withClue("Avg planning took too long:\n" + result.description) {
+      result.prepareAndPlanAvgNanos shouldBe <(1.second.toNanos)
     }
   }
 
-  def assertIsPlannedTimely(query: (String, String)) = {
-    val ((prepareFirst, planFirst), (prepareAvg, planAvg)) = plan(NO_RUNS)(query)
-
-    (prepareAvg + planAvg) shouldBe < (fromSeconds(1.0))
-    (prepareFirst + planFirst) shouldBe < (fromSeconds(1.0))
-  }
-
-  def fromSeconds(seconds: Double) = seconds * 1000000000.0
-
-  def toSeconds(nanoSeconds: Double) = nanoSeconds / 1000000000.0
-
-  def plan(times: Int)(queryWithTag: (String, String)): ((Double, Double), (Double, Double)) = {
-    val (tag, query) = queryWithTag
-    var (prepareTotal, planTotal) = (0.0d, 0.0d)
+  def plan(times: Int)(query: String): PlanningResult = {
+    var (prepareTotal, planTotal) = (0L, 0L)
     val (prepareFirst, planFirst) = plan(query)
 
     var count = 2
@@ -133,25 +129,27 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
     val prepareAvg = (prepareTotal + prepareFirst) / times
     val planAvg = (planTotal + planFirst) / times
 
-    if (VERBOSE) {
-      println(s"* Planned query '$tag':\n\n${indent(query)}\n")
-      println(s"  * First prepare time: ${toSeconds(prepareFirst)}")
-      println(s"  * First plan time: ${toSeconds(planFirst)}")
-      println(s"  * First total time: ${toSeconds(prepareFirst + planFirst)}")
-      println(s"  * Number of runs: $times")
-      println(s"  * Average prepare time: ${toSeconds(prepareAvg)} (excluding first ${toSeconds(prepareTotal / (times-1))})")
-      println(s"  * Average planning time: ${toSeconds(planAvg)} (excluding first ${toSeconds(planTotal / (times-1))})")
-      println(s"  * Average total time: ${toSeconds(prepareAvg + planAvg)} (excluding first ${toSeconds((prepareTotal + planTotal) / (times-1))})")
-      println()
-    }
+    val description =
+      s"""
+         |* Planned query:\n\n${indent(query)}\n
+         |  * First prepare time: ${ms(prepareFirst)}
+         |  * First plan time: ${ms(planFirst)}
+         |  * First total time: ${ms(prepareFirst + planFirst)}
+         |  * Number of runs: $times
+         |  * Average prepare time: ${ms(prepareAvg)} (excluding first ${ms(prepareTotal / (times - 1))})
+         |  * Average planning time: ${ms(planAvg)} (excluding first ${ms(planTotal / (times - 1))})
+         |  * Average total time: ${ms(prepareAvg + planAvg)} (excluding first ${ms((prepareTotal + planTotal) / (times - 1))})\n
+         """.stripMargin
 
-    ((prepareFirst, planFirst), (prepareAvg, planAvg))
+    PlanningResult(description, prepareFirst + planFirst, prepareAvg + planAvg)
   }
+
+  def ms(valueNanos: Long) = valueNanos.nanos.toMillis + "ms"
 
   def indent(text: String, indent: String = "    ") =
     indent + text.replace("\n", s"\n$indent")
 
-  def plan(query: String): (Double, Double) = {
+  def plan(query: String): (Long, Long) = {
     val compiler = createCurrentCompiler
     val (preparedSyntacticQueryTime, preparedSyntacticQuery) = measure(compiler.prepareSyntacticQuery(query, query, devNullLogger))
     val planTime = graph.inTx {
@@ -197,4 +195,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
   object DEV_NULL extends InfoLogger {
     def info(message: String){}
   }
+
+  case class PlanningResult(description: String, prepareAndPlanFirstNanos: Long, prepareAndPlanAvgNanos: Long)
+
 }
