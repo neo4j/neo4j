@@ -108,8 +108,8 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
       """match p = (a:Start)-[*]-> (b)
         |return b, avg(length(p))""".stripMargin)
 
-    result.toList should equal(List(Map("b" -> c, "avg(length(p))" -> 1.0),
-                                    Map("b" -> b, "avg(length(p))" -> 1.0)))
+    result.toSet should equal(Set(Map("b" -> c, "avg(length(p))" -> 1.0),
+                                  Map("b" -> b, "avg(length(p))" -> 1.0)))
   }
 
   // TCK'd
@@ -254,12 +254,13 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     // when
     val query =
       """MATCH p=(a:T {name: "a"})-[:R*]-(other: T)
-        |WHERE other <> a WITH a, other, min(length(p)) AS len
+        |WHERE other <> a
+        |WITH a, other, min(length(p)) AS len ORDER BY other.name
         |RETURN a.name as name, collect(other.name) AS others, len""".stripMargin
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     //then
-    result.toList should equal(Seq(Map("name" -> "a", "others" -> Seq("c", "b"), "len" -> 1 )))
+    result.toList should equal(Seq(Map("name" -> "a", "others" -> Seq("b", "c"), "len" -> 1 )))
   }
 
   // TCK'd

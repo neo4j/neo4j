@@ -61,7 +61,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
       val newMap = MutableMaps.create(mapSize)
 
       //add key values
-      (keyNames zip key.map(_.eagerizedValue)).foreach(newMap += _)
+      (keyNames zip key.map(_.originalValue)).foreach(newMap += _)
 
       //add aggregated values
       (aggregationNames zip aggregator.map(_.result)).foreach(newMap += _)

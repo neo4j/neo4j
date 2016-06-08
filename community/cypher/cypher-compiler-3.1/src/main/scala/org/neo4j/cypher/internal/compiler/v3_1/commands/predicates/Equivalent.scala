@@ -26,7 +26,7 @@ import scala.collection.JavaConverters._
 
 // Class that calculates if two values are equivalent or not.
 // Does not handle NULL values - that must be handled outside!
-class Equivalent(val eagerizedValue: Any) {
+class Equivalent(protected val eagerizedValue: Any, val originalValue: Any) {
   override def equals(in: Any): Boolean = {
     val eagerOther = in match {
       case s: Equivalent => s.eagerizedValue
@@ -71,7 +71,7 @@ class Equivalent(val eagerizedValue: Any) {
 }
 
 object Equivalent {
-  def apply(x: Any): Equivalent = new Equivalent(eager(x))
+  def apply(x: Any): Equivalent = new Equivalent(eager(x), x)
 
   private def eager(v: Any): Any = v match {
     case x: Number => x

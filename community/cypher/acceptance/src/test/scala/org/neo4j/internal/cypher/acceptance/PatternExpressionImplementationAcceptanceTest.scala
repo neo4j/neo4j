@@ -85,7 +85,13 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
     relate(start, createNode())
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n) with case when id(n) >= 0 then (n)-->() else 42 end as p, count(n) as c return p, c")
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      """match (n)
+        |with case
+        |       when id(n) >= 0 then (n)-->()
+        |       else 42
+        |     end as p, count(n) as c
+        |return p, c order by c""".stripMargin)
       .toList.head("p").asInstanceOf[Seq[_]]
 
     result should have size 2
