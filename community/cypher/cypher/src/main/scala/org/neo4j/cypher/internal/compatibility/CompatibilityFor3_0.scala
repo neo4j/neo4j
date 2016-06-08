@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compatibility
 
 import java.io.PrintWriter
+import java.time.Clock
 import java.util.Collections
 import java.{lang, util}
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{CRS, Point}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan => ExecutionPlan_v3_0, _}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
@@ -45,7 +45,6 @@ import org.neo4j.graphdb
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
 import org.neo4j.graphdb.{InputPosition, Node, Path, QueryExecutionType, Relationship, ResourceIterator}
-import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
@@ -74,17 +73,9 @@ object helpersv3_0 {
 
       override def getType: String = point.crs.name
 
-      //TODO simplify when depending on newer version of 3.0.X
-      override def getHref: String = point.crs.name match {
-        case CRS.WGS84.name => "http://spatialreference.org/ref/epsg/4326/"
-        case CRS.Cartesian.name => "http://spatialreference.org/ref/sr-org/7203/"
-      }
+      override def getHref: String = point.crs.url
 
-      //TODO simplify when depending on newer version of 3.0.X
-      override def getCode: Int = point.crs.name match {
-        case CRS.WGS84.name => 4326
-        case CRS.Cartesian.name => 7203
-      }
+      override def getCode: Int = point.crs.code
     }
 
     override def getCoordinates: java.util.List[graphdb.spatial.Coordinate] = Collections
@@ -544,7 +535,8 @@ case class CompatibilityFor3_0Cost(graph: GraphDatabaseQueryService,
 
     val logger = new StringInfoLogger3_0(log)
     val monitors = new WrappedMonitors3_0(kernelMonitors)
-    CypherCompilerFactory.costBasedCompiler(graph, config, clock, GeneratedQueryStructure, monitors, logger, rewriterSequencer, plannerName, runtimeName, updateStrategy)
+    CypherCompilerFactory.costBasedCompiler(graph, config, clock, GeneratedQueryStructure, monitors, logger,
+                                            rewriterSequencer, plannerName, runtimeName, updateStrategy, helpersv3_0.asPublicType)
   }
 
   override val queryCacheSize: Int = config.queryCacheSize
@@ -557,7 +549,7 @@ case class CompatibilityFor3_0Rule(graph: GraphDatabaseQueryService,
                                    kernelAPI: KernelAPI) extends CompatibilityFor3_0 {
   protected val compiler = {
     val monitors = new WrappedMonitors3_0(kernelMonitors)
-    CypherCompilerFactory.ruleBasedCompiler(graph, config, clock, monitors, rewriterSequencer)
+    CypherCompilerFactory.ruleBasedCompiler(graph, config, clock, monitors, rewriterSequencer, helpersv3_0.asPublicType)
   }
 
   override val queryCacheSize: Int = config.queryCacheSize

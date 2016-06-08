@@ -48,9 +48,9 @@ class PlannerFactory(graph: GraphDatabaseQueryService, kernelAPI: KernelAPI, ker
   }
 
   def create(spec: PlannerSpec_v3_0) =  spec.planner match {
-    case CypherPlanner.rule => CompatibilityFor3_0Rule(graph, as3_0(config), Clock.SYSTEM_CLOCK, kernelMonitors, kernelAPI)
+    case CypherPlanner.rule => CompatibilityFor3_0Rule(graph, as3_0(config),CypherCompiler.CLOCK, kernelMonitors, kernelAPI)
     case _ => CompatibilityFor3_0Cost(graph, as3_0(config),
-      Clock.SYSTEM_CLOCK, kernelMonitors, kernelAPI, log, spec.planner, spec.runtime, spec.updateStrategy)
+                                      CypherCompiler.CLOCK, kernelMonitors, kernelAPI, log, spec.planner, spec.runtime, spec.updateStrategy)
   }
 
   def create(spec: PlannerSpec_v3_1) = spec.planner match {
