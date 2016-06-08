@@ -46,7 +46,8 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
                                  "`toFloat()` handling `Any` type",
                                  "`toFloat()` failing on invalid arguments",
                                  "`type()` handling `Any` type",
-                                 "`type()` failing on invalid arguments")
+                                 "`type()` failing on invalid arguments",
+                                 "Aggregation with `min()`")
 
   // Stateful
   var graph: GraphDatabaseService = null
