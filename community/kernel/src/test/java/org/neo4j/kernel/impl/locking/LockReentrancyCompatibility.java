@@ -217,7 +217,7 @@ public class LockReentrancyCompatibility extends LockingCompatibilityTestSuite.C
         Future<Object> exclusiveLockFuture = acquireExclusive( clientB, NODE, 1L ).callAndAssertWaiting();
 
         // and when
-        clientA.releaseAll();
+        clientA.releaseShared( NODE, 1L );
 
         // exclusive lock should be received
         assertNotWaiting( clientB, exclusiveLockFuture );

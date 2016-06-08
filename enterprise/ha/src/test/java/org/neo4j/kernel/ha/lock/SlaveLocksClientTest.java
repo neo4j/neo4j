@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha.lock;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InOrder;
 import org.mockito.Matchers;
 import org.mockito.stubbing.OngoingStubbing;
 
@@ -38,6 +39,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
@@ -48,10 +50,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
@@ -80,7 +85,9 @@ public class SlaveLocksClientTest
 
         whenMasterAcquireExclusive().thenReturn( responseOk );
 
-        client = new SlaveLocksClient( master, local, lockManager, requestContextFactory, availabilityGuard, false );
+        client = new SlaveLocksClient( master, local, lockManager, mock( RequestContextFactory.class ),
+                availabilityGuard,
+                true );
     }
 
     private OngoingStubbing<Response<LockResult>> whenMasterAcquireShared()
@@ -258,15 +265,6 @@ public class SlaveLocksClientTest
     }
 
     @Test( expected = DistributedLockFailureException.class )
-    public void releaseAllMustThrowIfMasterThrows() throws Exception
-    {
-        when( master.endLockSession( any( RequestContext.class ), anyBoolean() ) ).thenThrow( new ComException() );
-
-        client.acquireExclusive( NODE, 1 ); // initialise
-        client.releaseAll();
-    }
-
-    @Test( expected = DistributedLockFailureException.class )
     public void closeMustThrowIfMasterThrows() throws Exception
     {
         when( master.endLockSession( any( RequestContext.class ), anyBoolean() ) ).thenThrow( new ComException() );
@@ -316,5 +314,85 @@ public class SlaveLocksClientTest
         {
             // THEN Good
         }
+    }
+
+    @Test( expected = LockClientStoppedException.class )
+    public void acquireSharedFailsWhenClientStopped()
+    {
+        stoppedClient().acquireShared( NODE, 1 );
+    }
+
+    @Test( expected = LockClientStoppedException.class )
+    public void releaseSharedFailsWhenClientStopped()
+    {
+        stoppedClient().releaseShared( NODE, 1 );
+    }
+
+    @Test( expected = LockClientStoppedException.class )
+    public void acquireExclusiveFailsWhenClientStopped()
+    {
+        stoppedClient().acquireExclusive( NODE, 1 );
+    }
+
+    @Test( expected = LockClientStoppedException.class )
+    public void releaseExclusiveFailsWhenClientStopped()
+    {
+        stoppedClient().releaseExclusive( NODE, 1 );
+    }
+
+    @Test( expected = LockClientStoppedException.class )
+    public void getLockSessionIdWhenClientStopped()
+    {
+        stoppedClient().getLockSessionId();
+    }
+
+    @Test
+    public void stopLocalLocksAndEndLockSessionOnMasterWhenStopped()
+    {
+        client.acquireShared( NODE, 1 );
+
+        client.stop();
+
+        verify( local ).stop();
+        verify( master ).endLockSession( any( RequestContext.class ), eq( false ) );
+    }
+
+    @Test
+    public void closeLocalLocksAndEndLockSessionOnMasterWhenClosed()
+    {
+        client.acquireShared( NODE, 1 );
+
+        client.close();
+
+        verify( local ).close();
+        verify( master ).endLockSession( any( RequestContext.class ), eq( true ) );
+    }
+
+    @Test
+    public void closeAfterStopped()
+    {
+        client.acquireShared( NODE, 1 );
+
+        client.stop();
+        client.close();
+
+        InOrder inOrder = inOrder( master, local );
+        inOrder.verify( master ).endLockSession( any( RequestContext.class ), eq( false ) );
+        inOrder.verify( local ).close();
+    }
+
+    @Test
+    public void closeWhenNotInitialized()
+    {
+        client.close();
+
+        verify( local ).close();
+        verifyNoMoreInteractions( master );
+    }
+
+    private SlaveLocksClient stoppedClient()
+    {
+        client.stop();
+        return client;
     }
 }

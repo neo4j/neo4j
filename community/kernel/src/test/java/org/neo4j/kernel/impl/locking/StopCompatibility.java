@@ -153,12 +153,6 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
         stoppedClient().releaseExclusive( ResourceTypes.NODE, 1 );
     }
 
-    @Test( expected = LockClientStoppedException.class )
-    public void releaseAllThrowsWhenClientStopped()
-    {
-        stoppedClient().releaseAll();
-    }
-
     @Test
     public void sharedLockCanBeStopped() throws Exception
     {
@@ -186,7 +180,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     @Test
     public void acquireSharedLockAfterSharedLockStoppedOtherThread() throws Exception
     {
-        acquireExclusiveLockInThisThread();
+        AcquiredLock thisThreadsExclusiveLock = acquireExclusiveLockInThisThread();
 
         LockAcquisition sharedLockAcquisition1 = acquireSharedLockInAnotherThread();
         assertThreadIsWaitingForLock( sharedLockAcquisition1 );
@@ -194,7 +188,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
         sharedLockAcquisition1.stop();
         assertLockAcquisitionFailed( sharedLockAcquisition1 );
 
-        releaseAllLocksInThisThread();
+        thisThreadsExclusiveLock.release();
 
         LockAcquisition sharedLockAcquisition2 = acquireSharedLockInAnotherThread();
         assertLockAcquisitionSucceeded( sharedLockAcquisition2 );
@@ -203,7 +197,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     @Test
     public void acquireExclusiveLockAfterExclusiveLockStoppedOtherThread() throws Exception
     {
-        acquireExclusiveLockInThisThread();
+        AcquiredLock thisThreadsExclusiveLock = acquireExclusiveLockInThisThread();
 
         LockAcquisition exclusiveLockAcquisition1 = acquireExclusiveLockInAnotherThread();
         assertThreadIsWaitingForLock( exclusiveLockAcquisition1 );
@@ -211,7 +205,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
         exclusiveLockAcquisition1.stop();
         assertLockAcquisitionFailed( exclusiveLockAcquisition1 );
 
-        releaseAllLocksInThisThread();
+        thisThreadsExclusiveLock.release();
 
         LockAcquisition exclusiveLockAcquisition2 = acquireExclusiveLockInAnotherThread();
         assertLockAcquisitionSucceeded( exclusiveLockAcquisition2 );
@@ -220,7 +214,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     @Test
     public void acquireSharedLockAfterExclusiveLockStoppedOtherThread() throws Exception
     {
-        acquireExclusiveLockInThisThread();
+        AcquiredLock thisThreadsExclusiveLock = acquireExclusiveLockInThisThread();
 
         LockAcquisition exclusiveLockAcquisition = acquireExclusiveLockInAnotherThread();
         assertThreadIsWaitingForLock( exclusiveLockAcquisition );
@@ -228,7 +222,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
         exclusiveLockAcquisition.stop();
         assertLockAcquisitionFailed( exclusiveLockAcquisition );
 
-        releaseAllLocksInThisThread();
+        thisThreadsExclusiveLock.release();
 
         LockAcquisition sharedLockAcquisition = acquireSharedLockInAnotherThread();
         assertLockAcquisitionSucceeded( sharedLockAcquisition );
@@ -237,7 +231,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     @Test
     public void acquireExclusiveLockAfterSharedLockStoppedOtherThread() throws Exception
     {
-        acquireExclusiveLockInThisThread();
+        AcquiredLock thisThreadsExclusiveLock = acquireExclusiveLockInThisThread();
 
         LockAcquisition sharedLockAcquisition = acquireSharedLockInAnotherThread();
         assertThreadIsWaitingForLock( sharedLockAcquisition );
@@ -245,7 +239,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
         sharedLockAcquisition.stop();
         assertLockAcquisitionFailed( sharedLockAcquisition );
 
-        releaseAllLocksInThisThread();
+        thisThreadsExclusiveLock.release();
 
         LockAcquisition exclusiveLockAcquisition = acquireExclusiveLockInAnotherThread();
         assertLockAcquisitionSucceeded( exclusiveLockAcquisition );
@@ -290,7 +284,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     @Test
     public void acquireExclusiveLockWhileHoldingSharedLockCanBeStopped() throws Exception
     {
-        acquireSharedLockInThisThread();
+        AcquiredLock thisThreadsSharedLock = acquireSharedLockInThisThread();
 
         CountDownLatch sharedLockAcquired = new CountDownLatch( 1 );
         CountDownLatch startExclusiveLock = new CountDownLatch( 1 );
@@ -304,7 +298,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
         acquisition.stop();
         assertLockAcquisitionFailed( acquisition );
 
-        releaseAllLocksInThisThread();
+        thisThreadsSharedLock.release();
         assertNoLocksHeld();
     }
 
@@ -323,7 +317,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
 
     private void closeClientAfterLockStopped( boolean shared ) throws Exception
     {
-        acquireExclusiveLockInThisThread();
+        AcquiredLock thisThreadsExclusiveLock = acquireExclusiveLockInThisThread();
 
         CountDownLatch firstLockAcquired = new CountDownLatch( 1 );
         LockAcquisition
@@ -337,14 +331,14 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
         assertLockAcquisitionFailed( acquisition );
         assertLocksHeld( RESOURCE_ID );
 
-        releaseAllLocksInThisThread();
+        thisThreadsExclusiveLock.release();
         assertNoLocksHeld();
     }
 
     private void acquireLockAfterOtherLockStoppedSameThread( boolean firstLockShared, boolean secondLockShared )
             throws Exception
     {
-        acquireExclusiveLockInThisThread();
+        AcquiredLock thisThreadsExclusiveLock = acquireExclusiveLockInThisThread();
 
         CountDownLatch firstLockFailed = new CountDownLatch( 1 );
         CountDownLatch startSecondLock = new CountDownLatch( 1 );
@@ -356,27 +350,24 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
 
         lockAcquisition.stop();
         await( firstLockFailed );
-        releaseAllLocksInThisThread();
+        thisThreadsExclusiveLock.release();
         startSecondLock.countDown();
 
         assertLockAcquisitionSucceeded( lockAcquisition );
     }
 
-    private void acquireSharedLockInThisThread()
+    private AcquiredLock acquireSharedLockInThisThread()
     {
         client.acquireShared( RESOURCE_TYPE, RESOURCE_ID );
         assertLocksHeld( RESOURCE_ID );
+        return AcquiredLock.shared( client, RESOURCE_TYPE, RESOURCE_ID );
     }
 
-    private void acquireExclusiveLockInThisThread()
+    private AcquiredLock acquireExclusiveLockInThisThread()
     {
         client.acquireExclusive( RESOURCE_TYPE, RESOURCE_ID );
         assertLocksHeld( RESOURCE_ID );
-    }
-
-    private void releaseAllLocksInThisThread()
-    {
-        client.releaseAll();
+        return AcquiredLock.exclusive( client, RESOURCE_TYPE, RESOURCE_ID );
     }
 
     private LockAcquisition acquireSharedLockInAnotherThread()
@@ -682,6 +673,44 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
         void stop()
         {
             getClient().stop();
+        }
+    }
+
+    private static class AcquiredLock
+    {
+        final Locks.Client client;
+        final boolean shared;
+        final Locks.ResourceType resourceType;
+        final long resourceId;
+
+        AcquiredLock( Locks.Client client, boolean shared, Locks.ResourceType resourceType, long resourceId )
+        {
+            this.client = client;
+            this.shared = shared;
+            this.resourceType = resourceType;
+            this.resourceId = resourceId;
+        }
+
+        static AcquiredLock shared( Locks.Client client, Locks.ResourceType resourceType, long resourceId )
+        {
+            return new AcquiredLock( client, true, resourceType, resourceId );
+        }
+
+        static AcquiredLock exclusive( Locks.Client client, Locks.ResourceType resourceType, long resourceId )
+        {
+            return new AcquiredLock( client, false, resourceType, resourceId );
+        }
+
+        void release()
+        {
+            if ( shared )
+            {
+                client.releaseShared( resourceType, resourceId );
+            }
+            else
+            {
+                client.releaseExclusive( resourceType, resourceId );
+            }
         }
     }
 }

@@ -235,20 +235,6 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public void releaseAll()
-    {
-        stateHolder.incrementActiveClients( this );
-        try
-        {
-            releaseLocks();
-        }
-        finally
-        {
-            stateHolder.decrementActiveClients();
-        }
-    }
-
-    @Override
     public void stop()
     {
         // closing client to prevent any new client to come

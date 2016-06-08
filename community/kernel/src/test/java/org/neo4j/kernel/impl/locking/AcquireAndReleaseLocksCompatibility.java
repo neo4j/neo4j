@@ -92,23 +92,6 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     }
 
     @Test
-    public void shouldReleaseAllLocks() throws Exception
-    {
-        // When
-        clientA.acquireExclusive( NODE, 1L );
-        clientA.acquireShared( NODE, 2l );
-
-        // Then shared locks should wait
-        Future<Object> clientBLock = acquireShared( clientB, NODE, 1L ).callAndAssertWaiting();
-
-        // And when
-        clientA.releaseAll();
-
-        // Then this should not block
-        assertNotWaiting( clientB, clientBLock );
-    }
-
-    @Test
     public void shouldTrySharedLock() throws Exception
     {
         // Given I've grabbed a share lock
