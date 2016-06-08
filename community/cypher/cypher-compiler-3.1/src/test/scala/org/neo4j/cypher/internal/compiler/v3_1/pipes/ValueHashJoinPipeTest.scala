@@ -160,17 +160,31 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     lhsIterator.fetched should equal(0)
   }
 
+  test("should support joining on arrays") {
+    // given
+    val ints = Array(1, 2, 3)
+    val doubles = Array(1.0, 2.0, 3.0)
+
+    val queryState = QueryStateHelper.empty
+
+    val left = newMockedPipe(SymbolTable(Map("a" -> CTInteger)))
+    when(left.createResults(queryState)).thenReturn(rows("a", ints, Array(2, 3, 4)))
+
+    val right = newMockedPipe(SymbolTable(Map("b" -> CTInteger)))
+    when(right.createResults(queryState)).thenReturn(rows("b",  doubles, Array(0, 1, 2)))
+
+    // when
+    val result = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)().createResults(queryState)
+
+    // then
+    result.toList should equal(List(Map("a" -> ints, "b" ->  doubles)))
+  }
+
+
   private def row(values: (String, Any)*) = ExecutionContext.from(values: _*)
 
   private def rows(variable: String, values: Any*): Iterator[ExecutionContext] =
     values.map(x => ExecutionContext.from(variable -> x)).iterator
-
-  private def newMockedNode(id: Int) = {
-    val node = mock[Node]
-    when(node.getId).thenReturn(id)
-    when(node.toString).thenReturn("node - " + id.toString)
-    node
-  }
 
   private def newMockedPipe(symbolTable: SymbolTable): Pipe = {
     val pipe = mock[Pipe]

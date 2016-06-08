@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_1.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.Equivalent
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{InternalPlanDescription, PlanDescriptionImpl, TwoChildren}
@@ -49,7 +50,8 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
     val result = for {context: ExecutionContext <- rhsIterator
                       joinKey = rhsExpression(context) if joinKey != null}
       yield {
-        val seq = table.getOrElse(joinKey, mutable.MutableList.empty)
+        val equiKey = Equivalent(joinKey)
+        val seq = table.getOrElse(equiKey, mutable.MutableList.empty)
         seq.map(context ++ _)
       }
     result.flatten
@@ -80,11 +82,11 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
   override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
   private def buildProbeTable(input: Iterator[ExecutionContext])(implicit state: QueryState) = {
-    val table = new mutable.HashMap[Any, mutable.MutableList[ExecutionContext]]
+    val table = new mutable.HashMap[Equivalent, mutable.MutableList[ExecutionContext]]
 
     for (context <- input;
          joinKey = lhsExpression(context) if joinKey != null) {
-      val seq = table.getOrElseUpdate(joinKey, mutable.MutableList.empty)
+      val seq = table.getOrElseUpdate(Equivalent(joinKey), mutable.MutableList.empty)
       seq += context
     }
 
