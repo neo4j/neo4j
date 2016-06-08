@@ -390,6 +390,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     private StoreLayerModule storeLayerModule;
     private TransactionLogModule transactionLogModule;
     private KernelModule kernelModule;
+    private BufferingIdGeneratorFactory bufferingIdGeneratorFactory;
 
     /**
      * Creates a <CODE>NeoStoreXaDataSource</CODE> using configuration from
@@ -529,7 +530,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             LegacyIndexApplierLookup legacyIndexApplierLookup =
                     dependencies.satisfyDependency( new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup ) );
 
-            BufferingIdGeneratorFactory bufferingIdGeneratorFactory = null;
             boolean safeIdBuffering = FeatureToggles.flag( getClass(), "safeIdBuffering", false );
             if ( safeIdBuffering )
             {
@@ -1382,6 +1382,14 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         return parts;
     }
 
+    public void maintenance()
+    {
+        if ( bufferingIdGeneratorFactory != null )
+        {
+            bufferingIdGeneratorFactory.maintenance();
+        }
+    }
+
     @Override
     public void registerIndexProvider( String name, IndexImplementation index )
     {
@@ -1403,6 +1411,17 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
      */
     public void beforeModeSwitch()
     {
+        clearTransactions();
+    }
+
+    private void clearTransactions()
+    {
+        if ( bufferingIdGeneratorFactory != null )
+        {
+            // We don't want to have buffered ids carry over to the new role
+            bufferingIdGeneratorFactory.clear();
+        }
+
         // Get rid of all pooled transactions, as they will otherwise reference
         // components that have been swapped out during the mode switch.
         kernelModule.kernelTransactions().disposeAll();
@@ -1415,9 +1434,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     public void afterModeSwitch()
     {
         loadSchemaCache();
-        // Get rid of all pooled transactions, as they will otherwise reference
-        // components that have been swapped out during the mode switch.
-        kernelModule.kernelTransactions().disposeAll();
+        clearTransactions();
     }
 
     @SuppressWarnings( "deprecation" )

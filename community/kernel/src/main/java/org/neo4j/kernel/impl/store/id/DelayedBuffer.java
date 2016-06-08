@@ -63,6 +63,7 @@ public class DelayedBuffer<T>
     public DelayedBuffer( Supplier<T> thresholdSupplier, Predicate<T> safeThreshold, int chunkSize,
             Consumer<long[]> chunkConsumer )
     {
+        assert chunkSize > 0;
         this.thresholdSupplier = thresholdSupplier;
         this.safeThreshold = safeThreshold;
         this.chunkSize = chunkSize;
@@ -145,5 +146,11 @@ public class DelayedBuffer<T>
         {
             chunkConsumer.accept( chunks.poll().values );
         }
+    }
+
+    public synchronized void clear()
+    {
+        chunks.clear();
+        chunkCursor = 0;
     }
 }

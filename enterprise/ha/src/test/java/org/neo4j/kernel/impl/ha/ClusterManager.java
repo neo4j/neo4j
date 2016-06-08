@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.ha;
 
-import org.w3c.dom.Document;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -45,21 +43,18 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.client.ClusterClientModule;
 import org.neo4j.cluster.client.Clusters;
-import org.neo4j.cluster.client.ClustersXMLSerializer;
 import org.neo4j.cluster.com.NetworkReceiver;
 import org.neo4j.cluster.com.NetworkSender;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
+import org.neo4j.consistency.store.StoreAssertions;
 import org.neo4j.function.Function;
 import org.neo4j.function.IntFunction;
 import org.neo4j.function.Predicate;
@@ -94,10 +89,8 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
-
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
 import static org.neo4j.helpers.ArrayUtil.contains;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -173,6 +166,7 @@ public class ClusterManager
     private final StoreDirInitializer storeDirInitializer;
     private final Listener<GraphDatabaseService> initialDatasetCreator;
     private final List<Predicate<ManagedCluster>> availabilityChecks;
+    private final boolean consistencyCheck;
     LifeSupport life;
 
     private ClusterManager( Builder builder )
@@ -185,6 +179,7 @@ public class ClusterManager
         this.storeDirInitializer = builder.initializer;
         this.initialDatasetCreator = builder.initialDatasetCreator;
         this.availabilityChecks = builder.availabilityChecks;
+        this.consistencyCheck = builder.consistencyCheck;
     }
 
     private Map<String,IntFunction<String>> withDefaults( Map<String,IntFunction<String>> commonConfig )
@@ -826,6 +821,11 @@ public class ClusterManager
          * @param checks availability checks that must pass before considering the cluster online.
          */
         SELF withAvailabilityChecks( Predicate<ManagedCluster>... checks );
+
+        /**
+         * Runs consistency checks on the databases after cluster has been shut down.
+         */
+        SELF withConsistencyCheckAfterwards();
     }
 
     public static class Builder implements ClusterBuilder<Builder>
@@ -837,6 +837,7 @@ public class ClusterManager
         private StoreDirInitializer initializer;
         private Listener<GraphDatabaseService> initialDatasetCreator;
         private List<Predicate<ManagedCluster>> availabilityChecks = Collections.emptyList();
+        private boolean consistencyCheck;
 
         public Builder( File root )
         {
@@ -933,6 +934,13 @@ public class ClusterManager
         public final Builder withAvailabilityChecks( Predicate<ManagedCluster>... checks )
         {
             this.availabilityChecks = Arrays.asList( checks );
+            return this;
+        }
+
+        @Override
+        public Builder withConsistencyCheckAfterwards()
+        {
+            this.consistencyCheck = true;
             return this;
         }
 
@@ -1134,8 +1142,19 @@ public class ClusterManager
         {
             for ( HighlyAvailableGraphDatabaseProxy member : members.values() )
             {
-                member.get().shutdown();
+                HighlyAvailableGraphDatabase memberDb = member.get();
+                File storeDir = memberDb.getStoreDirectory();
+                memberDb.shutdown();
+                if ( consistencyCheck )
+                {
+                    consistencyCheck( storeDir );
+                }
             }
+        }
+
+        private void consistencyCheck( File storeDir ) throws Throwable
+        {
+            StoreAssertions.assertConsistentStore( storeDir );
         }
 
         /**

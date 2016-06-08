@@ -32,6 +32,7 @@ import org.hamcrest.Matcher;
 import org.hamcrest.StringDescription;
 
 import org.neo4j.function.Consumer;
+import org.neo4j.function.Function;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -127,6 +128,11 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
             }
             builder.append( "}" );
             return builder.toString();
+        }
+
+        public String toLogLikeString()
+        {
+            return format( "%s: %s", level, message);
         }
     }
 
@@ -621,6 +627,18 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
         logCalls.clear();
     }
 
+    public String serialize()
+    {
+        return serialize( logCalls.iterator(), new Function<LogCall,String>()
+        {
+            @Override
+            public String apply( LogCall call )
+            {
+                return call.toLogLikeString();
+            }
+        } );
+    }
+
     private String describe( Iterator<LogMatcher> matchers )
     {
         StringBuilder sb = new StringBuilder();
@@ -634,10 +652,22 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
 
     private String serialize( Iterator<LogCall> events )
     {
+        return serialize( events, new Function<LogCall,String>()
+        {
+            @Override
+            public String apply( LogCall call )
+            {
+                return call.toString();
+            }
+        } );
+    }
+
+    private String serialize( Iterator<LogCall> events, Function<LogCall,String> serializer )
+    {
         StringBuilder sb = new StringBuilder();
         while ( events.hasNext() )
         {
-            sb.append( events.next().toString() );
+            sb.append( serializer.apply( events.next() ) );
             sb.append( "\n" );
         }
         return sb.toString();
