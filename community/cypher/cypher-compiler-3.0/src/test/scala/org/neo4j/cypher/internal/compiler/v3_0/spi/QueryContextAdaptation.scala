@@ -49,16 +49,14 @@ trait QueryContextAdaptation {
 
   override def getPropertiesForRelationship(relId: Long): scala.Iterator[Int] = ???
 
+  override def detachDeleteNode(node: Node): Int = ???
+
   override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit = ???
 
   override def singleShortestPath(left: Node, right: Node, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path] = ???
 
-  /**
-    * This should not be used. We'll remove sooner (or later). Don't do it.
-    */
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = ???
 
-  // Legacy dependency between kernel and compiler
   override def variableLengthPathExpand(node: PatternNode, realNode: Node, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]): scala.Iterator[Path] = ???
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection): Int = ???
@@ -83,7 +81,6 @@ trait QueryContextAdaptation {
 
   override def dropUniqueConstraint(labelId: Int, propertyKeyId: Int): Unit = ???
 
-  // Check if a runtime value is a node, relationship, path or some such value returned from
   override def isGraphKernelResultValue(v: Any): Boolean = ???
 
   override def transactionalContext: QueryTransactionalContext = ???

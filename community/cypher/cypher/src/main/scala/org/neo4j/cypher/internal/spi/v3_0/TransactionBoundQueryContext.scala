@@ -117,6 +117,14 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def getPropertiesForRelationship(relId: Long) =
     JavaConversionSupport.asScala(transactionalContext.statement.readOperations().relationshipGetPropertyKeys(relId))
 
+  override def detachDeleteNode(node: Node): Int =
+    try {
+      transactionalContext.statement.dataWriteOperations().nodeDetachDelete(node.getId)
+    } catch {
+      case _: exceptions.EntityNotFoundException => 0
+      // node has been deleted by another transaction, oh well...
+    }
+
   override def isLabelSetOnNode(label: Int, node: Long) =
     transactionalContext.statement.readOperations().nodeHasLabel(node, label)
 
@@ -298,14 +306,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       }
     }
 
-    override def detachDelete(obj: Node): Int =
-      try {
-        transactionalContext.statement.dataWriteOperations().nodeDetachDelete(obj.getId)
-      } catch {
-        case _: exceptions.EntityNotFoundException => 0
-        // node has been deleted by another transaction, oh well...
-      }
-
     override def propertyKeyIds(id: Long): Iterator[Int] = try {
       JavaConversionSupport.asScalaENFXSafe(transactionalContext.statement.readOperations().nodeGetPropertyKeys(id))
     } catch {
@@ -380,8 +380,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
         case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
       }
     }
-
-    override def detachDelete(obj: Relationship): Int = ???
 
     override def propertyKeyIds(id: Long): Iterator[Int] = try {
       asScalaENFXSafe(transactionalContext.statement.readOperations().relationshipGetPropertyKeys(id))

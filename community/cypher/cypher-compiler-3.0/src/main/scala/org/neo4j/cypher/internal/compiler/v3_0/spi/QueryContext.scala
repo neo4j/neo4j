@@ -81,6 +81,8 @@ trait QueryContext extends TokenContext {
 
   def getPropertiesForRelationship(relId: Long): Iterator[Int]
 
+  def detachDeleteNode(node: Node): Int
+
   def getOrCreatePropertyKeyId(propertyKey: String): Int
 
   def addIndexRule(labelId: Int, propertyKeyId: Int): IdempotentResult[IndexDescriptor]
@@ -169,8 +171,6 @@ trait QueryContext extends TokenContext {
 
 trait Operations[T <: PropertyContainer] {
   def delete(obj: T)
-
-  def detachDelete(obj: T): Int
 
   def setProperty(obj: Long, propertyKeyId: Int, value: Any)
 

@@ -78,6 +78,9 @@ class ExceptionTranslatingQueryContextFor3_0(val inner: QueryContext) extends Qu
   override def getPropertiesForRelationship(relId: Long): Iterator[Int] =
     translateException(inner.getPropertiesForRelationship(relId))
 
+  override def detachDeleteNode(node: Node): Int =
+    translateException(inner.detachDeleteNode(node))
+
   override def getPropertyKeyName(propertyKeyId: Int): String =
     translateException(inner.getPropertyKeyName(propertyKeyId))
 

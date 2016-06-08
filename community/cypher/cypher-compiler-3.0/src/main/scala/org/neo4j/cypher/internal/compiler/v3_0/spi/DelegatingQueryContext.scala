@@ -33,6 +33,7 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   protected def singleDbHit[A](value: A): A = value
   protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
+  protected def manyDbHits(count: Int): Int = count
 
   type EntityAccessor = inner.EntityAccessor
 
@@ -77,6 +78,9 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def getPropertiesForRelationship(relId: Long): Iterator[Int] =
     singleDbHit(inner.getPropertiesForRelationship(relId))
+
+  override def detachDeleteNode(obj: Node): Int = manyDbHits(inner.detachDeleteNode(obj))
+
 
   override def getPropertyKeyName(propertyKeyId: Int): String = singleDbHit(inner.getPropertyKeyName(propertyKeyId))
 
@@ -197,11 +201,8 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
 
   protected def singleDbHit[A](value: A): A = value
   protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
-  protected def manyDbHits(count: Int): Int = count
 
   override def delete(obj: T): Unit = singleDbHit(inner.delete(obj))
-
-  override def detachDelete(obj: T) = manyDbHits(inner.detachDelete(obj))
 
   override def setProperty(obj: Long, propertyKey: Int, value: Any): Unit =
     singleDbHit(inner.setProperty(obj, propertyKey, value))
