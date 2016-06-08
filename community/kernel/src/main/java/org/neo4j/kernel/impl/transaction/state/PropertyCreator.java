@@ -68,11 +68,12 @@ public class PropertyCreator
         // Chain traversal can be aborted only if:
         // - (1) (b) occurs and new property block fits where the current is
         // - (2) (a) occurs and (b) has occurred, but new property block didn't fit
-        // - (3) Chain ends
+        // - (3) (b) occurs and (a) has occurred
+        // - (4) Chain ends
         RecordProxy<Long, PropertyRecord, PrimitiveRecord> freeHostProxy = null;
         RecordProxy<Long, PropertyRecord, PrimitiveRecord> existingHostProxy = null;
         long prop = primitive.getNextProp();
-        while ( prop != Record.NO_NEXT_PROPERTY.intValue() ) // <-- (3)
+        while ( prop != Record.NO_NEXT_PROPERTY.intValue() ) // <-- (4)
         {
             RecordProxy<Long, PropertyRecord, PrimitiveRecord> proxy =
                     propertyRecords.getOrLoad( prop, primitive );
@@ -115,7 +116,7 @@ public class PropertyCreator
                 }
                 else if ( freeHostProxy != null )
                 {
-                    // (2) yes we could add it to a previously found host with sufficiently free space in it
+                    // (3) yes we could add it to a previously found host with sufficiently free space in it
                     PropertyRecord freeHost = freeHostProxy.forChangingData();
                     freeHost.addPropertyBlock( block );
                     freeHost.setChanged( primitive );

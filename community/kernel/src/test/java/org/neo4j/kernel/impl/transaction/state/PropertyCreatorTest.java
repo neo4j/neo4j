@@ -101,6 +101,23 @@ public class PropertyCreatorTest
     }
 
     @Test
+    public void shouldAddPropertyToChainContainingOtherNonFullRecordsInMiddle() throws Exception
+    {
+        // GIVEN
+        existingChain(
+                record( property( 0, 0 ), property( 1, 1 ), property( 2, 2 ) ),
+                record( property( 3, 3 ), property( 4, 4 ), property( 5, 5 ), property( 6, 6 ) ) );
+
+        // WHEN
+        setProperty( 10, 10 );
+
+        // THEN
+        assertChain(
+                record( property( 0, 0 ), property( 1, 1 ), property( 2, 2 ), property( 10, 10 ) ),
+                record( property( 3, 3 ), property( 4, 4 ), property( 5, 5 ), property( 6, 6 ) ) );
+    }
+
+    @Test
     public void shouldChangeOnlyProperty() throws Exception
     {
         // GIVEN
