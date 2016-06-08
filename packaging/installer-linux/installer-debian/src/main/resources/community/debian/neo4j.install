@@ -11,3 +11,4 @@ server/plugins      var/lib/neo4j
 
 server/conf/*       etc/neo4j
 server/neo4j        etc/init.d
+server/default/*    etc/default

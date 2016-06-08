@@ -25,6 +25,11 @@
                 </fileset>
             </copy>
 
+            <!-- Make the defaults file available to debuild -->
+            <copy file="${project.build.sourceDirectory}/../resources/common/default/neo4j"
+                  toFile="${project.build.outputDirectory}/@{name}/server/default/neo4j"/>
+
+
             <!-- Make the Neo4j wrapper scripts available to debuild -->
             <copy file="${project.build.sourceDirectory}/../resources/common/neo4j-script"
                   toFile="${project.build.outputDirectory}/@{name}/server/scripts/neo4j"/>
