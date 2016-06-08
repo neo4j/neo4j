@@ -20,6 +20,7 @@
 package cypher.feature.parser.matchers;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -39,58 +40,64 @@ public class ResultMatcher implements Matcher<Result>
     @Override
     public boolean matches( Result value )
     {
-        boolean result = matchesWithoutNecessarilyExhausting( value );
-        exhaust( value );
-        return result;
-    }
-
-    private boolean matchesWithoutNecessarilyExhausting( Result value )
-    {
         List<RowMatcher> mutableCopy = new ArrayList<>( rowMatchers );
-        while ( value.hasNext() && !mutableCopy.isEmpty() )
-        {
-            Map<String,Object> nextRow = value.next();
+        final boolean[] matched = {true};
+        List<String> columns = value.columns();
+
+        value.accept( row -> {
+            Map<String, Object> nextRow = new HashMap<>( columns.size() );
+            for ( String col : columns )
+            {
+                nextRow.put( col, row.get( col ) );
+            }
+
             int index = findMatch( mutableCopy, nextRow );
             if ( index < 0 )
             {
+                matched[0] = false;
                 return false;
             }
             mutableCopy.remove( index );
-        }
+            return true;
+        } );
 
-        boolean nothingLeftInReal = !value.hasNext();
         boolean nothingLeftInMatcher = mutableCopy.isEmpty();
-        return nothingLeftInMatcher && nothingLeftInReal;
+        return matched[0] && nothingLeftInMatcher;
     }
 
     public boolean matchesOrdered( Result value )
     {
-        boolean matches = matchesOrderedWithoutNecessarilyExhausting( value );
-        exhaust( value );
-        return matches;
-    }
+        final int[] counter = {0};
+        final boolean[] matched = {true};
+        List<String> columns = value.columns();
 
-    private boolean matchesOrderedWithoutNecessarilyExhausting( Result value )
-    {
-        boolean matches = true;
-        int counter = 0;
-        while ( value.hasNext() && counter < rowMatchers.size() )
-        {
-            matches &= rowMatchers.get( counter++ ).matches( value.next() );
-        }
+        value.accept( row -> {
+            Map<String, Object> nextRow = new HashMap<>( columns.size() );
+            for ( String col : columns )
+            {
+                nextRow.put( col, row.get( col ) );
+            }
 
-        boolean nothingLeftInReal = !value.hasNext();
-        boolean nothingLeftInMatcher = counter == rowMatchers.size();
-        return matches && nothingLeftInMatcher && nothingLeftInReal;
-    }
+            //This is never going to match, break out
+            if (counter[0] >= rowMatchers.size())
+            {
+                matched[0] = false;
+                return false;
+            }
 
-    private void exhaust( Result value )
-    {
-        // exhaust the result to get a full toString()
-        while ( value.hasNext() )
-        {
-            value.next();
-        }
+            matched[0] = rowMatchers.get( counter[0]++ ).matches( nextRow );
+            //found a mismatch, break out
+            if (!matched[0])
+            {
+                return false;
+            }
+
+            //continue
+            return true;
+        } );
+
+        boolean nothingLeftInMatcher = counter[0] == rowMatchers.size();
+        return matched[0] && nothingLeftInMatcher;
     }
 
     @Override

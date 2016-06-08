@@ -30,7 +30,7 @@ case class NodeExpression(nodeIdVar: Variable) extends CodeGenExpression {
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
     if (nodeIdVar.nullable)
-      structure.nullablePrimitive(nodeIdVar.name, CodeGenType.primitiveNode, structure.node(nodeIdVar.name))
+      structure.nullableReference(nodeIdVar.name, CodeGenType.primitiveNode, structure.node(nodeIdVar.name))
     else
       structure.node(nodeIdVar.name)
   }

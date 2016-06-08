@@ -66,6 +66,22 @@ public class FeatureSuiteTest
     {
     }
 
+    @RunWith( Cucumber.class )
+    @CucumberOptions(
+            plugin = {
+                    NAMED_GRAPHS_DBS,
+                    DB_CONFIG + "cost-compiled.json",
+                    HTML_REPORT + "cost-compiled",
+                    JSON_REPORT + "cost-compiled"
+            },
+            glue = { GLUE_PATH },
+            features = { FEATURE_PATH + FEATURE_TO_RUN },
+            strict = true
+    )
+    public static class CostCompiled
+    {
+    }
+
     // constants for TCK configuration
 
     private static final String NAMED_GRAPHS_DBS = "cypher.cucumber.db.DatabaseProvider:target/dbs";
