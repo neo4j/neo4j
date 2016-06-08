@@ -22,14 +22,14 @@ package org.neo4j.kernel.impl.store.format.standard;
 /**
  * Common low limit format settings.
  */
-final class StandardFormatSettings
+public final class StandardFormatSettings
 {
+    public static final int PROPERTY_TOKEN_MAXIMUM_ID_BITS = 24;
     static final int NODE_RECORD_MAXIMUM_ID_BITS = 35;
     static final int RELATIONSHIP_MAXIMUM_ID_BITS = 35;
     static final int PROPERTY_RECORD_MAXIMUM_ID_BITS = 36;
     static final int DYNAMIC_RECORD_MAXIMUM_ID_BITS = 36;
     static final int LABEL_TOKEN_MAXIMUM_ID_BITS = 32;
-    static final int PROPERTY_TOKEN_MAXIMUM_ID_BITS = 32;
     static final int RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS = 16;
     static final int RELATIONSHIP_GROUP_MAXIMUM_ID_BITS = 35;
 

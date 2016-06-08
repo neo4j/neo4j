@@ -510,9 +510,9 @@ public class IdGeneratorTest
             IdGeneratorImpl.createGenerator( fs, idGeneratorFile(), 0, false );
             IdGenerator idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1,
                     recordFormat.getMaxId(), false, 0 );
-            idGenerator.setHighId( recordFormat.getMaxId() - 1 );
+            idGenerator.setHighId( recordFormat.getMaxId() );
             long id = idGenerator.nextId();
-            assertEquals( recordFormat.getMaxId() - 1, id );
+            assertEquals( recordFormat.getMaxId(), id );
             idGenerator.freeId( id );
             try
             {
@@ -526,7 +526,7 @@ public class IdGeneratorTest
             idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1, recordFormat.getMaxId(), false, 0 );
             assertEquals( recordFormat.getMaxId() + 1, idGenerator.getHighId() );
             id = idGenerator.nextId();
-            assertEquals( recordFormat.getMaxId() - 1, id );
+            assertEquals( recordFormat.getMaxId(), id );
             try
             {
                 idGenerator.nextId();

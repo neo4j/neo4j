@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.input;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,13 +29,14 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.io.ByteUnit;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.test.DefaultFileSystemRule;
 import org.neo4j.test.RandomRule;
 import org.neo4j.test.Randoms;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
+
 import static java.lang.Math.abs;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -49,14 +51,28 @@ public class InputCacheTest
 {
     private static final int BATCH_SIZE = 100, BATCHES = 100;
 
+    private static final String[] TOKENS = new String[] { "One", "Two", "Three", "Four", "Five", "Six", "Seven" };
+
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private final TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
+    private final RandomRule randomRule = new RandomRule();
+
+    @Rule
+    public RuleChain ruleChain = RuleChain.outerRule( dir ).around( randomRule ).around( fileSystemRule );
+
+    private String[] previousLabels;
+    private final Group[] previousGroups = new Group[] { Group.GLOBAL, Group.GLOBAL };
+    private String previousType;
+
     @Test
     public void shouldCacheAndRetrieveNodes() throws Exception
     {
         // GIVEN
-        try ( InputCache cache = new InputCache( fs, dir.directory(), (int) ByteUnit.kibiBytes( 8 ) ) )
+        try ( InputCache cache = new InputCache( fileSystemRule.get(), dir.directory(), StandardV3_0.RECORD_FORMATS,
+                (int) ByteUnit.kibiBytes( 8 ) ) )
         {
             List<InputNode> nodes = new ArrayList<>();
-            Randoms random = new Randoms( randomRule.random(), Randoms.DEFAULT );
+            Randoms random = getRandoms();
             try ( Receiver<InputNode[],IOException> cacher = cache.cacheNodes( MAIN ) )
             {
                 InputNode[] batch = new InputNode[BATCH_SIZE];
@@ -93,10 +109,11 @@ public class InputCacheTest
     public void shouldCacheAndRetrieveRelationships() throws Exception
     {
         // GIVEN
-        try ( InputCache cache = new InputCache( fs, dir.directory(), (int) ByteUnit.kibiBytes( 8 ) ) )
+        try ( InputCache cache = new InputCache( fileSystemRule.get(), dir.directory(), StandardV3_0.RECORD_FORMATS,
+                (int) ByteUnit.kibiBytes( 8 ) ) )
         {
             List<InputRelationship> relationships = new ArrayList<>();
-            Randoms random = new Randoms( randomRule.random(), Randoms.DEFAULT );
+            Randoms random = getRandoms();
             try ( Receiver<InputRelationship[],IOException> cacher = cache.cacheRelationships( MAIN ) )
             {
                 InputRelationship[] batch = new InputRelationship[BATCH_SIZE];
@@ -131,7 +148,7 @@ public class InputCacheTest
 
     private void assertNoFilesLeftBehind()
     {
-        assertEquals( 0, fs.listFiles( dir.directory() ).length );
+        assertEquals( 0, fileSystemRule.get().listFiles( dir.directory() ).length );
     }
 
     private void assertRelationshipsEquals( InputRelationship expectedRelationship, InputRelationship relationship )
@@ -149,6 +166,11 @@ public class InputCacheTest
         {
             assertEquals( expectedRelationship.type(), relationship.type() );
         }
+    }
+
+    private Randoms getRandoms()
+    {
+        return new Randoms( randomRule.random(), Randoms.DEFAULT );
     }
 
     private void assertProperties( InputEntity expected, InputEntity entity )
@@ -265,13 +287,4 @@ public class InputCacheTest
     {
         return abs( random.random().nextLong() );
     }
-
-    private static final String[] TOKENS = new String[] { "One", "Two", "Three", "Four", "Five", "Six", "Seven" };
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    public final @Rule TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
-    public final @Rule RandomRule randomRule = new RandomRule();
-
-    private String[] previousLabels;
-    private final Group[] previousGroups = new Group[] { Group.GLOBAL, Group.GLOBAL };
-    private String previousType;
 }

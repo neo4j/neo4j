@@ -403,8 +403,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     private void prepareBatchImportMigration( File storeDir, File migrationDir, RecordFormats oldFormat,
-            RecordFormats newFormat )
-            throws IOException
+            RecordFormats newFormat ) throws IOException
     {
         BatchingNeoStores.createStore( fileSystem, migrationDir.getPath(), config, newFormat );
 

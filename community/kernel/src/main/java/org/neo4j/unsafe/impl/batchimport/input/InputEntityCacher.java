@@ -22,8 +22,10 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChannel;
@@ -34,12 +36,15 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_HEADER;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.GROUP_TOKEN;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.HAS_FIRST_PROPERTY_ID;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.HIGH_TOKEN_TYPE;
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.LABEL_TOKEN;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.NEW_GROUP;
-import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SAME_GROUP;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.PROPERTY_KEY_TOKEN;
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.RELATIONSHIP_TYPE_TOKEN;
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SAME_GROUP;
 
 /**
  * Abstract class for caching {@link InputEntity} or derivative to disk using a binary format.
+ * Currently each token type limited to have as maximum {#link Integer.MAX_VALUE} items.
  */
 abstract class InputEntityCacher<ENTITY extends InputEntity> implements Receiver<ENTITY[],IOException>
 {
@@ -49,16 +54,20 @@ abstract class InputEntityCacher<ENTITY extends InputEntity> implements Receiver
     private final StoreChannel headerChannel;
     private final int[] previousGroupIds;
 
-    private final short[] nextKeyId = new short[HIGH_TOKEN_TYPE];
+    private final int[] nextKeyId = new int[HIGH_TOKEN_TYPE];
+    private final int[] maxKeyId = new int[HIGH_TOKEN_TYPE];
     @SuppressWarnings( "unchecked" )
-    private final Map<String,Short>[] tokens = new Map[HIGH_TOKEN_TYPE];
+    private final Map<String,Integer>[] tokens = new Map[HIGH_TOKEN_TYPE];
 
-    protected InputEntityCacher( StoreChannel channel, StoreChannel header, int bufferSize, int groupSlots )
-            throws IOException
+    protected InputEntityCacher( StoreChannel channel, StoreChannel header, RecordFormats recordFormats, int bufferSize,
+            int groupSlots ) throws IOException
     {
         this.storeChannel = channel;
         this.headerChannel = header;
         this.previousGroupIds = new int[groupSlots];
+
+        initMaxTokenKeyIds( recordFormats );
+
         for ( int i = 0; i < groupSlots; i++ )
         {
             previousGroupIds[i] = Group.GLOBAL.id();
@@ -134,25 +143,26 @@ abstract class InputEntityCacher<ENTITY extends InputEntity> implements Receiver
     {
         if ( key instanceof String )
         {
-            Short id = tokens[type].get( key );
+            Integer id = tokens[type].get( key );
             if ( id == null )
             {
-                if ( nextKeyId[type] == -1 )
+                if ( nextKeyId[type] == maxKeyId[type] )
                 {
-                    throw new IllegalArgumentException( "Too many tokens" );
+                    throw new UnsupportedOperationException( "Too many tokens. Creation of more then " +
+                                                        maxKeyId[type] + " tokens is not supported." );
                 }
                 tokens[type].put( (String) key, id = nextKeyId[type]++ );
                 header.put( type );
                 ValueType.stringType().write( key, header );
             }
-            channel.putShort( id );
+            channel.putInt( id );
         }
         else if ( key instanceof Integer )
         {
             // Here we signal that we have a real token id, not to be confused by the local and contrived
             // toiken ids we generate in here. Following this -1 is the real token id.
-            channel.putShort( (short) -1 );
-            channel.putShort( safeCastLongToShort( (Integer) key ) );
+            channel.putInt( (short) -1 );
+            channel.putInt( (Integer) key );
         }
         else
         {
@@ -172,5 +182,18 @@ abstract class InputEntityCacher<ENTITY extends InputEntity> implements Receiver
         header.close();
         storeChannel.close();
         headerChannel.close();
+    }
+
+    private void initMaxTokenKeyIds( RecordFormats recordFormats )
+    {
+        maxKeyId[PROPERTY_KEY_TOKEN] = getMaxAcceptableTokenId( recordFormats.propertyKeyToken().getMaxId() );
+        maxKeyId[LABEL_TOKEN] = getMaxAcceptableTokenId( recordFormats.labelToken().getMaxId() );
+        maxKeyId[RELATIONSHIP_TYPE_TOKEN] = getMaxAcceptableTokenId( recordFormats.relationshipTypeToken().getMaxId() );
+        maxKeyId[GROUP_TOKEN] = getMaxAcceptableTokenId( recordFormats.relationshipGroup().getMaxId() );
+    }
+
+    private int getMaxAcceptableTokenId( long maxId )
+    {
+        return (int) Math.min( Integer.MAX_VALUE, maxId );
     }
 }
