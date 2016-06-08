@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import java.util.function.Consumer;
+
 public class FakeCommitment implements Commitment
 {
     public static final int CHECKSUM = 3;
@@ -26,6 +28,7 @@ public class FakeCommitment implements Commitment
     private final TransactionIdStore transactionIdStore;
     private boolean committed;
     private boolean hasLegacyIndexChanges = false;
+    private Consumer<Long> callback;
 
     public FakeCommitment( long id, TransactionIdStore transactionIdStore )
     {
@@ -50,6 +53,10 @@ public class FakeCommitment implements Commitment
     public void publishAsClosed()
     {
         transactionIdStore.transactionClosed( id, 1, 2 );
+        if ( callback != null )
+        {
+            callback.accept( id );
+        }
     }
 
     @Override

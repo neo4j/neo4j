@@ -22,6 +22,7 @@ package org.neo4j.coreedge.raft.replication.token;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import org.neo4j.coreedge.raft.state.Result;
 import org.neo4j.coreedge.raft.state.StateMachine;
@@ -56,8 +57,8 @@ public class ReplicatedTokenStateMachine<TOKEN extends Token> implements StateMa
     private final Log log;
     private long lastCommittedIndex = Long.MAX_VALUE;
 
-    public ReplicatedTokenStateMachine( TokenRegistry<TOKEN> tokenRegistry,
-            TokenFactory<TOKEN> tokenFactory, LogProvider logProvider )
+    public ReplicatedTokenStateMachine( TokenRegistry<TOKEN> tokenRegistry, TokenFactory<TOKEN> tokenFactory,
+            LogProvider logProvider )
     {
         this.tokenRegistry = tokenRegistry;
         this.tokenFactory = tokenFactory;
@@ -72,11 +73,12 @@ public class ReplicatedTokenStateMachine<TOKEN extends Token> implements StateMa
     }
 
     @Override
-    public synchronized Optional<Result> applyCommand( ReplicatedTokenRequest tokenRequest, long commandIndex )
+    public synchronized void applyCommand( ReplicatedTokenRequest tokenRequest, long commandIndex,
+            Consumer<Result> callback )
     {
         if ( commandIndex <= lastCommittedIndex )
         {
-            return Optional.empty();
+            return;
         }
 
         Integer tokenId = tokenRegistry.getId( tokenRequest.tokenName() );
@@ -85,7 +87,8 @@ public class ReplicatedTokenStateMachine<TOKEN extends Token> implements StateMa
         {
             try
             {
-                Collection<StorageCommand> commands =  ReplicatedTokenRequestSerializer.extractCommands( tokenRequest.commandBytes() );
+                Collection<StorageCommand> commands =
+                        ReplicatedTokenRequestSerializer.extractCommands( tokenRequest.commandBytes() );
                 tokenId = applyToStore( commands, commandIndex );
             }
             catch ( NoSuchEntryException e )
@@ -96,7 +99,7 @@ public class ReplicatedTokenStateMachine<TOKEN extends Token> implements StateMa
             tokenRegistry.addToken( tokenFactory.newToken( tokenRequest.tokenName(), tokenId ) );
         }
 
-        return Optional.of( Result.of( tokenId ) );
+        callback.accept( Result.of( tokenId ) );
     }
 
     private int applyToStore( Collection<StorageCommand> commands, long logIndex ) throws NoSuchEntryException
@@ -104,12 +107,12 @@ public class ReplicatedTokenStateMachine<TOKEN extends Token> implements StateMa
         int tokenId = extractTokenId( commands );
 
         PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( commands );
-        representation.setHeader( encodeLogIndexAsTxHeader(logIndex), 0, 0, 0, 0L, 0L, 0 );
+        representation.setHeader( encodeLogIndexAsTxHeader( logIndex ), 0, 0, 0, 0L, 0L, 0 );
 
         try ( LockGroup ignored = new LockGroup() )
         {
-            commitProcess.commit( new TransactionToApply( representation ),
-                    CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
+            commitProcess.commit( new TransactionToApply( representation ), CommitEvent.NULL,
+                    TransactionApplicationMode.EXTERNAL );
         }
         catch ( TransactionFailureException e )
         {
@@ -123,7 +126,7 @@ public class ReplicatedTokenStateMachine<TOKEN extends Token> implements StateMa
     {
         for ( StorageCommand command : commands )
         {
-            if( command instanceof Command.TokenCommand )
+            if ( command instanceof Command.TokenCommand )
             {
                 return ((Command.TokenCommand<? extends TokenRecord>) command).getAfter().getIntId();
             }

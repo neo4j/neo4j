@@ -20,9 +20,9 @@
 package org.neo4j.coreedge.raft.replication.tx;
 
 import java.util.Arrays;
-import java.util.Optional;
+import java.util.function.Consumer;
 
-import org.neo4j.coreedge.raft.state.CoreStateMachines;
+import org.neo4j.coreedge.raft.state.CommandDispatcher;
 import org.neo4j.coreedge.raft.state.Result;
 
 public class ReplicatedTransaction implements CoreReplicatedContent
@@ -40,9 +40,9 @@ public class ReplicatedTransaction implements CoreReplicatedContent
     }
 
     @Override
-    public Optional<Result> dispatch( CoreStateMachines coreStateMachines, long commandIndex )
+    public void dispatch( CommandDispatcher commandDispatcher, long commandIndex, Consumer<Result> callback )
     {
-        return coreStateMachines.dispatch( this, commandIndex );
+        commandDispatcher.dispatch( this, commandIndex, callback );
     }
 
     @Override

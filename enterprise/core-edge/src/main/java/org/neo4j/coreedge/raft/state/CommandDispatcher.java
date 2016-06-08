@@ -19,24 +19,23 @@
  */
 package org.neo4j.coreedge.raft.state;
 
-import java.io.IOException;
-import java.util.Optional;
 import java.util.function.Consumer;
 
-public interface StateMachine<Command>
-{
-    /**
-     * Apply command to state machine, modifying its internal state.
-     * Implementations should be idempotent, so that the caller is free to replay commands from any point in the log.
-     * @param command Command to the state machine.
-     * @param commandIndex The index of the command.
-     * @param callback To be called when a result is produced.
-     */
-    void applyCommand( Command command, long commandIndex, Consumer<Result> callback );
+import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
+import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequest;
+import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
+import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
 
-    /**
-     * Flushes state to durable storage.
-     * @throws IOException
-     */
-    void flush() throws IOException;
+public interface CommandDispatcher extends AutoCloseable
+{
+    void dispatch( ReplicatedTransaction transaction, long commandIndex, Consumer<Result> callback );
+
+    void dispatch( ReplicatedIdAllocationRequest idAllocation, long commandIndex, Consumer<Result> callback );
+
+    void dispatch( ReplicatedTokenRequest tokenRequest, long commandIndex, Consumer<Result> callback );
+
+    void dispatch( ReplicatedLockTokenRequest lockRequest, long commandIndex, Consumer<Result> callback );
+
+    @Override
+    void close();
 }

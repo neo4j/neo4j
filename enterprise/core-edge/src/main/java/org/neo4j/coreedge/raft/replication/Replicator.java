@@ -24,7 +24,7 @@ import java.util.concurrent.Future;
 /**
  * Replicate content across a cluster of servers.
   */
-public interface Replicator
+public interface Replicator<CONTENT extends ReplicatedContent>
 {
     /**
      * Submit content for replication. This method does not guarantee that the content
@@ -36,5 +36,5 @@ public interface Replicator
      *
      * @return A future that will receive the result when available. Only valid if trackResult is set.
      */
-    Future<Object> replicate( ReplicatedContent content, boolean trackResult ) throws InterruptedException;
+    Future<Object> replicate( CONTENT content, boolean trackResult ) throws InterruptedException;
 }

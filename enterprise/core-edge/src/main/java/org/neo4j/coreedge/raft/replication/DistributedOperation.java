@@ -34,7 +34,7 @@ import org.neo4j.storageengine.api.WritableChannel;
 /**
  * A uniquely identifiable operation.
  */
-public class DistributedOperation implements ReplicatedContent
+public class  DistributedOperation implements ReplicatedContent
 {
     private final ReplicatedContent content;
     private final GlobalSession<CoreMember> globalSession;

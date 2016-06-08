@@ -185,6 +185,10 @@ public class CoreEdgeClusterSettings
     public static final Setting<Integer> state_machine_flush_window_size =
             setting( "core_edge.state_machine_flush_window_size", INTEGER, "100" );
 
+    @Description("The maximum number of operations to be bacthed during applications of operations in the state machines")
+    public static Setting<Integer> state_machine_apply_max_batch_size =
+            setting( "core_edge.state_machine_apply_max_batch_size", INTEGER, "16" );
+
     @Description( "RAFT log pruning strategy" )
     public static final Setting<String> raft_log_pruning_strategy =
             setting( "core_edge.raft_log_prune_strategy", STRING, "keep_all" );

@@ -62,7 +62,7 @@ public class ReplicatedIdAllocationStateMachineTest
         ReplicatedIdAllocationRequest idAllocationRequest = new ReplicatedIdAllocationRequest( me, someType, 0, 1024 );
 
         // when
-        stateMachine.applyCommand( idAllocationRequest, 0 );
+        stateMachine.applyCommand( idAllocationRequest, 0, r -> {} );
 
         // then
         assertEquals( 1024, stateMachine.firstUnallocated( someType ) );
@@ -78,9 +78,9 @@ public class ReplicatedIdAllocationStateMachineTest
         long index = 0;
 
         // when
-        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), index++ );
-        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 1024, 1024 ), index++ );
-        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 2048, 1024 ), index );
+        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), index++, r -> {} );
+        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 1024, 1024 ), index++, r -> {} );
+        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 2048, 1024 ), index, r -> {} );
 
         // then
         assertEquals( 3072, stateMachine.firstUnallocated( someType ) );
@@ -94,9 +94,9 @@ public class ReplicatedIdAllocationStateMachineTest
                 new InMemoryStateStorage<>( new IdAllocationState() ) );
 
         // when
-        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
-        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
-        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
+        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0, r -> {} );
+        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0, r -> {} );
+        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0, r -> {} );
 
         // then
         assertEquals( 1024, stateMachine.firstUnallocated( someType ) );
@@ -110,9 +110,9 @@ public class ReplicatedIdAllocationStateMachineTest
                 new InMemoryStateStorage<>( new IdAllocationState() ) );
 
         // when
-        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
+        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0, r -> {} );
         // apply command that doesn't consume ids because the requested range is non-contiguous
-        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 2048, 1024 ), 0 );
+        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 2048, 1024 ), 0, r -> {} );
 
         // then
         assertEquals( 1024, stateMachine.firstUnallocated( someType ) );
@@ -124,19 +124,19 @@ public class ReplicatedIdAllocationStateMachineTest
         ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
                 new InMemoryStateStorage<>( new IdAllocationState() ) );
 
-        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0L, 10 ), 0L );
+        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0L, 10 ), 0L, r -> {} );
         assertEquals( 10L, stateMachine.firstUnallocated( someType ) );
 
         // apply command that doesn't consume ids because the requested range is non-contiguous
-        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 20L, 10 ), 1L );
+        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 20L, 10 ), 1L, r -> {} );
         assertEquals( 10L, stateMachine.firstUnallocated( someType ) );
 
-        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 10L, 10 ), 2L );
+        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 10L, 10 ), 2L, r -> {} );
         assertEquals( 20L, stateMachine.firstUnallocated( someType ) );
 
         // try applying the same command again. The requested range is now contiguous, but the log index
         // has already been exceeded
-        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 20L, 10 ), 1L );
+        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 20L, 10 ), 1L, r -> {} );
         assertEquals( 20L, stateMachine.firstUnallocated( someType ) );
     }
 }

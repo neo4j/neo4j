@@ -43,16 +43,16 @@ public class TransactionQueue
         this.applier = applier;
     }
 
-    public void queue( TransactionToApply transacion ) throws Exception
+    public void queue( TransactionToApply transaction ) throws Exception
     {
         if ( size == 0 )
         {
-            first = last = transacion;
+            first = last = transaction;
         }
         else
         {
-            last.next( transacion );
-            last = transacion;
+            last.next( transaction );
+            last = transaction;
         }
 
         if ( ++size == maxSize )
