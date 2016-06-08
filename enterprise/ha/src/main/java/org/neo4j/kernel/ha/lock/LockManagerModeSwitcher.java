@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha.lock;
 
 import org.neo4j.function.Factory;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
 import org.neo4j.kernel.ha.cluster.ModeSwitcherNotifier;
@@ -35,17 +36,19 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<Locks>
     private final RequestContextFactory requestContextFactory;
     private final AvailabilityGuard availabilityGuard;
     private final Factory<Locks> locksFactory;
+    private final Config config;
 
     public LockManagerModeSwitcher( ModeSwitcherNotifier modeSwitcherNotifier,
                                     DelegateInvocationHandler<Locks> delegate, DelegateInvocationHandler<Master> master,
                                     RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
-                                    Factory<Locks> locksFactory )
+                                    Factory<Locks> locksFactory, Config config )
     {
         super( modeSwitcherNotifier, delegate );
         this.master = master;
         this.requestContextFactory = requestContextFactory;
         this.availabilityGuard = availabilityGuard;
         this.locksFactory = locksFactory;
+        this.config = config;
     }
 
     @Override
@@ -58,6 +61,6 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<Locks>
     protected Locks getSlaveImpl( LifeSupport life )
     {
         return life.add( new SlaveLockManager( locksFactory.newInstance(), requestContextFactory, master.cement(),
-                availabilityGuard ) );
+                availabilityGuard, config ) );
     }
 }

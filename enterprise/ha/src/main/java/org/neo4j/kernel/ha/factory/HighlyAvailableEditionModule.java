@@ -631,7 +631,7 @@ public class HighlyAvailableEditionModule
             {
                 return CommunityEditionModule.createLockManager( config, logging );
             }
-        } ) );
+        }, config ) );
         return lockManager;
     }
 

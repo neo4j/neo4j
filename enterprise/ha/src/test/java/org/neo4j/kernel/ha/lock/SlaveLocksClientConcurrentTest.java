@@ -110,7 +110,7 @@ public class SlaveLocksClientConcurrentTest
     private SlaveLocksClient createClient()
     {
         return new SlaveLocksClient( master, lockManager.newClient(), lockManager,
-                requestContextFactory, availabilityGuard );
+                requestContextFactory, availabilityGuard, false );
     }
 
     private static class LockedOnMasterAnswer implements Answer

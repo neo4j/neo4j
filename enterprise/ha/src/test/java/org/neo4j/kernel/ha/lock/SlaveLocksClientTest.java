@@ -80,7 +80,7 @@ public class SlaveLocksClientTest
 
         whenMasterAcquireExclusive().thenReturn( responseOk );
 
-        client = new SlaveLocksClient( master, local, lockManager, requestContextFactory, availabilityGuard );
+        client = new SlaveLocksClient( master, local, lockManager, requestContextFactory, availabilityGuard, false );
     }
 
     private OngoingStubbing<Response<LockResult>> whenMasterAcquireShared()

@@ -19,18 +19,28 @@
  */
 package org.neo4j.ha;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.FutureTask;
-
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
@@ -38,32 +48,34 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.test.ha.ClusterRule;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.Exceptions.contains;
+import static org.neo4j.helpers.NamedThreadFactory.named;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
 public class ClusterTransactionIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() );
-
-    private ClusterManager.ManagedCluster cluster;
-
-    @Before
-    public void setUp() throws Exception
-    {
-        cluster = clusterRule.withProvider( clusterOfSize( 3 ) )
-                             .withSharedSetting( HaSettings.ha_server, ":6001-6005" )
-                             .withSharedSetting( HaSettings.tx_push_factor, "2" ).startCluster();
-
-        cluster.await( ClusterManager.allSeesAllAsAvailable() );
-    }
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+            .withProvider( clusterOfSize( 3 ) )
+            .withSharedSetting( HaSettings.ha_server, ":6001-6005" )
+            .withSharedSetting( HaSettings.tx_push_factor, "2" );
 
     @Test
     public void givenClusterWhenShutdownMasterThenCannotStartTransactionOnSlave() throws Throwable
     {
+        ClusterManager.ManagedCluster cluster = startCluster();
+
         final HighlyAvailableGraphDatabase master = cluster.getMaster();
         final HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
 
@@ -119,6 +131,8 @@ public class ClusterTransactionIT
     @Test
     public void slaveMustConnectLockManagerToNewMasterAfterTwoOtherClusterMembersRoleSwitch() throws Throwable
     {
+        ClusterManager.ManagedCluster cluster = startCluster();
+
         final HighlyAvailableGraphDatabase initialMaster = cluster.getMaster();
         HighlyAvailableGraphDatabase firstSlave = cluster.getAnySlave();
         HighlyAvailableGraphDatabase secondSlave = cluster.getAnySlave( firstSlave );
@@ -160,5 +174,131 @@ public class ClusterTransactionIT
             GlobalGraphOperations gops = GlobalGraphOperations.at( master );
             assertThat( IteratorUtil.count( gops.getAllNodes() ), is( 3 ) );
         }
+    }
+
+    @Test
+    public void terminateSlaveTransactionThatWaitsForLockOnMaster() throws Exception
+    {
+        clusterRule.withSharedSetting( HaSettings.lock_read_timeout, "1m" );
+        clusterRule.withSharedSetting( KernelTransactions.tx_termination_aware_locks, Settings.TRUE );
+
+        ClusterManager.ManagedCluster cluster = startCluster();
+
+        final Label label = DynamicLabel.label( "foo" );
+        final String property = "bar";
+        final String masterValue = "master";
+        final String slaveValue = "slave";
+
+        final HighlyAvailableGraphDatabase master = cluster.getMaster();
+        final HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+
+        createNodeWithLabel( cluster, label );
+
+        final CountDownLatch masterTxCommit = new CountDownLatch( 1 );
+        Future<?> masterTx = newSingleThreadExecutor( named( "masterTx" ) ).submit( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try ( Transaction tx = master.beginTx() )
+                {
+                    Node node = single( master.findNodes( label ) );
+                    node.setProperty( property, masterValue );
+                    await( masterTxCommit );
+                    tx.success();
+                }
+            }
+        } );
+
+        final AtomicReference<Transaction> slaveTxReference = new AtomicReference<>();
+        final CountDownLatch slaveTxStarted = new CountDownLatch( 1 );
+        Future<?> slaveTx = newSingleThreadExecutor( named( "slaveTx" ) ).submit( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try ( Transaction tx = slave.beginTx() )
+                {
+                    slaveTxReference.set( tx );
+                    Node node = single( slave.findNodes( label ) );
+                    slaveTxStarted.countDown();
+                    node.setProperty( property, slaveValue );
+                    tx.success();
+                }
+            }
+        } );
+
+        slaveTxStarted.await();
+        Thread.sleep( 2000 );
+
+        terminate( slaveTxReference );
+        assertTxWasTerminated( slaveTx );
+
+        masterTxCommit.countDown();
+        assertNull( masterTx.get() );
+        assertSingleNodeExists( master, label, property, masterValue );
+    }
+
+    private void createNodeWithLabel( ClusterManager.ManagedCluster cluster, Label label ) throws InterruptedException
+    {
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        try ( Transaction tx = master.beginTx() )
+        {
+            master.createNode( label );
+            tx.success();
+        }
+
+        cluster.sync();
+    }
+
+    private void assertSingleNodeExists( HighlyAvailableGraphDatabase db, Label label, String property, String value )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = single( db.findNodes( label ) );
+            assertTrue( node.hasProperty( property ) );
+            assertEquals( value, node.getProperty( property ) );
+            tx.success();
+        }
+    }
+
+    private void terminate( AtomicReference<Transaction> txReference )
+    {
+        Transaction tx = txReference.get();
+        assertNotNull( tx );
+        tx.terminate();
+    }
+
+    private void assertTxWasTerminated( Future<?> txFuture ) throws InterruptedException
+    {
+        try
+        {
+            txFuture.get();
+            fail( "Exception expected" );
+        }
+        catch ( ExecutionException e )
+        {
+            e.printStackTrace();
+            assertThat( e.getCause(), instanceOf( TransactionTerminatedException.class ) );
+        }
+    }
+
+    private static void await( CountDownLatch latch )
+    {
+        try
+        {
+            assertTrue( latch.await( 2, TimeUnit.MINUTES ) );
+        }
+        catch ( InterruptedException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    private ClusterManager.ManagedCluster startCluster() throws Exception
+    {
+        ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
+        cluster.await( ClusterManager.allSeesAllAsAvailable() );
+        return cluster;
     }
 }

@@ -225,7 +225,7 @@ public class MasterImplConversationStopFuzzIT
                                 }
                                 else
                                 {
-                                    worker.master.endLockSession( worker.requestContext, true );
+                                    endLockSession( worker );
                                     return IDLE;
                                 }
                             }
@@ -242,7 +242,7 @@ public class MasterImplConversationStopFuzzIT
                             }
                             else
                             {
-                                worker.master.endLockSession( worker.requestContext, true );
+                                endLockSession( worker );
                                 return IDLE;
                             }
                         }
@@ -303,15 +303,16 @@ public class MasterImplConversationStopFuzzIT
         {
             return random.nextInt();
         }
+
+        private static void endLockSession( SlaveEmulatorWorker worker )
+        {
+            boolean successfulSession = worker.random.nextBoolean();
+            worker.master.endLockSession( worker.requestContext, successfulSession );
+        }
     }
 
     static class ConversationTestMasterSPI implements MasterImpl.SPI
     {
-
-        public ConversationTestMasterSPI()
-        {
-        }
-
         @Override
         public boolean isAccessible()
         {

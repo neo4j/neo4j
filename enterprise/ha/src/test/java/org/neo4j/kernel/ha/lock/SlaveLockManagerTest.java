@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -86,6 +87,6 @@ public class SlaveLockManagerTest
 
     private SlaveLockManager newSlaveLockManager( Locks localLocks )
     {
-        return new SlaveLockManager( localLocks, requestContextFactory, master, availabilityGuard );
+        return new SlaveLockManager( localLocks, requestContextFactory, master, availabilityGuard, new Config() );
     }
 }

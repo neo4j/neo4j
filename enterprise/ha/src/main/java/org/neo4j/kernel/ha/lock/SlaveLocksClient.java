@@ -58,6 +58,7 @@ class SlaveLocksClient implements Locks.Client
     // Using atomic ints to avoid creating garbage through boxing.
     private final Map<Locks.ResourceType, Map<Long, AtomicInteger>> sharedLocks;
     private final Map<Locks.ResourceType, Map<Long, AtomicInteger>> exclusiveLocks;
+    private final boolean txTerminationAwareLocks;
     private boolean initialized = false;
 
     public SlaveLocksClient(
@@ -65,13 +66,15 @@ class SlaveLocksClient implements Locks.Client
             Locks.Client local,
             Locks localLockManager,
             RequestContextFactory requestContextFactory,
-            AvailabilityGuard availabilityGuard )
+            AvailabilityGuard availabilityGuard,
+            boolean txTerminationAwareLocks )
     {
         this.master = master;
         this.client = local;
         this.localLockManager = localLockManager;
         this.requestContextFactory = requestContextFactory;
         this.availabilityGuard = availabilityGuard;
+        this.txTerminationAwareLocks = txTerminationAwareLocks;
         sharedLocks = new HashMap<>();
         exclusiveLocks = new HashMap<>();
     }
@@ -209,7 +212,17 @@ class SlaveLocksClient implements Locks.Client
     @Override
     public void stop()
     {
-        throw new UnsupportedOperationException( "Lock client stop is unsupported on slave side." );
+        if ( txTerminationAwareLocks )
+        {
+            try ( Response<Void> ignore = master.endLockSession( newRequestContextFor( client ), false ) )
+            {
+                client.stop();
+            }
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Lock client stop is unsupported on slave side." );
+        }
     }
 
     @Override
