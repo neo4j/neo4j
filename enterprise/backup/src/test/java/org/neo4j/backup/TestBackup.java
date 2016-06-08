@@ -24,6 +24,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
@@ -84,12 +85,13 @@ import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 @RunWith( Parameterized.class )
 public class TestBackup
 {
+    private final TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( TestBackup.class );
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( TestBackup.class );
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
-    @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    public final RuleChain ruleChain = RuleChain.outerRule( testDir )
+            .around( pageCacheRule )
+            .around( SuppressOutput.suppressAll() );
 
     @Parameter
     public String recordFormatName;
@@ -109,10 +111,9 @@ public class TestBackup
     public void before() throws Exception
     {
         servers = new ArrayList<>();
-        File base = testDir.directory();
-        serverPath = new File( base, "server" );
-        otherServerPath = new File( base, "server2" );
-        backupPath = new File( base, "backuedup-serverdb" );
+        serverPath = testDir.directory( "server" );
+        otherServerPath = testDir.directory( "server2" );
+        backupPath = testDir.directory( "backedup-serverdb" );
     }
 
     @After
@@ -414,8 +415,7 @@ public class TestBackup
     @Test
     public void shouldRetainFileLocksAfterFullBackupOnLiveDatabase() throws Exception
     {
-        File sourcePath = new File( "target/var/serverdb-lock" );
-        FileUtils.deleteDirectory( sourcePath );
+        File sourcePath = testDir.directory( "serverdb-lock" );
 
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( sourcePath )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
