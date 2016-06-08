@@ -158,5 +158,5 @@ trait QueryContextAdaptation {
 
   override def getLabelId(labelName: String): Int = ???
 
-  override def detachDelete(node: Node): Int = ???
+  override def detachDeleteNode(node: Node): Int = ???
 }

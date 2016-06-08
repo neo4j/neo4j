@@ -23,6 +23,11 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxE
 
 class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
+  test("apa") {
+    val r = executeWithAllPlanners("profile UNWIND range(0,1000000) as x WHERE rand() = 0.4 RETURN 1")
+    println(r.dumpToString())
+  }
+
   // TCK'd
   test("should handle aggregates inside non aggregate expressions") {
     executeWithAllPlannersAndCompatibilityMode(
