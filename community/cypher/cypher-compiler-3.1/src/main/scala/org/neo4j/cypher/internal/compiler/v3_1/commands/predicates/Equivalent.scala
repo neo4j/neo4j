@@ -29,8 +29,16 @@ import scala.collection.JavaConverters._
 class Equivalent(protected val eagerizedValue: Any, val originalValue: Any) {
   override def equals(in: Any): Boolean = {
     val eagerOther = in match {
-      case s: Equivalent => s.eagerizedValue
-      case x => Equivalent.eager(x)
+      case s: Equivalent =>
+        if(originalValue.isInstanceOf[AnyRef] &&
+          s.originalValue.isInstanceOf[AnyRef] &&
+          (originalValue.asInstanceOf[AnyRef] eq s.originalValue.asInstanceOf[AnyRef])) return true
+        s.eagerizedValue
+      case x =>
+        if(originalValue.isInstanceOf[AnyRef] &&
+          x.isInstanceOf[AnyRef] &&
+          (originalValue.asInstanceOf[AnyRef] eq x.asInstanceOf[AnyRef])) return true
+        Equivalent.eager(x)
     }
 
     (eagerizedValue, eagerOther) match {
