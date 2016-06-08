@@ -52,8 +52,7 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
                                  "`type()` failing on invalid arguments",
                                  "Concatenating lists of different type",
                                  "Appending to a list of different type",
-                                 "Matching relationships into a list and matching variable length using the list", // only broken in rule planner TODO: separate this list between configurations
-                                 "Aggregation with `min()`")
+                                 "Matching relationships into a list and matching variable length using the list") // only broken in rule planner TODO: separate this list between configurations
 
   // Stateful
   var graph: GraphDatabaseService = null
