@@ -41,9 +41,9 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.HAS_FIRST_PROPE
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.HIGH_TOKEN_TYPE;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.LABEL_TOKEN;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.NEW_GROUP;
-import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SAME_GROUP;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.PROPERTY_KEY_TOKEN;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.RELATIONSHIP_TYPE_TOKEN;
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SAME_GROUP;
 
 /**
  * Abstract class for reading cached entities previously stored using {@link InputEntityCacher} or derivative.
@@ -87,11 +87,11 @@ abstract class InputEntityReader<ENTITY extends InputEntity> extends Prefetching
     {
         try ( ReadableClosableChannel reader = reader( header, (int) ByteUnit.kibiBytes( 8 ) ) )
         {
-            short[] tokenIds = new short[HIGH_TOKEN_TYPE];
+            int[] tokenIds = new int[HIGH_TOKEN_TYPE];
             byte type;
             while ( (type = reader.get()) != END_OF_HEADER )
             {
-                short tokenId = tokenIds[type]++;
+                int tokenId = tokenIds[type]++;
                 String name = (String) ValueType.stringType().read( reader );
                 tokens[type].put( tokenId, name );
             }
@@ -143,12 +143,11 @@ abstract class InputEntityReader<ENTITY extends InputEntity> extends Prefetching
 
     protected Object readToken( byte type ) throws IOException
     {
-        short id = channel.getShort();
+        int id = channel.getInt();
         if ( id == -1 )
         {
             // This is a real token id
-            int tokenId = channel.getShort() & 0xFFFF;
-            return tokenId; // as Integer
+            return channel.getInt();
         }
 
         String name = tokens[type].get( id );

@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
@@ -52,7 +53,8 @@ public class PerTypeRelationshipSplitterTest
         // GIVEN
         Collection<InputRelationship> expected = randomRelationships();
         InputIterable<InputRelationship> relationships = wrap( "test", expected );
-        InputCache inputCache = new InputCache( new DefaultFileSystemAbstraction(), directory.directory() );
+        InputCache inputCache = new InputCache( new DefaultFileSystemAbstraction(), directory.directory(),
+                StandardV3_0.RECORD_FORMATS );
         PerTypeRelationshipSplitter perType = new PerTypeRelationshipSplitter( relationships.iterator(),
                 types( expected ), type -> false, type -> Integer.parseInt( type.toString() ), inputCache );
 

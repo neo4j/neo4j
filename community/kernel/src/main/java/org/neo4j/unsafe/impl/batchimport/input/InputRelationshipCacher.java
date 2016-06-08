@@ -20,12 +20,14 @@
 package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.io.IOException;
-import org.neo4j.io.fs.StoreChannel;
 
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.HAS_TYPE_ID;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.NEW_TYPE;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.RELATIONSHIP_TYPE_TOKEN;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SAME_TYPE;
-import static org.neo4j.unsafe.impl.batchimport.input.InputCache.HAS_TYPE_ID;
 
 /**
  * Caches {@link InputRelationship} to disk using a binary format.
@@ -34,9 +36,10 @@ public class InputRelationshipCacher extends InputEntityCacher<InputRelationship
 {
     private String previousType;
 
-    public InputRelationshipCacher( StoreChannel channel, StoreChannel header, int bufferSize ) throws IOException
+    public InputRelationshipCacher( StoreChannel channel, StoreChannel header, RecordFormats recordFormats,
+            int bufferSize ) throws IOException
     {
-        super( channel, header, bufferSize, 2 );
+        super( channel, header, recordFormats, bufferSize, 2 );
     }
 
     @Override
