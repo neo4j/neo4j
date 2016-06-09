@@ -89,6 +89,10 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
 
             readData( record, cursor );
         }
+        else
+        {
+            record.setInUse( inUse );
+        }
     }
 
     public static String payloadTooBigErrorMessage( DynamicRecord record, int recordSize, int nrOfBytes )
