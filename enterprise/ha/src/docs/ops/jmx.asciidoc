@@ -23,7 +23,7 @@ include::jmx-page-cache.asciidoc[]
 
 [NOTE]
 The page pin count metric is disabled by default for performance reasons, in which case the pin count value will always be zero.
-The page pin count metric can be enabled by adding this line to the `neo4j-wrapper.conf` file:
+The page pin count metric can be enabled by adding this line to the `neo4j.conf` file:
 `dbms.jvm.additional=-Dorg.neo4j.io.pagecache.tracing.tracePinUnpin=true`
 
 include::jmx-primitive-count.asciidoc[]

@@ -14,11 +14,11 @@ On restarting the server the tuning enhancements specified in this file will be 
 Specifying JVM tuning properties
 --------------------------------
 
-Tuning the standalone server is achieved by editing the _neo4j-wrapper.conf_ file in the +conf+ directory of +NEO4J_HOME+.
+Tuning the standalone server is achieved by editing the _neo4j.conf_ file in the +conf+ directory of +NEO4J_HOME+.
 
 Edit the following properties:
 
-.neo4j-wrapper.conf JVM tuning properties
+.neo4j.conf JVM tuning properties
 [options="header", cols="<m,<"]
 |====================
 | Property Name                 | Meaning
