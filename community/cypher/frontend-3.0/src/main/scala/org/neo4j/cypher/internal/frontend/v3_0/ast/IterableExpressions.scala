@@ -67,7 +67,6 @@ trait FilteringExpression extends Expression {
   }
 }
 
-
 case class FilterExpression(scope: FilterScope, expression: Expression)(val position: InputPosition) extends FilteringExpression {
   val name = "filter"
 

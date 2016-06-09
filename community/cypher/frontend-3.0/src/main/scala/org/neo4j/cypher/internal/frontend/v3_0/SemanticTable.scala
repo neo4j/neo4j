@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Variable, ASTNode, Expression, ASTAnnotationMap}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{ASTAnnotationMap, ASTNode, Expression, Variable}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.TypeSpec
 
 import scala.collection.mutable
@@ -56,6 +56,8 @@ class SemanticTable(
     case (v@Variable(name), _) => name == expr && isNode(v) // NOTE: Profiling showed that checking node type last is better
     case _ => false
   }
+
+  def seen(expression: Expression) = types.contains(expression)
 
   def isNode(expr: String) = getTypeFor(expr) == symbols.CTNode.invariant
 

@@ -689,7 +689,15 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val left = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> firstNode)))
 
-    def filteringStep(context: ExecutionContext, q: QueryState, rel: Relationship): Boolean = rel.getId != 2
+    val filteringStep = new VarlenghtPredicate {
+
+      override def filterNode(row: ExecutionContext,
+                              state: QueryState)
+                             (node: Node): Boolean = true
+
+      override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: Relationship): Boolean =
+        rel.getId != 2
+    }
 
     // when
     val result = VarLengthExpandPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING,

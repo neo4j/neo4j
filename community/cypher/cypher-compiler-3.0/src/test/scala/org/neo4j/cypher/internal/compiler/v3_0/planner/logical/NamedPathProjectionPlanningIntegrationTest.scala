@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v3_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
@@ -47,12 +46,10 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
     result should equal(
       Selection(
         Seq(Equals(
-          FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, varFor("p")) _) _,
+          FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, pathExpr) _) _,
           varFor("a")
         ) _),
-        Projection(
-          Expand(NodeByLabelScan("a", lblName("X"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")(solved),
-          expressions = Map("a" -> varFor("a"), "b" -> varFor("b"), "p" -> pathExpr, "r" -> varFor("r")))(solved)
+          Expand(NodeByLabelScan("a", lblName("X"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")(solved)
       )(solved)
     )
   }
@@ -66,18 +63,15 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
       Selection(
         Seq(
           Equals(
-            FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, varFor("p")) _) _,
+            FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, pathExpr) _) _,
             Variable("a") _
           ) _,
           GreaterThan(
-            FunctionInvocation(FunctionName("length") _, varFor("p")) _,
+            FunctionInvocation(FunctionName("length") _, pathExpr) _,
             SignedDecimalIntegerLiteral("10") _
           ) _
         ),
-        Projection(
-          Expand(NodeByLabelScan("a", lblName("X"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")(solved),
-          expressions = Map("a" -> varFor("a"), "b" -> varFor("b"), "p" -> pathExpr, "r" -> varFor("r"))
-        )(solved)
+          Expand(NodeByLabelScan("a", lblName("X"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")(solved)
       )(solved)
     )
   }

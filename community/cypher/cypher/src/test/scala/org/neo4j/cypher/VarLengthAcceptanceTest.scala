@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.NoneInCollection
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.LegacyExpression
-import org.neo4j.graphdb.{Direction, Node}
 import org.neo4j.graphdb.Direction._
+import org.neo4j.graphdb.{Direction, Node}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.mutable
@@ -344,6 +344,68 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     result.close()
   }
 
+  test("should handle all rel predicates") {
+    //Given
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
+
+    //When
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH path=(p {id:'n0' })-[r:LIKES*]->(c) " +
+                                                              "WHERE all(rel in relationships(path) WHERE rel.generation = 1) RETURN c")
+
+    //Then
+    result.columnAs[String]("c").toSet should equal(Set(nodes("n01")))
+  }
+
+  test("should handle all node predicates") {
+    //Given
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
+
+    //When
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH path=(p {id:'n0' })-[r:LIKES*]->(c) " +
+                                                              "WHERE all(n in nodes(path) WHERE n.generation < 1) RETURN c")
+
+    //Then
+    result.columnAs[String]("c").toSet should equal(Set(nodes("n00"), nodes("n000"), nodes("n0000")))
+  }
+
+  test("should handle none rel predicates") {
+    //Given
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
+
+    //When
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH path=(p {id:'n0' })-[r:LIKES*]->(c) " +
+                                                              "WHERE none(rel in relationships(path) WHERE rel.generation = 1) RETURN c")
+
+    //Then
+    result.columnAs[String]("c").toSet should equal(Set(nodes("n00"), nodes("n000"), nodes("n0000")))
+  }
+
+  test("should handle none node predicates") {
+    //Given
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
+
+    //When
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH path=(p {id:'n0' })-[r:LIKES*]->(c) " +
+                                                              "WHERE none(n in nodes(path) WHERE n.generation >= 1) RETURN c")
+
+    //Then
+    result.columnAs[String]("c").toSet should equal(Set(nodes("n00"), nodes("n000"), nodes("n0000")))
+  }
+
+  test("should handle all multiple rel predicates") {
+    //Given
+    implicit val nodes = makeTreeModel(maxNodeDepth = 4)
+
+    //When
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH path=(p {id:'n0' })-[:LIKES*..2]->(cc) " +
+                                                              "WHERE all(rel in relationships(path) WHERE rel.generation = 1) " +
+                                                              "MATCH (cc)-[:LIKES*]->(c) " +
+                                                              "RETURN c")
+
+    //Then
+    result.columnAs[String]("c").toSet should equal(Set(nodes("n0110"), nodes("n011"), nodes("n010"), nodes("n0111"),
+                                                        nodes("n0100"), nodes("n0101")))
+  }
 
   def haveNoneRelFilter: Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
     override def apply(result: InternalExecutionResult): MatchResult = {
@@ -378,14 +440,14 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
       val inum = "0" * width + index.toBinaryString
       val name = "n" + inum.substring(inum.length - (depth + 1), inum.length)
       val parentName = name.substring(0, name.length - 1)
-      nodes(name) = createNode(Map("id" -> name))
+      nodes(name) = createNode(Map("id" -> name, "generation" -> index))
       if (nodes.isDefinedAt(parentName)) {
         val dir = if (directions.length >= depth) directions(depth - 1) else OUTGOING
         dir match {
           case OUTGOING =>
-            relate(nodes(parentName), nodes(name), "LIKES")
+            relate(nodes(parentName), nodes(name), "LIKES", Map("generation" -> index))
           case INCOMING =>
-            relate(nodes(name), nodes(parentName), "LIKES")
+            relate(nodes(name), nodes(parentName), "LIKES", Map("generation" -> index))
           case _ =>
             throw new IllegalArgumentException("Only accept INCOMING and OUTGOING")
         }
