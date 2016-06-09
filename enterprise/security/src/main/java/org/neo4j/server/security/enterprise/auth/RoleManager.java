@@ -47,4 +47,6 @@ public interface RoleManager
     Set<String> getAllRoleNames();
 
     Set<String> getRoleNamesForUser( String username );
+
+    Set<String> getUsernamesForRole( String roleName );
 }

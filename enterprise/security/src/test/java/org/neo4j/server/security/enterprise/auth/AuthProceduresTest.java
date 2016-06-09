@@ -84,6 +84,7 @@ public class AuthProceduresTest
         manager.newRole( PredefinedRolesBuilder.ARCHITECT, "schemaSubject" );
         manager.newRole( PredefinedRolesBuilder.PUBLISHER, "readWriteSubject" );
         manager.newRole( PredefinedRolesBuilder.READER, "readSubject" );
+        manager.newRole( "empty" );
         noneSubject = manager.login( authToken( "noneSubject", "abc" ) );
         readSubject = manager.login( authToken( "readSubject", "123" ) );
         writeSubject = manager.login( authToken( "readWriteSubject", "abc" ) );
@@ -722,8 +723,8 @@ public class AuthProceduresTest
             List<Object> roles = getObjectsAsList( r, "roles" );
             Assert.assertThat( roles,
                     containsInAnyOrder( PredefinedRolesBuilder.ADMIN, PredefinedRolesBuilder.ARCHITECT,
-                            PredefinedRolesBuilder.PUBLISHER, PredefinedRolesBuilder.READER ) );
-            assertEquals( 4, roles.size() );
+                            PredefinedRolesBuilder.PUBLISHER, PredefinedRolesBuilder.READER, "empty" ) );
+            assertEquals( 5, roles.size() );
         } );
     }
 
@@ -825,6 +826,49 @@ public class AuthProceduresTest
                     Assert.assertThat( roles, containsInAnyOrder( PredefinedRolesBuilder.PUBLISHER ) );
                     assertEquals( 1, roles.size() );
                 } );
+    }
+
+    @Test
+    public void shouldListUsersForRole() throws Exception
+    {
+        testResult( db, adminSubject, "CALL dbms.listUsersForRole('admin') YIELD value as users RETURN users",
+                r -> {
+                    List<Object> usernames = getObjectsAsList( r, "users" );
+                    Assert.assertThat( usernames, containsInAnyOrder( adminSubject.name(), "neo4j" ) );
+                    assertEquals( 2, usernames.size() );
+                } );
+    }
+
+    @Test
+    public void shouldNotAllowNonAdminListRoleUsers() throws Exception
+    {
+        testFailListRoleUsers( noneSubject, PredefinedRolesBuilder.ADMIN );
+        testFailListRoleUsers( readSubject, PredefinedRolesBuilder.ADMIN);
+        testFailListRoleUsers( writeSubject, PredefinedRolesBuilder.ADMIN );
+        testFailListRoleUsers( schemaSubject, PredefinedRolesBuilder.ADMIN );
+    }
+
+    @Test
+    public void shouldFailToListUsersForUnknownRole() throws Exception
+    {
+        try
+        {
+            testResult( db, adminSubject, "CALL dbms.listUsersForRole('Foo') YIELD value as users RETURN users",
+                    r -> assertFalse( r.hasNext() ) );
+            fail( "Expected exception to be thrown" );
+        }
+        catch ( QueryExecutionException e )
+        {
+            assertTrue( "Exception should contain 'Role Foo does not exist.' but was " + e.getMessage(),
+                    e.getMessage().contains( "Role Foo does not exist." ) );
+        }
+    }
+
+    @Test
+    public void shouldListNoUsersForRoleWithNoUsers() throws Exception
+    {
+        testResult( db, adminSubject, "CALL dbms.listUsersForRole('empty') YIELD value as users RETURN users",
+                r -> assertFalse( r.hasNext() ) );
     }
 
     //-------------Helper functions---------------
@@ -969,7 +1013,7 @@ public class AuthProceduresTest
     private void testSuccessfulListRolesAction( AuthSubject subject )
     {
         testCall( db, subject, "CALL dbms.listRoles() YIELD value AS roles RETURN count(roles)",
-                ( r ) -> assertEquals( r.get( "count(roles)" ), 4L ) );
+                ( r ) -> assertEquals( r.get( "count(roles)" ), 5L ) );
     }
 
     private void testFailListRoles( AuthSubject subject )
@@ -996,6 +1040,26 @@ public class AuthProceduresTest
         try
         {
             testSuccessfulListUserRolesAction( subject, username );
+        }
+        catch ( QueryExecutionException e )
+        {
+            assertTrue( "Exception should contain '" + AuthProcedures.PERMISSION_DENIED + "'",
+                    e.getMessage().contains( AuthProcedures.PERMISSION_DENIED ) );
+        }
+    }
+
+    private void testSuccessfulListRoleUsersAction( AuthSubject subject, String roleName )
+    {
+        testCall( db, subject,
+                "CALL dbms.listUsersForRole('" + roleName + "') YIELD value AS users RETURN count(users)",
+                Map::clear );
+    }
+
+    private void testFailListRoleUsers( AuthSubject subject, String roleName )
+    {
+        try
+        {
+            testSuccessfulListRoleUsersAction( subject, roleName );
         }
         catch ( QueryExecutionException e )
         {

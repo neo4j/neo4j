@@ -249,6 +249,18 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
         return roleRepository.findRoleNamesByUsername( username );
     }
 
+    @Override
+    public Set<String> getUsernamesForRole( String roleName )
+    {
+        assertAuthEnabled();
+        RoleRecord role = roleRepository.findByName( roleName );
+        if (role == null)
+        {
+            throw new IllegalArgumentException( "Role " + roleName + " does not exist." );
+        }
+        return role.users();
+    }
+
     public Set<String> getAllUsernames()
     {
         assertAuthEnabled();
