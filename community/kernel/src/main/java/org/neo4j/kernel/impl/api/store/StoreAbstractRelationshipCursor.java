@@ -120,7 +120,7 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItem.EntityI
         Lock lock = lockService.acquireRelationshipLock( relationshipRecord.getId(), LockService.LockType.READ_LOCK );
         if ( lockService != NO_LOCK_SERVICE )
         {
-            boolean success = true;
+            boolean success = false;
             try
             {
                 // It's safer to re-read the relationship record here, specifically nextProp, after acquiring the lock
