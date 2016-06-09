@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_1.commands.predicates
 import org.neo4j.cypher.internal.compiler.v3_1.{CRS, GeographicPoint}
 import org.neo4j.graphdb.{Node, Path, Relationship}
 
+import scala.collection.{GenTraversableOnce}
+import scala.collection.mutable.ArrayBuffer
 import scala.collection.JavaConverters._
 
 // Class that calculates if two values are equivalent or not.
@@ -70,16 +72,13 @@ class Equivalent(protected val eagerizedValue: Any, val originalValue: Any) exte
   private def hashCode(o: Any): Int = o match {
     case null => 0
     case n: Number => n.longValue().hashCode()
+    case n:Tuple1[Any] => hashCode(n._1)
+    case (n1,n2) => 2 * (hashCode(n1) + hashCode(n2))
+    case (n1,n2,n3) => 3 * (hashCode(n1) + hashCode(n2) + hashCode(n3))
     case n: IndexedSeq[_] =>
       val length = n.length
       if (length > 0)
         length * (hashCode(n.head) + hashCode(n(length/2))+ hashCode(n.last))
-      else
-        EMPTY_LIST
-    case n: Seq[_] =>
-      val length = n.length
-      if (length > 0)
-        length * hashCode(n.head)
       else
         EMPTY_LIST
     case x => x.hashCode()
@@ -99,11 +98,11 @@ object Equivalent {
     case null => null
     case a: Char => a.toString
 
-    case a: Array[_] => a.toList.map(eager)
+    case a: Array[_] => wrapEager(a)
     case m: java.util.Map[_,_] => m.asScala.mapValues(eager)
     case m: Map[_,_] => m.mapValues(eager)
-    case a: TraversableOnce[_] => a.toList.map(eager)
-    case l: java.lang.Iterable[_] => l.asScala.toList.map(eager)
+    case a: TraversableOnce[_] => wrapEager(a)
+    case l: java.lang.Iterable[_] => wrapEager(l.asScala)
     case l: GeographicPoint => l
     case x: org.neo4j.graphdb.spatial.Point =>
       val crs = CRS.fromURL(x.getCRS.getHref)
@@ -113,10 +112,15 @@ object Equivalent {
     case x => throw new IllegalStateException(s"unknown value: ($x) of type ${x.getClass})")
   }
 
-  def wrap[T](x : Seq[T], f: T => Any) : scala.Equals = x.size match {
-    case 1 => Equivalent(f(x.head))
-    case 2 => (Equivalent(f(x.head)),Equivalent(f(x.last)))
-    case 3 => (Equivalent(f(x.head)),Equivalent(f(x.tail.head)),Equivalent(f(x.last)))
-    case _ => x.toList.map((k:T) => Equivalent(f(k))) // should be a list
+  def wrapEager[T](x: GenTraversableOnce[T]): Any = {
+    val it = x.toIterator
+    if (it.isEmpty) return None
+    val e1 = eager(it.next())
+    if (it.isEmpty) return e1
+    val e2 = eager(it.next())
+    if (it.isEmpty) return (e1, e2)
+    val e3 = eager(it.next())
+    if (it.isEmpty) return (e1, e2, e3)
+    it.foldLeft( ArrayBuffer(e1, e2, e3)){ case (a, k) => a += eager(it.next()) }
   }
 }
