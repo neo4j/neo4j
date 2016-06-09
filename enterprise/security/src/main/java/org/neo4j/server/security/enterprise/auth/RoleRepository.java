@@ -30,9 +30,9 @@ import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
  */
 public interface RoleRepository extends Lifecycle
 {
-    RoleRecord findByName( String name );
+    RoleRecord getRoleByName( String roleName );
 
-    Set<String> findRoleNamesByUsername( String username );
+    Set<String> getRoleNamesByUsername( String username );
 
     /**
      * Create a role, given that the roles token is unique.
@@ -62,7 +62,7 @@ public interface RoleRepository extends Lifecycle
     int numberOfRoles();
 
     /** Utility for API consumers to tell if #create() will accept a given role name */
-    boolean isValidName( String name );
+    boolean isValidRoleName( String roleName );
 
     void removeUserFromAllRoles( String username ) throws ConcurrentModificationException, IOException;
 

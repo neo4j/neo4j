@@ -103,7 +103,7 @@ public class BasicAuthManager implements AuthManager, UserManager
         String username = AuthToken.safeCast( AuthToken.PRINCIPAL, authToken );
         String password = AuthToken.safeCast( AuthToken.CREDENTIALS, authToken );
 
-        User user = users.findByName( username );
+        User user = users.getUserByName( username );
         AuthenticationResult result = AuthenticationResult.FAILURE;
         if ( user != null )
         {
@@ -135,7 +135,7 @@ public class BasicAuthManager implements AuthManager, UserManager
     public boolean deleteUser( String username ) throws IOException
     {
         assertAuthEnabled();
-        User user = users.findByName( username );
+        User user = users.getUserByName( username );
         return user != null && users.delete( user );
     }
 
@@ -143,7 +143,7 @@ public class BasicAuthManager implements AuthManager, UserManager
     public User getUser( String username )
     {
         assertAuthEnabled();
-        return users.findByName( username );
+        return users.getUserByName( username );
     }
 
     public void setPassword( AuthSubject authSubject, String username, String password ) throws IOException,
@@ -164,7 +164,7 @@ public class BasicAuthManager implements AuthManager, UserManager
             IllegalCredentialsException
     {
         assertAuthEnabled();
-        User existingUser = users.findByName( username );
+        User existingUser = users.getUserByName( username );
         if ( existingUser == null )
         {
             throw new IllegalCredentialsException( "User " + username + " does not exist" );
@@ -201,7 +201,7 @@ public class BasicAuthManager implements AuthManager, UserManager
 
     private void assertValidName( String name )
     {
-        if ( !users.isValidName( name ) )
+        if ( !users.isValidUsername( name ) )
         {
             throw new IllegalArgumentException( "User name contains illegal characters. Please use simple ascii characters and numbers." );
         }

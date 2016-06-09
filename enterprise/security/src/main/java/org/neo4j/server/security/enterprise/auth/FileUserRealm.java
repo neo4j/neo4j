@@ -111,7 +111,7 @@ public class FileUserRealm extends AuthorizingRealm
     @Override
     protected AuthorizationInfo doGetAuthorizationInfo( PrincipalCollection principals ) throws AuthenticationException
     {
-        User user = userRepository.findByName( (String) principals.getPrimaryPrincipal() );
+        User user = userRepository.getUserByName( (String) principals.getPrimaryPrincipal() );
 
         //TODO: perhaps a more informative message here - this happens if the user has been deleted
         if ( user == null )
@@ -125,7 +125,7 @@ public class FileUserRealm extends AuthorizingRealm
         }
         else
         {
-            Set<String> roles = roleRepository.findRoleNamesByUsername( user.name() );
+            Set<String> roles = roleRepository.getRoleNamesByUsername( user.name() );
             return new SimpleAuthorizationInfo( roles );
         }
     }
@@ -135,7 +135,7 @@ public class FileUserRealm extends AuthorizingRealm
     {
         UsernamePasswordToken usernamePasswordToken = (UsernamePasswordToken) token;
 
-        User user = userRepository.findByName( usernamePasswordToken.getUsername() );
+        User user = userRepository.getUserByName( usernamePasswordToken.getUsername() );
 
         if ( user == null )
         {
@@ -184,15 +184,15 @@ public class FileUserRealm extends AuthorizingRealm
         return user;
     }
 
-    RoleRecord newRole( String roleName, String... users ) throws IOException
+    RoleRecord newRole( String roleName, String... usernames ) throws IOException
     {
         assertValidRoleName( roleName );
-        for ( String username : users )
+        for ( String username : usernames )
         {
             assertValidUsername( username );
         }
 
-        SortedSet<String> userSet = new TreeSet<String>( Arrays.asList( users ) );
+        SortedSet<String> userSet = new TreeSet<String>( Arrays.asList( usernames ) );
 
         RoleRecord role = new RoleRecord.Builder().withName( roleName ).withUsers( userSet ).build();
         roleRepository.create( role );
@@ -206,12 +206,12 @@ public class FileUserRealm extends AuthorizingRealm
 
         synchronized ( this )
         {
-            User user = userRepository.findByName( username );
+            User user = userRepository.getUserByName( username );
             if ( user == null )
             {
                 throw new IllegalArgumentException( "User " + username + " does not exist." );
             }
-            RoleRecord role = roleRepository.findByName( roleName );
+            RoleRecord role = roleRepository.getRoleByName( roleName );
             if ( role == null )
             {
                 throw new IllegalArgumentException( "Role " + roleName + " does not exist." );
@@ -239,12 +239,12 @@ public class FileUserRealm extends AuthorizingRealm
 
         synchronized ( this )
         {
-            User user = userRepository.findByName( username );
+            User user = userRepository.getUserByName( username );
             if ( user == null )
             {
                 throw new IllegalArgumentException( "User " + username + " does not exist." );
             }
-            RoleRecord role = roleRepository.findByName( roleName );
+            RoleRecord role = roleRepository.getRoleByName( roleName );
             if ( role == null )
             {
                 throw new IllegalArgumentException( "Role " + roleName + " does not exist." );
@@ -271,7 +271,7 @@ public class FileUserRealm extends AuthorizingRealm
         boolean result = false;
         synchronized ( this )
         {
-            User user = userRepository.findByName( username );
+            User user = userRepository.getUserByName( username );
             if ( user != null && userRepository.delete( user ) )
             {
                 removeUserFromAllRoles( username );
@@ -290,7 +290,7 @@ public class FileUserRealm extends AuthorizingRealm
     {
         // This method is not synchronized as it only modifies the UserRepository, which is synchronized in itself
         // If user is modified between findByName and update, we get ConcurrentModificationException and try again
-        User user = userRepository.findByName( username );
+        User user = userRepository.getUserByName( username );
         if ( user == null )
         {
             throw new IllegalArgumentException( "User " + username + " does not exist." );
@@ -315,7 +315,7 @@ public class FileUserRealm extends AuthorizingRealm
     {
         // This method is not synchronized as it only modifies the UserRepository, which is synchronized in itself
         // If user is modified between findByName and update, we get ConcurrentModificationException and try again
-        User user = userRepository.findByName( username );
+        User user = userRepository.getUserByName( username );
         if ( user == null )
         {
             throw new IllegalArgumentException( "User " + username + " does not exist." );
@@ -338,7 +338,7 @@ public class FileUserRealm extends AuthorizingRealm
 
     User findUser( String username )
     {
-        return userRepository.findByName( username );
+        return userRepository.getUserByName( username );
     }
 
     private void removeUserFromAllRoles( String username ) throws IOException
@@ -367,7 +367,7 @@ public class FileUserRealm extends AuthorizingRealm
 
     private void assertValidUsername( String name )
     {
-        if ( !userRepository.isValidName( name ) )
+        if ( !userRepository.isValidUsername( name ) )
         {
             throw new IllegalArgumentException(
                     "User name contains illegal characters. Please use simple ascii characters and numbers." );
@@ -376,7 +376,7 @@ public class FileUserRealm extends AuthorizingRealm
 
     private void assertValidRoleName( String name )
     {
-        if ( !roleRepository.isValidName( name ) )
+        if ( !roleRepository.isValidRoleName( name ) )
         {
             throw new IllegalArgumentException(
                     "Role name contains illegal characters. Please use simple ascii characters and numbers." );

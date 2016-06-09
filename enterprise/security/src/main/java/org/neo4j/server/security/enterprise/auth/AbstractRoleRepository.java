@@ -45,13 +45,13 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     protected volatile List<RoleRecord> roles = new ArrayList<>();
 
     @Override
-    public RoleRecord findByName( String name )
+    public RoleRecord getRoleByName( String roleName )
     {
-        return rolesByName.get( name );
+        return rolesByName.get( roleName );
     }
 
     @Override
-    public Set<String> findRoleNamesByUsername( String username )
+    public Set<String> getRoleNamesByUsername( String username )
     {
         Set<String> roleNames = rolesByUsername.get( username );
         return roleNames != null ? roleNames : Collections.emptySet();
@@ -60,7 +60,7 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     @Override
     public void create( RoleRecord role ) throws IllegalArgumentException, IOException
     {
-        if ( !isValidName( role.name() ) )
+        if ( !isValidRoleName( role.name() ) )
         {
             throw new IllegalArgumentException( "'" + role.name() + "' is not a valid role name." );
         }

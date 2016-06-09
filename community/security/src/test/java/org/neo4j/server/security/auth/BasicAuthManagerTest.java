@@ -49,7 +49,7 @@ public class BasicAuthManagerTest
         manager.start();
 
         // Then
-        final User user = users.findByName( "neo4j" );
+        final User user = users.getUserByName( "neo4j" );
         assertNotNull( user );
         assertTrue( user.credentials().matchesPassword( "neo4j" ) );
         assertTrue( user.passwordChangeRequired() );
@@ -147,7 +147,7 @@ public class BasicAuthManagerTest
         manager.newUser( "foo", "bar", true );
 
         // Then
-        User user = users.findByName( "foo" );
+        User user = users.getUserByName( "foo" );
         assertNotNull( user );
         assertTrue( user.passwordChangeRequired() );
         assertTrue( user.credentials().matchesPassword( "bar" ) );
@@ -168,7 +168,7 @@ public class BasicAuthManagerTest
         manager.deleteUser( "jake" );
 
         // Then
-        assertNull( users.findByName( "jake" ) );
+        assertNull( users.getUserByName( "jake" ) );
     }
 
     @Test
@@ -186,7 +186,7 @@ public class BasicAuthManagerTest
         manager.deleteUser( "unknown" );
 
         // Then
-        assertNotNull( users.findByName( "jake" ) );
+        assertNotNull( users.getUserByName( "jake" ) );
     }
 
     @Test
@@ -205,7 +205,7 @@ public class BasicAuthManagerTest
         // Then
         User user = manager.getUser( "jake" );
         assertTrue( user.credentials().matchesPassword( "hello, world!" ) );
-        assertThat( users.findByName( "jake" ), equalTo( user ) );
+        assertThat( users.getUserByName( "jake" ), equalTo( user ) );
     }
 
     @Test

@@ -90,7 +90,7 @@ public class FileUserRealmTest
     public void addUserToRoleShouldBeAtomic() throws Exception
     {
         // Create a code position for where we want to break in the main thread
-        CodePosition codePosition = getCodePositionAfterCall( "addUserToRole", "findByName" );
+        CodePosition codePosition = getCodePositionAfterCall( "addUserToRole", "getUserByName" );
 
         FileUserRealm realm = new FileUserRealm( userRepository, roleRepository );
 
@@ -102,8 +102,8 @@ public class FileUserRealmTest
         result.throwExceptionsIfAny();
 
         // Then
-        RoleRecord role = roleRepository.findByName( ROLE );
-        assertNull( "User " + USERNAME + " should be deleted!", userRepository.findByName( USERNAME ) );
+        RoleRecord role = roleRepository.getRoleByName( ROLE );
+        assertNull( "User " + USERNAME + " should be deleted!", userRepository.getUserByName( USERNAME ) );
         assertNotNull( "Role " + ROLE + " should exist!", role );
         assertTrue( "Users assigned to role " + ROLE + " should be empty!", role.users().isEmpty() );
     }
@@ -112,7 +112,7 @@ public class FileUserRealmTest
     public void deleteUserShouldBeAtomic() throws Exception
     {
         // Create a code position for where we want to break in the main thread
-        CodePosition codePosition = getCodePositionAfterCall( "deleteUser", "findByName" );
+        CodePosition codePosition = getCodePositionAfterCall( "deleteUser", "getUserByName" );
 
         FileUserRealm realm = new FileUserRealm( userRepository, roleRepository );
 
@@ -123,7 +123,7 @@ public class FileUserRealmTest
                 Arrays.asList( codePosition ) );
 
         // Then
-        assertNull( "User " + USERNAME + " should be deleted!", userRepository.findByName( USERNAME ) );
+        assertNull( "User " + USERNAME + " should be deleted!", userRepository.getUserByName( USERNAME ) );
         assertTrue( result.getSecondaryException() instanceof IllegalArgumentException );
         assertTrue( result.getSecondaryException().getMessage().equals( "User " + USERNAME + " does not exist." ) );
     }
