@@ -108,7 +108,7 @@ import static org.neo4j.test.ThreadTestUtils.fork;
 public abstract class PageCacheTest<T extends PageCache>
 {
     protected static final long SHORT_TIMEOUT_MILLIS = 10_000;
-    protected static final long SEMI_LONG_TIMEOUT_MILLIS = 60_000;
+    protected static final long SEMI_LONG_TIMEOUT_MILLIS = 120_000;
     protected static final long LONG_TIMEOUT_MILLIS = 360_000;
 
     protected static ExecutorService executor;
