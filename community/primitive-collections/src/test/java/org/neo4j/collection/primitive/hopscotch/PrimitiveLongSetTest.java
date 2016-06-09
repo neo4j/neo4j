@@ -19,18 +19,17 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import org.junit.Test;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.junit.Test;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveIntVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
-import org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.Monitor;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -41,20 +40,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import static org.neo4j.collection.primitive.Primitive.VALUE_MARKER;
-import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.NO_MONITOR;
-
 public class PrimitiveLongSetTest
 {
-    private PrimitiveLongHashSet newSet( int h )
+    private PrimitiveLongSet newSet( int capacity )
     {
-        return newSet( h, NO_MONITOR );
-    }
-
-    private PrimitiveLongHashSet newSet( int h, Monitor monitor )
-    {
-        return new PrimitiveLongHashSet(
-                new LongKeyTable<>( h, VALUE_MARKER ), VALUE_MARKER, monitor );
+        return Primitive.longSet( capacity );
     }
 
     @Test
