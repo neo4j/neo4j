@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions._
+import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.Equivalent
 import org.neo4j.cypher.internal.compiler.v3_1.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.frontend.v3_1.SyntaxException
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
@@ -49,22 +50,64 @@ class EagerAggregationPipeTest extends CypherFunSuite {
     intercept[SyntaxException](new EagerAggregationPipe(source, groupings, aggregations)())
   }
 
-  test("shouldAggregateCountStar") {
+  test("should aggregate count(*) on single grouping column") {
     val source = new FakePipe(List(
       Map[String, Any]("name" -> "Andres", "age" -> 36),
       Map[String, Any]("name" -> "Peter", "age" -> 38),
       Map[String, Any]("name" -> "Michael", "age" -> 36),
       Map[String, Any]("name" -> "Michael", "age" -> 31)), createSymbolTableFor("name"))
 
-    val returnItems = createReturnItemsFor("name")
-    val grouping = Map("count(*)" -> CountStar())
-    val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)()
+    val grouping = createReturnItemsFor("name")
+    val aggregation = Map("count(*)" -> CountStar())
+    val aggregationPipe = new EagerAggregationPipe(source, grouping, aggregation)()
 
     getResults(aggregationPipe) should contain allOf(
       Map[String, Any]("name" -> "Andres", "count(*)" -> 1),
       Map[String, Any]("name" -> "Peter", "count(*)" -> 1),
       Map[String, Any]("name" -> "Michael", "count(*)" -> 2)
     )
+  }
+
+  test("should aggregate count(*) on two grouping columns") {
+    def source = new FakePipe(List(
+      Map[String, Any]("a" -> 1, "b" -> 1),
+      Map[String, Any]("a" -> 1, "b" -> 1),
+      Map[String, Any]("a" -> 1, "b" -> 2),
+      Map[String, Any]("a" -> 2, "b" -> 2)), createSymbolTableFor("a"), createSymbolTableFor("b"))
+
+    val grouping = createReturnItemsFor("a", "b")
+    val aggregation = Map("count(*)" -> CountStar())
+    def aggregationPipe = new EagerAggregationPipe(source, grouping, aggregation)()
+
+    getResults(aggregationPipe) should contain allOf(
+      Map[String, Any]("a" -> 1, "b" -> 1, "count(*)" -> 2),
+      Map[String, Any]("a" -> 1, "b" -> 2, "count(*)" -> 1),
+      Map[String, Any]("a" -> 2, "b" -> 2, "count(*)" -> 1)
+    )
+
+    getResults(aggregationPipe).toString() shouldNot include(classOf[Equivalent].getSimpleName)
+  }
+
+  test("should aggregate count(*) on three grouping columns") {
+    def source = new FakePipe(List(
+      Map[String, Any]("a" -> 1, "b" -> 1, "c" -> 1),
+      Map[String, Any]("a" -> 1, "b" -> 1, "c" -> 2),
+      Map[String, Any]("a" -> 1, "b" -> 2, "c" -> 3),
+      Map[String, Any]("a" -> 2, "b" -> 2, "c" -> 4)),
+      createSymbolTableFor("a"), createSymbolTableFor("b"), createSymbolTableFor("c"))
+
+    val grouping = createReturnItemsFor("a", "b", "c")
+    val aggregation = Map("count(*)" -> CountStar())
+    def aggregationPipe = new EagerAggregationPipe(source, grouping, aggregation)()
+
+    getResults(aggregationPipe) should contain allOf(
+      Map[String, Any]("a" -> 1, "b" -> 1, "c" -> 1, "count(*)" -> 1),
+      Map[String, Any]("a" -> 1, "b" -> 1, "c" -> 2, "count(*)" -> 1),
+      Map[String, Any]("a" -> 1, "b" -> 2, "c" -> 3, "count(*)" -> 1),
+      Map[String, Any]("a" -> 2, "b" -> 2, "c" -> 4, "count(*)" -> 1)
+    )
+
+    getResults(aggregationPipe).toString() shouldNot include(classOf[Equivalent].getSimpleName)
   }
 
   test("should handle grouping on null") {

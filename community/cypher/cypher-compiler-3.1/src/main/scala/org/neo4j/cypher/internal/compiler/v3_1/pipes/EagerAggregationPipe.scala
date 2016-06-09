@@ -59,28 +59,6 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
     val keyNamesSize = keyNames.size
     val mapSize = keyNamesSize + aggregationNames.size
 
-    def createResults(key: Equals, aggregator: scala.Seq[AggregationFunction]): ExecutionContext = {
-      val newMap = MutableMaps.create(mapSize)
-
-      //add key values
-      keyNamesSize match {
-        case 1 => newMap += keyNames.head -> key.asInstanceOf[Equivalent].originalValue
-        case 2 =>
-          val t2 = key.asInstanceOf[(Equivalent, Equivalent)]
-          newMap += keyNames.head -> t2._1 += keyNames.last -> t2._2
-        case 3 =>
-          val t3 = key.asInstanceOf[(Equivalent, Equivalent, Equivalent)]
-          newMap += keyNames.head -> t3._1 += keyNames.tail.head -> t3._2 += keyNames.last -> t3._3
-        case _ =>
-          (keyNames zip key.asInstanceOf[List[Equivalent]].map(_.originalValue)).foreach(newMap += _)
-      }
-
-      //add aggregated values
-      (aggregationNames zip aggregator.map(_.result)).foreach(newMap += _)
-
-      ExecutionContext(newMap)
-    }
-
     def createEmptyResult(params: Map[String, Any]): Iterator[ExecutionContext] = {
       val newMap = MutableMaps.empty
       val aggregationNamesAndFunctions = aggregationNames zip aggregations.map(_._2.createAggregationFunction.result)
@@ -88,6 +66,37 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
       aggregationNamesAndFunctions.toMap
         .foreach { case (name, zeroValue) => newMap += name -> zeroValue}
       Iterator.single(ExecutionContext(newMap))
+    }
+
+    // This code is not pretty. It's full of asInstanceOf calls and other things that might irk you.
+    // You'll just have to trust that the original authors spent time profiling and making sure that this
+    // code runs really fast.
+    // If you feel like cleaning it up - please make sure to not regress in performance. This is a hot spot.
+    def createResults(key: Any, aggregator: scala.Seq[AggregationFunction]): ExecutionContext = {
+      val newMap = MutableMaps.create(mapSize)
+
+      //add key values
+      keyNamesSize match {
+        case 1 =>
+          newMap += keyNames.head -> key.asInstanceOf[Equivalent].originalValue
+        case 2 =>
+          val t2 = key.asInstanceOf[(Equivalent, Equivalent)]
+          newMap += keyNames.head -> t2._1.originalValue +=
+                    keyNames.last -> t2._2.originalValue
+        case 3 =>
+          val t3 = key.asInstanceOf[(Equivalent, Equivalent, Equivalent)]
+          newMap += keyNames.head -> t3._1.originalValue +=
+                    keyNames.tail.head -> t3._2.originalValue +=
+                    keyNames.last -> t3._3.originalValue
+        case _ =>
+          val listOfValues = key.asInstanceOf[List[Equivalent]]
+          (keyNames zip listOfValues.map(_.originalValue)).foreach(newMap += _)
+      }
+
+      //add aggregated values
+      (aggregationNames zip aggregator.map(_.result)).foreach(newMap += _)
+
+      ExecutionContext(newMap)
     }
 
     input.foreach(ctx => {
