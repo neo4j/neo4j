@@ -96,8 +96,14 @@ Function Get-Neo4jPrunsrv
         $PrunArgs += @("//IS//$($Name)")
 
         $JvmOptions = @('-Dfile.encoding=UTF-8')
-        $setting = (Get-Neo4jSetting -ConfigurationFile 'neo4j-wrapper.conf' -Name 'dbms.jvm.additional' -Neo4jServer $Neo4jServer)
-        if ($setting -ne $null) { $JvmOptions += $setting.Value }
+        # Try neo4j.conf first, but then fallback to neo4j-wrapper.conf for backwards compatibility reasons
+        $setting = (Get-Neo4jSetting -ConfigurationFile 'neo4j.conf' -Name 'dbms.jvm.additional' -Neo4jServer $Neo4jServer)
+        if ($setting -ne $null) {
+          $JvmOptions += $setting.Value
+        } else {
+          $setting = (Get-Neo4jSetting -ConfigurationFile 'neo4j-wrapper.conf' -Name 'dbms.jvm.additional' -Neo4jServer $Neo4jServer)
+          if ($setting -ne $null) { $JvmOptions += $setting.Value }
+        }
 
         $PrunArgs += @('--StartMode=jvm',
           '--StartMethod=start',
