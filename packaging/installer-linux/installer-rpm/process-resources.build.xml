@@ -21,8 +21,4 @@
             replace="&lt;fileNamePattern&gt;/var/log/neo4j/http.%d{yyyy-MM-dd_HH}.log&lt;/fileNamePattern&gt;"
             />
 
-    <replace file="${project.build.directory}/neo4j-${edition}-${neo4j.version}/conf/neo4j-wrapper.conf"
-             token="unsupported.dbms.udc.source=tarball"
-             value="unsupported.dbms.udc.source=rpm"/>
-
 </project>
