@@ -285,52 +285,48 @@ public class FileUserRealm extends AuthorizingRealm
 
     void suspendUser( String username ) throws IOException
     {
-        synchronized ( this )
+        // This method is not synchronized as it only modifies the UserRepository, which is synchronized in itself
+        // If user is modified between findByName and update, we get ConcurrentModificationException and try again
+        User user = userRepository.findByName( username );
+        if ( user == null )
         {
-            User user = userRepository.findByName( username );
-            if ( user == null )
+            throw new IllegalArgumentException( "User " + username + " does not exist." );
+        }
+        if ( !user.hasFlag( IS_SUSPENDED ) )
+        {
+            User suspendedUser = user.augment().withFlag( IS_SUSPENDED ).build();
+            try
             {
-                throw new IllegalArgumentException( "User " + username + " does not exist." );
+                userRepository.update( user, suspendedUser );
             }
-            if ( !user.hasFlag( IS_SUSPENDED ) )
+            catch ( ConcurrentModificationException e )
             {
-                User suspendedUser = user.augment().withFlag( IS_SUSPENDED ).build();
-                try
-                {
-                    userRepository.update( user, suspendedUser );
-                }
-                catch ( ConcurrentModificationException e )
-                {
-                    // Due to the synchronized (this) we should never get this exception unless the user repository
-                    // is modified outside this neo instance. In that case we do not know how to proceed.
-                    throw new RuntimeException( "Unexpected failure", e );
-                }
+                // Try again
+                suspendUser( username );
             }
         }
     }
 
     void activateUser( String username ) throws IOException
     {
-        synchronized ( this )
+        // This method is not synchronized as it only modifies the UserRepository, which is synchronized in itself
+        // If user is modified between findByName and update, we get ConcurrentModificationException and try again
+        User user = userRepository.findByName( username );
+        if ( user == null )
         {
-            User user = userRepository.findByName( username );
-            if ( user == null )
+            throw new IllegalArgumentException( "User " + username + " does not exist." );
+        }
+        if ( user.hasFlag( IS_SUSPENDED ) )
+        {
+            User activatedUser = user.augment().withoutFlag( IS_SUSPENDED ).build();
+            try
             {
-                throw new IllegalArgumentException( "User " + username + " does not exist." );
+                userRepository.update( user, activatedUser );
             }
-            if ( user.hasFlag( IS_SUSPENDED ) )
+            catch ( ConcurrentModificationException e )
             {
-                User activatedUser = user.augment().withoutFlag( IS_SUSPENDED ).build();
-                try
-                {
-                    userRepository.update( user, activatedUser );
-                }
-                catch ( ConcurrentModificationException e )
-                {
-                    // Due to the synchronized (this) we should never get this exception unless the user repository
-                    // is modified outside this neo instance. In that case we do not know how to proceed.
-                    throw new RuntimeException( "Unexpected failure", e );
-                }
+                // Try again
+                activateUser( username );
             }
         }
     }

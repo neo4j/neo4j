@@ -548,6 +548,36 @@ public class AuthProceduresTest
 
     //----------User suspension scenarios-----------
 
+    @Test
+    public void shouldSuspendUser() throws Exception
+    {
+        testCallEmpty( db, adminSubject, "CALL dbms.suspendUser('readSubject')" );
+        assertTrue( manager.getUser( "readSubject" ).hasFlag( FileUserRealm.IS_SUSPENDED ) );
+    }
+
+    @Test
+    public void shouldActivateUser() throws Exception
+    {
+        manager.suspendUser( "readSubject" );
+        testCallEmpty( db, adminSubject, "CALL dbms.activateUser('readSubject')" );
+        assertFalse( manager.getUser( "readSubject" ).hasFlag( FileUserRealm.IS_SUSPENDED ) );
+    }
+
+    @Test
+    public void shouldFailOnNonAdminSuspend() throws Exception
+    {
+        testCallFail( db, schemaSubject, "CALL dbms.suspendUser('readSubject')",
+                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
+    }
+
+    @Test
+    public void shouldFailOnNonAdminActivate() throws Exception
+    {
+        manager.suspendUser( "readSubject" );
+        testCallFail( db, schemaSubject, "CALL dbms.activateUser('readSubject')",
+                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
+    }
+
     /*
     Admin creates user Henrik with password bar
     Henrik logs in with correct password → ok
@@ -749,6 +779,22 @@ public class AuthProceduresTest
             }
             assertFalse( res.hasNext() );
         } );
+    }
+
+    public static void testCallFail( GraphDatabaseAPI db, AuthSubject subject, String call, Class expectedExceptionClass,
+            String partOfErrorMsg )
+    {
+        try
+        {
+            testCallEmpty( db, subject, call, null);
+            fail( "Expected exception to be thrown" );
+        }
+        catch ( Exception e )
+        {
+            assertEquals( expectedExceptionClass, e.getClass() );
+            assertTrue( "Exception should contain '" + partOfErrorMsg + "'",
+                    e.getMessage().contains( partOfErrorMsg ) );
+        }
     }
 
     public static void testCallEmpty( GraphDatabaseAPI db, AuthSubject subject, String call )
