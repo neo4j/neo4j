@@ -28,6 +28,8 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.cursor.IntValue;
 import org.neo4j.kernel.api.cursor.NodeItemHelper;
+import org.neo4j.kernel.impl.locking.Lock;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -46,8 +48,9 @@ import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
+import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
-
 
 /**
  * Base cursor for nodes.
@@ -61,6 +64,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
 
     protected final StoreStatement storeStatement;
 
+    private final LockService lockService;
     private final InstanceCache<StoreLabelCursor> labelCursor;
     private final InstanceCache<StoreSingleLabelCursor> singleLabelCursor;
     private final InstanceCache<StoreNodeRelationshipCursor> nodeRelationshipCursor;
@@ -71,7 +75,8 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
     public StoreAbstractNodeCursor( NodeRecord nodeRecord,
             final NeoStores neoStores,
             final StoreStatement storeStatement,
-            final RecordCursors cursors )
+            final RecordCursors cursors,
+            final LockService lockService )
     {
         this.nodeRecord = nodeRecord;
         this.cursors = cursors;
@@ -79,6 +84,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
         this.relationshipStore = neoStores.getRelationshipStore();
         this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
         this.storeStatement = storeStatement;
+        this.lockService = lockService;
 
         labelCursor = new InstanceCache<StoreLabelCursor>()
         {
@@ -102,7 +108,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
             protected StoreNodeRelationshipCursor create()
             {
                 return new StoreNodeRelationshipCursor( relationshipStore.newRecord(),
-                        relationshipGroupStore.newRecord(), this, cursors );
+                        relationshipGroupStore.newRecord(), this, cursors, lockService );
             }
         };
         singlePropertyCursor = new InstanceCache<StoreSinglePropertyCursor>()
@@ -147,22 +153,53 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
         return singleLabelCursor.get().init( nodeRecord, labelId );
     }
 
+    private Lock shortLivedReadLock()
+    {
+        Lock lock = lockService.acquireNodeLock( nodeRecord.getId(), LockService.LockType.READ_LOCK );
+        if ( lockService != NO_LOCK_SERVICE )
+        {
+            boolean success = false;
+            try
+            {
+                // It's safer to re-read the node record here, specifically nextProp, after acquiring the lock
+                if ( !cursors.node().next( nodeRecord.getId(), nodeRecord, CHECK ) )
+                {
+                    // So it looks like the node has been deleted. The current behavior of NodeStore#loadRecord
+                    // is to only set the inUse field on loading an unused record. This should (and will)
+                    // change to be more of a centralized behavior by the stores. Anyway, setting this pointer
+                    // to the primitive equivalent of null the property cursor will just look empty from the
+                    // outside and the releasing of the lock will be done as usual.
+                    nodeRecord.setNextProp( Record.NO_NEXT_PROPERTY.intValue() );
+                }
+                success = true;
+            }
+            finally
+            {
+                if ( !success )
+                {
+                    lock.release();
+                }
+            }
+        }
+        return lock;
+    }
+
     @Override
     public Cursor<PropertyItem> properties()
     {
-        return allPropertyCursor.get().init( nodeRecord.getNextProp() );
+        return allPropertyCursor.get().init( nodeRecord.getNextProp(), shortLivedReadLock() );
     }
 
     @Override
     public Cursor<PropertyItem> property( int propertyKeyId )
     {
-        return singlePropertyCursor.get().init( nodeRecord.getNextProp(), propertyKeyId );
+        return singlePropertyCursor.get().init( nodeRecord.getNextProp(), propertyKeyId, shortLivedReadLock() );
     }
 
     @Override
     public Cursor<RelationshipItem> relationships( Direction direction )
     {
-        return nodeRelationshipCursor.get().init( nodeRecord.isDense(), nodeRecord.getNextRel(), nodeRecord.getId(),
+        return nodeRelationshipCursor.get().init(  nodeRecord.isDense(), nodeRecord.getNextRel(), nodeRecord.getId(),
                 direction, null );
     }
 

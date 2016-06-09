@@ -52,6 +52,7 @@ import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -450,7 +451,7 @@ public class StateHandlingStatementOperationsTest
         StoreStatementWithSingleFreshIndexReader( IndexReader reader )
         {
             super( basicMockedNeoStores(), () -> mock( IndexReaderFactory.class ),
-                    () -> mock( LabelScanReader.class ) );
+                    () -> mock( LabelScanReader.class ),  new ReentrantLockService() );
             this.reader = reader;
         }
 

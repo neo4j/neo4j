@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.api.store;
 import java.util.function.Consumer;
 
 import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.RecordCursors;
-
 
 /**
  * Cursor for a specific property on a node or relationship.
@@ -37,9 +37,9 @@ public class StoreSinglePropertyCursor extends StorePropertyCursor
         super( cursors, (Consumer) instanceCache );
     }
 
-    public StoreSinglePropertyCursor init( long firstPropertyId, int propertyKeyId )
+    public StoreSinglePropertyCursor init( long firstPropertyId, int propertyKeyId, Lock lock )
     {
-        super.init( firstPropertyId );
+        super.init( firstPropertyId, lock );
         this.propertyKeyId = propertyKeyId;
         return this;
     }

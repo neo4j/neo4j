@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.function.Consumer;
 
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -53,9 +54,10 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
     public StoreNodeRelationshipCursor( RelationshipRecord relationshipRecord,
             RelationshipGroupRecord groupRecord,
             Consumer<StoreNodeRelationshipCursor> instanceCache,
-            RecordCursors cursors )
+            RecordCursors cursors,
+            LockService lockService )
     {
-        super( relationshipRecord, cursors );
+        super( relationshipRecord, cursors, lockService );
         this.groupRecord = groupRecord;
         this.instanceCache = instanceCache;
         this.cursors = cursors;
@@ -115,23 +117,23 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
                     {
                         switch ( direction )
                         {
-                            case INCOMING:
+                        case INCOMING:
+                        {
+                            if ( relationshipRecord.getSecondNode() != fromNodeId )
                             {
-                                if ( relationshipRecord.getSecondNode() != fromNodeId )
-                                {
-                                    continue;
-                                }
-                                break;
+                                continue;
                             }
+                            break;
+                        }
 
-                            case OUTGOING:
+                        case OUTGOING:
+                        {
+                            if ( relationshipRecord.getFirstNode() != fromNodeId )
                             {
-                                if ( relationshipRecord.getFirstNode() != fromNodeId )
-                                {
-                                    continue;
-                                }
-                                break;
+                                continue;
                             }
+                            break;
+                        }
                         }
                     }
 
@@ -157,10 +159,12 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
                 else
                 {
                     throw new InvalidRecordException( "While loading relationships for Node[" + fromNodeId +
-                            "] a Relationship[" + relationshipRecord.getId() + "] was encountered that had startNode:" +
-                            " " +
-                            relationshipRecord.getFirstNode() + " and endNode: " + relationshipRecord.getSecondNode() +
-                            ", i.e. which had neither start nor end node as the node we're loading relationships for" );
+                                                      "] a Relationship[" + relationshipRecord.getId() +
+                                                      "] was encountered that had startNode:" +
+                                                      " " +
+                                                      relationshipRecord.getFirstNode() + " and endNode: " +
+                                                      relationshipRecord.getSecondNode() +
+                                                      ", i.e. which had neither start nor end node as the node we're loading relationships for" );
                 }
 
                 // If there are no more relationships, and this is from a dense node, then
@@ -197,7 +201,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
                         GroupChain groupChain = GROUP_CHAINS[groupChainIndex++];
                         long chainStart = groupChain.chainStart( groupRecord );
                         if ( !NULL_REFERENCE.is( chainStart )
-                                && (direction == Direction.BOTH || groupChain.matchesDirection( direction )) )
+                             && (direction == Direction.BOTH || groupChain.matchesDirection( direction )) )
                         {
                             return chainStart;
                         }

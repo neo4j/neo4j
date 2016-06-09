@@ -581,7 +581,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         storageEngine.satisfyDependencies( dependencies );
 
         return life.add( storageEngine );
-
     }
 
     private TransactionLogModule buildTransactionLogs(

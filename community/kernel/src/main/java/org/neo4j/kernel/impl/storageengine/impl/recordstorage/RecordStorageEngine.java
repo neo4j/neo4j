@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -114,16 +113,14 @@ import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
-import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
-import static org.neo4j.kernel.configuration.Settings.TRUE;
-import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
 
 public class RecordStorageEngine implements StorageEngine, Lifecycle
 {
-    private static final boolean safeIdBuffering = flag( RecordStorageEngine.class, "safeIdBuffering", true );
+    private static final boolean safeIdBuffering = flag( RecordStorageEngine.class, "safeIdBuffering", false );
 
     private final StoreReadLayer storeLayer;
     private final IndexingService indexingService;
@@ -264,9 +261,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
     private Supplier<StorageStatement> storeStatementSupplier( NeoStores neoStores )
     {
-        final Supplier<IndexReaderFactory> indexReaderFactory = () -> new IndexReaderFactory.Caching( indexingService );
+        Supplier<IndexReaderFactory> indexReaderFactory = () -> new IndexReaderFactory.Caching( indexingService );
+        LockService lockService =
+                FeatureToggles.flag( getClass(), "propertyReadLocks", true ) ? this.lockService : NO_LOCK_SERVICE;
 
-        return () -> new StoreStatement( neoStores, indexReaderFactory, labelScanStore::newReader );
+        return () -> new StoreStatement( neoStores, indexReaderFactory, labelScanStore::newReader, lockService );
     }
 
     @Override
