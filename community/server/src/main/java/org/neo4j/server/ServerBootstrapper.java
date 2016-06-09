@@ -33,7 +33,6 @@ import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
-import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -74,15 +73,12 @@ public abstract class ServerBootstrapper implements Bootstrapper
     {
         try
         {
-            FormattedLog configLog = FormattedLogProvider.withoutRenderingContext()
-                                    .toOutputStream( System.out )
-                                    .getLog( getClass() );
-
-            Config config = createConfig( configLog, homeDir, configFile, configOverrides );
+            Config config = createConfig( homeDir, configFile, configOverrides );
 
             LogProvider userLogProvider = setupLogging( config );
             dependencies = dependencies.userLogProvider( userLogProvider );
             log = userLogProvider.getLog( getClass() );
+            config.setLogger( log );
 
             serverAddress = ServerSettings.httpConnector( config, ServerSettings.HttpConnector.Encryption.NONE )
                     .map( ( connector ) -> connector.address.toString() )
@@ -165,11 +161,10 @@ public abstract class ServerBootstrapper implements Bootstrapper
         return userLogProvider;
     }
 
-    private Config createConfig( Log log, File homeDir, Optional<File> file, Pair<String, String>[] configOverrides )
+    private Config createConfig( File homeDir, Optional<File> file, Pair<String, String>[] configOverrides )
             throws IOException
     {
-        return new ConfigLoader( this::settingsClasses ).loadConfig( Optional.of( homeDir ), file, log,
-                configOverrides );
+        return new ConfigLoader( this::settingsClasses ).loadConfig( Optional.of( homeDir ), file, configOverrides );
     }
 
     private void addShutdownHook()

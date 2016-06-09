@@ -104,8 +104,8 @@ public class CommunityServerBuilder
         final Optional<File> configFile = buildBefore();
 
         Log log = logProvider.getLog( getClass() );
-        Config config = new ConfigLoader( CommunityBootstrapper.settingsClasses )
-                .loadConfig( configFile, log );
+        Config config = new ConfigLoader( CommunityBootstrapper.settingsClasses ).loadConfig( configFile );
+        config.setLogger( log );
         return build( configFile, config, GraphDatabaseDependencies.newDependencies().userLogProvider( logProvider )
                 .monitors( new Monitors() ) );
     }
