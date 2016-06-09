@@ -184,9 +184,6 @@ import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.helpers.collection.Iterables.toList;
-import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
-import static org.neo4j.kernel.configuration.Settings.TRUE;
-import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
@@ -344,13 +341,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     }
 
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
-
-    /**
-     * This setting is hidden to the user and is here merely for making it easier to back out of
-     * a change where reading property chains incurs read locks on {@link LockService}.
-     */
-    private static final Setting<Boolean> use_read_locks_on_property_reads =
-            setting( "experimental.use_read_locks_on_property_reads", BOOLEAN, TRUE );
 
     private final Monitors monitors;
     private final Tracers tracers;
@@ -857,8 +847,8 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
 
     private Factory<StoreStatement> storeStatementFactory( final NeoStores neoStores )
     {
-        final LockService lockService =
-                config.get( use_read_locks_on_property_reads ) ? this.lockService : NO_LOCK_SERVICE;
+        final LockService lockService = FeatureToggles.flag( getClass(), "propertyReadLocks", true ) ?
+                this.lockService : NO_LOCK_SERVICE;
         return new Factory<StoreStatement>()
         {
             @Override
