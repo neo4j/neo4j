@@ -25,6 +25,7 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Consumer;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.cursor.PropertyItem;
+import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
@@ -40,6 +41,7 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
     private final StorePropertyPayloadCursor payload;
 
     private long nextPropertyRecordId;
+    private Lock lock;
 
     public StorePropertyCursor( PropertyStore propertyStore, Consumer<StorePropertyCursor> instanceCache )
     {
@@ -48,9 +50,10 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
         this.payload = new StorePropertyPayloadCursor( propertyStore.getStringStore(), propertyStore.getArrayStore() );
     }
 
-    public StorePropertyCursor init( long firstPropertyId )
+    public StorePropertyCursor init( long firstPropertyId, Lock lock )
     {
         nextPropertyRecordId = firstPropertyId;
+        this.lock = lock;
         return this;
     }
 
@@ -112,8 +115,15 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
     @Override
     public void close()
     {
-        payload.clear();
-        instanceCache.accept( this );
+        try
+        {
+            payload.clear();
+            instanceCache.accept( this );
+        }
+        finally
+        {
+            lock.release();
+        }
     }
 
     static Object payloadValueAsObject( StorePropertyPayloadCursor payload )
