@@ -540,7 +540,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                     dependencies.satisfyDependency( new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup ) );
 
             BufferingIdGeneratorFactory bufferingIdGeneratorFactory = null;
-            boolean safeIdBuffering = FeatureToggles.flag( getClass(), "safeIdBuffering", true );
+            boolean safeIdBuffering = FeatureToggles.flag( getClass(), "safeIdBuffering", false );
             if ( safeIdBuffering )
             {
                 // This buffering id generator factory will have properly buffering id generators injected into
