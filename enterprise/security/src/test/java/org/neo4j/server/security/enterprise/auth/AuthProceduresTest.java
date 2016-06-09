@@ -715,6 +715,48 @@ public class AuthProceduresTest
         } );
     }
 
+    @Test
+    public void shouldReturnRoles() throws Exception
+    {
+        testResult( db, adminSubject, "CALL dbms.listRoles() YIELD value AS roles RETURN roles", r -> {
+            List<Object> roles = getObjectsAsList( r, "roles" );
+            Assert.assertThat( roles,
+                    containsInAnyOrder( PredefinedRolesBuilder.ADMIN, PredefinedRolesBuilder.ARCHITECT,
+                            PredefinedRolesBuilder.PUBLISHER, PredefinedRolesBuilder.READER ) );
+            assertEquals( 4, roles.size() );
+        } );
+    }
+
+    @Test
+    public void shouldNotAllowNonAdminListRoles() throws Exception
+    {
+        testFailListRoles( noneSubject );
+        testFailListRoles( readSubject );
+        testFailListRoles( writeSubject );
+        testFailListRoles( schemaSubject );
+    }
+
+    /*
+    Admin creates user Henrik with password bar
+    Henrik logs in with correct password → ok
+    Henrik lists all roles → permission denied
+    Admin lists all roles → ok
+    Admin adds user Henrik to role Admin
+    Henrik lists all roles → ok
+    */
+    @Test
+    public void rolesListing() throws Exception
+    {
+        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)", null );
+        AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
+        assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
+        testFailListRoles( subject );
+        testSuccessfulListRolesAction( adminSubject );
+        testCallEmpty( db, adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PredefinedRolesBuilder.ADMIN + "')",
+                null );
+        testSuccessfulListRolesAction( subject );
+    }
+
     //-------------Helper functions---------------
 
     private void testSuccessfulReadAction( AuthSubject subject, Long count )
@@ -846,6 +888,25 @@ public class AuthProceduresTest
         try
         {
             testSuccessfulListUsersAction( subject, count );
+        }
+        catch ( QueryExecutionException e )
+        {
+            assertTrue( "Exception should contain '" + AuthProcedures.PERMISSION_DENIED + "'",
+                    e.getMessage().contains( AuthProcedures.PERMISSION_DENIED ) );
+        }
+    }
+
+    private void testSuccessfulListRolesAction( AuthSubject subject )
+    {
+        testCall( db, subject, "CALL dbms.listRoles() YIELD value AS roles RETURN count(roles)",
+                ( r ) -> assertEquals( r.get( "count(roles)" ), 4L ) );
+    }
+
+    private void testFailListRoles( AuthSubject subject )
+    {
+        try
+        {
+            testSuccessfulListRolesAction( subject );
         }
         catch ( QueryExecutionException e )
         {

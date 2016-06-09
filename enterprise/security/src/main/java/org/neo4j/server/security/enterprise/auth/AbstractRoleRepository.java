@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.stream.Collectors;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
@@ -192,6 +193,12 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
                 }
             }
         }
+    }
+
+    @Override
+    public Set<String> getAllRoleNames()
+    {
+        return roles.stream().map( RoleRecord::name ).collect( Collectors.toSet() );
     }
 
     protected void populateUserMap( RoleRecord role )

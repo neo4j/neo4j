@@ -231,6 +231,13 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
         realm.activateUser( username );
     }
 
+    @Override
+    public Set<String> getAllRoleNames()
+    {
+        assertAuthEnabled();
+        return roleRepository.getAllRoleNames();
+    }
+
     public Set<String> getAllUsernames()
     {
         assertAuthEnabled();

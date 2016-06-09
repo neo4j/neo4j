@@ -125,6 +125,18 @@ public class AuthProcedures
         return shiroSubject.getUserManager().getAllUsernames().stream().map( StringResult::new );
     }
 
+    @PerformsDBMS
+    @Procedure( "dbms.listRoles" )
+    public Stream<StringResult> listRoles() throws IllegalCredentialsException, IOException
+    {
+        ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
+        if ( !shiroSubject.isAdmin() )
+        {
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
+        }
+        return shiroSubject.getRoleManager().getAllRoleNames().stream().map( StringResult::new );
+    }
+
     public class StringResult {
         public final String value;
 

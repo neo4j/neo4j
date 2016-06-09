@@ -65,4 +65,6 @@ public interface RoleRepository extends Lifecycle
     boolean isValidName( String name );
 
     void removeUserFromAllRoles( String username ) throws ConcurrentModificationException, IOException;
+
+    Set<String> getAllRoleNames();
 }
