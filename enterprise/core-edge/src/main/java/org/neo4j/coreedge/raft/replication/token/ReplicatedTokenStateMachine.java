@@ -55,7 +55,7 @@ public class ReplicatedTokenStateMachine<TOKEN extends Token> implements StateMa
     private final TokenFactory<TOKEN> tokenFactory;
 
     private final Log log;
-    private long lastCommittedIndex = Long.MAX_VALUE;
+    private long lastCommittedIndex = -1;
 
     public ReplicatedTokenStateMachine( TokenRegistry<TOKEN> tokenRegistry, TokenFactory<TOKEN> tokenFactory,
             LogProvider logProvider )
@@ -138,5 +138,11 @@ public class ReplicatedTokenStateMachine<TOKEN extends Token> implements StateMa
     public synchronized void flush() throws IOException
     {
         // already implicitly flushed to the store
+    }
+
+    @Override
+    public long lastAppliedIndex()
+    {
+        return lastCommittedIndex;
     }
 }

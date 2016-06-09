@@ -39,7 +39,6 @@ import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.raft.replication.tx.CoreReplicatedContent;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -66,7 +65,6 @@ public class CoreStateTest
     private final InMemoryRaftLog raftLog = spy( new InMemoryRaftLog() );
 
     private final InMemoryStateStorage<Long> lastFlushedStorage = new InMemoryStateStorage<>( -1L );
-    private final InMemoryStateStorage<Long> lastApplyingStorage = new InMemoryStateStorage<>( -1L );
     private final InMemoryStateStorage<GlobalSessionTrackerState<CoreMember>> sessionStorage =
             new InMemoryStateStorage<>( new GlobalSessionTrackerState<>() );
 
@@ -82,15 +80,16 @@ public class CoreStateTest
     private final Monitors monitors = new Monitors();
     private final CoreState coreState = new CoreState( raftLog, batchSize, flushEvery, () -> dbHealth,
             NullLogProvider.getInstance(), new ProgressTrackerImpl( globalSession ), lastFlushedStorage,
-            lastApplyingStorage, sessionStorage, applier, mock( CoreStateDownloader.class ), inFlightMap, monitors );
+            sessionStorage, applier, mock( CoreStateDownloader.class ), inFlightMap, monitors );
 
     private ReplicatedTransaction nullTx = new ReplicatedTransaction( null );
 
     private final CommandDispatcher commandDispatcher = mock( CommandDispatcher.class );
-    private final CoreStateMachines txStateMachine = mock( CoreStateMachines.class );
+    private final CoreStateMachines coreStateMachines = mock( CoreStateMachines.class );
 
     {
-        when( txStateMachine.commandDispatcher() ).thenReturn( commandDispatcher );
+        when( coreStateMachines.commandDispatcher() ).thenReturn( commandDispatcher );
+        when( coreStateMachines.getApplyingIndex() ).thenReturn( -1L );
     }
 
     private int sequenceNumber = 0;
@@ -105,10 +104,10 @@ public class CoreStateTest
         // given
         RaftLogCommitIndexMonitor listener = mock( RaftLogCommitIndexMonitor.class );
         monitors.addMonitorListener( listener );
-        coreState.setStateMachine( txStateMachine );
+        coreState.setStateMachine( coreStateMachines );
         coreState.start();
 
-        InOrder inOrder = inOrder( txStateMachine, commandDispatcher );
+        InOrder inOrder = inOrder( coreStateMachines, commandDispatcher );
 
         // when
         raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
@@ -118,7 +117,7 @@ public class CoreStateTest
         applier.sync( false );
 
         // then
-        inOrder.verify( txStateMachine ).commandDispatcher();
+        inOrder.verify( coreStateMachines ).commandDispatcher();
         inOrder.verify( commandDispatcher ).dispatch( eq( nullTx ), eq( 0L ), anyCallback() );
         inOrder.verify( commandDispatcher ).dispatch( eq( nullTx ), eq( 1L ), anyCallback() );
         inOrder.verify( commandDispatcher ).dispatch( eq( nullTx ), eq( 2L ), anyCallback() );
@@ -131,7 +130,7 @@ public class CoreStateTest
     public void shouldNotApplyUncommittedCommands() throws Throwable
     {
         // given
-        coreState.setStateMachine( txStateMachine );
+        coreState.setStateMachine( coreStateMachines );
         coreState.start();
 
         // when
@@ -148,7 +147,7 @@ public class CoreStateTest
     public void entriesThatAreNotStateMachineCommandsShouldStillIncreaseCommandIndex() throws Throwable
     {
         // given
-        coreState.setStateMachine( txStateMachine );
+        coreState.setStateMachine( coreStateMachines );
         coreState.start();
 
         // when
@@ -157,10 +156,10 @@ public class CoreStateTest
         coreState.notifyCommitted( 1 );
         applier.sync( false );
 
-        InOrder inOrder = inOrder( txStateMachine, commandDispatcher );
+        InOrder inOrder = inOrder( coreStateMachines, commandDispatcher );
 
         // then
-        inOrder.verify( txStateMachine ).commandDispatcher();
+        inOrder.verify( coreStateMachines ).commandDispatcher();
         inOrder.verify( commandDispatcher ).dispatch( eq( nullTx ), eq( 1L ), anyCallback() );
         inOrder.verify( commandDispatcher ).close();
     }
@@ -171,7 +170,7 @@ public class CoreStateTest
     public void shouldPeriodicallyFlushState() throws Throwable
     {
         // given
-        coreState.setStateMachine( txStateMachine );
+        coreState.setStateMachine( coreStateMachines );
         coreState.start();
 
         int interactions = flushEvery * 5;
@@ -185,7 +184,7 @@ public class CoreStateTest
         applier.sync( false );
 
         // then
-        verify( txStateMachine, times( interactions / batchSize ) ).flush();
+        verify( coreStateMachines, times( interactions / batchSize ) ).flush();
         assertEquals( interactions - ( interactions % batchSize) - 1, (long) lastFlushedStorage.getInitialState() );
     }
 
@@ -195,6 +194,7 @@ public class CoreStateTest
         // given
         doThrow( IllegalStateException.class ).when( commandDispatcher )
                 .dispatch( any( ReplicatedTransaction.class ), anyLong(), anyCallback() );
+        coreState.setStateMachine( coreStateMachines );
         coreState.start();
 
         raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
@@ -214,7 +214,7 @@ public class CoreStateTest
         //given n things to apply in the cache, check that they are actually applied.
 
         // given
-        coreState.setStateMachine( txStateMachine );
+        coreState.setStateMachine( coreStateMachines );
         coreState.start();
 
         inFlightMap.register( 0L, new RaftLogEntry( 1, operation( nullTx ) ) );
@@ -232,9 +232,7 @@ public class CoreStateTest
     public void cacheEntryShouldBePurgedWhenApplied() throws Throwable
     {
         //given a cache in submitApplyJob, the contents of the cache should only contain unapplied "things"
-
-        // given
-        coreState.setStateMachine( txStateMachine );
+        coreState.setStateMachine( coreStateMachines );
         coreState.start();
 
         inFlightMap.register( 0L, new RaftLogEntry( 0, operation( nullTx ) ) );
@@ -256,7 +254,7 @@ public class CoreStateTest
     {
         // if the cache does not contain all things to be applied, make sure we fall back to the log
         // should only happen in recovery, otherwise this is probably a bug.
-        coreState.setStateMachine( txStateMachine );
+        coreState.setStateMachine( coreStateMachines );
         coreState.start();
 
         //given cache with missing entry
@@ -292,7 +290,7 @@ public class CoreStateTest
     {
         //When an entry is not in the log, we must fail.
 
-        coreState.setStateMachine( txStateMachine );
+        coreState.setStateMachine( coreStateMachines );
         coreState.start();
 
         inFlightMap.register( 0L, new RaftLogEntry( 0, operation( nullTx ) ) );
