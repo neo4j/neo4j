@@ -45,14 +45,21 @@ public class Neo4jWithSocket implements TestRule
 {
     private final Consumer<Map<Setting<?>,String>> configure;
     private StoreId storeId;
+    TestGraphDatabaseFactory graphDatabaseFactory;
 
     public Neo4jWithSocket()
     {
-        this( settings -> {} );
+        this( new TestGraphDatabaseFactory(), settings -> {} );
     }
 
     public Neo4jWithSocket( Consumer<Map<Setting<?>, String>> configure )
     {
+        this( new TestGraphDatabaseFactory(), configure );
+    }
+
+    public Neo4jWithSocket( TestGraphDatabaseFactory graphDatabaseFactory, Consumer<Map<Setting<?>, String>> configure )
+    {
+        this.graphDatabaseFactory = graphDatabaseFactory;
         this.configure = configure;
     }
 
@@ -75,7 +82,7 @@ public class Neo4jWithSocket implements TestRule
                 settings.put( BoltKernelExtension.Settings.tls_key_file, tempPath( "key", ".key" ) );
                 settings.put( BoltKernelExtension.Settings.tls_certificate_file, tempPath( "cert", ".cert" ) );
                 configure.accept( settings );
-                final GraphDatabaseService gdb = new TestGraphDatabaseFactory().newImpermanentDatabase( settings );
+                final GraphDatabaseService gdb = graphDatabaseFactory.newImpermanentDatabase( settings );
                 storeId = ((GraphDatabaseFacade) gdb).storeId();
                 try
                 {

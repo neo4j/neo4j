@@ -41,6 +41,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -56,7 +57,12 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 public class AuthenticationIT
 {
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getSettingsFunction() );
+    public Neo4jWithSocket server = new Neo4jWithSocket( getTestGraphDatabaseFactory(), getSettingsFunction() );
+
+    protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
+    {
+        return new TestGraphDatabaseFactory();
+    }
 
     protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
     {

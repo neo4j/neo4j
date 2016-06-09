@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import org.neo4j.helpers.Service;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.security.AccessMode;
@@ -26,8 +27,14 @@ import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.impl.enterprise.EnterpriseProceduresProvider;
 import org.neo4j.kernel.impl.proc.Procedures;
 
-public class ProceduresProvider implements EnterpriseProceduresProvider
+@Service.Implementation( EnterpriseProceduresProvider.class )
+public class ProceduresProvider extends Service implements EnterpriseProceduresProvider
 {
+    public ProceduresProvider()
+    {
+        super( "procedures-provider" );
+    }
+
     @Override
     public void registerProcedures( Procedures procedures )
     {

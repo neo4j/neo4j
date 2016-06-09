@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 import static java.time.Clock.systemUTC;
 import static org.junit.Assert.assertEquals;
@@ -64,8 +64,7 @@ public class AuthProceduresTest
     @Before
     public void setUp() throws Exception
     {
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
-        registerProcedures( db );
+        db = (GraphDatabaseAPI) new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase();
         manager = new EnterpriseAuthManager( new InMemoryUserRepository(), new InMemoryRoleRepository(),
                 new BasicPasswordPolicy(), systemUTC(), true );
         manager.newUser( "noneSubject", "abc", false );
