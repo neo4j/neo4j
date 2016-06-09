@@ -25,12 +25,21 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Spliterator;
+import java.util.stream.Stream;
 
+import org.neo4j.graphdb.Resource;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
+
+import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public class TestCommonIterators
 {
@@ -317,5 +326,87 @@ public class TestCommonIterators
         assertEquals( (Integer) 9, Iterables.fromEnd( ints, 0 ) );
         assertEquals( (Integer) 8, Iterables.fromEnd( ints, 1 ) );
         assertEquals( (Integer) 7, Iterables.fromEnd( ints, 2 ) );
+    }
+
+    @Test( expected = NullPointerException.class )
+    public void iteratorsStreamForNull()
+    {
+        Iterators.stream( null );
+    }
+
+    @Test
+    public void iteratorsStream()
+    {
+        List<Object> list = Arrays.asList( 1, 2, "3", '4', null, "abc", "56789" );
+
+        Iterator<Object> iterator = list.iterator();
+
+        assertEquals( list, Iterators.stream( iterator ).collect( toList() ) );
+    }
+
+    @Test
+    public void iteratorsStreamClosesResourceIterator()
+    {
+        List<Object> list = Arrays.asList( "a", "b", "c", "def" );
+
+        Resource resource = mock( Resource.class );
+        ResourceIterator<Object> iterator = Iterators.resourceIterator( list.iterator(), resource );
+
+        try ( Stream<Object> stream = Iterators.stream( iterator ) )
+        {
+            assertEquals( list, stream.collect( toList() ) );
+        }
+        verify( resource ).close();
+    }
+
+    @Test
+    public void iteratorsStreamCharacteristics()
+    {
+        Iterator<Integer> iterator = Arrays.asList( 1, 2, 3 ).iterator();
+        int characteristics = Spliterator.DISTINCT | Spliterator.ORDERED | Spliterator.SORTED;
+
+        Stream<Integer> stream = Iterators.stream( iterator, characteristics );
+
+        assertEquals( characteristics, stream.spliterator().characteristics() );
+    }
+
+    @Test( expected = NullPointerException.class )
+    public void iterablesStreamForNull()
+    {
+        Iterables.stream( null );
+    }
+
+    @Test
+    public void iterablesStream()
+    {
+        List<Object> list = Arrays.asList( 1, 2, "3", '4', null, "abc", "56789" );
+
+        assertEquals( list, Iterables.stream( list ).collect( toList() ) );
+    }
+
+    @Test
+    public void iterablesStreamClosesResourceIterator()
+    {
+        List<Object> list = Arrays.asList( "a", "b", "c", "def" );
+
+        Resource resource = mock( Resource.class );
+        ResourceIterable<Object> iterable = () -> Iterators.resourceIterator( list.iterator(), resource );
+
+        try ( Stream<Object> stream = Iterables.stream( iterable ) )
+        {
+            assertEquals( list, stream.collect( toList() ) );
+        }
+        verify( resource ).close();
+    }
+
+    @Test
+    public void iterablesStreamCharacteristics()
+    {
+        Iterable<Integer> iterable = Arrays.asList( 1, 2, 3 );
+        int characteristics = Spliterator.DISTINCT | Spliterator.ORDERED | Spliterator.NONNULL;
+
+        Stream<Integer> stream = Iterables.stream( iterable, characteristics );
+
+        assertEquals( characteristics, stream.spliterator().characteristics() );
     }
 }

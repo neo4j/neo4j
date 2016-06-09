@@ -30,9 +30,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
+import java.util.Spliterator;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Resource;
@@ -848,6 +851,40 @@ public final class Iterables
     public static String join( String joinString, Iterable<?> iter )
     {
         return Iterators.join( joinString, iter.iterator() );
+    }
+
+    /**
+     * Create a stream from the given iterable.
+     * <p>
+     * <b>Note:</b> returned stream needs to be closed via {@link Stream#close()} if the given iterable implements
+     * {@link Resource}.
+     *
+     * @param iterable the iterable to convert to stream
+     * @param <T> the type of elements in the given iterable
+     * @return stream over the iterable elements
+     * @throws NullPointerException when the given iterable is {@code null}
+     */
+    public static <T> Stream<T> stream( Iterable<T> iterable )
+    {
+        return stream( iterable, 0 );
+    }
+
+    /**
+     * Create a stream from the given iterable with given characteristics.
+     * <p>
+     * <b>Note:</b> returned stream needs to be closed via {@link Stream#close()} if the given iterable implements
+     * {@link Resource}.
+     *
+     * @param iterable the iterable to convert to stream
+     * @param characteristics the logical OR of characteristics for the underlying {@link Spliterator}
+     * @param <T> the type of elements in the given iterable
+     * @return stream over the iterable elements
+     * @throws NullPointerException when the given iterable is {@code null}
+     */
+    public static <T> Stream<T> stream( Iterable<T> iterable, int characteristics )
+    {
+        Objects.requireNonNull( iterable );
+        return Iterators.stream( iterable.iterator(), characteristics );
     }
 
     private static Iterable EMPTY = new Iterable()

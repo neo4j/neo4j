@@ -62,10 +62,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Collections.singletonList;
-import static java.util.Spliterator.IMMUTABLE;
-import static java.util.Spliterator.ORDERED;
-import static java.util.Spliterators.spliteratorUnknownSize;
-import static java.util.stream.StreamSupport.stream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -905,8 +901,9 @@ public class ProcedureIT
         @Procedure
         public Stream<MyOutputRecord> listCoolPeopleInDatabase()
         {
-            return stream( spliteratorUnknownSize( db.findNodes( label( "Person" ) ), ORDERED | IMMUTABLE ), false )
-                    .map( ( n ) -> new MyOutputRecord( (String) n.getProperty( "name" ) ) );
+            return db.findNodes( label( "Person" ) )
+                    .stream()
+                    .map( n -> new MyOutputRecord( (String) n.getProperty( "name" ) ) );
         }
 
         @Procedure

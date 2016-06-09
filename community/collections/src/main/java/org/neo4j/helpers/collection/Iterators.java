@@ -29,9 +29,14 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.function.Predicates;
@@ -723,5 +728,45 @@ public abstract class Iterators
             }
         }
         return sb.toString();
+    }
+
+    /**
+     * Create a stream from the given iterator.
+     * <p>
+     * <b>Note:</b> returned stream needs to be closed via {@link Stream#close()} if the given iterator implements
+     * {@link Resource}.
+     *
+     * @param iterator the iterator to convert to stream
+     * @param <T> the type of elements in the given iterator
+     * @return stream over the iterator elements
+     * @throws NullPointerException when the given stream is {@code null}
+     */
+    public static <T> Stream<T> stream( Iterator<T> iterator )
+    {
+        return stream( iterator, 0 );
+    }
+
+    /**
+     * Create a stream from the given iterator with given characteristics.
+     * <p>
+     * <b>Note:</b> returned stream needs to be closed via {@link Stream#close()} if the given iterator implements
+     * {@link Resource}.
+     *
+     * @param iterator the iterator to convert to stream
+     * @param characteristics the logical OR of characteristics for the underlying {@link Spliterator}
+     * @param <T> the type of elements in the given iterator
+     * @return stream over the iterator elements
+     * @throws NullPointerException when the given iterator is {@code null}
+     */
+    public static <T> Stream<T> stream( Iterator<T> iterator, int characteristics )
+    {
+        Objects.requireNonNull( iterator );
+        Spliterator<T> spliterator = Spliterators.spliteratorUnknownSize( iterator, characteristics );
+        Stream<T> stream = StreamSupport.stream( spliterator, false );
+        if ( iterator instanceof Resource )
+        {
+            return stream.onClose( ((Resource) iterator)::close );
+        }
+        return stream;
     }
 }

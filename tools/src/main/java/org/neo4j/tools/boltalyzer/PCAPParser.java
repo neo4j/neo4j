@@ -28,12 +28,10 @@ import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import org.neo4j.function.ThrowingSupplier;
+import org.neo4j.helpers.collection.Iterators;
 
 public class PCAPParser
 {
@@ -125,9 +123,9 @@ public class PCAPParser
 
     private Stream<Dict> streamFrom( ThrowingSupplier<Dict, IOException> supplier ) throws IOException
     {
-        return StreamSupport.stream( Spliterators.spliteratorUnknownSize( new Iterator<Dict>()
+        Iterator<Dict> iterator = new Iterator<Dict>()
         {
-            private Dict next = supplier.get();
+            Dict next = supplier.get();
 
             @Override
             public boolean hasNext()
@@ -149,7 +147,8 @@ public class PCAPParser
                     throw new RuntimeException( e );
                 }
             }
-        }, Spliterator.IMMUTABLE ), false );
+        };
+        return Iterators.stream( iterator );
     }
 
     private static class LittleEndianStream
