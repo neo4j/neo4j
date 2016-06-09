@@ -22,11 +22,13 @@ package org.neo4j.cypher.internal.compiler.v3_1.commands.predicates
 import org.neo4j.cypher.internal.compiler.v3_1.{CRS, GeographicPoint}
 import org.neo4j.graphdb.{Node, Path, Relationship}
 
+import scala.collection.{GenTraversableOnce}
+import scala.collection.mutable.ArrayBuffer
 import scala.collection.JavaConverters._
 
 // Class that calculates if two values are equivalent or not.
 // Does not handle NULL values - that must be handled outside!
-class Equivalent(protected val eagerizedValue: Any, val originalValue: Any) {
+class Equivalent(protected val eagerizedValue: Any, val originalValue: Any) extends scala.Equals {
   override def equals(in: Any): Boolean = {
     val eagerOther = in match {
       case s: Equivalent =>
@@ -50,6 +52,8 @@ class Equivalent(protected val eagerizedValue: Any, val originalValue: Any) {
     }
   }
 
+  override def canEqual(that: Any): Boolean = true
+
   private def mixedFloatEquality(a: Float, b: Double) =
     a.doubleValue() == b.doubleValue() ||
     (Math.rint(a.doubleValue()).toLong == b.longValue() &&
@@ -68,10 +72,13 @@ class Equivalent(protected val eagerizedValue: Any, val originalValue: Any) {
   private def hashCode(o: Any): Int = o match {
     case null => 0
     case n: Number => n.longValue().hashCode()
-    case n: Vector[_] =>
+    case n:Tuple1[Any] => hashCode(n._1)
+    case (n1,n2) => 2 * (hashCode(n1) + hashCode(n2))
+    case (n1,n2,n3) => 3 * (hashCode(n1) + hashCode(n2) + hashCode(n3))
+    case n: IndexedSeq[_] =>
       val length = n.length
       if (length > 0)
-        length * (hashCode(n.head) + hashCode(n.last))
+        length * (hashCode(n.head) + hashCode(n(length/2))+ hashCode(n.last))
       else
         EMPTY_LIST
     case x => x.hashCode()
@@ -91,11 +98,11 @@ object Equivalent {
     case null => null
     case a: Char => a.toString
 
-    case a: Array[_] => a.toVector.map(eager)
+    case a: Array[_] => wrapEager(a)
     case m: java.util.Map[_,_] => m.asScala.mapValues(eager)
     case m: Map[_,_] => m.mapValues(eager)
-    case a: TraversableOnce[_] => a.toVector.map(eager)
-    case l: java.lang.Iterable[_] => l.asScala.toVector.map(eager)
+    case a: TraversableOnce[_] => wrapEager(a)
+    case l: java.lang.Iterable[_] => wrapEager(l.asScala)
     case l: GeographicPoint => l
     case x: org.neo4j.graphdb.spatial.Point =>
       val crs = CRS.fromURL(x.getCRS.getHref)
@@ -103,5 +110,17 @@ object Equivalent {
       GeographicPoint(coordinates.head, coordinates.last, crs)
 
     case x => throw new IllegalStateException(s"unknown value: ($x) of type ${x.getClass})")
+  }
+
+  def wrapEager[T](x: GenTraversableOnce[T]): Any = {
+    val it = x.toIterator
+    if (it.isEmpty) return None
+    val e1 = eager(it.next())
+    if (it.isEmpty) return e1
+    val e2 = eager(it.next())
+    if (it.isEmpty) return (e1, e2)
+    val e3 = eager(it.next())
+    if (it.isEmpty) return (e1, e2, e3)
+    it.foldLeft( ArrayBuffer(e1, e2, e3)){ case (a, k) => a += eager(it.next()) }
   }
 }

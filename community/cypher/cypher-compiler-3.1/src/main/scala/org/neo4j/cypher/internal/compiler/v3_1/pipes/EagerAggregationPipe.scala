@@ -27,7 +27,8 @@ import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 
-import scala.collection.mutable.{Map => MutableMap}
+import scala.collection.GenTraversableOnce
+import scala.collection.mutable.{ArrayBuffer, Map => MutableMap}
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting sub graphs before starting
 // to emit aggregated results.
@@ -52,16 +53,22 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
     state.decorator.registerParentPipe(this)
 
     // This is the temporary storage used while the aggregation is going on
-    val result = MutableMap[Vector[Equivalent], Seq[AggregationFunction]]()
-    val keyNames = keyExpressions.toVector
+    val result = MutableMap[Equals, Seq[AggregationFunction]]()
+    val keyNames = keyExpressions.toList
     val aggregationNames: Seq[String] = aggregations.keys.toSeq
-    val mapSize = keyNames.size + aggregationNames.size
+    val keyNamesSize = keyNames.size
+    val mapSize = keyNamesSize + aggregationNames.size
 
-    def createResults(key: Vector[Equivalent], aggregator: scala.Seq[AggregationFunction]): ExecutionContext = {
+    def createResults(key: Equals, aggregator: scala.Seq[AggregationFunction]): ExecutionContext = {
       val newMap = MutableMaps.create(mapSize)
 
       //add key values
-      (keyNames zip key.map(_.originalValue)).foreach(newMap += _)
+      key match {
+        case e:Equivalent =>                                 newMap += keyNames.head -> e.originalValue
+        case (e1:Equivalent,e2:Equivalent) =>                newMap += keyNames.head -> e1.originalValue += keyNames.tail.head -> e2.originalValue
+        case (e1:Equivalent,e2:Equivalent,e3:Equivalent) =>  newMap += keyNames.head -> e1.originalValue += keyNames.tail.head -> e2.originalValue += keyNames.tail.tail.head -> e3.originalValue
+        case s:List[Equivalent] =>                           (keyNames zip s.map(_.originalValue)).foreach(newMap += _)
+      }
 
       //add aggregated values
       (aggregationNames zip aggregator.map(_.result)).foreach(newMap += _)
@@ -79,7 +86,12 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
     }
 
     input.foreach(ctx => {
-      val groupValues = keyNames.map(key => Equivalent(ctx.apply(key)))
+      val groupValues: Equals = keyNamesSize match {
+        case 1 => Equivalent(ctx(keyNames.head))
+        case 2 => (Equivalent(ctx(keyNames.head)),Equivalent(ctx(keyNames.last)))
+        case 3 => (Equivalent(ctx(keyNames.head)),Equivalent(ctx(keyNames.tail.head)),Equivalent(ctx(keyNames.last)))
+        case _ => keyNames.map( k => Equivalent(ctx(k)))
+      }
       val functions = result.getOrElseUpdate(groupValues, {
         val aggregateFunctions: Seq[AggregationFunction] = aggregations.map(_._2.createAggregationFunction).toSeq
         aggregateFunctions
