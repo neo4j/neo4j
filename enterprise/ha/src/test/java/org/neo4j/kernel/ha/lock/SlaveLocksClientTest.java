@@ -47,6 +47,8 @@ import org.neo4j.logging.NullLog;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
@@ -388,6 +390,40 @@ public class SlaveLocksClientTest
 
         verify( local ).close();
         verifyNoMoreInteractions( master );
+    }
+
+    @Test
+    public void stopThrowsWhenMasterCommunicationThrowsComException()
+    {
+        ComException error = new ComException( "Communication failure" );
+        when( master.endLockSession( any( RequestContext.class ), anyBoolean() ) ).thenThrow( error );
+
+        try
+        {
+            client.stop();
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( DistributedLockFailureException.class ) );
+        }
+    }
+
+    @Test
+    public void stopThrowsWhenMasterCommunicationThrows()
+    {
+        RuntimeException error = new IllegalArgumentException( "Wrong params" );
+        when( master.endLockSession( any( RequestContext.class ), anyBoolean() ) ).thenThrow( error );
+
+        try
+        {
+            client.stop();
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertEquals( error, e );
+        }
     }
 
     private SlaveLocksClient stoppedClient()
