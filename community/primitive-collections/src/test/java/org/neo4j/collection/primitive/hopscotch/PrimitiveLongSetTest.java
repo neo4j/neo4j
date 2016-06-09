@@ -90,14 +90,9 @@ public class PrimitiveLongSetTest
         expectedValues.add( 679990875L );
 
         final Set<Long> visitedKeys = new HashSet<>();
-        set.visitKeys( new PrimitiveLongVisitor()
-        {
-            @Override
-            public boolean visited( long value )
-            {
-                assertTrue( visitedKeys.add( value ) );
-                return false;
-            }
+        set.visitKeys( value -> {
+            assertTrue( visitedKeys.add( value ) );
+            return false;
         } );
         assertEquals( expectedValues, visitedKeys );
     }
@@ -379,14 +374,7 @@ public class PrimitiveLongSetTest
         final AtomicInteger counter = new AtomicInteger();
 
         // WHEN
-        map.visitKeys( new PrimitiveIntVisitor<RuntimeException>()
-        {
-            @Override
-            public boolean visited( int value )
-            {
-                return counter.incrementAndGet() > 2;
-            }
-        } );
+        map.visitKeys( value -> counter.incrementAndGet() > 2 );
 
         // THEN
         assertThat( counter.get(), is( 3 ) );
@@ -425,14 +413,7 @@ public class PrimitiveLongSetTest
         final AtomicInteger counter = new AtomicInteger();
 
         // WHEN
-        map.visitKeys( new PrimitiveIntVisitor<RuntimeException>()
-        {
-            @Override
-            public boolean visited( int value )
-            {
-                return counter.incrementAndGet() > 2;
-            }
-        } );
+        map.visitKeys( value -> counter.incrementAndGet() > 2 );
 
         // THEN
         assertThat( counter.get(), is( 3 ) );

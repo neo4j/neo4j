@@ -19,12 +19,12 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import org.junit.Test;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
-
-import org.junit.Test;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
@@ -40,7 +40,6 @@ import org.neo4j.test.randomized.TestResource;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -91,39 +90,18 @@ public class PrimitiveLongIntMapRIT
 
     private Printable given()
     {
-        return new Printable()
-        {
-            @Override
-            public void print( LinePrinter out )
-            {
-                out.println( PrimitiveLongIntMap.class.getSimpleName() + " map = " +
-                        Primitive.class.getSimpleName() + ".longIntMap();" );
-            }
-        };
+        return out -> out.println( PrimitiveLongIntMap.class.getSimpleName() + " map = " +
+                           Primitive.class.getSimpleName() + ".longIntMap();" );
     }
 
     private ActionFactory<Maps,String> actionFactory( final Random random )
     {
-        return new ActionFactory<Maps,String>()
-        {
-            @Override
-            public Action<Maps,String> apply( Maps from )
-            {
-                return generateAction( random, from );
-            }
-        };
+        return from -> generateAction( random, from );
     }
 
     private TargetFactory<Maps> mapFactory()
     {
-        return new TargetFactory<Maps>()
-        {
-            @Override
-            public Maps newInstance()
-            {
-                return new Maps();
-            }
-        };
+        return () -> new Maps();
     }
 
     protected Action<Maps,String> generateAction( Random random, Maps from )
