@@ -51,7 +51,9 @@ import org.neo4j.function.Factory;
 import org.neo4j.function.Function;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -59,12 +61,12 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdReuseEligibility;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.BranchDetectingTxVerifier;
 import org.neo4j.kernel.ha.BranchedDataMigrator;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
@@ -116,6 +118,7 @@ import org.neo4j.kernel.ha.management.HighlyAvailableKernelData;
 import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
+import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
@@ -135,6 +138,7 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.storemigration.UpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByDatabaseModeException;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -153,6 +157,7 @@ import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
 import static java.lang.reflect.Proxy.newProxyInstance;
+import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
@@ -161,6 +166,9 @@ import static java.lang.reflect.Proxy.newProxyInstance;
 public class HighlyAvailableEditionModule
         extends EditionModule
 {
+    public static final Setting<Long> id_reuse_safe_zone_time =
+            setting( "dbms.id_reuse_safe_zone", Settings.DURATION, "1h" );
+
     public HighAvailabilityMemberStateMachine memberStateMachine;
     public ClusterMembers members;
 
@@ -196,9 +204,10 @@ public class HighlyAvailableEditionModule
                 serverId.toIntegerIndex(),
                 dependencies.provideDependency( TransactionIdStore.class ) ) );
 
+        final long idReuseSafeZone = config.get( id_reuse_safe_zone_time );
         TransactionCommittingResponseUnpacker responseUnpacker = dependencies.satisfyDependency(
-                new TransactionCommittingResponseUnpacker( new DefaultUnpackerDependencies( dependencies ),
-                        config.get( HaSettings.pull_apply_batch_size ) ) );
+                new TransactionCommittingResponseUnpacker( new DefaultUnpackerDependencies( dependencies,
+                        idReuseSafeZone ), config.get( HaSettings.pull_apply_batch_size ) ) );
 
         Supplier<KernelAPI> kernelProvider = dependencies.provideDependency( KernelAPI.class );
 
@@ -552,7 +561,7 @@ public class HighlyAvailableEditionModule
         eligibleForIdReuse = new IdReuseEligibility()
         {
             @Override
-            public boolean isEligible()
+            public boolean isEligible( KernelTransactionsSnapshot snapshot )
             {
                 switch ( members.getCurrentMemberRole() )
                 {
@@ -569,7 +578,7 @@ public class HighlyAvailableEditionModule
                     // so that slaves have a chance to read consistently as well (slaves will know and compensate
                     // for falling outside of safe zone). Let's keep this separate from SLAVE since they
                     // have different reasons for doing what they do.
-                    return true;
+                    return Clock.SYSTEM_CLOCK.currentTimeMillis() - snapshot.snapshotTime() >= idReuseSafeZone;
                 default:
                     // If we're anything other than slave, i.e. also pending then retain the ids since we're
                     // not quite sure what state we're in at the moment and we clear the id buffers anyway

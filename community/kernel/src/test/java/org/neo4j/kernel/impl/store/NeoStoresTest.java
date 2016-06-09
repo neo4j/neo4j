@@ -85,8 +85,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 
 public class NeoStoresTest
@@ -466,7 +466,7 @@ public class NeoStoresTest
             metaDataStore.setCreationTime( 3 );
             metaDataStore.setRandomNumber( 4 );
             metaDataStore.setCurrentLogVersion( 5 );
-            metaDataStore.setLastCommittedAndClosedTransactionId( 6, 0, 0, 0 );
+            metaDataStore.setLastCommittedAndClosedTransactionId( 6, 0, 0, 0, 0 );
             metaDataStore.setStoreVersion( 7 );
             metaDataStore.setGraphNextProp( 8 );
             metaDataStore.setLatestConstraintIntroducingTx( 9 );
@@ -575,7 +575,7 @@ public class NeoStoresTest
             metaDataStore.setCreationTime( 3 );
             metaDataStore.setRandomNumber( 4 );
             metaDataStore.setCurrentLogVersion( 5 );
-            metaDataStore.setLastCommittedAndClosedTransactionId( 6, 0, 0, 0 );
+            metaDataStore.setLastCommittedAndClosedTransactionId( 6, 0, BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
             metaDataStore.setStoreVersion( 7 );
             metaDataStore.setGraphNextProp( 8 );
             metaDataStore.setLatestConstraintIntroducingTx( 9 );
@@ -600,7 +600,8 @@ public class NeoStoresTest
             assertEquals( 7, metaDataStore.getStoreVersion() );
             assertEquals( 8, metaDataStore.getGraphNextProp() );
             assertEquals( 9, metaDataStore.getLatestConstraintIntroducingTx() );
-            assertEquals( new TransactionId( 10, 11 ), metaDataStore.getUpgradeTransaction() );
+            assertEquals( new TransactionId( 10, 11, BASE_TX_COMMIT_TIMESTAMP ),
+                    metaDataStore.getUpgradeTransaction() );
             assertEquals( 12, metaDataStore.getUpgradeTime() );
         }
     }
@@ -616,13 +617,15 @@ public class NeoStoresTest
         try ( NeoStores neoStore = factory.openAllNeoStores( true ) )
         {
             MetaDataStore store = neoStore.getMetaDataStore();
-            store.setLastCommittedAndClosedTransactionId( 40, 4444, 0, LogHeader.LOG_HEADER_SIZE );
+            store.setLastCommittedAndClosedTransactionId( 40, 4444, BASE_TX_COMMIT_TIMESTAMP,
+                    LogHeader.LOG_HEADER_SIZE, 0 );
 
             // WHEN
-            store.transactionCommitted( 42, 6666 );
+            store.transactionCommitted( 42, 6666, BASE_TX_COMMIT_TIMESTAMP );
 
             // THEN
-            assertEquals( new TransactionId( 42, 6666 ), store.getLastCommittedTransaction() );
+            assertEquals( new TransactionId( 42, 6666, BASE_TX_COMMIT_TIMESTAMP ),
+                    store.getLastCommittedTransaction() );
         }
     }
 
@@ -637,13 +640,15 @@ public class NeoStoresTest
         try ( NeoStores neoStore = factory.openAllNeoStores( true ) )
         {
             MetaDataStore store = neoStore.getMetaDataStore();
-            store.setLastCommittedAndClosedTransactionId( 40, 4444, 0, LogHeader.LOG_HEADER_SIZE );
+            store.setLastCommittedAndClosedTransactionId( 40, 4444, BASE_TX_COMMIT_TIMESTAMP,
+                    LogHeader.LOG_HEADER_SIZE, 0 );
 
             // WHEN
-            store.transactionCommitted( 39, 3333 );
+            store.transactionCommitted( 39, 3333, BASE_TX_COMMIT_TIMESTAMP );
 
             // THEN
-            assertEquals( new TransactionId( 40, 4444 ), store.getLastCommittedTransaction() );
+            assertEquals( new TransactionId( 40, 4444, BASE_TX_COMMIT_TIMESTAMP ),
+                    store.getLastCommittedTransaction() );
         }
     }
 

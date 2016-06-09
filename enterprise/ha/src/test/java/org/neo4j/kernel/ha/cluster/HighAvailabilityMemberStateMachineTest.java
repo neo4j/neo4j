@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import org.junit.Test;
+import org.mockito.Matchers;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -30,11 +35,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.junit.Test;
-import org.mockito.Matchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -507,7 +507,7 @@ public class HighAvailabilityMemberStateMachineTest
         when( pageCacheMock.map( any( File.class ), anyInt() ) ).thenReturn( pagedFileMock );
 
         TransactionIdStore transactionIdStoreMock = mock( TransactionIdStore.class );
-        when( transactionIdStoreMock.getLastCommittedTransaction() ).thenReturn( new TransactionId( 0, 0 ) );
+        when( transactionIdStoreMock.getLastCommittedTransaction() ).thenReturn( new TransactionId( 0, 0, 0 ) );
         SwitchToSlave switchToSlave = new SwitchToSlave( new File( "" ), NullLogService.getInstance(),
                 mock( FileSystemAbstraction.class ),
                 config, dependencyResolver,

@@ -32,7 +32,7 @@ public class TransactionTerminatedException extends TransactionFailureException
         this( "" );
     }
 
-    protected TransactionTerminatedException( String info )
+    public TransactionTerminatedException( String info )
     {
         super( "The transaction has been terminated. " + requireNonNull( info ) );
     }

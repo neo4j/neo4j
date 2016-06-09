@@ -30,7 +30,9 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransaction.CloseListener;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.Status.Classification;
+import org.neo4j.kernel.api.exceptions.Status.Code;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 
@@ -84,7 +86,7 @@ public class TopLevelTransaction implements Transaction
     @Override
     public final void terminate()
     {
-        this.transaction.markForTermination();
+        this.transaction.markForTermination( Status.Transaction.MarkedAsFailed );
     }
 
     @Override
@@ -113,10 +115,13 @@ public class TopLevelTransaction implements Transaction
             String userMessage = successCalled
                     ? "Transaction was marked as successful, but unable to commit transaction so rolled back."
                     : "Unable to rollback transaction";
-            if ( e instanceof KernelException &&
-                    ((KernelException)e).status().code().classification() == Classification.TransientError )
+            if ( e instanceof KernelException )
             {
-                throw new TransientTransactionFailureException( userMessage, e );
+                Code statusCode = ((KernelException) e).status().code();
+                if ( statusCode.classification() == Classification.TransientError )
+                {
+                    throw new TransientTransactionFailureException( userMessage + ": " + statusCode.description(), e );
+                }
             }
             throw new TransactionFailureException( userMessage, e );
         }

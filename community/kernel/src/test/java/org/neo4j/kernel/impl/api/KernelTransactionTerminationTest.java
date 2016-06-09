@@ -35,6 +35,7 @@ import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
@@ -53,6 +54,7 @@ import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -73,7 +75,7 @@ public class KernelTransactionTerminationTest
                            @Override
                            public void accept( TestKernelTransaction tx )
                            {
-                               tx.markForTermination();
+                               tx.markForTermination( Status.Transaction.MarkedAsFailed );
                            }
                        },
                 new Consumer<TestKernelTransaction>()
@@ -82,7 +84,7 @@ public class KernelTransactionTerminationTest
                     public void accept( TestKernelTransaction tx )
                     {
                         close( tx );
-                        assertFalse( tx.shouldBeTerminated() );
+                        assertNull( tx.shouldBeTerminated() );
                         tx.initialize();
                     }
                 }
@@ -241,7 +243,7 @@ public class KernelTransactionTerminationTest
                     @Override
                     void executeOn( KernelTransaction tx )
                     {
-                        tx.markForTermination();
+                        tx.markForTermination( Status.Transaction.MarkedAsFailed );
                     }
                 };
 
@@ -403,7 +405,7 @@ public class KernelTransactionTerminationTest
 
         TestKernelTransaction initialize()
         {
-            initialize( 42 );
+            initialize( 42, 42 );
             monitor.reset();
             return this;
         }
@@ -420,13 +422,13 @@ public class KernelTransactionTerminationTest
 
         void assertTerminated()
         {
-            assertTrue( shouldBeTerminated() );
+            assertEquals( Status.Transaction.MarkedAsFailed, shouldBeTerminated() );
             assertTrue( monitor.terminated );
         }
 
         void assertNotTerminated()
         {
-            assertFalse( shouldBeTerminated() );
+            assertNull( shouldBeTerminated() );
             assertFalse( monitor.terminated );
         }
     }

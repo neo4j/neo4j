@@ -40,10 +40,10 @@ import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
@@ -367,23 +367,27 @@ public class ClusterTest
 
             HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
 
-            try ( Transaction tx = slave.beginTx() )
+            Transaction tx = slave.beginTx();
+            // Do a little write operation so that all "write" aspects of this tx is initializes properly
+            slave.createNode();
+
+            // Shut down master while we're keeping this transaction open
+            cluster.shutdown( cluster.getMaster() );
+
+            cluster.await( masterAvailable() );
+            cluster.await( masterSeesSlavesAsAvailable( 1 ) );
+            // Ending up here means that we didn't wait for this transaction to complete
+
+            tx.success();
+
+            try
             {
-                // Do a little write operation so that all "write" aspects of this tx is initializes properly
-                slave.createNode();
-
-                // Shut down master while we're keeping this transaction open
-                cluster.shutdown( cluster.getMaster() );
-
-                cluster.await( masterAvailable() );
-                cluster.await( masterSeesSlavesAsAvailable( 1 ) );
-                // Ending up here means that we didn't wait for this transaction to complete
-
-                tx.success();
+                tx.close();
+                fail( "Exception expected" );
             }
-            catch ( TransactionFailureException e )
+            catch ( Exception e )
             {
-                // Good
+                assertThat( e, instanceOf( TransactionFailureException.class ) );
             }
         }
         finally

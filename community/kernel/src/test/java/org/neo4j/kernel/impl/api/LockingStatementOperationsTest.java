@@ -79,7 +79,7 @@ public class LockingStatementOperationsTest
                 entityReadOps, entityWriteOps, schemaReadOps, schemaWriteOps, schemaStateOps
         );
 
-        when( transaction.shouldBeTerminated() ).thenReturn( false );
+        when( transaction.shouldBeTerminated() ).thenReturn( null );
     }
 
     @Test

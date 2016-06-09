@@ -291,7 +291,12 @@ class StorePropertyPayloadCursor
                     buffer = newBuffer;
                 }
                 buffer.put( data, 0, data.length );
+                Thread.sleep( 1 ); // TODO: Remove
             }
+        }
+        catch ( InterruptedException e )
+        {
+            throw new RuntimeException( e );
         }
     }
 

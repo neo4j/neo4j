@@ -307,6 +307,10 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         {
             return node.get().getProperty( propertyKeyId );
         }
+        finally
+        {
+            statement.assertOpen();
+        }
     }
 
     @Override

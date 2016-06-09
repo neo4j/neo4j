@@ -23,10 +23,12 @@ import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.kernel.TopLevelTransaction;
-import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+import static org.neo4j.kernel.impl.api.TransactionTermination.throwCorrectExceptionBasedOnTerminationReason;
 
 /**
  * This is meant to serve as the bridge that makes the Beans API tie transactions to threads. The Beans API
@@ -70,9 +72,10 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         {
             throw new NotInTransactionException();
         }
-        if ( transaction.getTransaction().shouldBeTerminated() )
+        Status terminationReason = transaction.getTransaction().shouldBeTerminated();
+        if ( terminationReason != null )
         {
-            throw new TransactionTerminatedException();
+            throwCorrectExceptionBasedOnTerminationReason( terminationReason );
         }
     }
 

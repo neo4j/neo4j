@@ -24,7 +24,6 @@ import java.io.File;
 import org.neo4j.function.Predicate;
 import org.neo4j.function.Supplier;
 import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdReuseEligibility;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 
@@ -53,7 +52,7 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
             @Override
             public boolean test( KernelTransactionsSnapshot snapshot )
             {
-                return snapshot.allClosed() && eligibleForReuse.isEligible();
+                return snapshot.allClosed() && eligibleForReuse.isEligible( snapshot );
             }
         };
         for ( BufferingIdGenerator generator : overriddenIdGenerators )

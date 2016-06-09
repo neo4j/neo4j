@@ -30,7 +30,6 @@ import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdReuseEligibility;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.Version;
@@ -52,6 +51,7 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -107,6 +107,8 @@ public class CommunityEditionModule
         upgradeConfiguration = new ConfigMapUpgradeConfiguration( config );
 
         constraintSemantics = createSchemaRuleVerifier();
+
+        eligibleForIdReuse = IdReuseEligibility.ALWAYS;
 
         registerRecovery( config.get( GraphDatabaseFacadeFactory.Configuration.editionName), life, dependencies );
 

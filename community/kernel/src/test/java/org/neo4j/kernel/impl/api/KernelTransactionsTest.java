@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -111,7 +112,7 @@ public class KernelTransactionsTest
         assertThat( postDispose, not( equalTo( first ) ) );
         assertThat( postDispose, not( equalTo( second ) ) );
 
-        assertTrue( leftOpen.shouldBeTerminated() );
+        assertTrue( leftOpen.shouldBeTerminated() != null );
     }
 
     @Test
@@ -262,7 +263,9 @@ public class KernelTransactionsTest
         when( readLayer.acquireStatement() ).thenReturn( mock( StoreStatement.class ) );
 
         NeoStores neoStores = mock( NeoStores.class );
-        when( neoStores.getMetaDataStore() ).thenReturn( mock( MetaDataStore.class ) );
+        MetaDataStore metaDataStore = mock( MetaDataStore.class );
+        when( metaDataStore.getLastCommittedTransaction() ).thenReturn( new TransactionId( 2, 3, 4 ) );
+        when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
         return new KernelTransactions( contextSupplier, neoStores, locks,
                 mock( IntegrityValidator.class ), null, null, null, null, null, null, null,
                 TransactionHeaderInformationFactory.DEFAULT, readLayer, commitProcess, null,
