@@ -28,7 +28,6 @@ import java.util.function.IntPredicate;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveIntVisitor;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.base.Hashing;
 
 @SuppressWarnings( "ALL" )
@@ -105,9 +104,9 @@ public abstract class PrimitiveIntSetImpl implements PrimitiveIntSet, IntPredica
     @Override
     public final boolean equals( Object obj )
     {
-        if ( obj instanceof PrimitiveLongSet )
+        if ( obj instanceof PrimitiveIntSet )
         {
-            PrimitiveLongSet set = (PrimitiveLongSet) obj;
+            PrimitiveIntSet set = (PrimitiveIntSet) obj;
             if ( set.size() != this.size() )
             {
                 return false;
@@ -115,7 +114,7 @@ public abstract class PrimitiveIntSetImpl implements PrimitiveIntSet, IntPredica
             IntCursor cursor = cursor();
             while ( cursor.moveNext() )
             {
-                long value = cursor.elem();
+                int value = cursor.elem();
                 if ( !set.contains( value ) )
                 {
                     return false;
@@ -127,7 +126,7 @@ public abstract class PrimitiveIntSetImpl implements PrimitiveIntSet, IntPredica
     }
 
     @Override
-    public int hashCode()
+    public final int hashCode()
     {
         int hash = 1337;
         IntCursor cursor = cursor();

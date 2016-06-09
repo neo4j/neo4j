@@ -23,10 +23,13 @@ import com.koloboke.collect.map.LongIntCursor;
 import com.koloboke.compile.ConcurrentModificationUnchecked;
 import com.koloboke.compile.KolobokeMap;
 
+import java.util.Objects;
+
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
 import org.neo4j.collection.primitive.PrimitiveLongIntVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
+import org.neo4j.collection.primitive.base.Hashing;
 
 @SuppressWarnings( "ALL" )
 @KolobokeMap
@@ -41,21 +44,21 @@ public abstract class PrimitiveLongIntMapImpl implements PrimitiveLongIntMap
     public abstract LongIntCursor cursor();
 
     @Override
-    public <E extends Exception> void visitEntries( PrimitiveLongIntVisitor<E> visitor ) throws E
+    public final <E extends Exception> void visitEntries( PrimitiveLongIntVisitor<E> visitor ) throws E
     {
         LongIntCursor cursor = cursor();
         while ( cursor.moveNext() && !visitor.visited( cursor.key(), cursor.value() ) );
     }
 
     @Override
-    public <E extends Exception> void visitKeys( PrimitiveLongVisitor<E> visitor ) throws E
+    public final <E extends Exception> void visitKeys( PrimitiveLongVisitor<E> visitor ) throws E
     {
         LongIntCursor cursor = cursor();
         while ( cursor.moveNext() && !visitor.visited( cursor.key() ) );
     }
 
     @Override
-    public PrimitiveLongIterator iterator()
+    public final PrimitiveLongIterator iterator()
     {
         final LongIntCursor cursor = cursor();
         return new PrimitiveLongIterator()
@@ -75,12 +78,49 @@ public abstract class PrimitiveLongIntMapImpl implements PrimitiveLongIntMap
     }
 
     @Override
-    public void close()
+    public final void close()
     {
     }
 
-    public int defaultValue()
+    public final int defaultValue()
     {
         return -1;
+    }
+
+    @Override
+    public final boolean equals( Object obj )
+    {
+        if ( obj instanceof PrimitiveLongIntMap )
+        {
+            PrimitiveLongIntMap map = (PrimitiveLongIntMap) obj;
+            if ( map.size() != size() )
+            {
+                return false;
+            }
+            LongIntCursor cursor = cursor();
+            while ( cursor.moveNext() )
+            {
+                Object value = map.get( cursor.key() );
+                if ( !Objects.equals( value, cursor.value() ) )
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public final int hashCode()
+    {
+        int hash = 1337;
+        LongIntCursor cursor = cursor();
+        while ( cursor.moveNext() )
+        {
+            hash += Hashing.xorShift( cursor.key() );
+            hash += Objects.hashCode( cursor.value() );
+        }
+        return hash;
     }
 }
