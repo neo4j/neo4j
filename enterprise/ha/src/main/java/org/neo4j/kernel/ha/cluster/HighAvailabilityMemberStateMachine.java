@@ -20,6 +20,7 @@
 package org.neo4j.kernel.ha.cluster;
 
 import java.net.URI;
+import java.util.Collection;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberEvents;
@@ -59,7 +60,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     private final ClusterMemberEvents events;
     private Log log;
 
-    private Iterable<HighAvailabilityMemberListener> memberListeners = Listeners.newListeners();
+    private Collection<HighAvailabilityMemberListener> memberListeners = Listeners.newListeners();
     private volatile HighAvailabilityMemberState state;
     private StateMachineClusterEventListener eventsListener;
     private final ObservedClusterMembers members;

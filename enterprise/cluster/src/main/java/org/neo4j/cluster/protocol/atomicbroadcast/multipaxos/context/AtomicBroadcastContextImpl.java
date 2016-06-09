@@ -19,6 +19,7 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
+import java.util.Collection;
 import java.util.concurrent.Executor;
 
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
@@ -41,7 +42,7 @@ class AtomicBroadcastContextImpl
     extends AbstractContextImpl
     implements AtomicBroadcastContext
 {
-    private Iterable<AtomicBroadcastListener> listeners = Listeners.newListeners();
+    private Collection<AtomicBroadcastListener> listeners = Listeners.newListeners();
     private final Executor executor;
     private final HeartbeatContext heartbeatContext;
 

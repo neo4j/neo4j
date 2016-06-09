@@ -21,6 +21,7 @@ package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -55,7 +56,7 @@ class ClusterContextImpl
         implements ClusterContext
 {
     // ClusterContext
-    private Iterable<ClusterListener> clusterListeners = Listeners.newListeners();
+    private Collection<ClusterListener> clusterListeners = Listeners.newListeners();
     private final List<ClusterMessage.ConfigurationRequestState> discoveredInstances = new ArrayList<ClusterMessage
             .ConfigurationRequestState>();
     private Iterable<URI> joiningInstances;

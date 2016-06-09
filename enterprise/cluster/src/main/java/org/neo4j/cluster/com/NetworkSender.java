@@ -44,6 +44,7 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.ClosedChannelException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -113,7 +114,7 @@ public class NetworkSender
     private URI me;
 
     private final Map<URI, Channel> connections = new ConcurrentHashMap<URI, Channel>();
-    private Iterable<NetworkChannelsListener> listeners = Listeners.newListeners();
+    private Collection<NetworkChannelsListener> listeners = Listeners.newListeners();
 
     private volatile boolean paused;
 

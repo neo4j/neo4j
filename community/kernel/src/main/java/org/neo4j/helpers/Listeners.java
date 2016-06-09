@@ -31,68 +31,56 @@ public class Listeners
 {
     public interface Notification<T>
     {
-        void notify(T listener);
+        void notify( T listener );
     }
 
-    public static <T> Iterable<T> newListeners()
+    public static <T> Collection<T> newListeners()
     {
-        return new LinkedList<T>();
+        return new LinkedList<>();
     }
 
-    public static <T> Iterable<T> addListener(T listener, Iterable<T> listeners)
+    public static <T> Collection<T> addListener( T listener, Collection<T> listeners )
     {
-        List<T> newListeners = new LinkedList<T>( (Collection<T>) listeners );
+        List<T> newListeners = new LinkedList<>( listeners );
         newListeners.add( listener );
         return newListeners;
     }
 
-    public static <T> Iterable<T> removeListener(T listener, Iterable<T> listeners)
+    public static <T> Collection<T> removeListener( T listener, Collection<T> listeners )
     {
-        List<T> newListeners = new LinkedList<T>( (Collection<T>) listeners );
+        List<T> newListeners = new LinkedList<>( listeners );
         newListeners.remove( listener );
         return newListeners;
     }
 
-    public static <T> void notifyListeners(Iterable<T> listeners, Notification<T> notification)
+    public static <T> void notifyListeners( Collection<T> listeners, Notification<T> notification )
     {
-        for( T listener : listeners )
+        for ( T listener : listeners )
         {
-            synchronized( listener )
-            {
-                try
-                {
-                    notification.notify( listener );
-                }
-                catch( Throwable e )
-                {
-                    e.printStackTrace();
-                }
-            }
+            notifySingleListener( notification, listener );
         }
     }
 
-    public static <T> void notifyListeners(Iterable<T> listeners, Executor executor, final Notification<T> notification)
+    public static <T> void notifyListeners( Collection<T> listeners, Executor executor, Notification<T> notification )
     {
-        for( final T listener : listeners )
+        for ( final T listener : listeners )
         {
-            executor.execute( new Runnable()
+            executor.execute( () -> notifySingleListener( notification, listener ) );
+        }
+    }
+
+    private static <T> void notifySingleListener( Notification<T> notification, T listener )
+    {
+        synchronized ( listener )
+        {
+            try
             {
-                @Override
-                public void run()
-                {
-                    synchronized( listener )
-                    {
-                        try
-                        {
-                            notification.notify( listener );
-                        }
-                        catch( Throwable e )
-                        {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-            });
+                notification.notify( listener );
+            }
+            catch ( Throwable e )
+            {
+                throw new RuntimeException( e );
+            }
         }
     }
 }

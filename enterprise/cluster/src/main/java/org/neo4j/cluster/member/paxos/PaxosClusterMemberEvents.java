@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -68,7 +69,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
     private AtomicBroadcast atomicBroadcast;
     private Log log;
     protected AtomicBroadcastSerializer serializer;
-    protected Iterable<ClusterMemberListener> listeners = Listeners.newListeners();
+    protected Collection<ClusterMemberListener> listeners = Listeners.newListeners();
     private ClusterMembersSnapshot clusterMembersSnapshot;
     private ClusterListener.Adapter clusterListener;
     private Snapshot snapshot;
