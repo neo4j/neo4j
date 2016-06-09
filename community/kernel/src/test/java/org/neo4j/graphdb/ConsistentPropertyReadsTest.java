@@ -22,6 +22,7 @@ package org.neo4j.graphdb;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -48,9 +49,9 @@ public class ConsistentPropertyReadsTest
         final Node[] nodes = new Node[10];
         final String[] keys = new String[] {"1", "2", "3"};
         final String[] values = new String[] {
-                "dsjlfhsdljhsjlghsljfghjlsfhg jlfh jldfgh djlfghdljfgh dljfghdfljgh dlfjg hdfljg hdfljg hdflghdfjgl hdfljg hdfjlg hdfglj hdfgjl dhfglj dhfgjl dfhglsdjfköasjkdlöadksflösf akljdhfwjl htlj3ht jl3rht jl3ht j3lht 3jt h3ltj h34tl j3ht j3t h3jtl h34jtl 3h4tl 3j4ht l34jt h3ljg",
-                "jdlhflahsjlw4hjltwrhtjl4hljterhglwrhyjl5hgwjlrgh rljeghlj rhyljthlj5 4yhj tlrwhtlj rhylj hrjtl h53jl6ht 35qjlhjl4 htjl rh jtl35 hyjl43 hyjl35hjylhwjelth tq3jlth qjlrwhetj lq3rht lqrjwhqlj rhyjl q3htjlhr tjlwhrg jlwrhy jlrht jlgwhjly h3rjl t h",
-                "kfgjlyh3jlghjl45h l4tg hj45l h46jl ghjlgh5glj  hgjl 5hgjl5hjl gh4j3 lgh46 ljh4 jl4h j4hg4lgj h4t jlgh 4t jlgh4tgjlthgje tlhjfldhb8ther8g0u8f0vrehi5köehvjlfhgutwohy ireghlwgh lrej htlweghwrufh wrutl h35ut lhrgvj rhyl5hy jlwhglwrhfu5oy h53tlj h4wlt h5eut herul"
+                longString( 'a' ),
+                longString( 'b' ),
+                longString( 'c' ),
         };
         try ( Transaction tx = db.beginTx() )
         {
@@ -81,10 +82,16 @@ public class ConsistentPropertyReadsTest
                         ThreadLocalRandom random = ThreadLocalRandom.current();
                         for ( int j = 0; j < 100; j++ )
                         {
+                            Node node = nodes[random.nextInt( nodes.length )];
+                            String key = keys[random.nextInt( keys.length )];
                             try ( Transaction tx = db.beginTx() )
                             {
-                                nodes[random.nextInt( nodes.length )].setProperty( keys[random.nextInt( keys.length )],
-                                        values[random.nextInt( values.length )] );
+                                node.removeProperty( key );
+                                tx.success();
+                            }
+                            try ( Transaction tx = db.beginTx() )
+                            {
+                                node.setProperty( key, values[random.nextInt( values.length )] );
                                 tx.success();
                             }
                         }
@@ -96,7 +103,7 @@ public class ConsistentPropertyReadsTest
                 }
             } );
         }
-        for ( int i = 0; i < 10; i++ )
+        for ( int i = 0; i < 100; i++ )
         {
             // Readers
             race.addContestant( new Runnable()
@@ -110,8 +117,8 @@ public class ConsistentPropertyReadsTest
                         try ( Transaction tx = db.beginTx() )
                         {
                             String value = (String) nodes[random.nextInt( nodes.length )]
-                                    .getProperty( keys[random.nextInt( keys.length )] );
-                            assertTrue( value, ArrayUtil.contains( values, value ) );
+                                    .getProperty( keys[random.nextInt( keys.length )], null );
+                            assertTrue( value, value == null || ArrayUtil.contains( values, value ) );
                             tx.success();
                         }
                     }
@@ -121,5 +128,12 @@ public class ConsistentPropertyReadsTest
 
         // WHEN
         race.go();
+    }
+
+    private String longString( char c )
+    {
+        char[] chars = new char[ThreadLocalRandom.current().nextInt( 800, 1000 )];
+        Arrays.fill( chars, c );
+        return new String( chars );
     }
 }

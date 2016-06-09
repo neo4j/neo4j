@@ -52,7 +52,7 @@ public class StoreStatement
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
 
-    public StoreStatement( final NeoStores neoStores )
+    public StoreStatement( final NeoStores neoStores, final LockService lockService )
     {
         this.neoStores = neoStores;
         this.nodeStore = neoStores.getNodeStore();
@@ -63,7 +63,8 @@ public class StoreStatement
             @Override
             protected StoreSingleNodeCursor create()
             {
-                return new StoreSingleNodeCursor( new NodeRecord( -1 ), neoStores, StoreStatement.this, this );
+                return new StoreSingleNodeCursor( new NodeRecord( -1 ), neoStores, StoreStatement.this, this,
+                        lockService );
             }
         };
         iteratorNodeCursor = new InstanceCache<StoreIteratorNodeCursor>()
@@ -71,7 +72,8 @@ public class StoreStatement
             @Override
             protected StoreIteratorNodeCursor create()
             {
-                return new StoreIteratorNodeCursor( new NodeRecord( -1 ), neoStores, StoreStatement.this, this );
+                return new StoreIteratorNodeCursor( new NodeRecord( -1 ), neoStores, StoreStatement.this, this,
+                        lockService );
             }
         };
         singleRelationshipCursor = new InstanceCache<StoreSingleRelationshipCursor>()
@@ -80,7 +82,7 @@ public class StoreStatement
             protected StoreSingleRelationshipCursor create()
             {
                 return new StoreSingleRelationshipCursor( new RelationshipRecord( -1 ),
-                        neoStores, StoreStatement.this, this );
+                        neoStores, StoreStatement.this, this, lockService );
             }
         };
         iteratorRelationshipCursor = new InstanceCache<StoreIteratorRelationshipCursor>()
@@ -89,7 +91,7 @@ public class StoreStatement
             protected StoreIteratorRelationshipCursor create()
             {
                 return new StoreIteratorRelationshipCursor( new RelationshipRecord( -1 ),
-                        neoStores, StoreStatement.this, this );
+                        neoStores, StoreStatement.this, this, lockService );
             }
         };
     }

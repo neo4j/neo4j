@@ -184,6 +184,7 @@ import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.helpers.collection.Iterables.toList;
+import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
 public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexProviders
@@ -529,7 +530,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                     dependencies.satisfyDependency( new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup ) );
 
             BufferingIdGeneratorFactory bufferingIdGeneratorFactory = null;
-            boolean safeIdBuffering = FeatureToggles.flag( getClass(), "safeIdBuffering", true );
+            boolean safeIdBuffering = FeatureToggles.flag( getClass(), "safeIdBuffering", false );
             if ( safeIdBuffering )
             {
                 // This buffering id generator factory will have properly buffering id generators injected into
@@ -846,12 +847,14 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
 
     private Factory<StoreStatement> storeStatementFactory( final NeoStores neoStores )
     {
+        final LockService lockService = FeatureToggles.flag( getClass(), "propertyReadLocks", true ) ?
+                this.lockService : NO_LOCK_SERVICE;
         return new Factory<StoreStatement>()
         {
             @Override
             public StoreStatement newInstance()
             {
-                return new StoreStatement( neoStores );
+                return new StoreStatement( neoStores, lockService );
             }
         };
     }
