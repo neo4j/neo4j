@@ -45,4 +45,6 @@ public interface RoleManager
     void removeUserFromRole( String username, String roleName ) throws IOException;
 
     Set<String> getAllRoleNames();
+
+    Set<String> getRoleNamesForUser( String username );
 }

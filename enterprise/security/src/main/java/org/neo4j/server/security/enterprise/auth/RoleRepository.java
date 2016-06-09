@@ -32,7 +32,7 @@ public interface RoleRepository extends Lifecycle
 {
     RoleRecord findByName( String name );
 
-    Set<String> findByUsername( String username );
+    Set<String> findRoleNamesByUsername( String username );
 
     /**
      * Create a role, given that the roles token is unique.

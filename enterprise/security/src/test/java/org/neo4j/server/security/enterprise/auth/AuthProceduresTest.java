@@ -757,6 +757,76 @@ public class AuthProceduresTest
         testSuccessfulListRolesAction( subject );
     }
 
+    @Test
+    public void shouldListRolesForUser() throws Exception
+    {
+        testResult( db, adminSubject, "CALL dbms.listRolesForUser('adminSubject') YIELD value as roles RETURN roles",
+                r -> {
+                    List<Object> roles = getObjectsAsList( r, "roles" );
+                    Assert.assertThat( roles, containsInAnyOrder( PredefinedRolesBuilder.ADMIN ) );
+                    assertEquals( 1, roles.size() );
+                } );
+    }
+
+    @Test
+    public void shouldNotAllowNonAdminListUserRoles() throws Exception
+    {
+        testFailListUserRoles( noneSubject, "adminSubject" );
+        testFailListUserRoles( readSubject, "adminSubject" );
+        testFailListUserRoles( writeSubject, "adminSubject" );
+        testFailListUserRoles( schemaSubject, "adminSubject" );
+    }
+
+    @Test
+    public void shouldFailToListRolesForUnknownUser() throws Exception
+    {
+        try
+        {
+            testResult( db, adminSubject, "CALL dbms.listRolesForUser('Henrik') YIELD value as roles RETURN roles",
+                    r -> assertFalse( r.hasNext() ) );
+            fail( "Expected exception to be thrown" );
+        }
+        catch ( QueryExecutionException e )
+        {
+            assertTrue( "Exception should contain 'User Henrik does not exist.' but was " + e.getMessage(),
+                    e.getMessage().contains( "User Henrik does not exist." ) );
+        }
+    }
+
+    @Test
+    public void shouldListNoRolesForUserWithNoRoles() throws Exception
+    {
+        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)", null );
+        testResult( db, adminSubject, "CALL dbms.listRolesForUser('Henrik') YIELD value as roles RETURN roles",
+                r -> assertFalse( r.hasNext() ) );
+    }
+
+    /*
+    Admin creates user Henrik with password bar
+    Admin creates user Craig with password foo
+    Admin adds user Craig to role Publisher
+    Henrik logs in with correct password → ok
+    Henrik lists all roles for user Craig → permission denied
+    Admin lists all roles for user Craig → ok
+    */
+    @Test
+    public void listingUserRoles() throws Exception
+    {
+        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)", null );
+        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Craig', 'foo', false)", null );
+        testCallEmpty( db, adminSubject, "CALL dbms.addUserToRole('Craig', '" + PredefinedRolesBuilder.PUBLISHER + "')",
+                null );
+        AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
+        assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
+        testFailListUserRoles( subject, "Craig" );
+        testResult( db, adminSubject, "CALL dbms.listRolesForUser('Craig') YIELD value as roles RETURN roles",
+                r -> {
+                    List<Object> roles = getObjectsAsList( r, "roles" );
+                    Assert.assertThat( roles, containsInAnyOrder( PredefinedRolesBuilder.PUBLISHER ) );
+                    assertEquals( 1, roles.size() );
+                } );
+    }
+
     //-------------Helper functions---------------
 
     private void testSuccessfulReadAction( AuthSubject subject, Long count )
@@ -907,6 +977,25 @@ public class AuthProceduresTest
         try
         {
             testSuccessfulListRolesAction( subject );
+        }
+        catch ( QueryExecutionException e )
+        {
+            assertTrue( "Exception should contain '" + AuthProcedures.PERMISSION_DENIED + "'",
+                    e.getMessage().contains( AuthProcedures.PERMISSION_DENIED ) );
+        }
+    }
+
+    private void testSuccessfulListUserRolesAction( AuthSubject subject, String username )
+    {
+        testCall( db, subject,
+                "CALL dbms.listRolesForUser('" + username + "') YIELD value AS roles RETURN count(roles)", Map::clear );
+    }
+
+    private void testFailListUserRoles( AuthSubject subject, String username )
+    {
+        try
+        {
+            testSuccessfulListUserRolesAction( subject, username );
         }
         catch ( QueryExecutionException e )
         {

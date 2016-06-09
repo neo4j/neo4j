@@ -21,6 +21,7 @@ package org.neo4j.server.security.enterprise.auth;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -50,9 +51,10 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     }
 
     @Override
-    public Set<String> findByUsername( String username )
+    public Set<String> findRoleNamesByUsername( String username )
     {
-        return rolesByUsername.get( username );
+        Set<String> roleNames = rolesByUsername.get( username );
+        return roleNames != null ? roleNames : Collections.emptySet();
     }
 
     @Override

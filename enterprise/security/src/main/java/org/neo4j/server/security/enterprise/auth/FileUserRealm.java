@@ -125,7 +125,7 @@ public class FileUserRealm extends AuthorizingRealm
         }
         else
         {
-            Set<String> roles = roleRepository.findByUsername( user.name() );
+            Set<String> roles = roleRepository.findRoleNamesByUsername( user.name() );
             return new SimpleAuthorizationInfo( roles );
         }
     }
