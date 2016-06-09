@@ -63,16 +63,11 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
       val newMap = MutableMaps.create(mapSize)
 
       //add key values
-      keyNamesSize match {
-        case 1 => newMap += keyNames.head -> key.asInstanceOf[Equivalent].originalValue
-        case 2 =>
-          val t2 = key.asInstanceOf[(Equivalent, Equivalent)]
-          newMap += keyNames.head -> t2._1 += keyNames.last -> t2._2
-        case 3 =>
-          val t3 = key.asInstanceOf[(Equivalent, Equivalent, Equivalent)]
-          newMap += keyNames.head -> t3._1 += keyNames.tail.head -> t3._2 += keyNames.last -> t3._3
-        case _ =>
-          (keyNames zip key.asInstanceOf[List[Equivalent]].map(_.originalValue)).foreach(newMap += _)
+      key match {
+        case e:Equivalent =>                                 newMap += keyNames.head -> e.originalValue
+        case (e1:Equivalent,e2:Equivalent) =>                newMap += keyNames.head -> e1.originalValue += keyNames.tail.head -> e2.originalValue
+        case (e1:Equivalent,e2:Equivalent,e3:Equivalent) =>  newMap += keyNames.head -> e1.originalValue += keyNames.tail.head -> e2.originalValue += keyNames.tail.tail.head -> e3.originalValue
+        case s:List[Equivalent] =>                           (keyNames zip s.map(_.originalValue)).foreach(newMap += _)
       }
 
       //add aggregated values
