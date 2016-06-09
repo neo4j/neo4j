@@ -44,7 +44,7 @@ public class StoreStatementTest
 
         when( scanStore.get() ).thenReturn( scanReader );
         StoreStatement statement = new StoreStatement( MockedNeoStores.basicMockedNeoStores(), mock( Supplier.class ),
-                scanStore );
+                scanStore, LockService.NO_LOCK_SERVICE );
         statement.acquire();
 
         // when

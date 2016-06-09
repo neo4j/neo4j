@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.store;
 import java.util.function.Consumer;
 
 import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -40,9 +41,10 @@ public class StoreSingleNodeCursor extends StoreAbstractNodeCursor
             NeoStores neoStores,
             StoreStatement storeStatement,
             Consumer<StoreSingleNodeCursor> instanceCache,
-            RecordCursors cursors )
+            RecordCursors cursors,
+            LockService lockService )
     {
-        super( nodeRecord, neoStores, storeStatement, cursors );
+        super( nodeRecord, neoStores, storeStatement, cursors, lockService );
         this.instanceCache = instanceCache;
     }
 

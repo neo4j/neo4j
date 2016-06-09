@@ -39,6 +39,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.store.StorePropertyCursor;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -540,7 +541,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         final StorePropertyCursor cursor = new StorePropertyCursor( cursors, ignored -> {} );
         final List<Object> scratch = new ArrayList<>();
         return (ENTITY entity, RECORD record) -> {
-            cursor.init( record.getNextProp() );
+            cursor.init( record.getNextProp(), LockService.NO_LOCK );
             scratch.clear();
             while ( cursor.next() )
             {
