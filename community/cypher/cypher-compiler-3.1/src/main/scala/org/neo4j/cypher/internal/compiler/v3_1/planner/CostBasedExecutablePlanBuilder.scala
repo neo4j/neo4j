@@ -124,9 +124,7 @@ object CostBasedExecutablePlanBuilder {
     val state = semanticChecker.check(namespacedStatement.toString, namespacedStatement, mkException = (msg, pos) => throw new InternalException(s"Unexpected error during late semantic checking: $msg at $pos"))
     val table = semanticTable.copy(types = state.typeTable, recordedScopes = state.recordedScopes)
 
-    val predicateSplitter = PredicateSplitter(table, namespacedStatement)
     val newStatement = statementRewriter.rewriteStatement(namespacedStatement)(
-      ApplyRewriter("PredicateSplitter", predicateSplitter.statementRewriter),
       collapseInCollections,
       nameUpdatingClauses /* this is actually needed as a precondition for projectedNamedPaths even though we do not handle updates in Ronja */,
       projectNamedPaths,

@@ -57,6 +57,8 @@ class SemanticTable(
     case _ => false
   }
 
+  def seen(expression: Expression) = types.contains(expression)
+
   def isNode(expr: String) = getTypeFor(expr) == symbols.CTNode.invariant
 
   def isRelationship(expr: String) = getTypeFor(expr) == symbols.CTRelationship.invariant

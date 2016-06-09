@@ -53,6 +53,8 @@ class FunctionsTest extends DocumentingTestBase {
   )
 
   @Test def all() {
+
+
     testThis(
       title = "all()",
       syntax = "all(variable IN list WHERE predicate)",

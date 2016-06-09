@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v3_1.planner.BeLikeMatcher._
 
 class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -201,6 +202,26 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     )
   }
 
+  test("should plan all predicates along with named varlength pattern") {
+    planFor("MATCH p=(a)-[r*]->(b) WHERE all(n in nodes(p) WHERE n.prop = 1337) RETURN p").plan should beLike {
+      case Projection(
+              VarExpand(_, _, _, _, _,_, _, _, _,
+                     Seq((Variable("n"),
+                     In(Property(Variable("n"), PropertyKeyName("prop") ),Collection(List(SignedDecimalIntegerLiteral("1337"))))))), _) => ()
+
+    }
+  }
+
+  test("should plan none predicates along with named varlength pattern") {
+    planFor("MATCH p=(a)-[r*]->(b) WHERE none(n in nodes(p) WHERE n.prop = 1337) RETURN p").plan should beLike {
+      case Projection(
+      VarExpand(_, _, _, _, _,_, _, _, _,
+                Seq((Variable("n"),
+                Not(In(Property(Variable("n"), PropertyKeyName("prop") ),Collection(List(SignedDecimalIntegerLiteral("1337")))))))), _) => ()
+
+    }
+  }
+
   private def containsArgumentOnly(queryGraph: QueryGraph): Boolean =
-    queryGraph.argumentIds.nonEmpty && queryGraph.patternNodes.size == 0 && queryGraph.patternRelationships.isEmpty
+    queryGraph.argumentIds.nonEmpty && queryGraph.patternNodes.isEmpty && queryGraph.patternRelationships.isEmpty
 }
