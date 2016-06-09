@@ -79,14 +79,14 @@ public class UpdatePullingTransactionObligationFulfillerTest
 
         doAnswer( invocation -> {
             ((HighAvailabilityMemberListener) invocation.getArguments()[0]).slaveIsAvailable(
-                    new HighAvailabilityMemberChangeEvent( null, null, serverId, null )
+                    new HighAvailabilityMemberChangeEvent( null, null, serverId, null, true )
             );
             return null;
         } ).when( machine ).addHighAvailabilityMemberListener( any( HighAvailabilityMemberListener.class ) );
 
         doAnswer( invocation -> {
             ((HighAvailabilityMemberListener) invocation.getArguments()[0]).instanceStops(
-                    new HighAvailabilityMemberChangeEvent( null, null, serverId, null )
+                    new HighAvailabilityMemberChangeEvent( null, null, serverId, null, true )
             );
             return null;
         } ).when( machine ).removeHighAvailabilityMemberListener( any( HighAvailabilityMemberListener.class ) );
