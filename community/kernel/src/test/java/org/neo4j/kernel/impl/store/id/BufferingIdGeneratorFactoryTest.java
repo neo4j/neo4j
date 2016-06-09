@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.io.File;
 import org.neo4j.function.Supplier;
+import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
@@ -44,7 +45,8 @@ public class BufferingIdGeneratorFactoryTest
     {
         // GIVEN
         MockedIdGeneratorFactory actual = new MockedIdGeneratorFactory();
-        BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual );
+        BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual,
+                Clock.SYSTEM_CLOCK );
         ControllableSnapshotSupplier boundaries = new ControllableSnapshotSupplier();
         IdGenerator idGenerator = bufferingIdGeneratorFactory.open(
                 new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, 0 );

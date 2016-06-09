@@ -68,6 +68,15 @@ public class TransactionQueue
         queueIndex = 0;
     }
 
+    public CommittedTransactionRepresentation last()
+    {
+        if ( queueIndex == 0 )
+        {
+            throw new IllegalStateException( "Nothing in queue" );
+        }
+        return queue[queueIndex - 1].transaction;
+    }
+
     private static class Transaction implements Access<Commitment>
     {
         private CommittedTransactionRepresentation transaction;

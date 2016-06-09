@@ -25,12 +25,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.test.Race;
 
+import static java.lang.Math.max;
+import static java.lang.Runtime.getRuntime;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
-import static java.lang.Math.max;
-import static java.lang.Runtime.getRuntime;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 public class HighestTransactionIdTest
 {
@@ -41,10 +41,10 @@ public class HighestTransactionIdTest
         HighestTransactionId highest = new HighestTransactionId( 10, 10 );
 
         // WHEN
-        highest.set( 8, 1299128 );
+        highest.set( 8, 1299128, BASE_TX_COMMIT_TIMESTAMP );
 
         // THEN
-        assertEquals( new TransactionId( 8, 1299128 ), highest.get() );
+        assertEquals( new TransactionId( 8, 1299128, BASE_TX_COMMIT_TIMESTAMP ), highest.get() );
     }
 
     @Test
@@ -77,7 +77,7 @@ public class HighestTransactionIdTest
                 @Override
                 public void run()
                 {
-                    if ( highest.offer( id, id ) )
+                    if ( highest.offer( id, id, BASE_TX_COMMIT_TIMESTAMP ) )
                     {
                         accepted.incrementAndGet();
                     }
@@ -96,14 +96,14 @@ public class HighestTransactionIdTest
     private void assertAccepted( HighestTransactionId highest, long txId, long checksum )
     {
         TransactionId current = highest.get();
-        assertTrue( highest.offer( txId, checksum ) );
+        assertTrue( highest.offer( txId, checksum, BASE_TX_COMMIT_TIMESTAMP ) );
         assertTrue( txId > current.transactionId() );
     }
 
     private void assertRejected( HighestTransactionId highest, long txId, long checksum )
     {
         TransactionId current = highest.get();
-        assertFalse( highest.offer( txId, checksum ) );
+        assertFalse( highest.offer( txId, checksum, BASE_TX_COMMIT_TIMESTAMP ) );
         assertEquals( current, highest.get() );
     }
 }

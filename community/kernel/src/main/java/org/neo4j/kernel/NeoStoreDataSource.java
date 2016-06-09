@@ -189,6 +189,9 @@ import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFact
 
 public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexProviders
 {
+
+    private BufferingIdGeneratorFactory bufferingIdGeneratorFactory;
+
     private interface NeoStoreModule
     {
         NeoStores neoStores();
@@ -529,14 +532,14 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             LegacyIndexApplierLookup legacyIndexApplierLookup =
                     dependencies.satisfyDependency( new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup ) );
 
-            BufferingIdGeneratorFactory bufferingIdGeneratorFactory = null;
+            bufferingIdGeneratorFactory = null;
             boolean safeIdBuffering = FeatureToggles.flag( getClass(), "safeIdBuffering", false );
             if ( safeIdBuffering )
             {
                 // This buffering id generator factory will have properly buffering id generators injected into
                 // the stores. The buffering depends on knowledge about active transactions,
                 // so we'll initialize it below when all those components have been instantiated.
-                bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( idGeneratorFactory );
+                bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( idGeneratorFactory, Clock.SYSTEM_CLOCK );
                 storeFactory.setIdGeneratorFactory( bufferingIdGeneratorFactory );
             }
 
@@ -1418,6 +1421,14 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         // Get rid of all pooled transactions, as they will otherwise reference
         // components that have been swapped out during the mode switch.
         kernelModule.kernelTransactions().disposeAll();
+    }
+
+    public void maintenance()
+    {
+        if ( bufferingIdGeneratorFactory != null )
+        {
+            bufferingIdGeneratorFactory.maintenance();
+        }
     }
 
     @SuppressWarnings( "deprecation" )

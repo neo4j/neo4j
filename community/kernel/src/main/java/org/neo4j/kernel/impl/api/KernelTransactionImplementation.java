@@ -172,6 +172,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     // Some header information
     private long startTimeMillis;
     private long lastTransactionIdWhenStarted;
+    private long lastTransactionTimestampWhenStarted;
+
     /**
      * Implements reusing the same underlying {@link KernelStatement} for overlapping statements.
      */
@@ -233,7 +235,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     /**
      * Reset this transaction to a vanilla state, turning it into a logically new transaction.
      */
-    public KernelTransactionImplementation initialize( long lastCommittedTx )
+    public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp )
     {
         this.locks = locksManager.newClient();
         this.closing = closed = failure = success = terminated = false;
@@ -242,6 +244,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.recordState.initialize( lastCommittedTx );
         this.startTimeMillis = clock.currentTimeMillis();
         this.lastTransactionIdWhenStarted = lastCommittedTx;
+        this.lastTransactionTimestampWhenStarted = lastTimeStamp;
         this.transactionEvent = tracer.beginTransaction();
         assert transactionEvent != null : "transactionEvent was null!";
         this.storeStatement = storeLayer.acquireStatement();
@@ -695,6 +698,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             reuseCount++;
         }
+    }
+
+    public long lastTransactionTimestampWhenStarted()
+    {
+        return lastTransactionTimestampWhenStarted;
     }
 
     private class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter

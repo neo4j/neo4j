@@ -148,7 +148,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         setUpgradeTransaction( BASE_TX_ID, BASE_TX_CHECKSUM );
         setCurrentLogVersion( 0 );
         setLastCommittedAndClosedTransactionId(
-                BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
+                BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, BASE_TX_LOG_BYTE_OFFSET, BASE_TX_LOG_VERSION );
         setStoreVersion( MetaDataStore.versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
         setGraphNextProp( -1 );
         setLatestConstraintIntroducingTx( 0 );
@@ -464,7 +464,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
             lastClosedTx.set( lastCommittedTxId,
                     new long[]{lastClosedTransactionLogVersion, lastClosedTransactionLogByteOffset} );
             highestCommittedTransaction.set( lastCommittedTxId,
-                    getRecordValue( cursor, Position.LAST_TRANSACTION_CHECKSUM ) );
+                    getRecordValue( cursor, Position.LAST_TRANSACTION_CHECKSUM ), BASE_TX_COMMIT_TIMESTAMP );
             upgradeTxChecksumField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_CHECKSUM );
         }
         while ( cursor.shouldRetry() );
@@ -630,11 +630,11 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
     }
 
     @Override
-    public void transactionCommitted( long transactionId, long checksum )
+    public void transactionCommitted( long transactionId, long checksum, long commitTimestamp )
     {
         assertNotClosed();
         checkInitialized( lastCommittingTxField.get() );
-        if ( highestCommittedTransaction.offer( transactionId, checksum ) )
+        if ( highestCommittedTransaction.offer( transactionId, checksum, commitTimestamp ) )
         {
             // We need to synchronize here in order to guarantee that the two field are written consistently
             // together. Note that having the exclusive lock on tha page is not enough for 2 reasons:
@@ -675,7 +675,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
     {
         assertNotClosed();
         checkInitialized( upgradeTxChecksumField );
-        return new TransactionId( upgradeTxIdField, upgradeTxChecksumField );
+        return new TransactionId( upgradeTxIdField, upgradeTxChecksumField, BASE_TX_COMMIT_TIMESTAMP );
     }
 
     @Override
@@ -709,7 +709,8 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
 
     // only for initialization
     @Override
-    public void setLastCommittedAndClosedTransactionId( long transactionId, long checksum, long logVersion, long byteOffset )
+    public void setLastCommittedAndClosedTransactionId( long transactionId, long checksum,
+            long commitTimestamp, long byteOffset, long logVersion )
     {
         assertNotClosed();
         setRecord( Position.LAST_TRANSACTION_ID, transactionId );
@@ -721,7 +722,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         lastClosedTx.set( transactionId, new long[]{logVersion, byteOffset} );
         lastClosedTransactionLogVersion = logVersion;
         lastClosedTransactionLogByteOffset = byteOffset;
-        highestCommittedTransaction.set( transactionId, checksum );
+        highestCommittedTransaction.set( transactionId, checksum, commitTimestamp );
     }
 
     @Override

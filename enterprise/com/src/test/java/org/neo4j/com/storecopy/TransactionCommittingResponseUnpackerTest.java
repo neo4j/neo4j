@@ -40,6 +40,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.KernelEventHandlers;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.api.BatchingTransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
@@ -92,6 +93,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_TX_HANDLER;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class TransactionCommittingResponseUnpackerTest
@@ -148,7 +150,8 @@ public class TransactionCommittingResponseUnpackerTest
         unpacker.unpackResponse( response, stoppingTxHandler );
 
         // Then
-        verify( txIdStore, times( 1 ) ).transactionCommitted( eq( committingTransactionId ), anyLong() );
+        verify( txIdStore, times( 1 ) ).transactionCommitted( eq( committingTransactionId ), anyLong(),
+                BASE_TX_COMMIT_TIMESTAMP );
         verify( txIdStore, times( 1 ) ).transactionClosed( eq( committingTransactionId ), anyLong(), anyLong() );
         verify( appender, times( 1 ) ).append( any( TransactionRepresentation.class ), anyLong() );
         verify( appender, times( 1 ) ).force();
@@ -453,7 +456,8 @@ public class TransactionCommittingResponseUnpackerTest
         catch ( Exception e )
         {
             // THEN apart from failing we don't want any committed/closed calls to TransactionIdStore
-            verify( transactionIdStore, times( 0 ) ).transactionCommitted( anyLong(), anyLong() );
+            verify( transactionIdStore, times( 0 ) ).transactionCommitted( anyLong(), anyLong(),
+                    BASE_TX_COMMIT_TIMESTAMP );
             verify( transactionIdStore, times( 0 ) ).transactionClosed( anyLong(), anyLong(), anyLong() );
         }
     }
@@ -489,6 +493,12 @@ public class TransactionCommittingResponseUnpackerTest
             public Supplier<TransactionAppender> transactionAppender()
             {
                 return Suppliers.singleton( appender );
+            }
+
+            @Override
+            public KernelTransactions kernelTransactions()
+            {
+                return mock( KernelTransactions.class );
             }
 
             @Override

@@ -24,6 +24,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.BatchingTransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.LegacyIndexApplierLookup;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
@@ -121,6 +122,12 @@ public class DefaultUnpackerDependencies implements TransactionCommittingRespons
                 return resolver.resolveDependency( TransactionAppender.class );
             }
         };
+    }
+
+    @Override
+    public KernelTransactions kernelTransactions()
+    {
+        return resolver.resolveDependency( KernelTransactions.class );
     }
 
     @Override

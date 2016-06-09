@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
@@ -179,7 +180,9 @@ public class KernelTransactions extends LifecycleAdapter
     public KernelTransaction newInstance()
     {
         assertDatabaseIsRunning();
-        return localTxPool.acquire().initialize( neoStores.getMetaDataStore().getLastCommittedTransactionId() );
+        TransactionId lastCommittedTransaction = neoStores.getMetaDataStore().getLastCommittedTransaction();
+        return localTxPool.acquire().initialize( lastCommittedTransaction.transactionId(),
+                lastCommittedTransaction.commitTimestamp() );
     }
 
     /**
@@ -256,6 +259,6 @@ public class KernelTransactions extends LifecycleAdapter
     @Override
     public KernelTransactionsSnapshot get()
     {
-        return new KernelTransactionsSnapshot( allTransactions );
+        return new KernelTransactionsSnapshot( allTransactions, Clock.SYSTEM_CLOCK.currentTimeMillis() );
     }
 }

@@ -31,11 +31,6 @@ import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
-import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
-import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
@@ -68,6 +63,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 public class KernelTransactionImplementationTest
 {
@@ -348,7 +344,7 @@ public class KernelTransactionImplementationTest
         } ).when( recordState ).extractCommands( anyListOf( Command.class ) );
         try ( KernelTransactionImplementation transaction = newTransaction() )
         {
-            transaction.initialize( 5L );
+            transaction.initialize( 5L, BASE_TX_COMMIT_TIMESTAMP );
 
             // WHEN committing it at a later point
             clock.forward( 5, MILLISECONDS );
@@ -386,7 +382,7 @@ public class KernelTransactionImplementationTest
         transaction.markForTermination();
 
         // WHEN
-        transaction.initialize( 10L );
+        transaction.initialize( 10L, BASE_TX_COMMIT_TIMESTAMP );
         transaction.txState().nodeDoCreate( 11L );
         transaction.success();
         transaction.close();
@@ -406,7 +402,7 @@ public class KernelTransactionImplementationTest
         reset( locks );
 
         // WHEN
-        transaction.initialize( 10L );
+        transaction.initialize( 10L, BASE_TX_COMMIT_TIMESTAMP );
         transaction.close();
 
         // THEN
@@ -422,7 +418,7 @@ public class KernelTransactionImplementationTest
 
         // WHEN
         transaction.close();
-        transaction.initialize( 1 );
+        transaction.initialize( 1, BASE_TX_COMMIT_TIMESTAMP );
 
         // THEN
         assertEquals( reuseCount + 1, transaction.getReuseCount() );
@@ -460,7 +456,7 @@ public class KernelTransactionImplementationTest
                 hooks, null, headerInformationFactory, commitProcess, transactionMonitor, storeReadLayer, legacyIndexState,
                 pool, new StandardConstraintSemantics(), clock, TransactionTracer.NULL, new ProcedureCache(), mock( NeoStoreTransactionContext
                 .class ) );
-        transaction.initialize( 0 );
+        transaction.initialize( 0, BASE_TX_COMMIT_TIMESTAMP );
         return transaction;
     }
 

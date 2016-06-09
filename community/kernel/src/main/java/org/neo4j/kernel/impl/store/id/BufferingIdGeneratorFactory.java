@@ -20,7 +20,10 @@
 package org.neo4j.kernel.impl.store.id;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.function.Supplier;
+import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
@@ -32,13 +35,17 @@ import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
  */
 public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
 {
+    // TODO: How do Slave and Master agree on this, and what is a good quarantine time?
+    public static final long ID_REUSE_QUARANTINE_TIME = TimeUnit.HOURS.toMillis( 1 );
     private final BufferingIdGenerator[/*IdType#ordinal as key*/] overriddenIdGenerators =
             new BufferingIdGenerator[IdType.values().length];
+    private final Clock clock;
     private Supplier<KernelTransactionsSnapshot> boundaries;
 
-    public BufferingIdGeneratorFactory( IdGeneratorFactory delegate )
+    public BufferingIdGeneratorFactory( IdGeneratorFactory delegate, Clock clock )
     {
         super( delegate );
+        this.clock = clock;
     }
 
     public void initialize( Supplier<KernelTransactionsSnapshot> boundaries )
@@ -59,7 +66,8 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
         IdGenerator generator = super.open( filename, grabSize, idType, highId );
         if ( idType.allowAggressiveReuse() )
         {
-            BufferingIdGenerator bufferingGenerator = new BufferingIdGenerator( generator );
+            BufferingIdGenerator bufferingGenerator = new BufferingIdGenerator( generator,
+                    ID_REUSE_QUARANTINE_TIME, clock );
 
             // If shutdown was CLEAN
             // BufferingIdGeneratorFactory has lifecycle:

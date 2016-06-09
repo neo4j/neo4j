@@ -28,7 +28,10 @@ import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.function.Supplier;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.BatchingTransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
@@ -48,6 +51,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
+import static org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory.ID_REUSE_QUARANTINE_TIME;
 
 /**
  * Receives and unpacks {@link Response responses}.
@@ -78,6 +82,8 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         Supplier<TransactionObligationFulfiller> transactionObligationFulfiller();
 
         Supplier<TransactionAppender> transactionAppender();
+
+        KernelTransactions kernelTransactions();
 
         LogService logService();
     }
@@ -142,6 +148,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     private LogRotation logRotation;
     private KernelHealth kernelHealth;
     private Log log;
+    private KernelTransactions kernelTransactions;
     private volatile boolean stopped;
 
     public TransactionCommittingResponseUnpacker( Dependencies dependencies )
@@ -198,6 +205,18 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
 
     private void applyQueuedTransactions() throws IOException
     {
+        // Check timestamp on last transaction in queue
+        long newLatestAppliedTime = transactionQueue.last().getCommitEntry().getTimeWritten();
+        for ( KernelTransaction tx : kernelTransactions.activeTransactions() )
+        {
+            long commitTimestamp = ((KernelTransactionImplementation) tx).lastTransactionTimestampWhenStarted();
+            if ( commitTimestamp < newLatestAppliedTime - ID_REUSE_QUARANTINE_TIME )
+            {
+                // TODO: Make transaction terminate for correct reason. (With correct exception)
+                tx.markForTermination();
+            }
+        }
+
         // Synchronize to guard for concurrent shutdown
         synchronized ( logFile )
         {
@@ -228,7 +247,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
                         // We mark as closed below.
                         transactionQueue.accept( batchApplier );
                         // Ensure that all changes are flushed to the store, we're doing some batching of transactions
-                        // here so some shortcuts are taken in places. Although now comes the time where we must
+                        // here so some shortcuts are taken in places. Although now comes the snapshotTime where we must
                         // ensure that all pending changes are applied and flushed properly.
                         storeApplier.closeBatch();
                     }
@@ -266,6 +285,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         this.logRotation = dependencies.logRotation();
         this.kernelHealth = dependencies.kernelHealth();
         this.log = dependencies.logService().getInternalLogProvider().getLog( getClass() );
+        this.kernelTransactions = dependencies.kernelTransactions();
         this.stopped = false;
     }
 
@@ -322,6 +342,88 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         @Override
         public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
         {
+            // PROBLEM
+            // A slave can read inconsistent or corrupted data (mixed state records) because of reuse of property ids.
+            // This happens when a record that has been read gets reused and then read again or possibly reused in
+            // middle of reading a property chain or dynamic record chain.
+            // This is guarded for in single instance with the delaying of id reuse. This does not cover the Slave
+            // case because the transactions that SET, REMOVE and REUSE the record are applied in batch and thus a
+            // slave transaction can see states from all of the transactions that touches the reused record during its
+            // lifetime.
+            //
+            // PROTOTYPED SOLUTION
+            // Master and Slave agree on quarantine snapshotTime.
+            // Let T = quarantine snapshotTime (more about quarantine snapshotTime further down)
+            //
+            // -> Master promise to hold all deleted ids in quarantine before reusing them, (T duration).
+            //      He thereby creates a safe zone of transactions that among themselves are guaranteed to be free of
+            //      id reuse contamination.
+            // -> Slave promise to not let any transactions cross the safe zone boundary.
+            //      Meaning all transactions that falls out of the safe zone, as updates gets applied,
+            //      will need to be terminated, with a hint that they can simply be restarted
+            //
+            // Safe zone is a snapshotTime frame in Masters domain. All transactions that started and finished within this
+            // snapshotTime frame are guarantied to not have read any mixed state records.
+            //
+            // LARGE ASCII EXAMPLE
+            //
+            //    x---------------------------------------------------------------------------------->| TIME
+            //    |MASTER STATE
+            //    |---------------------------------------------------------------------------------->|
+            //    |                                                          Batch to apply to slave
+            //    |                                                        |<------------------------>|
+            //    |
+            //    |                                                        A
+            //    |SLAVE STATE 1 (before applying batch)         |<---T--->|
+            //    |----------------------------------------------+-------->|
+            //    |                                                        |
+            //    |                                                        |
+            //    |                                                        |      B
+            //    |SLAVE STATE 2 (mid apply)                            |<-+-T--->|
+            //    |-----------------------------------------------------+--+----->|
+            //    |                                                        |      |
+            //    |                                                        |      |
+            //    |                                                        |      |  C
+            //    |SLAVE STATE 3 (mid apply / after apply)                 |<---T-+->|
+            //    |--------------------------------------------------------+------+->|
+            //    |                                                        |      |  |
+            //    |                                                        |      |  |
+            //    |                                                        |      |  |                D
+            //    |SLAVE STATE 4 (after apply)                             |      |  |      |<---T--->|
+            //    |--------------------------------------------------------+------+--+------+-------->|
+            //
+            // * Tx start on slave when slave is in SLAVE STATE 1
+            //      - Latest applied transaction has timestamp A and safe zone is A-T.
+            //      - Tx.startTime = A
+            //
+            // Scenario 1 - Tx finish when slave is in SLAVE STATE 2
+            //      Latest applied transaction in store has timestamp B and safe zone is B-T.
+            //      Tx did not cross the safe zone boundary as Tx.startTime = A > B-T
+            //      We can safely assume that Tx did not read any mixed state records.
+            //
+            // Scenario 2 - Tx has not yet finished in SLAVE STATE 3
+            //      Latest applied transaction in store has timestamp C and safe zone is C-T.
+            //      We are just about to apply the next part of the batch and push the safe zone window forward.
+            //      This will make Tx.startTime = A < C-T. This means Tx is now in risk of reading mixed state records.
+            //      We will terminate Tx and let the user try again.
+            //
+            //
+            // small ASCII example
+            //                              BATCH pulled by slave
+            //                          _________________________
+            //                         |                         |
+            // |-----------------------|------------------------>|  MASTER
+            //
+            //  Three slave states, S1, S2 and S3
+            //                               ____________________
+            //                      ________|_______S3 safe zone |
+            //           __________|___S2 safe zone |            |
+            //          | S1 safe zone |    |       |            |
+            // |--------|----------|-->| ---|------>|----------->|  SLAVE
+            //
+            // tx started in S1 can finish in S2 but not in S3
+            // tx started in S2 can finish in S3.
+
             if ( transactionQueue.queue( transaction, txHandler ) )
             {
                 applyQueuedTransactions();

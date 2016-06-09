@@ -79,6 +79,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
 
@@ -89,7 +90,8 @@ public class RecoveryTest
     @Rule
     public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
     private final LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 1L );
-    private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 5L, 0, 0, 0 );
+    private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 5L, 0,
+            BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
     private final int logVersion = 1;
 
     private LogEntry lastCommittedTxStartEntry;

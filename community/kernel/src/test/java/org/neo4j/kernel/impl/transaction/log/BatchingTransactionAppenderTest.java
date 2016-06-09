@@ -81,6 +81,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.Exceptions.contains;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 
@@ -390,7 +391,8 @@ public class BatchingTransactionAppenderTest
             // THEN
             assertTrue( contains( e, failureMessage, RuntimeException.class ) );
             verify( transactionIdStore, times( 1 ) ).nextCommittingTransactionId();
-            verify( transactionIdStore, times( 1 ) ).transactionCommitted( eq( txId ), anyLong() );
+            verify( transactionIdStore, times( 1 ) ).transactionCommitted( eq( txId ), anyLong(),
+                    BASE_TX_COMMIT_TIMESTAMP);
             verify( transactionIdStore, times( 1 ) ).transactionClosed( eq( txId ), anyLong(), anyLong() );
             verifyNoMoreInteractions( transactionIdStore );
         }

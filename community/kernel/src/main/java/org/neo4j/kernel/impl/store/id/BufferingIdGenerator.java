@@ -22,15 +22,20 @@ package org.neo4j.kernel.impl.store.id;
 import org.neo4j.function.Consumer;
 import org.neo4j.function.Predicate;
 import org.neo4j.function.Supplier;
+import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 
 class BufferingIdGenerator extends IdGenerator.Delegate
 {
+    private final long atLeastTimeBuffered;
+    private final Clock clock;
     private DelayedBuffer<KernelTransactionsSnapshot> buffer;
 
-    public BufferingIdGenerator( IdGenerator delegate )
+    public BufferingIdGenerator( IdGenerator delegate, long atLeastTimeBuffered, Clock clock )
     {
         super( delegate );
+        this.atLeastTimeBuffered = atLeastTimeBuffered;
+        this.clock = clock;
     }
 
     void initialize( Supplier<KernelTransactionsSnapshot> boundaries )
@@ -40,7 +45,8 @@ class BufferingIdGenerator extends IdGenerator.Delegate
             @Override
             public boolean test( KernelTransactionsSnapshot snapshot )
             {
-                return snapshot.allClosed();
+                return snapshot.allClosed() &&
+                       clock.currentTimeMillis() - snapshot.snapshotTime() > atLeastTimeBuffered;
             }
         }, 10_000, new Consumer<long[]>()
         {
