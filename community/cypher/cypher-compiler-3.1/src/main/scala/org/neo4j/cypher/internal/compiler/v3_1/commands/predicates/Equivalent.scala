@@ -26,7 +26,7 @@ import scala.collection.JavaConverters._
 
 // Class that calculates if two values are equivalent or not.
 // Does not handle NULL values - that must be handled outside!
-class Equivalent(protected val eagerizedValue: Any, val originalValue: Any) {
+class Equivalent(protected val eagerizedValue: Any, val originalValue: Any) extends scala.Equals {
   override def equals(in: Any): Boolean = {
     val eagerOther = in match {
       case s: Equivalent =>
@@ -50,6 +50,8 @@ class Equivalent(protected val eagerizedValue: Any, val originalValue: Any) {
     }
   }
 
+  override def canEqual(that: Any): Boolean = true
+
   private def mixedFloatEquality(a: Float, b: Double) =
     a.doubleValue() == b.doubleValue() ||
     (Math.rint(a.doubleValue()).toLong == b.longValue() &&
@@ -68,10 +70,16 @@ class Equivalent(protected val eagerizedValue: Any, val originalValue: Any) {
   private def hashCode(o: Any): Int = o match {
     case null => 0
     case n: Number => n.longValue().hashCode()
-    case n: Vector[_] =>
+    case n: IndexedSeq[_] =>
       val length = n.length
       if (length > 0)
-        length * (hashCode(n.head) + hashCode(n.last))
+        length * (hashCode(n.head) + hashCode(n(length/2))+ hashCode(n.last))
+      else
+        EMPTY_LIST
+    case n: Seq[_] =>
+      val length = n.length
+      if (length > 0)
+        length * hashCode(n.head)
       else
         EMPTY_LIST
     case x => x.hashCode()
@@ -91,11 +99,11 @@ object Equivalent {
     case null => null
     case a: Char => a.toString
 
-    case a: Array[_] => a.toVector.map(eager)
+    case a: Array[_] => a.toList.map(eager)
     case m: java.util.Map[_,_] => m.asScala.mapValues(eager)
     case m: Map[_,_] => m.mapValues(eager)
-    case a: TraversableOnce[_] => a.toVector.map(eager)
-    case l: java.lang.Iterable[_] => l.asScala.toVector.map(eager)
+    case a: TraversableOnce[_] => a.toList.map(eager)
+    case l: java.lang.Iterable[_] => l.asScala.toList.map(eager)
     case l: GeographicPoint => l
     case x: org.neo4j.graphdb.spatial.Point =>
       val crs = CRS.fromURL(x.getCRS.getHref)
@@ -103,5 +111,12 @@ object Equivalent {
       GeographicPoint(coordinates.head, coordinates.last, crs)
 
     case x => throw new IllegalStateException(s"unknown value: ($x) of type ${x.getClass})")
+  }
+
+  def wrap[T](x : Seq[T], f: T => Any) : scala.Equals = x.size match {
+    case 1 => Equivalent(f(x.head))
+    case 2 => (Equivalent(f(x.head)),Equivalent(f(x.last)))
+    case 3 => (Equivalent(f(x.head)),Equivalent(f(x.tail.head)),Equivalent(f(x.last)))
+    case _ => x.toList.map((k:T) => Equivalent(f(k))) // should be a list
   }
 }
