@@ -21,6 +21,7 @@ package org.neo4j.server.rest.dbms;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Map;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.servlet.FilterChain;
@@ -37,6 +38,8 @@ import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.AuthToken;
+import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.web.XForwardUtil;
@@ -99,9 +102,11 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
         final String username = usernameAndPassword[0];
         final String password = usernameAndPassword[1];
 
-        AuthSubject authSubject = authenticate( username, password );
-        switch ( authSubject.getAuthenticationResult() )
+        try
         {
+            AuthSubject authSubject = authenticate( username, password );
+            switch ( authSubject.getAuthenticationResult() )
+            {
             case PASSWORD_CHANGE_REQUIRED:
                 if ( !PASSWORD_CHANGE_WHITELIST.matcher( path ).matches() )
                 {
@@ -112,7 +117,8 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
             case SUCCESS:
                 try
                 {
-                    filterChain.doFilter( new AuthorizedRequestWrapper( BASIC_AUTH, username, request, authSubject ), servletResponse );
+                    filterChain.doFilter( new AuthorizedRequestWrapper( BASIC_AUTH, username, request, authSubject ),
+                            servletResponse );
                 }
                 catch ( AuthorizationViolationException e )
                 {
@@ -125,13 +131,22 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
             default:
                 log.warn( "Failed authentication attempt for '%s' from %s", username, request.getRemoteAddr() );
                 requestAuthentication( request, invalidCredential ).accept( response );
+            }
+        }
+        catch ( InvalidAuthTokenException e )
+        {
+            requestAuthentication( request, invalidAuthToken( e.getMessage() ) ).accept( response );
         }
     }
 
-    private AuthSubject authenticate( String username, String password )
+    private AuthSubject authenticate( String username, String password ) throws InvalidAuthTokenException
     {
         AuthManager authManager = authManagerSupplier.get();
-        AuthSubject authSubject = authManager.login( username, password );
+
+        Map<String,Object> authToken = map( AuthToken.SCHEME_KEY,
+                "basic", AuthToken.PRINCIPAL, username, AuthToken.CREDENTIALS, password );
+
+        AuthSubject authSubject = authManager.login( authToken );
         return authSubject;
     }
 
@@ -158,6 +173,15 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
                     map( "errors", singletonList( map(
                             "code", Status.Security.AuthenticationRateLimit.code().serialize(),
                             "message", "Too many failed authentication requests. Please wait 5 seconds and try again." ) ) ) );
+
+    private static final ThrowingConsumer<HttpServletResponse, IOException> invalidAuthToken( final String message )
+    {
+        return error( 401,
+                map( "errors", singletonList( map(
+                        "code", Status.Security.Unauthorized.code().serialize(),
+                        "message", message ) ) ) );
+    }
+
 
     private static ThrowingConsumer<HttpServletResponse, IOException> passwordChangeRequired( final String username, final String baseURL )
     {

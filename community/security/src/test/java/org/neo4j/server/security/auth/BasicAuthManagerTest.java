@@ -33,6 +33,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 
 public class BasicAuthManagerTest
 {
@@ -67,7 +68,7 @@ public class BasicAuthManagerTest
         when( authStrategy.authenticate( user, "abc123" )).thenReturn( AuthenticationResult.SUCCESS );
 
         // When
-        AuthSubject authSubject = manager.login( "jake", "abc123" );
+        AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) );
         AuthenticationResult result = authSubject.getAuthenticationResult();
 
         // Then
@@ -87,7 +88,7 @@ public class BasicAuthManagerTest
         when( authStrategy.authenticate( user, "abc123" )).thenReturn( AuthenticationResult.TOO_MANY_ATTEMPTS );
 
         // When
-        AuthSubject authSubject = manager.login( "jake", "abc123" );
+        AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) );
         AuthenticationResult result = authSubject.getAuthenticationResult();
 
         // Then
@@ -107,7 +108,7 @@ public class BasicAuthManagerTest
         when( authStrategy.authenticate( user, "abc123" )).thenReturn( AuthenticationResult.SUCCESS );
 
         // When
-        AuthSubject authSubject = manager.login( "jake", "abc123" );
+        AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) );
         AuthenticationResult result = authSubject.getAuthenticationResult();
 
         // Then
@@ -126,7 +127,7 @@ public class BasicAuthManagerTest
         manager.start();
 
         // When
-        AuthSubject authSubject = manager.login( "unknown", "abc123" );
+        AuthSubject authSubject = manager.login( authToken( "unknown", "abc123" ) );
         AuthenticationResult result = authSubject.getAuthenticationResult();
 
         // Then
@@ -238,7 +239,7 @@ public class BasicAuthManagerTest
 
         try
         {
-            manager.login( "foo", "bar" );
+            manager.login( authToken( "foo", "bar" ) );
             fail( "exception expected" );
         } catch ( IllegalStateException e )
         {

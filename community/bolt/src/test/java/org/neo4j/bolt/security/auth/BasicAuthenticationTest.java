@@ -35,7 +35,7 @@ import org.neo4j.server.security.auth.BasicAuthManager;
 import org.neo4j.server.security.auth.BasicAuthSubject;
 
 import static java.util.Collections.singletonList;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.anyMap;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -49,13 +49,13 @@ public class BasicAuthenticationTest
     private final Supplier<String> identifier = () -> "UNIQUE";
 
     @Test
-    public void shouldNotDoAnythingOnSuccess() throws AuthenticationException
+    public void shouldNotDoAnythingOnSuccess() throws Exception
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
         BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
         BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier  );
-        when( manager.login( anyString(), anyString() ) ).thenReturn( authSubject );
+        when( manager.login( anyMap() ) ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );
 
         //Expect nothing
@@ -65,7 +65,7 @@ public class BasicAuthenticationTest
     }
 
     @Test
-    public void shouldThrowAndLogOnFailure() throws AuthenticationException
+    public void shouldThrowAndLogOnFailure() throws Exception
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
@@ -74,7 +74,7 @@ public class BasicAuthenticationTest
         LogProvider logProvider = mock( LogProvider.class );
         when( logProvider.getLog( BasicAuthentication.class ) ).thenReturn( log );
         BasicAuthentication authentication = new BasicAuthentication( manager, logProvider, identifier );
-        when( manager.login( anyString(), anyString() ) ).thenReturn( authSubject );
+        when( manager.login( anyMap() ) ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.FAILURE );
 
         // Expect
@@ -90,13 +90,13 @@ public class BasicAuthenticationTest
     }
 
     @Test
-    public void shouldIndicateThatCredentialsExpired() throws AuthenticationException
+    public void shouldIndicateThatCredentialsExpired() throws Exception
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
         BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
         BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier );
-        when( manager.login( anyString(), anyString() ) ).thenReturn( authSubject );
+        when( manager.login( anyMap() ) ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
 
         // Expect
@@ -110,13 +110,13 @@ public class BasicAuthenticationTest
     }
 
     @Test
-    public void shouldFailWhenTooManyAttempts() throws AuthenticationException
+    public void shouldFailWhenTooManyAttempts() throws Exception
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
         BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
         BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier );
-        when( manager.login( anyString(), anyString() ) ).thenReturn( authSubject );
+        when( manager.login( anyMap() ) ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.TOO_MANY_ATTEMPTS );
 
         // Expect
@@ -129,13 +129,13 @@ public class BasicAuthenticationTest
     }
 
     @Test
-    public void shouldBeAbleToUpdateCredentials() throws AuthenticationException
+    public void shouldBeAbleToUpdateCredentials() throws Exception
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
         BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
         BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier );
-        when( manager.login( anyString(), anyString() ) ).thenReturn( authSubject );
+        when( manager.login( anyMap() ) ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );
 
         //Expect nothing
@@ -146,13 +146,13 @@ public class BasicAuthenticationTest
     }
 
     @Test
-    public void shouldBeAbleToUpdateExpiredCredentials() throws AuthenticationException
+    public void shouldBeAbleToUpdateExpiredCredentials() throws Exception
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
         BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
         BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier );
-        when( manager.login( anyString(), anyString() ) ).thenReturn( authSubject );
+        when( manager.login( anyMap() ) ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
 
         //Expect nothing
@@ -163,13 +163,13 @@ public class BasicAuthenticationTest
     }
 
     @Test
-    public void shouldNotBeAbleToUpdateCredentialsIfOldCredentialsAreInvalid() throws AuthenticationException
+    public void shouldNotBeAbleToUpdateCredentialsIfOldCredentialsAreInvalid() throws Exception
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
         BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
         BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier );
-        when( manager.login( anyString(), anyString() ) ).thenReturn( authSubject );
+        when( manager.login( anyMap() ) ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.FAILURE );
 
         // Expect
@@ -184,13 +184,13 @@ public class BasicAuthenticationTest
     }
 
     @Test
-    public void shouldFailOnUnknownScheme() throws AuthenticationException
+    public void shouldFailOnUnknownScheme() throws Exception
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
         BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
         BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier );
-        when( manager.login( anyString(), anyString() ) ).thenReturn( authSubject );
+        when( manager.login( anyMap() ) ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );
 
         // Expect
@@ -203,13 +203,13 @@ public class BasicAuthenticationTest
     }
 
     @Test
-    public void shouldFailOnMalformedToken() throws AuthenticationException
+    public void shouldFailOnMalformedToken() throws Exception
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
         BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
         BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier );
-        when( manager.login( anyString(), anyString() ) ).thenReturn( authSubject );
+        when( manager.login( anyMap() ) ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );
 
         // Expect

@@ -131,6 +131,22 @@ public class AuthenticationIT
     }
 
     @Test
+    public void shouldFailIfMalformedAuthToken() throws Throwable
+    {
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1",
+                                map( "principal", "neo4j", "this-should-have-been-credentials", "neo4j", "scheme", "basic" ) ) ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves( msgFailure( Status.Security.Unauthorized,
+                String.format( "The value associated with the key `credentials` must be a String but was: null (ID:%s)", server.uniqueIdentier()) ) ) );
+    }
+
+    @Test
     public void shouldBeAbleToUpdateCredentials() throws Throwable
     {
         // When

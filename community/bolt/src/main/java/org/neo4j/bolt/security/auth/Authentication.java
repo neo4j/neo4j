@@ -49,9 +49,4 @@ public interface Authentication
      * Allows all tokens to authenticate.
      */
     Authentication NONE = authToken -> AuthenticationResult.AUTH_DISABLED;
-
-    String SCHEME_KEY = "scheme";
-    String PRINCIPAL = "principal";
-    String CREDENTIALS = "credentials";
-    String NEW_CREDENTIALS = "new_credentials";
 }
