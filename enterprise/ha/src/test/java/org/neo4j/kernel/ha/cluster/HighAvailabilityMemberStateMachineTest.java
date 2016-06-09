@@ -54,7 +54,6 @@ import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.AvailabilityGuard.AvailabilityRequirement;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.PullerFactory;
@@ -177,6 +176,7 @@ public class HighAvailabilityMemberStateMachineTest
 
         // Then
         assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.TO_SLAVE ) );
+        assertThat( probe.lastEvent.shouldBroadcast(), is( true ) );
         assertThat( probe.masterIsAvailable, is( true ) );
     }
 
@@ -213,6 +213,7 @@ public class HighAvailabilityMemberStateMachineTest
         // Then
         assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
         assertThat( probe.instanceStops, is( true ) );
+        assertThat( probe.lastEvent.shouldBroadcast(), is( false ) );
         verify( guard, times( 2 ) ).require( any( AvailabilityRequirement.class ) );
     }
 
@@ -250,6 +251,7 @@ public class HighAvailabilityMemberStateMachineTest
         // Then
         assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.SLAVE ) );
         assertThat( probe.instanceStops, is( false ) );
+        assertThat( probe.lastEvent.shouldBroadcast(), is( true ) );
     }
 
     @Test
@@ -287,6 +289,7 @@ public class HighAvailabilityMemberStateMachineTest
         // Then
         assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
         assertThat( probe.instanceStops, is( true ) );
+        assertThat( probe.lastEvent.shouldBroadcast(), is( false ) );
         verify( guard, times( 2 ) ).require( any( AvailabilityRequirement.class ) );
     }
 
@@ -321,6 +324,7 @@ public class HighAvailabilityMemberStateMachineTest
         // Then
         assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
         assertThat( probe.instanceStops, is( true ) );
+        assertThat( probe.lastEvent.shouldBroadcast(), is( false ) );
         verify( guard, times( 1 ) ).require( any( AvailabilityRequirement.class ) );
     }
 
@@ -354,6 +358,7 @@ public class HighAvailabilityMemberStateMachineTest
         // Then
         assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
         assertThat( probe.instanceStops, is( true ) );
+        assertThat( probe.lastEvent.shouldBroadcast(), is( false ) );
         verify( guard, times( 1 ) ).require( any( AvailabilityRequirement.class ) );
     }
 
@@ -509,7 +514,7 @@ public class HighAvailabilityMemberStateMachineTest
                 handler,
                 mock( ClusterMemberAvailability.class ), mock( RequestContextFactory.class ),
                 mock( PullerFactory.class, RETURNS_MOCKS ),
-                Iterables.<KernelExtensionFactory<?>>empty(), masterClientResolver,
+                Iterables.empty(), masterClientResolver,
                 monitor,
                 new StoreCopyClient.Monitor.Adapter(),
                 Suppliers.singleton( dataSource ),

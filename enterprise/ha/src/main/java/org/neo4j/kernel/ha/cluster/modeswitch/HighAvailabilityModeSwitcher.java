@@ -248,7 +248,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 break;
             case PENDING:
 
-                switchToPending( event.getOldState() );
+                switchToPending( event.getOldState(), event.shouldBroadcast() );
                 break;
             default:
                 // do nothing
@@ -403,7 +403,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         }, cancellationHandle );
     }
 
-    private void switchToPending( final HighAvailabilityMemberState oldState )
+    private void switchToPending( final HighAvailabilityMemberState oldState, boolean broadcast )
     {
         msgLog.info( "I am %s, moving to pending", instanceId );
 
@@ -414,13 +414,16 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 return;
             }
 
-            if ( oldState.equals( HighAvailabilityMemberState.SLAVE ) )
+            if ( broadcast )
             {
-                clusterMemberAvailability.memberIsUnavailable( SLAVE );
-            }
-            else if ( oldState.equals( HighAvailabilityMemberState.MASTER ) )
-            {
-                clusterMemberAvailability.memberIsUnavailable( MASTER );
+                if ( oldState.equals( HighAvailabilityMemberState.SLAVE ) )
+                {
+                    clusterMemberAvailability.memberIsUnavailable( SLAVE );
+                }
+                else if ( oldState.equals( HighAvailabilityMemberState.MASTER ) )
+                {
+                    clusterMemberAvailability.memberIsUnavailable( MASTER );
+                }
             }
 
             componentSwitcher.switchToPending();

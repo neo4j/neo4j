@@ -30,6 +30,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
@@ -46,7 +48,6 @@ import static org.neo4j.helpers.TimeUtil.parseTimeMillis;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.UNKNOWN;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
-import static org.neo4j.kernel.impl.ha.ClusterManager.memberSeesOtherMemberAsFailed;
 import static org.neo4j.kernel.impl.ha.ClusterManager.memberThinksItIsRole;
 
 /**
@@ -77,7 +78,9 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.memberThinksItIsRole;
 public class TransactionThroughMasterSwitchStressIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() );
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+            .withInstanceSetting( HaSettings.slave_only,
+                value -> value == 1 || value == 2 ? Settings.TRUE : Settings.FALSE );
 
     @Test
     public void shouldNotHaveTransactionsRunningThroughRoleSwitchProduceInconsistencies() throws Throwable
@@ -173,21 +176,15 @@ public class TransactionThroughMasterSwitchStressIT
     private void reelectTheSameMasterMakingItGoToPendingAndBack( ManagedCluster cluster ) throws Throwable
     {
         HighlyAvailableGraphDatabase master = cluster.getMaster();
-        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
 
-        // Fail one slave, so that there's only two alive left
-        RepairKit slaveRepair = cluster.fail( slave );
-        cluster.await( memberSeesOtherMemberAsFailed( master, slave ) );
-
-        // Fail master and wait for master to go to pending, since cluster lost quorum
-        RepairKit masterRepair = cluster.fail( master, false, NetworkFlag.IN );
+        // Fail master and wait for master to go to pending, since it detects it's partitioned away
+        RepairKit masterRepair = cluster.fail( master, false, NetworkFlag.IN, NetworkFlag.OUT );
         cluster.await( memberThinksItIsRole( master, UNKNOWN ) );
 
         // Then Immediately repair
         masterRepair.repair();
-        slaveRepair.repair();
 
-        // Wait for this instance to go to master again
+        // Wait for this instance to go to master again, since the other instances are slave only
         cluster.await( memberThinksItIsRole( master, MASTER ) );
         cluster.await( ClusterManager.masterAvailable() );
         assertEquals( master, cluster.getMaster() );
