@@ -105,7 +105,7 @@ public class RaftLogDurabilityTest
             int entryCacheSize = 4;
 
             SegmentedRaftLog log = new SegmentedRaftLog( fileSystem, directory, rotateAtSizeBytes, new DummyRaftableContentSerializer(),
-                    NullLogProvider.getInstance(), entryCacheSize, "1 size" );
+                    NullLogProvider.getInstance(), "1 size" );
             log.start();
             return log;
         };
