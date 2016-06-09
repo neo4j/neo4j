@@ -27,7 +27,8 @@ import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 
-import scala.collection.mutable.{Map => MutableMap}
+import scala.collection.GenTraversableOnce
+import scala.collection.mutable.{ArrayBuffer, Map => MutableMap}
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting sub graphs before starting
 // to emit aggregated results.
@@ -90,7 +91,12 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
     }
 
     input.foreach(ctx => {
-      val groupValues: Equals =  Equivalent.wrap(keyNames, ctx)
+      val groupValues: Equals = keyNamesSize match {
+        case 1 => Equivalent(ctx(keyNames.head))
+        case 2 => (Equivalent(ctx(keyNames.head)),Equivalent(ctx(keyNames.last)))
+        case 3 => (Equivalent(ctx(keyNames.head)),Equivalent(ctx(keyNames.tail.head)),Equivalent(ctx(keyNames.last)))
+        case _ => keyNames.map( k => Equivalent(ctx(k)))
+      }
       val functions = result.getOrElseUpdate(groupValues, {
         val aggregateFunctions: Seq[AggregationFunction] = aggregations.map(_._2.createAggregationFunction).toSeq
         aggregateFunctions
