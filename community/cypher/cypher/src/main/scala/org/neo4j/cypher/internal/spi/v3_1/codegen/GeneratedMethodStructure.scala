@@ -25,7 +25,7 @@ import org.neo4j.codegen.Expression.{not, or, _}
 import org.neo4j.codegen.MethodReference.methodReference
 import org.neo4j.codegen._
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
-import org.neo4j.collection.primitive.{PrimitiveLongIntMap, PrimitiveLongIterator, PrimitiveLongObjectMap}
+import org.neo4j.collection.primitive.{PrimitiveLongCollection, PrimitiveLongIntMap, PrimitiveLongIterator, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.DirectionConverter.toGraphDb
@@ -467,7 +467,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
         pop(
           invoke(generator.load(tableVar), countingTablePut, generator.load(keyVar),
                  ternary(
-                   equal(generator.load(countName), get(staticField[LongKeyIntValueTable, Int]("NULL")), typeRef[Int]),
+                   equal(generator.load(countName), get(staticField[PrimitiveLongCollection, Int]("NULL")), typeRef[Int]),
                    constant(1),
                    addInts(generator.load(countName), constant(1))))))
 

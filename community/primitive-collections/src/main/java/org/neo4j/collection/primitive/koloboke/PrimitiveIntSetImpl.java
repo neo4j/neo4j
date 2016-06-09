@@ -29,8 +29,7 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveIntVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-
-import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.DEFAULT_HASHING;
+import org.neo4j.collection.primitive.base.Hashing;
 
 @SuppressWarnings( "ALL" )
 @KolobokeSet
@@ -134,7 +133,7 @@ public abstract class PrimitiveIntSetImpl implements PrimitiveIntSet, IntPredica
         IntCursor cursor = cursor();
         while ( cursor.moveNext() )
         {
-            hash += DEFAULT_HASHING.hash( cursor.elem() );
+            hash += Hashing.xorShift( cursor.elem() );
         }
         return hash;
     }

@@ -17,14 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.collection.primitive;
+package org.neo4j.collection.primitive.base;
 
-public interface PrimitiveLongCollection extends PrimitiveCollection, PrimitiveLongIterable
+public class Hashing
 {
-    long NULL = -1;
+    public static int julHash( long value )
+    {
+        int h = (int) ((value >>> 32) ^ value);
+        h ^= (h >>> 20) ^ (h >>> 12);
+        return h ^ (h >>> 7) ^ (h >>> 4);
+    }
 
-    /**
-     * Visit the keys of this collection, until all have been visited or the visitor returns 'true'.
-     */
-    <E extends Exception> void visitKeys( PrimitiveLongVisitor<E> visitor ) throws E;
+    public static int xorShift( long value )
+    {
+        value ^= (value << 21);
+        value ^= (value >>> 35);
+        value ^= (value << 4);
+        return (int) ((value >>> 32) ^ value);
+    }
 }

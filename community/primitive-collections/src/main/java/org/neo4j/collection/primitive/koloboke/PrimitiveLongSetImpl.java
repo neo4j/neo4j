@@ -28,8 +28,7 @@ import java.util.function.LongPredicate;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
-
-import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.DEFAULT_HASHING;
+import org.neo4j.collection.primitive.base.Hashing;
 
 @SuppressWarnings( "ALL" )
 @KolobokeSet
@@ -133,7 +132,7 @@ public abstract class PrimitiveLongSetImpl implements PrimitiveLongSet, LongPred
         LongCursor cursor = cursor();
         while ( cursor.moveNext() )
         {
-            hash += DEFAULT_HASHING.hash( cursor.elem() );
+            hash += Hashing.xorShift( cursor.elem() );
         }
         return hash;
     }

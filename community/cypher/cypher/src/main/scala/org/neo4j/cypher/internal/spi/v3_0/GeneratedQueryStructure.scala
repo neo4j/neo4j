@@ -30,7 +30,7 @@ import org.neo4j.codegen.TypeReference._
 import org.neo4j.codegen._
 import org.neo4j.codegen.source.{SourceCode, SourceVisitor}
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
-import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongIterator, PrimitiveLongObjectMap}
+import org.neo4j.collection.primitive._
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen.{CompiledConversionUtils, CompiledExpandUtils, CompiledMathHelper, NodeIdWrapper, RelationshipIdWrapper}
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.DirectionConverter
@@ -535,7 +535,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
       generator.expression(Expression.invoke(generator.load(tableVar), Methods.countingTablePut, generator.load(keyVar),
         Expression.ternary(
           Expression.equal(generator.load(countName), Expression
-            .get(staticField[LongKeyIntValueTable, Int]("NULL")), typeRef[Int]),
+            .get(staticField[PrimitiveLongCollection, Int]("NULL")), typeRef[Int]),
           Expression.constant(1),
           Expression.addInts(generator.load(countName), Expression.constant(1)))))
     case LongsToCountTable =>
