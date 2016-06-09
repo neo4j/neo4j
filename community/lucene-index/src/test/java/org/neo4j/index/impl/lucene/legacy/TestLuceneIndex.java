@@ -26,6 +26,9 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedNumericSortField;
+import org.apache.lucene.search.SortedSetSortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.hamcrest.CoreMatchers;
@@ -113,6 +116,73 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         restartTx();
         assertThat( index.get( key, value ), Contains.contains( entity1, entity2 ) );
         index.delete();
+    }
+
+    @Test
+    public void queryIndexWithSortByNumeric() throws Exception
+    {
+        Index<Node> index = nodeIndex( stringMap() );
+        String numericProperty = "NODE_ID";
+
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            for ( int i = 0; i < 15; i++ )
+            {
+                Node node = graphDb.createNode();
+                node.setProperty( numericProperty, i );
+                index.add( node, numericProperty, new ValueContext( i ).indexNumeric() );
+            }
+            transaction.success();
+        }
+
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            QueryContext queryContext = new QueryContext( numericProperty + ":**" );
+            queryContext.sort( new Sort( new SortedNumericSortField( numericProperty, SortField.Type.INT, false ) ) );
+            IndexHits<Node> nodes = index.query( queryContext );
+
+            int expectedIndexId = 0;
+            for ( Node node : nodes )
+            {
+                assertEquals("Nodes should be sorted by numeric property", expectedIndexId++, node.getProperty( numericProperty ));
+            }
+            transaction.success();
+        }
+    }
+
+    @Test
+    public void queryIndexWithSortByString() throws Exception
+    {
+        Index<Node> index = nodeIndex( stringMap() );
+        String stringProperty = "NODE_NAME";
+
+        String[] names = new String[]{"Fry", "Leela", "Bender", "Amy", "Hubert", "Calculon"};
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            for ( String name : names )
+            {
+                Node node = graphDb.createNode();
+                node.setProperty( stringProperty, name );
+                index.add( node, stringProperty, name );
+            }
+            transaction.success();
+        }
+
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            QueryContext queryContext = new QueryContext( stringProperty + ":**" );
+            queryContext.sort( new Sort( new SortedSetSortField( stringProperty, true ) ) );
+            IndexHits<Node> nodes = index.query( queryContext );
+
+            int nameIndex = 0;
+            String[] sortedNames = new String[]{"Leela", "Hubert", "Fry", "Calculon", "Bender", "Amy"};
+            for ( Node node : nodes )
+            {
+                assertEquals("Nodes should be sorted by string property", sortedNames[nameIndex++],
+                        node.getProperty( stringProperty ));
+            }
+            transaction.success();
+        }
     }
 
     @Test
