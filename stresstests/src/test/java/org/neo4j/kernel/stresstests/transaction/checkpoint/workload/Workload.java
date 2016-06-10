@@ -29,7 +29,6 @@ import org.neo4j.kernel.stresstests.transaction.checkpoint.mutation.RandomMutati
 
 public class Workload implements Resource
 {
-    private final GraphDatabaseService db;
     private final int threads;
     private final SyncMonitor sync;
     private final Worker worker;
@@ -37,7 +36,6 @@ public class Workload implements Resource
 
     public Workload( GraphDatabaseService db, RandomMutation randomMutation, int threads )
     {
-        this.db = db;
         this.threads = threads;
         this.sync = new SyncMonitor( threads );
         this.worker = new Worker( db, randomMutation, sync, 100 );
@@ -66,12 +64,14 @@ public class Workload implements Resource
             executor.submit( worker );
         }
 
+        TimeUnit.SECONDS.sleep( 20 ); // sleep to make sure workers are started
+
         long now = System.currentTimeMillis();
         long previousReportTime = System.currentTimeMillis();
         long finishLine = runningTimeMillis + now;
         long sampleRate = TimeUnit.SECONDS.toMillis( 10 );
         long lastReport = sampleRate + now;
-        long previousTransactionCount = 0;
+        long previousTransactionCount = sync.transactions();
         Thread.sleep( sampleRate );
         do
         {
