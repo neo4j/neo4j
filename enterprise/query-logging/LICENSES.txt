@@ -3,6 +3,8 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
+  Koloboke Collections API
+  Koloboke Collections Implementation Commons (for Implementation Library and Koloboke Compile)
   Lucene Core
   Lucene Memory
 ------------------------------------------------------------------------------

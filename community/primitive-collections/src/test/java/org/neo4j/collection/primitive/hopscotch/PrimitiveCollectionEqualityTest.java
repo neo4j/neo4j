@@ -31,7 +31,6 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveCollection;
-import org.neo4j.collection.primitive.PrimitiveIntLongMap;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
@@ -128,32 +127,6 @@ public class PrimitiveCollectionEqualityTest
                 public boolean remove( PrimitiveLongSet coll )
                 {
                     return coll.remove( x );
-                }
-            };
-        }
-    };
-
-    @DataPoint
-    public static ValueProducer<PrimitiveIntLongMap> intLongV = new ValueProducer<PrimitiveIntLongMap>(
-            PrimitiveIntLongMap.class )
-    {
-        @Override
-        public Value<PrimitiveIntLongMap> randomValue()
-        {
-            final int x = randomInt();
-            final long y = randomLong();
-            return new Value<PrimitiveIntLongMap>()
-            {
-                @Override
-                public void add( PrimitiveIntLongMap coll )
-                {
-                    coll.put( x, y );
-                }
-
-                @Override
-                public boolean remove( PrimitiveIntLongMap coll )
-                {
-                    return coll.remove( x ) == y;
                 }
             };
         }
@@ -266,184 +239,36 @@ public class PrimitiveCollectionEqualityTest
     // ==== Primitive Collection Implementations ====
 
     @DataPoint
-    public static Factory<PrimitiveIntSet> intSet = new Factory<PrimitiveIntSet>()
-    {
-        @Override
-        public PrimitiveIntSet newInstance()
-        {
-            return Primitive.intSet();
-        }
-    };
+    public static Factory<PrimitiveIntSet> intSet = Primitive::intSet;
 
     @DataPoint
-    public static Factory<PrimitiveIntSet> intSetWithCapacity = new Factory<PrimitiveIntSet>()
-    {
-        @Override
-        public PrimitiveIntSet newInstance()
-        {
-            return Primitive.intSet( randomCapacity() );
-        }
-    };
+    public static Factory<PrimitiveIntSet> intSetWithCapacity = () -> Primitive.intSet( randomCapacity() );
 
     @DataPoint
-    public static Factory<PrimitiveIntSet> offheapIntSet = new Factory<PrimitiveIntSet>()
-    {
-        @Override
-        public PrimitiveIntSet newInstance()
-        {
-            return Primitive.offHeapIntSet();
-        }
-    };
+    public static Factory<PrimitiveLongSet> longSet = Primitive::longSet;
 
     @DataPoint
-    public static Factory<PrimitiveIntSet> offheapIntSetWithCapacity = new Factory<PrimitiveIntSet>()
-    {
-        @Override
-        public PrimitiveIntSet newInstance()
-        {
-            return Primitive.offHeapIntSet( randomCapacity() );
-        }
-    };
+    public static Factory<PrimitiveLongSet> longSetWithCapacity = () -> Primitive.longSet( randomCapacity() );
 
     @DataPoint
-    public static Factory<PrimitiveLongSet> longSet = new Factory<PrimitiveLongSet>()
-    {
-        @Override
-        public PrimitiveLongSet newInstance()
-        {
-            return Primitive.longSet();
-        }
-    };
+    public static Factory<PrimitiveLongIntMap> longIntMap = Primitive::longIntMap;
 
     @DataPoint
-    public static Factory<PrimitiveLongSet> longSetWithCapacity = new Factory<PrimitiveLongSet>()
-    {
-        @Override
-        public PrimitiveLongSet newInstance()
-        {
-            return Primitive.longSet( randomCapacity() );
-        }
-    };
+    public static Factory<PrimitiveLongIntMap> longIntMapWithCapacity = () -> Primitive.longIntMap( randomCapacity() );
 
     @DataPoint
-    public static Factory<PrimitiveLongSet> offheapLongSet = new Factory<PrimitiveLongSet>()
-    {
-        @Override
-        public PrimitiveLongSet newInstance()
-        {
-            return Primitive.offHeapLongSet();
-        }
-    };
+    public static Factory<PrimitiveIntObjectMap> intObjMap = Primitive::intObjectMap;
 
     @DataPoint
-    public static Factory<PrimitiveLongSet> offheapLongSetWithCapacity = new Factory<PrimitiveLongSet>()
-    {
-        @Override
-        public PrimitiveLongSet newInstance()
-        {
-            return Primitive.offHeapLongSet( randomCapacity() );
-        }
-    };
+    public static Factory<PrimitiveIntObjectMap> intObjMapWithCapacity =
+            () -> Primitive.intObjectMap( randomCapacity() );
 
     @DataPoint
-    public static Factory<PrimitiveIntLongMap> intLongMap = new Factory<PrimitiveIntLongMap>()
-    {
-        @Override
-        public PrimitiveIntLongMap newInstance()
-        {
-            return Primitive.intLongMap();
-        }
-    };
+    public static Factory<PrimitiveLongObjectMap> longObjectMap = Primitive::longObjectMap;
 
     @DataPoint
-    public static Factory<PrimitiveIntLongMap> intLongMapWithCapacity = new Factory<PrimitiveIntLongMap>()
-    {
-        @Override
-        public PrimitiveIntLongMap newInstance()
-        {
-            return Primitive.intLongMap( randomCapacity() );
-        }
-    };
-
-    @DataPoint
-    public static Factory<PrimitiveLongIntMap> longIntMap = new Factory<PrimitiveLongIntMap>()
-    {
-        @Override
-        public PrimitiveLongIntMap newInstance()
-        {
-            return Primitive.longIntMap();
-        }
-    };
-
-    @DataPoint
-    public static Factory<PrimitiveLongIntMap> longIntMapWithCapacity = new Factory<PrimitiveLongIntMap>()
-    {
-        @Override
-        public PrimitiveLongIntMap newInstance()
-        {
-            return Primitive.longIntMap( randomCapacity() );
-        }
-    };
-
-    @DataPoint
-    public static Factory<PrimitiveLongLongMap> offheapLongLongMap = new Factory<PrimitiveLongLongMap>()
-    {
-        @Override
-        public PrimitiveLongLongMap newInstance()
-        {
-            return Primitive.offHeapLongLongMap();
-        }
-    };
-
-    @DataPoint
-    public static Factory<PrimitiveLongLongMap> offheapLongLongMapWithCapacity = new Factory<PrimitiveLongLongMap>()
-    {
-        @Override
-        public PrimitiveLongLongMap newInstance()
-        {
-            return Primitive.offHeapLongLongMap( randomCapacity() );
-        }
-    };
-
-    @DataPoint
-    public static Factory<PrimitiveIntObjectMap> intObjMap = new Factory<PrimitiveIntObjectMap>()
-    {
-        @Override
-        public PrimitiveIntObjectMap newInstance()
-        {
-            return Primitive.intObjectMap();
-        }
-    };
-
-    @DataPoint
-    public static Factory<PrimitiveIntObjectMap> intObjMapWithCapacity = new Factory<PrimitiveIntObjectMap>()
-    {
-        @Override
-        public PrimitiveIntObjectMap newInstance()
-        {
-            return Primitive.intObjectMap( randomCapacity() );
-        }
-    };
-
-    @DataPoint
-    public static Factory<PrimitiveLongObjectMap> longObjectMap = new Factory<PrimitiveLongObjectMap>()
-    {
-        @Override
-        public PrimitiveLongObjectMap newInstance()
-        {
-            return Primitive.longObjectMap();
-        }
-    };
-
-    @DataPoint
-    public static Factory<PrimitiveLongObjectMap> longObjectMapWithCapacity = new Factory<PrimitiveLongObjectMap>()
-    {
-        @Override
-        public PrimitiveLongObjectMap newInstance()
-        {
-            return Primitive.longObjectMap( randomCapacity() );
-        }
-    };
+    public static Factory<PrimitiveLongObjectMap> longObjectMapWithCapacity =
+            () -> Primitive.longObjectMap( randomCapacity() );
 
     private static final PrimitiveIntSet observedRandomInts = Primitive.intSet();
     private static final PrimitiveLongSet observedRandomLongs = Primitive.longSet();

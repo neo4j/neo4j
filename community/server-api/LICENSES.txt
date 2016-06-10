@@ -9,6 +9,8 @@ Apache Software License, Version 2.0
   Commons Digester
   Commons Lang
   Commons Logging
+  Koloboke Collections API
+  Koloboke Collections Implementation Commons (for Implementation Library and Koloboke Compile)
   Lucene Core
   Lucene Memory
 ------------------------------------------------------------------------------

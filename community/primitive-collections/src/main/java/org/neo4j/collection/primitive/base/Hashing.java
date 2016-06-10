@@ -17,30 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.collection.primitive.hopscotch;
+package org.neo4j.collection.primitive.base;
 
-public class IntKeyTable<VALUE> extends IntArrayBasedKeyTable<VALUE>
+public class Hashing
 {
-    public IntKeyTable( int capacity, VALUE singleValue )
+    public static int julHash( long value )
     {
-        super( capacity, 2, 32, singleValue );
+        int h = (int) ((value >>> 32) ^ value);
+        h ^= (h >>> 20) ^ (h >>> 12);
+        return h ^ (h >>> 7) ^ (h >>> 4);
     }
 
-    @Override
-    public long key( int index )
+    public static int xorShift( long value )
     {
-        return table[index( index )];
-    }
-
-    @Override
-    protected void internalPut( int actualIndex, long key, VALUE value )
-    {
-        table[actualIndex] = (int)key;
-    }
-
-    @Override
-    protected IntArrayBasedKeyTable<VALUE> newInstance( int newCapacity )
-    {
-        return new IntKeyTable<>( newCapacity, singleValue );
+        value ^= (value << 21);
+        value ^= (value >>> 35);
+        value ^= (value << 4);
+        return (int) ((value >>> 32) ^ value);
     }
 }

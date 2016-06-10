@@ -19,14 +19,14 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-
-import org.junit.Ignore;
-import org.junit.Test;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
@@ -90,7 +90,7 @@ public class PrimitiveCollectionBenchmark
 
      */
 
-    private static final int RUNS = 3;
+    private static final int RUNS = 10;
 
     @Test
     public void performanceTestPrimitiveLongSet() throws Exception
@@ -353,7 +353,7 @@ public class PrimitiveCollectionBenchmark
 
     private static class HopScotchSet implements MapInterface
     {
-        private final PrimitiveLongSet set = Primitive.offHeapLongSet();
+        private final PrimitiveLongSet set = Primitive.longSet();
 
         @Override
         public void put( long key, int value )
@@ -417,10 +417,10 @@ public class PrimitiveCollectionBenchmark
             sleep( 1000 );
         }
         System.out.println( "  add: " + addTime + ", contains: " + containsTime +
-                ", mem: " + Runtime.getRuntime().totalMemory() + "   " + set );
+                ", mem: " + Runtime.getRuntime().totalMemory() );
     }
 
-    private static final int DATA_SIZE = 10_000_000;
+    private static final int DATA_SIZE = 1_000_000;
     private static final long[] RANDOM_DATA, SEQUENTIAL_DATA;
     static
     {

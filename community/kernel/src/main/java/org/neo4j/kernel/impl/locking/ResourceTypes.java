@@ -22,11 +22,10 @@ package org.neo4j.kernel.impl.locking;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.collection.primitive.base.Hashing;
 import org.neo4j.kernel.impl.util.concurrent.LockWaitStrategies;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
-
-import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.DEFAULT_HASHING;
 
 public enum ResourceTypes implements ResourceType
 {
@@ -102,7 +101,7 @@ public enum ResourceTypes implements ResourceType
 
     private static int hash( long value )
     {
-        return DEFAULT_HASHING.hash( value );
+        return Hashing.xorShift( value );
     }
 
     public static long graphPropertyResource()

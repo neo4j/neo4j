@@ -21,6 +21,8 @@ package org.neo4j.collection.primitive;
 
 public interface PrimitiveLongCollection extends PrimitiveCollection, PrimitiveLongIterable
 {
+    long NULL = -1;
+
     /**
      * Visit the keys of this collection, until all have been visited or the visitor returns 'true'.
      */
