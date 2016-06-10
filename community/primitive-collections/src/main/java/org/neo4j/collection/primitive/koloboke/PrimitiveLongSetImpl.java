@@ -69,7 +69,10 @@ public abstract class PrimitiveLongSetImpl implements PrimitiveLongSet, LongPred
     public final <E extends Exception> void visitKeys( PrimitiveLongVisitor<E> visitor ) throws E
     {
         LongCursor cursor = cursor();
-        while ( cursor.moveNext() && !visitor.visited( cursor.elem() ) );
+        while ( cursor.moveNext() && !visitor.visited( cursor.elem() ) )
+        {
+            long x = NULL;
+        }
     }
 
     @Override

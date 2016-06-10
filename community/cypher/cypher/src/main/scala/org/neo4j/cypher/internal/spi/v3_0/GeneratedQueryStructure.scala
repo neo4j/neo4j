@@ -29,7 +29,6 @@ import org.neo4j.codegen.MethodReference._
 import org.neo4j.codegen.TypeReference._
 import org.neo4j.codegen._
 import org.neo4j.codegen.source.{SourceCode, SourceVisitor}
-import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.collection.primitive._
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen.{CompiledConversionUtils, CompiledExpandUtils, CompiledMathHelper, NodeIdWrapper, RelationshipIdWrapper}

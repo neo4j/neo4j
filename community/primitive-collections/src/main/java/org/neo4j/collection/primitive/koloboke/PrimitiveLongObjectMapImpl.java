@@ -47,14 +47,20 @@ public abstract class PrimitiveLongObjectMapImpl<VALUE> implements PrimitiveLong
     public final <E extends Exception> void visitEntries( PrimitiveLongObjectVisitor<VALUE, E> visitor ) throws E
     {
         LongObjCursor cursor = cursor();
-        while ( cursor.moveNext() && !visitor.visited( cursor.key(), (VALUE) cursor.value() ) );
+        while ( cursor.moveNext() && !visitor.visited( cursor.key(), (VALUE) cursor.value() ) )
+        {
+            long x = NULL;
+        }
     }
 
     @Override
     public final <E extends Exception> void visitKeys( PrimitiveLongVisitor<E> visitor ) throws E
     {
         LongObjCursor cursor = cursor();
-        while ( cursor.moveNext() && !visitor.visited( cursor.key() ) );
+        while ( cursor.moveNext() && !visitor.visited( cursor.key() ) )
+        {
+            long x = NULL;
+        }
     }
 
     @Override

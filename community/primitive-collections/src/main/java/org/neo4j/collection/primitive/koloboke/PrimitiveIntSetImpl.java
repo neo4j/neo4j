@@ -69,7 +69,10 @@ public abstract class PrimitiveIntSetImpl implements PrimitiveIntSet, IntPredica
     public final <E extends Exception> void visitKeys( PrimitiveIntVisitor<E> visitor ) throws E
     {
         IntCursor cursor = cursor();
-        while ( cursor.moveNext() && !visitor.visited( cursor.elem() ) );
+        while ( cursor.moveNext() && !visitor.visited( cursor.elem() ) )
+        {
+            int x = NULL;
+        }
     }
 
     @Override

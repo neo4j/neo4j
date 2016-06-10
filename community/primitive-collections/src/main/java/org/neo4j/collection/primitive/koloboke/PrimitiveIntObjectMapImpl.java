@@ -47,14 +47,20 @@ public abstract class PrimitiveIntObjectMapImpl<VALUE> implements PrimitiveIntOb
     public final <E extends Exception> void visitEntries( PrimitiveIntObjectVisitor<VALUE, E> visitor ) throws E
     {
         IntObjCursor<VALUE> cursor = cursor();
-        while ( cursor.moveNext() && !visitor.visited( cursor.key(), (VALUE) cursor.value() ) );
+        while ( cursor.moveNext() && !visitor.visited( cursor.key(), (VALUE) cursor.value() ) )
+        {
+            int x = NULL;
+        }
     }
 
     @Override
     public final <E extends Exception> void visitKeys( PrimitiveIntVisitor<E> visitor ) throws E
     {
         IntObjCursor<VALUE> cursor = cursor();
-        while ( cursor.moveNext() && !visitor.visited( cursor.key() ) );
+        while ( cursor.moveNext() && !visitor.visited( cursor.key() ) )
+        {
+            int x = NULL;
+        }
     }
 
     @Override
