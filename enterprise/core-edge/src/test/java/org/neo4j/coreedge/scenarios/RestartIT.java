@@ -31,7 +31,7 @@ import org.junit.Test;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
+import org.neo4j.coreedge.discovery.SharedDiscoveryService;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -68,7 +68,7 @@ public class RestartIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
+        cluster = Cluster.start( dbDir, 3, 0, new SharedDiscoveryService() );
 
         // when
         cluster.removeCoreServerWithServerId( 0 );
@@ -83,7 +83,7 @@ public class RestartIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
+        cluster = Cluster.start( dbDir, 3, 0, new SharedDiscoveryService() );
 
         // when
         cluster.removeCoreServerWithServerId( 1 );
@@ -98,7 +98,7 @@ public class RestartIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
+        cluster = Cluster.start( dbDir, 3, 0, new SharedDiscoveryService() );
 
         // when
         final GraphDatabaseService coreDB = cluster.getCoreServerById( 0 );
@@ -134,7 +134,7 @@ public class RestartIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 2, 1, new TestOnlyDiscoveryServiceFactory() );
+        cluster = Cluster.start( dbDir, 2, 1, new SharedDiscoveryService() );
 
         // when
         final GraphDatabaseService coreDB = cluster.awaitLeader( 5000 );

@@ -41,7 +41,6 @@ import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.ListenSocketAddress;
 import org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule;
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -82,7 +81,7 @@ class HazelcastServerLifecycle extends LifecycleAdapter
             String registrationId = hazelcastInstance.getCluster().addMembershipListener( hazelcastListener );
             membershipRegistrationId.put( hazelcastListener, registrationId );
         }
-        listener.onTopologyChange( currentTopology() );
+        listener.onTopologyChange();
     }
 
     @Override
@@ -171,7 +170,7 @@ class HazelcastServerLifecycle extends LifecycleAdapter
         AdvertisedSocketAddress raftAddress = config.get( CoreEdgeClusterSettings.raft_advertised_address );
         memberAttributeConfig.setStringAttribute( RAFT_SERVER, raftAddress.toString() );
 
-        HostnamePort boltAddress = EnterpriseEdgeEditionModule.extractBoltAddress( config );
+        AdvertisedSocketAddress boltAddress = EnterpriseEdgeEditionModule.extractBoltAddress( config );
         memberAttributeConfig.setStringAttribute( BOLT_SERVER, boltAddress.toString() );
 
         c.setMemberAttributeConfig( memberAttributeConfig );
@@ -211,7 +210,7 @@ class HazelcastServerLifecycle extends LifecycleAdapter
             HazelcastClusterTopology clusterTopology = new HazelcastClusterTopology(
                     hazelcastInstance.getCluster().getMembers(),
                     HazelcastClient.edgeMembers(hazelcastInstance) );
-            listener.onTopologyChange( clusterTopology );
+            listener.onTopologyChange();
         }
 
         @Override
@@ -220,7 +219,7 @@ class HazelcastServerLifecycle extends LifecycleAdapter
             HazelcastClusterTopology clusterTopology = new HazelcastClusterTopology(
                     hazelcastInstance.getCluster().getMembers(),
                     HazelcastClient.edgeMembers(hazelcastInstance) );
-            listener.onTopologyChange( clusterTopology );
+            listener.onTopologyChange();
         }
 
         @Override

@@ -20,44 +20,33 @@
 package org.neo4j.coreedge.discovery;
 
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.BoltAddress;
-import org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
-class TestOnlyEdgeTopologyService extends LifecycleAdapter implements EdgeTopologyService
+class SharedDiscoveryEdgeClient extends LifecycleAdapter implements EdgeTopologyService
 {
-    private final BoltAddress edgeMe;
-    private final TestOnlyDiscoveryServiceFactory cluster;
+    private final SharedDiscoveryService sharedDiscoveryService;
+    private final Log log;
 
-    TestOnlyEdgeTopologyService( Config config, TestOnlyDiscoveryServiceFactory cluster )
+    SharedDiscoveryEdgeClient( SharedDiscoveryService sharedDiscoveryService, LogProvider logProvider )
     {
-        this.cluster = cluster;
-        this.edgeMe = toEdge( config );
-    }
-
-    private BoltAddress toEdge( Config config )
-    {
-        return new BoltAddress(
-                new AdvertisedSocketAddress(
-                        EnterpriseEdgeEditionModule.extractBoltAddress( config ).toString() ) );
-    }
-
-    @Override
-    public void stop()
-    {
-        cluster.edgeMembers.remove( edgeMe );
-    }
-
-    @Override
-    public ClusterTopology currentTopology()
-    {
-        return new TestOnlyClusterTopology( false, cluster.coreMembers, cluster.boltAddresses, cluster.edgeMembers );
+        this.sharedDiscoveryService = sharedDiscoveryService;
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
     public void registerEdgeServer( AdvertisedSocketAddress address )
     {
-        cluster.edgeMembers.add( edgeMe );
+        sharedDiscoveryService.registerEdgeServer( address );
+        log.info( "Registered edge server at %s", address );
+    }
+
+    @Override
+    public ClusterTopology currentTopology()
+    {
+        ClusterTopology topology = sharedDiscoveryService.currentTopology( null );
+        log.info( "Current topology is %s", topology );
+        return topology;
     }
 }

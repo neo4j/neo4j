@@ -25,7 +25,7 @@ import org.junit.runners.model.Statement;
 
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
-import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
+import org.neo4j.coreedge.discovery.SharedDiscoveryService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.rule.TargetDirectory;
@@ -46,7 +46,7 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
 
     private int noCoreServers = 3;
     private int noEdgeServers = 3;
-    private DiscoveryServiceFactory factory = new TestOnlyDiscoveryServiceFactory();
+    private DiscoveryServiceFactory factory = new SharedDiscoveryService();
     private Map<String,String> coreParams = stringMap();
     private Map<String,IntFunction<String>> instanceCoreParams = new HashMap<>();
     private Map<String,String> edgeParams = stringMap();

@@ -27,7 +27,6 @@ import com.hazelcast.core.Member;
 
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.BoltAddress;
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -108,7 +107,7 @@ class HazelcastClient extends LifecycleAdapter implements EdgeTopologyService
     }
 
     @Override
-    public void registerEdgeServer( HostnamePort address )
+    public void registerEdgeServer( AdvertisedSocketAddress address )
     {
         hazelcastInstance.getSet( EDGE_SERVERS ).add( address.toString() );
     }

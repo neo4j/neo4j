@@ -32,7 +32,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.neo4j.coreedge.convert.ConvertClassicStoreCommand;
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
+import org.neo4j.coreedge.discovery.SharedDiscoveryService;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
@@ -102,7 +102,7 @@ public class ConvertNonCoreEdgeStoreIT
             new ConvertClassicStoreCommand( destination, recordFormat ).execute();
         }
 
-        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory(), recordFormat );
+        cluster = Cluster.start( dbDir, 3, 0, new SharedDiscoveryService(), recordFormat );
 
         // when
         GraphDatabaseService coreDB = cluster.awaitLeader( 5000 );

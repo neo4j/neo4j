@@ -19,9 +19,9 @@
  */
 package org.neo4j.coreedge.discovery;
 
-import org.neo4j.helpers.HostnamePort;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 
 public interface EdgeTopologyService extends ReadOnlyTopologyService
 {
-    void registerEdgeServer( HostnamePort address );
+    void registerEdgeServer( AdvertisedSocketAddress address );
 }

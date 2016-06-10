@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
+import org.neo4j.coreedge.discovery.SharedDiscoveryService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -78,7 +78,7 @@ public class ClusterShutdownIT
         final File dbDir = dir.directory();
 
         // given - a cluster
-        final Cluster cluster = Cluster.start( dbDir, clusterSize, 0, new TestOnlyDiscoveryServiceFactory() );
+        final Cluster cluster = Cluster.start( dbDir, clusterSize, 0, new SharedDiscoveryService() );
 
         try
         {

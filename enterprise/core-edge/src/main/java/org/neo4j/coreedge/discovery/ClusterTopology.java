@@ -27,7 +27,7 @@ import org.neo4j.coreedge.server.CoreMember;
 
 public interface ClusterTopology
 {
-    boolean bootstrappable();
+    boolean canBeBootstrapped();
 
     Set<CoreMember> coreMembers();
 

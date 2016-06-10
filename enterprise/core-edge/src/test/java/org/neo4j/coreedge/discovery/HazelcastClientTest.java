@@ -34,6 +34,7 @@ import com.hazelcast.core.ItemListener;
 import com.hazelcast.core.Member;
 import org.junit.Test;
 
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -220,7 +221,7 @@ public class HazelcastClientTest
 
         // when
         client.currentTopology();
-        client.registerEdgeServer( new HostnamePort( "localhost:7000" ) );
+        client.registerEdgeServer( new AdvertisedSocketAddress( "localhost:7000" ) );
 
         // then
         assertEquals( 1, client.currentTopology().edgeMembers().size() );

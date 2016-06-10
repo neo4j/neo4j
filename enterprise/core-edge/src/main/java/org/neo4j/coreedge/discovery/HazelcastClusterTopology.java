@@ -45,7 +45,7 @@ public class HazelcastClusterTopology implements ClusterTopology
     }
 
     @Override
-    public boolean bootstrappable()
+    public boolean canBeBootstrapped()
     {
         Member firstMember = coreMembers.iterator().next();
         return firstMember.localMember();
