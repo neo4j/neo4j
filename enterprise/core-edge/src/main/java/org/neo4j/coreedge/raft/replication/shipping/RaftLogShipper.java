@@ -139,7 +139,7 @@ public class RaftLogShipper<MEMBER>
 
     public synchronized void start()
     {
-        log.info( "Starting log shipper to: " + follower );
+        log.info( "Starting log shipper: %s", statusAsString() );
 
         try
         {
@@ -154,7 +154,7 @@ public class RaftLogShipper<MEMBER>
             // TODO: service is a LifeCycle.
             // TODO: Should we have and use one system level timeout service instead?
 
-            log.error( "Failed to start log shipper to: " + follower, e );
+            log.error( "Failed to start log shipper " + statusAsString(), e );
         }
 
         sendSingle( raftLog.appendIndex(), lastLeaderContext );
@@ -162,7 +162,7 @@ public class RaftLogShipper<MEMBER>
 
     public synchronized void stop()
     {
-        log.info( "Stopping log shipper to: " + follower );
+        log.info( "Stopping log shipper %s", statusAsString() );
 
         try
         {
@@ -171,7 +171,7 @@ public class RaftLogShipper<MEMBER>
         }
         catch ( Throwable e )
         {
-            log.error( "Failed to start log shipper to: " + follower, e );
+            log.error( "Failed to start log shipper " + statusAsString(), e );
         }
         abortTimeout();
     }
@@ -186,7 +186,8 @@ public class RaftLogShipper<MEMBER>
             break;
         case PIPELINE:
         case CATCHUP:
-            log.info( format( "Mismatch in mode %s from follower %s", mode, follower ) );
+            log.info( "%s: mismatch in mode %s from follower %s, moving to MISMATCH mode",
+                    statusAsString(), mode, follower );
             mode = Mode.MISMATCH;
             sendSingle( lastSentIndex, leaderContext );
             break;
@@ -205,12 +206,12 @@ public class RaftLogShipper<MEMBER>
         case MISMATCH:
             if ( sendNextBatchAfterMatch( leaderContext ) )
             {
-                log.info( format( "Caught up after mismatch: %s", follower ) );
+                log.info( "%s: caught up after mismatch, moving to PIPELINE mode", statusAsString() );
                 mode = Mode.PIPELINE;
             }
             else
             {
-                log.info( format( "Starting catch up after mismatch: %s", follower ) );
+                log.info( "%s: starting catch up after mismatch, moving to CATCHUP mode", statusAsString() );
                 mode = Mode.CATCHUP;
             }
             break;
@@ -219,7 +220,7 @@ public class RaftLogShipper<MEMBER>
             {
                 if ( sendNextBatchAfterMatch( leaderContext ) )
                 {
-                    log.info( format( "Caught up: %s", follower ) );
+                    log.info( "%s: caught up, moving to PIPELINE mode", statusAsString() );
                     mode = Mode.PIPELINE;
                 }
             }
@@ -255,6 +256,7 @@ public class RaftLogShipper<MEMBER>
                     /* The timer is still set at this point. Either we will send the next batch
                      * as soon as the follower has caught up with the last pipelined entry,
                      * or when we timeout and resend. */
+                    log.info("%s: follower has fallen behind (target prevLogIndex was %d, maxAllowedShippingLag is %d), moving to CATCHUP mode", statusAsString(), prevLogIndex, maxAllowedShippingLag );
                     mode = Mode.CATCHUP;
                     break;
                 }
@@ -301,7 +303,7 @@ public class RaftLogShipper<MEMBER>
         }
         catch ( Throwable e )
         {
-            log.error( "Exception during timeout handling: " + follower, e );
+            log.error( "Exception during timeout handling: " + statusAsString(), e );
         }
     }
 
@@ -312,6 +314,7 @@ public class RaftLogShipper<MEMBER>
         case PIPELINE:
             /* we leave pipelined mode here, because the follower seems
              * unresponsive and we do not want to spam it with new entries */
+            log.info( "%s: timed out, moving to CATCHUP mode", statusAsString() );
             mode = Mode.CATCHUP;
             /* fallthrough */
         case CATCHUP:
@@ -399,8 +402,8 @@ public class RaftLogShipper<MEMBER>
 
             if ( prevLogTerm > leaderContext.term )
             {
-                log.warn(
-                        format( "Aborting send. Not leader anymore? %s, prevLogTerm=%d", leaderContext, prevLogTerm ) );
+                log.warn( "%s aborting send. Not leader anymore? %s, prevLogTerm=%d",
+                        statusAsString(), leaderContext, prevLogTerm );
                 return;
             }
 
@@ -431,9 +434,9 @@ public class RaftLogShipper<MEMBER>
         catch ( IOException e )
         {
             log.warn(
-                    "Tried to send entry at index %d that can't be found in the raft log; it has likely been pruned. " +
+                    "%s tried to send entry at index %d that can't be found in the raft log; it has likely been pruned. " +
                             "This is a temporary state and the system should recover automatically in a short while.",
-                    logIndex );
+                    statusAsString(), logIndex );
         }
     }
 
@@ -469,8 +472,8 @@ public class RaftLogShipper<MEMBER>
 
             if ( prevLogTerm > leaderContext.term )
             {
-                log.warn(
-                        format( "Aborting send. Not leader anymore? %s, prevLogTerm=%d", leaderContext, prevLogTerm ) );
+                log.warn( "%s aborting send. Not leader anymore? %s, prevLogTerm=%d",
+                        statusAsString(), leaderContext, prevLogTerm );
                 return;
             }
 
@@ -486,8 +489,8 @@ public class RaftLogShipper<MEMBER>
                     entries[offset] = cursor.get();
                     if ( entries[offset].term() > leaderContext.term )
                     {
-                        log.warn( format( "Aborting send. Not leader anymore? %s, entryTerm=%d", leaderContext,
-                                entries[offset].term() ) );
+                        log.warn( "%s aborting send. Not leader anymore? %s, entryTerm=%d",
+                                statusAsString(), leaderContext, entries[offset].term() );
                         return;
                     }
                     offset++;
@@ -498,7 +501,13 @@ public class RaftLogShipper<MEMBER>
         }
         catch ( IOException e )
         {
-            log.warn( "Exception during batch send", e );
+            log.warn( statusAsString() + " exception during batch send", e );
         }
+    }
+
+    private String statusAsString()
+    {
+        return format( "%s[matchIndex: %d, lastSentIndex: %d, localAppendIndex: %d, mode: %s]", follower, matchIndex,
+                lastSentIndex, raftLog.appendIndex(), mode );
     }
 }

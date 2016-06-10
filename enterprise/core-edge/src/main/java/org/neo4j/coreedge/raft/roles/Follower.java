@@ -105,9 +105,10 @@ public class Follower implements RaftMessageHandler
 
             case ELECTION_TIMEOUT:
             {
-                if ( Election.start( ctx, outcome ) )
+                if ( Election.start( ctx, outcome, log ) )
                 {
                     outcome.setNextRole( CANDIDATE );
+                    log.info( "Moving to CANDIDATE state after successfully starting election %n" );
                 }
                 break;
             }

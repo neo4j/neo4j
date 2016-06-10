@@ -46,7 +46,7 @@ public class Leader implements RaftMessageHandler
         return new FilteringIterable<>( ctx.replicationMembers(), member -> !member.equals( ctx.myself() ) );
     }
 
-    static <MEMBER> void sendHeartbeats( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome ) throws IOException
+    private static <MEMBER> void sendHeartbeats( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome ) throws IOException
     {
         long commitIndex = ctx.leaderCommit();
         long commitIndexTerm = ctx.entryLog().readEntryTerm( commitIndex );
@@ -76,6 +76,8 @@ public class Leader implements RaftMessageHandler
 
                 outcome.steppingDown();
                 outcome.setNextRole( FOLLOWER );
+                log.info( "Moving to FOLLOWER state after receiving heartbeat at term %d (my term is " +
+                        "%d) from %s%n", req.leaderTerm(), ctx.term(), req.from() );
                 Heart.beat( ctx, outcome, (Heartbeat<MEMBER>) message );
                 break;
             }
@@ -108,6 +110,8 @@ public class Leader implements RaftMessageHandler
                     // There is a new leader in a later term, we should revert to follower. (§5.1)
                     outcome.steppingDown();
                     outcome.setNextRole( FOLLOWER );
+                    log.info( "Moving to FOLLOWER state after receiving append request at term %d (my term is " +
+                            "%d) from %s%n", req.leaderTerm(), ctx.term(), req.from() );
                     Appending.handleAppendEntriesRequest( ctx, outcome, req );
                     break;
                 }
@@ -128,6 +132,8 @@ public class Leader implements RaftMessageHandler
                     outcome.setNextTerm( response.term() );
                     outcome.steppingDown();
                     outcome.setNextRole( FOLLOWER );
+                    log.info( "Moving to FOLLOWER state after receiving append response at term %d (my term is " +
+                            "%d) from %s%n", response.term(), ctx.term(), response.from() );
                     outcome.replaceFollowerStates( new FollowerStates<>() );
                     break;
                 }
@@ -197,6 +203,8 @@ public class Leader implements RaftMessageHandler
                 if ( req.term() > ctx.term() )
                 {
                     outcome.steppingDown();
+                    log.info( "Moving to FOLLOWER state after receiving vote request at term %d (my term is " +
+                            "%d) from %s%n", req.term(), ctx.term(), req.from() );
                     outcome.setNextRole( FOLLOWER );
                     Voting.handleVoteRequest( ctx, outcome, req );
                     break;
