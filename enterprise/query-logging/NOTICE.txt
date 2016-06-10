@@ -25,6 +25,8 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Koloboke Collections API
+  Koloboke Collections Implementation Commons (for Implementation Library and Koloboke Compile)
   Lucene Core
   Lucene Memory
 

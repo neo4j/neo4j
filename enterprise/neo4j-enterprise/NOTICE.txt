@@ -33,6 +33,8 @@ Apache Software License, Version 2.0
   Ehcache Core
   Graphite Integration for Metrics
   hazelcast-all
+  Koloboke Collections API
+  Koloboke Collections Implementation Commons (for Implementation Library and Koloboke Compile)
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core

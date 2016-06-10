@@ -27,6 +27,8 @@ Apache Software License, Version 2.0
   Jetty :: Utilities
   Jetty :: Webapp Application Support
   Jetty :: XML utilities
+  Koloboke Collections API
+  Koloboke Collections Implementation Commons (for Implementation Library and Koloboke Compile)
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core

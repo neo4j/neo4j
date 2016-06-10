@@ -8,6 +8,8 @@ Apache Software License, Version 2.0
   Apache Shiro :: Support :: EHCache
   Commons BeanUtils
   Ehcache Core
+  Koloboke Collections API
+  Koloboke Collections Implementation Commons (for Implementation Library and Koloboke Compile)
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
