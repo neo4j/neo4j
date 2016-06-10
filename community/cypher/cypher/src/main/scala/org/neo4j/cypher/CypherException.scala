@@ -136,7 +136,7 @@ class ArithmeticException(message: String, cause: Throwable) extends CypherExcep
 }
 
 class IncomparableValuesException(lhs: String, rhs: String, cause: Throwable)
-  extends SyntaxException(s"Don't know how to compare that. Left: ${lhs}; Right: ${rhs}", cause) {
+  extends CypherTypeException(s"Don't know how to compare that. Left: $lhs; Right: $rhs", cause) {
   def this(lhs: String, rhs: String) = this(lhs, rhs, null)
 }
 
