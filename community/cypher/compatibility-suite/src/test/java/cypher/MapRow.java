@@ -17,40 +17,45 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_1.codegen;
+package cypher;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-import org.neo4j.cypher.internal.compiler.v3_1.spi.InternalResultRow;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Result;
 
-public class ResultRowImpl implements InternalResultRow
+import static org.neo4j.helpers.Exceptions.withCause;
+
+public class MapRow implements Result.ResultRow
 {
-    private Map<String, Object> results;
+    private final Map<String, Object> map;
 
-    public ResultRowImpl( Map<String, Object> results )
+    public MapRow( Map<String, Object> map )
     {
-        this.results = results;
+        this.map = map;
     }
 
-    public ResultRowImpl( )
+    private <T> T get( String key, Class<T> type )
     {
-        this( new HashMap<>() );
-    }
-
-    public void set( String k, Object value)
-    {
-        results.put( k, value );
-    }
-
-    @Override
-    public Object get( String key )
-    {
-        return get( key, Object.class );
+        Object value = map.get( key );
+        if ( value == null )
+        {
+            if ( !map.containsKey( key ) )
+            {
+                throw new NoSuchElementException( "No such entry: " + key );
+            }
+        }
+        try
+        {
+            return type.cast( value );
+        }
+        catch ( ClassCastException e )
+        {
+            throw withCause( new NoSuchElementException( "Element '" + key + "' is not a " + type.getSimpleName() ), e );
+        }
     }
 
     @Override
@@ -63,6 +68,12 @@ public class ResultRowImpl implements InternalResultRow
     public Relationship getRelationship( String key )
     {
         return get( key, Relationship.class );
+    }
+
+    @Override
+    public Object get( String key )
+    {
+        return get( key, Object.class );
     }
 
     @Override
@@ -87,24 +98,5 @@ public class ResultRowImpl implements InternalResultRow
     public Path getPath( String key )
     {
         return get( key, Path.class );
-    }
-
-    private <T> T get( String key, Class<T> type )
-    {
-        Object value = results.get( key );
-        if ( value == null && !results.containsKey( key ) )
-        {
-            throw new IllegalArgumentException( "No column \"" + key + "\" exists" );
-        }
-        try
-        {
-            return type.cast( value );
-        }
-        catch ( ClassCastException e )
-        {
-            String message = String.format("The current item in column \"%s\" is not a %s; it's \"%s\"",
-                    key, type.getSimpleName(), value);
-            throw new NoSuchElementException(message);
-        }
     }
 }

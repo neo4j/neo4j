@@ -21,11 +21,13 @@ package cypher.feature.parser
 
 import java.util.Collections
 
+import cypher.MapRow
 import cypher.feature.parser.matchers.ResultMatcher
 import org.junit.runner.RunWith
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb._
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -90,6 +92,9 @@ abstract class ParsingTestSupport extends FunSuite with Matchers with DecorateAs
 
   def result(maps: Map[String, AnyRef]*): Result = {
     val result = mock(classOf[Result])
+    val cols = if (maps.isEmpty) Seq.empty[String] else maps.head.keys
+    maps.foreach(_.keys should equal(cols))
+
     val itr = maps.map(_.asJava).iterator
     when(result.hasNext).thenAnswer(new Answer[Boolean] {
       override def answer(invocation: InvocationOnMock): Boolean = itr.hasNext
@@ -98,6 +103,19 @@ abstract class ParsingTestSupport extends FunSuite with Matchers with DecorateAs
       override def answer(invocation: InvocationOnMock) = itr.next
     })
     when(result.toString).thenReturn(s"Result:\n${maps.mkString("\n")}")
+
+    when(result.columns()).thenReturn(cols.toList.asJava)
+
+    when(result.accept(org.mockito.Matchers.any())).thenAnswer(new Answer[Unit] {
+      override def answer(invocationOnMock: InvocationOnMock): Unit = {
+        val visitor = invocationOnMock.getArgumentAt(0, classOf[ResultVisitor[_]])
+        var continue = true
+        while (continue && itr.hasNext) {
+          val row = new MapRow(itr.next())
+          continue = visitor.visit(row)
+        }
+      }
+    })
     result
   }
 

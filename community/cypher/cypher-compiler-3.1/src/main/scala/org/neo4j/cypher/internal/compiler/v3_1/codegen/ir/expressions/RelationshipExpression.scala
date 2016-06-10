@@ -30,7 +30,7 @@ case class RelationshipExpression(relId: Variable) extends CodeGenExpression {
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
     if (relId.nullable)
-      structure.nullablePrimitive(relId.name, CodeGenType.primitiveRel, structure.relationship(relId.name))
+      structure.nullableReference(relId.name, CodeGenType.primitiveRel, structure.relationship(relId.name))
     else
       structure.relationship(relId.name)
 
