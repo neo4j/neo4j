@@ -34,6 +34,7 @@ import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.Builder;
 import org.neo4j.kernel.impl.ha.ClusterManager.ClusterBuilder;
@@ -55,6 +56,23 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
  */
 public class ClusterRule extends ExternalResource implements ClusterBuilder<ClusterRule>
 {
+    private static final StoreDirInitializer defaultStoreDirInitializer =
+            new ClusterManager.StoreDirInitializer()
+            {
+                @Override
+                public void initializeStoreDir( int serverId, File storeDir ) throws IOException
+                {
+                    File[] files = storeDir.listFiles();
+                    if ( files != null )
+                    {
+                        for ( File file : files )
+                        {
+                            FileUtils.deleteRecursively( file );
+                        }
+                    }
+                }
+            };
+
     private ClusterManager.Builder clusterManagerBuilder;
     private ClusterManager clusterManager;
     private File storeDirectory;
@@ -69,7 +87,8 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
                 .withSharedSetting( default_timeout, "1s" )
                 .withSharedSetting( tx_push_factor, "0" )
                 .withSharedSetting( pagecache_memory, "8m" )
-                .withAvailabilityChecks( allSeesAllAsAvailable() );
+                .withAvailabilityChecks( allSeesAllAsAvailable() )
+                .withStoreDirInitializer( defaultStoreDirInitializer );
     }
 
     @Override
