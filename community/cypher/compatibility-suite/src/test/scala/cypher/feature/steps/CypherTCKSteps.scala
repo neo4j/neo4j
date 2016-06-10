@@ -42,6 +42,8 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
   val unsupportedScenarios = Set("Fail when adding new label predicate on already bound node 5",
                                  "Fail when trying to compare strings and numbers",
+                                 "Handling property access on the Any type",
+                                 "Failing when performing property access on a non-map 1",
                                  "`toInt()` handling `Any` type",
                                  "`toInt()` failing on invalid arguments",
                                  "`toFloat()` handling `Any` type",

@@ -30,7 +30,7 @@ case class TCKErrorHandler(typ: String, phase: String, detail: String) extends M
 
   def check(result: Try[Result]) = {
     phase match {
-      case TCKErrorPhases.COMPILE_TIME => checkError(result, typ, phase, detail)
+      case TCKErrorPhases.COMPILE_TIME => checkError(result, typ, phase, detail, compileTimeError)
       case TCKErrorPhases.RUNTIME => result match {
         case Success(triedResult) =>
           // might need to exhaust result to provoke error
@@ -40,8 +40,8 @@ case class TCKErrorHandler(typ: String, phase: String, detail: String) extends M
             }
             triedResult
           }
-          checkError(consumedResult, typ, phase, detail)
-        case x => checkError(x, typ, phase, detail)
+          checkError(consumedResult, typ, phase, detail, runtimeError)
+        case x => checkError(x, typ, phase, detail, runtimeError)
       }
       case _ => fail(s"Unknown phase $phase specified. Supported values are '${TCKErrorPhases.COMPILE_TIME}' and '${TCKErrorPhases.RUNTIME}'.")
     }
@@ -49,53 +49,13 @@ case class TCKErrorHandler(typ: String, phase: String, detail: String) extends M
 
   private val DOTALL = "(?s)"
 
-  private def checkError(result: Try[Result], typ: String, phase: String, detail: String) = {
+  private def checkError(result: Try[Result], typ: String, phase: String, detail: String, msgHandler: String => Boolean) = {
     val statusType = if (typ == TCKErrorTypes.CONSTRAINT_VALIDATION_FAILED) "Schema" else "Statement"
     result match {
       case Failure(e: QueryExecutionException) =>
         s"Neo.ClientError.$statusType.$typ" should equal(e.getStatusCode)
 
-        // Compile time errors
-        if (e.getMessage.matches("Invalid input .+ is not a valid value, must be a positive integer[\\s.\\S]+"))
-          detail should equal(NEGATIVE_INTEGER_ARGUMENT)
-        else if (e.getMessage.matches("Can't use aggregate functions inside of aggregate functions\\."))
-          detail should equal(NESTED_AGGREGATION)
-        else if (e.getMessage.matches("Can't create node `(\\w+)` with labels or properties here. The variable is already declared in this context"))
-          detail should equal(VARIABLE_ALREADY_BOUND)
-        else if (e.getMessage.matches("Can't create `\\w+` with properties or labels here. The variable is already declared in this context"))
-          detail should equal(VARIABLE_ALREADY_BOUND)
-        else if (e.getMessage.matches(s"${DOTALL}Type mismatch: expected .+ but was .+"))
-          detail should equal("InvalidArgumentType")
-        else if (e.getMessage.matches("Only directed relationships are supported in .+"))
-          detail should equal(REQUIRES_DIRECTED_RELATIONSHIP)
-        else if (e.getMessage.matches(s"${DOTALL}Invalid input '.*': expected an identifier character, whitespace, '\\|', a length specification, a property map or '\\]' \\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*"))
-          detail should equal("InvalidRelationshipPattern")
-        else if (e.getMessage.matches(s"${DOTALL}Invalid input '.*': expected whitespace, RangeLiteral, a property map or '\\]' \\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*"))
-          detail should equal("InvalidRelationshipPattern")
-
-        // Runtime errors
-        else if (e.getMessage.matches("Expected .+ to be a java.lang.String, but it was a .+"))
-          detail should equal(MAP_ELEMENT_ACCESS_BY_NON_STRING)
-        else if (e.getMessage.matches("Expected .+ to be a java.lang.Number, but it was a .+"))
-          detail should equal(LIST_ELEMENT_ACCESS_BY_NON_INTEGER)
-        else if (e.getMessage.matches(".+ is not a collection or a map. Element access is only possible by performing a collection lookup using an integer index, or by performing a map lookup using a string key .+"))
-          detail should equal(INVALID_ELEMENT_ACCESS)
-        else if (e.getMessage.matches(".+ can not create a new node due to conflicts with( both)? existing( and missing)? unique nodes.*"))
-          detail should equal(CREATE_BLOCKED_BY_CONSTRAINT)
-        else if (e.getMessage.matches("Node [0-9]+ already exists with label .+ and property \".+\"=\\[.+\\]"))
-          detail should equal(CREATE_BLOCKED_BY_CONSTRAINT)
-        else if (e.getMessage.matches("Cannot delete node\\<\\d+\\>, because it still has relationships. To delete this node, you must first delete its relationships."))
-          detail should equal(DELETE_CONNECTED_NODE)
-        else if (e.getMessage.matches("Don't know how to compare that\\..+"))
-          detail should equal(INCOMPARABLE_VALUES)
-        else if (e.getMessage.startsWith("It is not allowed to refer to variables in"))
-          detail should equal(VARIABLE_USE_NOT_ALLOWED)
-        else if (e.getMessage.matches("Invalid input '.+' is not a valid argument, must be a number in the range 0.0 to 1.0"))
-          detail should equal("NumberOutOfRange")
-        else if (e.getMessage.matches("Expected a String, Number or Boolean, got: .+"))
-          detail should equal("InvalidArgumentValue")
-
-        else fail(s"Unknown $phase error: $e", e)
+        if (!msgHandler(e.getMessage)) fail(s"Unknown $phase error: $e", e)
 
       case Failure(e) =>
         fail(s"Unknown $phase error: $e", e)
@@ -103,6 +63,93 @@ case class TCKErrorHandler(typ: String, phase: String, detail: String) extends M
       case _: Success[_] =>
         fail(s"No $phase error was raised")
     }
-
   }
+
+  private def compileTimeError(msg: String): Boolean = {
+    var r = true
+
+    if (msg.matches("Invalid input '-(\\d)+' is not a valid value, must be a positive integer[\\s.\\S]+"))
+      detail should equal(NEGATIVE_INTEGER_ARGUMENT)
+    else if (msg.matches("Invalid input '.+' is not a valid value, must be a positive integer[\\s.\\S]+"))
+      detail should equal("InvalidArgumentType")
+    else if (msg.matches("Can't use aggregate functions inside of aggregate functions\\."))
+      detail should equal(NESTED_AGGREGATION)
+    else if (msg.matches("Can't create node `(\\w+)` with labels or properties here. The variable is already declared in this context"))
+      detail should equal(VARIABLE_ALREADY_BOUND)
+    else if (msg.matches("Can't create `\\w+` with properties or labels here. The variable is already declared in this context"))
+      detail should equal(VARIABLE_ALREADY_BOUND)
+    else if (msg.matches("Only directed relationships are supported in .+"))
+      detail should equal(REQUIRES_DIRECTED_RELATIONSHIP)
+    else if (msg.matches(s"${DOTALL}Type mismatch: expected .+ but was .+"))
+      detail should equal("InvalidArgumentType")
+    else if (msg.matches(semanticError("Variable `.+` not defined")))
+      detail should equal("UndefinedVariable")
+    else if (msg.matches(semanticError("Type mismatch: .+ already defined with conflicting type .+ \\(expected .+\\)")))
+      detail should equal("VariableTypeConflict")
+    else if (msg.matches(semanticError("Cannot use the same relationship variable '.+' for multiple patterns")))
+      detail should equal("RelationshipUniquenessViolation")
+    else if (msg.matches(semanticError("Variable length relationships cannot be used in ((CREATE)|(MERGE))")))
+      detail should equal("CreatingVarLength")
+    else if (msg.matches(semanticError("Parameter maps cannot be used in ((MATCH)|(MERGE)) patterns \\(use a literal map instead, eg. \"\\{id: \\{param\\}\\.id\\}\"\\)")))
+      detail should equal("InvalidParameterUse")
+    else if (msg.matches(semanticError("Variable `.+` already declared")))
+      detail should equal(VARIABLE_ALREADY_BOUND)
+    else if (msg.matches(semanticError("MATCH cannot follow OPTIONAL MATCH \\(perhaps use a WITH clause between them\\)")))
+      detail should equal("InvalidClauseComposition")
+    else if (msg.matches(semanticError("floating point number is too large")))
+      detail should equal("FloatingPointOverflow")
+    else if (msg.matches(semanticError("Argument to exists\\(\\.\\.\\.\\) is not a property or pattern")))
+      detail should equal("InvalidArgumentExpression")
+    else if (msg.startsWith("Invalid input '—':"))
+      detail should equal("InvalidUnicode")
+    else if (msg.matches(semanticError("Can't use aggregating expressions inside of expressions executing over lists")))
+      detail should equal("InvalidAggregation")
+    else if (msg.matches(semanticError("It is not allowed to refer to variables in ((SKIP)|(LIMIT))")))
+      detail should equal("NonConstantExpression")
+    else if (msg.matches(semanticError("A single relationship type must be specified for ((CREATE)|(MERGE))")))
+      detail should equal("NoSingleRelationshipType")
+    else if (msg.matches(s"${DOTALL}Invalid input '.*': expected an identifier character, whitespace, '\\|', a length specification, a property map or '\\]' \\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*"))
+      detail should equal("InvalidRelationshipPattern")
+    else if (msg.matches(s"${DOTALL}Invalid input '.*': expected whitespace, RangeLiteral, a property map or '\\]' \\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*"))
+      detail should equal("InvalidRelationshipPattern")
+    else r = false
+
+    r
+  }
+
+  private def runtimeError(msg: String): Boolean = {
+    var r = true
+
+    if (msg.matches("Type mismatch: expected a map but was .+"))
+      detail should equal("PropertyAccessOnNonMap")
+    else if (msg.matches("Expected .+ to be a java.lang.String, but it was a .+"))
+      detail should equal(MAP_ELEMENT_ACCESS_BY_NON_STRING)
+    else if (msg.matches("Expected .+ to be a java.lang.Number, but it was a .+"))
+      detail should equal(LIST_ELEMENT_ACCESS_BY_NON_INTEGER)
+    else if (msg.matches(".+ is not a collection or a map. Element access is only possible by performing a collection lookup using an integer index, or by performing a map lookup using a string key .+"))
+      detail should equal(INVALID_ELEMENT_ACCESS)
+    else if (msg.matches(".+ can not create a new node due to conflicts with( both)? existing( and missing)? unique nodes.*"))
+      detail should equal(CREATE_BLOCKED_BY_CONSTRAINT)
+    else if (msg.matches("Node [0-9]+ already exists with label .+ and property \".+\"=\\[.+\\]"))
+      detail should equal(CREATE_BLOCKED_BY_CONSTRAINT)
+    else if (msg.matches("Cannot delete node\\<\\d+\\>, because it still has relationships. To delete this node, you must first delete its relationships."))
+      detail should equal(DELETE_CONNECTED_NODE)
+    else if (msg.matches("Don't know how to compare that\\..+"))
+      detail should equal(INCOMPARABLE_VALUES)
+    else if (msg.startsWith("It is not allowed to refer to variables in"))
+      detail should equal(VARIABLE_USE_NOT_ALLOWED)
+    else if (msg.matches("Invalid input '.+' is not a valid argument, must be a number in the range 0.0 to 1.0"))
+      detail should equal("NumberOutOfRange")
+    else if (msg.matches("step argument to range\\(\\) cannot be zero"))
+      detail should equal("NumberOutOfRange")
+    else if (msg.matches("Expected a String, Number or Boolean, got: .+"))
+      detail should equal("InvalidArgumentValue")
+    else r = false
+
+    r
+  }
+
+  private val POSITION_PATTERN = " \\(line .+, column .+ \\(offset: .+\\)\\).*"
+
+  private def semanticError(pattern: String): String = DOTALL + pattern + POSITION_PATTERN
 }
