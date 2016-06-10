@@ -144,6 +144,8 @@ case class TCKErrorHandler(typ: String, phase: String, detail: String) extends M
       detail should equal("NumberOutOfRange")
     else if (msg.matches("Expected a String, Number or Boolean, got: .+"))
       detail should equal("InvalidArgumentValue")
+    else if (msg.matches("The expression .+ should have been a node or a relationship, but got .+"))
+      detail should equal("RequiresNodeOrRelationship")
     else r = false
 
     r
