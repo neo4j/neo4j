@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v3_1.commands.predicates
 import org.neo4j.cypher.internal.compiler.v3_1.{CRS, GeographicPoint}
 import org.neo4j.graphdb.{Node, Path, Relationship}
 
-import scala.collection.{GenTraversableOnce}
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.GenTraversableOnce
 import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
 
 // Class that calculates if two values are equivalent or not.
 // Does not handle NULL values - that must be handled outside!
@@ -56,8 +56,8 @@ class Equivalent(protected val eagerizedValue: Any, val originalValue: Any) exte
 
   private def mixedFloatEquality(a: Float, b: Double) =
     a.doubleValue() == b.doubleValue() ||
-    (Math.rint(a.doubleValue()).toLong == b.longValue() &&
-     Math.rint(b.doubleValue()).toLong == a.longValue())
+      (Math.rint(a.doubleValue()).toLong == b.longValue() &&
+        Math.rint(b.doubleValue()).toLong == a.longValue())
 
   private var hash: Option[Int] = None
 
@@ -72,13 +72,13 @@ class Equivalent(protected val eagerizedValue: Any, val originalValue: Any) exte
   private def hashCode(o: Any): Int = o match {
     case null => 0
     case n: Number => n.longValue().hashCode()
-    case n:Tuple1[Any] => hashCode(n._1)
-    case (n1,n2) => 2 * (hashCode(n1) + hashCode(n2))
-    case (n1,n2,n3) => 3 * (hashCode(n1) + hashCode(n2) + hashCode(n3))
+    case n: Tuple1[Any] => hashCode(n._1)
+    case (n1, n2) => 31 * hashCode(n1) + hashCode(n2)
+    case (n1, n2, n3) => (31 * hashCode(n1) + hashCode(n2)) * 31 + hashCode(n3)
     case n: IndexedSeq[_] =>
       val length = n.length
       if (length > 0)
-        length * (hashCode(n.head) + hashCode(n(length/2))+ hashCode(n.last))
+        length * (31 * hashCode(n.head) + hashCode(n(length / 2)) * 31 + hashCode(n.last))
       else
         EMPTY_LIST
     case x => x.hashCode()
@@ -99,8 +99,8 @@ object Equivalent {
     case a: Char => a.toString
 
     case a: Array[_] => wrapEager(a)
-    case m: java.util.Map[_,_] => m.asScala.mapValues(eager)
-    case m: Map[_,_] => m.mapValues(eager)
+    case m: java.util.Map[_, _] => m.asScala.mapValues(eager)
+    case m: Map[_, _] => m.mapValues(eager)
     case a: TraversableOnce[_] => wrapEager(a)
     case l: java.lang.Iterable[_] => wrapEager(l.asScala)
     case l: GeographicPoint => l
@@ -112,7 +112,7 @@ object Equivalent {
     case x => throw new IllegalStateException(s"unknown value: ($x) of type ${x.getClass})")
   }
 
-  def wrapEager[T](x: GenTraversableOnce[T]): Any = {
+  private def wrapEager[T](x: GenTraversableOnce[T]): Any = {
     val it = x.toIterator
     if (it.isEmpty) return None
     val e1 = eager(it.next())
@@ -121,6 +121,9 @@ object Equivalent {
     if (it.isEmpty) return (e1, e2)
     val e3 = eager(it.next())
     if (it.isEmpty) return (e1, e2, e3)
-    it.foldLeft( ArrayBuffer(e1, e2, e3)){ case (a, k) => a += eager(it.next()) }
+
+    it.foldLeft(ArrayBuffer(e1, e2, e3)) {
+      case (acc, element: T) => acc += eager(element)
+    }
   }
 }
