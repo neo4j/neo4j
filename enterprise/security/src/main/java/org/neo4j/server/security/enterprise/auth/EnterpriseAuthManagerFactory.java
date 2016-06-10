@@ -21,6 +21,7 @@ package org.neo4j.server.security.enterprise.auth;
 
 import java.io.File;
 
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -51,17 +52,14 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
     public AuthManager newInstance( Config config, LogProvider logProvider )
     {
         // Resolve auth store file names
-        File authStoreDir = config.get( GraphDatabaseSettings.auth_store_dir );
-        File userStoreFile;
-        if ( authStoreDir != null )
+        File authStoreDir = config.get( DatabaseManagementSystemSettings.auth_store_directory );
+
+        // Because it contains sensitive information there is a legacy setting to configure
+        // the location of the user store file that we still respect
+        File userStoreFile = config.get( GraphDatabaseSettings.auth_store );
+        if ( userStoreFile == null )
         {
             userStoreFile = new File( authStoreDir, USER_STORE_FILENAME );
-        }
-        else
-        {
-            // Fallback on the directory of the legacy setting
-            userStoreFile = config.get( GraphDatabaseSettings.auth_store );
-            authStoreDir = userStoreFile.getParentFile();
         }
         File roleStoreFile = new File( authStoreDir, ROLE_STORE_FILENAME );
 

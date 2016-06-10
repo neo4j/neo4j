@@ -33,7 +33,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.shell.ShellSettings;
 
-import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
+import static org.neo4j.dbms.DatabaseManagementSystemSettings.auth_store_directory;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 
 public class ConfigLoader
@@ -104,9 +104,9 @@ public class ConfigLoader
         config.putIfAbsent( ShellSettings.remote_shell_enabled.name(), TRUE );
         config.putIfAbsent( GraphDatabaseSettings.auth_enabled.name(), "true" );
 
-        String dataDirectory = config.getOrDefault( data_directory.name(), data_directory.getDefaultValue() );
+        File authStoreDirectory = auth_store_directory.apply( ( name ) -> config.get( name ) );
         config.putIfAbsent( GraphDatabaseSettings.auth_store.name(),
-                new File( dataDirectory, "dbms/auth" ).toString() );
+                new File( authStoreDirectory, "auth" ).toString() );
     }
 
     private static Map<String, String> loadFromFile( Log log, File file )

@@ -32,6 +32,9 @@ Apache Software License, Version 2.0
   Lucene Core
   Lucene Memory
 
+BSD License
+  JLine
+
 MIT License
   SLF4J API Module
 
