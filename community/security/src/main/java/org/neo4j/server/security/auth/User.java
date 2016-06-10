@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.security.auth;
 
+import java.util.SortedSet;
+import java.util.TreeSet;
+
 /**
  * Controls authorization and authentication for an individual user.
  */
@@ -35,14 +38,16 @@ public class User
     /** Authentication credentials used by the built in username/password authentication scheme */
     private final Credential credential;
 
-    /** Whether a password change is needed */
-    private final boolean passwordChangeRequired;
+    /** Set of flags, eg. password_change_required */
+    private final SortedSet<String> flags;
 
-    public User(String name, Credential credential, boolean passwordChangeRequired)
+    public static final String PASSWORD_CHANGE_REQUIRED = "password_change_required";
+
+    private User( String name, Credential credential, SortedSet<String> flags )
     {
         this.name = name;
         this.credential = credential;
-        this.passwordChangeRequired = passwordChangeRequired;
+        this.flags = flags;
     }
 
     public String name()
@@ -55,7 +60,10 @@ public class User
         return credential;
     }
 
-    public boolean passwordChangeRequired() { return passwordChangeRequired; }
+    public boolean hasFlag(String flag) { return flags.contains(flag); }
+    public Iterable<String> getFlags() { return flags; }
+
+    public boolean passwordChangeRequired() { return flags.contains( PASSWORD_CHANGE_REQUIRED ); }
 
     /** Use this user as a base for a new user object */
     public Builder augment() { return new Builder(this); }
@@ -74,7 +82,7 @@ public class User
 
         User user = (User) o;
 
-        if ( passwordChangeRequired != user.passwordChangeRequired )
+        if ( !flags.equals( user.flags ) )
         {
             return false;
         }
@@ -95,7 +103,7 @@ public class User
     {
         int result = name != null ? name.hashCode() : 0;
         result = 31 * result + ( credential != null ? credential.hashCode() : 0);
-        result = 31 * result + (passwordChangeRequired ? 1 : 0);
+        result = 31 * result + ( flags.hashCode() );
         return result;
     }
 
@@ -105,7 +113,7 @@ public class User
         return "User{" +
                 "name='" + name + '\'' +
                 ", credentials=" + credential +
-                ", passwordChangeRequired=" + passwordChangeRequired +
+                ", flags=" + flags.toString() +
                 '}';
     }
 
@@ -113,24 +121,44 @@ public class User
     {
         private String name;
         private Credential credential = Credential.INACCESSIBLE;
-        private boolean pwdChangeRequired;
+        private TreeSet<String> flags = new TreeSet<>();
 
         public Builder() { }
+
+        public Builder( String name, Credential credential )
+        {
+            this.name = name;
+            this.credential = credential;
+        }
 
         public Builder( User base )
         {
             name = base.name;
             credential = base.credential;
-            pwdChangeRequired = base.passwordChangeRequired;
+            flags.addAll( base.flags );
         }
 
         public Builder withName( String name ) { this.name = name; return this; }
         public Builder withCredentials( Credential creds ) { this.credential = creds; return this; }
-        public Builder withRequiredPasswordChange( boolean change ) { this.pwdChangeRequired = change; return this; }
+        public Builder withFlag( String flag ) { this.flags.add(flag); return this; }
+        public Builder withoutFlag( String flag ) { this.flags.remove(flag); return this; }
+
+        public Builder withRequiredPasswordChange( boolean change )
+        {
+            if ( change )
+            {
+                withFlag( PASSWORD_CHANGE_REQUIRED );
+            }
+            else
+            {
+                withoutFlag( PASSWORD_CHANGE_REQUIRED );
+            }
+            return this;
+        }
 
         public User build()
         {
-            return new User(name, credential, pwdChangeRequired );
+            return new User(name, credential, flags );
         }
     }
 }

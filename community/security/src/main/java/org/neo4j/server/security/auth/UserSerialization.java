@@ -71,9 +71,11 @@ public class UserSerialization
 
     private String serialize( User user )
     {
-        return join( userSeparator, user.name(),
+        return String.join( userSeparator,
+                user.name(),
                 serialize( user.credentials() ),
-                user.passwordChangeRequired() ? "password_change_required" : "" );
+                String.join( ",", user.getFlags() )
+            );
     }
 
     private User deserializeUser( String line, int lineNumber ) throws FormatException
@@ -81,20 +83,31 @@ public class UserSerialization
         String[] parts = line.split( userSeparator, -1 );
         if ( parts.length != 3 )
         {
-            throw new FormatException( format( "wrong number of line fields [line %d]", lineNumber ) );
+            throw new FormatException( format( "wrong number of line fields, expected 3, got %d [line %d]",
+                    parts.length,
+                    lineNumber
+            ) );
         }
-        return new User.Builder()
+
+        User.Builder b = new User.Builder()
                 .withName( parts[0] )
-                .withCredentials( deserializeCredentials( parts[1], lineNumber ) )
-                .withRequiredPasswordChange( parts[2].equals( "password_change_required" ) )
-                .build();
+                .withCredentials( deserializeCredentials( parts[1], lineNumber ) );
+
+        for ( String flag : parts[2].split( ",", -1 ))
+        {
+            String trimmed = flag.trim();
+            if (!trimmed.isEmpty())
+                b = b.withFlag( trimmed );
+        }
+
+        return  b.build();
     }
 
     private String serialize( Credential cred )
     {
         String encodedSalt = HexString.encodeHexString( cred.salt() );
         String encodedPassword = HexString.encodeHexString( cred.passwordHash() );
-        return join( credentialSeparator, Credential.DIGEST_ALGO, encodedPassword, encodedSalt );
+        return String.join( credentialSeparator, Credential.DIGEST_ALGO, encodedPassword, encodedSalt );
     }
 
     private Credential deserializeCredentials( String part, int lineNumber ) throws FormatException
@@ -111,16 +124,5 @@ public class UserSerialization
         byte[] decodedPassword = HexString.decodeHexString( split[1] );
         byte[] decodedSalt = HexString.decodeHexString( split[2] );
         return new Credential( decodedSalt, decodedPassword );
-    }
-
-    private String join( String separator, String... segments )
-    {
-        StringBuilder sb = new StringBuilder();
-        for ( int i = 0; i < segments.length; i++ )
-        {
-            if(i > 0) { sb.append( separator ); }
-            sb.append( segments[i] == null ? "" : segments[i] );
-        }
-        return sb.toString();
     }
 }

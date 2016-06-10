@@ -33,6 +33,7 @@ import org.neo4j.server.security.auth.User;
 
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -58,6 +59,7 @@ public class ShiroAuthManagerTest
         users = new InMemoryUserRepository();
         roles = new InMemoryRoleRepository();
         authStrategy = mock( AuthenticationStrategy.class );
+        when( authStrategy.isAuthenticationPermitted( anyString() ) ).thenReturn( true );
         passwordPolicy = mock( PasswordPolicy.class );
         manager = new ShiroAuthManager( users, roles, passwordPolicy, authStrategy, true );
         manager.init();
@@ -89,10 +91,9 @@ public class ShiroAuthManagerTest
     public void shouldFindAndAuthenticateUserSuccessfully() throws Throwable
     {
         // Given
-        final User user = new User( "jake", Credential.forPassword( "abc123" ), false );
+        final User user = newUser( "jake", "abc123" , false );
         users.create( user );
         manager.start();
-        when( authStrategy.isAuthenticationPermitted( user.name() )).thenReturn( true );
 
         // When
         AuthenticationResult result = manager.login( "jake", "abc123" ).getAuthenticationResult();
@@ -105,9 +106,10 @@ public class ShiroAuthManagerTest
     public void shouldFindAndAuthenticateUserAndReturnAuthStrategyResult() throws Throwable
     {
         // Given
-        final User user = new User( "jake", Credential.forPassword( "abc123" ), true );
+        final User user = newUser( "jake", "abc123" , true );
         users.create( user );
         manager.start();
+        when( authStrategy.isAuthenticationPermitted( user.name() )).thenReturn( false );
 
         // When
         AuthSubject authSubject = manager.login( "jake", "abc123" );
@@ -121,10 +123,9 @@ public class ShiroAuthManagerTest
     public void shouldFindAndAuthenticateUserAndReturnPasswordChangeIfRequired() throws Throwable
     {
         // Given
-        final User user = new User( "jake", Credential.forPassword( "abc123" ), true );
+        final User user = newUser( "jake", "abc123" , true );
         users.create( user );
         manager.start();
-        when( authStrategy.isAuthenticationPermitted( user.name() )).thenReturn( true );
 
         // When
         AuthenticationResult result = manager.login( "jake", "abc123" ).getAuthenticationResult();
@@ -137,10 +138,9 @@ public class ShiroAuthManagerTest
     public void shouldFailAuthenticationIfUserIsNotFound() throws Throwable
     {
         // Given
-        final User user = new User( "jake", Credential.forPassword( "abc123" ), true );
+        final User user = newUser( "jake", "abc123" , true );
         users.create( user );
         manager.start();
-        when( authStrategy.isAuthenticationPermitted( "unknown" )).thenReturn( true );
 
         // When
         AuthSubject authSubject = manager.login( "unknown", "abc123" );
@@ -172,8 +172,8 @@ public class ShiroAuthManagerTest
         System.out.println("shouldDeleteUser");
 
         // Given
-        final User user = new User( "jake", Credential.forPassword( "abc123" ), true );
-        final User user2 = new User( "craig", Credential.forPassword( "321cba" ), true );
+        final User user = newUser( "jake", "abc123" , true );
+        final User user2 = newUser( "craig", "321cba" , true );
         users.create( user );
         users.create( user2 );
         manager.start();
@@ -190,7 +190,7 @@ public class ShiroAuthManagerTest
     public void shouldFailDeletingUnknownUser() throws Throwable
     {
         // Given
-        final User user = new User( "jake", Credential.forPassword( "abc123" ), true );
+        final User user = newUser( "jake", "abc123" , true );
         users.create( user );
         manager.start();
 
@@ -210,10 +210,114 @@ public class ShiroAuthManagerTest
     }
 
     @Test
+    public void shouldSuspendExistingUser() throws Throwable
+    {
+        // Given
+        final User user = newUser( "jake", "abc123" , true );
+        users.create( user );
+        manager.start();
+
+        // When
+        manager.suspendUser( "jake" );
+
+        // Then
+        AuthSubject authSubject = manager.login( "jake", "abc123" );
+        assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.FAILURE ) );
+    }
+
+    @Test
+    public void shouldActivateExistingUser() throws Throwable
+    {
+        // Given
+        final User user = newUser( "jake", "abc123", false );
+        users.create( user );
+        manager.start();
+        manager.suspendUser( "jake" );
+
+        // When
+        manager.activateUser( "jake" );
+
+        // Then
+        AuthSubject authSubject = manager.login( "jake", "abc123" );
+        assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
+    }
+
+    @Test
+    public void shouldSuspendSuspendedUser() throws Throwable
+    {
+        // Given
+        final User user = newUser( "jake", "abc123", false );
+        users.create( user );
+        manager.start();
+        manager.suspendUser( "jake" );
+
+        // When
+        manager.suspendUser( "jake" );
+
+        // Then
+        AuthSubject authSubject = manager.login( "jake", "abc123" );
+        assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.FAILURE ) );
+    }
+
+    @Test
+    public void shouldActivateActiveUser() throws Throwable
+    {
+        // Given
+        final User user = newUser( "jake", "abc123", false );
+        users.create( user );
+        manager.start();
+
+        // When
+        manager.activateUser( "jake" );
+
+        // Then
+        AuthSubject authSubject = manager.login( "jake", "abc123" );
+        assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
+    }
+
+    @Test
+    public void shouldFailToSuspendNonExistingUser() throws Throwable
+    {
+        // Given
+        manager.start();
+
+        // When
+        try
+        {
+            manager.suspendUser( "jake" );
+            fail( "Should throw exception on suspending unknown user" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // Then
+            assertThat(e.getMessage(), containsString("User jake does not exist"));
+        }
+    }
+
+    @Test
+    public void shouldFailToActivateNonExistingUser() throws Throwable
+    {
+        // Given
+        manager.start();
+
+        // When
+        try
+        {
+            manager.activateUser( "jake" );
+            fail( "Should throw exception on activating unknown user" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // Then
+            assertThat(e.getMessage(), containsString("User jake does not exist"));
+        }
+    }
+
+    @Test
     public void shouldSetPassword() throws Throwable
     {
         // Given
-        users.create( new User( "jake", Credential.forPassword( "abc123" ), true ) );
+        users.create( newUser( "jake", "abc123", true ) );
         manager.start();
 
         // When
@@ -229,9 +333,8 @@ public class ShiroAuthManagerTest
     public void shouldSetPasswordThroughAuthSubject() throws Throwable
     {
         // Given
-        users.create( new User( "neo", Credential.forPassword( "abc123" ), true ) );
+        users.create( newUser( "neo", "abc123", true ) );
         manager.start();
-        when( authStrategy.isAuthenticationPermitted( "neo" )).thenReturn( true );
 
         // When
         AuthSubject authSubject = manager.login( "neo", "abc123" );
@@ -253,9 +356,8 @@ public class ShiroAuthManagerTest
     public void shouldNotRequestPasswordChangeWithInvalidCredentials() throws Throwable
     {
         // Given
-        users.create( new User( "neo", Credential.forPassword( "abc123" ), true ) );
+        users.create( newUser( "neo", "abc123", true ) );
         manager.start();
-        when( authStrategy.isAuthenticationPermitted( "neo" )).thenReturn( true );
 
         // When
         AuthSubject authSubject = manager.login( "neo", "wrong" );
@@ -294,14 +396,12 @@ public class ShiroAuthManagerTest
         manager.newRole( "reader", "neo" );
         manager.newUser( "smith", "abc123", false );
         manager.newRole( "agent", "smith" );
-        when( authStrategy.isAuthenticationPermitted( anyString() ) ).thenReturn( true );
     }
 
     @Test
     public void defaultUserShouldHaveCorrectPermissions() throws Throwable
     {
         // Given
-        when( authStrategy.isAuthenticationPermitted( anyString() ) ).thenReturn( true );
         manager.start();
 
         // When
@@ -472,5 +572,12 @@ public class ShiroAuthManagerTest
         }
 
         assertTrue( users.numberOfUsers() == 0 );
+    }
+
+    private User newUser( String userName, String password, boolean pwdChange )
+    {
+        return new User.Builder( userName, Credential.forPassword( password ))
+                    .withRequiredPasswordChange( pwdChange )
+                    .build();
     }
 }

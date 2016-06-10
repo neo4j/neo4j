@@ -42,6 +42,7 @@ import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.auth.UserRepository;
+import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 public class ShiroAuthManager extends BasicAuthManager implements RoleManager
 {
@@ -160,14 +161,10 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
             try
             {
                 subject.login( token );
-            }
-            catch ( ExpiredCredentialsException e )
-            {
-                result = AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
-
-                // We have to build an identity with the given username to allow the user to change password
-                // At this point we know that the username is valid
-                subject = buildSubject( username );
+                if ( realm.findUser( username ).passwordChangeRequired() )
+                {
+                    result = AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
+                }
             }
             catch ( AuthenticationException e )
             {
@@ -214,6 +211,18 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
     {
         assertAuthEnabled();
         return realm.deleteUser( username );
+    }
+
+    void suspendUser( String username ) throws IOException
+    {
+        assertAuthEnabled();
+        realm.suspendUser( username );
+    }
+
+    void activateUser( String username ) throws IOException
+    {
+        assertAuthEnabled();
+        realm.activateUser( username );
     }
 
     private Subject buildSubject( String username )
