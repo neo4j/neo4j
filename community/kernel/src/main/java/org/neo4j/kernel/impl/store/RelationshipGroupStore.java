@@ -130,7 +130,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
         // [ xxx,    ] high firstLoop bits
         long highByte = cursor.getByte();
 
-        int type = cursor.getShort();
+        int type = getUnsignedShort( cursor.getShort() );
         long nextLowBits = cursor.getUnsignedInt();
         long nextOutLowBits = cursor.getUnsignedInt();
         long nextInLowBits = cursor.getUnsignedInt();
@@ -292,5 +292,10 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     public int getDenseNodeThreshold()
     {
         return denseNodeThreshold;
+    }
+
+    private int getUnsignedShort( short value )
+    {
+        return value & 0xFFFF;
     }
 }
