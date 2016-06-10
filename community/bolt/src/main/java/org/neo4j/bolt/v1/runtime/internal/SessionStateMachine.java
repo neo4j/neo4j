@@ -89,7 +89,8 @@ public class SessionStateMachine implements Session, SessionState
                         }
                         catch ( Throwable e )
                         {
-                            return error( ctx, e );
+                            ctx.error( new Neo4jError( Status.General.UnknownError, e.getMessage() ));
+                            return halt( ctx );
                         }
                     }
 

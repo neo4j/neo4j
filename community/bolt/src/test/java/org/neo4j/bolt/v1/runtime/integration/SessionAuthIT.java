@@ -61,7 +61,7 @@ public class SessionAuthIT
     }
 
     @Test
-    public void shouldCloseConnectionOnFailure() throws Throwable
+    public void shouldCloseConnectionOnAuthenticationFailure() throws Throwable
     {
         // given it is important for client applications to programmatically
         // identify expired credentials as the cause of not being authenticated
