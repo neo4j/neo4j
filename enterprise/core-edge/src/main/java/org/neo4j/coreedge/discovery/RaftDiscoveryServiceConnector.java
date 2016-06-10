@@ -47,12 +47,12 @@ public class RaftDiscoveryServiceConnector extends LifecycleAdapter implements C
         ClusterTopology clusterTopology = discoveryService.currentTopology();
         Set<CoreMember> initialMembers = clusterTopology.coreMembers();
 
-        if ( clusterTopology.bootstrappable() )
+        if ( clusterTopology.canBeBootstrapped() )
         {
             raftInstance.bootstrapWithInitialMembers( new CoreMemberSet( initialMembers ) );
         }
 
-        onTopologyChange( clusterTopology );
+        onTopologyChange();
     }
 
     @Override
@@ -62,8 +62,8 @@ public class RaftDiscoveryServiceConnector extends LifecycleAdapter implements C
     }
 
     @Override
-    public void onTopologyChange( ClusterTopology clusterTopology )
+    public void onTopologyChange()
     {
-        raftInstance.setTargetMembershipSet( clusterTopology.coreMembers() );
+        raftInstance.setTargetMembershipSet( discoveryService.currentTopology().coreMembers() );
     }
 }

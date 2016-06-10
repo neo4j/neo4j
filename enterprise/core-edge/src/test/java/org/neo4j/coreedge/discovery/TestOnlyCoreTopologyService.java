@@ -68,9 +68,7 @@ class TestOnlyCoreTopologyService extends LifecycleAdapter implements CoreTopolo
 
     private BoltAddress extractBoltAddress( Config config )
     {
-        return new BoltAddress(
-                new AdvertisedSocketAddress(
-                        EnterpriseEdgeEditionModule.extractBoltAddress( config ).toString() ) );
+        return new BoltAddress( EnterpriseEdgeEditionModule.extractBoltAddress( config ) );
     }
 
     @Override

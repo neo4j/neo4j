@@ -55,10 +55,9 @@ class TestOnlyClusterTopology implements ClusterTopology
     }
 
     @Override
-    public boolean bootstrappable()
+    public boolean canBeBootstrapped()
     {
-        // Can only bootstrap for a cluster with multiple instances
-        return canBeBootstrapped && coreMembers.size() > 1;
+        return canBeBootstrapped;
     }
 
     @Override
@@ -72,7 +71,7 @@ class TestOnlyClusterTopology implements ClusterTopology
     {
         return "TestOnlyClusterTopology{" +
                 "coreMembers.size()=" + coreMembers.size() +
-                ", bootstrappable=" + bootstrappable() +
+                ", bootstrappable=" + canBeBootstrapped() +
                 ", edgeMembers.size()=" + edgeBoltAddresses.size() +
                 '}';
     }
