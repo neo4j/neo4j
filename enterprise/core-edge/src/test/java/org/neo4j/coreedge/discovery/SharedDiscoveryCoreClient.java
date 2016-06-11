@@ -48,35 +48,30 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     }
 
     @Override
-    public void addMembershipListener( Listener listener )
+    public synchronized void addMembershipListener( Listener listener )
     {
-        synchronized ( sharedDiscoveryService )
-        {
-            listeners.add( listener );
-        }
+        listeners.add( listener );
     }
 
     @Override
-    public void removeMembershipListener( Listener listener )
+    public synchronized void removeMembershipListener( Listener listener )
     {
-        synchronized ( sharedDiscoveryService )
-        {
-            listeners.remove( listener );
-        }
+        listeners.remove( listener );
     }
 
     @Override
     public void start() throws InterruptedException
     {
         sharedDiscoveryService.registerCoreServer( member, boltAddress, this );
-        sharedDiscoveryService.waitForClusterFormation();
         log.info( "Registered core server %s", member );
+        sharedDiscoveryService.waitForClusterFormation();
+        log.info( "Cluster formed" );
     }
 
     @Override
     public void stop()
     {
-        sharedDiscoveryService.unregisterCoreServer( member, boltAddress, this );
+        sharedDiscoveryService.unRegisterCoreServer( member, boltAddress, this );
         log.info( "Unregistered core server %s", member );
     }
 
@@ -88,13 +83,10 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
         return topology;
     }
 
-    void onTopologyChange( ClusterTopology topology )
+    synchronized void onTopologyChange()
     {
-        log.info( "Notified of topology change %s", topology );
-        for ( Listener listener : listeners )
-        {
-            listener.onTopologyChange();
-        }
+        log.info( "Notified of topology change" );
+        listeners.forEach( Listener::onTopologyChange );
     }
 
     private static CoreMember toCoreMember( Config config )
