@@ -41,6 +41,7 @@ import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -98,14 +99,14 @@ public class NetworkReceiver
     // Receiving
     private NioServerSocketChannelFactory nioChannelFactory;
     private ServerBootstrap serverBootstrap;
-    private Iterable<MessageProcessor> processors = Listeners.newListeners();
+    private Collection<MessageProcessor> processors = Listeners.newListeners();
 
     private final Monitor monitor;
     private final Configuration config;
     private final Log msgLog;
 
     private final Map<URI, Channel> connections = new ConcurrentHashMap<>();
-    private Iterable<NetworkChannelsListener> listeners = Listeners.newListeners();
+    private Collection<NetworkChannelsListener> listeners = Listeners.newListeners();
 
     volatile boolean bindingDetected = false;
 

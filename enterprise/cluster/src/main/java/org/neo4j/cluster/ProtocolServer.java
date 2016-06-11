@@ -20,6 +20,7 @@
 package org.neo4j.cluster;
 
 import java.net.URI;
+import java.util.Collection;
 
 import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.statemachine.StateMachine;
@@ -44,7 +45,7 @@ public class ProtocolServer
     private URI boundAt;
     protected StateMachineProxyFactory proxyFactory;
     protected final StateMachines stateMachines;
-    private Iterable<BindingListener> bindingListeners = Listeners.newListeners();
+    private Collection<BindingListener> bindingListeners = Listeners.newListeners();
     private Log msgLog;
 
     public ProtocolServer( InstanceId me, StateMachines stateMachines, LogProvider logProvider )

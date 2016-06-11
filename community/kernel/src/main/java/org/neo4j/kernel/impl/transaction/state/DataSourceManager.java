@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import java.util.Collection;
 import java.util.function.Supplier;
 
 import org.neo4j.helpers.Listeners;
@@ -44,7 +45,7 @@ public class DataSourceManager implements Lifecycle, Supplier<KernelAPI>
     }
 
     private LifeSupport life = new LifeSupport();
-    private Iterable<Listener> dsRegistrationListeners = Listeners.newListeners();
+    private Collection<Listener> dsRegistrationListeners = Listeners.newListeners();
     private NeoStoreDataSource dataSource;
 
     public void addListener( Listener listener )

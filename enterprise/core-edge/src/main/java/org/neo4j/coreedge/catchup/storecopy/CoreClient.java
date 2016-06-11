@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.catchup.storecopy;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
 import io.netty.channel.ChannelInitializer;
@@ -53,9 +54,9 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
 {
     private final PullRequestMonitor pullRequestMonitor;
     private StoreFileStreams storeFileStreams = null;
-    private Iterable<StoreFileStreamingCompleteListener> storeFileStreamingCompleteListeners = Listeners.newListeners();
-    private Iterable<TxStreamCompleteListener> txStreamCompleteListeners = Listeners.newListeners();
-    private Iterable<TxPullResponseListener> txPullResponseListeners = Listeners.newListeners();
+    private Collection<StoreFileStreamingCompleteListener> storeFileStreamingCompleteListeners = Listeners.newListeners();
+    private Collection<TxStreamCompleteListener> txStreamCompleteListeners = Listeners.newListeners();
+    private Collection<TxPullResponseListener> txPullResponseListeners = Listeners.newListeners();
     private CompletableFuture<CoreSnapshot> coreSnapshotFuture;
 
     private SenderService senderService;

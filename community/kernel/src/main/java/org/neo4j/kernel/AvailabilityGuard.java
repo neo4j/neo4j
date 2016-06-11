@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -111,7 +112,7 @@ public class AvailabilityGuard
     private final AtomicInteger requirementCount = new AtomicInteger( 0 );
     private final Set<AvailabilityRequirement> blockingRequirements = new CopyOnWriteArraySet<>();
     private final AtomicBoolean isShutdown = new AtomicBoolean( false );
-    private Iterable<AvailabilityListener> listeners = Listeners.newListeners();
+    private Collection<AvailabilityListener> listeners = Listeners.newListeners();
     private final Clock clock;
     private final Log log;
 

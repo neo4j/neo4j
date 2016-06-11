@@ -21,6 +21,7 @@ package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -48,7 +49,7 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
 
     private Map<InstanceId, Set<InstanceId>> nodeSuspicions = new HashMap<>();
 
-    private Iterable<HeartbeatListener> heartBeatListeners = Listeners.newListeners();
+    private Collection<HeartbeatListener> heartBeatListeners = Listeners.newListeners();
 
     private final Executor executor;
     private ClusterContext clusterContext;
@@ -63,7 +64,7 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
 
     private HeartbeatContextImpl( InstanceId me, CommonContextState commonState, LogProvider logging, Timeouts timeouts,
                                   Set<InstanceId> failed, Map<InstanceId, Set<InstanceId>> nodeSuspicions,
-                                  Iterable<HeartbeatListener> heartBeatListeners, Executor executor )
+                                  Collection<HeartbeatListener> heartBeatListeners, Executor executor )
     {
         super( me, commonState, logging, timeouts );
         this.failed = failed;
