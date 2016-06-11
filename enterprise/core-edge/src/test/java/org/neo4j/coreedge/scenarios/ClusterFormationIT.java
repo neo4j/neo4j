@@ -28,7 +28,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
+import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
+import org.neo4j.coreedge.discovery.SharedDiscoveryService;
+import org.neo4j.coreedge.discovery.SharedDiscoveryService;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.graphdb.Transaction;
@@ -56,7 +58,7 @@ public class ClusterFormationIT
     public void shouldBeAbleToAddAndRemoveCoreServers() throws Exception
     {
         // given
-        cluster = Cluster.start( dir.directory(), 3, 0, new TestOnlyDiscoveryServiceFactory() );
+        cluster = Cluster.start( dir.directory(), 3, 0, new SharedDiscoveryService() );
 
         // when
         cluster.removeCoreServerWithServerId( 0 );
@@ -82,7 +84,7 @@ public class ClusterFormationIT
     public void shouldBeAbleToAddAndRemoveCoreServersUnderModestLoad() throws Exception
     {
         // given
-        cluster = Cluster.start( dir.directory(), 3, 0, new TestOnlyDiscoveryServiceFactory() );
+        cluster = Cluster.start( dir.directory(), 3, 0, new SharedDiscoveryService() );
 
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.submit( (Runnable) () -> {
@@ -120,7 +122,7 @@ public class ClusterFormationIT
     public void shouldBeAbleToRestartTheCluster() throws Exception
     {
         // when
-        final TestOnlyDiscoveryServiceFactory discoveryServiceFactory = new TestOnlyDiscoveryServiceFactory();
+        final DiscoveryServiceFactory discoveryServiceFactory = new SharedDiscoveryService();
         cluster = Cluster.start( dir.directory(), 3, 0, discoveryServiceFactory );
 
         // then

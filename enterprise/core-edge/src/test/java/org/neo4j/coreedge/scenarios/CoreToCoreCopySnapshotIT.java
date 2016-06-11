@@ -30,7 +30,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
+import org.neo4j.coreedge.discovery.SharedDiscoveryService;
 import org.neo4j.coreedge.raft.log.segmented.FileNames;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
@@ -80,7 +80,7 @@ public class CoreToCoreCopySnapshotIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
+        cluster = Cluster.start( dbDir, 3, 0, new SharedDiscoveryService() );
 
         CoreGraphDatabase leader = cluster.awaitLeader( TIMEOUT_MS );
 
@@ -97,7 +97,7 @@ public class CoreToCoreCopySnapshotIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
+        cluster = Cluster.start( dbDir, 3, 0, new SharedDiscoveryService() );
 
         CoreGraphDatabase source = cluster.coreTx( ( db, tx ) -> {
             Node node = db.createNode();
@@ -118,7 +118,7 @@ public class CoreToCoreCopySnapshotIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
+        cluster = Cluster.start( dbDir, 3, 0, new SharedDiscoveryService() );
 
         CoreGraphDatabase source = cluster.coreTx( ( db, tx ) -> {
             createData( db, 1000 );
@@ -142,7 +142,7 @@ public class CoreToCoreCopySnapshotIT
                 CoreEdgeClusterSettings.raft_log_pruning_strategy.name(), "3 entries",
                 CoreEdgeClusterSettings.raft_log_rotation_size.name(), "1K" );
 
-        cluster = Cluster.start( dbDir, 3, 0, params, new TestOnlyDiscoveryServiceFactory() );
+        cluster = Cluster.start( dbDir, 3, 0, params, new SharedDiscoveryService() );
 
         CoreGraphDatabase leader = cluster.coreTx( ( db, tx ) -> {
             createData( db, 10000 );
@@ -179,7 +179,7 @@ public class CoreToCoreCopySnapshotIT
 
         //Start the cluster and accumulate some log files.
         try ( Cluster cluster = Cluster
-                .start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory(), coreParams, emptyMap(),
+                .start( dbDir, 3, 0, new SharedDiscoveryService(), coreParams, emptyMap(),
                         StandardV3_0.NAME ) )
         {
 

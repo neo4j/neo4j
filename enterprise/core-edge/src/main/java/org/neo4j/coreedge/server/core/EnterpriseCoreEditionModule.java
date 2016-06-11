@@ -163,6 +163,7 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.udc.UsageData;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
 
 /**
@@ -276,7 +277,7 @@ public class EnterpriseCoreEditionModule
         myself = new CoreMember(
                 config.get( CoreEdgeClusterSettings.transaction_advertised_address ),
                 config.get( CoreEdgeClusterSettings.raft_advertised_address ),
-                 new AdvertisedSocketAddress(  EnterpriseEdgeEditionModule.extractBoltAddress(config).toString())
+                EnterpriseEdgeEditionModule.extractBoltAddress( config )
         );
 
         final MessageLogger<AdvertisedSocketAddress> messageLogger;
