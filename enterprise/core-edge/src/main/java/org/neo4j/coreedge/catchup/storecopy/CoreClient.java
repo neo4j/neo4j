@@ -19,21 +19,20 @@
  */
 package org.neo4j.coreedge.catchup.storecopy;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.concurrent.CompletableFuture;
-
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 
+import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
+
 import org.neo4j.coreedge.catchup.RequestMessageType;
+import org.neo4j.coreedge.catchup.storecopy.core.CoreSnapshotListener;
 import org.neo4j.coreedge.catchup.storecopy.core.CoreSnapshotRequest;
 import org.neo4j.coreedge.catchup.storecopy.edge.GetStoreRequest;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFileReceiver;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFileStreamingCompleteListener;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFileStreams;
 import org.neo4j.coreedge.catchup.tx.edge.PullRequestMonitor;
-import org.neo4j.coreedge.catchup.storecopy.core.CoreSnapshotListener;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullRequest;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponse;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseListener;
@@ -54,9 +53,9 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
 {
     private final PullRequestMonitor pullRequestMonitor;
     private StoreFileStreams storeFileStreams = null;
-    private Collection<StoreFileStreamingCompleteListener> storeFileStreamingCompleteListeners = Listeners.newListeners();
-    private Collection<TxStreamCompleteListener> txStreamCompleteListeners = Listeners.newListeners();
-    private Collection<TxPullResponseListener> txPullResponseListeners = Listeners.newListeners();
+    private final Listeners<StoreFileStreamingCompleteListener> storeFileStreamingCompleteListeners = new Listeners<>();
+    private final Listeners<TxStreamCompleteListener> txStreamCompleteListeners = new Listeners<>();
+    private final Listeners<TxPullResponseListener> txPullResponseListeners = new Listeners<>();
     private CompletableFuture<CoreSnapshot> coreSnapshotFuture;
 
     private SenderService senderService;
@@ -110,22 +109,22 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
 
     public void addTxPullResponseListener( TxPullResponseListener listener )
     {
-        txPullResponseListeners = Listeners.addListener( listener, txPullResponseListeners );
+        txPullResponseListeners.add( listener );
     }
 
     public void removeTxPullResponseListener( TxPullResponseListener listener )
     {
-        txPullResponseListeners = Listeners.removeListener( listener, txPullResponseListeners );
+        txPullResponseListeners.remove( listener );
     }
 
     public void addStoreFileStreamingCompleteListener( StoreFileStreamingCompleteListener listener )
     {
-        storeFileStreamingCompleteListeners = Listeners.addListener( listener, storeFileStreamingCompleteListeners );
+        storeFileStreamingCompleteListeners.add( listener );
     }
 
     public void removeStoreFileStreamingCompleteListener( StoreFileStreamingCompleteListener listener )
     {
-        storeFileStreamingCompleteListeners = Listeners.removeListener( listener, storeFileStreamingCompleteListeners );
+        storeFileStreamingCompleteListeners.remove( listener );
     }
 
     @Override
@@ -140,33 +139,31 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
     }
 
     @Override
-    public void onFileStreamingComplete( final long lastCommittedTxBeforeStoreCopy )
+    public void onFileStreamingComplete( long lastCommittedTxBeforeStoreCopy )
     {
-        Listeners.notifyListeners( storeFileStreamingCompleteListeners,
+        storeFileStreamingCompleteListeners.notify(
                 listener -> listener.onFileStreamingComplete( lastCommittedTxBeforeStoreCopy ) );
     }
 
     @Override
-    public void onTxStreamingComplete( final long lastTransactionId )
+    public void onTxStreamingComplete( long lastTransactionId )
     {
-        Listeners.notifyListeners( txStreamCompleteListeners,
-                listener -> listener.onTxStreamingComplete( lastTransactionId ) );
+        txStreamCompleteListeners.notify( listener -> listener.onTxStreamingComplete( lastTransactionId ) );
     }
 
     @Override
-    public void onTxReceived( final TxPullResponse tx ) throws IOException
+    public void onTxReceived( TxPullResponse tx ) throws IOException
     {
-        Listeners.notifyListeners( txPullResponseListeners,
-                listener -> {
-                    try
-                    {
-                        listener.onTxReceived( tx );
-                    }
-                    catch ( IOException e )
-                    {
-                        throw new RuntimeException( e );
-                    }
-                } );
+        txPullResponseListeners.notify( listener -> {
+            try
+            {
+                listener.onTxReceived( tx );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+        } );
     }
 
     @Override
@@ -177,11 +174,11 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
 
     public void addTxStreamCompleteListener( TxStreamCompleteListener listener )
     {
-        txStreamCompleteListeners = Listeners.addListener( listener, txStreamCompleteListeners );
+        txStreamCompleteListeners.add( listener );
     }
 
     public void removeTxStreamCompleteListener( TxStreamCompleteListener listener )
     {
-        txStreamCompleteListeners = Listeners.removeListener( listener, txStreamCompleteListeners );
+        txStreamCompleteListeners.remove( listener );
     }
 }

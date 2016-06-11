@@ -21,7 +21,6 @@ package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -40,8 +39,6 @@ import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.helpers.collection.Iterables.asList;
-
 class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatContext
 {
     // HeartbeatContext
@@ -49,7 +46,7 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
 
     private Map<InstanceId, Set<InstanceId>> nodeSuspicions = new HashMap<>();
 
-    private Collection<HeartbeatListener> heartBeatListeners = Listeners.newListeners();
+    private final Listeners<HeartbeatListener> heartBeatListeners;
 
     private final Executor executor;
     private ClusterContext clusterContext;
@@ -60,11 +57,12 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
     {
         super( me, commonState, logging, timeouts );
         this.executor = executor;
+        this.heartBeatListeners = new Listeners<>();
     }
 
     private HeartbeatContextImpl( InstanceId me, CommonContextState commonState, LogProvider logging, Timeouts timeouts,
                                   Set<InstanceId> failed, Map<InstanceId, Set<InstanceId>> nodeSuspicions,
-                                  Collection<HeartbeatListener> heartBeatListeners, Executor executor )
+                                  Listeners<HeartbeatListener> heartBeatListeners, Executor executor )
     {
         super( me, commonState, logging, timeouts );
         this.failed = failed;
@@ -89,7 +87,7 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
      * @return True iff the node was suspected
      */
     @Override
-    public boolean alive( final InstanceId node )
+    public boolean alive( InstanceId node )
     {
         Set<InstanceId> serverSuspicions = suspicionsFor( getMyId() );
         boolean suspected = serverSuspicions.remove( node );
@@ -97,14 +95,14 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
         if ( !isFailed( node ) && failed.remove( node ) )
         {
             getLog( HeartbeatContext.class ).info( "Notifying listeners that instance " + node + " is alive" );
-            Listeners.notifyListeners( heartBeatListeners, executor, listener -> listener.alive( node ) );
+            heartBeatListeners.notify( executor, listener -> listener.alive( node ) );
         }
 
         return suspected;
     }
 
     @Override
-    public void suspect( final InstanceId node )
+    public void suspect( InstanceId node )
     {
         Set<InstanceId> serverSuspicions = suspicionsFor( getMyId() );
 
@@ -119,7 +117,7 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
         {
             getLog( HeartbeatContext.class ).info( "Notifying listeners that instance " + node + " is failed" );
             failed.add( node );
-            Listeners.notifyListeners( heartBeatListeners, executor, listener -> listener.failed( node ) );
+            heartBeatListeners.notify( executor, listener -> listener.failed( node ) );
         }
 
         if ( checkSuspectEverybody() )
@@ -221,12 +219,12 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
         }
 
         // Check if anyone is considered failed
-        for ( final InstanceId node : suspicions )
+        for ( InstanceId node : suspicions )
         {
             if ( isFailed( node ) && !failed.contains( node ) )
             {
                 failed.add( node );
-                Listeners.notifyListeners( heartBeatListeners, executor, listener -> listener.failed( node ) );
+                heartBeatListeners.notify( executor, listener -> listener.failed( node ) );
             }
         }
     }
@@ -246,13 +244,13 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
     @Override
     public void addHeartbeatListener( HeartbeatListener listener )
     {
-        heartBeatListeners = Listeners.addListener( listener, heartBeatListeners );
+        heartBeatListeners.add( listener );
     }
 
     @Override
     public void removeHeartbeatListener( HeartbeatListener listener )
     {
-        heartBeatListeners = Listeners.removeListener( listener, heartBeatListeners );
+        heartBeatListeners.remove( listener );
     }
 
     @Override
@@ -350,12 +348,11 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
         return learnerContext.getLastLearnedInstanceId();
     }
 
-    public HeartbeatContextImpl snapshot( CommonContextState commonStateSnapshot, LogProvider logging, Timeouts
-            timeouts,
-                                          Executor executor )
+    public HeartbeatContextImpl snapshot( CommonContextState commonStateSnapshot, LogProvider logging,
+            Timeouts timeouts, Executor executor )
     {
         return new HeartbeatContextImpl( me, commonStateSnapshot, logging, timeouts, new HashSet<>( failed ),
-                new HashMap<>( nodeSuspicions ), new ArrayList<>( asList( heartBeatListeners ) ), executor );
+                new HashMap<>( nodeSuspicions ), new Listeners<>( heartBeatListeners ), executor );
     }
 
     @Override

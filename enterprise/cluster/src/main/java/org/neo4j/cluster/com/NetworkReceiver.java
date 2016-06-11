@@ -41,7 +41,6 @@ import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -99,14 +98,14 @@ public class NetworkReceiver
     // Receiving
     private NioServerSocketChannelFactory nioChannelFactory;
     private ServerBootstrap serverBootstrap;
-    private Collection<MessageProcessor> processors = Listeners.newListeners();
+    private final Listeners<MessageProcessor> processors = new Listeners<>();
 
     private final Monitor monitor;
     private final Configuration config;
     private final Log msgLog;
 
     private final Map<URI, Channel> connections = new ConcurrentHashMap<>();
-    private Collection<NetworkChannelsListener> listeners = Listeners.newListeners();
+    private final Listeners<NetworkChannelsListener> listeners = new Listeners<>();
 
     volatile boolean bindingDetected = false;
 
@@ -215,7 +214,7 @@ public class NetworkReceiver
     @Override
     public void addMessageProcessor( MessageProcessor processor )
     {
-        processors = Listeners.addListener( processor, processors );
+        processors.add( processor );
     }
 
     public void receive( Message message )
@@ -262,33 +261,19 @@ public class NetworkReceiver
         return URI.create( uri );
     }
 
-    public void listeningAt( final URI me )
+    public void listeningAt( URI me )
     {
-        Listeners.notifyListeners( listeners, new Listeners.Notification<NetworkChannelsListener>()
-        {
-            @Override
-            public void notify( NetworkChannelsListener listener )
-            {
-                listener.listeningAt( me );
-            }
-        } );
+        listeners.notify( listener -> listener.listeningAt( me ) );
     }
 
-    protected void openedChannel( final URI uri, Channel ctxChannel )
+    protected void openedChannel( URI uri, Channel ctxChannel )
     {
         connections.put( uri, ctxChannel );
 
-        Listeners.notifyListeners( listeners, new Listeners.Notification<NetworkChannelsListener>()
-        {
-            @Override
-            public void notify( NetworkChannelsListener listener )
-            {
-                listener.channelOpened( uri );
-            }
-        } );
+        listeners.notify( listener -> listener.channelOpened( uri ) );
     }
 
-    protected void closedChannel( final URI uri )
+    protected void closedChannel( URI uri )
     {
         Channel channel = connections.remove( uri );
         if ( channel != null )
@@ -296,19 +281,12 @@ public class NetworkReceiver
             channel.close();
         }
 
-        Listeners.notifyListeners( listeners, new Listeners.Notification<NetworkChannelsListener>()
-        {
-            @Override
-            public void notify( NetworkChannelsListener listener )
-            {
-                listener.channelClosed( uri );
-            }
-        } );
+        listeners.notify( listener -> listener.channelClosed( uri ) );
     }
 
     public void addNetworkChannelsListener( NetworkChannelsListener listener )
     {
-        listeners = Listeners.addListener( listener, listeners );
+        listeners.add( listener );
     }
 
     private class NetworkNodePipelineFactory

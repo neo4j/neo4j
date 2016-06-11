@@ -21,7 +21,6 @@ package org.neo4j.cluster;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.cluster.com.message.Message;
@@ -149,12 +148,12 @@ public class TestProtocolServer
     public class TestMessageSource
             implements MessageSource, MessageProcessor
     {
-        Collection<MessageProcessor> listeners = Listeners.newListeners();
+        final Listeners<MessageProcessor> listeners = new Listeners<>();
 
         @Override
         public void addMessageProcessor( MessageProcessor listener )
         {
-            listeners = Listeners.addListener( listener, listeners );
+            listeners.add( listener );
         }
 
         @Override
