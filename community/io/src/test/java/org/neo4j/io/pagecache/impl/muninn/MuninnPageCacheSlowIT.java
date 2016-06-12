@@ -19,10 +19,21 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import org.apache.commons.lang3.SystemUtils;
+import org.junit.Before;
+
 import org.neo4j.io.pagecache.PageCacheSlowTest;
+
+import static org.junit.Assume.assumeFalse;
 
 public class MuninnPageCacheSlowIT extends PageCacheSlowTest<MuninnPageCache>
 {
+    @Before
+    public void doNotRunOnWindows()
+    {
+        assumeFalse( SystemUtils.IS_OS_WINDOWS );
+    }
+
     @Override
     protected Fixture<MuninnPageCache> createFixture()
     {
