@@ -29,6 +29,7 @@ import org.junit.Test;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
 import org.neo4j.coreedge.catchup.tx.edge.TxPollingClient;
+import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.discovery.HazelcastClusterTopology;
 import org.neo4j.coreedge.raft.replication.tx.ConstantTimeRetryStrategy;
@@ -67,7 +68,7 @@ public class EdgeServerStartupProcessTest
         AdvertisedSocketAddress coreServerAddress = new AdvertisedSocketAddress( "localhost:1999" );
         EdgeTopologyService hazelcastTopology = mock( EdgeTopologyService.class );
 
-        HazelcastClusterTopology clusterTopology = mock( HazelcastClusterTopology.class );
+        ClusterTopology clusterTopology = mock( ClusterTopology.class );
         when( hazelcastTopology.currentTopology() ).thenReturn( clusterTopology );
 
         when( clusterTopology.coreMembers() ).thenReturn( coreMembers( coreServerAddress ) );
@@ -98,7 +99,7 @@ public class EdgeServerStartupProcessTest
 
         AdvertisedSocketAddress coreServerAddress = new AdvertisedSocketAddress( "localhost:1999" );
         EdgeTopologyService hazelcastTopology = mock( EdgeTopologyService.class );
-        HazelcastClusterTopology clusterTopology = mock( HazelcastClusterTopology.class );
+        ClusterTopology clusterTopology = mock( ClusterTopology.class );
         when( clusterTopology.coreMembers() ).thenReturn( coreMembers( coreServerAddress ) );
 
         when( hazelcastTopology.currentTopology() ).thenReturn( clusterTopology );

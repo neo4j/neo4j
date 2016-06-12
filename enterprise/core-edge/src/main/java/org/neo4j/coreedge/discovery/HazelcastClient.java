@@ -27,12 +27,12 @@ import com.hazelcast.core.Member;
 
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.BoltAddress;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.Collections.emptySet;
-import static java.util.stream.Collectors.toSet;
 
 import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.EDGE_SERVERS;
 
@@ -51,10 +51,10 @@ class HazelcastClient extends LifecycleAdapter implements EdgeTopologyService
     @Override
     public ClusterTopology currentTopology()
     {
-        Set<Member> coreMembers = emptySet();
+        ClusterTopology clusterTopology = new ClusterTopology( false, emptySet(), emptySet(), emptySet() );
         boolean attemptedConnection = false;
 
-        while ( coreMembers.isEmpty() && !attemptedConnection )
+        while ( clusterTopology.coreMembers().isEmpty() && !attemptedConnection )
         {
             if ( hazelcastInstance == null )
             {
@@ -72,7 +72,7 @@ class HazelcastClient extends LifecycleAdapter implements EdgeTopologyService
 
             try
             {
-                coreMembers = hazelcastInstance.getCluster().getMembers();
+                clusterTopology = HazelcastClusterTopology.fromHazelcastInstance( hazelcastInstance );
             }
             catch ( HazelcastInstanceNotActiveException e )
             {
@@ -80,21 +80,7 @@ class HazelcastClient extends LifecycleAdapter implements EdgeTopologyService
             }
         }
 
-        Set<BoltAddress> edgeMembers = edgeMembers( hazelcastInstance );
-
-        return new HazelcastClusterTopology( coreMembers, edgeMembers );
-    }
-
-    public static Set<BoltAddress> edgeMembers( HazelcastInstance hazelcastInstance )
-    {
-        if ( hazelcastInstance == null )
-        {
-            return emptySet();
-        }
-
-        return hazelcastInstance.<String>getSet( EDGE_SERVERS ).stream()
-                .map( hostnamePort -> new BoltAddress( new AdvertisedSocketAddress( hostnamePort ) ) )
-                .collect( toSet() );
+        return clusterTopology;
     }
 
     @Override

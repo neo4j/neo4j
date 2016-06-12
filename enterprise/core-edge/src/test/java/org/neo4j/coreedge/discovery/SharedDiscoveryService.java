@@ -79,7 +79,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         lock.lock();
         try
         {
-            return new TestOnlyClusterTopology(
+            return new ClusterTopology(
                     coreClients.get( 0 ) == client,
                     unmodifiableSet( coreMembers ),
                     unmodifiableSet( coreBoltAddresses ),

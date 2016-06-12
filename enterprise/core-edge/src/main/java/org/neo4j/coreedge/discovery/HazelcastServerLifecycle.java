@@ -22,7 +22,6 @@ package org.neo4j.coreedge.discovery;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.hazelcast.config.JoinConfig;
@@ -31,40 +30,35 @@ import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.Member;
 import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
 import com.hazelcast.instance.GroupProperties;
 
-import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.ListenSocketAddress;
 import org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule;
-import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-class HazelcastServerLifecycle extends LifecycleAdapter
-        implements CoreTopologyService, ReadOnlyTopologyService
+class HazelcastServerLifecycle extends LifecycleAdapter implements CoreTopologyService, ReadOnlyTopologyService
 {
     private static final String CLUSTER_SERVER = "cluster_server";
-
     static final String TRANSACTION_SERVER = "transaction_server";
     static final String RAFT_SERVER = "raft_server";
     static final String BOLT_SERVER = "bolt_server";
 
-    private Config config;
+    private final Config config;
     private final Log log;
     private HazelcastInstance hazelcastInstance;
 
-    private List<StartupListener> startupListeners = new ArrayList<>();
     private List<MembershipListener> membershipListeners = new ArrayList<>();
     private Map<MembershipListener, String> membershipRegistrationId = new ConcurrentHashMap<>();
 
-    public HazelcastServerLifecycle( Config config, LogProvider logProvider )
+    HazelcastServerLifecycle( Config config, LogProvider logProvider )
     {
         this.config = config;
         this.log = logProvider.getLog( getClass() );
@@ -97,17 +91,11 @@ class HazelcastServerLifecycle extends LifecycleAdapter
         }
     }
 
-    public Set<Member> getMembers()
-    {
-        return hazelcastInstance.getCluster().getMembers();
-    }
-
     @Override
     public void start() throws Throwable
     {
         hazelcastInstance = createHazelcastInstance();
-
-        Listeners.notifyListeners( startupListeners, listener -> listener.hazelcastStarted( hazelcastInstance ) );
+        log.info( "Cluster discovery service started" );
 
         for ( MembershipListener membershipListener : membershipListeners )
         {
@@ -123,9 +111,9 @@ class HazelcastServerLifecycle extends LifecycleAdapter
         {
             hazelcastInstance.shutdown();
         }
-        catch ( Throwable ignored )
+        catch ( Throwable e )
         {
-            // TODO: log something if important
+            log.warn( "Failed to stop Hazelcast", e );
         }
     }
 
@@ -184,15 +172,11 @@ class HazelcastServerLifecycle extends LifecycleAdapter
     }
 
     @Override
-    public HazelcastClusterTopology currentTopology()
+    public ClusterTopology currentTopology()
     {
-        return new HazelcastClusterTopology(
-                hazelcastInstance.getCluster().getMembers(), HazelcastClient.edgeMembers(hazelcastInstance) );
-    }
-
-    public interface StartupListener
-    {
-        void hazelcastStarted( HazelcastInstance hazelcastInstance );
+        ClusterTopology clusterTopology = HazelcastClusterTopology.fromHazelcastInstance( hazelcastInstance );
+        log.info( "Current topology is %s.", clusterTopology );
+        return clusterTopology;
     }
 
     private class MembershipListenerAdapter implements MembershipListener
@@ -207,18 +191,14 @@ class HazelcastServerLifecycle extends LifecycleAdapter
         @Override
         public void memberAdded( MembershipEvent membershipEvent )
         {
-            HazelcastClusterTopology clusterTopology = new HazelcastClusterTopology(
-                    hazelcastInstance.getCluster().getMembers(),
-                    HazelcastClient.edgeMembers(hazelcastInstance) );
+            log.info( "Member added %s", membershipEvent );
             listener.onTopologyChange();
         }
 
         @Override
         public void memberRemoved( MembershipEvent membershipEvent )
         {
-            HazelcastClusterTopology clusterTopology = new HazelcastClusterTopology(
-                    hazelcastInstance.getCluster().getMembers(),
-                    HazelcastClient.edgeMembers(hazelcastInstance) );
+            log.info( "Member removed %s", membershipEvent );
             listener.onTopologyChange();
         }
 
