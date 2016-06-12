@@ -33,7 +33,7 @@ import java.util.concurrent.ExecutionException;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
+import org.neo4j.coreedge.discovery.SharedDiscoveryService;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -69,7 +69,7 @@ public class RecoveryIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
+        cluster = Cluster.start( dbDir, 3, 0, new SharedDiscoveryService() );
 
         HashSet<File> storeDirs = new HashSet<>();
 
@@ -103,7 +103,7 @@ public class RecoveryIT
         // given
         int clusterSize = 3;
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, clusterSize, 0, new TestOnlyDiscoveryServiceFactory() );
+        cluster = Cluster.start( dbDir, clusterSize, 0, new SharedDiscoveryService() );
 
         ArrayList<String> storeDirs = new ArrayList<>();
 

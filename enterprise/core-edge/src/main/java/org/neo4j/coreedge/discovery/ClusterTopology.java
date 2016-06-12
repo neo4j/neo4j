@@ -19,19 +19,56 @@
  */
 package org.neo4j.coreedge.discovery;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.Set;
 
 import org.neo4j.coreedge.server.BoltAddress;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.helpers.collection.Iterables;
 
-public interface ClusterTopology
+public class ClusterTopology
 {
-    boolean bootstrappable();
+    private final ArrayList<CoreMember> coreMembers;
+    private final Set<BoltAddress> boltAddresses;
+    private final Set<BoltAddress> edgeBoltAddresses;
+    private final boolean canBeBootstrapped;
 
-    Set<CoreMember> coreMembers();
+    ClusterTopology( boolean canBeBootstrapped, Set<CoreMember> coreMembers,
+                     Set<BoltAddress> coreBoltAddresses, Set<BoltAddress> edgeBoltAddresses )
+    {
+        this.canBeBootstrapped = canBeBootstrapped;
+        this.boltAddresses = coreBoltAddresses;
+        this.edgeBoltAddresses = edgeBoltAddresses;
+        this.coreMembers = new ArrayList<>( coreMembers );
+    }
 
-    Set<BoltAddress> edgeMembers();
+    public Set<CoreMember> coreMembers()
+    {
+        return Iterables.asSet( coreMembers );
+    }
 
-    Set<BoltAddress> boltCoreMembers();
+    public Set<BoltAddress> edgeMembers()
+    {
+        return edgeBoltAddresses;
+    }
+
+    public boolean canBeBootstrapped()
+    {
+        return canBeBootstrapped;
+    }
+
+    public Set<BoltAddress> boltCoreMembers()
+    {
+        return boltAddresses;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "TestOnlyClusterTopology{" +
+                "coreMembers.size()=" + coreMembers.size() +
+                ", bootstrappable=" + canBeBootstrapped() +
+                ", edgeMembers.size()=" + edgeBoltAddresses.size() +
+                '}';
+    }
 }

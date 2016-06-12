@@ -32,7 +32,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BinaryOperator;
 
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
+import org.neo4j.coreedge.discovery.SharedDiscoveryService;
 import org.neo4j.coreedge.raft.log.segmented.FileNames;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
@@ -88,7 +88,7 @@ public class EdgeServerReplicationIT
     public void shouldNotBeAbleToWriteToEdge() throws Exception
     {
         // given
-        cluster = Cluster.start( dir.directory(), 3, 1, new TestOnlyDiscoveryServiceFactory() );
+        cluster = Cluster.start( dir.directory(), 3, 1, new SharedDiscoveryService() );
 
         GraphDatabaseService edgeDB = cluster.findAnEdgeServer();
 
@@ -114,7 +114,7 @@ public class EdgeServerReplicationIT
     public void allServersBecomeAvailable() throws Exception
     {
         // given
-        cluster = Cluster.start( dir.directory(), 3, 1, new TestOnlyDiscoveryServiceFactory() );
+        cluster = Cluster.start( dir.directory(), 3, 1, new SharedDiscoveryService() );
 
         // then
         for ( final EdgeGraphDatabase edgeGraphDatabase : cluster.edgeServers() )
@@ -128,7 +128,7 @@ public class EdgeServerReplicationIT
     public void shouldEventuallyPullTransactionDownToAllEdgeServers() throws Exception
     {
         // given
-        final TestOnlyDiscoveryServiceFactory discoveryServiceFactory = new TestOnlyDiscoveryServiceFactory();
+        final SharedDiscoveryService discoveryServiceFactory = new SharedDiscoveryService();
         cluster = Cluster.start( dir.directory(), 3, 0, discoveryServiceFactory );
         int nodesBeforeEdgeServerStarts = 1;
 
@@ -181,7 +181,7 @@ public class EdgeServerReplicationIT
         File edgeDatabaseStoreFileLocation = createExistingEdgeStore( dir.directory().getAbsolutePath() +
                 pathSeparator + "edgeStore" );
 
-        cluster = Cluster.start( dir.directory(), 3, 0, new TestOnlyDiscoveryServiceFactory() );
+        cluster = Cluster.start( dir.directory(), 3, 0, new SharedDiscoveryService() );
 
         executeOnLeaderWithRetry( db -> {
             for ( int i = 0; i < 10; i++ )
@@ -209,7 +209,7 @@ public class EdgeServerReplicationIT
         String coreRecordFormat = HighLimit.NAME;
         String edgeRecordFormat = StandardV3_0.NAME;
 
-        cluster = Cluster.start( dir.directory(), 3, 0, new TestOnlyDiscoveryServiceFactory(), coreRecordFormat );
+        cluster = Cluster.start( dir.directory(), 3, 0, new SharedDiscoveryService(), coreRecordFormat );
 
         // when
         executeOnLeaderWithRetry( db -> {
@@ -241,7 +241,7 @@ public class EdgeServerReplicationIT
                 CoreEdgeClusterSettings.state_machine_flush_window_size.name(), "1",
                 CoreEdgeClusterSettings.raft_log_pruning_strategy.name(), "1 entries"
         );
-        cluster = Cluster.start( dir.cleanDirectory( "db" ), 3, 0, new TestOnlyDiscoveryServiceFactory(),
+        cluster = Cluster.start( dir.cleanDirectory( "db" ), 3, 0, new SharedDiscoveryService(),
                 params,  emptyMap(), HighLimit.NAME );
 
         cluster.coreTx( ( db, tx ) -> {

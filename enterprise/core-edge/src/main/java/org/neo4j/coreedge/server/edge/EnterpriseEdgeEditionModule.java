@@ -200,10 +200,9 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 new ExponentialBackoffStrategy( 1, TimeUnit.SECONDS ), logProvider, discoveryService, config ) );
     }
 
-    public static HostnamePort extractBoltAddress( Config config )
+    public static AdvertisedSocketAddress extractBoltAddress( Config config )
     {
-        AdvertisedSocketAddress advertisedSocketAddress = config.get( CoreEdgeClusterSettings.bolt_advertised_address );
-        return new HostnamePort( advertisedSocketAddress.toString() );
+        return config.get( CoreEdgeClusterSettings.bolt_advertised_address );
     }
 
     private void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,
