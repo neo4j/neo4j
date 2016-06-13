@@ -33,6 +33,7 @@ import org.apache.shiro.authz.SimpleRole;
 import org.apache.shiro.authz.permission.RolePermissionResolver;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
+import org.apache.shiro.subject.SimplePrincipalCollection;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -89,7 +90,7 @@ public class FileUserRealm extends AuthorizingRealm
             }
             else
             {
-                return Collections.EMPTY_LIST;
+                return Collections.emptyList();
             }
         }
     };
@@ -230,6 +231,7 @@ public class FileUserRealm extends AuthorizingRealm
                 }
             }
         }
+        clearCachedAuthorizationInfoForUser( username );
     }
 
     void removeUserFromRole( String username, String roleName ) throws IOException
@@ -262,6 +264,7 @@ public class FileUserRealm extends AuthorizingRealm
                 }
             }
         }
+        clearCachedAuthorizationInfoForUser( username );
     }
 
     boolean deleteUser( String username ) throws IOException
@@ -280,6 +283,7 @@ public class FileUserRealm extends AuthorizingRealm
                 throw new IllegalArgumentException( "The user '" + username + "' does not exist" );
             }
         }
+        clearCacheForUser( username );
         return result;
     }
 
@@ -305,6 +309,7 @@ public class FileUserRealm extends AuthorizingRealm
                 suspendUser( username );
             }
         }
+        clearCacheForUser( username );
     }
 
     void activateUser( String username ) throws IOException
@@ -329,6 +334,7 @@ public class FileUserRealm extends AuthorizingRealm
                 activateUser( username );
             }
         }
+        clearCacheForUser( username );
     }
 
     User findUser( String username )
@@ -371,5 +377,15 @@ public class FileUserRealm extends AuthorizingRealm
             throw new IllegalArgumentException(
                     "Role name contains illegal characters. Please use simple ascii characters and numbers." );
         }
+    }
+
+    private void clearCachedAuthorizationInfoForUser( String username )
+    {
+        clearCachedAuthorizationInfo( new SimplePrincipalCollection( username, this.getName() ) );
+    }
+
+    private void clearCacheForUser( String username )
+    {
+        clearCache( new SimplePrincipalCollection( username, this.getName() ) );
     }
 }
