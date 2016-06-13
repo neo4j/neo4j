@@ -32,6 +32,7 @@ import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -54,7 +55,7 @@ public class SegmentsTest
     private final FileNames fileNames = new FileNames( baseDirectory );
     @SuppressWarnings( "unchecked" )
     private final ChannelMarshal<ReplicatedContent> contentMarshal = mock( ChannelMarshal.class );
-    private final LogProvider logProvider = mock( LogProvider.class, RETURNS_MOCKS );
+    private final LogProvider logProvider = NullLogProvider.getInstance();
     private final SegmentHeader header = mock( SegmentHeader.class );
     private final List<SegmentFile> segmentFiles = asList(
             new SegmentFile( fsa, fileNames.getForVersion( 0 ), contentMarshal, logProvider, header ),
@@ -223,7 +224,6 @@ public class SegmentsTest
         File baseDirectory = new File( "." );
         FileNames fileNames = new FileNames( baseDirectory );
         ChannelMarshal<ReplicatedContent> contentMarshal = mock( ChannelMarshal.class );
-        LogProvider logProvider = mock( LogProvider.class );
 
         Segments segments = new Segments( fsa, fileNames, Collections.emptyList(), contentMarshal, logProvider, -1 );
 

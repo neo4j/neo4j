@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.security.SecureRandom;
+import java.util.Objects;
 import java.util.Random;
 
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
@@ -146,6 +147,16 @@ public final class StoreId implements Externalizable
     public int hashCode()
     {
         return 31 * (int) (creationTime ^ (creationTime >>> 32)) + (int) (randomId ^ (randomId >>> 32));
+    }
+
+    public boolean theRealEquals( StoreId other )
+    {
+        return equals( other ) && equalsByUpgradeId( other );
+    }
+
+    public int theRealHashCode()
+    {
+        return Objects.hash( creationTime, randomId, upgradeTime, upgradeId );
     }
 
     @Override

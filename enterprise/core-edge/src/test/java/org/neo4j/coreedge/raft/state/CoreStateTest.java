@@ -82,8 +82,7 @@ public class CoreStateTest
     private final Monitors monitors = new Monitors();
     private final CoreState coreState = new CoreState( raftLog, batchSize, flushEvery, () -> dbHealth,
             NullLogProvider.getInstance(), new ProgressTrackerImpl( globalSession ), lastFlushedStorage,
-            lastApplyingStorage, sessionStorage, mock( CoreServerSelectionStrategy.class ), applier,
-            mock( CoreStateDownloader.class ), inFlightMap, monitors );
+            lastApplyingStorage, sessionStorage, applier, mock( CoreStateDownloader.class ), inFlightMap, monitors );
 
     private ReplicatedTransaction nullTx = new ReplicatedTransaction( null );
 

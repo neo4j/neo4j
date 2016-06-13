@@ -27,18 +27,21 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.core.IsCollectionContaining.hasItem;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 
 import static org.neo4j.coreedge.raft.TestMessageBuilders.heartbeat;
 import static org.neo4j.coreedge.raft.roles.AppendEntriesRequestTest.ContentGenerator.content;
@@ -48,6 +51,8 @@ import static org.neo4j.coreedge.server.RaftTestMember.member;
 @RunWith(Parameterized.class)
 public class HeartbeatTest
 {
+    private final LocalDatabase storeId = mock( LocalDatabase.class);
+
     @Parameterized.Parameters(name = "{0} with leader {1} terms ahead.")
     public static Collection<Object[]> data()
     {
@@ -84,7 +89,7 @@ public class HeartbeatTest
                 .leaderTerm( leaderTerm )
                 .build();
 
-        Outcome<RaftTestMember> outcome = role.handler.handle( heartbeat, state, log() );
+        Outcome<RaftTestMember> outcome = role.handler.handle( heartbeat, state, log(), storeId );
 
         assertThat( outcome.getLogCommands(), empty());
     }
@@ -108,7 +113,7 @@ public class HeartbeatTest
                 .leaderTerm( leaderTerm )
                 .build();
 
-        Outcome<RaftTestMember> outcome = role.handler.handle( heartbeat, state, log() );
+        Outcome<RaftTestMember> outcome = role.handler.handle( heartbeat, state, log(), storeId );
 
         assertThat( outcome.getCommitIndex(), Matchers.equalTo(0L) );
     }
@@ -132,7 +137,7 @@ public class HeartbeatTest
                 .leaderTerm( leaderTerm )
                 .build();
 
-        Outcome<RaftTestMember> outcome = role.handler.handle( heartbeat, state, log() );
+        Outcome<RaftTestMember> outcome = role.handler.handle( heartbeat, state, log(), storeId );
 
         assertThat( outcome.getLogCommands(), empty() );
 

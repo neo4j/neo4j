@@ -51,7 +51,7 @@ public class TxPullResponseDecoder extends MessageToMessageDecoder<ByteBuf>
     {
         if ( protocol.isExpecting( NextMessage.TX_PULL_RESPONSE ) )
         {
-            StoreId storeId = new StoreIdMarshal().unmarshal( msg );
+            StoreId storeId = StoreIdMarshal.unmarshal( msg );
 
             NetworkReadableClosableByteBuf logChannel = new NetworkReadableClosableByteBuf( msg );
             LogEntryReader<NetworkReadableClosableByteBuf> reader = new VersionAwareLogEntryReader<>(

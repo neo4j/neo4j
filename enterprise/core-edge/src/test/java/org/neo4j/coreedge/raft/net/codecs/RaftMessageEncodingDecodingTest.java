@@ -38,6 +38,7 @@ import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.ByteBufMarshal;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.kernel.impl.store.StoreId;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -52,7 +53,6 @@ public class RaftMessageEncodingDecodingTest
                 new AdvertisedSocketAddress( "127.0.0.2:5001" ), new AdvertisedSocketAddress( "127.0.0.3:5001" ) );
         RaftMessages.AppendEntries.Request<CoreMember> request = new AppendEntriesRequestBuilder<CoreMember>()
                 .from( sender )
-                .leader( sender )
                 .leaderCommit( 2 )
                 .leaderTerm( 4 )
                 .logEntry( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 2 ) ) )
@@ -68,7 +68,6 @@ public class RaftMessageEncodingDecodingTest
                 new AdvertisedSocketAddress( "127.0.0.2:5001" ), new AdvertisedSocketAddress( "127.0.0.3:5001" ) );
         RaftMessages.AppendEntries.Request<CoreMember> request = new AppendEntriesRequestBuilder<CoreMember>()
                 .from( sender )
-                .leader( sender )
                 .leaderCommit( 2 )
                 .leaderTerm( 4 )
                 .build();
@@ -103,7 +102,8 @@ public class RaftMessageEncodingDecodingTest
         // When
         CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
                 new AdvertisedSocketAddress( "127.0.0.2:5001" ), new AdvertisedSocketAddress( "127.0.0.3:5001" ) );
-        RaftMessages.Heartbeat<CoreMember> message = new RaftMessages.Heartbeat<>( sender, 1, 2, 3 );
+        RaftMessages.Heartbeat<CoreMember> message = new RaftMessages.Heartbeat<>( sender, 1, 2, 3,
+                new StoreId( 1, 2, 3, 4, 5 ) );
         encoder.encode( setupContext(), message, resultingBuffers );
 
         // Then

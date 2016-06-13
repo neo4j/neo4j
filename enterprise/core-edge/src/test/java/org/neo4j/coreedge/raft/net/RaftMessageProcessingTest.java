@@ -35,6 +35,7 @@ import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.ByteBufMarshal;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.kernel.impl.store.StoreId;
 
 import static org.junit.Assert.assertEquals;
 
@@ -81,6 +82,7 @@ public class RaftMessageProcessingTest
     };
 
     private EmbeddedChannel channel;
+    private StoreId storeId = new StoreId( 1, 2, 3, 4, 5 );
 
     @Before
     public void setup()
@@ -94,7 +96,7 @@ public class RaftMessageProcessingTest
         // given
         CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:9000" ),
                 new AdvertisedSocketAddress( "host1:9001" ), new AdvertisedSocketAddress( "host1:9002" ) );
-        RaftMessages.Vote.Request request = new RaftMessages.Vote.Request<>( member, 1, member, 1, 1 );
+        RaftMessages.Vote.Request request = new RaftMessages.Vote.Request<>( member, 1, member, 1, 1, storeId );
 
         // when
         channel.writeOutbound( request );
@@ -110,7 +112,7 @@ public class RaftMessageProcessingTest
         // given
         CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:9000" ),
                 new AdvertisedSocketAddress( "host1:9001" ), new AdvertisedSocketAddress( "host1:9002" ) );
-        RaftMessages.Vote.Response response = new RaftMessages.Vote.Response<>( member, 1, true );
+        RaftMessages.Vote.Response response = new RaftMessages.Vote.Response<>( member, 1, true, storeId );
 
         // when
         channel.writeOutbound( response );
@@ -128,7 +130,8 @@ public class RaftMessageProcessingTest
                 new AdvertisedSocketAddress( "host1:9001" ), new AdvertisedSocketAddress( "host1:9002" ) );
         RaftLogEntry logEntry = new RaftLogEntry( 1, ReplicatedInteger.valueOf( 1 ) );
         RaftMessages.AppendEntries.Request request =
-                new RaftMessages.AppendEntries.Request<>( member, 1, 1, 99, new RaftLogEntry[] { logEntry }, 1 );
+                new RaftMessages.AppendEntries.Request<>( member, 1, 1, 99, new RaftLogEntry[] { logEntry }, 1,
+                        storeId );
 
         // when
         channel.writeOutbound( request );
@@ -145,7 +148,7 @@ public class RaftMessageProcessingTest
         CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:9000" ),
                 new AdvertisedSocketAddress( "host1:9001" ), new AdvertisedSocketAddress( "host1:9002" ) );
         RaftMessages.AppendEntries.Response response =
-                new RaftMessages.AppendEntries.Response<>( member, 1, false, -1, 0 );
+                new RaftMessages.AppendEntries.Response<>( member, 1, false, -1, 0, storeId );
 
         // when
         channel.writeOutbound( response );
@@ -162,7 +165,7 @@ public class RaftMessageProcessingTest
         CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:9000" ),
                 new AdvertisedSocketAddress( "host1:9001" ), new AdvertisedSocketAddress( "host1:9002" ) );
         RaftMessages.NewEntry.Request request =
-                new RaftMessages.NewEntry.Request<>( member, ReplicatedInteger.valueOf( 12 ) );
+                new RaftMessages.NewEntry.Request<>( member, ReplicatedInteger.valueOf( 12 ), storeId );
 
         // when
         channel.writeOutbound( request );

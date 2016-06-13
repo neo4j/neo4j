@@ -22,6 +22,7 @@ package org.neo4j.coreedge.raft.roles;
 import java.io.IOException;
 import java.util.List;
 
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.Followers;
 import org.neo4j.coreedge.raft.RaftMessageHandler;
 import org.neo4j.coreedge.raft.RaftMessages;
@@ -29,13 +30,17 @@ import org.neo4j.coreedge.raft.RaftMessages.Heartbeat;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.outcome.ShipCommand;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.raft.state.follower.FollowerState;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.helpers.collection.FilteringIterable;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.logging.Log;
 
 import static java.lang.Math.max;
+
+import static org.neo4j.coreedge.raft.roles.Role.CANDIDATE;
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 
@@ -46,11 +51,13 @@ public class Leader implements RaftMessageHandler
         return new FilteringIterable<>( ctx.replicationMembers(), member -> !member.equals( ctx.myself() ) );
     }
 
-    private static <MEMBER> void sendHeartbeats( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome ) throws IOException
+    private static <MEMBER> void sendHeartbeats( ReadableRaftState<MEMBER> ctx,
+                                                 Outcome<MEMBER> outcome, StoreId storeId ) throws IOException
     {
         long commitIndex = ctx.leaderCommit();
         long commitIndexTerm = ctx.entryLog().readEntryTerm( commitIndex );
-        Heartbeat<MEMBER> heartbeat = new Heartbeat<>( ctx.myself(), ctx.term(), commitIndex, commitIndexTerm );
+        Heartbeat<MEMBER> heartbeat = new Heartbeat<>( ctx.myself(), ctx.term(), commitIndex,
+                commitIndexTerm, storeId );
         for ( MEMBER to : replicationTargets( ctx ) )
         {
             outcome.addOutgoingMessage( new RaftMessages.Directed<>( to, heartbeat ) );
@@ -58,8 +65,8 @@ public class Leader implements RaftMessageHandler
     }
 
     @Override
-    public <MEMBER> Outcome<MEMBER> handle( RaftMessages.RaftMessage<MEMBER> message,
-                                            ReadableRaftState<MEMBER> ctx, Log log ) throws IOException
+    public <MEMBER> Outcome<MEMBER> handle( RaftMessages.RaftMessage<MEMBER> message, ReadableRaftState<MEMBER> ctx,
+                                            Log log, LocalDatabase localDatabase ) throws IOException
     {
         Outcome<MEMBER> outcome = new Outcome<>( LEADER, ctx );
 
@@ -84,7 +91,7 @@ public class Leader implements RaftMessageHandler
 
             case HEARTBEAT_TIMEOUT:
             {
-                sendHeartbeats( ctx, outcome );
+                sendHeartbeats( ctx, outcome, localDatabase.storeId() );
                 break;
             }
 
@@ -96,7 +103,7 @@ public class Leader implements RaftMessageHandler
                 {
                     RaftMessages.AppendEntries.Response<MEMBER> appendResponse =
                             new RaftMessages.AppendEntries.Response<>( ctx.myself(), ctx.term(), false, req.prevLogIndex(),
-                                    ctx.entryLog().appendIndex() );
+                                    ctx.entryLog().appendIndex(), localDatabase.storeId() );
 
                     outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(), appendResponse ) );
                     break;
@@ -112,7 +119,7 @@ public class Leader implements RaftMessageHandler
                     outcome.setNextRole( FOLLOWER );
                     log.info( "Moving to FOLLOWER state after receiving append request at term %d (my term is " +
                             "%d) from %s%n", req.leaderTerm(), ctx.term(), req.from() );
-                    Appending.handleAppendEntriesRequest( ctx, outcome, req );
+                    Appending.handleAppendEntriesRequest( ctx, outcome, req, localDatabase.storeId() );
                     break;
                 }
             }
@@ -190,7 +197,7 @@ public class Leader implements RaftMessageHandler
                         // it can take appropriate action.
                         outcome.addOutgoingMessage( new RaftMessages.Directed<>( response.from(),
                                 new RaftMessages.LogCompactionInfo<>( ctx.myself(), ctx.term(),
-                                        ctx.entryLog().prevIndex() ) ) );
+                                        ctx.entryLog().prevIndex(), localDatabase.storeId() ) ) );
                     }
                 }
                 break;
@@ -205,13 +212,14 @@ public class Leader implements RaftMessageHandler
                     outcome.steppingDown();
                     log.info( "Moving to FOLLOWER state after receiving vote request at term %d (my term is " +
                             "%d) from %s%n", req.term(), ctx.term(), req.from() );
+
                     outcome.setNextRole( FOLLOWER );
-                    Voting.handleVoteRequest( ctx, outcome, req );
+                    Voting.handleVoteRequest( ctx, outcome, req, localDatabase.storeId() );
                     break;
                 }
 
                 outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(),
-                        new RaftMessages.Vote.Response<>( ctx.myself(), ctx.term(), false ) ) );
+                        new RaftMessages.Vote.Response<>( ctx.myself(), ctx.term(), false, localDatabase.storeId() ) ) );
                 break;
             }
 
@@ -233,5 +241,12 @@ public class Leader implements RaftMessageHandler
         }
 
         return outcome;
+    }
+
+    @Override
+    public <MEMBER> Outcome<MEMBER> validate( RaftMessages.RaftMessage<MEMBER> message, RaftState<MEMBER> ctx,
+                                              Log log, LocalDatabase localDatabase )
+    {
+        return new Outcome<>( LEADER, ctx );
     }
 }

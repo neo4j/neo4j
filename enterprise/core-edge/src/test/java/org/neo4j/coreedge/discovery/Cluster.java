@@ -31,10 +31,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
+import java.util.stream.Collectors;
 
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
 import org.neo4j.coreedge.raft.replication.id.IdGenerationException;
@@ -51,6 +53,7 @@ import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.Level;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 
@@ -69,8 +72,8 @@ public class Cluster implements AutoCloseable
     private static final int DEFAULT_BACKOFF_MS = 100;
 
     private final File parentDir;
-    private final Map<String,String> coreParams;
-    private Map<String,IntFunction<String>> instanceCoreParams;
+    private final Map<String, String> coreParams;
+    private Map<String, IntFunction<String>> instanceCoreParams;
     private final Map<String, String> edgeParams;
     private final Map<String, IntFunction<String>> instanceEdgeParams;
     private final String recordFormat;
@@ -82,8 +85,9 @@ public class Cluster implements AutoCloseable
     private Set<EdgeGraphDatabase> edgeServers = new HashSet<>();
 
     public Cluster( File parentDir, int noOfCoreServers, int noOfEdgeServers, DiscoveryServiceFactory fatory,
-            Map<String,String> coreParams, Map<String,IntFunction<String>> instanceCoreParams,
-                    Map<String,String> edgeParams, Map<String,IntFunction<String>> instanceEdgeParams, String recordFormat )
+                    Map<String, String> coreParams, Map<String, IntFunction<String>> instanceCoreParams,
+                    Map<String, String> edgeParams, Map<String, IntFunction<String>> instanceEdgeParams,
+                    String recordFormat )
             throws ExecutionException, InterruptedException
     {
         this.noOfCoreServers = noOfCoreServers;
@@ -113,8 +117,8 @@ public class Cluster implements AutoCloseable
     }
 
     public static Cluster start( File parentDir, int noOfCoreServers, int noOfEdgeServers,
-            DiscoveryServiceFactory discoveryServiceFactory, Map<String,String> coreParams,
-            Map<String, IntFunction<String>> instanceCoreParams,  String recordFormat )
+                                 DiscoveryServiceFactory discoveryServiceFactory, Map<String, String> coreParams,
+                                 Map<String, IntFunction<String>> instanceCoreParams, String recordFormat )
             throws ExecutionException, InterruptedException
     {
         Cluster cluster = new Cluster( parentDir, noOfCoreServers, noOfEdgeServers, discoveryServiceFactory,
@@ -124,7 +128,7 @@ public class Cluster implements AutoCloseable
     }
 
     public static Cluster start( File parentDir, int noOfCoreServers, int noOfEdgeServers,
-            DiscoveryServiceFactory discoveryServiceFactory, String recordFormat )
+                                 DiscoveryServiceFactory discoveryServiceFactory, String recordFormat )
             throws ExecutionException, InterruptedException
     {
         return start( parentDir, noOfCoreServers, noOfEdgeServers, discoveryServiceFactory, stringMap(), emptyMap(),
@@ -132,7 +136,8 @@ public class Cluster implements AutoCloseable
     }
 
     public static Cluster start( File parentDir, int noOfCoreServers, int noOfEdgeServers,
-            DiscoveryServiceFactory discoveryServiceFactory ) throws ExecutionException, InterruptedException
+                                 DiscoveryServiceFactory discoveryServiceFactory )
+            throws ExecutionException, InterruptedException
     {
         return start( parentDir, noOfCoreServers, noOfEdgeServers, discoveryServiceFactory, stringMap(), emptyMap(),
                 StandardV3_0.NAME );
@@ -146,14 +151,14 @@ public class Cluster implements AutoCloseable
     }
 
     public static Cluster start( File parentDir, int noOfCoreServers, int noOfEdgeServers,
-            Map<String,String> coreParams ) throws ExecutionException, InterruptedException
+                                 Map<String, String> coreParams ) throws ExecutionException, InterruptedException
     {
         return start( parentDir, noOfCoreServers, noOfEdgeServers, new HazelcastDiscoveryServiceFactory(), coreParams,
                 emptyMap(), StandardV3_0.NAME );
     }
 
     public static Cluster start( File parentDir, int noOfCoreServers, int noOfEdgeServers,
-            Map<String,String> coreParams, DiscoveryServiceFactory discoveryServiceFactory )
+                                 Map<String, String> coreParams, DiscoveryServiceFactory discoveryServiceFactory )
             throws ExecutionException, InterruptedException
     {
         return start( parentDir, noOfCoreServers, noOfEdgeServers, discoveryServiceFactory, coreParams, emptyMap(),
@@ -175,9 +180,9 @@ public class Cluster implements AutoCloseable
         return new File( parentDir, "server-edge-" + serverId );
     }
 
-    private Map<String,String> serverParams( String serverType, int serverId, String initialHosts )
+    private Map<String, String> serverParams( String serverType, int serverId, String initialHosts )
     {
-        Map<String,String> params = stringMap();
+        Map<String, String> params = stringMap();
         params.put( "dbms.mode", serverType );
         params.put( GraphDatabaseSettings.store_internal_log_level.name(), Level.DEBUG.name() );
         params.put( CoreEdgeClusterSettings.cluster_name.name(), CLUSTER_NAME );
@@ -198,8 +203,8 @@ public class Cluster implements AutoCloseable
     }
 
     private void startCoreServers( ExecutorService executor, final int noOfCoreServers,
-            List<AdvertisedSocketAddress> addresses, Map<String,String> extraParams,
-            Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
+                                   List<AdvertisedSocketAddress> addresses, Map<String, String> extraParams,
+                                   Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
             throws InterruptedException, ExecutionException
     {
         CompletionService<CoreGraphDatabase> ecs = new ExecutorCompletionService<>( executor );
@@ -218,8 +223,10 @@ public class Cluster implements AutoCloseable
     }
 
     private void startEdgeServers( ExecutorService executor, int noOfEdgeServers,
-            final List<AdvertisedSocketAddress> addresses,
-                                   Map<String,String> extraParams, Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
+                                   final List<AdvertisedSocketAddress> addresses,
+                                   Map<String, String> extraParams,
+                                   Map<String, IntFunction<String>> instanceExtraParams,
+                                   String recordFormat )
             throws InterruptedException, ExecutionException
     {
         CompletionService<EdgeGraphDatabase> ecs = new ExecutorCompletionService<>( executor );
@@ -237,7 +244,9 @@ public class Cluster implements AutoCloseable
     }
 
     private CoreGraphDatabase startCoreServer( int serverId, int clusterSize, List<AdvertisedSocketAddress> addresses,
-            Map<String,String> extraParams, Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
+                                               Map<String, String> extraParams,
+                                               Map<String, IntFunction<String>> instanceExtraParams,
+                                               String recordFormat )
     {
         int clusterPort = 5000 + serverId;
         int txPort = 6000 + serverId;
@@ -246,7 +255,7 @@ public class Cluster implements AutoCloseable
 
         String initialHosts = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
 
-        final Map<String,String> params = serverParams( "CORE", serverId, initialHosts );
+        final Map<String, String> params = serverParams( "CORE", serverId, initialHosts );
 
         params.put( GraphDatabaseSettings.record_format.name(), recordFormat );
 
@@ -257,9 +266,9 @@ public class Cluster implements AutoCloseable
         params.put( CoreEdgeClusterSettings.raft_advertised_address.name(), "localhost:" + raftPort );
         params.put( CoreEdgeClusterSettings.raft_listen_address.name(), "127.0.0.1:" + raftPort );
 
-        params.put( new GraphDatabaseSettings.BoltConnector("bolt").type.name(), "BOLT" );
-        params.put( new GraphDatabaseSettings.BoltConnector("bolt").enabled.name(), "true" );
-        params.put( new GraphDatabaseSettings.BoltConnector("bolt").address.name(), "0.0.0.0:" + boltPort );
+        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
+        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
+        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).address.name(), "0.0.0.0:" + boltPort );
 
         params.put( CoreEdgeClusterSettings.bolt_advertised_address.name(), "127.0.0.1:" + boltPort );
 
@@ -281,19 +290,23 @@ public class Cluster implements AutoCloseable
     }
 
     private EdgeGraphDatabase startEdgeServer( int serverId, List<AdvertisedSocketAddress> addresses,
-                                               Map<String,String> extraParams, Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
+                                               Map<String, String> extraParams,
+                                               Map<String, IntFunction<String>> instanceExtraParams,
+                                               String recordFormat )
     {
         final File storeDir = edgeServerStoreDirectory( parentDir, serverId );
         return startEdgeServer( serverId, storeDir, addresses, extraParams, instanceExtraParams, recordFormat );
     }
 
     private EdgeGraphDatabase startEdgeServer( int serverId, File storeDir, List<AdvertisedSocketAddress> addresses,
-                                               Map<String,String> extraParams, Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
+                                               Map<String, String> extraParams,
+                                               Map<String, IntFunction<String>> instanceExtraParams,
+                                               String recordFormat )
     {
         String initialHosts = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
 
         final Map<String, String> params = serverParams( "EDGE", serverId, initialHosts );
-        params.put(GraphDatabaseSettings.record_format.name(), recordFormat);
+        params.put( GraphDatabaseSettings.record_format.name(), recordFormat );
         params.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         params.put( GraphDatabaseSettings.auth_store.name(), new File( parentDir, "auth" ).getAbsolutePath() );
         params.put( GraphDatabaseSettings.logs_directory.name(), storeDir.getAbsolutePath() );
@@ -304,9 +317,9 @@ public class Cluster implements AutoCloseable
         {
             params.put( entry.getKey(), entry.getValue().apply( serverId ) );
         }
-        params.put( new GraphDatabaseSettings.BoltConnector("bolt").type.name(), "BOLT" );
-        params.put( new GraphDatabaseSettings.BoltConnector("bolt").enabled.name(), "true" );
-        params.put( new GraphDatabaseSettings.BoltConnector("bolt").address.name(), "0.0.0.0:" + (9000 + serverId ));
+        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
+        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
+        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).address.name(), "0.0.0.0:" + (9000 + serverId) );
 
         params.put( CoreEdgeClusterSettings.bolt_advertised_address.name(), "127.0.0.1:" + (9000 + serverId) );
 
@@ -396,35 +409,24 @@ public class Cluster implements AutoCloseable
         coreServers.remove( serverToRemove );
     }
 
-    public void removeEdgeServerWithServerId( int serverId )
-    {
-        EdgeGraphDatabase serverToRemove = null;
-        for ( EdgeGraphDatabase edgeServer : edgeServers )
-        {
-            if ( serverIdFor( edgeServer ) == serverId )
-            {
-                edgeServer.shutdown();
-                serverToRemove = edgeServer;
-            }
-        }
-
-        if ( serverToRemove == null )
-        {
-            throw new RuntimeException( "Could not remove edge server with server id " + serverId );
-        }
-        else
-        {
-            edgeServers.remove( serverToRemove );
-        }
-    }
-
     public void addCoreServerWithServerId( int serverId, int intendedClusterSize )
     {
         addCoreServerWithServerId( serverId, intendedClusterSize, stringMap(), emptyMap(), StandardV3_0.NAME );
     }
 
-    private void addCoreServerWithServerId( int serverId, int intendedClusterSize, Map<String,String> extraParams,
-            Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
+    public Future<?> asyncAddCoreServerWithServerId( int serverId, int intendedClusterSize )
+    {
+        ExecutorService executor = Executors.newCachedThreadPool();
+        return executor.submit( () -> {
+                    addCoreServerWithServerId( serverId, intendedClusterSize, stringMap(), emptyMap(),
+                            StandardV3_0.NAME );
+                    executor.shutdown();
+                }
+        );
+    }
+
+    private void addCoreServerWithServerId( int serverId, int intendedClusterSize, Map<String, String> extraParams,
+                                            Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
     {
         Config config = firstOrNull( coreServers ).getDependencyResolver().resolveDependency( Config.class );
         List<AdvertisedSocketAddress> advertisedAddress =
@@ -529,7 +531,7 @@ public class Cluster implements AutoCloseable
     /**
      * Perform a transaction against the core cluster, selecting the target and retrying as necessary.
      */
-    public CoreGraphDatabase coreTx( BiConsumer<CoreGraphDatabase,Transaction> op )
+    public CoreGraphDatabase coreTx( BiConsumer<CoreGraphDatabase, Transaction> op )
             throws TimeoutException, InterruptedException
     {
         // this currently wraps the leader-only strategy, since it is the recommended and only approach
@@ -539,7 +541,7 @@ public class Cluster implements AutoCloseable
     /**
      * Perform a transaction against the leader of the core cluster, retrying as necessary.
      */
-    private CoreGraphDatabase leaderTx( BiConsumer<CoreGraphDatabase,Transaction> op )
+    private CoreGraphDatabase leaderTx( BiConsumer<CoreGraphDatabase, Transaction> op )
             throws TimeoutException, InterruptedException
     {
         long endTime = System.currentTimeMillis() + DEFAULT_TIMEOUT_MS;
@@ -575,14 +577,17 @@ public class Cluster implements AutoCloseable
 
     private boolean isTransientFailure( Throwable e )
     {
-        // TODO: This should really catch all cases of transient failures. Must be able to express that in a clearer manner...
-        return ( e instanceof IdGenerationException ) || isLockExpired( e ) || isLockOnFollower( e );
+        // TODO: This should really catch all cases of transient failures. Must be able to express that in a clearer
+        // manner...
+        return (e instanceof IdGenerationException) || isLockExpired( e ) || isLockOnFollower( e );
 
     }
 
     private boolean isLockOnFollower( Throwable e )
     {
-        return e instanceof AcquireLockTimeoutException && ( e.getMessage().equals( LeaderOnlyLockManager.LOCK_NOT_ON_LEADER_ERROR_MESSAGE ) || e.getCause() instanceof NoLeaderFoundException);
+        return e instanceof AcquireLockTimeoutException &&
+                (e.getMessage().equals( LeaderOnlyLockManager .LOCK_NOT_ON_LEADER_ERROR_MESSAGE ) ||
+                e.getCause() instanceof NoLeaderFoundException);
     }
 
     private boolean isLockExpired( Throwable e )
@@ -597,5 +602,12 @@ public class Cluster implements AutoCloseable
     public void close() throws Exception
     {
         shutdown();
+    }
+
+    public Set<CoreGraphDatabase> healthyCoreMembers()
+    {
+        return coreServers.stream()
+                .filter( db -> db.getDependencyResolver().resolveDependency( DatabaseHealth.class ).isHealthy() )
+                .collect( Collectors.toSet() );
     }
 }

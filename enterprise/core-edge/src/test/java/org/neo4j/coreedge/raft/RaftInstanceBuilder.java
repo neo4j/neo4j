@@ -22,6 +22,9 @@ package org.neo4j.coreedge.raft;
 import java.time.Clock;
 import java.util.function.Supplier;
 
+import org.mockito.cglib.core.Local;
+
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
@@ -37,10 +40,13 @@ import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
+import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+
+import static org.mockito.Mockito.mock;
 
 public class RaftInstanceBuilder<MEMBER>
 {
@@ -73,6 +79,7 @@ public class RaftInstanceBuilder<MEMBER>
     private Monitors monitors = new Monitors();
     private RaftStateMachine raftStateMachine = new RaftStateMachine(){};
     private final InFlightMap<Long,RaftLogEntry> inFlightMap;
+    private LocalDatabase localDatabase = mock( LocalDatabase.class );
 
     public RaftInstanceBuilder( MEMBER member, int expectedClusterSize, RaftGroup.Builder<MEMBER> memberSetBuilder )
     {
@@ -88,16 +95,23 @@ public class RaftInstanceBuilder<MEMBER>
                 outbound );
         RaftMembershipManager<MEMBER> membershipManager = new RaftMembershipManager<>( leaderOnlyReplicator,
                 memberSetBuilder, raftLog, logProvider, expectedClusterSize, electionTimeout, clock, catchupTimeout,
-                raftMembership );
+                raftMembership, localDatabase );
         RaftLogShippingManager<MEMBER> logShipping =
                 new RaftLogShippingManager<>( outbound, logProvider, raftLog, clock, member, membershipManager,
-                        retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, inFlightMap );
+                        retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, inFlightMap, localDatabase );
 
         RaftInstance<MEMBER> raft = new RaftInstance<>( member, termState, voteState, raftLog, raftStateMachine, electionTimeout,
-                heartbeatInterval, renewableTimeoutService, outbound, logProvider,
-                membershipManager, logShipping, databaseHealthSupplier, inFlightMap, monitors );
+                heartbeatInterval, renewableTimeoutService, mock( CoreServerSelectionStrategy.class ), outbound,
+                logProvider, membershipManager, logShipping, databaseHealthSupplier, inFlightMap, monitors,
+                localDatabase );
         inbound.registerHandler( raft );
         return raft;
+    }
+
+    public RaftInstanceBuilder<MEMBER> localDatabase( LocalDatabase localDatabase  )
+    {
+        this.localDatabase = localDatabase;
+        return this;
     }
 
     public RaftInstanceBuilder<MEMBER> electionTimeout( long electionTimeout )

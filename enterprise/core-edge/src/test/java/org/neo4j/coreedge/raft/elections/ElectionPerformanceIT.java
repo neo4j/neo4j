@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.RaftTestNetwork;
 import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 import org.neo4j.function.Predicates;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -57,7 +58,7 @@ public class ElectionPerformanceIT
      * which should be the initial member set entry, making it possible for every member
      * to perform elections. We need this before we start disconnecting members.
      */
-    private class BootstrapWaiter implements RaftStateMachine
+    private class BootstrapWaiter implements RaftStateMachine<RaftTestMember>
     {
         private AtomicLong count = new AtomicLong();
 
@@ -68,7 +69,7 @@ public class ElectionPerformanceIT
         }
 
         @Override
-        public void notifyNeedFreshSnapshot()
+        public void notifyNeedFreshSnapshot( RaftTestMember myself, CoreServerSelectionStrategy strategy )
         {
         }
 

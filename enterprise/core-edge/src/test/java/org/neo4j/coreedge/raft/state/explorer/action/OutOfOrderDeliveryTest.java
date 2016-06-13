@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.neo4j.coreedge.raft.RaftMessages.Timeout.Election;
 import org.neo4j.coreedge.raft.RaftMessages.Timeout.Heartbeat;
 import org.neo4j.coreedge.raft.state.explorer.ClusterState;
+import org.neo4j.kernel.impl.store.StoreId;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
@@ -31,12 +32,14 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class OutOfOrderDeliveryTest
 {
+    private final StoreId storeId = new StoreId( 1,2,3,4,5 );
+
     @Test
     public void shouldReOrder() throws Exception
     {
         // given
         ClusterState clusterState = new ClusterState( asSet( member( 0 ) ) );
-        clusterState.queues.get( member( 0 ) ).add( new Election<>( member( 0 ) ) );
+        clusterState.queues.get( member( 0 ) ).add( new Election<>( member( 0 ), storeId ) );
         clusterState.queues.get( member( 0 ) ).add( new Heartbeat<>( member( 0 ) ) );
 
         // when
@@ -44,6 +47,6 @@ public class OutOfOrderDeliveryTest
 
         // then
         assertEquals( new Heartbeat<>( member( 0 ) ), reOrdered.queues.get( member( 0 ) ).poll() );
-        assertEquals( new Election<>( member( 0 ) ), reOrdered.queues.get( member( 0 ) ).poll() );
+        assertEquals( new Election<>( member( 0 ), storeId ), reOrdered.queues.get( member( 0 ) ).poll() );
     }
 }

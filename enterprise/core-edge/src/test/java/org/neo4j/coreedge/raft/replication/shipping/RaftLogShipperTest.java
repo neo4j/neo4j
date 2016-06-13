@@ -28,6 +28,7 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.LeaderContext;
 import org.neo4j.coreedge.raft.OutboundMessageCollector;
 import org.neo4j.coreedge.raft.RaftMessages.AppendEntries;
@@ -39,6 +40,7 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -100,7 +102,8 @@ public class RaftLogShipperTest
     {
         logShipper =
                 new RaftLogShipper<>( outbound, logProvider, raftLog, clock, leader, follower, leaderTerm, leaderCommit,
-                        retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, new InFlightMap<>() );
+                        retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, new InFlightMap<>(),
+                        mock( LocalDatabase.class ));
         logShipper.start();
     }
 

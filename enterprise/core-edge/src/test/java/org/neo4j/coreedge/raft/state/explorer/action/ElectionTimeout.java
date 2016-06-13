@@ -26,6 +26,7 @@ import java.util.Queue;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.state.explorer.ClusterState;
+import org.neo4j.kernel.impl.store.StoreId;
 
 public class ElectionTimeout implements Action
 {
@@ -41,7 +42,7 @@ public class ElectionTimeout implements Action
     {
         ClusterState newClusterState = new ClusterState( previous );
         Queue<RaftMessages.RaftMessage<RaftTestMember>> newQueue = new LinkedList<>( previous.queues.get( member ) );
-        newQueue.offer( new RaftMessages.Timeout.Election<>( member ) );
+        newQueue.offer( new RaftMessages.Timeout.Election<>( member, new StoreId( 1, 2, 3, 4, 5 ) ) );
         newClusterState.queues.put( member, newQueue );
         return newClusterState;
     }

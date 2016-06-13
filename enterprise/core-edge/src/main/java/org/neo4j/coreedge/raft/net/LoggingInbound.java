@@ -43,6 +43,12 @@ public class LoggingInbound<M extends Message> implements Inbound<M>
     {
         inbound.registerHandler( new MessageHandler<M>()
         {
+            @Override
+            public boolean validate( M message )
+            {
+                return handler.validate( message );
+            }
+
             public synchronized void handle( M message )
             {
                 messageLogger.log( me, message );

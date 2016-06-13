@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.LeaderContext;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
@@ -49,6 +50,7 @@ public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
     private final int catchupBatchSize;
     private final int maxAllowedShippingLag;
     private final InFlightMap<Long,RaftLogEntry> inFlightMap;
+    private final LocalDatabase localDatabase;
 
     private Map<MEMBER,RaftLogShipper> logShippers = new HashMap<>();
     private LeaderContext lastLeaderContext;
@@ -58,8 +60,8 @@ public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
 
     public RaftLogShippingManager( Outbound<MEMBER> outbound, LogProvider logProvider, ReadableRaftLog raftLog,
                                    Clock clock, MEMBER myself, RaftMembership<MEMBER> membership, long retryTimeMillis,
-                                   int catchupBatchSize, int maxAllowedShippingLag, InFlightMap<Long, RaftLogEntry>
-            inFlightMap )
+                                   int catchupBatchSize, int maxAllowedShippingLag,
+                                   InFlightMap<Long, RaftLogEntry> inFlightMap, LocalDatabase localDatabase )
     {
         this.outbound = outbound;
         this.logProvider = logProvider;
@@ -71,6 +73,7 @@ public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
         this.catchupBatchSize = catchupBatchSize;
         this.maxAllowedShippingLag = maxAllowedShippingLag;
         this.inFlightMap = inFlightMap;
+        this.localDatabase = localDatabase;
 
         membership.registerListener( this );
     }
@@ -113,7 +116,7 @@ public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
         {
             logShipper = new RaftLogShipper<>( outbound, logProvider, raftLog, clock, myself, member,
                     leaderContext.term, leaderContext.commitIndex, retryTimeMillis, catchupBatchSize,
-                    maxAllowedShippingLag, inFlightMap );
+                    maxAllowedShippingLag, inFlightMap, localDatabase );
 
             logShippers.put( member, logShipper );
 

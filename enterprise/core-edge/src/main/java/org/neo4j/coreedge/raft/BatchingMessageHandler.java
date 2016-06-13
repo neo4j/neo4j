@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.RaftMessages.RaftMessage;
 import org.neo4j.coreedge.raft.net.Inbound.MessageHandler;
 import org.neo4j.logging.Log;
@@ -35,19 +36,28 @@ public class BatchingMessageHandler<MEMBER> implements Runnable, MessageHandler<
 {
     private final Log log;
     private final MessageHandler<RaftMessage<MEMBER>> innerHandler;
+    private final LocalDatabase localDatabase;
 
     private final BlockingQueue<RaftMessage<MEMBER>> messageQueue;
     private final int maxBatch;
     private final List<RaftMessage<MEMBER>> batch;
 
-    public BatchingMessageHandler( MessageHandler<RaftMessage<MEMBER>> innerHandler, LogProvider logProvider, int queueSize, int maxBatch )
+    public BatchingMessageHandler( MessageHandler<RaftMessage<MEMBER>> innerHandler, LogProvider logProvider,
+                                   int queueSize, int maxBatch, LocalDatabase localDatabase )
     {
         this.innerHandler = innerHandler;
+        this.localDatabase = localDatabase;
         this.log = logProvider.getLog( getClass() );
         this.maxBatch = maxBatch;
 
         this.batch = new ArrayList<>( maxBatch );
         this.messageQueue = new ArrayBlockingQueue<>( queueSize );
+    }
+
+    @Override
+    public boolean validate( RaftMessage<MEMBER> message )
+    {
+        return innerHandler.validate( message );
     }
 
     @Override
@@ -105,7 +115,7 @@ public class BatchingMessageHandler<MEMBER> implements Runnable, MessageHandler<
 
                 if ( batchRequest == null )
                 {
-                    batchRequest = new RaftMessages.NewEntry.Batch<>( batch.size() );
+                    batchRequest = new RaftMessages.NewEntry.Batch<>( batch.size(), localDatabase.storeId() );
                 }
                 batchRequest.add( newEntryRequest.content() );
             }

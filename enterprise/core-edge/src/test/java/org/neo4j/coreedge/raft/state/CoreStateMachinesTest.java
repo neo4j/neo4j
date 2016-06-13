@@ -24,6 +24,7 @@ import org.mockito.InOrder;
 
 import java.util.function.Consumer;
 
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.log.MonitoredRaftLog;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationStateMachine;
@@ -131,7 +132,7 @@ public class CoreStateMachinesTest
 
     private final CoreStateMachines coreStateMachines = new CoreStateMachines( txSM, labelTokenSM,
             relationshipTypeTokenSM, propertyKeyTokenSM, lockTokenSM, idAllocationSM, coreState,
-            recoverTransactionLogState, txLogState );
+            recoverTransactionLogState, txLogState, mock( LocalDatabase.class ) );
 
     private final ReplicatedTransaction replicatedTransaction = mock( ReplicatedTransaction.class );
     private final ReplicatedIdAllocationRequest iAllocationRequest = mock( ReplicatedIdAllocationRequest.class );

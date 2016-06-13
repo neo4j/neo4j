@@ -24,6 +24,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.RaftMessages.AppendEntries;
 import org.neo4j.coreedge.raft.RaftMessages.Timeout.Heartbeat;
@@ -80,7 +81,8 @@ public class LeaderTest
     private Outbound outbound;
 
     private LogProvider logProvider = NullLogProvider.getInstance();
-    private static final int HIGHEST_TERM = 99;
+
+    private final LocalDatabase localDatabase = mock( LocalDatabase.class);
 
     private static final ReplicatedString CONTENT = ReplicatedString.valueOf( "some-content-to-raft" );
 
@@ -117,7 +119,7 @@ public class LeaderTest
         RaftMessages.AppendEntries.Response<RaftTestMember> response = appendEntriesResponse().success()
                 .matchIndex( 90 ).term( 4 ).from( instance2 ).build();
 
-        Outcome<RaftTestMember> outcome = leader.handle( response, state, mock( Log.class ) );
+        Outcome<RaftTestMember> outcome = leader.handle( response, state, mock( Log.class ), localDatabase );
 
         // then
         // The leader should not be trying to send any messages to that instance
@@ -159,7 +161,7 @@ public class LeaderTest
         RaftMessages.AppendEntries.Response<RaftTestMember> response = appendEntriesResponse().success()
                 .matchIndex( 100 ).term( 4 ).from( instance2 ).build();
 
-        Outcome<RaftTestMember> outcome = leader.handle( response, state, mock( Log.class ) );
+        Outcome<RaftTestMember> outcome = leader.handle( response, state, mock( Log.class ), localDatabase );
 
         // then
         // The leader should not be trying to send any messages to that instance
@@ -206,7 +208,7 @@ public class LeaderTest
                 .term( 231 )
                 .from( instance2 ).build();
 
-        Outcome<RaftTestMember> outcome = leader.handle( response, state, mock( Log.class ) );
+        Outcome<RaftTestMember> outcome = leader.handle( response, state, mock( Log.class ), localDatabase );
 
         // then
         int matchCount = 0;
@@ -234,7 +236,6 @@ public class LeaderTest
          */
         Leader leader = new Leader();
         RaftTestMember instance2 = new RaftTestMember( 2 );
-        int i = 101;
         int j = 100;
         FollowerState instance2State = createArtificialFollowerState( j );
 
@@ -260,7 +261,7 @@ public class LeaderTest
                 .term( 4 )
                 .from( instance2 ).build();
 
-        Outcome<RaftTestMember> outcome = leader.handle( response, state, mock( Log.class ) );
+        Outcome<RaftTestMember> outcome = leader.handle( response, state, mock( Log.class ), localDatabase );
 
         // then the leader should not send anything, since this is a delayed, out of order response to a previous append
         // request
@@ -315,7 +316,7 @@ public class LeaderTest
                 .term( 4 )
                 .from( instance2 ).build();
 
-        Outcome<RaftTestMember> outcome = leader.handle( response, state, mock( Log.class ) );
+        Outcome<RaftTestMember> outcome = leader.handle( response, state, mock( Log.class ), localDatabase );
 
         // then
         int mismatchCount = 0;
@@ -343,7 +344,7 @@ public class LeaderTest
                 .from( member1 )
                 .term( state.term() + 1 )
                 .build();
-        Outcome<RaftTestMember> outcome = leader.handle( message, state, log() );
+        Outcome<RaftTestMember> outcome = leader.handle( message, state, log(), localDatabase );
 
         // then
         assertEquals( 0, count( outcome.getOutgoingMessages() ) );
@@ -365,7 +366,7 @@ public class LeaderTest
         Leader leader = new Leader();
 
         // when
-        Outcome<RaftTestMember> outcome = leader.handle( new Heartbeat<>( member1 ), state, log() );
+        Outcome<RaftTestMember> outcome = leader.handle( new Heartbeat<>( member1 ), state, log(), localDatabase );
 
         // then
         assertTrue( messageFor( outcome, member1 ) instanceof RaftMessages.Heartbeat );
@@ -383,11 +384,11 @@ public class LeaderTest
 
         Leader leader = new Leader();
 
-        RaftMessages.NewEntry.Request<RaftTestMember> newEntryRequest = new RaftMessages.NewEntry.Request<>( member(
-                9 ), CONTENT );
+        RaftMessages.NewEntry.Request<RaftTestMember> newEntryRequest = new RaftMessages.NewEntry.Request<>(
+                member( 9 ), CONTENT, localDatabase.storeId() );
 
         // when
-        Outcome<RaftTestMember> outcome = leader.handle( newEntryRequest, state, log() );
+        Outcome<RaftTestMember> outcome = leader.handle( newEntryRequest, state, log(), localDatabase );
         //state.update( outcome );
 
         // then
@@ -411,13 +412,14 @@ public class LeaderTest
         Leader leader = new Leader();
 
         int BATCH_SIZE = 3;
-        RaftMessages.NewEntry.Batch<RaftTestMember> batchRequest = new RaftMessages.NewEntry.Batch<>( BATCH_SIZE );
+        RaftMessages.NewEntry.Batch<RaftTestMember> batchRequest =
+                new RaftMessages.NewEntry.Batch<>( BATCH_SIZE, localDatabase.storeId() );
         batchRequest.add( valueOf( 0 ) );
         batchRequest.add( valueOf( 1 ) );
         batchRequest.add( valueOf( 2 ) );
 
         // when
-        Outcome<RaftTestMember> outcome = leader.handle( batchRequest, state, log() );
+        Outcome<RaftTestMember> outcome = leader.handle( batchRequest, state, log(), localDatabase );
 
         // then
         BatchAppendLogEntries logCommand = (BatchAppendLogEntries) single( outcome.getLogCommands() );
@@ -459,7 +461,8 @@ public class LeaderTest
 
         // when a single instance responds (plus self == 2 out of 3 instances)
         Outcome<RaftTestMember> outcome = leader.handle(
-                new RaftMessages.AppendEntries.Response<>( member1, 0, true, 0, 0 ), state, log() );
+                new RaftMessages.AppendEntries.Response<>( member1, 0, true, 0, 0, localDatabase.storeId() ),
+                state, log(), localDatabase );
 
         // then
         assertEquals( 0L, outcome.getCommitIndex() );
@@ -487,7 +490,8 @@ public class LeaderTest
 
         // when
         Outcome<RaftTestMember> outcome =
-                leader.handle( new AppendEntries.Response<>( member1, 0, true, 2, 2 ), state, log() );
+                leader.handle( new AppendEntries.Response<>( member1, 0, true, 2, 2, localDatabase.storeId() ),
+                        state, log(), localDatabase );
 
         state.update( outcome );
 

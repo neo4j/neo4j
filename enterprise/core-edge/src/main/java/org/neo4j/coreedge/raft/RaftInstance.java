@@ -27,6 +27,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
+import org.neo4j.coreedge.discovery.CoreServerSelectionException;
 import org.neo4j.coreedge.helper.VolatileFuture;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
@@ -44,6 +46,11 @@ import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.core.NotMyselfSelectionStrategy;
+import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
+import org.neo4j.kernel.impl.store.kvstore.Rotation;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -58,15 +65,15 @@ import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 /**
  * The core raft class representing a member of the raft group. The main interactions are
  * with the network and the entry log.
- * <p/>
+ * <p>
  * The network is represented by the inbound and outbound classes, and inbound messages are
  * handled by the core state machine, which in turn can generate outbound messages in
  * response.
- * <p/>
+ * <p>
  * The raft entry log persists the user data which the raft system safely replicates. The raft
  * algorithm ensures that these logs eventually are fed with the exact same entries, even in
  * the face of failures.
- * <p/>
+ * <p>
  * The main entry point for adding a new entry is the sendToLeader() function, which starts of
  * the process of safe replication. The new entry will be safely replicated and eventually
  * added to the local log through a call to the append() function of the entry log. Eventually
@@ -98,8 +105,10 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>,
     private final long electionTimeout;
 
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
+    private final LocalDatabase localDatabase;
     private final VolatileFuture<MEMBER> volatileLeader = new VolatileFuture<>( null );
 
+    private final CoreServerSelectionStrategy defaultStrategy;
     private final Outbound<MEMBER> outbound;
     private final Log log;
     private Role currentRole = Role.FOLLOWER;
@@ -110,12 +119,13 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>,
                          StateStorage<VoteState<MEMBER>> voteStorage, RaftLog entryLog,
                          RaftStateMachine raftStateMachine, long electionTimeout, long heartbeatInterval,
                          RenewableTimeoutService renewableTimeoutService,
+                         CoreServerSelectionStrategy defaultStrategy,
                          final Outbound<MEMBER> outbound,
                          LogProvider logProvider, RaftMembershipManager<MEMBER> membershipManager,
                          RaftLogShippingManager<MEMBER> logShipping,
                          Supplier<DatabaseHealth> databaseHealthSupplier,
                          InFlightMap<Long, RaftLogEntry> inFlightMap,
-                         Monitors monitors )
+                         Monitors monitors, LocalDatabase localDatabase )
     {
         this.myself = myself;
         this.entryLog = entryLog;
@@ -124,10 +134,12 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>,
         this.heartbeatInterval = heartbeatInterval;
 
         this.renewableTimeoutService = renewableTimeoutService;
+        this.defaultStrategy = defaultStrategy;
 
         this.outbound = outbound;
         this.logShipping = logShipping;
         this.databaseHealthSupplier = databaseHealthSupplier;
+        this.localDatabase = localDatabase;
         this.log = logProvider.getLog( getClass() );
 
         this.membershipManager = membershipManager;
@@ -144,7 +156,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>,
         electionTimer = renewableTimeoutService.create(
                 Timeouts.ELECTION, electionTimeout, randomTimeoutRange(), timeout -> {
                     log.info( "Election timeout triggered, base timeout value is %d%n", electionTimeout );
-                    handle( new RaftMessages.Timeout.Election<>( myself ) );
+                    handle( new RaftMessages.Timeout.Election<>( myself, localDatabase.storeId() ) );
                     timeout.renew();
                 } );
         renewableTimeoutService.create(
@@ -246,9 +258,12 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>,
 
     private void checkForSnapshotNeed( Outcome<MEMBER> outcome )
     {
-        if( outcome.needsFreshSnapshot() )
+        if ( outcome.needsFreshSnapshot() )
         {
-            raftStateMachine.notifyNeedFreshSnapshot();
+            CoreServerSelectionStrategy strategy = outcome.isProcessable()
+                    ? defaultStrategy
+                    : () -> ((CoreMember) outcome.getLeader()).getCoreAddress();
+            raftStateMachine.notifyNeedFreshSnapshot( myself, strategy );
         }
     }
 
@@ -272,7 +287,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>,
             logShipping.stop();
         }
 
-        if( outcome.getRole() == LEADER )
+        if ( outcome.getRole() == LEADER )
         {
             logShipping.handleCommands( outcome.getShipCommands(), leaderContext );
         }
@@ -292,11 +307,41 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>,
         return false;
     }
 
+    @Override
+    public boolean validate( RaftMessages.RaftMessage<MEMBER> incomingMessage )
+    {
+        try
+        {
+            Outcome<MEMBER> outcome = currentRole.handler.validate( incomingMessage, state, log, localDatabase );
+
+            boolean processable = outcome.isProcessable();
+            if ( !processable )
+            {
+                checkForSnapshotNeed( outcome );
+            }
+
+            return processable;
+        }
+        catch ( Throwable e )
+        {
+            panicAndStop( incomingMessage, e );
+            throw e;
+        }
+    }
+
+    private void panicAndStop( RaftMessages.RaftMessage<MEMBER> incomingMessage, Throwable e )
+    {
+        // TODO: perhaps try to recover from some errors, like IllegalArgumentExceptions from the log
+        log.error( "Failed to process Raft message " + incomingMessage, e );
+        databaseHealthSupplier.get().panic( e );
+        electionTimer.cancel();
+    }
+
     public synchronized void handle( RaftMessages.RaftMessage<MEMBER> incomingMessage )
     {
         try
         {
-            Outcome<MEMBER> outcome = currentRole.handler.handle( incomingMessage, state, log );
+            Outcome<MEMBER> outcome = currentRole.handler.handle( incomingMessage, state, log, localDatabase );
 
             boolean newLeaderWasElected = leaderChanged( outcome, state.leader() );
             boolean newCommittedEntry = outcome.getCommitIndex() > state.commitIndex();
@@ -312,11 +357,11 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>,
 
             volatileLeader.set( outcome.getLeader() );
 
-            if( newCommittedEntry )
+            if ( newCommittedEntry )
             {
                 raftStateMachine.notifyCommitted( state.commitIndex() );
             }
-            if( newLeaderWasElected )
+            if ( newLeaderWasElected )
             {
                 notifyLeaderChanges( outcome );
             }
@@ -325,9 +370,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>,
         }
         catch ( Throwable e )
         {
-            // TODO: perhaps try to recover from some errors, like IllegalArgumentExceptions from the log
-            log.error( "Failed to process RAFT message " + incomingMessage, e );
-            databaseHealthSupplier.get().panic( e );
+            panicAndStop( incomingMessage, e );
         }
     }
 

@@ -22,6 +22,7 @@ package org.neo4j.coreedge.raft.state;
 import java.io.IOException;
 import java.util.function.Consumer;
 
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.core.CoreStateType;
 import org.neo4j.coreedge.raft.log.MonitoredRaftLog;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
@@ -51,6 +52,7 @@ public class CoreStateMachines
     private final CoreState coreState;
     private final RecoverTransactionLogState txLogState;
     private final MonitoredRaftLog raftLog;
+    private final LocalDatabase localDatabase;
 
     private final CommandDispatcher currentBatch = new StateMachineCommandDispatcher();
     private volatile boolean runningBatch;
@@ -64,7 +66,7 @@ public class CoreStateMachines
             ReplicatedIdAllocationStateMachine idAllocationStateMachine,
             CoreState coreState,
             RecoverTransactionLogState txLogState,
-            MonitoredRaftLog raftLog )
+            MonitoredRaftLog raftLog, LocalDatabase localDatabase )
     {
         this.replicatedTxStateMachine = replicatedTxStateMachine;
         this.labelTokenStateMachine = labelTokenStateMachine;
@@ -75,10 +77,12 @@ public class CoreStateMachines
         this.coreState = coreState;
         this.txLogState = txLogState;
         this.raftLog = raftLog;
+        this.localDatabase = localDatabase;
     }
 
     CommandDispatcher commandDispatcher()
     {
+        localDatabase.assertHealthy( IllegalStateException.class );
         assert !runningBatch;
         runningBatch = true;
         return currentBatch;
@@ -118,7 +122,7 @@ public class CoreStateMachines
         long snapshotPrevIndex = coreSnapshot.prevIndex();
         try
         {
-            if( snapshotPrevIndex > 1)
+            if ( snapshotPrevIndex > 1 )
             {
                 raftLog.skip( snapshotPrevIndex, coreSnapshot.prevTerm() );
             }
@@ -189,8 +193,8 @@ public class CoreStateMachines
         @Override
         public void close()
         {
-            replicatedTxStateMachine.ensuredApplied();
             runningBatch = false;
+            replicatedTxStateMachine.ensuredApplied();
         }
     }
 }
