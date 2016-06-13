@@ -27,8 +27,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.function.Supplier;
 
 import org.neo4j.function.Suppliers;
-
-import static java.lang.Math.min;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**
@@ -37,7 +36,7 @@ import static org.neo4j.helpers.Exceptions.launderedException;
  */
 public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
 {
-    public static final ParkStrategy DEFAULT_PARK_STRATEGY = new ParkStrategy.Park( 10 );
+    public static final ParkStrategy DEFAULT_PARK_STRATEGY = new ParkStrategy.Park( 10, MILLISECONDS );
 
     private final BlockingQueue<Task<LOCAL>> queue;
     private final ParkStrategy parkStrategy;
@@ -45,6 +44,7 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     @SuppressWarnings( "unchecked" )
     private volatile Processor[] processors = (Processor[]) Array.newInstance( Processor.class, 0 );
     private volatile boolean shutDown;
+    private volatile boolean abortQueued;
     private volatile Throwable panic;
     private final Supplier<LOCAL> initialLocalState;
     private final int maxProcessorCount;
@@ -132,10 +132,14 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     {
         if ( shutDown )
         {
-            String message = "Executor has been shut down";
-            throw panic != null
-                    ? new IllegalStateException( message, panic )
-                    : new IllegalStateException( message );
+            if ( panic != null )
+            {
+                throw new IllegalStateException( "Executor has been shut down in panic", panic );
+            }
+            if ( abortQueued )
+            {
+                throw new IllegalStateException( "Executor has been shut down, aborting queued" );
+            }
         }
     }
 
@@ -148,7 +152,7 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     }
 
     @Override
-    public synchronized void shutdown( boolean awaitAllCompleted )
+    public synchronized void shutdown( int flags )
     {
         if ( shutDown )
         {
@@ -156,10 +160,12 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
         }
 
         this.shutDown = true;
+        boolean awaitAllCompleted = (flags & TaskExecutor.SF_AWAIT_ALL_COMPLETED) != 0;
         while ( awaitAllCompleted && !queue.isEmpty() && panic == null /*all bets are off in the event of panic*/ )
         {
             parkAWhile();
         }
+        this.abortQueued = (flags & TaskExecutor.SF_ABORT_QUEUED) != 0;
         for ( Processor processor : processors )
         {
             processor.shutDown = true;
@@ -198,7 +204,6 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     private class Processor extends Thread
     {
         private volatile boolean shutDown;
-        private final LOCAL threadLocalState = initialLocalState.get();
 
         Processor( String name )
         {
@@ -210,7 +215,9 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
         @Override
         public void run()
         {
-            while ( !shutDown )
+            // Initialized here since it's the thread itself that needs to call it
+            final LOCAL threadLocalState = initialLocalState.get();
+            while ( !abortQueued && !shutDown )
             {
                 Task<LOCAL> task = queue.poll();
                 if ( task != null )
@@ -222,12 +229,16 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
                     catch ( Throwable e )
                     {
                         panic = e;
-                        shutdown( false );
+                        shutdown( TaskExecutor.SF_ABORT_QUEUED );
                         throw launderedException( e );
                     }
                 }
                 else
                 {
+                    if ( shutDown )
+                    {
+                        break;
+                    }
                     parkAWhile();
                 }
             }

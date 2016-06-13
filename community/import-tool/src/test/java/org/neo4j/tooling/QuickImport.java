@@ -32,20 +32,16 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
+import org.neo4j.unsafe.impl.batchimport.Configuration.Default;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
-import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
-
-import org.neo4j.unsafe.impl.batchimport.Configuration.Default;
-
 import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
-import static org.neo4j.tooling.CsvDataGenerator.bareboneNodeHeader;
-import static org.neo4j.tooling.CsvDataGenerator.bareboneRelationshipHeader;
+import static org.neo4j.tooling.DataGeneratorInput.bareboneNodeHeader;
+import static org.neo4j.tooling.DataGeneratorInput.bareboneRelationshipHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
@@ -60,10 +56,10 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors.defaul
  * Quick comes from gaming terminology where you sometimes just want to play a quick game, without
  * any settings or hazzle, just play.
  *
- * Uses {@link CsvDataGeneratorInput} as random data {@link Input}.
+ * Uses {@link DataGeneratorInput} as random data {@link Input}.
  *
  * For the time being the node/relationship data can't be controlled via command-line arguments,
- * only through changing the code. The {@link CsvDataGeneratorInput} accepts two {@link Header headers}
+ * only through changing the code. The {@link DataGeneratorInput} accepts two {@link Header headers}
  * describing which sort of data it should generate.
  */
 public class QuickImport
@@ -98,12 +94,17 @@ public class QuickImport
                 return args.getNumber( dense_node_threshold.name(), super.denseNodeThreshold() ).intValue();
             }
         };
-        Input input = new CsvDataGeneratorInput(
-                nodeHeader, relationshipHeader,
-                COMMAS, nodeCount, relationshipCount, new Groups(), idType, labelCount, relationshipTypeCount,
-                silentBadCollector( 0 ));
+
+        SimpleDataGenerator generator = new SimpleDataGenerator( nodeHeader, relationshipHeader, relationshipCount,
+                nodeCount, labelCount, relationshipTypeCount, idType );
+        Input input = new DataGeneratorInput(
+                nodeCount, relationshipCount,
+                generator.nodes(), generator.relationships(),
+                idType, silentBadCollector( 0 ) );
         BatchImporter importer = new ParallelBatchImporter( dir, importConfig,
-                new SimpleLogService( sysoutLogProvider, sysoutLogProvider ), defaultVisible(), Config.defaults() );
+                new SimpleLogService( sysoutLogProvider, sysoutLogProvider ),
+                defaultVisible(),
+                Config.defaults() );
         importer.doImport( input );
     }
 

@@ -34,7 +34,6 @@ import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
-import static java.lang.System.nanoTime;
 import static java.util.Arrays.asList;
 
 /**
@@ -73,6 +72,7 @@ public abstract class AbstractStep<T> implements Step<T>
     protected final MovingAverage totalProcessingTime;
     protected long startTime, endTime;
     private final List<StatsProvider> additionalStatsProvider;
+    protected final Runnable healthChecker = () -> assertHealthy();
 
     public AbstractStep( StageControl control, String name, Configuration config,
             StatsProvider... additionalStatsProvider )
@@ -146,35 +146,6 @@ public abstract class AbstractStep<T> implements Step<T>
         {
             throw Exceptions.launderedException( cause );
         }
-    }
-
-    protected long await( LongPredicate predicate, long value )
-    {
-        if ( predicate.test( value ) )
-        {
-            return 0;
-        }
-
-        long startTime = nanoTime();
-        for ( int i = 0; i < 1_000_000 && !predicate.test( value ); i++ )
-        {   // Busy loop a while
-        }
-
-        while ( !predicate.test( value ) )
-        {
-            // Sleeping wait
-            try
-            {
-                Thread.sleep( 1 );
-                Thread.yield();
-            }
-            catch ( InterruptedException e )
-            {   // It's OK
-            }
-
-            assertHealthy();
-        }
-        return nanoTime() - startTime;
     }
 
     protected void assertHealthy()

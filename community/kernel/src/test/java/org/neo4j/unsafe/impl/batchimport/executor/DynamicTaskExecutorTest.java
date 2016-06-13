@@ -23,12 +23,12 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.concurrent.Future;
-
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy.Park;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -36,13 +36,20 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
+import static org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor.SF_ABORT_QUEUED;
+import static org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor.SF_AWAIT_ALL_COMPLETED;
+
 public class DynamicTaskExecutorTest
 {
+    private static final Park PARK = new ParkStrategy.Park( 1, MILLISECONDS );
+
     @Test
     public void shouldExecuteTasksInParallel() throws Exception
     {
         // GIVEN
-        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 5, new ParkStrategy.Park( 1 ),
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 5, PARK,
                 getClass().getSimpleName() );
         ControlledTask task1 = new ControlledTask();
         TestTask task2 = new TestTask();
@@ -58,7 +65,7 @@ public class DynamicTaskExecutorTest
         while ( task1.executed == 0 )
         {   // Busy loop
         }
-        executor.shutdown( true );
+        executor.shutdown( SF_AWAIT_ALL_COMPLETED );
 
         // THEN
         assertEquals( 1, task1.executed );
@@ -69,7 +76,7 @@ public class DynamicTaskExecutorTest
     public void shouldIncrementNumberOfProcessorsWhenRunning() throws Exception
     {
         // GIVEN
-        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 0, 5, new ParkStrategy.Park( 1 ),
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 0, 5, PARK,
                 getClass().getSimpleName() );
         ControlledTask task1 = new ControlledTask();
         TestTask task2 = new TestTask();
@@ -86,7 +93,7 @@ public class DynamicTaskExecutorTest
         while ( task1.executed == 0 )
         {   // Busy loop
         }
-        executor.shutdown( true );
+        executor.shutdown( SF_AWAIT_ALL_COMPLETED );
 
         // THEN
         assertEquals( 1, task1.executed );
@@ -97,7 +104,7 @@ public class DynamicTaskExecutorTest
     public void shouldDecrementNumberOfProcessorsWhenRunning() throws Exception
     {
         // GIVEN
-        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 5, new ParkStrategy.Park( 1 ),
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 5, PARK,
                 getClass().getSimpleName() );
         ControlledTask task1 = new ControlledTask();
         ControlledTask task2 = new ControlledTask();
@@ -118,7 +125,7 @@ public class DynamicTaskExecutorTest
         Thread.sleep( 200 ); // gosh, a Thread.sleep...
         assertEquals( 0, task4.executed );
         task3.latch.finish();
-        executor.shutdown( true );
+        executor.shutdown( SF_AWAIT_ALL_COMPLETED );
 
         // THEN
         assertEquals( 1, task1.executed );
@@ -131,7 +138,7 @@ public class DynamicTaskExecutorTest
     public void shouldExecuteMultipleTasks() throws Exception
     {
         // GIVEN
-        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 30, 0, 5, new ParkStrategy.Park( 1 ),
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 30, 0, 5, PARK,
                 getClass().getSimpleName() );
         ExpensiveTask[] tasks = new ExpensiveTask[1000];
 
@@ -140,7 +147,7 @@ public class DynamicTaskExecutorTest
         {
             executor.submit( tasks[i] = new ExpensiveTask( 10 ) );
         }
-        executor.shutdown( true );
+        executor.shutdown( SF_AWAIT_ALL_COMPLETED );
 
         // THEN
         for ( ExpensiveTask task : tasks )
@@ -153,7 +160,7 @@ public class DynamicTaskExecutorTest
     public void shouldShutDownOnTaskFailure() throws Exception
     {
         // GIVEN
-        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 30, 0, 5, new ParkStrategy.Park( 1 ),
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 30, 0, 5, PARK,
                 getClass().getSimpleName() );
 
         // WHEN
@@ -171,7 +178,7 @@ public class DynamicTaskExecutorTest
     public void shouldShutDownOnTaskFailureEvenIfOtherTasksArePending() throws Exception
     {
         // GIVEN
-        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 10, new ParkStrategy.Park( 1 ),
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 10, PARK,
                 getClass().getSimpleName() );
         IOException exception = new IOException( "Test message" );
         ControlledTask firstBlockingTask = new ControlledTask();
@@ -194,14 +201,14 @@ public class DynamicTaskExecutorTest
 
         // THEN
         assertExceptionOnSubmit( executor, exception );
-        executor.shutdown( false ); // call would block if the shutdown as part of failure doesn't complete properly
+        executor.shutdown( SF_ABORT_QUEUED ); // call would block if the shutdown as part of failure doesn't complete properly
     }
 
     @Test
     public void shouldSurfaceTaskErrorInAssertHealthy() throws Exception
     {
         // GIVEN
-        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 10, new ParkStrategy.Park( 1 ),
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 10, PARK,
                 getClass().getSimpleName() );
         IOException exception = new IOException( "Failure" );
 
@@ -233,7 +240,7 @@ public class DynamicTaskExecutorTest
     public void shouldLetShutdownCompleteInEventOfPanic() throws Exception
     {
         // GIVEN
-        final TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 10, new ParkStrategy.Park( 1 ),
+        final TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 10, PARK,
                 getClass().getSimpleName() );
         IOException exception = new IOException( "Failure" );
 
@@ -250,7 +257,7 @@ public class DynamicTaskExecutorTest
                 @Override
                 public Void doWork( Void state ) throws Exception
                 {
-                    executor.shutdown( true );
+                    executor.shutdown( SF_AWAIT_ALL_COMPLETED );
                     return null;
                 }
             } );
@@ -273,7 +280,7 @@ public class DynamicTaskExecutorTest
     public void shouldRespectMaxProcessors() throws Exception
     {
         // GIVEN
-        final TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 4, 10, new ParkStrategy.Park( 1 ),
+        final TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 4, 10, PARK,
                 getClass().getSimpleName() );
 
         // WHEN/THEN
@@ -283,7 +290,7 @@ public class DynamicTaskExecutorTest
         assertEquals( 2, executor.numberOfProcessors() );
         executor.setNumberOfProcessors( 10 );
         assertEquals( 4, executor.numberOfProcessors() );
-        executor.shutdown( true );
+        executor.shutdown( SF_AWAIT_ALL_COMPLETED );
     }
 
     private void assertExceptionOnSubmit( TaskExecutor<Void> executor, IOException exception )

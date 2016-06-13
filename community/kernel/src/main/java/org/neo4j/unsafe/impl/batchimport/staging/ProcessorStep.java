@@ -24,19 +24,28 @@ import java.util.function.LongPredicate;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor;
+import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 import static java.lang.System.currentTimeMillis;
 import static java.lang.System.nanoTime;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import static org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor.DEFAULT_PARK_STRATEGY;
+import static org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor.SF_ABORT_QUEUED;
+import static org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor.SF_AWAIT_ALL_COMPLETED;
+import static org.neo4j.unsafe.impl.batchimport.staging.Processing.await;
 
 /**
  * {@link Step} that uses {@link TaskExecutor} as a queue and execution mechanism.
  * Supports an arbitrary number of threads to execute batches in parallel.
  * Subclasses implement {@link #process(Object, BatchSender)} receiving the batch to process
  * and an {@link BatchSender} for sending the modified batch, or other batches downstream.
+ *
+ * There's an overlap of functionality in {@link TicketedProcessing}, however the fit isn't perfect
+ * for using it as the engine in a {@link ProcessorStep} because the queuing of processed results
+ * works a bit differently. Perhaps sometimes this can be addressed.
  */
 public abstract class ProcessorStep<T> extends AbstractStep<T>
 {
@@ -51,6 +60,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     // Time stamp for when we processed the last queued batch received from upstream.
     // Useful for tracking how much time we spend waiting for batches from upstream.
     private final AtomicLong lastBatchEndTime = new AtomicLong();
+    private final ParkStrategy park = new ParkStrategy.Park( 1, MILLISECONDS );
 
     protected ProcessorStep( StageControl control, String name, Configuration config, int maxProcessors,
             StatsProvider... additionalStatsProviders )
@@ -77,9 +87,8 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     public long receive( final long ticket, final T batch )
     {
         // Don't go too far ahead
-        long idleTime = await( catchUp, executor.numberOfProcessors() );
+        long idleTime = await( catchUp, executor.numberOfProcessors(), healthChecker, park );
         incrementQueue();
-
         executor.submit( sender -> {
             assertHealthy();
             sender.initialize( ticket );
@@ -89,7 +98,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
                 // since grabbing a permit may include locking.
                 if ( guarantees( ORDER_PROCESS ) )
                 {
-                    await( rightBeginTicket, ticket );
+                    await( rightBeginTicket, ticket, healthChecker, park );
                 }
                 try ( Resource precondition = permit( batch ) )
                 {
@@ -113,7 +122,6 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
                 issuePanic( e );
             }
         } );
-
         return idleTime;
     }
 
@@ -170,7 +178,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     public void close() throws Exception
     {
         super.close();
-        executor.shutdown( panic == null );
+        executor.shutdown( panic == null ? SF_AWAIT_ALL_COMPLETED : SF_ABORT_QUEUED );
     }
 
     @Override
@@ -196,7 +204,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     {
         if ( guarantees( ORDER_SEND_DOWNSTREAM ) )
         {
-            await( rightDoneTicket, ticket );
+            await( rightDoneTicket, ticket, healthChecker, park );
         }
         downstreamIdleTime.addAndGet( downstream.receive( ticket, batch ) );
         doneBatches.incrementAndGet();

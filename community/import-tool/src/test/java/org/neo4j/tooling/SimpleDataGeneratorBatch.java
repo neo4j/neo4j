@@ -20,13 +20,8 @@
 package org.neo4j.tooling;
 
 import java.util.Random;
-import java.util.function.Function;
-
-import org.neo4j.csv.reader.SourceTraceability;
 import org.neo4j.helpers.ArrayUtil;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.test.Randoms;
-import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Deserialization;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
@@ -34,76 +29,56 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
 import static java.lang.Math.abs;
 
-/**
- * Generates random data based on a {@link Header} and some statistics, such as label/relationship type counts.
- */
-public class RandomDataIterator<T> extends PrefetchingIterator<T> implements InputIterator<T>
+class SimpleDataGeneratorBatch<T>
 {
     private final Header header;
-    private final long limit;
     private final Random random;
     private final Randoms randoms;
-    private final Deserialization<T> deserialization;
     private final long nodeCount;
+    private final long start;
     private final Distribution<String> labels;
     private final Distribution<String> relationshipTypes;
-    private final String sourceDescription;
+    private final Deserialization<T> deserialization;
+    private final T[] target;
 
     private long cursor;
     private long position;
 
-    public RandomDataIterator( Header header, long limit, Random random,
-            Function<SourceTraceability,Deserialization<T>> deserialization, long nodeCount,
-            int labelCount, int relationshipTypeCount )
+    SimpleDataGeneratorBatch(
+            Header header, long start, long randomSeed, long nodeCount,
+            Distribution<String> labels, Distribution<String> relationshipTypes,
+            Deserialization<T> deserialization, T[] target )
     {
         this.header = header;
-        this.limit = limit;
-        this.random = random;
-        this.randoms = new Randoms( random, Randoms.DEFAULT );
-        this.deserialization = deserialization.apply( this );
+        this.start = start;
         this.nodeCount = nodeCount;
-        this.labels = new Distribution<>( tokens( "Label", labelCount ) );
-        this.relationshipTypes = new Distribution<>( tokens( "TYPE", relationshipTypeCount ) );
-        this.sourceDescription = getClass().getSimpleName() + ":" + header;
+        this.labels = labels;
+        this.relationshipTypes = relationshipTypes;
+        this.target = target;
+        this.random = new Random( randomSeed );
+        this.randoms = new Randoms( random, Randoms.DEFAULT );
+        this.deserialization = deserialization;
 
-        this.deserialization.initialize();
+        deserialization.initialize();
     }
 
-    private String[] tokens( String prefix, int count )
+    T[] get()
     {
-        String[] result = new String[count];
-        for ( int i = 0; i < count; i++ )
+        for ( int i = 0; i < target.length; i++ )
         {
-            result[i] = prefix + (i+1);
+            target[i] = next();
         }
-        return result;
+        return target;
     }
 
-    @Override
-    protected T fetchNextOrNull()
-    {
-        if ( cursor < limit )
-        {
-            try
-            {
-                return generateDataLine();
-            }
-            finally
-            {
-                cursor++;
-            }
-        }
-        return null;
-    }
-
-    private T generateDataLine()
+    private T next()
     {
         for ( Entry entry : header.entries() )
         {
             switch ( entry.type() )
             {
             case ID:
-                deserialization.handle( entry, idValue( entry, cursor ) );
+                deserialization.handle( entry, idValue( entry, start + cursor ) );
                 break;
             case PROPERTY:
                 deserialization.handle( entry, randomProperty( entry, random ) );
@@ -128,6 +103,7 @@ public class RandomDataIterator<T> extends PrefetchingIterator<T> implements Inp
         finally
         {
             deserialization.clear();
+            cursor++;
         }
     }
 
@@ -190,28 +166,5 @@ public class RandomDataIterator<T> extends PrefetchingIterator<T> implements Inp
         }
         position += length * 6;
         return result;
-    }
-
-    @Override
-    public void close()
-    {   // Nothing to close
-    }
-
-    @Override
-    public String sourceDescription()
-    {
-        return sourceDescription;
-    }
-
-    @Override
-    public long lineNumber()
-    {
-        return cursor;
-    }
-
-    @Override
-    public long position()
-    {
-        return position;
     }
 }

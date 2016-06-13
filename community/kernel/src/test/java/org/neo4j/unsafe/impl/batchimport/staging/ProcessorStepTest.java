@@ -47,10 +47,7 @@ public class ProcessorStepTest
         StageControl control = mock( StageControl.class );
         MyProcessorStep step = new MyProcessorStep( control, 0 );
         step.start( ORDER_PROCESS );
-        while ( step.numberOfProcessors() < 5 )
-        {
-            step.incrementNumberOfProcessors();
-        }
+        step.setNumberOfProcessors( 5 );
 
         // WHEN
         int batches = 10;
@@ -78,7 +75,7 @@ public class ProcessorStepTest
         final int processors = 2;
         final ProcessorStep<Void> step = new BlockingProcessorStep( control, processors, latch );
         step.start( ORDER_PROCESS );
-        step.incrementNumberOfProcessors(); // now at 2
+        step.setNumberOfProcessors( 2 );
         // adding two should be fine
         for ( int i = 0; i < processors+1 /* +1 since we allow queueing one more*/; i++ )
         {
@@ -102,8 +99,7 @@ public class ProcessorStepTest
         final CountDownLatch latch = new CountDownLatch( 1 );
         final ProcessorStep<Void> step = new BlockingProcessorStep( control, 0, latch );
         step.start( ORDER_PROCESS );
-        step.incrementNumberOfProcessors(); // now at 2
-        step.incrementNumberOfProcessors(); // now at 3
+        step.setNumberOfProcessors( 3 );
         // adding two should be fine
         for ( int i = 0; i < step.numberOfProcessors()+1 /* +1 since we allow queueing one more*/; i++ )
         {
