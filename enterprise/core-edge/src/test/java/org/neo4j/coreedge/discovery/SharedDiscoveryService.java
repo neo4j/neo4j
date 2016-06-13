@@ -80,7 +80,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         try
         {
             return new ClusterTopology(
-                    coreClients.get( 0 ) == client,
+                    coreClients.size() > 0 && coreClients.get( 0 ) == client,
                     unmodifiableSet( coreMembers ),
                     unmodifiableSet( coreBoltAddresses ),
                     unmodifiableSet( edgeBoltAddresses )
