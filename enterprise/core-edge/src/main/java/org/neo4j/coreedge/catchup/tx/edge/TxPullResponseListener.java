@@ -19,9 +19,7 @@
  */
 package org.neo4j.coreedge.catchup.tx.edge;
 
-import java.io.IOException;
-
 public interface TxPullResponseListener
 {
-    void onTxReceived( TxPullResponse tx ) throws IOException;
+    void onTxReceived( TxPullResponse tx );
 }

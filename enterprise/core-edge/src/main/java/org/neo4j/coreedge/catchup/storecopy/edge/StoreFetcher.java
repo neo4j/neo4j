@@ -37,6 +37,7 @@ public class StoreFetcher
     private final Log log;
     private FileSystemAbstraction fs;
     private PageCache pageCache;
+    private final LogProvider logProvider;
     private StoreCopyClient storeCopyClient;
     private TxPullClient txPullClient;
     private TransactionLogCatchUpFactory transactionLogFactory;
@@ -46,6 +47,7 @@ public class StoreFetcher
                          StoreCopyClient storeCopyClient, TxPullClient txPullClient,
                          TransactionLogCatchUpFactory transactionLogFactory )
     {
+        this.logProvider = logProvider;
         this.storeCopyClient = storeCopyClient;
         this.txPullClient = txPullClient;
         this.fs = fs;
@@ -62,7 +64,7 @@ public class StoreFetcher
             long lastFlushedTxId = storeCopyClient.copyStoreFiles( from, new StreamToDisk( storeDir, fs ) );
             log.info( "Store files streamed up to %d", lastFlushedTxId );
 
-            try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache ) )
+            try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, logProvider ) )
             {
                 log.info( "Pulling transactions from: %d", lastFlushedTxId - 1 );
                 long lastPulledTxId = txPullClient.pullTransactions( from, lastFlushedTxId - 1, writer );

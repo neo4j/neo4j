@@ -32,6 +32,7 @@ import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseListener;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Matchers.any;
@@ -128,7 +129,7 @@ public class StoreFetcherTest
     {
         TransactionLogCatchUpFactory factory = mock( TransactionLogCatchUpFactory.class );
         when( factory.create( any( File.class ), any( FileSystemAbstraction.class ),
-                any( PageCache.class ) ) ).thenReturn( writer );
+                any( PageCache.class ), any( LogProvider.class ) ) ).thenReturn( writer );
         return factory;
     }
 }

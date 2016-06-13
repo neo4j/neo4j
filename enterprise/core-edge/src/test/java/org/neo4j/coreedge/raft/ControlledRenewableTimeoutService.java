@@ -43,4 +43,9 @@ public class ControlledRenewableTimeoutService implements RenewableTimeoutServic
         Pair<TimeoutHandler, RenewableTimeout> pair = handlers.get( name );
         pair.first().onTimeout( pair.other() );
     }
+
+    public RenewableTimeout getTimeout( TimeoutName name )
+    {
+        return handlers.get( name ).other();
+    }
 }

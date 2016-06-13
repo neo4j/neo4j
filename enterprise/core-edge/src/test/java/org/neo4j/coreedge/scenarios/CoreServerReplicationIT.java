@@ -31,7 +31,6 @@ import org.junit.Test;
 
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.SharedDiscoveryService;
-import org.neo4j.coreedge.discovery.SharedDiscoveryService;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Node;

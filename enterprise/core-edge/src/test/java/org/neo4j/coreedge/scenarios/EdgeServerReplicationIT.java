@@ -141,12 +141,7 @@ public class EdgeServerReplicationIT
             }
         } );
 
-        cluster.addEdgeServerWithFileLocation( 0 );
-
-        Set<EdgeGraphDatabase> edgeGraphDatabases = cluster.edgeServers();
-
-        cluster.shutdownCoreServers();
-        cluster = Cluster.start( dir.directory(), 3, 0, discoveryServiceFactory );
+        cluster.addEdgeServerWithId( 0 );
 
         // when
         executeOnLeaderWithRetry( db -> {
@@ -155,9 +150,7 @@ public class EdgeServerReplicationIT
         } );
 
         // then
-        assertEquals( 1, edgeGraphDatabases.size() );
-
-        for ( final GraphDatabaseService edgeDB : edgeGraphDatabases )
+        for ( final GraphDatabaseService edgeDB : cluster.edgeServers() )
         {
             try ( Transaction tx = edgeDB.beginTx() )
             {

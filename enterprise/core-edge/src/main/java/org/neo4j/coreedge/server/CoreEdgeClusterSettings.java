@@ -231,4 +231,8 @@ public class CoreEdgeClusterSettings
     @Internal
     public static final Setting<String> cluster_name = setting( "core_edge.cluster_name", STRING, "core-cluster",
             illegalValueMessage( "must be a valid cluster name", matches( ANY ) ) );
+
+    @Description( "Maximum transaction batch size for edge servers when applying transactions pulled from core servers." )
+    @Internal
+    public static Setting<Integer> edge_transaction_applier_batch_size = setting( "core_edge.edge_transaction_applier_batch_size", INTEGER, "16" );
 }
