@@ -48,6 +48,7 @@ import static java.lang.String.format;
 import static java.util.Collections.singletonList;
 import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 import static org.neo4j.server.web.XForwardUtil.X_FORWARD_HOST_HEADER_KEY;
 import static org.neo4j.server.web.XForwardUtil.X_FORWARD_PROTO_HEADER_KEY;
 
@@ -142,9 +143,7 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
     private AuthSubject authenticate( String username, String password ) throws InvalidAuthTokenException
     {
         AuthManager authManager = authManagerSupplier.get();
-
-        Map<String,Object> authToken = map( AuthToken.SCHEME_KEY,
-                "basic", AuthToken.PRINCIPAL, username, AuthToken.CREDENTIALS, password );
+        Map<String,Object> authToken = newBasicAuthToken( username, password );
 
         AuthSubject authSubject = authManager.login( authToken );
         return authSubject;
@@ -181,7 +180,6 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
                         "code", Status.Security.Unauthorized.code().serialize(),
                         "message", message ) ) ) );
     }
-
 
     private static ThrowingConsumer<HttpServletResponse, IOException> passwordChangeRequired( final String username, final String baseURL )
     {

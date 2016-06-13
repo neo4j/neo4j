@@ -23,6 +23,8 @@ import java.util.Map;
 
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 
+import static org.neo4j.helpers.collection.MapUtil.map;
+
 public interface AuthToken
 {
     String SCHEME_KEY = "scheme";
@@ -40,5 +42,10 @@ public interface AuthToken
                     (value == null ? "null" : value.getClass().getSimpleName()));
         }
         return (String) value;
+    }
+
+    static Map<String,Object> newBasicAuthToken( String username, String password )
+    {
+        return map( AuthToken.SCHEME_KEY, "basic", AuthToken.PRINCIPAL, username, AuthToken.CREDENTIALS, password );
     }
 }

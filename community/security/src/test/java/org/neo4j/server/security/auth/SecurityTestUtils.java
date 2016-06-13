@@ -21,14 +21,12 @@ package org.neo4j.server.security.auth;
 
 import java.util.Map;
 
-import org.neo4j.kernel.api.security.AuthToken;
-
-import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 
 public class SecurityTestUtils
 {
     public static Map<String,Object> authToken( String username, String password )
     {
-        return map( AuthToken.SCHEME_KEY, "basic", AuthToken.PRINCIPAL, username, AuthToken.CREDENTIALS, password );
+        return newBasicAuthToken( username, password );
     }
 }

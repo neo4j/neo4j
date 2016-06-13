@@ -202,27 +202,6 @@ public class BasicAuthenticationTest
         authentication.authenticate( map( "scheme", "UNKNOWN", "principal", "bob", "credentials", "secret" ) );
     }
 
-    @Test
-    public void shouldFailOnMalformedToken() throws Exception
-    {
-        // Given
-        BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier );
-        when( manager.login( anyMap() ) ).thenReturn( authSubject );
-        when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );
-
-        // Expect
-        exception.expect( AuthenticationException.class );
-        exception.expect( hasStatus( Status.Security.Unauthorized ) );
-        exception.expectMessage(
-                "The value associated with the key `principal` must be a String but was: SingletonList" );
-
-        // When
-        authentication
-                .authenticate( map( "scheme", "basic", "principal", singletonList( "bob" ), "credentials", "secret" ) );
-    }
-
     private HasStatus hasStatus( Status status )
     {
         return new HasStatus( status );

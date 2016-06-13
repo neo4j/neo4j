@@ -36,6 +36,7 @@ import org.neo4j.logging.LogProvider;
 import static org.neo4j.kernel.api.security.AuthToken.NEW_CREDENTIALS;
 import static org.neo4j.kernel.api.security.AuthToken.PRINCIPAL;
 import static org.neo4j.kernel.api.security.AuthToken.SCHEME_KEY;
+import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 
 /**
  * Performs basic authentication with user name and password.
@@ -106,17 +107,17 @@ public class BasicAuthentication implements Authentication
     {
         try
         {
-            String newPassword = AuthToken.safeCast( NEW_CREDENTIALS, authToken );
-
             AuthSubject authSubject = authManager.login( authToken );
 
             switch ( authSubject.getAuthenticationResult() )
             {
             case SUCCESS:
             case PASSWORD_CHANGE_REQUIRED:
+                String username = AuthToken.safeCast( PRINCIPAL, authToken );
+                String newPassword = AuthToken.safeCast( NEW_CREDENTIALS, authToken );
                 authSubject.setPassword( newPassword );
                 //re-authenticate user
-                authSubject = authManager.login( authToken );
+                authSubject = authManager.login( newBasicAuthToken( username, newPassword ) );
                 break;
             default:
                 throw new AuthenticationException( Status.Security.Unauthorized, identifier.get() );
