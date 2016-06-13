@@ -27,6 +27,9 @@ import java.util.Arrays;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.storageengine.api.ReadPastEndException;
 
+/**
+ * Implementation of {@link ReadableClosablePositionAwareChannel} operating over a {@code byte[]} in memory.
+ */
 public class InMemoryClosableChannel implements ReadableClosablePositionAwareChannel, FlushablePositionAwareChannel
 {
     private final byte[] bytes;
@@ -38,18 +41,21 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
         this( 1000 );
     }
 
-    public InMemoryClosableChannel( byte[] bytes )
+    public InMemoryClosableChannel( byte[] bytes, boolean append )
     {
         this.bytes = bytes;
         this.asWriter = ByteBuffer.wrap( this.bytes );
         this.asReader = ByteBuffer.wrap( this.bytes );
+        if ( append )
+        {
+            this.asWriter.position( bytes.length );
+        }
     }
 
     public InMemoryClosableChannel( int bufferSize )
     {
-        this( new byte[bufferSize] );
+        this( new byte[bufferSize], false );
     }
-
 
     public void reset()
     {
