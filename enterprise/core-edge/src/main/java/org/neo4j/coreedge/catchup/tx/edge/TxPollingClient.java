@@ -22,7 +22,6 @@ package org.neo4j.coreedge.catchup.tx.edge;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.CoreClient;
-import org.neo4j.coreedge.discovery.CoreServerSelectionException;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -74,17 +73,10 @@ public class TxPollingClient extends LifecycleAdapter
                         transactionServer = connectionStrategy.coreServer();
                         coreClient.pollForTransactions( transactionServer, txIdStore.getLastCommittedTransactionId() );
                     }
-                    catch ( CoreServerSelectionException e )
+                    catch ( Exception e )
                     {
-                        if ( transactionServer != null )
-                        {
-                            log.info( "Failed polling for transactions from %s, reason: ", transactionServer.toString(),
-                                    e.getMessage() );
-                        }
-                        else
-                        {
-                            // Do nothing, we'll poll again shortly.
-                        }
+                        log.warn( "Tx pull attempt failed, will retry at the next regularly " +
+                                "scheduled polling attempt.", e );
                     }
                 }, pollingInterval, MILLISECONDS );
     }
