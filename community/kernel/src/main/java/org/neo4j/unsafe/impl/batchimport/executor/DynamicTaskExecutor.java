@@ -72,37 +72,6 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     }
 
     @Override
-    public synchronized void setNumberOfProcessors( int count )
-    {
-        assertHealthy();
-        assert count > 0;
-        if ( count == processors.length )
-        {
-            return;
-        }
-
-        count = min( count, maxProcessorCount );
-        Processor[] newProcessors;
-        if ( count > processors.length )
-        {   // Add one or more
-            newProcessors = Arrays.copyOf( processors, count );
-            for ( int i = processors.length; i < newProcessors.length; i++ )
-            {
-                newProcessors[i] = new Processor( processorThreadNamePrefix + "-" + i );
-            }
-        }
-        else
-        {   // Remove one or more
-            newProcessors = Arrays.copyOf( processors, count );
-            for ( int i = newProcessors.length; i < processors.length; i++ )
-            {
-                processors[i].shutDown = true;
-            }
-        }
-        this.processors = newProcessors;
-    }
-
-    @Override
     public int numberOfProcessors()
     {
         return processors.length;
@@ -111,22 +80,38 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     @Override
     public synchronized boolean incrementNumberOfProcessors()
     {
-        if ( numberOfProcessors() >= maxProcessorCount )
+        if ( shutDown )
         {
             return false;
         }
-        setNumberOfProcessors( numberOfProcessors() + 1 );
+        int currentNumber = numberOfProcessors();
+        if ( currentNumber >= maxProcessorCount )
+        {
+            return false;
+        }
+
+        Processor[] newProcessors = Arrays.copyOf( processors, currentNumber + 1 );
+        newProcessors[currentNumber] = new Processor( processorThreadNamePrefix + "-" + currentNumber );
+        this.processors = newProcessors;
         return true;
     }
 
     @Override
     public synchronized boolean decrementNumberOfProcessors()
     {
-        if ( numberOfProcessors() == 1 )
+        if ( shutDown )
         {
             return false;
         }
-        setNumberOfProcessors( numberOfProcessors() - 1 );
+        int currentNumber = numberOfProcessors();
+        if ( currentNumber == 1 )
+        {
+            return false;
+        }
+
+        Processor[] newProcessors = Arrays.copyOf( processors, currentNumber - 1 );
+        processors[currentNumber-1].shutDown = true;
+        processors = newProcessors;
         return true;
     }
 

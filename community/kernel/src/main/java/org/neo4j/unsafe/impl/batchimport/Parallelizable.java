@@ -26,21 +26,80 @@ package org.neo4j.unsafe.impl.batchimport;
 public interface Parallelizable
 {
     /**
-     * The number of processors processing incoming tasks in parallel.
+     * @return number of processors processing incoming tasks in parallel.
      */
-    int numberOfProcessors();
+    default int numberOfProcessors()
+    {
+        return 1;
+    }
 
     /**
      * Increments number of processors that processes tasks in parallel.
      *
      * @return {@code true} if one more processor was assigned, otherwise {@code false}.
      */
-    boolean incrementNumberOfProcessors();
+    default boolean incrementNumberOfProcessors()
+    {
+        return false;
+    }
 
     /**
      * Decrements number of processors that processes tasks in parallel.
      *
      * @return {@code true} if one processor was unassigned, otherwise {@code false}.
      */
-    boolean decrementNumberOfProcessors();
+    default boolean decrementNumberOfProcessors()
+    {
+        return false;
+    }
+
+    /**
+     * Tries to set specified number of processors. If {@code processors} would be out of bounds
+     * for what this instance can assign then a value within bounds will be set instead.
+     *
+     * @param processors number of desired processors.
+     * @return number of actual processors after this call.
+     */
+    default int setNumberOfProcessors( int processors )
+    {
+        int current;
+        while ( (current = numberOfProcessors()) != processors )
+        {
+            boolean success = current < processors ? incrementNumberOfProcessors() :
+                decrementNumberOfProcessors();
+            if ( !success )
+            {
+                break;
+            }
+        }
+        return current;
+    }
+
+    class Delegate implements Parallelizable
+    {
+        protected final Parallelizable actual;
+
+        public Delegate( Parallelizable actual )
+        {
+            this.actual = actual;
+        }
+
+        @Override
+        public int numberOfProcessors()
+        {
+            return actual.numberOfProcessors();
+        }
+
+        @Override
+        public boolean incrementNumberOfProcessors()
+        {
+            return actual.incrementNumberOfProcessors();
+        }
+
+        @Override
+        public boolean decrementNumberOfProcessors()
+        {
+            return actual.decrementNumberOfProcessors();
+        }
+    }
 }

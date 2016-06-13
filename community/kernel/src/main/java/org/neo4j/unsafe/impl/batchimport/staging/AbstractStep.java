@@ -95,28 +95,6 @@ public abstract class AbstractStep<T> implements Step<T>
         return (orderingGuarantees & orderingGuaranteeFlag) != 0;
     }
 
-    /**
-     * The number of processors processing incoming batches in parallel for this step. Exposed as a method
-     * since this number can change over time depending on the load.
-     */
-    @Override
-    public int numberOfProcessors()
-    {
-        return 1;
-    }
-
-    @Override
-    public boolean incrementNumberOfProcessors()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean decrementNumberOfProcessors()
-    {
-        return false;
-    }
-
     @Override
     public String name()
     {
@@ -290,6 +268,7 @@ public abstract class AbstractStep<T> implements Step<T>
     @Override
     public String toString()
     {
-        return format( "Step[%s, processors:%d, batches:%d", name, numberOfProcessors(), doneBatches.get() );
+        return format( "%s[%s, processors:%d, batches:%d", getClass().getSimpleName(),
+                name, numberOfProcessors(), doneBatches.get() );
     }
 }

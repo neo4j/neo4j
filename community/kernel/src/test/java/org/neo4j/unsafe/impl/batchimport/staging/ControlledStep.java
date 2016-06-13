@@ -83,10 +83,11 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
         return numberOfProcessors;
     }
 
-    public ControlledStep<T> setNumberOfProcessors( int numberOfProcessors )
+    public ControlledStep<T> setProcessors( int numberOfProcessors )
     {
         assertTrue( numberOfProcessors <= maxProcessors );
         this.numberOfProcessors = numberOfProcessors;
+        setNumberOfProcessors( numberOfProcessors );
         return this;
     }
 

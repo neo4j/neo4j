@@ -58,7 +58,7 @@ public class IteratorBatcherStep<T> extends IoProducerStep
     }
 
     @Override
-    public void close()
+    public void close() throws Exception
     {
         data.close();
     }
@@ -67,5 +67,24 @@ public class IteratorBatcherStep<T> extends IoProducerStep
     protected long position()
     {
         return data.position();
+    }
+
+    // We have to let our processing framework know about changes in processor count assigned to us
+    @Override
+    public int numberOfProcessors()
+    {
+        return data.numberOfProcessors();
+    }
+
+    @Override
+    public boolean incrementNumberOfProcessors()
+    {
+        return data.incrementNumberOfProcessors();
+    }
+
+    @Override
+    public boolean decrementNumberOfProcessors()
+    {
+        return data.decrementNumberOfProcessors();
     }
 }

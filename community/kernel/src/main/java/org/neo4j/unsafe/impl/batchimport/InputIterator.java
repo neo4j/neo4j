@@ -28,7 +28,7 @@ import org.neo4j.unsafe.impl.batchimport.input.Input;
 /**
  * A {@link ResourceIterator} with added methods suitable for {@link Input} into a {@link BatchImporter}.
  */
-public interface InputIterator<T> extends ResourceIterator<T>, SourceTraceability
+public interface InputIterator<T> extends ResourceIterator<T>, SourceTraceability, Parallelizable
 {
     public static abstract class Adapter<T> extends PrefetchingIterator<T> implements InputIterator<T>
     {
@@ -102,6 +102,24 @@ public interface InputIterator<T> extends ResourceIterator<T>, SourceTraceabilit
         public long position()
         {
             return actual.position();
+        }
+
+        @Override
+        public int numberOfProcessors()
+        {
+            return actual.numberOfProcessors();
+        }
+
+        @Override
+        public boolean incrementNumberOfProcessors()
+        {
+            return actual.incrementNumberOfProcessors();
+        }
+
+        @Override
+        public boolean decrementNumberOfProcessors()
+        {
+            return actual.decrementNumberOfProcessors();
         }
     }
 
