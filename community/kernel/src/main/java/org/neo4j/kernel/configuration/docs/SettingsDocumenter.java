@@ -44,7 +44,7 @@ public class SettingsDocumenter
     //       et cetera, for instance using back-ticks: "`my.setting`".
     private static final Pattern NUMBER_OR_IP = Pattern.compile( "[0-9\\.]+" );
     private static final List<String> CONFIG_NAMES_BLACKLIST = Arrays.asList( "round_robin", "keep_all", "keep_last",
-            "keep_none", "metrics.neo4j", "i.e", "e.g", "fixed_ascending", "fixed_descending" );
+            "keep_none", "metrics.neo4j", "i.e", "e.g", "fixed_ascending", "fixed_descending", "high_limit" );
 
     public static final String IFDEF_HTMLOUTPUT = String.format("ifndef::nonhtmloutput[]%n");
     public static final String IFDEF_NONHTMLOUTPUT = String.format("ifdef::nonhtmloutput[]%n");
