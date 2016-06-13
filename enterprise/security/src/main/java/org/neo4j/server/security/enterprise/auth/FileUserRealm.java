@@ -90,7 +90,7 @@ public class FileUserRealm extends AuthorizingRealm
             }
             else
             {
-                return Collections.EMPTY_LIST;
+                return Collections.emptyList();
             }
         }
     };
@@ -309,6 +309,7 @@ public class FileUserRealm extends AuthorizingRealm
                 suspendUser( username );
             }
         }
+        clearCacheForUser( username );
     }
 
     void activateUser( String username ) throws IOException
@@ -333,6 +334,7 @@ public class FileUserRealm extends AuthorizingRealm
                 activateUser( username );
             }
         }
+        clearCacheForUser( username );
     }
 
     User findUser( String username )
