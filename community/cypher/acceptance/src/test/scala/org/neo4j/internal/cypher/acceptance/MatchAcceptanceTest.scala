@@ -28,6 +28,7 @@ import scala.collection.JavaConverters._
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
+  // TCK'd
   test("make sure non-existing nodes are not returned") {
     executeWithAllPlannersAndCompatibilityMode("match (n) where id(n) = 10 return n") should be(empty)
     executeWithAllPlannersAndRuntimesAndCompatibilityMode("match ()-[r]->() where id(r) = 10 return r") should be(empty)
@@ -41,6 +42,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     a[NotFoundException] should be thrownBy result.columnAs("m")
   }
 
+  // TCK'd
   test("AND'd predicates that throw exceptions should not matter if other predicates return false") {
     val root = createLabeledNode(Map("name" -> "x"), "Root")
     val child1 = createLabeledNode(Map("id" -> "text"), "TextNode")
@@ -48,12 +50,13 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate(root, child1)
     relate(root, child2)
 
-    val query = "MATCH (:Root {name:'x'})-->(i:TextNode) WHERE i.id =~ 'te.*' RETURN i"
+    val query = "MATCH (:Root {name:'x'})-->(i:TextNode) WHERE i.id > 'te' RETURN i"
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     result.toList should equal(List(Map("i" -> child1)))
   }
 
+  // TCK'd
   test("OR'd predicates that throw exceptions should not matter if other predicates return true") {
     val root = createLabeledNode(Map("name" -> "x"), "Root")
     val child1 = createLabeledNode(Map("id" -> "text"), "TextNode")
@@ -61,12 +64,13 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate(root, child1)
     relate(root, child2)
 
-    val query = "MATCH (:Root {name:'x'})-->(i) WHERE exists(i.id) OR i.id =~ 'te.*' RETURN i"
+    val query = "MATCH (:Root {name:'x'})-->(i) WHERE exists(i.id) OR i.id > 'te' RETURN i"
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     result.columnAs("i").toSet[Node] should equal(Set(child1, child2))
   }
 
+  // TCK'd
   test("exceptions should be thrown if rows are kept through AND'd predicates") {
     val root = createLabeledNode(Map("name" -> "x"), "Root")
     val child = createLabeledNode(Map("id" -> 0), "Child")
@@ -77,6 +81,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     an [IncomparableValuesException] should be thrownBy executeWithAllPlannersAndCompatibilityMode(query)
   }
 
+  // TCK'd
   test("exceptions should be thrown if rows are kept through OR'd predicates") {
     val root = createLabeledNode(Map("name" -> "x"), "Root")
     val child = createLabeledNode(Map("id" -> 0), "Child")
@@ -87,6 +92,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     an [IncomparableValuesException] should be thrownBy executeWithAllPlannersAndCompatibilityMode(query)
   }
 
+  // TCK'd
   test("combines aggregation and named path") {
     val node1 = createNode("num" -> 1)
     val node2 = createNode("num" -> 2)
@@ -107,6 +113,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     ))
   }
 
+  // Not TCK material -- only one integer type
   test("comparing numbers should work nicely") {
     val n1 = createNode(Map("x" -> 50))
     val n2 = createNode(Map("x" -> 50l))
@@ -121,6 +128,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.columnAs[Node]("n").toList should equal(List(n1, n2, n3, n4, n5))
   }
 
+  // Not TCK material -- no character type
   test("comparing string and chars should work nicely") {
     val n1 = createNode(Map("x" -> "Anders"))
     val n2 = createNode(Map("x" -> 'C'))
@@ -134,6 +142,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.columnAs("n").toList should equal(List(n1, n2))
   }
 
+  // TCK'd
   test("test zero length var len path in the middle") {
     createNodes("A", "B", "C", "D", "E")
     relate("A" -> "CONTAINS" -> "B")
@@ -149,12 +158,12 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       )
   }
 
+  // TCK'd
   test("simple var length acceptance test") {
     createNodes("A", "B", "C", "D")
     relate("A" -> "CONTAINS" -> "B")
     relate("B" -> "CONTAINS" -> "C")
     relate("C" -> "CONTAINS" -> "D")
-
 
     val result = executeWithAllPlannersAndCompatibilityMode("match (a {name:'A'})-[*]->(x) return x")
 
@@ -166,6 +175,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       )
   }
 
+  // TCK'd
   test("should return a var length path without minimal length") {
     createNodes("A", "B", "C")
     val r1 = relate("A" -> "KNOWS" -> "B")
@@ -179,6 +189,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     ))
   }
 
+  // TCK'd
   test("should return a var length path with unbound max") {
     createNodes("A", "B", "C")
     val r1 = relate("A" -> "KNOWS" -> "B")
@@ -192,7 +203,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     ))
   }
 
-
+  // TCK'd
   test("should handle bound nodes not part of the pattern") {
     createNodes("A", "B", "C")
     relate("A" -> "KNOWS" -> "B")
@@ -201,6 +212,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     result should equal (Set(Map("a" -> node("A"), "b" -> node("B"), "c" -> node("C"))))
   }
+
+  // Not TCK material -- shortestPath(), allShortestPaths()
 
   test("should return shortest path") {
     createNodes("A", "B")
@@ -311,17 +324,90 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result should equal(Set(List(nodeA, nodeB)))
   }
 
+  test("should handle optional paths from graph algo") {
+    val a = createNode("A")
+    val b = createNode("B")
+    val c = createNode("C")
+    val r = relate(a, b, "X")
+
+    val result = executeWithAllPlannersAndCompatibilityMode( """
+match (a {name:'A'}), (x) where x.name in ['B', 'C']
+optional match p = shortestPath((a)-[*]->(x))
+return x, p""").toSet
+
+    graph.inTx(assert(Set(
+      Map("x" -> b, "p" -> PathImpl(a, r, b)),
+      Map("x" -> c, "p" -> null)
+    ) === result))
+  }
+
+  test("should handle all shortest paths") {
+    createDiamond()
+
+    val result = executeWithAllPlannersAndCompatibilityMode( """
+match (a), (d) where id(a) = 0 and id(d) = 3
+match p = allShortestPaths( (a)-[*]->(d) )
+return p""")
+
+    result.toList.size should equal (2)
+  }
+
+  test("shortest Path Direction Respected") {
+    val a = createNode()
+    val b = createNode()
+    relate(a, b)
+    val result = executeWithAllPlannersAndCompatibilityMode("match (a), (b) where id(a) = 0 and id(b) = 1 match p=shortestPath((b)<-[*]-(a)) return p").toList.head("p").asInstanceOf[Path]
+
+    result.startNode() should equal (b)
+    result.endNode() should equal (a)
+  }
+
+  test("should return shortest paths when only one side is bound") {
+    val a = createLabeledNode("A")
+    val b = createLabeledNode("B")
+    val r1 = relate(a, b)
+
+    val result = executeWithAllPlannersAndCompatibilityMode("match (a:A) match p = shortestPath( (a)-[*]->(b:B) ) return p").toList.head("p").asInstanceOf[Path]
+
+    graph.inTx {
+      result.startNode() should equal(a)
+      result.endNode() should equal(b)
+      result.length() should equal(1)
+      result.lastRelationship() should equal (r1)
+    }
+  }
+
+  test("should handle cartesian products even when same argument exists on both sides") {
+    val node1 = createNode()
+    val node2 = createNode()
+    val r = relate(node1, node2)
+
+    val query = """WITH [{0}, {1}] AS x, count(*) as y
+                  |MATCH (n) WHERE ID(n) IN x
+                  |MATCH (m) WHERE ID(m) IN x
+                  |MATCH paths = allShortestPaths((n)-[*..1]-(m))
+                  |RETURN paths""".stripMargin
+
+    val result = executeWithAllPlannersAndCompatibilityMode(query, "0" -> node1.getId, "1" -> node2.getId)
+    graph.inTx(
+      result.toSet should equal(Set(Map("paths" -> new PathImpl(node1, r, node2)), Map("paths" -> new PathImpl(node2, r, node1))))
+    )
+  }
+
+  // -- End of shortest path
+
+  // TCK'd
   test("two bound nodes pointing to one") {
     val a = createNode("A")
     val b = createNode("B")
     val x1 = createNode("x1")
     val x2 = createNode("x2")
 
-    relate(a, x1, "REL", "AX1")
-    relate(a, x2, "REL", "AX2")
+    relate(a, x1)
+    relate(a, x2)
 
-    relate(b, x1, "REL", "BX1")
-    relate(b, x2, "REL", "BX2")
+    relate(b, x1)
+    relate(b, x2)
 
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode( """
 MATCH (a {name:'A'}), (b {name:'B'})
@@ -331,6 +417,7 @@ return x""")
     result.columnAs("x").toList should equal (List(x2, x1))
   }
 
+  // TCK'd
   test("three bound nodes pointing to one") {
     val a = createNode("A")
     val b = createNode("B")
@@ -338,14 +425,14 @@ return x""")
     val x1 = createNode("x1")
     val x2 = createNode("x2")
 
-    relate(a, x1, "REL", "AX1")
-    relate(a, x2, "REL", "AX2")
+    relate(a, x1)
+    relate(a, x2)
 
-    relate(b, x1, "REL", "BX1")
-    relate(b, x2, "REL", "BX2")
+    relate(b, x1)
+    relate(b, x2)
 
-    relate(c, x1, "REL", "CX1")
-    relate(c, x2, "REL", "CX2")
+    relate(c, x1)
+    relate(c, x2)
 
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode( """
 MATCH (a {name:'A'}), (b {name:'B'}), (c {name:'C'})
@@ -355,6 +442,7 @@ return x""")
     result.columnAs("x").toList should equal (List(x2, x1))
   }
 
+  // TCK'd
   test("three bound nodes pointing to one with a bunch of extra connections") {
     val a = createNode("a")
     val b = createNode("b")
@@ -394,22 +482,24 @@ return x""")
     result.columnAs("x").toList should equal (List(e, d))
   }
 
+  // TCK'd
   test("should split optional mandatory cleverly") {
     val a = createNode("A")
     val b = createNode("B")
     val c = createNode("C")
 
-    relate(a, b, "knows", "rAB")
-    relate(b, c, "knows", "rBC")
+    relate(a, b, "KNOWS")
+    relate(b, c, "KNOWS")
 
     val result = executeWithAllPlannersAndCompatibilityMode( """
 match (a {name:'A'})
-optional match (a)-[r1:knows]->(friend)-[r2:knows]->(foaf)
-return foaf""")
+optional match (a)-[r1:KNOWS]->(friend)-[r2:KNOWS]->(foo)
+return foo""")
 
-    result.toList should equal (List(Map("foaf" -> c)))
+    result.toList should equal (List(Map("foo" -> c)))
   }
 
+  // TCK'd
   test("should handle optional paths") {
     val a = createNode("A")
     val b = createNode("B")
@@ -429,23 +519,7 @@ return x, p""")
     }
   }
 
-  test("should handle optional paths from graph algo") {
-    val a = createNode("A")
-    val b = createNode("B")
-    val c = createNode("C")
-    val r = relate(a, b, "X")
-
-    val result = executeWithAllPlannersAndCompatibilityMode( """
-match (a {name:'A'}), (x) where x.name in ['B', 'C']
-optional match p = shortestPath((a)-[*]->(x))
-return x, p""").toSet
-
-    graph.inTx(assert(Set(
-      Map("x" -> b, "p" -> PathImpl(a, r, b)),
-      Map("x" -> c, "p" -> null)
-    ) === result))
-  }
-
+  // TCK'd
   test("should handle optional paths from a combo") {
     val a = createNode("A")
     val b = createNode("B")
@@ -461,21 +535,7 @@ return p""")
     ) === result.toSet)
   }
 
-  test("should handle optional paths from a combo with MATCH") {
-    val a = createNode("A")
-    val b = createNode("B")
-    relate(a, b, "X")
-
-    val result = executeWithAllPlannersAndCompatibilityMode( """
-match (a {name:'A'})
-optional match p = (a)-->(b)-[*]->(c)
-return p""")
-
-    assert(Set(
-      Map("p" -> null)
-    ) === result.toSet)
-  }
-
+  // TCK'd
   test("should handle optional paths from var length path") {
     val a = createNode("A")
     val b = createNode("B")
@@ -493,6 +553,7 @@ return r, x, p""")
     ) === result.toSet)
   }
 
+  // TCK'd
   test("should return an iterable with all relationships from a var length") {
     val a = createNode()
     val b = createNode()
@@ -508,17 +569,7 @@ return r""")
     result.toList should equal (List(Map("r" -> List(r1, r2))))
   }
 
-  test("should handle all shortest paths") {
-    createDiamond()
-
-    val result = executeWithAllPlannersAndCompatibilityMode( """
-match (a), (d) where id(a) = 0 and id(d) = 3
-match p = allShortestPaths( (a)-[*]->(d) )
-return p""")
-
-    result.toList.size should equal (2)
-  }
-
+  // TCK'd
   test("should collect leafs") {
     val a = createNode()
     val b = createNode()
@@ -539,6 +590,7 @@ return p, leaf""")
     ) === result.toSet)
   }
 
+  // TCK'd
   test("should exclude connected nodes") {
     val a = createNode("A")
     val b = createNode("B")
@@ -553,57 +605,71 @@ RETURN other""")
     result.toList should equal (List(Map("other" -> c)))
   }
 
+  // TCK'd
   test("should not throw exception when stuff is missing") {
     val a = createNode()
     val b = createNode("Mark")
     relate(a, b)
+
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode( """
 MATCH (n)-->(x0)
 OPTIONAL MATCH (x0)-->(x1)
 WHERE x1.foo = 'bar'
 RETURN x0.name""")
+
     result.toList should equal (List(Map("x0.name" -> "Mark")))
   }
 
+  // TCK'd
   test("should solve an optional match even when the optional match is highly selective") {
     val a = createNode("A")
     val b = createNode("B")
     val c = createNode("C")
     relate(a, b)
     relate(a, c)
+
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode( s"""
 MATCH (a)-->(b)
 WHERE id(b) = ${b.getId}
 OPTIONAL MATCH (a)-->(c)
 WHERE id(c) = ${c.getId}
 RETURN a.name""")
+
     result.toList should equal (List(Map("a.name" -> "A")))
   }
 
+  // TCK'd
   test("should find nodes both directions") {
     val n = createNode()
     val a = createNode()
-    relate(a, n, "Admin")
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode( "match (n) -[:Admin]- (b) where id(n) = 0 return id(n), id(b)")
+    relate(a, n, "ADMIN")
+
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode( "match (n) -[:ADMIN]- (b) where id(n) = 0 return id(n), id(b)")
+
     result.toSet should equal (Set(Map("id(n)" -> 0, "id(b)" -> 1)))
   }
 
+  // TCK'd
   test("should get all nodes") {
     val a = createNode()
     val b = createNode()
 
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n) return n")
+
     result.columnAs[Node]("n").toSet should equal (Set(a, b))
   }
 
+  // TCK'd
   test("should allow comparisons of nodes") {
     val a = createNode()
     val b = createNode()
 
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a), (b) where a <> b return a,b")
+
     result.toSet should equal (Set(Map("a" -> b, "b" -> a), Map("b" -> b, "a" -> a)))
   }
 
+  // TCK'd
   test("should solve selfreferencing pattern") {
     val a = createNode()
     val b = createNode()
@@ -614,9 +680,10 @@ RETURN a.name""")
 
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (a)-->(b), (b)-->(b) return b")
 
-    result shouldBe 'isEmpty
+    result shouldBe empty
   }
 
+  // TCK'd
   test("should solve self referencing pattern2") {
     val a = createNode()
     val b = createNode()
@@ -624,11 +691,12 @@ RETURN a.name""")
     val r = relate(a, a)
     relate(a, b)
 
-
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (a)-[r]->(a) return r")
+
     result.toList should equal (List(Map("r" -> r)))
   }
 
+  // TCK'd
   test("relationship predicate with multiple rel types") {
     val a = createNode()
     val b = createNode()
@@ -642,6 +710,7 @@ RETURN a.name""")
     result should equal (Set(Map("a" -> a), Map("a" -> b)))
   }
 
+  // TCK'd
   test("relationship predicate") {
     val a = createNode()
     val x = createNode()
@@ -653,6 +722,7 @@ RETURN a.name""")
     result should equal (List(Map("a" -> a)))
   }
 
+  // TCK'd
   test("nullable var length path should work") {
     createNode()
     val b = createNode()
@@ -666,6 +736,7 @@ return b
     result should equal (List(Map("b" -> b)))
   }
 
+  // TCK'd
   test("listing rel types multiple times should not give multiple returns") {
     val a = createNode()
     val b = createNode()
@@ -676,6 +747,7 @@ return b
     result should equal (List(Map("b" -> b)))
   }
 
+  // TCK'd
   test("different results on ordered aggregation with limit") {
     val root = createNode()
     val n1 = createNode("x" -> 1)
@@ -694,6 +766,7 @@ return b
     resultWithoutLimit.toList should equal (resultWithLimit.toList)
   }
 
+  // TCK'd
   test("should be able to handle single node patterns") {
     // given
     val n = createNode("foo" -> "bar")
@@ -705,54 +778,51 @@ return b
     result.toList should equal (List(Map("n" -> n)))
   }
 
+  // TCK'd
   test("issue 479") {
     createNode()
 
-    val q = "match (n) where id(n) = 0 optional match (n)-->(x) where (x)-->() return x"
+    val q = "match (n) optional match (n)-->(x) where (x)-->() return x"
 
     executeWithAllPlannersAndCompatibilityMode(q).toList should equal (List(Map("x" -> null)))
   }
 
+  // TCK'd
   test("issue 479 has relationship to specific node") {
     createNode()
 
-    val q = "match (n) where id(n) = 0 optional match (n)-[:FRIEND]->(x) where not (n)-[:BLOCK]->(x) return x"
+    val q = "match (n) optional match (n)-[:FRIEND]->(x) where not (n)-[:BLOCK]->(x) return x"
 
     executeWithAllPlannersAndCompatibilityMode(q).toList should equal (List(Map("x" -> null)))
   }
 
+  // Not TCK material -- filter()
   test("length on filter") {
     val q = "match (n) optional match (n)-[r]->(m) return length(filter(x in collect(r) WHERE x <> null)) as cn"
 
     executeWithAllPlannersAndCompatibilityMode(q).toList should equal (List(Map("cn" -> 0)))
   }
 
+  // TCK'd
   test("path Direction Respected") {
     val a = createNode()
     val b = createNode()
     relate(a, b)
+
     val result = executeWithAllPlannersAndCompatibilityMode("match p=(b)<--(a) return p").toList.head("p").asInstanceOf[Path]
 
     result.startNode() should equal (b)
     result.endNode() should equal (a)
   }
 
-  test("shortest Path Direction Respected") {
-    val a = createNode()
-    val b = createNode()
-    relate(a, b)
-    val result = executeWithAllPlannersAndCompatibilityMode("match (a), (b) where id(a) = 0 and id(b) = 1 match p=shortestPath((b)<-[*]-(a)) return p").toList.head("p").asInstanceOf[Path]
-
-    result.startNode() should equal (b)
-    result.endNode() should equal (a)
-  }
-
+  // TCK'd
   test("no match in optional match should produce null values") {
     val result = executeWithAllPlannersAndCompatibilityMode("OPTIONAL MATCH (n) RETURN n")
 
     result.toList should equal (List(Map("n" ->  null)))
   }
 
+  // TCK'd
   test("should preserve the original matched values if optional match matches nothing") {
     val n = createNode()
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n) OPTIONAL MATCH (n)-[:NOT_EXIST]->(x) RETURN n, x")
@@ -760,6 +830,7 @@ return b
     result.toList should equal (List(Map("n" -> n, "x" -> null)))
   }
 
+  // TCK'd
   test("empty collect should not contain null") {
     val n = createNode()
     val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n) OPTIONAL MATCH (n)-[:NOT_EXIST]->(x) RETURN n, collect(x)")
@@ -767,6 +838,7 @@ return b
     result.toList should equal (List(Map("n" -> n, "collect(x)" -> List())))
   }
 
+  // TCK'd
   test("can rewrite exists property") {
     val a = createNode()
     val r1 = createNode("foo" -> "bar")
@@ -783,21 +855,26 @@ return b
     result.toList should equal (List(Map("r" -> r1)))
   }
 
+  // TCK'd
   test("can handle paths with multiple unnamed nodes") {
     createNode()
+
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)<--()<--(b)-->()-->(c) WHERE id(a) = 0 RETURN c")
 
-    result shouldBe 'isEmpty
+    result shouldBe empty
   }
 
+  // TCK'd
   test("path expressions should work with on the fly predicates") {
     val refNode = createNode()
     relate(refNode, createNode("name" -> "Neo"))
+
     val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a)-->(b) WHERE (b)-->() AND id(a) = {self} RETURN b", "self" -> refNode.getId)
 
-    result shouldBe 'isEmpty
+    result shouldBe empty
   }
 
+  // TCK'd
   test("should filter nodes by label given in match") {
     // given
     val a = createNode()
@@ -808,12 +885,13 @@ return b
     relate(a, b2)
 
     // when
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(s"MATCH (a)-->(b:foo) RETURN b")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)-->(b:foo) RETURN b")
 
     // THEN
     result.toList should equal (List(Map("b" -> b1)))
   }
 
+  // TCK'd
   test("should match nodes with specified labels on both sides") {
     // given
     val r = relate(createLabeledNode("A"), createLabeledNode("B"))
@@ -822,12 +900,13 @@ return b
     relate(createLabeledNode("A"), createLabeledNode("A"))
 
     // when
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(s"MATCH (a:A)-[r]->(b:B) RETURN r")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a:A)-[r]->(b:B) RETURN r")
 
     // THEN
     result.toSet should equal (Set(Map("r" -> r)))
   }
 
+  // TCK'd
   test("should match nodes with many labels specified on it") {
     // given
     val n = createLabeledNode("A","B","C")
@@ -839,24 +918,26 @@ return b
     createLabeledNode("C")
 
     // when
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(s"MATCH (a:A:B:C) RETURN a")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a:A:B:C) RETURN a")
 
     // THEN
     result.toList should equal (List(Map("a" -> n)))
   }
 
+  // TCK'd
   test("should be able to tell if a label is on a node or not") {
     // given
     createNode()
     createLabeledNode("Foo")
 
     // when
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(s"MATCH (n) RETURN (n:Foo)")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n) RETURN (n:Foo)")
 
     // THEN
     result.toSet should equal (Set(Map("(n:Foo)" -> true), Map("(n:Foo)" -> false)))
   }
 
+  // TCK'd
   test("should use predicates in the correct place") {
     // given
     val m = executeWithCostPlannerOnly( """create
@@ -885,6 +966,8 @@ return b
     // then
     result.toList should equal (List(Map("out.name" -> "product1")))
   }
+
+  // Not TCK material -- index hints
 
   test("should be able to use index hints") {
     // given
@@ -937,6 +1020,9 @@ return b
     result.executionPlanDescription().toString should include("IndexSeek")
   }
 
+  // End of index hints
+
+  // TCK'd
   test("should be able to use label as start point") {
     // given
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
@@ -951,14 +1037,21 @@ return b
     result.toList should equal (List(Map("n" -> jake)))
   }
 
+  // Not TCK material -- id()
   test("id in where leads to empty result") {
     // when
     val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n) WHERE id(n)=1337 RETURN n")
 
     // then DOESN'T THROW EXCEPTION
-    result shouldBe 'isEmpty
+    result shouldBe empty
   }
 
+  test("should not fail if asking for a non existent node id with WHERE") {
+    executeWithAllPlannersAndCompatibilityMode("match (n) where id(n) in [0,1] return n").toList
+    // should not throw an exception
+  }
+
+  // TCK'd
   test("should handle two unconnected patterns") {
     // given a node with two related nodes
     val a = createNode()
@@ -994,30 +1087,30 @@ return b
     }
   }
 
-  test("should not fail if asking for a non existent node id with WHERE") {
-    executeWithAllPlannersAndCompatibilityMode("match (n) where id(n) in [0,1] return n").toList
-    // should not throw an exception
-  }
-
+  // TCK'd
   test("non optional patterns should not contain nulls") {
     // given
-    val h = createNode()
-    val g = createNode()
-    val t = createNode()
+    val a = createNode()
     val b = createNode()
+    val c = createNode()
+    val d = createNode()
 
-    relate(h, g)
-    relate(h, t)
-    relate(h, b)
-    relate(g, t)
-    relate(g, b)
-    relate(t, b)
+    relate(a, b)
+    relate(a, c)
+    relate(a, d)
+    relate(b, c)
+    relate(b, d)
+    relate(c, d)
 
-    val result = profile("MATCH (h)-[r1]-(n)-[r2]-(g)-[r3]-(o)-[r4]-(h), (n)-[r]-(o) where id(h) = 1 and id(g) = 2 RETURN o")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
+      "MATCH (h)-[r1]-(n)-[r2]-(g)-[r3]-(o)-[r4]-(h), (n)-[r]-(o) where id(h) = 1 and id(g) = 2 RETURN o"
+    )
 
     // then
     assert(!result.columnAs[Node]("o").contains(null), "Result should not contain nulls")
   }
+
+  // Not TCK material -- indexes
 
   test("should handle queries that cant be index solved because expressions lack dependencies") {
     // given
@@ -1166,6 +1259,33 @@ return b
     result.executionPlanDescription().toString should not include "SchemaIndex"
   }
 
+  test("index hints should work in optional match") {
+    //GIVEN
+    val subnet = createLabeledNode("Subnet")
+    createLabeledNode("Subnet")//extra dangling subnet
+    val host = createLabeledNode(Map("name" -> "host"), "Host")
+
+    relate(subnet, host)
+
+    graph.createIndex("Host", "name")
+
+    val query =
+      """MATCH (subnet: Subnet)
+        |OPTIONAL MATCH (subnet)-->(host:Host)
+        |USING INDEX host:Host(name)
+        |WHERE host.name = 'host'
+        |RETURN host""".stripMargin
+
+    //WHEN
+    val result = profile(query)
+
+    //THEN
+    result.toList should equal (List(Map("host" -> host), Map("host" -> null)))
+  }
+
+  // End of indexes
+
+  // TCK'd
   test("should handle cyclic patterns") {
     // given
     val a = createNode("a")
@@ -1184,6 +1304,7 @@ return b
     ))
   }
 
+  // TCK'd
   test("should handle cyclic patterns (broken up into two paths)") {
     // given
     val a = createNode("a")
@@ -1202,6 +1323,7 @@ return b
     ))
   }
 
+  // TCK'd
   test("should match fixed-size var length pattern") {
     val a = createNode()
     val b = createNode()
@@ -1211,6 +1333,7 @@ return b
     result.toList should equal (List(Map("r" -> List(r))))
   }
 
+  // Non-deterministic -- requires new TCK design
   test("should only evaluate non-deterministic predicates after pattern is matched") {
     // given
     graph.inTx {
@@ -1227,6 +1350,7 @@ return b
     count should not equal 100
   }
 
+  // TCK'd
   test("should not find any matches when a node in a pattern is null") {
     // given empty db
 
@@ -1237,6 +1361,7 @@ return b
     result.toList should be(empty)
   }
 
+  // TCK'd
   test("should not find node in the match if there is a filter on the optional match") {
     // given
     val a = createNode()
@@ -1250,6 +1375,7 @@ return b
     result.toList should be(empty)
   }
 
+  // TCK'd
   test("optional match starting from a null node returns null") {
     // given empty db
 
@@ -1260,6 +1386,7 @@ return b
     result.toList should equal (List(Map("b"->null)))
   }
 
+  // TCK'd
   test("optional match returns null") {
     // given empty db
 
@@ -1270,6 +1397,7 @@ return b
     result.toList should equal (List(Map("a" -> null)))
   }
 
+  // TCK'd
   test("match p = (a) return p") {
     // given a single node
     val node = createNode()
@@ -1277,10 +1405,10 @@ return b
     // when
     val result = executeWithAllPlannersAndCompatibilityMode("match p = (a) return p")
 
-    // should give us a number in the middle, not all or nothing
     result.toList should equal (List(Map("p"->new PathImpl(node))))
   }
 
+  // TCK'd
   test("match p = (a)-[r*0..]->(b) return p") {
     // given a single node
     val node = createNode()
@@ -1292,6 +1420,7 @@ return b
     result.toList should equal (List(Map("p"-> new PathImpl(node))))
   }
 
+  // TCK'd
   test("MATCH (n) RETURN n.prop AS m, count(n) AS count") {
     // given a single node
     createNode("prop" -> "42")
@@ -1299,10 +1428,10 @@ return b
     // when
     val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n) RETURN n.prop AS n, count(n) AS count")
 
-    // should give us a single, empty path starting at one end
     result.toList should equal (List(Map("n" -> "42", "count" -> 1)))
   }
 
+  // TCK'd
   test("MATCH (u)-[r1]->(v) WITH r1 AS r2 MATCH (a)-[r2]->(b) RETURN r2 AS rel") {
     // given two disconnected rels
     val rel1 = relate(createNode(), createNode())
@@ -1319,6 +1448,7 @@ return b
     actual should equal(expected)
   }
 
+  // TCK'd
   test("MATCH (u)-[r1]->(v) WITH r1 AS r2, count(*) AS c ORDER BY c MATCH (a)-[r2]->(b) RETURN r2 AS rel") {
     // given two disconnected rels
     val rel1 = relate(createNode(), createNode())
@@ -1335,6 +1465,7 @@ return b
     actual should equal(expected)
   }
 
+  // TCK'd
   test("MATCH (a)-[r]->(b) WITH a, r, b, count(*) AS c ORDER BY c MATCH (a)-[r]->(b) RETURN r AS rel ORDER BY id(rel)") {
     // given two disconnected rels
     val rel1 = relate(createNode(), createNode())
@@ -1351,6 +1482,9 @@ return b
     actual should equal(expected)
   }
 
+  private def relsById(in: Seq[Relationship]): Seq[Relationship] = in.sortBy(_.getId)
+
+  // TCK'd
   test("MATCH (a1)-[r]->(b1) WITH r LIMIT 1 OPTIONAL MATCH (a2)-[r]->(b2) RETURN a2, r, b2") {
     val node1 = createNode()
     val node2 = createNode()
@@ -1359,12 +1493,12 @@ return b
     // when
     val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a1)-[r]->(b1) WITH r LIMIT 1 OPTIONAL MATCH (a2)-[r]->(b2) RETURN a2, r, b2")
 
-    // should give us all rels
     val actual = result.toList
 
     actual should equal(List(Map("a2" -> node1, "r" -> relationship, "b2" -> node2)))
   }
 
+  // TCK'd
   test("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)-[r]->(b2) RETURN a1, r, b2") {
     val node1 = createNode()
     val node2 = createNode()
@@ -1373,12 +1507,12 @@ return b
     // when
     val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)-[r]->(b2) RETURN a1, r, b2")
 
-    // should give us all rels
     val actual = result.toList
 
     actual should equal(List(Map("a1" -> node1, "r" -> relationship, "b2" -> node2)))
   }
 
+  // TCK'd
   test("MATCH (a1)-[r]->() WITH r, a1 LIMIT 1 MATCH (a1:X)-[r]->(b2) RETURN a1, r, b2") {
     val node1 = createNode()
     val node2 = createNode()
@@ -1387,12 +1521,12 @@ return b
     // when
     val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a1)-[r]->() WITH r, a1 LIMIT 1 MATCH (a1:X)-[r]->(b2) RETURN a1, r, b2")
 
-    // should give us all rels
     val actual = result.toList
 
     actual should be(empty)
   }
 
+  // TCK'd
   test("MATCH (a1:X:Y)-[r]->() WITH r, a1 LIMIT 1 MATCH (a1:Y)-[r]->(b2) RETURN a1, r, b2") {
     val node1 = graph.inTx({
       val node = createNode()
@@ -1406,12 +1540,12 @@ return b
     // when
     val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a1:X:Y)-[r]->() WITH r, a1 LIMIT 1 MATCH (a1:Y)-[r]->(b2) RETURN a1, r, b2")
 
-    // should give us all rels
     val actual = result.toList
 
     actual shouldNot be(empty)
   }
 
+  // TCK'd
   test("MATCH (a1)-[r:X]->() WITH r, a1 LIMIT 1 MATCH (a1)-[r:Y]->(b2) RETURN a1, r, b2") {
     val node1 = createNode()
     val node2 = createNode()
@@ -1420,12 +1554,12 @@ return b
     // when
     val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a1)-[r:X]->() WITH r, a1 LIMIT 1 MATCH (a1)-[r:Y]->(b2) RETURN a1, r, b2")
 
-    // should give us all rels
     val actual = result.toList
 
     actual should be(empty)
   }
 
+  // TCK'd
   test("MATCH (a1)-[r:Y]->() WITH r, a1 LIMIT 1 MATCH (a1)-[r:Y]->(b2) RETURN a1, r, b2") {
     val node1 = createNode()
     val node2 = createNode()
@@ -1434,12 +1568,12 @@ return b
     // when
     val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a1)-[r:Y]->() WITH r, a1 LIMIT 1 MATCH (a1)-[r:Y]->(b2) RETURN a1, r, b2")
 
-    // should give us all rels
     val actual = result.toList
 
     actual shouldNot be(empty)
   }
 
+  // TCK'd
   // todo: broken for rule planner
   test("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
     val node1 = createNode()
@@ -1458,6 +1592,7 @@ return b
     ))
   }
 
+  // TCK'd
   test("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS first, b AS second LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
     val node1 = createNode()
     val node2 = createNode()
@@ -1475,6 +1610,7 @@ return b
     ))
   }
 
+  // TCK'd
   test("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS second, b AS first LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
     val node1 = createNode()
     val node2 = createNode()
@@ -1490,6 +1626,7 @@ return b
     actual should be(empty)
   }
 
+  // TCK'd
   test("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2") {
     val node1 = createNode()
     val node2 = createNode()
@@ -1498,12 +1635,12 @@ return b
     // when
     val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2")
 
-    // should give us all rels
     val actual = result.toList
 
     actual should equal(List(Map("a1" -> node1, "r" -> relationship, "b2" -> null)))
   }
 
+  // TCK'd
   test("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2, a2") {
     val node1 = createNode()
     val node2 = createNode()
@@ -1518,6 +1655,7 @@ return b
     actual should equal(List(Map("a1" -> node1, "r" -> relationship, "b2" -> null, "a2" -> null)))
   }
 
+  // TCK'd
   test("MATCH (n) WITH n.prop AS n2 RETURN n2.prop") {
     // Given a single node
     createNode("prop" -> "42")
@@ -1526,6 +1664,7 @@ return b
     intercept[CypherTypeException](executeWithAllPlannersAndCompatibilityMode("MATCH (n) WITH n.prop AS n2 RETURN n2.prop"))
   }
 
+  // TCK'd
   test("MATCH foo RETURN foo.bar AS x ORDER BY x DESC LIMIT 4") {
     createNode("bar" -> 1)
     createNode("bar" -> 3)
@@ -1533,6 +1672,7 @@ return b
 
     // when
     val result = executeWithAllPlannersAndCompatibilityMode("MATCH (foo) RETURN foo.bar AS x ORDER BY x DESC LIMIT 4")
+
     result.toList should equal(List(
       Map("x" -> 3),
       Map("x" -> 2),
@@ -1540,6 +1680,7 @@ return b
     ))
   }
 
+  // TCK'd
   test("MATCH (a) RETURN count(a) > 0") {
     val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) RETURN count(a) > 0")
     result.toList should equal(List(
@@ -1547,6 +1688,7 @@ return b
     ))
   }
 
+  // TCK'd
   test("MATCH (a:Artist)-[:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *") {
     val a = createLabeledNode("Artist")
     val b = createLabeledNode("Artist")
@@ -1561,24 +1703,7 @@ return b
     ))
   }
 
-  private def relsById(in: Seq[Relationship]): Seq[Relationship] = in.sortBy(_.getId)
-
-  // todo: broken for rule planner
-  test("should return shortest paths when only one side is bound") {
-    val a = createLabeledNode("A")
-    val b = createLabeledNode("B")
-    val r1 = relate(a, b)
-
-    val result = executeWithAllPlannersAndCompatibilityMode("match (a:A) match p = shortestPath( (a)-[*]->(b:B) ) return p").toList.head("p").asInstanceOf[Path]
-
-    graph.inTx {
-      result.startNode() should equal(a)
-      result.endNode() should equal(b)
-      result.length() should equal(1)
-      result.lastRelationship() should equal (r1)
-    }
-  }
-
+  // TCK'd
   test("should not break when using pattern expressions and order by") {
     val query =
       """
@@ -1590,6 +1715,7 @@ return b
     executeWithAllPlannersAndCompatibilityMode(query).toList
   }
 
+  // TCK'd
   test("issue #2907, varlength pattern should check label on endnode") {
 
     val a = createLabeledNode("LABEL")
@@ -1613,6 +1739,7 @@ return b
     result.toList should equal (List(Map("b" -> b)))
   }
 
+  // TCK'd
   test("make sure that we are handling arguments in leaf plans") {
 
     val a = createLabeledNode("LABEL")
@@ -1631,6 +1758,7 @@ return b
     result.toList should equal (List(Map("b" -> b)))
   }
 
+  // TCK'd
   test("issue #2907 should only check label on end node") {
 
     val a = createLabeledNode("BLUE")
@@ -1652,6 +1780,7 @@ return b
     result should equal (1)
   }
 
+  // Not TCK material -- FOREACH
   test("Should be able to run delete/merge query multiple times") {
     //GIVEN
     createLabeledNode("User")
@@ -1682,6 +1811,7 @@ return b
     check should equal(Set(Map("f.name" -> "Dir1"), Map("f.name" -> "Dir2")))
   }
 
+  // Not TCK material -- FOREACH
   test("Should be able to run delete/merge query multiple times, match on property") {
     //GIVEN
     createLabeledNode("User")
@@ -1715,38 +1845,15 @@ return b
     check should equal(Set(Map("f.name" -> "Dir1"), Map("f.name" -> "Dir2")))
   }
 
-  test("index hints should work in optional match") {
-    //GIVEN
-    val subnet = createLabeledNode("Subnet")
-    createLabeledNode("Subnet")//extra dangling subnet
-    val host = createLabeledNode(Map("name" -> "host"), "Host")
-
-    relate(subnet, host)
-
-    graph.createIndex("Host", "name")
-
-    val query =
-      """MATCH (subnet: Subnet)
-        |OPTIONAL MATCH (subnet)-->(host:Host)
-        |USING INDEX host:Host(name)
-        |WHERE host.name = 'host'
-        |RETURN host""".stripMargin
-
-    //WHEN
-    val result = profile(query)
-
-    //THEN
-    result.toList should equal (List(Map("host" -> host), Map("host" -> null)))
-  }
-
+  // TCK'd
   test("Undirected paths should be properly handled") {
     //GIVEN
     val node1 = createLabeledNode("Movie")
     val node2 = createNode()
-    val rel = relate(node2, node1)
+    relate(node2, node1)
 
     val query =
-      """profile match p = (n:Movie)--(m) return p limit 1""".stripMargin
+      """match p = (n:Movie)--(m) return p limit 1""".stripMargin
 
     graph.inTx {
       val res = executeWithAllPlannersAndCompatibilityMode(query).toList
@@ -1756,6 +1863,7 @@ return b
     }
   }
 
+  // TCK'd
   test("named paths should work properly with WITH") {
     val a = createNode()
     val query = """MATCH p = (a)
@@ -1764,9 +1872,11 @@ return b
                   | """.stripMargin
 
     val result = executeWithAllPlannersAndCompatibilityMode(query).toList
+
     result should equal(List(Map("p" -> PathImpl(a))))
   }
 
+  // TCK'd
   test("Named paths with directed followed by undirected relationships") {
     //GIVEN
     val node1 = createNode()
@@ -1791,6 +1901,7 @@ return b
     }
   }
 
+  // TCK'd
   test("Named paths with directed followed by multiple undirected relationships") {
     //GIVEN
     val node1 = createNode()
@@ -1817,23 +1928,7 @@ return b
     }
   }
 
-  test("should handle cartesian products even when same argument exists on both sides") {
-    val node1 = createNode()
-    val node2 = createNode()
-    val r = relate(node1, node2)
-
-    val query = """WITH [{0}, {1}] AS x, count(*) as y
-                  |MATCH (n) WHERE ID(n) IN x
-                  |MATCH (m) WHERE ID(m) IN x
-                  |MATCH paths = allShortestPaths((n)-[*..1]-(m))
-                  |RETURN paths""".stripMargin
-
-    val result = executeWithAllPlannersAndCompatibilityMode(query, "0" -> node1.getId, "1" -> node2.getId)
-    graph.inTx(
-      result.toSet should equal(Set(Map("paths" -> new PathImpl(node1, r, node2)), Map("paths" -> new PathImpl(node2, r, node1))))
-    )
-  }
-
+  // TCK'd
   test("should handle paths of containing undirected varlength") {
     // given
     val db1 = createLabeledNode("Start")
@@ -1852,12 +1947,14 @@ return b
     executeWithAllPlannersAndCompatibilityMode(query).toList should have size 4
   }
 
+  // Not TCK material -- id()
   test("should return empty result when there are no relationship with the given id") {
     executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH ()-[r]->() WHERE id(r) = 42 RETURN r") shouldBe empty
     executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH ()<-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
     executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH ()-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
   }
 
+  // Not TCK material -- id()
   test("should use NodeByIdSeek for id array in variables") {
     // given
     val a = createNode().getId
@@ -1873,15 +1970,18 @@ return b
     result.toList should equal(List(Map("count(*)" -> 3)))
   }
 
+  // TCK'd
   test("should return null as value for non-existent property") {
     createNode(Map("foo" -> 1))
 
     val query = "MATCH (a) RETURN a.bar"
 
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(query).toList
+
     result should equal(List(Map("a.bar" -> null)))
   }
 
+  // TCK'd
   test("should return property value for matched node") {
     val props = Map("prop" -> 1)
     createNode(props)
@@ -1889,18 +1989,22 @@ return b
     val query = "MATCH (a) RETURN a.prop"
 
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(query).toComparableResult
+
     result should equal(List(asResult(props, "a")))
   }
 
+  // TCK'd
   test("should return property value for matched relationship") {
     relate(createNode(), createNode(), "prop" -> 1)
 
     val query = "MATCH (a)-[r]->(b) RETURN r.prop"
 
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(query).toComparableResult
+
     result should equal(List(asResult(Map("prop" -> 1), "r")))
   }
 
+  // TCK'd
   test("should return property value for matched node and relationship") {
     val nodeProp = Map("nodeProp" -> 1)
     relate(createNode(nodeProp), createNode(), "relProp" -> 2)
@@ -1908,9 +2012,11 @@ return b
     val query = "MATCH (a)-[r]->(b) RETURN a.nodeProp, r.relProp"
 
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(query).toComparableResult
+
     result should equal(List(asResult(Map("nodeProp" -> 1), "a") ++ asResult(Map("relProp" -> 2), "r")))
   }
 
+  // TCK'd
   test("should be able to project both nodes and relationships") {
     val a = createNode()
     val r = relate(a, createNode())
@@ -1918,18 +2024,22 @@ return b
     val query = "MATCH (a)-[r]->(b) RETURN a AS FOO, r AS BAR"
 
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(query).toComparableResult
+
     result should equal(List(Map("FOO" -> a, "BAR" -> r)))
   }
 
+  // TCK'd
   test("should return null as value for non-existent relationship property") {
     relate(createNode(), createNode(), "prop" -> 1)
 
     val query = "MATCH (a)-[r]->(b) RETURN r.foo"
 
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(query).toComparableResult
+
     result should equal(List(Map("r.foo" -> null)))
   }
 
+  // TCK'd
   test("should return multiple property values for matched node") {
     val props = Map[String, Any](
       "name" -> "Philip J. Fry",
@@ -1941,17 +2051,21 @@ return b
     val query = "MATCH (a) RETURN a.name, a.age, a.seasons"
 
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(query).toComparableResult
+
     result should equal(List(asResult(props, "a")))
   }
 
+  // TCK'd
   test("adding a property and a literal is supported in new runtime") {
     val props = Map("prop" -> 1)
     createNode(props)
+
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a) RETURN a.prop + 1 AS FOO").toComparableResult
 
     result should equal(List(Map("FOO" -> 2)))
   }
 
+  // TCK'd
   test("adding arrays is supported in new runtime") {
     val props = Map("prop1" -> Array(1,2,3), "prop2" -> Array(4, 5))
     createNode(props)
@@ -1960,6 +2074,7 @@ return b
     result should equal(List(Map("FOO" -> List(1, 2, 3, 4, 5))))
   }
 
+  // TCK'd
   test("should type var length variables correctly as collection of relationships") {
     createNode()
     val r = relate(createNode(), createNode())
@@ -1969,6 +2084,7 @@ return b
     result should equal(List(Map("l" -> null), Map("l" -> null), Map("l" -> r), Map("l" -> null), Map("l" -> r)))
   }
 
+  // TCK'd
   test("should correctly handle nulls in var length expand") {
     val node = createLabeledNode("A")
     createLabeledNode("B")
@@ -1984,6 +2100,7 @@ return b
     result should equal(List(Map("a" -> node, "b" -> null, "c" -> null)))
   }
 
+  // TCK'd
   test("should handle varlength paths of size 0..0") {
     val a = createNode()
     val b = createNode()
@@ -2003,24 +2120,29 @@ return b
     ))
   }
 
-  test("properly handle collections of nodes and relationships") {
+  // TCK'd
+  test("properly handle lists of nodes and relationships") {
     val node1 = createNode()
     val node2 = createNode()
     val rel = relate(node1, node2)
+
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n)-[r]->(m) return [n, r, m] as r").toComparableResult
 
     result should equal(Seq(Map("r" -> Seq(node1, rel, node2))))
   }
 
+  // TCK'd
   test("properly handle maps of nodes and relationships") {
     val node1 = createNode()
     val node2 = createNode()
     val rel = relate(node1, node2)
+
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n)-[r]->(m) return {node1: n, rel: r, node2: m} as m").toComparableResult
 
     result should equal(Seq(Map("m" -> Map("node1" -> node1, "rel" -> rel, "node2" -> node2))))
   }
 
+  // TCK'd
   test("matching existing path with two nodes should respect relationship direction") {
     val a = createNode("prop" -> "a")
     val b = createNode("prop" -> "b")
@@ -2031,6 +2153,7 @@ return b
     result shouldBe List(Map("p" -> PathImpl(a, rel, b)))
   }
 
+  // TCK'd
   test("matching non-existing path with two nodes should respect relationship direction") {
     val a = createNode("prop" -> "a")
     val b = createNode("prop" -> "b")
@@ -2041,6 +2164,7 @@ return b
     result shouldBe empty
   }
 
+  // TCK'd
   test("issue 4692 path matching should respect relationship directions") {
     val a = createNode()
     val b = createNode()
@@ -2052,6 +2176,7 @@ return b
     result shouldBe empty
   }
 
+  // TCK'd
   test("matching path with single <--> relationship should respect other relationship directions") {
     val a = createNode()
     val b = createNode()
@@ -2065,6 +2190,7 @@ return b
       Map("p" -> PathImpl(b, r1, a, r2, b)))
   }
 
+  // TCK'd
   test("matching path with only <--> relationships should work") {
     val a = createNode()
     val b = createNode()
@@ -2080,12 +2206,14 @@ return b
       Map("p" -> PathImpl(b, r2, a, r1, b)))
   }
 
+  // Not sure if TCK material -- is this test just for `columns()`?
   test("columns should be in the provided order") {
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (p),(o),(n),(t),(u),(s) RETURN p,o,n,t,u,s")
 
     result.columns should equal(List("p", "o", "n", "t", "u", "s"))
   }
 
+  // TCK'd
   test("should be able to match on nodes with MANY labels") {
     //given
     val start = createLabeledNode('A' to 'M' map(_.toString):_* )
@@ -2099,6 +2227,7 @@ return b
     result.toList should equal(List(Map("n" -> start, "m" -> end)))
   }
 
+  // TCK'd
   test("should be able to do varlength matches of sizes larger that 15 hops") {
     //given
     //({prop: "bar"})-[:R]->({prop: "bar"})…-[:R]->({prop: "foo"})
@@ -2123,9 +2252,11 @@ return b
     val query = "MATCH (a) MERGE (b) WITH * OPTIONAL MATCH (a)--(b) RETURN count(*)"
 
     val result = executeWithAllPlannersAndCompatibilityMode(query)
+
     result.columnAs[Long]("count(*)").next shouldBe 6
   }
 
+  // Not TCK material -- cardinality estimation
   test("aliasing node names should not change estimations but it should simply introduce a projection") {
     val b = createLabeledNode("B")
     (0 to 10).foreach { i =>
@@ -2153,6 +2284,7 @@ return b
     resultWithAlias.close()
   }
 
+  // TCK'd
   test("should get correct amount of rows in case of loops") {
     val node = createNode()
     relate(node, node)
