@@ -252,7 +252,7 @@ public class PhysicalLogCommandReaderV2_2_4 implements CommandReader, CommandHan
         {
             throw new IOException( "Illegal in use flag: " + inUseByte );
         }
-        int type = channel.getShort();
+        int type = getUnsignedShort( channel.getShort() );
         RelationshipGroupRecord record = new RelationshipGroupRecord( id, type );
         record.setInUse( inUse );
         record.setNext( channel.getLong() );
@@ -751,5 +751,10 @@ public class PhysicalLogCommandReaderV2_2_4 implements CommandReader, CommandHan
     @Override
     public void close()
     {   // Nothing to close
+    }
+
+    private int getUnsignedShort( short value )
+    {
+        return value & 0xFFFF;
     }
 }
