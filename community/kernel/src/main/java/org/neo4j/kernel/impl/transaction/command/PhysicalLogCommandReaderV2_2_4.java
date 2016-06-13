@@ -219,7 +219,7 @@ public class PhysicalLogCommandReaderV2_2_4 extends BaseCommandReader
         {
             throw new IOException( "Illegal in use flag: " + inUseByte );
         }
-        int type = channel.getShort();
+        int type = getUnsignedShort( channel );
         RelationshipGroupRecord record = new RelationshipGroupRecord( id, type );
         record.setInUse( inUse );
         record.setNext( channel.getLong() );
