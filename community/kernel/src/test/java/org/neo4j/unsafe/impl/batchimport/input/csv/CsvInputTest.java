@@ -27,8 +27,8 @@ import java.util.function.Function;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.csv.reader.BufferedCharSeeker;
 import org.neo4j.csv.reader.CharSeeker;
+import org.neo4j.csv.reader.CharSeekers;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.graphdb.ResourceIterator;
@@ -940,7 +940,7 @@ public class CsvInputTest
 
     private static CharSeeker charSeeker( String data )
     {
-        return new BufferedCharSeeker( wrap( new StringReader( data ) ), SEEKER_CONFIG );
+        return CharSeekers.charSeeker( wrap( new StringReader( data ) ), SEEKER_CONFIG, false );
     }
 
     @SuppressWarnings( { "rawtypes", "unchecked" } )

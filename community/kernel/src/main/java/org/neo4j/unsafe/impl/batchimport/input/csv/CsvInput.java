@@ -34,7 +34,6 @@ import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
-import org.neo4j.unsafe.impl.batchimport.input.MissingRelationshipDataException;
 
 /**
  * Provides {@link Input} from data contained in tabular/csv form. Expects factories for instantiating
@@ -145,23 +144,7 @@ public class CsvInput implements Input
                     {
                         return new InputEntityDeserializer<>( dataHeader, dataStream, config.delimiter(),
                                 new InputRelationshipDeserialization( dataStream, dataHeader, groups ),
-                                decorator, entity -> {
-                                    if ( entity.startNode() == null )
-                                    {
-                                        throw new MissingRelationshipDataException(Type.START_ID,
-                                                            entity + " is missing " + Type.START_ID + " field" );
-                                    }
-                                    if ( entity.endNode() == null )
-                                    {
-                                        throw new MissingRelationshipDataException(Type.END_ID,
-                                                            entity + " is missing " + Type.END_ID + " field" );
-                                    }
-                                    if ( !entity.hasTypeId() && entity.type() == null )
-                                    {
-                                        throw new MissingRelationshipDataException(Type.TYPE,
-                                                            entity + " is missing " + Type.TYPE + " field" );
-                                    }
-                                }, badCollector );
+                                decorator, new InputRelationshipValidator(), badCollector );
                     }
                 };
             }

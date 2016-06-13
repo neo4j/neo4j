@@ -25,8 +25,8 @@ import java.io.StringReader;
 
 import org.junit.Test;
 
-import org.neo4j.csv.reader.BufferedCharSeeker;
 import org.neo4j.csv.reader.CharSeeker;
+import org.neo4j.csv.reader.CharSeekers;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
@@ -38,8 +38,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyZeroInteractions;
+
 import static org.neo4j.csv.reader.Readables.sources;
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.helpers.ArrayUtil.array;
@@ -176,27 +175,6 @@ public class DataFactoriesTest
     }
 
     @Test
-    public void shouldParseHeaderFromSeparateReader() throws Exception
-    {
-        // GIVEN
-        CharSeeker dataSeeker = mock( CharSeeker.class );
-        Header.Factory headerFactory =
-                defaultFormatNodeFileHeader( wrap( new StringReader( "id:ID\tname:String\tbirth_date:long" ) ) );
-        Extractors extractors = new Extractors( ';' );
-
-        // WHEN
-        Header header = headerFactory.create( dataSeeker, TABS, IdType.ACTUAL );
-
-        // THEN
-        assertArrayEquals( array(
-                entry( "id", Type.ID, extractors.long_() ),
-                entry( "name", Type.PROPERTY, extractors.string() ),
-                entry( "birth_date", Type.PROPERTY, extractors.long_() ) ), header.entries() );
-        verifyZeroInteractions( dataSeeker );
-        dataSeeker.close();
-    }
-
-    @Test
     public void shouldParseHeaderFromFirstLineOfFirstInputFile() throws Exception
     {
         // GIVEN
@@ -300,7 +278,7 @@ public class DataFactoriesTest
 
     private CharSeeker seeker( String data )
     {
-        return new BufferedCharSeeker( wrap( new StringReader( data ) ), SEEKER_CONFIG );
+        return CharSeekers.charSeeker( wrap( new StringReader( data ) ), SEEKER_CONFIG, false );
     }
 
     private static Configuration withBufferSize( Configuration config, final int bufferSize )
