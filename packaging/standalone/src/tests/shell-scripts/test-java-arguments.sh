@@ -19,7 +19,7 @@ for run_command in run_console run_daemon; do
     test_expect_java_arg '-XX:+UseG1GC'
   "
 
-    test_expect_success "should add additional options" "
+  test_expect_success "should add additional options" "
     set_config 'dbms.jvm.additional' '-XX:+UseG1GC', neo4j.conf &&
     ${run_command} &&
     test_expect_java_arg '-XX:+UseG1GC'

@@ -426,14 +426,14 @@ public interface Status
                 "An unknown error occurred." ),
         OutOfMemoryError( TransientError,
                 "There is not enough memory to perform the current task. Please try increasing " +
-                "'dbms.memory.heap.max_size' in the process configuration (normally in 'conf/neo4j.conf' or, if you " +
+                "'dbms.memory.heap.max_size' in the neo4j configuration (normally in 'conf/neo4j.conf' or, if you " +
                 "you are using Neo4j Desktop, found through the user interface) or if you are running an embedded " +
                 "installation increase the heap by using '-Xmx' command line flag, and then restart the database." ),
         StackOverFlowError( TransientError,
                 "There is not enough stack size to perform the current task. This is generally considered to be a " +
                 "database error, so please contact Neo4j support. You could try increasing the stack size: " +
                 "for example to set the stack size to 2M, add `dbms.jvm.additional=-Xss2M' to " +
-                "in the process configuration (normally in 'conf/neo4j.conf' or, if you are using " +
+                "in the neo4j configuration (normally in 'conf/neo4j.conf' or, if you are using " +
                 "Neo4j Desktop, found through the user interface) or if you are running an embedded installation " +
                 "just add -Xss2M as command line flag." ),
 
