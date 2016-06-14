@@ -50,7 +50,7 @@ public class RaftMessageEncodingDecodingTest
     public void shouldSerializeAppendRequestWithMultipleEntries() throws Exception
     {
         CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
-                new AdvertisedSocketAddress( "127.0.0.2:5001" ), new AdvertisedSocketAddress( "127.0.0.3:5001" ) );
+                new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
         RaftMessages.AppendEntries.Request<CoreMember> request = new AppendEntriesRequestBuilder<CoreMember>()
                 .from( sender )
                 .leaderCommit( 2 )
@@ -65,7 +65,7 @@ public class RaftMessageEncodingDecodingTest
     public void shouldSerializeAppendRequestWithNoEntries() throws Exception
     {
         CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
-                new AdvertisedSocketAddress( "127.0.0.2:5001" ), new AdvertisedSocketAddress( "127.0.0.3:5001" ) );
+                new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
         RaftMessages.AppendEntries.Request<CoreMember> request = new AppendEntriesRequestBuilder<CoreMember>()
                 .from( sender )
                 .leaderCommit( 2 )
@@ -78,7 +78,7 @@ public class RaftMessageEncodingDecodingTest
     public void shouldSerializeAppendResponse() throws Exception
     {
         CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
-                new AdvertisedSocketAddress( "127.0.0.2:5001" ), new AdvertisedSocketAddress( "127.0.0.3:5001" ) );
+                new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
         RaftMessages.AppendEntries.Response<CoreMember> request = new AppendEntriesResponseBuilder<CoreMember>()
                 .from( sender )
                 .success()
@@ -101,7 +101,7 @@ public class RaftMessageEncodingDecodingTest
 
         // When
         CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
-                new AdvertisedSocketAddress( "127.0.0.2:5001" ), new AdvertisedSocketAddress( "127.0.0.3:5001" ) );
+                new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
         RaftMessages.Heartbeat<CoreMember> message = new RaftMessages.Heartbeat<>( sender, 1, 2, 3,
                 new StoreId( 1, 2, 3, 4, 5 ) );
         encoder.encode( setupContext(), message, resultingBuffers );
@@ -121,7 +121,7 @@ public class RaftMessageEncodingDecodingTest
     public void shouldSerializeVoteRequest() throws Exception
     {
         CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
-                new AdvertisedSocketAddress( "127.0.0.2:5001" ), new AdvertisedSocketAddress( "127.0.0.3:5001" ) );
+                new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
         RaftMessages.Vote.Request<Object> request = new VoteRequestBuilder<>()
                 .candidate( sender )
                 .from( sender )
@@ -136,7 +136,7 @@ public class RaftMessageEncodingDecodingTest
     public void shouldSerializeVoteResponse() throws Exception
     {
         CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
-                new AdvertisedSocketAddress( "127.0.0.2:5001" ), new AdvertisedSocketAddress( "127.0.0.3:5001" ) );
+                new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
         RaftMessages.Vote.Response<Object> request = new VoteResponseBuilder<>()
                 .from( sender )
                 .grant()

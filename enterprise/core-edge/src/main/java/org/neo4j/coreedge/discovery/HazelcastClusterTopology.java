@@ -19,7 +19,9 @@
  */
 package org.neo4j.coreedge.discovery;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import com.hazelcast.core.HazelcastInstance;
@@ -43,8 +45,8 @@ public class HazelcastClusterTopology
     static ClusterTopology fromHazelcastInstance( HazelcastInstance hazelcastInstance )
     {
         Set<Member> coreMembers = hazelcastInstance.getCluster().getMembers();
-        return new ClusterTopology( canBeBootstrapped( coreMembers ), toCoreMembers( coreMembers ),
-                toBoltMembers( coreMembers ), edgeMembers( hazelcastInstance ) );
+        return new ClusterTopology( canBeBootstrapped( coreMembers ), toCoreMemberMap( coreMembers ),
+                edgeMembers( hazelcastInstance ) );
     }
 
     private static Set<BoltAddress> edgeMembers( HazelcastInstance hazelcastInstance )
@@ -65,33 +67,17 @@ public class HazelcastClusterTopology
         return firstMember.localMember();
     }
 
-    private static Set<BoltAddress> toBoltMembers( Set<Member> members )
+    private static Map<CoreMember, BoltAddress> toCoreMemberMap( Set<Member> members )
     {
-        Set<BoltAddress> coreMembers = new HashSet<>();
+        Map<CoreMember, BoltAddress> coreMembers = new HashMap<>();
 
         for ( Member member : members )
         {
-            if ( member.getStringAttribute( BOLT_SERVER ) != null )
-            {
-                coreMembers.add( new BoltAddress(
-                        new AdvertisedSocketAddress( member.getStringAttribute( BOLT_SERVER ) ) ) );
-            }
-        }
-
-        return coreMembers;
-    }
-
-    private static Set<CoreMember> toCoreMembers( Set<Member> members )
-    {
-        HashSet<CoreMember> coreMembers = new HashSet<>();
-
-        for ( Member member : members )
-        {
-            coreMembers.add( new CoreMember(
+            coreMembers.put( new CoreMember(
                     new AdvertisedSocketAddress( member.getStringAttribute( TRANSACTION_SERVER ) ),
-                    new AdvertisedSocketAddress( member.getStringAttribute( RAFT_SERVER ) ),
-                    new AdvertisedSocketAddress( member.getStringAttribute( BOLT_SERVER ) )
-            ) );
+                    new AdvertisedSocketAddress( member.getStringAttribute( RAFT_SERVER ) )),
+                    new BoltAddress( new AdvertisedSocketAddress( member.getStringAttribute( BOLT_SERVER ) ) )
+            );
         }
 
         return coreMembers;
