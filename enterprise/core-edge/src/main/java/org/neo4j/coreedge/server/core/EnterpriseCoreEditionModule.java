@@ -114,7 +114,6 @@ import org.neo4j.coreedge.server.SenderService;
 import org.neo4j.coreedge.server.core.locks.LeaderOnlyLockManager;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenState;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
-import org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule;
 import org.neo4j.coreedge.server.logging.BetterMessageLogger;
 import org.neo4j.coreedge.server.logging.MessageLogger;
 import org.neo4j.coreedge.server.logging.NullMessageLogger;
@@ -276,14 +275,15 @@ public class EnterpriseCoreEditionModule
 
         myself = new CoreMember(
                 config.get( CoreEdgeClusterSettings.transaction_advertised_address ),
-                config.get( CoreEdgeClusterSettings.raft_advertised_address ),
-                EnterpriseEdgeEditionModule.extractBoltAddress( config )
+                config.get( CoreEdgeClusterSettings.raft_advertised_address )
         );
 
         final MessageLogger<AdvertisedSocketAddress> messageLogger;
         if ( config.get( CoreEdgeClusterSettings.raft_messages_log_enable ) )
         {
-            messageLogger = life.add(new BetterMessageLogger<>( myself.getRaftAddress(), raftMessagesLog( storeDir ) ));
+            messageLogger = life.add(
+                    new BetterMessageLogger<>( myself.getRaftAddress(), raftMessagesLog( storeDir ) )
+            );
         }
         else
         {
@@ -313,7 +313,8 @@ public class EnterpriseCoreEditionModule
 
         NonBlockingChannels nonBlockingChannels = new NonBlockingChannels();
 
-        CoreToCoreClient.ChannelInitializer channelInitializer = new CoreToCoreClient.ChannelInitializer( logProvider, nonBlockingChannels );
+        CoreToCoreClient.ChannelInitializer channelInitializer = new CoreToCoreClient.ChannelInitializer(
+                logProvider, nonBlockingChannels );
         CoreToCoreClient coreToCoreClient = life.add( new CoreToCoreClient( logProvider,
                 channelInitializer, platformModule.monitors, maxQueueSize, nonBlockingChannels ) );
         channelInitializer.setOwner( coreToCoreClient );
@@ -357,7 +358,7 @@ public class EnterpriseCoreEditionModule
             CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, storeFetcher, coreToCoreClient,
                     logProvider );
 
-            InFlightMap<Long,RaftLogEntry> inFlightMap = new InFlightMap<>();
+            InFlightMap<Long, RaftLogEntry> inFlightMap = new InFlightMap<>();
 
             coreState = new CoreState(
                     raftLog, config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
@@ -380,7 +381,8 @@ public class EnterpriseCoreEditionModule
         }
 
         RaftReplicator<CoreMember> replicator = new RaftReplicator<>( raft, myself,
-                new RaftOutbound( loggingOutbound ), sessionPool, progressTracker, new ExponentialBackoffStrategy( 10, SECONDS ) );
+                new RaftOutbound( loggingOutbound ), sessionPool, progressTracker, new ExponentialBackoffStrategy(
+                10, SECONDS ) );
 
         dependencies.satisfyDependency( raft );
 
@@ -417,7 +419,8 @@ public class EnterpriseCoreEditionModule
                 idAllocationState );
 
         int allocationChunk = 1024; // TODO: AllocationChunk should be configurable and per type.
-        ReplicatedIdRangeAcquirer idRangeAcquirer = new ReplicatedIdRangeAcquirer( replicator, idAllocationStateMachine, allocationChunk, myself, logProvider );
+        ReplicatedIdRangeAcquirer idRangeAcquirer = new ReplicatedIdRangeAcquirer( replicator,
+                idAllocationStateMachine, allocationChunk, myself, logProvider );
 
         long electionTimeout = config.get( CoreEdgeClusterSettings.leader_election_timeout );
         MembershipWaiter<CoreMember> membershipWaiter =
@@ -433,7 +436,8 @@ public class EnterpriseCoreEditionModule
 
         TokenRegistry<RelationshipTypeToken> relationshipTypeTokenRegistry = new TokenRegistry<>( "RelationshipType" );
         ReplicatedRelationshipTypeTokenHolder relationshipTypeTokenHolder = new ReplicatedRelationshipTypeTokenHolder(
-                relationshipTypeTokenRegistry, replicator, this.idGeneratorFactory, dependencies, tokenCreationTimeout );
+                relationshipTypeTokenRegistry, replicator, this.idGeneratorFactory, dependencies,
+                tokenCreationTimeout );
 
         TokenRegistry<Token> propertyKeyTokenRegistry = new TokenRegistry<>( "PropertyKey" );
         ReplicatedPropertyKeyTokenHolder propertyKeyTokenHolder = new ReplicatedPropertyKeyTokenHolder(
@@ -477,7 +481,8 @@ public class EnterpriseCoreEditionModule
 
         commitProcessFactory = ( appender, applier, ignored ) ->
         {
-            TransactionRepresentationCommitProcess localCommit = new TransactionRepresentationCommitProcess( appender, applier );
+            TransactionRepresentationCommitProcess localCommit = new TransactionRepresentationCommitProcess(
+                    appender, applier );
             coreStateMachines.refresh( localCommit ); // This gets called when a core-to-core download is performed.
             return new ReplicatedTransactionCommitProcess( replicator );
         };
@@ -499,7 +504,8 @@ public class EnterpriseCoreEditionModule
 
         constraintSemantics = new EnterpriseConstraintSemantics();
 
-        coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
+        coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard,
+                transactionStartTimeout );
 
         registerRecovery( platformModule.databaseInfo, life, dependencies );
 
@@ -571,7 +577,7 @@ public class EnterpriseCoreEditionModule
                         marshal,
                         logProvider,
                         entryCacheSize,
-                        pruningStrategyConfig) );
+                        pruningStrategyConfig ) );
             }
 
             case NAIVE:
@@ -676,7 +682,8 @@ public class EnterpriseCoreEditionModule
 
         CoreMemberSetBuilder memberSetBuilder = new CoreMemberSetBuilder();
 
-        LeaderOnlyReplicator leaderOnlyReplicator = new LeaderOnlyReplicator<>( myself, myself.getRaftAddress(), outbound );
+        LeaderOnlyReplicator leaderOnlyReplicator = new LeaderOnlyReplicator<>( myself, myself.getRaftAddress(),
+                outbound );
 
         RaftMembershipManager<CoreMember> raftMembershipManager = new RaftMembershipManager<>( leaderOnlyReplicator,
                 memberSetBuilder, raftLog, logProvider, expectedClusterSize, electionTimeout, Clock.systemUTC(),
@@ -700,7 +707,8 @@ public class EnterpriseCoreEditionModule
         BatchingMessageHandler<CoreMember> batchingMessageHandler =
                 new BatchingMessageHandler<>( raftInstance, logProvider, queueSize, maxBatch );
 
-        life.add( new ContinuousJob( jobScheduler, new JobScheduler.Group( "raft-batch-handler", NEW_THREAD ), batchingMessageHandler ) );
+        life.add( new ContinuousJob( jobScheduler, new JobScheduler.Group( "raft-batch-handler", NEW_THREAD ),
+                batchingMessageHandler ) );
 
         loggingRaftInbound.registerHandler( batchingMessageHandler );
 
@@ -751,8 +759,9 @@ public class EnterpriseCoreEditionModule
     }
 
     private Locks createLockManager( final Config config, final LogService logging, final Replicator replicator,
-                                     CoreMember myself, LeaderLocator<CoreMember> leaderLocator, long
-                                             leaderLockTokenTimeout, ReplicatedLockTokenStateMachine lockTokenStateMachine )
+                                     CoreMember myself, LeaderLocator<CoreMember> leaderLocator,
+                                     long leaderLockTokenTimeout,
+                                     ReplicatedLockTokenStateMachine lockTokenStateMachine )
     {
         Locks localLocks = CommunityEditionModule.createLockManager( config, logging );
 

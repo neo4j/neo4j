@@ -37,8 +37,9 @@ public class CoreMemberMarshalTest
         // given
         CoreMember.CoreMemberMarshal marshal = new CoreMember.CoreMemberMarshal();
 
-        final CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
-                new AdvertisedSocketAddress( "host1:2001" ), new AdvertisedSocketAddress( "host1:3001" ) );
+        final CoreMember member = new CoreMember(
+                new AdvertisedSocketAddress( "host1:1001" ), new AdvertisedSocketAddress( "host1:2001" )
+        );
 
         // when
         final ByteBuffer buffer = ByteBuffer.allocate( 1_000 );
@@ -56,13 +57,15 @@ public class CoreMemberMarshalTest
         // given
         CoreMember.CoreMemberMarshal marshal = new CoreMember.CoreMemberMarshal();
 
-        final CoreMember aRealMember = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
-                new AdvertisedSocketAddress( "host1:2001" ), new AdvertisedSocketAddress( "host1:3001" ) );
+        final CoreMember aRealMember = new CoreMember(
+                new AdvertisedSocketAddress( "host1:1001" ), new AdvertisedSocketAddress( "host1:2001" )
+        );
 
         final CoreMember aNullMember = null;
 
-        final CoreMember anotherRealMember = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
-                new AdvertisedSocketAddress( "host1:2001" ), new AdvertisedSocketAddress( "host1:3001" ) );
+        final CoreMember anotherRealMember = new CoreMember(
+                new AdvertisedSocketAddress( "host1:1001" ), new AdvertisedSocketAddress( "host1:2001" )
+        );
 
         // when
         final ByteBuffer buffer = ByteBuffer.allocate( 1_000 );
@@ -88,8 +91,9 @@ public class CoreMemberMarshalTest
         // given
         // a CoreMember and a ByteBuffer to write it to
         CoreMember.CoreMemberMarshal marshal = new CoreMember.CoreMemberMarshal();
-        final CoreMember aRealMember = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
-                new AdvertisedSocketAddress( "host1:2001" ), new AdvertisedSocketAddress( "host1:3001" ) );
+        final CoreMember aRealMember = new CoreMember(
+                new AdvertisedSocketAddress( "host1:1001" ), new AdvertisedSocketAddress( "host1:2001" )
+        );
 
         final ByteBuffer buffer = ByteBuffer.allocate( 1_000 );
 

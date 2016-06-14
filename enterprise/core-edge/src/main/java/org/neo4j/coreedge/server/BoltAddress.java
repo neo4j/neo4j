@@ -59,7 +59,7 @@ public class BoltAddress
         return Objects.hash( boltAddress );
     }
 
-    public AdvertisedSocketAddress getBoltAddress()
+    public AdvertisedSocketAddress getAdvertisedAddress()
     {
         return boltAddress;
     }

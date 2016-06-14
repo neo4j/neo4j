@@ -93,8 +93,7 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     {
         return new CoreMember(
                 config.get( CoreEdgeClusterSettings.transaction_advertised_address ),
-                config.get( CoreEdgeClusterSettings.raft_advertised_address ),
-                EnterpriseEdgeEditionModule.extractBoltAddress( config )
+                config.get( CoreEdgeClusterSettings.raft_advertised_address )
         );
     }
 

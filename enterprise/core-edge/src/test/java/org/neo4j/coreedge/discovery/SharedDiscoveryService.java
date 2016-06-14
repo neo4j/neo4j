@@ -20,8 +20,10 @@
 package org.neo4j.coreedge.discovery;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -34,12 +36,12 @@ import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 
+import static java.util.Collections.unmodifiableMap;
 import static java.util.Collections.unmodifiableSet;
 
 public class SharedDiscoveryService implements DiscoveryServiceFactory
 {
-    private final Set<CoreMember> coreMembers = new HashSet<>();
-    private final Set<BoltAddress> coreBoltAddresses = new HashSet<>();
+    private final Map<CoreMember, BoltAddress> coreMembers = new HashMap<>(  );
     private final Set<BoltAddress> edgeBoltAddresses = new HashSet<>();
     private final List<SharedDiscoveryCoreClient> coreClients = new ArrayList<>();
 
@@ -81,8 +83,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         {
             return new ClusterTopology(
                     coreClients.size() > 0 && coreClients.get( 0 ) == client,
-                    unmodifiableSet( coreMembers ),
-                    unmodifiableSet( coreBoltAddresses ),
+                    unmodifiableMap( coreMembers ),
                     unmodifiableSet( edgeBoltAddresses )
             );
         }
@@ -97,8 +98,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         lock.lock();
         try
         {
-            coreMembers.add( coreMember );
-            coreBoltAddresses.add( boltAddress );
+            coreMembers.put( coreMember, boltAddress );
             coreClients.add( client );
             enoughMembers.signalAll();
             coreClients.forEach( SharedDiscoveryCoreClient::onTopologyChange );
@@ -115,7 +115,6 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         try
         {
             coreMembers.remove( coreMember );
-            coreBoltAddresses.remove( boltAddress );
             coreClients.remove( client );
             coreClients.forEach( SharedDiscoveryCoreClient::onTopologyChange );
         }

@@ -32,6 +32,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 
 import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.EDGE_SERVERS;
@@ -51,7 +52,7 @@ class HazelcastClient extends LifecycleAdapter implements EdgeTopologyService
     @Override
     public ClusterTopology currentTopology()
     {
-        ClusterTopology clusterTopology = new ClusterTopology( false, emptySet(), emptySet(), emptySet() );
+        ClusterTopology clusterTopology = new ClusterTopology( false, emptyMap(), emptySet() );
         boolean attemptedConnection = false;
 
         while ( clusterTopology.coreMembers().isEmpty() && !attemptedConnection )

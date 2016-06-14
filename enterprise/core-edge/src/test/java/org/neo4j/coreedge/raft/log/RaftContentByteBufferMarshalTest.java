@@ -48,8 +48,7 @@ public class RaftContentByteBufferMarshalTest
 {
     private CoreMember coreMember = new CoreMember(
             new AdvertisedSocketAddress( "core:1" ),
-            new AdvertisedSocketAddress( "raft:1" ),
-            new AdvertisedSocketAddress( "bolt:1" )
+            new AdvertisedSocketAddress( "raft:1" )
     );
 
     @Test
@@ -58,11 +57,11 @@ public class RaftContentByteBufferMarshalTest
         // given
         CoreReplicatedContentMarshal serializer = new CoreReplicatedContentMarshal();
         CoreMemberSet in = new CoreMemberSet( asSet(
-                new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
-                        new AdvertisedSocketAddress( "host1:1002" ), new AdvertisedSocketAddress( "host1:1003" )
+                new CoreMember(
+                        new AdvertisedSocketAddress( "host1:1001" ), new AdvertisedSocketAddress( "host1:1002" )
                 ),
-                new CoreMember( new AdvertisedSocketAddress( "host2:1002" ),
-                        new AdvertisedSocketAddress( "host2:1002" ), new AdvertisedSocketAddress( "host2:1003" )
+                new CoreMember(
+                        new AdvertisedSocketAddress( "host2:1002" ), new AdvertisedSocketAddress( "host2:1002" )
                 )
         ) );
 
