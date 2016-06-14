@@ -72,7 +72,7 @@ public class KernelTransactions extends LifecycleAdapter
         Supplier<KernelTransactionsSnapshot>   // For providing KernelTransactionSnapshots
 {
     public static final Setting<Boolean> tx_termination_aware_locks = setting(
-            "experimental.tx_termination_aware_locks", Settings.BOOLEAN, Settings.FALSE );
+            "unsupported.dbms.tx_termination_aware_locks", Settings.BOOLEAN, Settings.FALSE );
 
     // Transaction dependencies
 
