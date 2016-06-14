@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
 
 import org.junit.Test;
 
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 
 import static org.junit.Assert.assertEquals;

@@ -25,7 +25,7 @@ import org.neo4j.coreedge.catchup.tx.edge.TxPollingClient;
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.raft.replication.tx.RetryStrategy;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.server.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;

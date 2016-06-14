@@ -33,6 +33,7 @@ import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.net.NonBlockingChannel;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.net.monitoring.MessageQueueMonitor;
+import org.neo4j.server.AdvertisedSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;

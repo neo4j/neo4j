@@ -31,7 +31,7 @@ import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.ReadOnlyTopologyService;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.BoltAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.api.exceptions.ProcedureException;

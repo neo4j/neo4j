@@ -32,7 +32,7 @@ import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionFactory;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.store.id.IdType;

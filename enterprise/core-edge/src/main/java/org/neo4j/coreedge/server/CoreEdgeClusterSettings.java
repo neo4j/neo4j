@@ -25,7 +25,9 @@ import java.util.function.Function;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
+import org.neo4j.server.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Internal;
+import org.neo4j.server.configuration.ServerSettings;
 
 import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
@@ -52,22 +54,6 @@ public class CoreEdgeClusterSettings
         {
             String[] split = value.split( ":" );
             return new ListenSocketAddress( new InetSocketAddress( split[0], Integer.valueOf( split[1] ) ) );
-        }
-
-        @Override
-        public String toString()
-        {
-            return "a socket address";
-        }
-    };
-
-    public static final Function<String, AdvertisedSocketAddress> ADVERTISED_SOCKET_ADDRESS = new Function<String,
-            AdvertisedSocketAddress>()
-    {
-        @Override
-        public AdvertisedSocketAddress apply( String value )
-        {
-            return new AdvertisedSocketAddress( value );
         }
 
         @Override
@@ -125,7 +111,7 @@ public class CoreEdgeClusterSettings
 
     @Description("Hostname/IP address and port that other RAFT servers can use to communicate with us.")
     public static final Setting<AdvertisedSocketAddress> transaction_advertised_address =
-            setting( "core_edge.transaction_advertised_address", ADVERTISED_SOCKET_ADDRESS, "localhost:6001" );
+            setting( "core_edge.transaction_advertised_address", ServerSettings.ADVERTISED_SOCKET_ADDRESS, "localhost:6001" );
 
     @Description("Network interface and port for the RAFT server to listen on.")
     public static final Setting<ListenSocketAddress> raft_listen_address =
@@ -133,11 +119,7 @@ public class CoreEdgeClusterSettings
 
     @Description("Hostname/IP address and port that other RAFT servers can use to communicate with us.")
     public static final Setting<AdvertisedSocketAddress> raft_advertised_address =
-            setting( "core_edge.raft_advertised_address", ADVERTISED_SOCKET_ADDRESS, "localhost:7400" );
-
-    @Description("Hostname/IP address and port that we can be connected to be the driver.")
-    public static final Setting<AdvertisedSocketAddress> bolt_advertised_address =
-            setting( "core_edge.bolt_advertised_address", ADVERTISED_SOCKET_ADDRESS, "localhost:7687" );
+            setting( "core_edge.raft_advertised_address", ServerSettings.ADVERTISED_SOCKET_ADDRESS, "localhost:7400" );
 
     @Description("Host and port to bind the cluster management communication.")
     public static final Setting<ListenSocketAddress> cluster_listen_address =
@@ -145,7 +127,7 @@ public class CoreEdgeClusterSettings
 
     @Description("A comma-separated list of other members of the cluster to join.")
     public static final Setting<List<AdvertisedSocketAddress>> initial_core_cluster_members =
-            setting( "core_edge.initial_core_cluster_members", list( ",", ADVERTISED_SOCKET_ADDRESS ), MANDATORY );
+            setting( "core_edge.initial_core_cluster_members", list( ",", ServerSettings.ADVERTISED_SOCKET_ADDRESS ), MANDATORY );
 
     @Description("Prevents the network middleware from dumping its own logs. Defaults to true.")
     public static final Setting<Boolean> disable_middleware_logging =

@@ -23,9 +23,9 @@ import java.util.Optional;
 
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
+import org.neo4j.server.AdvertisedSocketAddress;
 
 public class NotMyselfSelectionStrategy implements CoreServerSelectionStrategy
 {

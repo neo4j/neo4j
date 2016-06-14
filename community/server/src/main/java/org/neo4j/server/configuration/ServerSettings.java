@@ -30,6 +30,7 @@ import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.server.AdvertisedSocketAddress;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Internal;
@@ -72,6 +73,24 @@ public interface ServerSettings
 
     @Description("Comma-seperated list of custom security rules for Neo4j to use.")
     Setting<List<String>> security_rules = setting( "dbms.security.http_authorization_classes", STRING_LIST, EMPTY );
+    Function<String, AdvertisedSocketAddress> ADVERTISED_SOCKET_ADDRESS = new Function<String,
+            AdvertisedSocketAddress>()
+    {
+        @Override
+        public AdvertisedSocketAddress apply( String value )
+        {
+            return new AdvertisedSocketAddress( value );
+        }
+
+        @Override
+        public String toString()
+        {
+            return "a socket address";
+        }
+    };
+    @Description("Hostname/IP address and port that we can be connected to be the driver.")
+    Setting<AdvertisedSocketAddress> bolt_advertised_address =
+            Settings.setting( "core_edge.bolt_advertised_address", ADVERTISED_SOCKET_ADDRESS, "localhost:7687" );
 
     @Description("Configuration options for HTTP connectors. " +
                  "\"(http-connector-key)\" is a placeholder for a unique name for the connector, for instance " +

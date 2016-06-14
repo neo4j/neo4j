@@ -23,8 +23,8 @@ import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.CoreClient;
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
+import org.neo4j.server.AdvertisedSocketAddress;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;

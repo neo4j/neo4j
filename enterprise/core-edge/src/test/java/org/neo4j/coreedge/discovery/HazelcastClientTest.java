@@ -34,11 +34,10 @@ import com.hazelcast.core.ItemListener;
 import com.hazelcast.core.Member;
 import org.junit.Test;
 
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.server.AdvertisedSocketAddress;
 
 import static java.lang.String.format;
 

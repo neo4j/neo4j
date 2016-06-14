@@ -25,8 +25,8 @@ import java.util.Random;
 import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.server.AdvertisedSocketAddress;
 
 public class ConnectToRandomCoreServer implements CoreServerSelectionStrategy
 {

@@ -21,6 +21,8 @@ package org.neo4j.coreedge.server;
 
 import java.util.Objects;
 
+import org.neo4j.server.AdvertisedSocketAddress;
+
 import static java.lang.String.format;
 
 public class BoltAddress

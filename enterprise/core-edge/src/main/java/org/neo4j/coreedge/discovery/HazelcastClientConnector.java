@@ -23,8 +23,8 @@ import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.core.HazelcastInstance;
 
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
+import org.neo4j.server.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 
 public class HazelcastClientConnector implements HazelcastConnector
