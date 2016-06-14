@@ -41,11 +41,11 @@ public class ResultMatcher implements Matcher<Result>
     public boolean matches( Result value )
     {
         List<RowMatcher> mutableCopy = new ArrayList<>( rowMatchers );
-        final boolean[] matched = {true};
+        final boolean[] matched = { true };
         List<String> columns = value.columns();
 
         value.accept( row -> {
-            Map<String, Object> nextRow = new HashMap<>( columns.size() );
+            Map<String,Object> nextRow = new HashMap<>( columns.size() );
             for ( String col : columns )
             {
                 nextRow.put( col, row.get( col ) );
@@ -55,7 +55,7 @@ public class ResultMatcher implements Matcher<Result>
             if ( index < 0 )
             {
                 matched[0] = false;
-                return false;
+                return true;    // we always want to visit the next row
             }
             mutableCopy.remove( index );
             return true;
@@ -67,32 +67,24 @@ public class ResultMatcher implements Matcher<Result>
 
     public boolean matchesOrdered( Result value )
     {
-        final int[] counter = {0};
-        final boolean[] matched = {true};
+        final int[] counter = { 0 };
+        final boolean[] matched = { true };
         List<String> columns = value.columns();
 
         value.accept( row -> {
-            Map<String, Object> nextRow = new HashMap<>( columns.size() );
+            Map<String,Object> nextRow = new HashMap<>( columns.size() );
             for ( String col : columns )
             {
                 nextRow.put( col, row.get( col ) );
             }
 
-            //This is never going to match, break out
-            if (counter[0] >= rowMatchers.size())
+            if ( counter[0] >= rowMatchers.size() )
             {
                 matched[0] = false;
-                return false;
+                return true;    // we always want to visit the next row
             }
-
             matched[0] = rowMatchers.get( counter[0]++ ).matches( nextRow );
-            //found a mismatch, break out
-            if (!matched[0])
-            {
-                return false;
-            }
 
-            //continue
             return true;
         } );
 
