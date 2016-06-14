@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.ReadOnlyTopologyService;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.BoltAddress;
@@ -31,7 +32,6 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -58,7 +58,7 @@ public class DiscoverMembersProcedure extends CallableProcedure.BasicProcedure
     @Override
     public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
-        Set<AdvertisedSocketAddress> addresses = findAddresses().map( BoltAddress::getBoltAddress )
+        Set<AdvertisedSocketAddress> addresses = findAddresses().map( BoltAddress::getAdvertisedAddress )
                 .limit( noOfAddressesToReturn( input ) ).collect( toSet() );
         log.info( "Discovery members: %s", addresses.stream().collect( toSet() ) );
         return wrapUpAddresses( addresses );
@@ -66,7 +66,8 @@ public class DiscoverMembersProcedure extends CallableProcedure.BasicProcedure
 
     private Stream<BoltAddress> findAddresses()
     {
-        return discoveryService.currentTopology().boltCoreMembers().stream();
+        ClusterTopology clusterTopology = discoveryService.currentTopology();
+        return clusterTopology.coreMembers().stream().map( clusterTopology::boltAddress );
     }
 
     private int noOfAddressesToReturn( Object[] input )

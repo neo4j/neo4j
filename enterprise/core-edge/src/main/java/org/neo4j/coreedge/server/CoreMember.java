@@ -36,21 +36,17 @@ public class CoreMember
 {
     private final AdvertisedSocketAddress coreAddress;
     private final AdvertisedSocketAddress raftAddress;
-    private final AdvertisedSocketAddress boltAddress;
 
-    public CoreMember( AdvertisedSocketAddress coreAddress, AdvertisedSocketAddress raftAddress,
-                       AdvertisedSocketAddress boltAddress)
+    public CoreMember( AdvertisedSocketAddress coreAddress, AdvertisedSocketAddress raftAddress )
     {
         this.coreAddress = coreAddress;
         this.raftAddress = raftAddress;
-        this.boltAddress = boltAddress;
     }
 
     @Override
     public String toString()
     {
-        return format( "CoreMember{coreAddress=%s, raftAddress=%s, boltAddress=%s}",
-                coreAddress, raftAddress, boltAddress );
+        return format( "CoreMember{coreAddress=%s, raftAddress=%s}", coreAddress, raftAddress );
     }
 
     @Override
@@ -66,14 +62,13 @@ public class CoreMember
         }
         CoreMember that = (CoreMember) o;
         return Objects.equals( coreAddress, that.coreAddress ) &&
-                Objects.equals( raftAddress, that.raftAddress ) &&
-                Objects.equals( boltAddress, that.boltAddress );
+                Objects.equals( raftAddress, that.raftAddress );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( coreAddress, raftAddress, boltAddress );
+        return Objects.hash( coreAddress, raftAddress );
     }
 
     public AdvertisedSocketAddress getCoreAddress()
@@ -84,11 +79,6 @@ public class CoreMember
     public AdvertisedSocketAddress getRaftAddress()
     {
         return raftAddress;
-    }
-
-    public AdvertisedSocketAddress getBoltAddress()
-    {
-        return boltAddress;
     }
 
     /**
@@ -105,13 +95,6 @@ public class CoreMember
      * │             │port                  4 bytes││
      * │             └─────────────────────────────┘│
      * └────────────────────────────────────────────┘
-     * │bolt address ┌─────────────────────────────┐│
-     * │             │hostnameLength        4 bytes││
-     * │             │hostnameBytes        variable││
-     * │             │port                  4 bytes││
-     * │             └─────────────────────────────┘│
-     * └────────────────────────────────────────────┘
-     *
      * <p/>
      * This Marshal implementation can also serialize and deserialize null values. They are encoded as a CoreMember
      * with empty strings in the address fields, so they still adhere to the format displayed above.
@@ -133,57 +116,49 @@ public class CoreMember
             {
                 byteBufMarshal.marshal( NULL_ADDRESS, buffer );
                 byteBufMarshal.marshal( NULL_ADDRESS, buffer );
-                byteBufMarshal.marshal( NULL_ADDRESS, buffer );
             }
             else
             {
                 byteBufMarshal.marshal( member.getCoreAddress(), buffer );
                 byteBufMarshal.marshal( member.getRaftAddress(), buffer );
-                byteBufMarshal.marshal( member.getBoltAddress(), buffer );
             }
         }
 
         @Override
         public void marshal( CoreMember member, ByteBuf buffer )
         {
-            byteBufMarshal.marshal( member.getCoreAddress(), buffer );
-            byteBufMarshal.marshal( member.getRaftAddress(), buffer );
-            byteBufMarshal.marshal( member.getBoltAddress(), buffer );
+            if ( member == null )
+            {
+                byteBufMarshal.marshal( NULL_ADDRESS, buffer );
+                byteBufMarshal.marshal( NULL_ADDRESS, buffer );
+            }
+            else
+            {
+                byteBufMarshal.marshal( member.getCoreAddress(), buffer );
+                byteBufMarshal.marshal( member.getRaftAddress(), buffer );
+            }
+        }
+
+        @Override
+        public void marshal( CoreMember member, WritableChannel channel ) throws IOException
+        {
+            channelMarshal.marshal( member.getCoreAddress(), channel );
+            channelMarshal.marshal( member.getRaftAddress(), channel );
         }
 
         public CoreMember unmarshal( ByteBuffer buffer )
         {
             AdvertisedSocketAddress coreAddress = byteBufMarshal.unmarshal( buffer );
             AdvertisedSocketAddress raftAddress = byteBufMarshal.unmarshal( buffer );
-            AdvertisedSocketAddress boltAddress = byteBufMarshal.unmarshal( buffer );
-
-            return dealWithPossibleNullAddress( coreAddress, raftAddress, boltAddress );
+            return dealWithPossibleNullAddress( coreAddress, raftAddress );
         }
 
         @Override
-        public CoreMember unmarshal( ByteBuf source )
+        public CoreMember unmarshal( ByteBuf buffer )
         {
-            AdvertisedSocketAddress coreAddress = byteBufMarshal.unmarshal( source );
-            AdvertisedSocketAddress raftAddress = byteBufMarshal.unmarshal( source );
-            AdvertisedSocketAddress boltAddress = byteBufMarshal.unmarshal( source );
-            return dealWithPossibleNullAddress( coreAddress, raftAddress, boltAddress );
-        }
-
-        @Override
-        public void marshal( CoreMember member, WritableChannel channel ) throws IOException
-        {
-            if ( member == null )
-            {
-                channelMarshal.marshal( NULL_ADDRESS, channel );
-                channelMarshal.marshal( NULL_ADDRESS, channel );
-                channelMarshal.marshal( NULL_ADDRESS, channel );
-            }
-            else
-            {
-                channelMarshal.marshal( member.getCoreAddress(), channel );
-                channelMarshal.marshal( member.getRaftAddress(), channel );
-                channelMarshal.marshal( member.getBoltAddress(), channel );
-            }
+            AdvertisedSocketAddress coreAddress = byteBufMarshal.unmarshal( buffer );
+            AdvertisedSocketAddress raftAddress = byteBufMarshal.unmarshal( buffer );
+            return dealWithPossibleNullAddress( coreAddress, raftAddress );
         }
 
         @Override
@@ -191,26 +166,22 @@ public class CoreMember
         {
             AdvertisedSocketAddress coreAddress = channelMarshal.unmarshal( source );
             AdvertisedSocketAddress raftAddress = channelMarshal.unmarshal( source );
-            AdvertisedSocketAddress boltAddress = channelMarshal.unmarshal( source );
-            return dealWithPossibleNullAddress( coreAddress, raftAddress, boltAddress );
+            return dealWithPossibleNullAddress( coreAddress, raftAddress );
         }
 
         private CoreMember dealWithPossibleNullAddress( AdvertisedSocketAddress coreAddress,
-                                                        AdvertisedSocketAddress raftAddress,
-                                                        AdvertisedSocketAddress boltAddress)
+                                                        AdvertisedSocketAddress raftAddress )
         {
-            if ( coreAddress == null ||
-                 raftAddress == null ||
-                 boltAddress == null ||
-                    (coreAddress.equals( NULL_ADDRESS ) &&
-                            raftAddress.equals( NULL_ADDRESS ) &&
-                            boltAddress.equals( NULL_ADDRESS )) )
+            if (
+                    coreAddress == null ||
+                            raftAddress == null ||
+                            (coreAddress.equals( NULL_ADDRESS ) && raftAddress.equals( NULL_ADDRESS )) )
             {
                 return null;
             }
             else
             {
-                return new CoreMember( coreAddress, raftAddress, boltAddress );
+                return new CoreMember( coreAddress, raftAddress );
             }
         }
     }

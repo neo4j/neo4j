@@ -83,10 +83,9 @@ public class CoreReplicatedContentByteBufferMarshalTest
         // given
         ByteBuf buffer = Unpooled.buffer();
         ReplicatedContent message = new CoreMemberSet( asSet(
-                new CoreMember( new AdvertisedSocketAddress( "host_a:1" ), new AdvertisedSocketAddress( "host_a:2" ),
-                        new AdvertisedSocketAddress( "host_a:3" ) ),
+                new CoreMember( new AdvertisedSocketAddress( "host_a:1" ), new AdvertisedSocketAddress( "host_a:2" )),
                 new CoreMember( new AdvertisedSocketAddress( "host_b:101" ),
-                        new AdvertisedSocketAddress( "host_b:102" ), new AdvertisedSocketAddress( "host_c:102" ) )
+                        new AdvertisedSocketAddress( "host_b:102" ) )
         ) );
 
         // when
@@ -104,8 +103,7 @@ public class CoreReplicatedContentByteBufferMarshalTest
         ReplicatedContent message = new ReplicatedIdAllocationRequest(
                 new CoreMember(
                         new AdvertisedSocketAddress( "host_a:1" ),
-                        new AdvertisedSocketAddress( "host_a:2" ),
-                        new AdvertisedSocketAddress( "host_a:3" )
+                        new AdvertisedSocketAddress( "host_a:2" )
                 ), IdType.PROPERTY, 100, 200 );
 
         // when
