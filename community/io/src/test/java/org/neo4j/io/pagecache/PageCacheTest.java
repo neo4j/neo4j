@@ -55,7 +55,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.pagecache.AdversarialPagedFile;
-import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
@@ -94,15 +93,12 @@ import static org.neo4j.test.ThreadTestUtils.fork;
 
 public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSupport<T>
 {
-//<<<<<<< HEAD
-//=======
     protected static final long SHORT_TIMEOUT_MILLIS = 10_000;
     protected static final long SEMI_LONG_TIMEOUT_MILLIS = 120_000;
     protected static final long LONG_TIMEOUT_MILLIS = 360_000;
 
     protected static ExecutorService executor;
 
-//>>>>>>> upstream/2.3
     @BeforeClass
     public static void enablePinUnpinMonitoring()
     {
