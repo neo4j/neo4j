@@ -33,92 +33,101 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.ReadableRelationshipIndex;
 
-public class TestAutoIndexReopen {
+public class TestAutoIndexReopen
+{
 
     private GraphDatabaseAPI graphDb;
 
     private long id1 = -1;
     private long id2 = -1;
     private long id3 = -1;
-    
+
     @Before
-    public void startDb() {
+    public void startDb()
+    {
         graphDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
-            newImpermanentDatabaseBuilder().setConfig(new HashMap<>()).newGraphDatabase();
-        
-         try (Transaction tx = graphDb.beginTx()) {
+                newImpermanentDatabaseBuilder().setConfig(new HashMap<>()).newGraphDatabase();
+
+        try (Transaction tx = graphDb.beginTx())
+        {
             // Create the node and relationship auto-indexes
-            graphDb.index().getNodeAutoIndexer().setEnabled( true );
+            graphDb.index().getNodeAutoIndexer().setEnabled(true);
             graphDb.index().getNodeAutoIndexer().startAutoIndexingProperty(
-                "nodeProp" );
-            graphDb.index().getRelationshipAutoIndexer().setEnabled( true );
+                    "nodeProp");
+            graphDb.index().getRelationshipAutoIndexer().setEnabled(true);
             graphDb.index().getRelationshipAutoIndexer().startAutoIndexingProperty(
-                "type" );
+                    "type");
 
             tx.success();
         }
 
-        
-        try (Transaction tx = graphDb.beginTx()) {
+        try (Transaction tx = graphDb.beginTx())
+        {
             Node node1 = graphDb.createNode();
             Node node2 = graphDb.createNode();
             Node node3 = graphDb.createNode();
             id1 = node1.getId();
             id2 = node2.getId();
             id3 = node3.getId();
-            Relationship rel = node1.createRelationshipTo( node2,
-                RelationshipType.withName( "FOO" ) );
-            rel.setProperty( "type", "FOO" );
-        
+            Relationship rel = node1.createRelationshipTo(node2,
+                    RelationshipType.withName("FOO"));
+            rel.setProperty("type", "FOO");
+
             tx.success();
 
         }
     }
 
     @After
-    public void stopDb() {
-        if (graphDb != null) {
+    public void stopDb()
+    {
+        if (graphDb != null)
+        {
             graphDb.shutdown();
         }
         graphDb = null;
     }
-    
-    private ReadableRelationshipIndex relationShipAutoIndex () {
+
+    private ReadableRelationshipIndex relationShipAutoIndex()
+    {
         return graphDb.index().getRelationshipAutoIndexer().getAutoIndex();
     }
 
     @Test
-    public void testForceOpenIfChanged() {
+    public void testForceOpenIfChanged()
+    {
         // do some actions to force the indexreader to be reopened
-        try (Transaction tx = graphDb.beginTx()) {
+        try (Transaction tx = graphDb.beginTx())
+        {
             Node node1 = graphDb.getNodeById(id1);
             Node node2 = graphDb.getNodeById(id2);
             Node node3 = graphDb.getNodeById(id3);
-            
+
             node1.setProperty("np2", "test property");
-			
-			node1.getRelationships(RelationshipType.withName( "FOO" )).forEach(r -> {
-				r.delete();
-			});
-			
-			// check first node
-			assertEquals( 0, relationShipAutoIndex().get("type", "FOO", node1, node3).size() );
-			// create second relation ship
-			Relationship rel = node1.createRelationshipTo( node3,
-                RelationshipType.withName( "FOO" ) );
-            rel.setProperty( "type", "FOO" );
-            
-			// check second node -> crashs with old FullTxData
-			assertEquals( 0, relationShipAutoIndex().get("type", "FOO", node1, node2).size() );
+
+            node1.getRelationships(RelationshipType.withName("FOO")).forEach(r ->
+            {
+                r.delete();
+            });
+
+            // check first node
+            assertEquals(0, relationShipAutoIndex().get("type", "FOO", node1, node3).size());
             // create second relation ship
-			rel = node1.createRelationshipTo( node2, RelationshipType.withName( "FOO" ) );
-			rel.setProperty("type", "FOO");
-			assertEquals( 1, relationShipAutoIndex().get("type", "FOO", node1, node2).size() );
-			
-			tx.success();
+            Relationship rel = node1.createRelationshipTo(node3,
+                    RelationshipType.withName("FOO"));
+            rel.setProperty("type", "FOO");
+
+            // check second node -> crashs with old FullTxData
+            assertEquals(0, relationShipAutoIndex().get("type", "FOO", node1, node2).size());
+            // create second relation ship
+            rel = node1.createRelationshipTo(node2, RelationshipType.withName("FOO"));
+            rel.setProperty("type", "FOO");
+            assertEquals(1, relationShipAutoIndex().get("type", "FOO", node1, node2).size());
+
+            tx.success();
         }
     }
 }
+
