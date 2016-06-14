@@ -19,7 +19,6 @@
  */
 package org.neo4j.io.pagecache;
 
-import org.apache.commons.lang3.SystemUtils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -65,6 +64,7 @@ import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
@@ -81,6 +81,8 @@ import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.test.LinearHistoryPageCacheTracer;
 import org.neo4j.test.RepeatRule;
 
+import static java.lang.Long.toHexString;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -93,10 +95,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.lang.Long.toHexString;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
@@ -108,7 +106,7 @@ import static org.neo4j.test.ThreadTestUtils.fork;
 public abstract class PageCacheTest<T extends PageCache>
 {
     protected static final long SHORT_TIMEOUT_MILLIS = 10_000;
-    protected static final long SEMI_LONG_TIMEOUT_MILLIS = 60_000;
+    protected static final long SEMI_LONG_TIMEOUT_MILLIS = 120_000;
     protected static final long LONG_TIMEOUT_MILLIS = 360_000;
 
     protected static ExecutorService executor;
@@ -3552,8 +3550,6 @@ public abstract class PageCacheTest<T extends PageCache>
     @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void backgroundThreadsMustGracefullyShutDown() throws Exception
     {
-        assumeTrue( "For some reason, this test is very flaky on Windows", !SystemUtils.IS_OS_WINDOWS );
-
         int iterations = 1000;
         List<WeakReference<PageCache>> refs = new LinkedList<>();
         final Queue<Throwable> caughtExceptions = new ConcurrentLinkedQueue<>();
@@ -3576,22 +3572,7 @@ public abstract class PageCacheTest<T extends PageCache>
 
             for ( int i = 0; i < iterations; i++ )
             {
-                PageCache cache = createPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
-
-                // Touch all the pages
-                PagedFile pagedFile = cache.map( file( "a" ), filePageSize );
-                try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
-                {
-                    for ( int j = 0; j < filePagesInTotal; j++ )
-                    {
-                        assertTrue( cursor.next() );
-                    }
-                }
-
-                // We're now likely racing with the eviction thread
-                pagedFile.close();
-                cache.close();
-                refs.add( new WeakReference<>( cache ) );
+                createAndDirtyAndShutDownPageCache( refs, filePagesInTotal );
 
                 assertTrue( caughtExceptions.isEmpty() );
             }
@@ -3605,13 +3586,17 @@ public abstract class PageCacheTest<T extends PageCache>
         // could possibly strongly reference the cache is any lingering background thread. If we do a couple of
         // GCs, then we should observe that the WeakReference has been cleared by the garbage collector. If it
         // hasn't, then something must be keeping it alive, even though it has been closed.
-        int maxChecks = 100;
+        int maxChecks = 200;
+        //noinspection unused -- we use old-gen heap pollution, as well as System.gc(), to cause old-gen GCs
+        byte[] randomHeapPollution;
         boolean passed;
         do
         {
             System.gc();
             Thread.sleep( 100 );
             passed = true;
+            //noinspection UnusedAssignment -- dumping unused crap into the old-gen heap to provoke GCs
+            randomHeapPollution = new byte[(int) ByteUnit.mebiBytes( 2 )];
 
             for ( WeakReference<PageCache> ref : refs )
             {
@@ -3640,6 +3625,27 @@ public abstract class PageCacheTest<T extends PageCache>
                 fail( "PageCaches should not be held live after close: " + nonNullPageCaches );
             }
         }
+    }
+
+    private void createAndDirtyAndShutDownPageCache( List<WeakReference<PageCache>> refs, int filePagesInTotal )
+            throws IOException
+    {
+        PageCache cache = createPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+
+        // Touch all the pages
+        PagedFile pagedFile = cache.map( file( "a" ), filePageSize );
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+        {
+            for ( int j = 0; j < filePagesInTotal; j++ )
+            {
+                assertTrue( cursor.next() );
+            }
+        }
+
+        // We're now likely racing with the eviction thread
+        pagedFile.close();
+        cache.close();
+        refs.add( new WeakReference<>( cache ) );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
