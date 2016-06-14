@@ -106,12 +106,18 @@ case class TCKErrorHandler(typ: String, phase: String, detail: String) extends M
       detail should equal("InvalidAggregation")
     else if (msg.matches(semanticError("It is not allowed to refer to variables in ((SKIP)|(LIMIT))")))
       detail should equal("NonConstantExpression")
+    else if (msg.matches("Can't use non-deterministic \\(random\\) functions inside of aggregate functions\\."))
+      detail should equal("NonConstantExpression")
     else if (msg.matches(semanticError("A single relationship type must be specified for ((CREATE)|(MERGE))")))
       detail should equal("NoSingleRelationshipType")
     else if (msg.matches(s"${DOTALL}Invalid input '.*': expected an identifier character, whitespace, '\\|', a length specification, a property map or '\\]' \\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*"))
       detail should equal("InvalidRelationshipPattern")
     else if (msg.matches(s"${DOTALL}Invalid input '.*': expected whitespace, RangeLiteral, a property map or '\\]' \\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*"))
       detail should equal("InvalidRelationshipPattern")
+    else if (msg.matches(semanticError("invalid literal number")))
+      detail should equal("InvalidNumberLiteral")
+    else if (msg.matches(semanticError("Unknown function '.+'")))
+      detail should equal("UnknownFunction")
     else r = false
 
     r
