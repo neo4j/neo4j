@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,8 +30,6 @@ import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.Log;
-
-import static org.neo4j.helpers.Listeners.notifyListeners;
 
 /**
  * The availability guard ensures that the database will only take calls when it is in an ok state.
@@ -112,7 +109,7 @@ public class AvailabilityGuard
     private final AtomicInteger requirementCount = new AtomicInteger( 0 );
     private final Set<AvailabilityRequirement> blockingRequirements = new CopyOnWriteArraySet<>();
     private final AtomicBoolean isShutdown = new AtomicBoolean( false );
-    private Collection<AvailabilityListener> listeners = Listeners.newListeners();
+    private final Listeners<AvailabilityListener> listeners = new Listeners<>();
     private final Clock clock;
     private final Log log;
 
@@ -139,14 +136,7 @@ public class AvailabilityGuard
             if ( requirementCount.getAndIncrement() == 0 && !isShutdown.get() )
             {
                 log.info( DATABASE_UNAVAILABLE_MSG + requirement.description() );
-                notifyListeners( listeners, new Listeners.Notification<AvailabilityListener>()
-                {
-                    @Override
-                    public void notify( AvailabilityListener listener )
-                    {
-                        listener.unavailable();
-                    }
-                } );
+                listeners.notify( AvailabilityListener::unavailable );
             }
         }
     }
@@ -168,14 +158,7 @@ public class AvailabilityGuard
             if ( requirementCount.getAndDecrement() == 1 && !isShutdown.get() )
             {
                 log.info( DATABASE_AVAILABLE_MSG + requirement.description() );
-                notifyListeners( listeners, new Listeners.Notification<AvailabilityListener>()
-                {
-                    @Override
-                    public void notify( AvailabilityListener listener )
-                    {
-                        listener.available();
-                    }
-                } );
+                listeners.notify( AvailabilityListener::available );
             }
         }
     }
@@ -194,14 +177,7 @@ public class AvailabilityGuard
 
             if ( requirementCount.get() == 0 )
             {
-                notifyListeners( listeners, new Listeners.Notification<AvailabilityListener>()
-                {
-                    @Override
-                    public void notify( AvailabilityListener listener )
-                    {
-                        listener.unavailable();
-                    }
-                } );
+                listeners.notify( AvailabilityListener::unavailable );
             }
         }
     }
@@ -325,7 +301,7 @@ public class AvailabilityGuard
      */
     public void addListener( AvailabilityListener listener )
     {
-        listeners = Listeners.addListener( listener, listeners );
+        listeners.add( listener );
     }
 
     /**
@@ -335,7 +311,7 @@ public class AvailabilityGuard
      */
     public void removeListener( AvailabilityListener listener )
     {
-        listeners = Listeners.removeListener( listener, listeners );
+        listeners.remove( listener );
     }
 
     /**

@@ -21,7 +21,6 @@ package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -56,7 +55,7 @@ class ClusterContextImpl
         implements ClusterContext
 {
     // ClusterContext
-    private Collection<ClusterListener> clusterListeners = Listeners.newListeners();
+    private final Listeners<ClusterListener> clusterListeners = new Listeners<>();
     private final List<ClusterMessage.ConfigurationRequestState> discoveredInstances = new ArrayList<ClusterMessage
             .ConfigurationRequestState>();
     private Iterable<URI> joiningInstances;
@@ -158,13 +157,13 @@ class ClusterContextImpl
     @Override
     public void addClusterListener( ClusterListener listener )
     {
-        clusterListeners = Listeners.addListener( listener, clusterListeners );
+        clusterListeners.add( listener );
     }
 
     @Override
     public void removeClusterListener( ClusterListener listener )
     {
-        clusterListeners = Listeners.removeListener( listener, clusterListeners );
+        clusterListeners.remove( listener );
     }
 
     // Implementation
@@ -195,7 +194,7 @@ class ClusterContextImpl
     public void joined()
     {
         commonState.configuration().joined( me, commonState.boundAt() );
-        Listeners.notifyListeners( clusterListeners, executor,
+        clusterListeners.notify( executor,
                 listener -> listener.enteredCluster( commonState.configuration() ) );
     }
 
@@ -204,19 +203,18 @@ class ClusterContextImpl
     {
         timeouts.cancelAllTimeouts();
         commonState.configuration().left();
-        Listeners.notifyListeners( clusterListeners, executor, listener -> listener.leftCluster() );
+        clusterListeners.notify( executor, ClusterListener::leftCluster );
     }
 
     @Override
-    public void joined( final InstanceId instanceId, final URI atURI )
+    public void joined( InstanceId instanceId, URI atURI )
     {
         commonState.configuration().joined( instanceId, atURI );
 
         if ( commonState.configuration().getMembers().containsKey( me ) )
         {
             // Make sure this node is in cluster before notifying of others joining and leaving
-            Listeners.notifyListeners( clusterListeners, executor,
-                    listener -> listener.joinedCluster( instanceId, atURI ) );
+            clusterListeners.notify( executor, listener -> listener.joinedCluster( instanceId, atURI ) );
         }
         // else:
         //   This typically happens in situations when several nodes join at once, and the ordering
@@ -227,12 +225,12 @@ class ClusterContextImpl
     }
 
     @Override
-    public void left( final InstanceId node )
+    public void left( InstanceId node )
     {
         final URI member = commonState.configuration().getUriForId( node );
         commonState.configuration().left( node );
         invalidateElectorIfNecessary( node );
-        Listeners.notifyListeners( clusterListeners, executor, listener -> listener.leftCluster( node, member ) );
+        clusterListeners.notify( executor, listener -> listener.leftCluster( node, member ) );
     }
 
     @Override
@@ -242,7 +240,7 @@ class ClusterContextImpl
     }
 
     @Override
-    public void elected( final String roleName, final InstanceId instanceId, InstanceId electorId, long version )
+    public void elected( String roleName, InstanceId instanceId, InstanceId electorId, long version )
     {
         if ( electorId != null )
         {
@@ -271,9 +269,8 @@ class ClusterContextImpl
             this.lastElector = electorId;
         }
         commonState.configuration().elected( roleName, instanceId );
-        Listeners.notifyListeners( clusterListeners, executor,
-                listener -> listener.elected( roleName, instanceId,
-                        commonState.configuration().getUriForId( instanceId ) ) );
+        clusterListeners.notify( executor, listener ->
+                listener.elected( roleName, instanceId, commonState.configuration().getUriForId( instanceId ) ) );
     }
 
     @Override
@@ -283,13 +280,12 @@ class ClusterContextImpl
     }
 
     @Override
-    public void unelected( final String roleName, final org.neo4j.cluster.InstanceId instanceId,
+    public void unelected( String roleName, org.neo4j.cluster.InstanceId instanceId,
                            org.neo4j.cluster.InstanceId electorId, long version )
     {
         commonState.configuration().unelected( roleName );
-        Listeners.notifyListeners( clusterListeners, executor,
-                listener -> listener.unelected(
-                        roleName, instanceId, commonState.configuration().getUriForId( instanceId ) ) );
+        clusterListeners.notify( executor, listener ->
+                listener.unelected( roleName, instanceId, commonState.configuration().getUriForId( instanceId ) ) );
     }
 
     @Override

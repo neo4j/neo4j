@@ -19,7 +19,6 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
-import java.util.Collection;
 import java.util.concurrent.Executor;
 
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
@@ -42,7 +41,7 @@ class AtomicBroadcastContextImpl
     extends AbstractContextImpl
     implements AtomicBroadcastContext
 {
-    private Collection<AtomicBroadcastListener> listeners = Listeners.newListeners();
+    private final Listeners<AtomicBroadcastListener> listeners = new Listeners<>();
     private final Executor executor;
     private final HeartbeatContext heartbeatContext;
 
@@ -58,26 +57,19 @@ class AtomicBroadcastContextImpl
     @Override
     public void addAtomicBroadcastListener( AtomicBroadcastListener listener )
     {
-        listeners = Listeners.addListener( listener, listeners );
+        listeners.add( listener );
     }
 
     @Override
     public void removeAtomicBroadcastListener( AtomicBroadcastListener listener )
     {
-        listeners = Listeners.removeListener( listener, listeners );
+        listeners.remove( listener );
     }
 
     @Override
-    public void receive( final Payload value )
+    public void receive( Payload value )
     {
-        Listeners.notifyListeners( listeners, executor, new Listeners.Notification<AtomicBroadcastListener>()
-        {
-            @Override
-            public void notify( final AtomicBroadcastListener listener )
-            {
-                listener.receive( value );
-            }
-        } );
+        listeners.notify( executor, listener -> listener.receive( value ) );
     }
 
     public AtomicBroadcastContextImpl snapshot( CommonContextState commonStateSnapshot, LogProvider logging,

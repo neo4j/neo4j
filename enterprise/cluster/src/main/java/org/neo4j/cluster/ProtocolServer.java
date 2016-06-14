@@ -20,7 +20,6 @@
 package org.neo4j.cluster;
 
 import java.net.URI;
-import java.util.Collection;
 
 import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.statemachine.StateMachine;
@@ -29,9 +28,9 @@ import org.neo4j.cluster.statemachine.StateMachineProxyFactory;
 import org.neo4j.cluster.statemachine.StateTransitionListener;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.Listeners;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
  * A ProtocolServer ties together the underlying StateMachines with an understanding of ones
@@ -45,7 +44,7 @@ public class ProtocolServer
     private URI boundAt;
     protected StateMachineProxyFactory proxyFactory;
     protected final StateMachines stateMachines;
-    private Collection<BindingListener> bindingListeners = Listeners.newListeners();
+    private final Listeners<BindingListener> bindingListeners = new Listeners<>();
     private Log msgLog;
 
     public ProtocolServer( InstanceId me, StateMachines stateMachines, LogProvider logProvider )
@@ -68,7 +67,7 @@ public class ProtocolServer
     @Override
     public void addBindingListener( BindingListener listener )
     {
-        bindingListeners = Listeners.addListener( listener, bindingListeners );
+        bindingListeners.add( listener );
         try
         {
             if ( boundAt != null )
@@ -85,21 +84,14 @@ public class ProtocolServer
     @Override
     public void removeBindingListener( BindingListener listener )
     {
-        bindingListeners = Listeners.removeListener( listener, bindingListeners );
+        bindingListeners.remove( listener );
     }
 
-    public void listeningAt( final URI me )
+    public void listeningAt( URI me )
     {
         this.boundAt = me;
 
-        Listeners.notifyListeners( bindingListeners, new Listeners.Notification<BindingListener>()
-        {
-            @Override
-            public void notify( BindingListener listener )
-            {
-                listener.listeningAt( me );
-            }
-        } );
+        bindingListeners.notify( listener -> listener.listeningAt( me ) );
     }
 
     /**
