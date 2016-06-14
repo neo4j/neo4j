@@ -65,6 +65,7 @@ import static org.neo4j.kernel.impl.util.Bits.notFlag;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bMap;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.shortToUnsignedInt;
 
 public class PhysicalLogNeoCommandReaderV2_2 implements CommandReader
 {
@@ -304,7 +305,7 @@ public class PhysicalLogNeoCommandReaderV2_2 implements CommandReader
             {
                 throw new IOException( "Illegal in use flag: " + inUseByte );
             }
-            int type = channel.getShort();
+            int type = shortToUnsignedInt( channel.getShort() );
             RelationshipGroupRecord record = new RelationshipGroupRecord( id, type );
             record.setInUse( inUse );
             record.setNext( channel.getLong() );
