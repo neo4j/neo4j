@@ -42,7 +42,6 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -92,8 +91,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     protected static final long SHORT_TIMEOUT_MILLIS = 10_000;
     protected static final long SEMI_LONG_TIMEOUT_MILLIS = 120_000;
     protected static final long LONG_TIMEOUT_MILLIS = 360_000;
-
-    protected static ExecutorService executor;
 
     @BeforeClass
     public static void enablePinUnpinMonitoring()
