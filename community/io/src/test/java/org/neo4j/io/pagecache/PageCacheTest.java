@@ -19,10 +19,6 @@
  */
 package org.neo4j.io.pagecache;
 
-import org.apache.commons.lang3.SystemUtils;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -55,6 +51,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.pagecache.AdversarialPagedFile;
+import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
@@ -71,7 +68,6 @@ import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.test.RepeatRule;
 
 import static java.lang.Long.toHexString;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
