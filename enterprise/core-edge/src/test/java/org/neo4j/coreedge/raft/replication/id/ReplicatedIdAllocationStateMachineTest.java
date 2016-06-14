@@ -35,8 +35,7 @@ public class ReplicatedIdAllocationStateMachineTest
 {
     private CoreMember me = new CoreMember(
             new AdvertisedSocketAddress( "a:1" ),
-            new AdvertisedSocketAddress( "a:2" ),
-            new AdvertisedSocketAddress( "a:3" )
+            new AdvertisedSocketAddress( "a:2" )
     );
 
     private IdType someType = IdType.NODE;
