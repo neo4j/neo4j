@@ -19,48 +19,31 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import java.util.Iterator;
+
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.unsafe.impl.batchimport.staging.Configuration;
 import org.neo4j.unsafe.impl.batchimport.staging.IteratorBatcherStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 /**
- * {@link IteratorBatcherStep} that is tailored to the {@link BatchImporter} as it produces {@link Batch}
- * objects.
+ * Reads {@link RelationshipGroupRecord group records} from {@link RelationshipGroupCache}, sending
+ * them downstream in batches.
  */
-public class InputIteratorBatcherStep<T> extends IteratorBatcherStep<T>
+public class ReadGroupsFromCacheStep extends IteratorBatcherStep<RelationshipGroupRecord>
 {
-    private final InputIterator<T> data;
+    private final int itemSize;
 
-    public InputIteratorBatcherStep( StageControl control, Configuration config,
-            InputIterator<T> data, Class<T> itemClass )
+    public ReadGroupsFromCacheStep( StageControl control, Configuration config,
+            Iterator<RelationshipGroupRecord> groups, int itemSize )
     {
-        super( control, config, data, itemClass );
-        this.data = data;
-    }
-
-    @SuppressWarnings( { "unchecked", "rawtypes" } )
-    @Override
-    protected Object nextBatchOrNull( long ticket, int batchSize )
-    {
-        Object batch = super.nextBatchOrNull( ticket, batchSize );
-        return batch != null ? new Batch( (Object[]) batch ) : null;
-    }
-
-    @Override
-    public void close() throws Exception
-    {
-        data.close();
-        super.close();
+        super( control, config, groups, RelationshipGroupRecord.class );
+        this.itemSize = itemSize;
     }
 
     @Override
     protected long position()
     {
-        return data.position();
-    }
-
-    @Override
-    public int processors( int delta )
-    {
-        return data.processors( delta );
+        return cursor * itemSize;
     }
 }

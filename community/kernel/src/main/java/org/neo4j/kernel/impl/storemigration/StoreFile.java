@@ -202,6 +202,11 @@ public enum StoreFile
         return fileName( StoreFileType.STORE );
     }
 
+    public String fileNamePart()
+    {
+        return storeFileNamePart;
+    }
+
     public boolean isRecordStore()
     {
         return recordStore;
