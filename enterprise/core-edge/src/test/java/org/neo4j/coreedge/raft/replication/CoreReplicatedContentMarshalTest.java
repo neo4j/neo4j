@@ -26,15 +26,17 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Test;
 
+import org.neo4j.coreedge.catchup.storecopy.core.NetworkFlushableByteBuf;
 import org.neo4j.coreedge.raft.membership.CoreMemberSet;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
+import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequest;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequestSerializer;
 import org.neo4j.coreedge.raft.replication.token.TokenType;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionFactory;
+import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.ByteBufMarshal;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -47,58 +49,53 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class CoreReplicatedContentByteBufferMarshalTest
+public class CoreReplicatedContentMarshalTest
 {
-    private final ByteBufMarshal<ReplicatedContent> marshal = new CoreReplicatedContentMarshal();
+    private final ChannelMarshal<ReplicatedContent> marshal = new CoreReplicatedContentMarshal();
 
     @Test
     public void shouldMarshalTransactionReference() throws Exception
     {
         ByteBuf buffer = Unpooled.buffer();
-        PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( Collections.emptyList() );
+        PhysicalTransactionRepresentation representation =
+                new PhysicalTransactionRepresentation( Collections.emptyList() );
         representation.setHeader( new byte[]{0}, 1, 1, 1, 1, 1, 1 );
 
-        ReplicatedContent replicatedTx = ReplicatedTransactionFactory.createImmutableReplicatedTransaction( representation );
+        ReplicatedContent replicatedTx =
+                ReplicatedTransactionFactory.createImmutableReplicatedTransaction( representation );
 
-        marshal.marshal( replicatedTx, buffer );
-
-        assertThat( marshal.unmarshal( buffer ), equalTo( replicatedTx ) );
+        assertMarshalingEquality( buffer, replicatedTx );
     }
 
     @Test
     public void shouldMarshalTransactionReferenceWithMissingHeader() throws Exception
     {
         ByteBuf buffer = Unpooled.buffer();
-        PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( Collections.emptyList() );
+        PhysicalTransactionRepresentation representation =
+                new PhysicalTransactionRepresentation( Collections.emptyList() );
 
-        ReplicatedContent replicatedTx = ReplicatedTransactionFactory.createImmutableReplicatedTransaction( representation );
-        marshal.marshal( replicatedTx, buffer );
+        ReplicatedContent replicatedTx =
+                ReplicatedTransactionFactory.createImmutableReplicatedTransaction( representation );
 
-        assertThat( marshal.unmarshal( buffer ), equalTo( replicatedTx ) );
+        assertMarshalingEquality( buffer, replicatedTx );
     }
 
     @Test
     public void shouldMarshalMemberSet() throws Exception
     {
-        // given
         ByteBuf buffer = Unpooled.buffer();
         ReplicatedContent message = new CoreMemberSet( asSet(
-                new CoreMember( new AdvertisedSocketAddress( "host_a:1" ), new AdvertisedSocketAddress( "host_a:2" )),
+                new CoreMember( new AdvertisedSocketAddress( "host_a:1" ), new AdvertisedSocketAddress( "host_a:2" ) ),
                 new CoreMember( new AdvertisedSocketAddress( "host_b:101" ),
                         new AdvertisedSocketAddress( "host_b:102" ) )
         ) );
 
-        // when
-        marshal.marshal( message, buffer );
-
-        // then
-        assertThat( marshal.unmarshal( buffer ), equalTo( message ) );
+        assertMarshalingEquality( buffer, message );
     }
 
     @Test
     public void shouldMarshalIdRangeRequest() throws Exception
     {
-        // given
         ByteBuf buffer = Unpooled.buffer();
         ReplicatedContent message = new ReplicatedIdAllocationRequest(
                 new CoreMember(
@@ -106,17 +103,12 @@ public class CoreReplicatedContentByteBufferMarshalTest
                         new AdvertisedSocketAddress( "host_a:2" )
                 ), IdType.PROPERTY, 100, 200 );
 
-        // when
-        marshal.marshal( message, buffer );
-
-        // then
-        assertThat( marshal.unmarshal( buffer ), equalTo( message ) );
+        assertMarshalingEquality( buffer, message );
     }
 
     @Test
     public void shouldMarshalTokenRequest() throws Exception
     {
-        // given
         ByteBuf buffer = Unpooled.buffer();
 
         ArrayList<StorageCommand> commands = new ArrayList<>();
@@ -129,10 +121,13 @@ public class CoreReplicatedContentByteBufferMarshalTest
         ReplicatedContent message = new ReplicatedTokenRequest( TokenType.LABEL, "theLabel",
                 ReplicatedTokenRequestSerializer.commandBytes( commands ) );
 
-        // when
-        marshal.marshal( message, buffer );
+        assertMarshalingEquality( buffer, message );
+    }
 
-        // then
-        assertThat( marshal.unmarshal( buffer ), equalTo( message ) );
+    private void assertMarshalingEquality( ByteBuf buffer, ReplicatedContent replicatedTx ) throws java.io.IOException
+    {
+        marshal.marshal( replicatedTx, new NetworkFlushableByteBuf( buffer ) );
+
+        assertThat( marshal.unmarshal( new NetworkReadableClosableChannelNetty4( buffer ) ), equalTo( replicatedTx ) );
     }
 }

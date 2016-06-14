@@ -20,12 +20,8 @@
 package org.neo4j.coreedge.server;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
-import io.netty.buffer.ByteBuf;
-
-import org.neo4j.coreedge.raft.state.ByteBufferMarshal;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
@@ -99,90 +95,38 @@ public class CoreMember
      * This Marshal implementation can also serialize and deserialize null values. They are encoded as a CoreMember
      * with empty strings in the address fields, so they still adhere to the format displayed above.
      */
-    public static class CoreMemberMarshal implements ByteBufferMarshal<CoreMember>,
-            ChannelMarshal<CoreMember>,
-            ByteBufMarshal<CoreMember>
+    public static class CoreMemberMarshal implements ChannelMarshal<CoreMember>
     {
-        private static final AdvertisedSocketAddress NULL_ADDRESS = new AdvertisedSocketAddress( "" );
-
-        final AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal byteBufMarshal =
-                new AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal();
         final AdvertisedSocketAddress.AdvertisedSocketAddressChannelMarshal channelMarshal =
                 new AdvertisedSocketAddress.AdvertisedSocketAddressChannelMarshal();
-
-        public void marshal( CoreMember member, ByteBuffer buffer )
-        {
-            if ( member == null )
-            {
-                byteBufMarshal.marshal( NULL_ADDRESS, buffer );
-                byteBufMarshal.marshal( NULL_ADDRESS, buffer );
-            }
-            else
-            {
-                byteBufMarshal.marshal( member.getCoreAddress(), buffer );
-                byteBufMarshal.marshal( member.getRaftAddress(), buffer );
-            }
-        }
-
-        @Override
-        public void marshal( CoreMember member, ByteBuf buffer )
-        {
-            if ( member == null )
-            {
-                byteBufMarshal.marshal( NULL_ADDRESS, buffer );
-                byteBufMarshal.marshal( NULL_ADDRESS, buffer );
-            }
-            else
-            {
-                byteBufMarshal.marshal( member.getCoreAddress(), buffer );
-                byteBufMarshal.marshal( member.getRaftAddress(), buffer );
-            }
-        }
 
         @Override
         public void marshal( CoreMember member, WritableChannel channel ) throws IOException
         {
-            channelMarshal.marshal( member.getCoreAddress(), channel );
-            channelMarshal.marshal( member.getRaftAddress(), channel );
-        }
+            if ( member == null )
+            {
+                channel.put( (byte) -1 );
+            }
+            else
+            {
+                channel.put( (byte) 1 );
+                channelMarshal.marshal( member.getCoreAddress(), channel );
+                channelMarshal.marshal( member.getRaftAddress(), channel );
+            }
 
-        public CoreMember unmarshal( ByteBuffer buffer )
-        {
-            AdvertisedSocketAddress coreAddress = byteBufMarshal.unmarshal( buffer );
-            AdvertisedSocketAddress raftAddress = byteBufMarshal.unmarshal( buffer );
-            return dealWithPossibleNullAddress( coreAddress, raftAddress );
-        }
-
-        @Override
-        public CoreMember unmarshal( ByteBuf buffer )
-        {
-            AdvertisedSocketAddress coreAddress = byteBufMarshal.unmarshal( buffer );
-            AdvertisedSocketAddress raftAddress = byteBufMarshal.unmarshal( buffer );
-            return dealWithPossibleNullAddress( coreAddress, raftAddress );
         }
 
         @Override
         public CoreMember unmarshal( ReadableChannel source ) throws IOException
         {
-            AdvertisedSocketAddress coreAddress = channelMarshal.unmarshal( source );
-            AdvertisedSocketAddress raftAddress = channelMarshal.unmarshal( source );
-            return dealWithPossibleNullAddress( coreAddress, raftAddress );
-        }
-
-        private CoreMember dealWithPossibleNullAddress( AdvertisedSocketAddress coreAddress,
-                                                        AdvertisedSocketAddress raftAddress )
-        {
-            if (
-                    coreAddress == null ||
-                            raftAddress == null ||
-                            (coreAddress.equals( NULL_ADDRESS ) && raftAddress.equals( NULL_ADDRESS )) )
+            if ( source.get() == -1 )
             {
                 return null;
             }
-            else
-            {
-                return new CoreMember( coreAddress, raftAddress );
-            }
+
+            AdvertisedSocketAddress coreAddress = channelMarshal.unmarshal( source );
+            AdvertisedSocketAddress raftAddress = channelMarshal.unmarshal( source );
+            return new CoreMember( coreAddress, raftAddress );
         }
     }
 }

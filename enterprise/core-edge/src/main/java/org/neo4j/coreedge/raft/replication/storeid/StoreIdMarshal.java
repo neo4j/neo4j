@@ -21,8 +21,6 @@ package org.neo4j.coreedge.raft.replication.storeid;
 
 import java.io.IOException;
 
-import io.netty.buffer.ByteBuf;
-
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
@@ -32,37 +30,6 @@ public final class StoreIdMarshal
 {
     private StoreIdMarshal() { }
 
-    public static void marshal( StoreId storeId, ByteBuf byteBuf )
-    {
-        if ( storeId == null)
-        {
-            byteBuf.writeByte( 0 );
-            return;
-        }
-
-        byteBuf.writeByte( 1 );
-        byteBuf.writeLong( storeId.getCreationTime() );
-        byteBuf.writeLong( storeId.getRandomId() );
-        byteBuf.writeLong( storeId.getStoreVersion() );
-        byteBuf.writeLong( storeId.getUpgradeTime() );
-        byteBuf.writeLong( storeId.getUpgradeId() );
-    }
-
-    public static StoreId unmarshal( ByteBuf byteBuf )
-    {
-        if ( byteBuf.readByte() == 0 )
-        {
-            return null;
-        }
-
-        long creationTime = byteBuf.readLong();
-        long randomId = byteBuf.readLong();
-        long storeVersion = byteBuf.readLong();
-        long upgradeTime = byteBuf.readLong();
-        long upgradeId = byteBuf.readLong();
-        return new StoreId( creationTime, randomId, storeVersion, upgradeTime, upgradeId );
-    }
-
     public static void marshal( StoreId storeId, WritableChannel channel ) throws IOException
     {
         if ( storeId == null)
@@ -71,6 +38,7 @@ public final class StoreIdMarshal
             return;
         }
 
+        channel.put( (byte) 1 );
         channel.putLong( storeId.getCreationTime() );
         channel.putLong( storeId.getRandomId() );
         channel.putLong( storeId.getStoreVersion() );
@@ -96,6 +64,7 @@ public final class StoreIdMarshal
         }
         catch ( ReadPastEndException notEnoughBytes )
         {
+            System.out.println("Greetings.");
             return null;
         }
     }

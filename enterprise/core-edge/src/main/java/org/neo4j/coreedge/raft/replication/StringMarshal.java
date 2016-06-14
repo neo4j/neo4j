@@ -96,27 +96,6 @@ public class StringMarshal
         }
     }
 
-    public static String unmarshal( ByteBuffer buffer )
-    {
-        try
-        {
-            int len = buffer.getInt();
-            if ( len == NULL_STRING_LENGTH )
-            {
-                return null;
-            }
-
-            byte[] stringBytes = new byte[len];
-            buffer.get( stringBytes );
-
-            return new String( stringBytes, DEFAULT_CHARSET );
-        }
-        catch ( UnsupportedEncodingException e )
-        {
-            throw new RuntimeException( "UTF-8 should be supported by all java platforms." );
-        }
-    }
-
     public static void marshal( WritableChannel channel, String string ) throws IOException
     {
         try
@@ -144,11 +123,6 @@ public class StringMarshal
         try
         {
             int len = channel.getInt();
-            if ( len == NULL_STRING_LENGTH )
-            {
-                return null;
-            }
-
             byte[] stringBytes = new byte[len];
             channel.get( stringBytes, stringBytes.length );
 

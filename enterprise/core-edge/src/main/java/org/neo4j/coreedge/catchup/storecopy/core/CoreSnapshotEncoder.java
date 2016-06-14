@@ -33,7 +33,7 @@ public class CoreSnapshotEncoder extends MessageToMessageEncoder<CoreSnapshot>
     protected void encode( ChannelHandlerContext ctx, CoreSnapshot coreSnapshot, List<Object> out ) throws Exception
     {
         ByteBuf encoded = ctx.alloc().buffer();
-        new CoreSnapshot.Marshal().marshal( coreSnapshot, encoded );
+        new CoreSnapshot.Marshal().marshal( coreSnapshot, new NetworkFlushableByteBuf( encoded ) );
         out.add( encoded );
     }
 }

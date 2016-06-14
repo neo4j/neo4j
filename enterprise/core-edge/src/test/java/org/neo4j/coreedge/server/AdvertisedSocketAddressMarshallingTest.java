@@ -19,30 +19,33 @@
  */
 package org.neo4j.coreedge.server;
 
-import java.nio.ByteBuffer;
+import java.io.IOException;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Test;
 
+import org.neo4j.coreedge.raft.net.NetworkFlushableChannelNetty4;
+import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 
 public class AdvertisedSocketAddressMarshallingTest
 {
     @Test
-    public void shouldMarshalAndUnmarshalFromByteBuffer()
+    public void shouldMarshalAndUnmarshalFromChannel() throws Exception
     {
         // given
-        ByteBuffer buffer = ByteBuffer.allocate( 2_000 );
+        ByteBuf buffer = Unpooled.buffer( 2_000 );
         AdvertisedSocketAddress sent = new AdvertisedSocketAddress( "test-hostname:1234" );
-        AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal marshal = new AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal();
+        AdvertisedSocketAddress.AdvertisedSocketAddressChannelMarshal marshal =
+                new AdvertisedSocketAddress.AdvertisedSocketAddressChannelMarshal();
 
         // when
-        marshal.marshal( sent, buffer );
-        buffer.flip();
-        AdvertisedSocketAddress received = marshal.unmarshal( buffer );
+        marshal.marshal( sent, new NetworkFlushableChannelNetty4( buffer ) );
+        AdvertisedSocketAddress received = marshal.unmarshal( new NetworkReadableClosableChannelNetty4( buffer ) );
 
         // then
         assertNotSame( sent, received );
@@ -50,54 +53,25 @@ public class AdvertisedSocketAddressMarshallingTest
     }
 
     @Test
-    public void shouldMarshalAndUnmarshalFromByteBuf()
+    public void shouldThrowExceptionOnHalfWrittenEntryInByteBuffer() throws Exception
     {
         // given
-        ByteBuf buffer = Unpooled.buffer();
+        ByteBuf buffer = Unpooled.buffer( 2_000 );
         AdvertisedSocketAddress sent = new AdvertisedSocketAddress( "test-hostname:1234" );
-        AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal marshal = new AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal();
+        AdvertisedSocketAddress.AdvertisedSocketAddressChannelMarshal marshal =
+                new AdvertisedSocketAddress.AdvertisedSocketAddressChannelMarshal();
 
         // when
-        marshal.marshal( sent, buffer );
-        AdvertisedSocketAddress received = marshal.unmarshal( buffer );
-
-        // then
-        assertNotSame( sent, received );
-        assertEquals( sent, received );
-    }
-
-    @Test
-    public void shouldReturnNullOnHalfWrittenEntryInByteBuffer() throws Exception
-    {
-        // given
-        ByteBuffer buffer = ByteBuffer.allocate( 2_000 );
-        AdvertisedSocketAddress sent = new AdvertisedSocketAddress( "test-hostname:1234" );
-        AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal marshal = new AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal();
-
-        // when
-        marshal.marshal( sent, buffer );
-        buffer.limit( buffer.position() - 4 );
-        buffer.flip();
-        AdvertisedSocketAddress received = marshal.unmarshal( buffer );
-
-        // then
-        assertNull( received );
-    }
-
-    @Test
-    public void shouldReturnNullOnHalfWrittenEntryInByteBuf() throws Exception
-    {
-        // given
-        ByteBuf buffer = Unpooled.buffer();
-        AdvertisedSocketAddress sent = new AdvertisedSocketAddress( "test-hostname:1234" );
-        AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal marshal = new AdvertisedSocketAddress.AdvertisedSocketAddressByteBufferMarshal();
-
-        // when
-        marshal.marshal( sent, buffer );
-        buffer = buffer.slice( 0, buffer.writerIndex() - 4 );
-        AdvertisedSocketAddress received = marshal.unmarshal( buffer );
-
-        // then
-        assertNull( received );
+        marshal.marshal( sent, new NetworkFlushableChannelNetty4( buffer ) );
+        ByteBuf bufferWithMissingBytes = buffer.copy( 0, buffer.writerIndex() - 5 );
+        try
+        {
+            marshal.unmarshal( new NetworkReadableClosableChannelNetty4( bufferWithMissingBytes ) );
+            fail();
+        }
+        catch ( IOException e )
+        {
+            // expected.
+        }
     }
 }

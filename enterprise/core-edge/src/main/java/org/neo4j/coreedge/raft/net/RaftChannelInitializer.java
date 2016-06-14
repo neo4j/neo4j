@@ -26,14 +26,14 @@ import io.netty.handler.codec.LengthFieldPrepender;
 
 import org.neo4j.coreedge.raft.net.codecs.RaftMessageEncoder;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.server.ByteBufMarshal;
+import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.server.logging.ExceptionLoggingHandler;
 
 public class RaftChannelInitializer extends ChannelInitializer<SocketChannel>
 {
-    private final ByteBufMarshal<ReplicatedContent> marshal;
+    private final ChannelMarshal<ReplicatedContent> marshal;
 
-    public RaftChannelInitializer( ByteBufMarshal<ReplicatedContent> marshal )
+    public RaftChannelInitializer( ChannelMarshal<ReplicatedContent> marshal )
     {
         this.marshal = marshal;
     }

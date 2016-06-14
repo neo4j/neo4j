@@ -19,16 +19,13 @@
  */
 package org.neo4j.coreedge.raft.state;
 
-import io.netty.buffer.ByteBuf;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.coreedge.catchup.storecopy.core.NetworkFlushableByteBuf;
 import org.neo4j.coreedge.catchup.storecopy.core.CoreStateType;
-import org.neo4j.coreedge.catchup.tx.edge.NetworkReadableClosableByteBuf;
-import org.neo4j.coreedge.server.ByteBufMarshal;
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
 
 public class CoreSnapshot
 {
@@ -73,21 +70,21 @@ public class CoreSnapshot
         return snapshotCollection.size();
     }
 
-    public static class Marshal implements ByteBufMarshal<CoreSnapshot>
+    public static class Marshal implements ChannelMarshal<CoreSnapshot>
     {
         @Override
-        public void marshal( CoreSnapshot coreSnapshot, ByteBuf buffer )
+        public void marshal( CoreSnapshot coreSnapshot, WritableChannel buffer ) throws IOException
         {
-            buffer.writeLong( coreSnapshot.prevIndex );
-            buffer.writeLong( coreSnapshot.prevTerm );
+            buffer.putLong( coreSnapshot.prevIndex );
+            buffer.putLong( coreSnapshot.prevTerm );
 
-            buffer.writeInt( coreSnapshot.size() );
+            buffer.putInt( coreSnapshot.size() );
             for ( CoreStateType type : coreSnapshot.types() )
             {
                 try
                 {
-                    buffer.writeInt( type.ordinal() );
-                    type.marshal.marshal( coreSnapshot.get( type ), new NetworkFlushableByteBuf( buffer ) );
+                    buffer.putInt( type.ordinal() );
+                    type.marshal.marshal( coreSnapshot.get( type ), buffer );
                 }
                 catch ( IOException e )
                 {
@@ -97,20 +94,20 @@ public class CoreSnapshot
         }
 
         @Override
-        public CoreSnapshot unmarshal( ByteBuf source )
+        public CoreSnapshot unmarshal( ReadableChannel source ) throws IOException
         {
-            long prevIndex = source.readLong();
-            long prevTerm = source.readLong();
+            long prevIndex = source.getLong();
+            long prevTerm = source.getLong();
 
             CoreSnapshot coreSnapshot = new CoreSnapshot( prevIndex, prevTerm );
-            int snapshotCount = source.readInt();
+            int snapshotCount = source.getInt();
             for ( int i = 0; i < snapshotCount; i++ )
             {
-                int typeOrdinal = source.readInt();
+                int typeOrdinal = source.getInt();
                 try
                 {
                     CoreStateType type = CoreStateType.values()[typeOrdinal];
-                    Object state = type.marshal.unmarshal( new NetworkReadableClosableByteBuf( source ) );
+                    Object state = type.marshal.unmarshal( source );
                     coreSnapshot.add( type, state );
                 }
                 catch ( IOException e )
