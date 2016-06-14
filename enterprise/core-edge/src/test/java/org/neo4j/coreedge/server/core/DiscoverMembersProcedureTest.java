@@ -131,7 +131,6 @@ public class DiscoverMembersProcedureTest
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 4, 5, 6 ) );
         when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
 
-
         final DiscoverMembersProcedure proc = new DiscoverMembersProcedure( coreTopologyService, NullLogProvider
                 .getInstance() );
 

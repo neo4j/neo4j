@@ -27,7 +27,6 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 
 public class FileHeaderEncoder extends MessageToMessageEncoder<FileHeader>
 {
-
     @Override
     protected void encode( ChannelHandlerContext ctx, FileHeader msg, List<Object> out ) throws Exception
     {

@@ -19,20 +19,23 @@
  */
 package org.neo4j.coreedge.raft.membership;
 
-import java.nio.ByteBuffer;
-
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.junit.Test;
 
+import org.neo4j.coreedge.raft.net.NetworkFlushableChannelNetty4;
+import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.storageengine.api.ReadPastEndException;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 
 public class CoreMemberMarshalTest
 {
     @Test
-    public void shouldSerializeAndDeserializeUsingByteBuffer() throws Exception
+    public void shouldSerializeAndDeserialize() throws Exception
     {
         // given
         CoreMember.CoreMemberMarshal marshal = new CoreMember.CoreMemberMarshal();
@@ -42,51 +45,16 @@ public class CoreMemberMarshalTest
         );
 
         // when
-        final ByteBuffer buffer = ByteBuffer.allocate( 1_000 );
-        marshal.marshal( member, buffer );
-        buffer.flip();
-        final CoreMember recovered = marshal.unmarshal( buffer );
+        ByteBuf buffer = Unpooled.buffer( 1_000 );
+        marshal.marshal( member, new NetworkFlushableChannelNetty4( buffer ) );
+        final CoreMember recovered = marshal.unmarshal( new NetworkReadableClosableChannelNetty4( buffer ) );
 
         // then
         assertEquals( member, recovered );
     }
 
     @Test
-    public void shouldManageNull() throws Exception
-    {
-        // given
-        CoreMember.CoreMemberMarshal marshal = new CoreMember.CoreMemberMarshal();
-
-        final CoreMember aRealMember = new CoreMember(
-                new AdvertisedSocketAddress( "host1:1001" ), new AdvertisedSocketAddress( "host1:2001" )
-        );
-
-        final CoreMember aNullMember = null;
-
-        final CoreMember anotherRealMember = new CoreMember(
-                new AdvertisedSocketAddress( "host1:1001" ), new AdvertisedSocketAddress( "host1:2001" )
-        );
-
-        // when
-        final ByteBuffer buffer = ByteBuffer.allocate( 1_000 );
-
-        marshal.marshal( aRealMember, buffer );
-        marshal.marshal( aNullMember, buffer );
-        marshal.marshal( anotherRealMember, buffer );
-
-        buffer.flip();
-        final CoreMember theRestoredRealMember = marshal.unmarshal( buffer );
-        final CoreMember theRestoredNullMember = marshal.unmarshal( buffer );
-        final CoreMember theRestoredAnotherRealMember = marshal.unmarshal( buffer );
-
-        // then
-        assertEquals( aRealMember, theRestoredRealMember );
-        assertEquals( aNullMember, theRestoredNullMember );
-        assertEquals( anotherRealMember, theRestoredAnotherRealMember );
-    }
-
-    @Test
-    public void shouldReturnNullForHalfWrittenInstance() throws Exception
+    public void shouldThrowExceptionForHalfWrittenInstance() throws Exception
     {
         // given
         // a CoreMember and a ByteBuffer to write it to
@@ -95,19 +63,21 @@ public class CoreMemberMarshalTest
                 new AdvertisedSocketAddress( "host1:1001" ), new AdvertisedSocketAddress( "host1:2001" )
         );
 
-        final ByteBuffer buffer = ByteBuffer.allocate( 1_000 );
+        ByteBuf buffer = Unpooled.buffer( 1000 );
 
         // and the CoreMember is serialized but for 5 bytes at the end
-        marshal.marshal( aRealMember, buffer );
-        buffer.limit( buffer.position() - 5 );
-        buffer.flip();
+        marshal.marshal( aRealMember, new NetworkFlushableChannelNetty4( buffer ) );
+        ByteBuf bufferWithMissingBytes = buffer.copy( 0, buffer.writerIndex() - 5 );
 
         // when
-        // that member is read back
-        CoreMember member = marshal.unmarshal( buffer );
-
-        // then
-        // it should be null and not a half written instance
-        assertNull( member );
+        try
+        {
+            marshal.unmarshal( new NetworkReadableClosableChannelNetty4( bufferWithMissingBytes ) );
+            fail( "Should have thrown exception" );
+        }
+        catch ( ReadPastEndException e )
+        {
+            // expected
+        }
     }
 }

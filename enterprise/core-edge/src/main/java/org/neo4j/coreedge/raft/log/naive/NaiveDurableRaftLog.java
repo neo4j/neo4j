@@ -19,25 +19,29 @@
  */
 package org.neo4j.coreedge.raft.log.naive;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
+import org.neo4j.com.NetworkFlushableChannel;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogCursor;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.raft.net.NetworkFlushableChannelNetty4;
+import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
 import org.neo4j.coreedge.raft.replication.MarshallingException;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.server.ByteBufMarshal;
+import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.cursor.CursorValue;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.WritableChannel;
 
 /**
  * Writes a raft log to disk using 3 files:
@@ -81,7 +85,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
 
     private final FileSystemAbstraction fileSystem;
     private final File directory;
-    private final ByteBufMarshal<ReplicatedContent> marshal;
+    private final ChannelMarshal<ReplicatedContent> marshal;
     private final Log log;
     private long appendIndex = -1;
     private long contentOffset;
@@ -90,7 +94,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     private long prevTerm = -1;
 
     public NaiveDurableRaftLog( FileSystemAbstraction fileSystem, File directory,
-                                ByteBufMarshal<ReplicatedContent> marshal, LogProvider logProvider )
+                                ChannelMarshal<ReplicatedContent> marshal, LogProvider logProvider )
     {
         this.fileSystem = fileSystem;
         this.directory = directory;
@@ -209,7 +213,8 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         }
         else
         {
-            throw new IllegalArgumentException( "Cannot truncate at index " + fromIndex + " when append index is " + appendIndex );
+            throw new IllegalArgumentException( "Cannot truncate at index " + fromIndex + " when append index is " +
+                    appendIndex );
         }
         term = readEntryTerm( appendIndex );
     }
@@ -219,7 +224,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     {
         try
         {
-            if( safeIndex > prevIndex )
+            if ( safeIndex > prevIndex )
             {
                 long safeIndexTerm = readEntryTerm( safeIndex );
 
@@ -240,8 +245,10 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
                 contentChannel.close();
                 fileSystem.deleteFile( new File( directory, "entries.log" ) );
                 fileSystem.deleteFile( new File( directory, "content.log" ) );
-                fileSystem.renameFile( new File( directory, "temp-entries.log" ), new File( directory, "entries.log" ) );
-                fileSystem.renameFile( new File( directory, "temp-content.log" ), new File( directory, "content.log" ) );
+                fileSystem.renameFile( new File( directory, "temp-entries.log" ), new File( directory, "entries.log"
+                ) );
+                fileSystem.renameFile( new File( directory, "temp-content.log" ), new File( directory, "content.log"
+                ) );
                 entriesChannel = fileSystem.open( new File( directory, "entries.log" ), "rw" );
                 contentChannel = fileSystem.open( new File( directory, "content.log" ), "rw" );
 
@@ -262,7 +269,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     @Override
     public long skip( long index, long term ) throws IOException
     {
-        if( index > appendIndex )
+        if ( index > appendIndex )
         {
             entriesChannel.close();
             contentChannel.close();
@@ -311,7 +318,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     @Override
     public long readEntryTerm( long logIndex ) throws IOException
     {
-        if( logIndex == prevIndex )
+        if ( logIndex == prevIndex )
         {
             return prevTerm;
         }
@@ -334,6 +341,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
             this.term = term;
             this.contentPointer = contentPointer;
         }
+
         @Override
         public String toString()
         {
@@ -404,21 +412,23 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     {
         if ( logIndex <= prevIndex || logIndex > appendIndex )
         {
-            throw new IllegalArgumentException("compaction exception");
+            throw new IllegalArgumentException( "compaction exception" );
         }
 
         ByteBuffer buffer = ByteBuffer.allocate( ENTRY_RECORD_LENGTH );
-        entriesChannel.read( buffer, ( logIndex - (prevIndex + 1) ) * ENTRY_RECORD_LENGTH );
+        entriesChannel.read( buffer, (logIndex - (prevIndex + 1)) * ENTRY_RECORD_LENGTH );
         buffer.flip();
         long term = buffer.getLong();
         long contentPointer = buffer.getLong();
         return new Entry( term, contentPointer );
     }
 
-    private int writeContent( RaftLogEntry logEntry, StoreChannel contentChannel ) throws MarshallingException, IOException
+    private int writeContent( RaftLogEntry logEntry, StoreChannel contentChannel ) throws MarshallingException,
+            IOException
     {
         ByteBuf buffer = Unpooled.buffer();
-        marshal.marshal( logEntry.content(), buffer );
+        WritableChannel channel = new NetworkFlushableChannelNetty4( buffer );
+        marshal.marshal( logEntry.content(), channel );
         ByteBuffer contentBuffer = buffer.internalNioBuffer( 0, buffer.writerIndex() );
         int length = CONTENT_LENGTH_BYTES + contentBuffer.remaining();
 
@@ -443,7 +453,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         contentChannel.read( contentBuffer, contentPointer + CONTENT_LENGTH_BYTES );
         contentBuffer.flip();
         ByteBuf byteBuf = Unpooled.wrappedBuffer( contentBuffer );
-        return marshal.unmarshal( byteBuf );
+        return marshal.unmarshal( new NetworkReadableClosableChannelNetty4( byteBuf ) );
     }
 
     private void storeMetadata() throws IOException
