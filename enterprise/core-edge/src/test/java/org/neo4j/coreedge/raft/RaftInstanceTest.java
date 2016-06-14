@@ -20,19 +20,21 @@
 package org.neo4j.coreedge.raft;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.IOException;
 
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
+import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogCursor;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
+import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -46,6 +48,9 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.coreedge.raft.RaftInstance.Timeouts.ELECTION;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesRequest;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.voteRequest;
@@ -56,7 +61,6 @@ import static org.neo4j.coreedge.server.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterables.last;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-@RunWith(MockitoJUnitRunner.class)
 public class RaftInstanceTest
 {
     private RaftTestMember myself = member( 0 );
@@ -70,6 +74,7 @@ public class RaftInstanceTest
     private ReplicatedInteger data1 = ReplicatedInteger.valueOf( 1 );
 
     private RaftLog raftLog = new InMemoryRaftLog();
+    private StoreId storeId = new StoreId( 1, 2, 3, 4, 5 );
 
     @Test
     public void shouldAlwaysStartAsFollower() throws Exception
@@ -352,18 +357,24 @@ public class RaftInstanceTest
     public void shouldPersistAtSpecifiedLogIndex() throws Exception
     {
         // given
+        StoreId storeId = new StoreId( 1, 2, 3, 4, 5 );
+        LocalDatabase localDatabase = mock( LocalDatabase.class );
+        when(localDatabase.storeId()).thenReturn( storeId );
+
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts )
                 .raftLog( raftLog )
+                .localDatabase( localDatabase )
                 .build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) ); // @logIndex=0
 
         // when
         raft.handle(
-                appendEntriesRequest().from( member1 ).leaderTerm( 0 ).leader( myself ).prevLogIndex( 0 )
-                        .prevLogTerm( 0 ).logEntry( new RaftLogEntry( 0, data1 ) ).leaderCommit( -1 ).build() );
+                appendEntriesRequest().from( member1 ).leaderTerm( 0 ).prevLogIndex( 0 )
+                        .prevLogTerm( 0 ).logEntry( new RaftLogEntry( 0, data1 ) ).leaderCommit( -1 )
+                        .storeId(storeId).build() );
 
         // then
         assertEquals( 1, raftLog.appendIndex() );
@@ -378,7 +389,20 @@ public class RaftInstanceTest
         final RaftTestMember newMember = member( 99 );
         DirectNetworking.Inbound newMemberInbound = network.new Inbound( 99 );
         final OutboundMessageCollector messages = new OutboundMessageCollector();
-        newMemberInbound.registerHandler( message -> messages.send( newMember, message ) );
+        newMemberInbound.registerHandler( new Inbound.MessageHandler()
+        {
+            @Override
+            public boolean validate( Message message )
+            {
+                return true;
+            }
+
+            @Override
+            public void handle( Message message )
+            {
+                messages.send( newMember, message );
+            }
+        } );
 
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
 
@@ -447,7 +471,7 @@ public class RaftInstanceTest
 
         // when
         raft.handle( new RaftMessages.AppendEntries.Request<>( member1, 0, -1, -1,
-                new RaftLogEntry[]{new RaftLogEntry( 0, new ReplicatedString( "hello" ) )}, 0 ) );
+                new RaftLogEntry[]{new RaftLogEntry( 0, new ReplicatedString( "hello" ) )}, 0, storeId ) );
 
         // then
         assertTrue( databaseHealth.hasPanicked() );

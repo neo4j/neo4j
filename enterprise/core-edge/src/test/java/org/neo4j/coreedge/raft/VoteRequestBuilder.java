@@ -19,6 +19,8 @@
  */
 package org.neo4j.coreedge.raft;
 
+import org.neo4j.kernel.impl.store.StoreId;
+
 public class VoteRequestBuilder<MEMBER>
 {
     private long term = -1;
@@ -26,10 +28,11 @@ public class VoteRequestBuilder<MEMBER>
     private MEMBER candidate;
     private long lastLogIndex;
     private long lastLogTerm;
+    private StoreId storeId = new StoreId( 1, 2, 3, 4, 5 );
 
     public RaftMessages.Vote.Request<MEMBER> build()
     {
-        return new RaftMessages.Vote.Request<>( from, term, candidate, lastLogIndex, lastLogTerm );
+        return new RaftMessages.Vote.Request<>( from, term, candidate, lastLogIndex, lastLogTerm, storeId );
     }
 
     public VoteRequestBuilder<MEMBER> from( MEMBER from )

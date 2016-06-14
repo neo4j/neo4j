@@ -23,13 +23,17 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.explorer.ClusterState;
 import org.neo4j.coreedge.raft.state.explorer.ComparableRaftState;
 import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
+
+import static org.mockito.Mockito.mock;
 
 public class ProcessMessage implements Action
 {
@@ -53,7 +57,8 @@ public class ProcessMessage implements Action
         }
         ComparableRaftState memberState = previous.states.get( member );
         ComparableRaftState newMemberState = new ComparableRaftState( memberState );
-        Outcome<RaftTestMember> outcome = previous.roles.get( member ).handler.handle( message, memberState, log );
+        Outcome<RaftTestMember> outcome = previous.roles.get( member ).handler.handle( message, memberState, log,
+                mock( LocalDatabase.class) );
         newMemberState.update( outcome );
 
         for ( RaftMessages.Directed<RaftTestMember> outgoingMessage : outcome.getOutgoingMessages() )

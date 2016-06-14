@@ -26,10 +26,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 
@@ -37,6 +39,7 @@ import static java.util.Arrays.asList;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.mockito.Mockito.mock;
 
 import static org.neo4j.coreedge.raft.MessageUtils.messageFor;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.voteRequest;
@@ -57,6 +60,8 @@ public class NonFollowerVoteRequestTest
     private RaftTestMember myself = member( 0 );
     private RaftTestMember member1 = member( 1 );
 
+    private final LocalDatabase storeId = mock( LocalDatabase.class);
+
     @Test
     public void shouldRejectVoteRequestFromCurrentTerm() throws Exception
     {
@@ -67,7 +72,7 @@ public class NonFollowerVoteRequestTest
 
         Outcome<RaftTestMember> outcome = role.handler.handle( voteRequest().from( member1 ).term( candidateTerm )
                 .lastLogIndex( 0 )
-                .lastLogTerm( -1 ).build(), state, log() );
+                .lastLogTerm( -1 ).build(), state, log(), storeId );
 
         // then
         assertFalse( ((RaftMessages.Vote.Response) messageFor( outcome, member1 )).voteGranted() );
@@ -84,7 +89,7 @@ public class NonFollowerVoteRequestTest
 
         Outcome<RaftTestMember> outcome = role.handler.handle( voteRequest().from( member1 ).term( candidateTerm )
                 .lastLogIndex( 0 )
-                .lastLogTerm( -1 ).build(), state, log() );
+                .lastLogTerm( -1 ).build(), state, log(), storeId );
 
         // then
         assertFalse( ((RaftMessages.Vote.Response) messageFor( outcome, member1 )).voteGranted() );

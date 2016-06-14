@@ -24,6 +24,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.NewLeaderBarrier;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.net.Inbound;
@@ -31,6 +32,7 @@ import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -38,6 +40,7 @@ import org.neo4j.logging.NullLogProvider;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 
 import static org.neo4j.coreedge.raft.TestMessageBuilders.voteResponse;
 import static org.neo4j.coreedge.raft.roles.Role.CANDIDATE;
@@ -58,6 +61,7 @@ public class CandidateTest
     private Inbound inbound;
 
     private LogProvider logProvider = NullLogProvider.getInstance();
+    private final LocalDatabase storeId = mock( LocalDatabase.class);
 
     @Test
     public void shouldBeElectedLeaderOnReceivingGrantedVoteResponseWithCurrentTerm() throws Exception
@@ -70,7 +74,7 @@ public class CandidateTest
                 .term( state.term() )
                 .from( member1 )
                 .grant()
-                .build(), state, log() );
+                .build(), state, log(), storeId );
 
         // then
         assertEquals( LEADER, outcome.getRole() );
@@ -89,7 +93,7 @@ public class CandidateTest
                 .term( state.term() )
                 .from( member1 )
                 .deny()
-                .build(), state, log() );
+                .build(), state, log(), storeId );
 
         // then
         assertEquals( CANDIDATE, outcome.getRole() );
@@ -108,7 +112,7 @@ public class CandidateTest
                 .term( voterTerm )
                 .from( member1 )
                 .grant()
-                .build(), state, log() );
+                .build(), state, log(), storeId );
 
         // then
         assertEquals( FOLLOWER, outcome.getRole() );
@@ -128,7 +132,7 @@ public class CandidateTest
                 .term( voterTerm )
                 .from( member1 )
                 .grant()
-                .build(), state, log() );
+                .build(), state, log(), storeId );
 
         // then
         assertEquals( CANDIDATE, outcome.getRole() );

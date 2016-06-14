@@ -31,17 +31,18 @@ import org.neo4j.coreedge.raft.outcome.ShipCommand;
 import org.neo4j.coreedge.raft.outcome.TruncateLogCommand;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
+import org.neo4j.kernel.impl.store.StoreId;
 
 public class Appending
 {
     public static <MEMBER> void handleAppendEntriesRequest(
-            ReadableRaftState<MEMBER> state, Outcome<MEMBER> outcome, RaftMessages.AppendEntries.Request<MEMBER> request )
+            ReadableRaftState<MEMBER> state, Outcome<MEMBER> outcome, RaftMessages.AppendEntries.Request<MEMBER> request, StoreId localStoreId )
             throws IOException
     {
         if ( request.leaderTerm() < state.term() )
         {
             RaftMessages.AppendEntries.Response<MEMBER> appendResponse = new RaftMessages.AppendEntries.Response<>(
-                    state.myself(), state.term(), false, -1, state.entryLog().appendIndex() );
+                    state.myself(), state.term(), false, -1, state.entryLog().appendIndex(),localStoreId );
 
             outcome.addOutgoingMessage( new RaftMessages.Directed<>( request.from(), appendResponse ) );
             return;
@@ -56,7 +57,7 @@ public class Appending
         {
             assert request.prevLogIndex() > -1 && request.prevLogTerm() > -1;
             RaftMessages.AppendEntries.Response<MEMBER> appendResponse = new RaftMessages.AppendEntries.Response<>(
-                    state.myself(), request.leaderTerm(), false, -1, state.entryLog().appendIndex() );
+                    state.myself(), request.leaderTerm(), false, -1, state.entryLog().appendIndex(), localStoreId );
 
             outcome.addOutgoingMessage( new RaftMessages.Directed<>( request.from(), appendResponse ) );
             return;
@@ -106,7 +107,8 @@ public class Appending
         long endMatchIndex = request.prevLogIndex() + request.entries().length; // this is the index of the last incoming entry
         if ( endMatchIndex >= 0 )
         {
-            RaftMessages.AppendEntries.Response<MEMBER> appendResponse = new RaftMessages.AppendEntries.Response<>( state.myself(), request.leaderTerm(), true, endMatchIndex, endMatchIndex );
+            RaftMessages.AppendEntries.Response<MEMBER> appendResponse = new RaftMessages.AppendEntries.Response<>(
+                    state.myself(), request.leaderTerm(), true, endMatchIndex, endMatchIndex, localStoreId );
             outcome.addOutgoingMessage( new RaftMessages.Directed<>( request.from(), appendResponse ) );
         }
     }

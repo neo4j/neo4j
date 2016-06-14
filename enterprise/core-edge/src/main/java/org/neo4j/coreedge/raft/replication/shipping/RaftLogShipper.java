@@ -22,9 +22,11 @@ package org.neo4j.coreedge.raft.replication.shipping;
 import java.io.IOException;
 import java.time.Clock;
 
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.raft.LeaderContext;
 import org.neo4j.coreedge.raft.RaftMessages;
+import org.neo4j.coreedge.raft.RenewableTimeoutService;
 import org.neo4j.coreedge.raft.log.RaftLogCursor;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
@@ -37,7 +39,7 @@ import static java.lang.Long.max;
 import static java.lang.Long.min;
 import static java.lang.String.format;
 import static org.neo4j.coreedge.raft.RenewableTimeoutService.RenewableTimeout;
-import static org.neo4j.coreedge.raft.RenewableTimeoutService.TimeoutName;
+import static org.neo4j.coreedge.raft.replication.shipping.RaftLogShipper.Timeouts.RESEND;
 
 /// Optimizations
 // TODO: Have several outstanding batches in catchup mode, to bridge the latency gap.
@@ -89,6 +91,7 @@ public class RaftLogShipper<MEMBER>
 
     private final Outbound<MEMBER> outbound;
     private final LogProvider logProvider;
+    private final LocalDatabase localDatabase;
     private final Log log;
     private final ReadableRaftLog raftLog;
     private final Clock clock;
@@ -97,7 +100,12 @@ public class RaftLogShipper<MEMBER>
     private final MEMBER leader;
 
     private DelayedRenewableTimeoutService timeoutService;
-    private final TimeoutName timeoutName = () -> "RESEND";
+
+    public enum Timeouts implements RenewableTimeoutService.TimeoutName
+    {
+        RESEND
+    }
+
     private final long retryTimeMillis;
     private final int catchupBatchSize;
     private final int maxAllowedShippingLag;
@@ -115,8 +123,9 @@ public class RaftLogShipper<MEMBER>
     private Mode mode = Mode.MISMATCH;
 
     RaftLogShipper( Outbound<MEMBER> outbound, LogProvider logProvider, ReadableRaftLog raftLog, Clock clock,
-            MEMBER leader, MEMBER follower, long leaderTerm, long leaderCommit, long retryTimeMillis,
-            int catchupBatchSize, int maxAllowedShippingLag, InFlightMap<Long, RaftLogEntry> inFlightMap )
+                    MEMBER leader, MEMBER follower, long leaderTerm, long leaderCommit, long retryTimeMillis,
+                    int catchupBatchSize, int maxAllowedShippingLag, InFlightMap<Long, RaftLogEntry> inFlightMap,
+                    LocalDatabase localDatabase)
     {
         this.outbound = outbound;
         this.catchupBatchSize = catchupBatchSize;
@@ -130,6 +139,7 @@ public class RaftLogShipper<MEMBER>
         this.retryTimeMillis = retryTimeMillis;
         this.lastLeaderContext = new LeaderContext( leaderTerm, leaderCommit );
         this.inFlightMap = inFlightMap;
+        this.localDatabase = localDatabase;
     }
 
     public Object identity()
@@ -342,7 +352,7 @@ public class RaftLogShipper<MEMBER>
         {
             timeout.cancel();
         }
-        timeout = timeoutService.create( timeoutName, deltaMillis, 0, timeout -> onScheduledTimeoutExpiry() );
+        timeout = timeoutService.create( RESEND, deltaMillis, 0, timeout -> onScheduledTimeoutExpiry() );
     }
 
     private void abortTimeout()
@@ -382,7 +392,7 @@ public class RaftLogShipper<MEMBER>
          */
         RaftMessages.Heartbeat<MEMBER> appendRequest =
                 new RaftMessages.Heartbeat<>( leader, leaderContext.term, leaderContext.commitIndex,
-                        leaderContext.term );
+                        leaderContext.term, localDatabase.storeId() );
 
         outbound.send( follower, appendRequest );
     }
@@ -427,7 +437,7 @@ public class RaftLogShipper<MEMBER>
 
             RaftMessages.AppendEntries.Request<MEMBER> appendRequest =
                     new RaftMessages.AppendEntries.Request<>( leader, leaderContext.term, prevLogIndex, prevLogTerm,
-                            logEntries, leaderContext.commitIndex );
+                            logEntries, leaderContext.commitIndex, localDatabase.storeId() );
 
             outbound.send( follower, appendRequest );
         }
@@ -447,7 +457,8 @@ public class RaftLogShipper<MEMBER>
         lastSentIndex = prevLogIndex + 1;
 
         RaftMessages.AppendEntries.Request<MEMBER> appendRequest = new RaftMessages.AppendEntries.Request<>(
-                leader, leaderContext.term, prevLogIndex, prevLogTerm, newEntries, leaderContext.commitIndex );
+                leader, leaderContext.term, prevLogIndex, prevLogTerm, newEntries, leaderContext.commitIndex,
+                localDatabase.storeId() );
 
         outbound.send( follower, appendRequest );
 
@@ -477,9 +488,19 @@ public class RaftLogShipper<MEMBER>
                 return;
             }
 
+            if ( prevLogTerm < 0 )
+            {
+                log.warn( "%s aborting append entry request since someone has pruned away the entries we needed." +
+                        "Sending a LogCompactionInfo instead. Leader context=%s, prevLogTerm=%d",
+                        statusAsString(), leaderContext, prevLogTerm );
+                outbound.send( follower, new RaftMessages.LogCompactionInfo<>( leader, leaderContext.term,
+                        prevLogIndex, localDatabase.storeId() ) );
+                return;
+            }
+
             RaftMessages.AppendEntries.Request<MEMBER> appendRequest =
                     new RaftMessages.AppendEntries.Request<>( leader, leaderContext.term, prevLogIndex, prevLogTerm,
-                            entries, leaderContext.commitIndex );
+                            entries, leaderContext.commitIndex, localDatabase.storeId() );
 
             int offset = 0;
             try ( RaftLogCursor cursor = raftLog.getEntryCursor( startIndex ) )

@@ -29,6 +29,7 @@ import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.pruning.Threshold;
 import org.neo4j.kernel.internal.DatabaseHealth;
 
 public class LocalDatabase
@@ -40,6 +41,9 @@ public class LocalDatabase
     private Supplier<NeoStoreDataSource> neoDataSourceSupplier;
     private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
+
+    private volatile StoreId storeId;
+    private volatile DatabaseHealth databaseHealth;
 
     public LocalDatabase(
             File storeDir,
@@ -63,12 +67,17 @@ public class LocalDatabase
 
     public void stop()
     {
+        clearCache();
         neoDataSourceSupplier.get().stop();
     }
 
     public StoreId storeId()
     {
-        return neoDataSourceSupplier.get().getStoreId();
+        if ( storeId == null )
+        {
+            storeId = neoDataSourceSupplier.get().getStoreId();
+        }
+        return storeId;
     }
 
     public void deleteStore() throws IOException
@@ -78,7 +87,21 @@ public class LocalDatabase
 
     public void panic( Throwable cause )
     {
-        databaseHealthSupplier.get().panic( cause );
+        getDatabaseHealth().panic( cause );
+    }
+
+    public <EXCEPTION extends Throwable> void assertHealthy( Class<EXCEPTION> cause ) throws EXCEPTION
+    {
+        getDatabaseHealth().assertHealthy( cause );
+    }
+
+    private DatabaseHealth getDatabaseHealth()
+    {
+        if ( databaseHealth == null )
+        {
+            databaseHealth = databaseHealthSupplier.get();
+        }
+        return databaseHealth;
     }
 
     public void copyStoreFrom( AdvertisedSocketAddress from, StoreFetcher storeFetcher ) throws StoreCopyFailedException
@@ -101,5 +124,11 @@ public class LocalDatabase
     public boolean isEmpty()
     {
         return transactionIdStoreSupplier.get().getLastCommittedTransactionId() == TransactionIdStore.BASE_TX_ID;
+    }
+
+    private void clearCache()
+    {
+        storeId = null;
+        databaseHealth = null;
     }
 }

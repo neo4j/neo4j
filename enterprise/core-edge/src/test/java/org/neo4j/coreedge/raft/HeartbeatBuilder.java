@@ -19,16 +19,19 @@
  */
 package org.neo4j.coreedge.raft;
 
+import org.neo4j.kernel.impl.store.StoreId;
+
 public class HeartbeatBuilder<MEMBER>
 {
     private long commitIndex = -1;
     private long leaderTerm = -1;
     private long commitIndexTerm = -1;
     private MEMBER from = null;
+    private StoreId storeId = new StoreId( 1, 2, 3, 4, 5 );
 
     public RaftMessages.Heartbeat<MEMBER> build()
     {
-        return new RaftMessages.Heartbeat<>( from, leaderTerm, commitIndex, commitIndexTerm );
+        return new RaftMessages.Heartbeat<>( from, leaderTerm, commitIndex, commitIndexTerm, storeId );
     }
 
     public HeartbeatBuilder<MEMBER> from( MEMBER from )

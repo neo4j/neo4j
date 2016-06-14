@@ -27,6 +27,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.RaftMessages.AppendEntries.Response;
 import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
@@ -45,6 +46,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import static org.neo4j.coreedge.raft.MessageUtils.messageFor;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesRequest;
@@ -57,6 +59,9 @@ import org.hamcrest.Matchers;
 @RunWith(Parameterized.class)
 public class AppendEntriesRequestTest
 {
+
+    private final LocalDatabase localDatabase = mock( LocalDatabase.class);
+
     @Parameterized.Parameters(name = "{0} with leader {1} terms ahead.")
     public static Collection<Object[]> data()
     {
@@ -91,7 +96,7 @@ public class AppendEntriesRequestTest
                 .prevLogIndex( -1 )
                 .prevLogTerm( -1 )
                 .logEntry( logEntry )
-                .build(), state, log() );
+                .build(), state, log(), localDatabase );
 
         // then
         assertTrue( ((Response) messageFor( outcome, leader )).success() );
@@ -117,7 +122,7 @@ public class AppendEntriesRequestTest
                 .prevLogTerm( -1 )
                 .logEntry( logEntry1 )
                 .logEntry( logEntry2 )
-                .build(), state, log() );
+                .build(), state, log(), localDatabase );
 
         // then
         assertTrue( ((Response) messageFor( outcome, leader )).success() );
@@ -142,7 +147,7 @@ public class AppendEntriesRequestTest
                 .prevLogIndex( state.entryLog().appendIndex() + 1 )
                 .prevLogTerm( leaderTerm )
                 .logEntry( new RaftLogEntry( leaderTerm, content() ) )
-                .build(), state, log() );
+                .build(), state, log(), localDatabase );
 
         // then
         Response response = (Response) messageFor( outcome, leader );
@@ -169,7 +174,7 @@ public class AppendEntriesRequestTest
                 .prevLogIndex( raftLog.appendIndex() )
                 .prevLogTerm( leaderTerm )
                 .logEntry( new RaftLogEntry( leaderTerm, content() ) )
-                .build(), state, log() );
+                .build(), state, log(), localDatabase );
 
         // then
         assertTrue( ((Response) messageFor( outcome, leader )).success() );
@@ -196,7 +201,7 @@ public class AppendEntriesRequestTest
                 .prevLogIndex( raftLog.appendIndex() - 1 )
                 .prevLogTerm( -1 )
                 .logEntry( new RaftLogEntry( leaderTerm, content() ) )
-                .build(), state, log() );
+                .build(), state, log(), localDatabase );
 
         // then
         assertTrue( ((Response) messageFor( outcome, leader )).success() );
@@ -223,7 +228,7 @@ public class AppendEntriesRequestTest
                 .prevLogIndex( raftLog.appendIndex() )
                 .prevLogTerm( leaderTerm )
                 .leaderCommit( 0 )
-                .build(), state, log() );
+                .build(), state, log(), localDatabase );
 
         // then
         assertTrue( ((Response) messageFor( outcome, leader )).success() );
@@ -253,7 +258,7 @@ public class AppendEntriesRequestTest
                 .prevLogTerm( leaderTerm )
                 .logEntry( newLogEntry )
                 .leaderCommit( 0 )
-                .build(), state, log() );
+                .build(), state, log(), localDatabase );
 
         // then
         assertTrue( ((Response) messageFor( outcome, leader )).success() );
@@ -283,7 +288,7 @@ public class AppendEntriesRequestTest
                 .prevLogIndex( raftLog.appendIndex() + 1 )
                 .prevLogTerm( leaderTerm )
                 .leaderCommit( 0 )
-                .build(), state, log() );
+                .build(), state, log(), localDatabase );
 
         // then
         assertFalse( ((Response) messageFor( outcome, leader )).success() );

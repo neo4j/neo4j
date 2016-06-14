@@ -53,6 +53,8 @@ public class Outcome<MEMBER> implements Message
 
     private long commitIndex;
 
+    private boolean processable;
+
     /* Follower */
     private MEMBER votedFor;
     private boolean renewElectionTimeout;
@@ -107,6 +109,7 @@ public class Outcome<MEMBER> implements Message
         votedFor = ctx.votedFor();
         renewElectionTimeout = false;
         needsFreshSnapshot = false;
+        processable = true;
 
         votesForMe = (currentRole == Role.CANDIDATE) ? new HashSet<>( ctx.votesForMe() ) : new HashSet<>();
 
@@ -159,6 +162,16 @@ public class Outcome<MEMBER> implements Message
     public void markNeedForFreshSnapshot()
     {
         this.needsFreshSnapshot = true;
+    }
+
+    public void markUnprocessable()
+    {
+        this.processable = false;
+    }
+
+    public boolean isProcessable()
+    {
+        return processable;
     }
 
     public void addVoteForMe( MEMBER voteFrom )

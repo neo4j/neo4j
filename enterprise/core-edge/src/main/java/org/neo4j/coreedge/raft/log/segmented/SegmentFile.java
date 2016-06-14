@@ -279,4 +279,13 @@ class SegmentFile implements AutoCloseable
         closeWriter();
         readerPool.close();
     }
+
+    @Override
+    public String toString()
+    {
+        return "SegmentFile{" +
+                "file=" + file.getName() +
+                ", header=" + header +
+                '}';
+    }
 }

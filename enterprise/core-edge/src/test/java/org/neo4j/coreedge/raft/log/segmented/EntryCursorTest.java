@@ -22,32 +22,32 @@ package org.neo4j.coreedge.raft.log.segmented;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.Collections;
 
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
+
+import static java.util.Collections.emptyList;
 
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 
 public class EntryCursorTest
 {
+    private final FileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+    private final File bam = new File( "bam" );
+    private final FileNames fileNames = new FileNames( bam );
+    private final Segments segments =
+            new Segments( fsa, fileNames, emptyList(), mock( ChannelMarshal.class ), NullLogProvider.getInstance(), -1 );
+
+    {
+        fsa.mkdir( bam );
+    }
 
     @Test
     public void ifFileExistsButEntryDoesNotExist() throws Exception
     {
-        FileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
-        File bam = new File( "bam" );
-        fsa.mkdir( bam );
-        FileNames fileNames = new FileNames( bam );
-        ChannelMarshal<ReplicatedContent> contentMarshal = mock( ChannelMarshal.class );
-        LogProvider logProvider = mock( LogProvider.class );
-
-        Segments segments = new Segments( fsa, fileNames, Collections.emptyList(), contentMarshal, logProvider, -1 );
-
         // When
         segments.rotate( -1, -1, -1 );
         segments.rotate( 10, 10, 10 );
@@ -63,15 +63,6 @@ public class EntryCursorTest
     @Test
     public void requestedSegmentHasBeenPruned() throws Exception
     {
-        FileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
-        File bam = new File( "bam" );
-        fsa.mkdir( bam );
-        FileNames fileNames = new FileNames( bam );
-        ChannelMarshal<ReplicatedContent> contentMarshal = mock( ChannelMarshal.class );
-        LogProvider logProvider = mock( LogProvider.class );
-
-        Segments segments = new Segments( fsa, fileNames, Collections.emptyList(), contentMarshal, logProvider, -1 );
-
         // When
         segments.rotate( -1, -1, -1 );
         segments.rotate( 10, 10, 10 );
@@ -89,15 +80,6 @@ public class EntryCursorTest
     @Test
     public void requestedSegmentHasNotExistedYet() throws Exception
     {
-        FileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
-        File bam = new File( "bam" );
-        fsa.mkdir( bam );
-        FileNames fileNames = new FileNames( bam );
-        ChannelMarshal<ReplicatedContent> contentMarshal = mock( ChannelMarshal.class );
-        LogProvider logProvider = mock( LogProvider.class );
-
-        Segments segments = new Segments( fsa, fileNames, Collections.emptyList(), contentMarshal, logProvider, -1 );
-
         // When
         segments.rotate( -1, -1, -1 );
         segments.rotate( 10, 10, 10 );

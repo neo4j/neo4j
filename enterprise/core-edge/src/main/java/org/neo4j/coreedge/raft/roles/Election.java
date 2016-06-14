@@ -25,11 +25,13 @@ import java.util.Set;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.logging.Log;
 
 public class Election
 {
-    public static <MEMBER> boolean start( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome, Log log ) throws IOException
+    public static <MEMBER> boolean start( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome,
+                                          Log log, StoreId storeId ) throws IOException
     {
         Set<MEMBER> currentMembers = ctx.votingMembers();
         if ( currentMembers == null || !currentMembers.contains( ctx.myself() ) )
@@ -43,7 +45,7 @@ public class Election
 
         RaftMessages.Vote.Request<MEMBER> voteForMe =
                 new RaftMessages.Vote.Request<>( ctx.myself(), outcome.getTerm(), ctx.myself(), ctx.entryLog()
-                        .appendIndex(), ctx.entryLog().readEntryTerm( ctx.entryLog().appendIndex() ) );
+                        .appendIndex(), ctx.entryLog().readEntryTerm( ctx.entryLog().appendIndex() ), storeId );
 
         for ( MEMBER member : currentMembers )
         {

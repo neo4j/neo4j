@@ -28,10 +28,19 @@ import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
-public class StoreIdMarshal
+public final class StoreIdMarshal
 {
-    public void marshal( StoreId storeId, ByteBuf byteBuf )
+    private StoreIdMarshal() { }
+
+    public static void marshal( StoreId storeId, ByteBuf byteBuf )
     {
+        if ( storeId == null)
+        {
+            byteBuf.writeByte( 0 );
+            return;
+        }
+
+        byteBuf.writeByte( 1 );
         byteBuf.writeLong( storeId.getCreationTime() );
         byteBuf.writeLong( storeId.getRandomId() );
         byteBuf.writeLong( storeId.getStoreVersion() );
@@ -39,8 +48,13 @@ public class StoreIdMarshal
         byteBuf.writeLong( storeId.getUpgradeId() );
     }
 
-    public StoreId unmarshal( ByteBuf byteBuf )
+    public static StoreId unmarshal( ByteBuf byteBuf )
     {
+        if ( byteBuf.readByte() == 0 )
+        {
+            return null;
+        }
+
         long creationTime = byteBuf.readLong();
         long randomId = byteBuf.readLong();
         long storeVersion = byteBuf.readLong();
@@ -49,8 +63,14 @@ public class StoreIdMarshal
         return new StoreId( creationTime, randomId, storeVersion, upgradeTime, upgradeId );
     }
 
-    public void marshal( StoreId storeId, WritableChannel channel ) throws IOException
+    public static void marshal( StoreId storeId, WritableChannel channel ) throws IOException
     {
+        if ( storeId == null)
+        {
+            channel.put( (byte) 0 );
+            return;
+        }
+
         channel.putLong( storeId.getCreationTime() );
         channel.putLong( storeId.getRandomId() );
         channel.putLong( storeId.getStoreVersion() );
@@ -58,10 +78,15 @@ public class StoreIdMarshal
         channel.putLong( storeId.getUpgradeId() );
     }
 
-    public StoreId unmarshal( ReadableChannel channel ) throws IOException
+    public static StoreId unmarshal( ReadableChannel channel ) throws IOException
     {
         try
         {
+            if ( channel.get() == 0 )
+            {
+                return null;
+            }
+
             long creationTime = channel.getLong();
             long randomId = channel.getLong();
             long storeVersion = channel.getLong();
@@ -69,7 +94,7 @@ public class StoreIdMarshal
             long upgradeId = channel.getLong();
             return new StoreId( creationTime, randomId, storeVersion, upgradeTime, upgradeId );
         }
-        catch( ReadPastEndException notEnoughBytes )
+        catch ( ReadPastEndException notEnoughBytes )
         {
             return null;
         }

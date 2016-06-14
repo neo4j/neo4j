@@ -36,7 +36,7 @@ public class TxPullResponseEncoder extends MessageToMessageEncoder<TxPullRespons
     protected void encode( ChannelHandlerContext ctx, TxPullResponse response, List<Object> out ) throws Exception
     {
         ByteBuf encoded = ctx.alloc().buffer();
-        new StoreIdMarshal().marshal( response.storeId(), encoded );
+        StoreIdMarshal.marshal( response.storeId(), encoded );
         new CommittedTransactionSerializer( new NetworkFlushableByteBuf( encoded ) ).visit( response.tx() );
         out.add( encoded );
     }

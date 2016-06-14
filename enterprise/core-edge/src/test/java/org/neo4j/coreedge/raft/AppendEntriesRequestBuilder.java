@@ -21,9 +21,9 @@ package org.neo4j.coreedge.raft;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.UUID;
 
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.kernel.impl.store.StoreId;
 
 public class AppendEntriesRequestBuilder<MEMBER>
 {
@@ -31,15 +31,14 @@ public class AppendEntriesRequestBuilder<MEMBER>
     private long leaderCommit = -1;
     private long prevLogTerm = -1;
     private long prevLogIndex = -1;
-    private MEMBER leader = null;
     private long leaderTerm = -1;
-    private MEMBER from = null;
-    private UUID correlationId = new UUID( 0, 0 );
+    private MEMBER from;
+    private StoreId storeId;
 
     public RaftMessages.AppendEntries.Request<MEMBER> build()
     {
         return new RaftMessages.AppendEntries.Request<>( from, leaderTerm, prevLogIndex, prevLogTerm,
-                logEntries.toArray( new RaftLogEntry[logEntries.size()] ), leaderCommit );
+                logEntries.toArray( new RaftLogEntry[logEntries.size()] ), leaderCommit, storeId );
     }
 
     public AppendEntriesRequestBuilder<MEMBER> from( MEMBER from )
@@ -78,15 +77,9 @@ public class AppendEntriesRequestBuilder<MEMBER>
         return this;
     }
 
-    public AppendEntriesRequestBuilder<MEMBER> leader( MEMBER leader )
+    public AppendEntriesRequestBuilder<MEMBER> storeId( StoreId storeId )
     {
-        this.leader = leader;
-        return this;
-    }
-
-    public AppendEntriesRequestBuilder<MEMBER> correlationId( UUID correlationId )
-    {
-        this.correlationId = correlationId;
+        this.storeId = storeId;
         return this;
     }
 }

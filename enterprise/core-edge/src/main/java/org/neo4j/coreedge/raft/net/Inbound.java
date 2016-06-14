@@ -27,6 +27,8 @@ public interface Inbound<M extends Message>
 
     interface MessageHandler<M extends Message>
     {
+        boolean validate( M message );
+
         void handle( M message );
     }
 }

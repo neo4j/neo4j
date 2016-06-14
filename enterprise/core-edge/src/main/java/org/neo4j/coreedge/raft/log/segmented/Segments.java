@@ -180,6 +180,7 @@ class Segments implements AutoCloseable
         Collection<SegmentFile> forDisposal = new ArrayList<>();
         SegmentFile oldestNotDisposed = collectSegmentsForDisposal( pruneIndex, forDisposal );
 
+        log.debug( "Segments marked for pruning: %s", forDisposal );
         for ( SegmentFile segment : forDisposal )
         {
             try
@@ -224,6 +225,7 @@ class Segments implements AutoCloseable
         SegmentFile segment;
         while ( filesItr.hasNext() && (segment = filesItr.next()).isDisposed() )
         {
+            log.debug( "Prune segment %s", segment );
             segment.delete();
             Iterator<Map.Entry<Long,SegmentFile>> rangeItr = rangeMap.entrySet().iterator();
             Map.Entry<Long,SegmentFile> firstRange = Iterators.firstOrNull( rangeItr );

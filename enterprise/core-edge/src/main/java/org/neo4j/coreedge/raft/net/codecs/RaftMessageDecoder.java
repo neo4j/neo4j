@@ -29,9 +29,11 @@ import io.netty.handler.codec.MessageToMessageDecoder;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.coreedge.raft.replication.storeid.StoreIdMarshal;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.ByteBufMarshal;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.kernel.impl.store.StoreId;
 
 import static org.neo4j.coreedge.raft.RaftMessages.Type.APPEND_ENTRIES_REQUEST;
 import static org.neo4j.coreedge.raft.RaftMessages.Type.APPEND_ENTRIES_RESPONSE;
@@ -57,8 +59,8 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
 
         RaftMessages.Type[] values = RaftMessages.Type.values();
         RaftMessages.Type messageType = values[messageTypeWire];
-
         CoreMember from = retrieveMember( buffer );
+        StoreId storeId = StoreIdMarshal.unmarshal( buffer );
 
         if ( messageType.equals( VOTE_REQUEST ) )
         {
@@ -69,7 +71,7 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
             long lastLogTerm = buffer.readLong();
 
             RaftMessages.Vote.Request<CoreMember> request = new RaftMessages.Vote.Request<>(
-                    from, term, candidate, lastLogIndex, lastLogTerm );
+                    from, term, candidate, lastLogIndex, lastLogTerm, storeId );
             list.add( request );
         }
         else if ( messageType.equals( VOTE_RESPONSE ) )
@@ -78,7 +80,7 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
             boolean voteGranted = buffer.readBoolean();
 
             RaftMessages.Vote.Response<CoreMember> response = new RaftMessages.Vote.Response<>( from, term,
-                    voteGranted );
+                    voteGranted, storeId );
             list.add( response );
         }
         else if ( messageType.equals( APPEND_ENTRIES_REQUEST ) )
@@ -100,7 +102,7 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
             }
 
             list.add( new RaftMessages.AppendEntries.Request<>( from, term, prevLogIndex, prevLogTerm,
-                    entries, leaderCommit ) );
+                    entries, leaderCommit, storeId ) );
         }
         else if ( messageType.equals( APPEND_ENTRIES_RESPONSE ) )
         {
@@ -109,13 +111,14 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
             long matchIndex = buffer.readLong();
             long appendIndex = buffer.readLong();
 
-            list.add( new RaftMessages.AppendEntries.Response<>( from, term, success, matchIndex, appendIndex ) );
+            list.add( new RaftMessages.AppendEntries.Response<>( from, term, success, matchIndex,
+                    appendIndex, storeId ) );
         }
         else if ( messageType.equals( NEW_ENTRY_REQUEST ) )
         {
             ReplicatedContent content = marshal.unmarshal( buffer );
 
-            list.add( new RaftMessages.NewEntry.Request<>( from, content ) );
+            list.add( new RaftMessages.NewEntry.Request<>( from, content, storeId ) );
         }
         else if ( messageType.equals( HEARTBEAT ) )
         {
@@ -123,14 +126,14 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
             long commitIndexTerm = buffer.readLong();
             long commitIndex = buffer.readLong();
 
-            list.add( new RaftMessages.Heartbeat<>( from, leaderTerm, commitIndex, commitIndexTerm ) );
+            list.add( new RaftMessages.Heartbeat<>( from, leaderTerm, commitIndex, commitIndexTerm, storeId ) );
         }
         else if ( messageType.equals( LOG_COMPACTION_INFO ) )
         {
             long leaderTerm = buffer.readLong();
             long prevIndex = buffer.readLong();
 
-            list.add( new RaftMessages.LogCompactionInfo<>( from, leaderTerm, prevIndex ) );
+            list.add( new RaftMessages.LogCompactionInfo<>( from, leaderTerm, prevIndex, storeId ) );
         }
         else
         {

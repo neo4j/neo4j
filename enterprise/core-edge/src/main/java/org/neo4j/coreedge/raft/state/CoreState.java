@@ -49,7 +49,7 @@ import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 
-public class CoreState extends LifecycleAdapter implements RaftStateMachine, LogPruner
+public class CoreState extends LifecycleAdapter implements RaftStateMachine<CoreMember>, LogPruner
 {
     private static final long NOTHING = -1;
     private final RaftLog raftLog;
@@ -62,7 +62,6 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     private final InFlightMap<Long,RaftLogEntry> inFlightMap;
     private final Log log;
     private final CoreStateApplier applier;
-    private final CoreServerSelectionStrategy selectionStrategy;
     private final CoreStateDownloader downloader;
     private final RaftLogCommitIndexMonitor commitIndexMonitor;
     private final OperationBatcher batcher;
@@ -84,7 +83,6 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
             StateStorage<Long> lastFlushedStorage,
             StateStorage<Long> lastApplyingStorage,
             StateStorage<GlobalSessionTrackerState<CoreMember>> sessionStorage,
-            CoreServerSelectionStrategy selectionStrategy,
             CoreStateApplier applier,
             CoreStateDownloader downloader,
             InFlightMap<Long,RaftLogEntry> inFlightMap,
@@ -98,7 +96,6 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
         this.sessionStorage = sessionStorage;
         this.applier = applier;
         this.downloader = downloader;
-        this.selectionStrategy = selectionStrategy;
         this.log = logProvider.getLog( getClass() );
         this.dbHealth = dbHealth;
         this.inFlightMap = inFlightMap;
@@ -262,13 +259,13 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     }
 
     @Override
-    public synchronized void notifyNeedFreshSnapshot()
+    public synchronized void notifyNeedFreshSnapshot( CoreMember myself, CoreServerSelectionStrategy strategy )
     {
         try
         {
-            downloadSnapshot( selectionStrategy.coreServer() );
+            downloadSnapshot( myself, strategy.coreServer() );
         }
-        catch ( CoreServerSelectionException | InterruptedException | StoreCopyFailedException e )
+        catch ( InterruptedException | StoreCopyFailedException | CoreServerSelectionException e )
         {
             log.error( "Failed to download snapshot", e );
         }
@@ -287,12 +284,16 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     /**
      * Attempts to download a fresh snapshot from another core instance.
      *
+     * @param myself
      * @param source The source address to attempt a download of a snapshot from.
      */
-    public synchronized void downloadSnapshot( AdvertisedSocketAddress source )
+    public synchronized void downloadSnapshot( CoreMember myself, AdvertisedSocketAddress source )
             throws InterruptedException, StoreCopyFailedException
     {
         applier.sync( true );
+
+        System.out.printf( "[%s] Downloading snapshot from: %s%n", myself, source );
+
         downloader.downloadSnapshot( source, this );
     }
 

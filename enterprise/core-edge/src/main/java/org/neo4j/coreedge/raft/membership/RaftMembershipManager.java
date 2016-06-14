@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogCursor;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
@@ -66,19 +67,22 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
     private final Log log;
     private final int expectedClusterSize;
     private final StateStorage<RaftMembershipState<MEMBER>> stateStorage;
+    private final LocalDatabase localDatabase;
     private final RaftMembershipState<MEMBER> raftMembershipState;
     private long lastApplied = -1;
 
     public RaftMembershipManager( LeaderOnlyReplicator replicator, RaftGroup.Builder<MEMBER> memberSetBuilder, RaftLog entryLog,
                                   LogProvider logProvider, int expectedClusterSize, long electionTimeout,
                                   Clock clock, long catchupTimeout,
-                                  StateStorage<RaftMembershipState<MEMBER>> stateStorage )
+                                  StateStorage<RaftMembershipState<MEMBER>> stateStorage,
+                                  LocalDatabase localDatabase)
     {
         this.replicator = replicator;
         this.memberSetBuilder = memberSetBuilder;
         this.entryLog = entryLog;
         this.expectedClusterSize = expectedClusterSize;
         this.stateStorage = stateStorage;
+        this.localDatabase = localDatabase;
         this.raftMembershipState = stateStorage.getInitialState();
         this.log = logProvider.getLog( getClass() );
 
@@ -265,7 +269,7 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
     @Override
     public void doConsensus( Set<MEMBER> newVotingMemberSet )
     {
-        replicator.replicate( memberSetBuilder.build( newVotingMemberSet ) );
+        replicator.replicate( memberSetBuilder.build( newVotingMemberSet ), localDatabase.storeId() );
     }
 
     @Override

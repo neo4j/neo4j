@@ -19,15 +19,18 @@
  */
 package org.neo4j.coreedge.raft;
 
+import org.neo4j.kernel.impl.store.StoreId;
+
 public class VoteResponseBuilder<MEMBER>
 {
     boolean voteGranted = false;
     private long term = -1;
     private MEMBER from = null;
+    private StoreId storeId = new StoreId( 1, 2, 3, 4, 5 );;
 
     public RaftMessages.Vote.Response<MEMBER> build()
     {
-        return new RaftMessages.Vote.Response<>( from, term, voteGranted );
+        return new RaftMessages.Vote.Response<>( from, term, voteGranted, storeId );
     }
 
     public VoteResponseBuilder<MEMBER> from( MEMBER from )

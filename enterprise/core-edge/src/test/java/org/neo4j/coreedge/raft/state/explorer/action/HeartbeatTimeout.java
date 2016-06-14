@@ -26,6 +26,7 @@ import java.util.Queue;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.state.explorer.ClusterState;
+import org.neo4j.kernel.impl.store.StoreId;
 
 public class HeartbeatTimeout implements Action
 {

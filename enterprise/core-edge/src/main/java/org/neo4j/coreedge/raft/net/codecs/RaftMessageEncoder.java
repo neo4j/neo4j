@@ -27,6 +27,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.coreedge.raft.replication.storeid.StoreIdMarshal;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.ByteBufMarshal;
 import org.neo4j.coreedge.server.CoreMember;
@@ -50,6 +51,7 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Raf
 
         buf.writeInt( message.type().ordinal() );
         writeMember( message.from(), buf );
+        StoreIdMarshal.marshal( message.storeId(), buf );
 
         if ( message instanceof RaftMessages.Vote.Request )
         {
