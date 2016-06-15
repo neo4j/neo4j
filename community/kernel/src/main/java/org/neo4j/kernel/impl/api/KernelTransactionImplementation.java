@@ -23,6 +23,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
@@ -184,6 +186,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final NeoStoreTransactionContext context;
     private volatile int reuseCount;
 
+    /**
+     * Lock prevents transaction {@link #markForTermination() transction termination} from interfering with {@link
+     * #close() transaction commit} and specifically with {@link #release()}.
+     * Termination can run concurrently with commit and we need to make sure that it terminates the right lock client
+     * and the right transaction (with the right {@link #reuseCount}) because {@link KernelTransactionImplementation}
+     * instances are pooled.
+     */
+    private final Lock terminationReleaseLock = new ReentrantLock();
+
     public KernelTransactionImplementation( StatementOperationParts operations,
                                             SchemaWriteGuard schemaWriteGuard,
                                             LabelScanStore labelScanStore,
@@ -275,18 +286,42 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return terminated;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * This method is guarded by {@link #terminationReleaseLock} to coordinate concurrent
+     * {@link #close()} and {@link #release()} calls.
+     */
     @Override
     public void markForTermination()
     {
-        if ( !terminated )
+        if ( !canBeTerminated() )
         {
-            failure = true;
-            terminated = true;
-            if ( txTerminationAwareLocks && locks != null )
+            return;
+        }
+
+        int initialReuseCount = reuseCount;
+        terminationReleaseLock.lock();
+        try
+        {
+            // this instance could have been reused, make sure we are trying to terminate the right transaction
+            // without this check there exists a possibility to terminate lock client that has just been returned to
+            // the pool or a transaction that was reused and represents a completely different logical transaction
+            boolean stillSameTransaction = initialReuseCount == reuseCount;
+            if ( stillSameTransaction && canBeTerminated() )
             {
-                locks.stop();
+                failure = true;
+                terminated = true;
+                if ( txTerminationAwareLocks && locks != null )
+                {
+                    locks.stop();
+                }
+                transactionMonitor.transactionTerminated();
             }
-            transactionMonitor.transactionTerminated();
+        }
+        finally
+        {
+            terminationReleaseLock.unlock();
         }
     }
 
@@ -684,9 +719,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     /**
      * Release resources held up by this transaction & return it to the transaction pool.
+     * This method is guarded by {@link #terminationReleaseLock} to coordinate concurrent
+     * {@link #markForTermination()} calls.
      */
     private void release()
     {
+        terminationReleaseLock.lock();
         try
         {
             locks.close();
@@ -701,7 +739,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         finally
         {
             reuseCount++;
+            terminationReleaseLock.unlock();
         }
+    }
+
+    /**
+     * Transaction can be terminated only when it is not closed and not already terminated.
+     * Otherwise termination does not make sense.
+     */
+    private boolean canBeTerminated()
+    {
+        return !closed && !terminated;
     }
 
     private class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter

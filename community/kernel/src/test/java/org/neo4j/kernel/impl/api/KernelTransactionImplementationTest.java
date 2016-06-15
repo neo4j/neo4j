@@ -57,6 +57,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -220,27 +221,37 @@ public class KernelTransactionImplementationTest
     @Test
     public void shouldIgnoreTerminateAfterCommit() throws Exception
     {
-        KernelTransaction transaction = newInitializedTransaction();
+        Locks locks = mock( Locks.class );
+        Locks.Client client = mock( Locks.Client.class );
+        when( locks.newClient() ).thenReturn( client );
+
+        KernelTransaction transaction = newInitializedTransaction( true, locks );
         transaction.success();
         transaction.close();
         transaction.markForTermination();
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( true );
-        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
+        verify( transactionMonitor, never() ).transactionTerminated();
+        verify( client, never() ).stop();
         verifyNoMoreInteractions( transactionMonitor );
     }
 
     @Test
     public void shouldIgnoreTerminateAfterRollback() throws Exception
     {
-        KernelTransaction transaction = newInitializedTransaction();
+        Locks locks = mock( Locks.class );
+        Locks.Client client = mock( Locks.Client.class );
+        when( locks.newClient() ).thenReturn( client );
+
+        KernelTransaction transaction = newInitializedTransaction( true, locks );
         transaction.close();
         transaction.markForTermination();
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
-        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
+        verify( transactionMonitor, never() ).transactionTerminated();
+        verify( client, never() ).stop();
         verifyNoMoreInteractions( transactionMonitor );
     }
 
@@ -440,13 +451,30 @@ public class KernelTransactionImplementationTest
         Locks.Client client = mock( Locks.Client.class );
         when( locks.newClient() ).thenReturn( client );
 
-        KernelTransactionImplementation transaction = newTransaction( true, locks );
-        transaction.initialize( 0 );
+        KernelTransactionImplementation transaction = newInitializedTransaction( true, locks );
 
         transaction.markForTermination();
 
         assertTrue( transaction.shouldBeTerminated() );
         verify( client ).stop();
+    }
+
+    @Test
+    public void markForTerminationTerminatedTransaction()
+    {
+        Locks locks = mock( Locks.class );
+        Locks.Client client = mock( Locks.Client.class );
+        when( locks.newClient() ).thenReturn( client );
+
+        KernelTransactionImplementation transaction = newInitializedTransaction( true, locks );
+
+        transaction.markForTermination();
+        transaction.markForTermination();
+        transaction.markForTermination();
+
+        assertTrue( transaction.shouldBeTerminated() );
+        verify( client ).stop();
+        verify( transactionMonitor ).transactionTerminated();
     }
 
     private final NeoStores neoStores = mock( NeoStores.class );
@@ -474,7 +502,12 @@ public class KernelTransactionImplementationTest
 
     private KernelTransactionImplementation newInitializedTransaction()
     {
-        KernelTransactionImplementation transaction = newTransaction( false, locks );
+        return newInitializedTransaction( false, locks );
+    }
+
+    private KernelTransactionImplementation newInitializedTransaction( boolean txTerminationAware, Locks locks )
+    {
+        KernelTransactionImplementation transaction = newTransaction( txTerminationAware, locks );
         transaction.initialize( 0 );
         return transaction;
     }
