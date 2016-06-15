@@ -84,11 +84,13 @@ public class SessionStateMachine implements Session, SessionState
                         }
                         catch ( AuthenticationException e )
                         {
-                            return error( ctx, new Neo4jError( e.status(), e.getMessage(), e ) );
+                            ctx.error( new Neo4jError( e.status(), e.getMessage() ));
+                            return AUTH_FAILURE;
                         }
                         catch ( Throwable e )
                         {
-                            return error( ctx, e );
+                            ctx.error( new Neo4jError( Status.General.UnknownError, e.getMessage() ));
+                            return halt( ctx );
                         }
                     }
 
@@ -309,6 +311,31 @@ public class SessionStateMachine implements Session, SessionState
                     {
                         ctx.ignored();
                         return ERROR;
+                    }
+                },
+        /** Failed to authenticate, acknowledging the error here leads you back to UNINITIALIZED and you get to try again */
+        AUTH_FAILURE
+                {
+                    @Override
+                    public State reset( SessionStateMachine ctx )
+                    {
+                        // There may still be a transaction open, so do
+                        // an extra reset on the outcome of ackFailure to ensure we go
+                        // to idle state.
+                        return ackFailure( ctx ).reset( ctx );
+                    }
+
+                    @Override
+                    public State ackFailure( SessionStateMachine ctx )
+                    {
+                        return UNINITIALIZED;
+                    }
+
+                    @Override
+                    protected State onNoImplementation( SessionStateMachine ctx, String command )
+                    {
+                        ctx.ignored();
+                        return AUTH_FAILURE;
                     }
                 },
 
