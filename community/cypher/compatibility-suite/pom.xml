@@ -114,6 +114,7 @@
     </dependency>
 
     <!-- Visualization -->
+
     <dependency>
       <groupId>org.jfree</groupId>
       <artifactId>jfreechart</artifactId>
@@ -147,6 +148,7 @@
         </exclusion>
       </exclusions>
     </dependency>
+
     <dependency>
       <groupId>org.scalautils</groupId>
       <artifactId>scalautils_2.11</artifactId>
@@ -158,6 +160,7 @@
         </exclusion>
       </exclusions>
     </dependency>
+
     <dependency>
       <groupId>org.scalacheck</groupId>
       <artifactId>scalacheck_2.11</artifactId>
@@ -184,6 +187,12 @@
       <version>${project.version}</version>
     </dependency>
 
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-spec-suite-tools</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
     <!-- neo4j testing -->
 
     <dependency>
@@ -205,6 +214,14 @@
       <artifactId>neo4j-cypher</artifactId>
       <type>test-jar</type>
       <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-spec-suite-tools</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
 

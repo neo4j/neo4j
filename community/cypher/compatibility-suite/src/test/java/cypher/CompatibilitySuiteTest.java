@@ -24,7 +24,7 @@ import cucumber.api.junit.Cucumber;
 import org.junit.runner.RunWith;
 
 @RunWith( UnpackedResources.class )
-public class FeatureSuiteTest
+public class CompatibilitySuiteTest
 {
 
     // These two constants are only used to make testing and debugging easier.

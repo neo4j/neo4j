@@ -24,15 +24,15 @@ import org.junit.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.isEmptyString;
 
-public class FeatureSuiteTestConstantsTest
+public class CompatibilitySuiteTestConstantsTest
 {
     @Test
     public void runsAllFeatures() {
-        assertThat(FeatureSuiteTest.FEATURE_TO_RUN, isEmptyString());
+        assertThat( CompatibilitySuiteTest.FEATURE_TO_RUN, isEmptyString());
     }
 
     @Test
     public void runsAllScenarios() {
-        assertThat(FeatureSuiteTest.SCENARIO_NAME_REQUIRED, isEmptyString());
+        assertThat( CompatibilitySuiteTest.SCENARIO_NAME_REQUIRED, isEmptyString());
     }
 }
