@@ -27,11 +27,10 @@ import org.neo4j.kernel.internal.Version
 import scala.reflect.io.File
 
 object GraphArchive {
-  def apply(graph: GraphRecipe.Descriptor[CypherScript], overriddenParameters: Map[String, Any] = Map.empty, dbConfig: Map[String, String] = Map.empty) =
-    Descriptor(graph, overriddenParameters, dbConfig = dbConfig)
+  def apply(graph: GraphRecipe.Descriptor[CypherScript], dbConfig: Map[String, String] = Map.empty) =
+    Descriptor(graph, dbConfig = dbConfig)
 
   final case class Descriptor(recipe: GraphRecipe.Descriptor[CypherScript],
-                              overriddenParameters: Map[String, Any],
                               os: OperatingSystem.Descriptor = OperatingSystem.local,
                               runtime: JavaRuntime.Descriptor = JavaRuntime.local,
                               kernel: GraphKernel.Descriptor = GraphKernel.local,
@@ -44,8 +43,6 @@ object GraphArchive {
     }
 
     def scripts = recipe.scripts
-
-    def parameters = recipe.parameters ++ overriddenParameters
   }
 }
 
@@ -55,7 +52,6 @@ object GraphRecipe {
 
   final case class Descriptor[T](name: String,
                                  scripts: Seq[T],
-                                 parameters: Map[String, Any],
                                  nodes: Set[NodePropertyInfo],
                                  relationships: Set[RelationshipPropertyInfo],
                                  labels: Set[LabelInfo]

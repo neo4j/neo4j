@@ -66,7 +66,7 @@ public class UnpackedResources extends Enclosed
         try ( FileSystem fileSystem = FileSystems.newFileSystem( uri, Collections.emptyMap() ) )
         {
             findAndUnpackTo( fileSystem, "glob:**/*.feature", featuresDirectory );
-            findAndUnpackTo( fileSystem, "glob:**/*.cyp", graphsDirectory );
+            findAndUnpackTo( fileSystem, "glob:**/*.cypher", graphsDirectory );
             findAndUnpackTo( fileSystem, "glob:**/*.json", graphsDirectory );
         }
         catch ( IOException e )
@@ -79,12 +79,13 @@ public class UnpackedResources extends Enclosed
     {
         System.out.println( "Unpacking to " + targetDirectory.getCanonicalPath() );
         PathMatcher matcher = sourceFileSystem.getPathMatcher(sourcePattern);
-        for (Iterator<Path> it = Files.walk( sourceFileSystem.getPath( "/" ), 1 ).iterator(); it.hasNext(); )
+        for (Iterator<Path> it = Files.walk( sourceFileSystem.getPath( "/" ), 2 ).iterator(); it.hasNext(); )
         {
             Path next = it.next();
             if ( matcher.matches( next ) )
             {
-                File target = new File( targetDirectory, next.toString() );
+                File target = new File( targetDirectory, next.getFileName().toString() );
+//                Files.copy( next, target.toPath(), StandardCopyOption.REPLACE_EXISTING );
                 Files.copy( next, target.toPath() );
                 System.out.println( "Unpacked " + target.getName() );
             }

@@ -46,15 +46,24 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
                                  "Fail when trying to compare strings and numbers",
                                  "Handling property access on the Any type",
                                  "Failing when performing property access on a non-map 1",
-                                 "`toInt()` handling `Any` type",
+                                 "`toInt()` handling Any type",
                                  "`toInt()` failing on invalid arguments",
-                                 "`toFloat()` handling `Any` type",
+                                 "`toFloat()` handling Any type",
                                  "`toFloat()` failing on invalid arguments",
-                                 "`type()` handling `Any` type",
+                                 "`type()` handling Any type",
                                  "`type()` failing on invalid arguments",
                                  "Concatenating lists of different type",
                                  "Appending to a list of different type",
-                                 "Matching relationships into a list and matching variable length using the list") // only broken in rule planner TODO: separate this list between configurations
+                                 "Matching relationships into a list and matching variable length using the list", // only broken in rule planner TODO: separate this list between configurations
+                                 // TODO: Align TCK w Cypher changes
+                                 "Comparing nodes to properties",
+                                 "Fail when comparing nodes to parameters",
+                                 "Fail when comparing parameters to nodes",
+                                 "Fail when comparing relationships to nodes",
+                                 "Generate the movie graph correctly",  // quoting issue in string
+                                 "Fail when using property access on primitive type", // change error detail
+                                 "Fail when comparing nodes to relationships"
+  )
 
   // Stateful
   var graph: GraphDatabaseService = null
@@ -217,8 +226,8 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     val recommendedPcSize = recipe.recommendedPageCacheSize
     val pcSize = (recommendedPcSize/MB(32)+1)*MB(32)
     val config = currentDatabaseConfig(pcSize.toString)
-    val archive = GraphArchive(recipe, Map.empty, config)
-    val path = GraphArchiveLibrary.default.lendForReadingOnly(archive)(graphArchiveImporter)
+    val archive = GraphArchive(recipe, config)
+    val path = GraphArchiveLibrary.default.lendForReadingOnly(archive)(graphImporter)
     val builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(path.jfile)
     builder.setConfig(config.asJava)
     graph = builder.newGraphDatabase()
@@ -233,7 +242,7 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     builder.result()
   }
 
-  object graphArchiveImporter extends GraphArchiveImporter {
+  object graphImporter extends GraphArchiveImporter {
     protected def createDatabase(archive: GraphArchive.Descriptor, destination: Path): GraphDatabaseService = {
       val builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(destination.jfile)
       builder.setConfig(archive.dbConfig.asJava)

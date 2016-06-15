@@ -35,7 +35,7 @@ class GraphFileRepository(graphs: Path) {
   val graphRecipeLoader = GraphRecipeLoader.forRepository(self)
 
   def graphImportFile(name: String) = graphs / File(s"$name.json")
-  def graphScriptFile(name: String) = graphs / File(s"$name.cyp")
+  def graphScriptFile(name: String) = graphs / File(s"$name.cypher")
   def graphArchivePath(descriptor: GraphArchive.Descriptor) = graphs / Path(descriptor.toString)
   def graphArchiveImportStatusFile(descriptor: GraphArchive.Descriptor) = graphArchivePath(descriptor) / "IMPORTED"
   def temporarySnapshotPath = DeleteDirectory.onExit(graphs / Path(UUID.randomUUID().toString))

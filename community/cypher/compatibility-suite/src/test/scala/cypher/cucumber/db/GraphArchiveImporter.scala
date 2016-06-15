@@ -56,7 +56,6 @@ abstract class GraphArchiveImporter {
   }
 
   def createData(archive: Descriptor, db: GraphDatabaseService): Unit = {
-    val parameters = ParametersConverter(archive.parameters)
     archive.scripts.foreach { script =>
       val executor = new CypherExecutor(db)
       try {
@@ -66,7 +65,7 @@ abstract class GraphArchiveImporter {
 
         while (iterator.hasNext) {
           val statement = iterator.next()
-          val result = executor.execute(statement, parameters)
+          val result = executor.execute(statement, java.util.Collections.emptyMap())
           try {
             while (result.hasNext) result.next()
           } finally {
@@ -109,7 +108,6 @@ abstract class GraphArchiveImporter {
     def execute(statement: String, parameters: JavaMap[String, AnyRef]) =
       try {
         ensureOpen()
-        System.out.println(statement)
         db.execute(statement, parameters)
       } finally {
         count += 1
