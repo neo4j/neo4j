@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_0.spi._
 import org.neo4j.cypher.internal.frontend.v3_0.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection, spi => frontend}
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.spi.{TransactionalContextWrapperv3_0, BeansAPIRelationshipIterator, TransactionalContextWrapperv3_1}
+import org.neo4j.cypher.internal.spi.{BeansAPIRelationshipIterator, TransactionalContextWrapperv3_0}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{InternalException, internal}
 import org.neo4j.graphalgo.impl.path.ShortestPath
@@ -289,6 +289,14 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def nodeIsDense(node: Long): Boolean = transactionalContext.statement.readOperations().nodeIsDense(node)
 
+  override def detachDeleteNode(node: Node): Int =
+    try {
+      transactionalContext.statement.dataWriteOperations().nodeDetachDelete(node.getId)
+    } catch {
+      case _: exceptions.EntityNotFoundException => 0
+      // node has been deleted by another transaction, oh well...
+    }
+
   class NodeOperations extends BaseOperations[Node] {
     override def delete(obj: Node) {
       try {
@@ -373,14 +381,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
     override def releaseExclusiveLock(obj: Long) =
       transactionalContext.statement.readOperations().releaseExclusive(ResourceTypes.NODE, obj)
-
-    override def detachDelete(obj: Node): Int =
-      try {
-        transactionalContext.statement.dataWriteOperations().nodeDetachDelete(obj.getId)
-      } catch {
-        case _: exceptions.EntityNotFoundException => 0
-        // node has been deleted by another transaction, oh well...
-      }
   }
 
   class RelationshipOperations extends BaseOperations[Relationship] {
@@ -470,8 +470,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
     override def releaseExclusiveLock(obj: Long) =
       transactionalContext.statement.readOperations().acquireExclusive(ResourceTypes.RELATIONSHIP, obj)
-
-    override def detachDelete(obj: Relationship): Int = ???
   }
 
   override def getOrCreatePropertyKeyId(propertyKey: String) =
