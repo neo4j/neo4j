@@ -34,7 +34,7 @@ case class ToIntFunction(a: Expression) extends NullInNullOutExpression(a) {
 
   def rewrite(f: (Expression) => Expression): Expression = f(ToIntFunction(a.rewrite(f)))
 
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = a(m) match {
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = value match {
     case v: Number =>
       v.longValue()
     case v: String =>
