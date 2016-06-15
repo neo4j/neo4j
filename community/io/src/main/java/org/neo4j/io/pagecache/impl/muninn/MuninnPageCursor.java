@@ -42,6 +42,8 @@ abstract class MuninnPageCursor extends PageCursor
     private static final boolean usePreciseCursorErrorStackTraces =
             flag( MuninnPageCursor.class, "usePreciseCursorErrorStackTraces", false );
 
+    private static final boolean boundsCheck = flag( MuninnPageCursor.class, "boundsCheck", true );
+
     // Size of the respective primitive types in bytes.
     private static final int SIZE_OF_BYTE = Byte.BYTES;
     private static final int SIZE_OF_SHORT = Short.BYTES;
@@ -390,12 +392,19 @@ abstract class MuninnPageCursor extends PageCursor
      */
     private long getBoundedPointer( int offset, int size )
     {
-        long can = pointer + offset;
-        long lim = pointer + pageSize - size;
-        long ref = Math.min( can, lim );
-        ref = Math.max( ref, pointer );
-        outOfBounds |= ref != can | lim < pointer;
-        return ref;
+        if ( boundsCheck )
+        {
+            long can = pointer + offset;
+            long lim = pointer + pageSize - size;
+            long ref = Math.min( can, lim );
+            ref = Math.max( ref, pointer );
+            outOfBounds |= ref != can | lim < pointer;
+            return ref;
+        }
+        else
+        {
+            return pointer + offset;
+        }
     }
 
     @Override
