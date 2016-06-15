@@ -77,7 +77,7 @@ public class OutboundMessageCollector implements Outbound<RaftTestMember>
 
         for ( Message message : sentTo( member ) )
         {
-            if( message instanceof RaftMessages.AppendEntries.Request )
+            if ( message instanceof RaftMessages.AppendEntries.Request )
             {
                 for ( RaftLogEntry actualEntry : ((RaftMessages.AppendEntries.Request) message).entries() )
                 {

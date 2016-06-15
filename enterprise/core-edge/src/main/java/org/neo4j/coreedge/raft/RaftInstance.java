@@ -50,6 +50,7 @@ import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.core.NotMyselfSelectionStrategy;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
+import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.kvstore.Rotation;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -322,7 +323,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>,
 
             return processable;
         }
-        catch ( Throwable e )
+        catch ( MismatchingStoreIdException e )
         {
             panicAndStop( incomingMessage, e );
             throw e;
@@ -331,7 +332,6 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>,
 
     private void panicAndStop( RaftMessages.RaftMessage<MEMBER> incomingMessage, Throwable e )
     {
-        // TODO: perhaps try to recover from some errors, like IllegalArgumentExceptions from the log
         log.error( "Failed to process Raft message " + incomingMessage, e );
         databaseHealthSupplier.get().panic( e );
         electionTimer.cancel();
