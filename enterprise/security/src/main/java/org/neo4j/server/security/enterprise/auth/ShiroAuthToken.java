@@ -19,16 +19,41 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import java.time.Clock;
+import org.apache.shiro.authc.AuthenticationToken;
+
 import java.util.Map;
 
-import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-import org.neo4j.server.security.auth.PasswordPolicy;
-import org.neo4j.server.security.auth.UserRepository;
 
-public interface EnterpriseAuthManager extends AuthManager
+public class ShiroAuthToken implements AuthenticationToken
 {
-    EnterpriseUserManager getUserManager();
+    private Map<String,Object> authToken;
+
+    public ShiroAuthToken( Map<String,Object> authToken )
+    {
+        this.authToken = authToken;
+    }
+
+    @Override
+    public Object getPrincipal()
+    {
+        return authToken.get( AuthToken.PRINCIPAL );
+    }
+
+    @Override
+    public Object getCredentials()
+    {
+        return authToken.get( AuthToken.CREDENTIALS );
+    }
+
+    public String getScheme() throws InvalidAuthTokenException
+    {
+        return AuthToken.safeCast( AuthToken.SCHEME_KEY, authToken );
+    }
+
+    public Map<String,Object> getMap()
+    {
+        return authToken;
+    }
 }

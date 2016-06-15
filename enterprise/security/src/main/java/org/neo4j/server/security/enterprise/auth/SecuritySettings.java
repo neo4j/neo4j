@@ -23,6 +23,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
 
+import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.HOSTNAME_PORT;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.STRING;
@@ -36,6 +37,14 @@ public class SecuritySettings
 {
     @SuppressWarnings( "unused" ) // accessed by reflection
 
+    @Description( "Enable auth via external authentication providers." )
+    public static final Setting<Boolean> external_auth_enabled =
+            setting( "dbms.security.external_auth_enabled", BOOLEAN, "true" );
+
+    @Description( "Enable auth via a configurable LDAP authentication provider." )
+    public static final Setting<Boolean> ldap_auth_enabled =
+            setting( "dbms.security.ldap.enabled", BOOLEAN, "true" );
+
     @Description( "Hostname and port of LDAP server to use for authentication and authorization." )
     public static final Setting<HostnamePort> ldap_server =
             setting( "dbms.security.ldap.host", HOSTNAME_PORT, "0.0.0.0:389" );
@@ -48,11 +57,15 @@ public class SecuritySettings
     public static final Setting<String> ldap_referral =
             setting( "dbms.security.ldap.referral", STRING, "follow" );
 
-
     @Description( "User DN template." )
     public static final Setting<String> ldap_user_dn_template =
             setting( "dbms.security.ldap.user_dn_template", STRING, "uid={0},ou=users,dc=example,dc=com" );
 
-    // Or use "sAMAccountName={0}" as default?
+    @Description( "System username" )
+    public static final Setting<String> ldap_system_username =
+            setting( "dbms.security.ldap.system_username", STRING, NO_DEFAULT );
 
+    @Description( "System password" )
+    public static final Setting<String> ldap_system_password =
+            setting( "dbms.security.ldap.system_password", STRING, NO_DEFAULT );
 }

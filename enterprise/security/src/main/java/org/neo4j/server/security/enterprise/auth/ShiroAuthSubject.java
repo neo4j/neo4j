@@ -24,6 +24,7 @@ import org.apache.shiro.subject.Subject;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
@@ -35,7 +36,7 @@ public class ShiroAuthSubject implements AuthSubject
     static final String READ_WRITE = "data:read,write";
     static final String READ = "data:read";
 
-    private final ShiroAuthManager authManager;
+    private final EnterpriseAuthManager authManager;
     private final Subject subject;
     private final AuthenticationResult authenticationResult;
 
@@ -48,7 +49,7 @@ public class ShiroAuthSubject implements AuthSubject
         return (ShiroAuthSubject) authSubject;
     }
 
-    public ShiroAuthSubject( ShiroAuthManager authManager, Subject subject, AuthenticationResult authenticationResult )
+    public ShiroAuthSubject( EnterpriseAuthManager authManager, Subject subject, AuthenticationResult authenticationResult )
     {
         this.authManager = authManager;
         this.subject = subject;
@@ -70,17 +71,12 @@ public class ShiroAuthSubject implements AuthSubject
     @Override
     public void setPassword( String password ) throws IOException, IllegalCredentialsException
     {
-        authManager.setPassword( this, (String) subject.getPrincipal(), password );
+        authManager.getUserManager().setPassword( this, (String) subject.getPrincipal(), password );
     }
 
-    public RoleManager getRoleManager()
+    public EnterpriseUserManager getUserManager()
     {
-        return authManager;
-    }
-
-    public ShiroAuthManager getUserManager()
-    {
-        return authManager;
+        return authManager.getUserManager();
     }
 
     public boolean isAdmin()

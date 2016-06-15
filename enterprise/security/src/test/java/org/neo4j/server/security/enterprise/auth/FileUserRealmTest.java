@@ -32,7 +32,11 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
+import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.server.security.auth.AuthenticationStrategy;
+import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
+import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.auth.UserRepository;
 
@@ -44,6 +48,8 @@ public class FileUserRealmTest
 {
     RoleRepository roleRepository;
     UserRepository userRepository;
+    PasswordPolicy passwordPolicy;
+    AuthenticationStrategy authenticationStrategy;
 
     private static final String USERNAME = "neo4j";
     private static final String ROLE = "admin";
@@ -60,6 +66,27 @@ public class FileUserRealmTest
         userRepository = new InMemoryUserRepository();
         userRepository.create( new User.Builder().withName( USERNAME ).build() );
         roleRepository.create( new RoleRecord.Builder().withName( ROLE ).build() );
+        passwordPolicy = new BasicPasswordPolicy();
+        authenticationStrategy = new AuthenticationStrategy()
+        {
+            @Override
+            public boolean isAuthenticationPermitted( String username )
+            {
+                return true;
+            }
+
+            @Override
+            public void updateWithAuthenticationResult( AuthenticationResult result, String username )
+            {
+            }
+
+            @Override
+            public AuthenticationResult authenticate( User user, String password )
+            {
+                return AuthenticationResult.SUCCESS;
+            }
+        };
+
     }
 
     @Test
@@ -92,7 +119,8 @@ public class FileUserRealmTest
         // Create a code position for where we want to break in the main thread
         CodePosition codePosition = getCodePositionAfterCall( "addUserToRole", "getUserByName" );
 
-        FileUserRealm realm = new FileUserRealm( userRepository, roleRepository );
+        FileUserRealm realm = new FileUserRealm( userRepository, roleRepository, passwordPolicy, authenticationStrategy,
+                true );
 
         // When
         RunResult result = InterleavedRunner.interleave(
@@ -114,7 +142,8 @@ public class FileUserRealmTest
         // Create a code position for where we want to break in the main thread
         CodePosition codePosition = getCodePositionAfterCall( "deleteUser", "getUserByName" );
 
-        FileUserRealm realm = new FileUserRealm( userRepository, roleRepository );
+        FileUserRealm realm = new FileUserRealm( userRepository, roleRepository, passwordPolicy, authenticationStrategy,
+                true );
 
         // When
         RunResult result = InterleavedRunner.interleave(

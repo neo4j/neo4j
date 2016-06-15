@@ -19,14 +19,26 @@
  */
 package org.neo4j.server.security.enterprise.auth.integration.bolt;
 
+import org.junit.Test;
+
 import java.util.Map;
 import java.util.function.Consumer;
 
 import org.neo4j.bolt.v1.transport.integration.AuthenticationIT;
+import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.server.security.enterprise.auth.SecuritySettings;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.bolt.v1.messaging.message.Messages.init;
+import static org.neo4j.bolt.v1.messaging.message.Messages.pullAll;
+import static org.neo4j.bolt.v1.messaging.message.Messages.run;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyRecieves;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class EnterpriseAuthenticationIT extends AuthenticationIT
 {
@@ -42,6 +54,37 @@ public class EnterpriseAuthenticationIT extends AuthenticationIT
         return settings -> {
             settings.put( GraphDatabaseSettings.auth_enabled, "true" );
             settings.put( GraphDatabaseSettings.auth_manager, "enterprise-auth-manager" );
+            // TODO: This is configuration for a temporary external ldap test server
+            settings.put( SecuritySettings.ldap_server, "ldap.forumsys.com:389" );
+            settings.put( SecuritySettings.ldap_user_dn_template, "uid={0},dc=example,dc=com" );
+            settings.put( SecuritySettings.ldap_system_username, "xcn=read-only-admin,dc=example,dc=com" );
+            settings.put( SecuritySettings.ldap_system_password, "password" );
         };
     }
+
+    @Test
+    public void shouldBeAbleToLoginWithLdap() throws Throwable
+    {
+        // TODO: Move this to separate external auth test class
+
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", map( "principal", "einstein",
+                                "credentials", "password", "scheme", "basic" ) ) ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+
+        // When
+        client.send( TransportTestUtil.chunk(
+                run( "MATCH (n) RETURN n" ),
+                pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+    }
+
 }

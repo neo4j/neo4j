@@ -25,6 +25,7 @@ import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authc.SimpleAuthenticationInfo;
 import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.authc.credential.CredentialsMatcher;
+import org.apache.shiro.authc.pam.UnsupportedTokenException;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.Permission;
 import org.apache.shiro.authz.SimpleAuthorizationInfo;
@@ -43,8 +44,14 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
+import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.Credential;
+import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
@@ -52,11 +59,8 @@ import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 /**
  * Shiro realm wrapping FileUserRepository
  */
-public class FileUserRealm extends AuthorizingRealm
+public class FileUserRealm extends AuthorizingRealm implements NeoLifecycleRealm, EnterpriseUserManager
 {
-    private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
-
     /**
      * This flag is used in the same way as User.PASSWORD_CHANGE_REQUIRED, but it's
      * placed here because of user suspension not being a part of community edition
@@ -94,14 +98,23 @@ public class FileUserRealm extends AuthorizingRealm
         }
     };
 
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordPolicy passwordPolicy;
+    private final AuthenticationStrategy authenticationStrategy;
+    private final boolean authenticationEnabled;
     private final Map<String,SimpleRole> roles;
 
-    public FileUserRealm( UserRepository userRepository, RoleRepository roleRepository )
+    public FileUserRealm( UserRepository userRepository, RoleRepository roleRepository, PasswordPolicy passwordPolicy,
+            AuthenticationStrategy authenticationStrategy, boolean authenticationEnabled )
     {
         super();
 
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.passwordPolicy = passwordPolicy;
+        this.authenticationStrategy = authenticationStrategy;
+        this.authenticationEnabled = authenticationEnabled;
         setCredentialsMatcher( credentialsMatcher );
         setRolePermissionResolver( rolePermissionResolver );
 
@@ -109,17 +122,78 @@ public class FileUserRealm extends AuthorizingRealm
     }
 
     @Override
+    public void initialize() throws Throwable
+    {
+        userRepository.init();
+        roleRepository.init();
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+        userRepository.start();
+        roleRepository.start();
+
+        if ( numberOfUsers() == 0 )
+        {
+            newUser( "neo4j", "neo4j", true );
+
+            if ( numberOfRoles() == 0 )
+            {
+                // Make the default user admin for now
+                newRole( PredefinedRolesBuilder.ADMIN, "neo4j" );
+            }
+        }
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+        userRepository.stop();
+        roleRepository.stop();
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        userRepository.shutdown();
+        roleRepository.shutdown();
+        setCacheManager( null );
+    }
+
+    @Override
+    public boolean supports( AuthenticationToken token )
+    {
+        try
+        {
+            if ( token instanceof ShiroAuthToken )
+            {
+                return ((ShiroAuthToken) token).getScheme().equals( "basic" );
+            }
+            return false;
+        }
+        catch( InvalidAuthTokenException e )
+        {
+            return false;
+        }
+    }
+
+    @Override
     protected AuthorizationInfo doGetAuthorizationInfo( PrincipalCollection principals ) throws AuthenticationException
     {
-        User user = userRepository.getUserByName( (String) principals.getPrimaryPrincipal() );
-
-        //TODO: perhaps a more informative message here - this happens if the user has been deleted
-        if ( user == null )
+        String username = (String) getAvailablePrincipal( principals );
+        if ( username == null )
         {
-            throw new AuthenticationException( "User " + principals.getPrimaryPrincipal() + " does not exist" );
+            return null;
         }
 
-        if ( user.passwordChangeRequired() || user.hasFlag( IS_SUSPENDED ))
+        User user = userRepository.getUserByName( username );
+        if ( user == null )
+        {
+            return null;
+        }
+
+        if ( user.passwordChangeRequired() || user.hasFlag( IS_SUSPENDED ) )
         {
             return new SimpleAuthorizationInfo();
         }
@@ -133,13 +207,22 @@ public class FileUserRealm extends AuthorizingRealm
     @Override
     protected AuthenticationInfo doGetAuthenticationInfo( AuthenticationToken token ) throws AuthenticationException
     {
-        UsernamePasswordToken usernamePasswordToken = (UsernamePasswordToken) token;
+        ShiroAuthToken shiroAuthToken = (ShiroAuthToken) token;
 
-        User user = userRepository.getUserByName( usernamePasswordToken.getUsername() );
+        String username;
+        try
+        {
+            username = AuthToken.safeCast( AuthToken.PRINCIPAL, shiroAuthToken.getMap() );
+        }
+        catch ( InvalidAuthTokenException e )
+        {
+            throw new UnsupportedTokenException( e );
+        }
 
+        User user = userRepository.getUserByName( username );
         if ( user == null )
         {
-            throw new AuthenticationException( "User " + usernamePasswordToken.getUsername() + " does not exist" );
+            throw new AuthenticationException( "User " + username + " does not exist" );
         }
 
         SimpleAuthenticationInfo authenticationInfo =
@@ -169,7 +252,25 @@ public class FileUserRealm extends AuthorizingRealm
         return roleRepository.numberOfRoles();
     }
 
-    User newUser( String username, String initialPassword, boolean requirePasswordChange )
+    @Override
+    public void setPassword( AuthSubject authSubject, String username, String password ) throws IOException,
+            IllegalCredentialsException
+    {
+        ShiroAuthSubject shiroAuthSubject = ShiroAuthSubject.castOrFail( authSubject );
+
+        if ( !shiroAuthSubject.doesUsernameMatch( username ) )
+        {
+            throw new AuthorizationViolationException( "Invalid attempt to change the password for user " + username );
+        }
+
+        setUserPassword( username, password );
+
+        // This will invalidate the auth cache
+        authSubject.logout();
+    }
+
+    @Override
+    public User newUser( String username, String initialPassword, boolean requirePasswordChange )
             throws IOException, IllegalCredentialsException
     {
         assertValidUsername( username );
@@ -200,7 +301,8 @@ public class FileUserRealm extends AuthorizingRealm
         return role;
     }
 
-    void addUserToRole( String username, String roleName ) throws IOException
+    @Override
+    public void addUserToRole( String username, String roleName ) throws IOException
     {
         checkValidityOfUsernameAndRoleName( username, roleName );
 
@@ -233,7 +335,8 @@ public class FileUserRealm extends AuthorizingRealm
         clearCachedAuthorizationInfoForUser( username );
     }
 
-    void removeUserFromRole( String username, String roleName ) throws IOException
+    @Override
+    public void removeUserFromRole( String username, String roleName ) throws IOException
     {
         checkValidityOfUsernameAndRoleName( username, roleName );
 
@@ -266,7 +369,8 @@ public class FileUserRealm extends AuthorizingRealm
         clearCachedAuthorizationInfoForUser( username );
     }
 
-    boolean deleteUser( String username ) throws IOException
+    @Override
+    public boolean deleteUser( String username ) throws IOException
     {
         boolean result = false;
         synchronized ( this )
@@ -286,10 +390,47 @@ public class FileUserRealm extends AuthorizingRealm
         return result;
     }
 
-    void suspendUser( String username ) throws IOException
+    @Override
+    public User getUser( String username )
+    {
+        return null;
+    }
+
+    @Override
+    public void setUserPassword( String username, String password ) throws IOException, IllegalCredentialsException
+    {
+        User existingUser = userRepository.getUserByName( username );
+        if ( existingUser == null )
+        {
+            throw new IllegalCredentialsException( "User " + username + " does not exist" );
+        }
+
+        passwordPolicy.validatePassword( password );
+
+        if ( existingUser.credentials().matchesPassword( password ) )
+        {
+            throw new IllegalCredentialsException( "Old password and new password cannot be the same." );
+        }
+
+        try
+        {
+            User updatedUser = existingUser.augment()
+                    .withCredentials( Credential.forPassword( password ) )
+                    .withRequiredPasswordChange( false )
+                    .build();
+            userRepository.update( existingUser, updatedUser );
+        } catch ( ConcurrentModificationException e )
+        {
+            // try again
+            setUserPassword( username, password );
+        }
+    }
+
+    @Override
+    public void suspendUser( String username ) throws IOException
     {
         // This method is not synchronized as it only modifies the UserRepository, which is synchronized in itself
-        // If user is modified between findByName and update, we get ConcurrentModificationException and try again
+        // If user is modified between getUserByName and update, we get ConcurrentModificationException and try again
         User user = userRepository.getUserByName( username );
         if ( user == null )
         {
@@ -311,10 +452,11 @@ public class FileUserRealm extends AuthorizingRealm
         clearCacheForUser( username );
     }
 
-    void activateUser( String username ) throws IOException
+    @Override
+    public void activateUser( String username ) throws IOException
     {
         // This method is not synchronized as it only modifies the UserRepository, which is synchronized in itself
-        // If user is modified between findByName and update, we get ConcurrentModificationException and try again
+        // If user is modified between getUserByName and update, we get ConcurrentModificationException and try again
         User user = userRepository.getUserByName( username );
         if ( user == null )
         {
@@ -336,6 +478,39 @@ public class FileUserRealm extends AuthorizingRealm
         clearCacheForUser( username );
     }
 
+    @Override
+    public Set<String> getAllRoleNames()
+    {
+        return roleRepository.getAllRoleNames();
+    }
+
+    @Override
+    public Set<String> getRoleNamesForUser( String username )
+    {
+        if ( userRepository.getUserByName( username ) == null )
+        {
+            throw new IllegalArgumentException( "User " + username + " does not exist." );
+        }
+        return roleRepository.getRoleNamesByUsername( username );
+    }
+
+    @Override
+    public Set<String> getUsernamesForRole( String roleName )
+    {
+        RoleRecord role = roleRepository.getRoleByName( roleName );
+        if ( role == null )
+        {
+            throw new IllegalArgumentException( "Role " + roleName + " does not exist." );
+        }
+        return role.users();
+    }
+
+    @Override
+    public Set<String> getAllUsernames()
+    {
+        return userRepository.getAllUsernames();
+    }
+
     User findUser( String username )
     {
         return userRepository.getUserByName( username );
@@ -352,11 +527,6 @@ public class FileUserRealm extends AuthorizingRealm
             // Try again
             removeUserFromAllRoles( username );
         }
-    }
-
-    public Set<String> getAllUsernames()
-    {
-        return userRepository.getAllUsernames();
     }
 
     private void checkValidityOfUsernameAndRoleName( String username, String roleName ) throws IllegalArgumentException

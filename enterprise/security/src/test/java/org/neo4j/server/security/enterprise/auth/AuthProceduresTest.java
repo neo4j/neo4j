@@ -42,7 +42,6 @@ import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.R
 // TODO: homogenize "'' does not exist" type error messages. In short, add quotes in the right places
 public class AuthProceduresTest extends AuthProcedureTestBase
 {
-
     //---------- Change own password -----------
 
     // Enterprise version of test in BuiltInProceduresIT.callChangePasswordWithAccessModeInDbmsMode.

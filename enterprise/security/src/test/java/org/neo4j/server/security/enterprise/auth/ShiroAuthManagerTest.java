@@ -62,7 +62,7 @@ public class ShiroAuthManagerTest
         authStrategy = mock( AuthenticationStrategy.class );
         when( authStrategy.isAuthenticationPermitted( anyString() ) ).thenReturn( true );
         passwordPolicy = mock( PasswordPolicy.class );
-        manager = new ShiroAuthManager( users, roles, passwordPolicy, authStrategy, true );
+        manager = new ShiroAuthManager( users, roles, passwordPolicy, authStrategy );
         manager.init();
     }
 
@@ -516,63 +516,6 @@ public class ShiroAuthManagerTest
         assertFalse( subject.allowsReads() );
         assertFalse( subject.allowsWrites() );
         assertFalse( subject.allowsSchemaWrites() );
-    }
-
-    @Test
-    public void shouldThrowWhenAuthIsDisabled() throws Throwable
-    {
-        // Restart with auth disabled
-        manager.stop();
-        manager.shutdown();
-        manager = new ShiroAuthManager( users, roles, passwordPolicy, authStrategy, false );
-        manager.start();
-
-        try
-        {
-            manager.login( authToken( "foo", "bar" ) );
-            fail( "exception expected" );
-        } catch ( IllegalStateException e )
-        {
-            // expected
-        }
-
-        try
-        {
-            manager.newUser( "foo", "bar", true );
-            fail( "exception expected" );
-        } catch ( IllegalStateException e )
-        {
-            // expected
-        }
-
-        try
-        {
-            manager.deleteUser( "foo" );
-            fail( "exception expected" );
-        } catch ( IllegalStateException e )
-        {
-            // expected
-        }
-
-        try
-        {
-            manager.getUser( "foo" );
-            fail( "exception expected" );
-        } catch ( IllegalStateException e )
-        {
-            // expected
-        }
-
-        try
-        {
-            manager.setUserPassword( "foo", "bar" );
-            fail( "exception expected" );
-        } catch ( IllegalStateException e )
-        {
-            // expected
-        }
-
-        assertTrue( users.numberOfUsers() == 0 );
     }
 
     private User newUser( String userName, String password, boolean pwdChange )

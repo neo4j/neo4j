@@ -83,7 +83,7 @@ public class AuthProcedures
         {
             throw new AuthorizationViolationException( PERMISSION_DENIED );
         }
-        shiroSubject.getRoleManager().addUserToRole( username, roleName );
+        shiroSubject.getUserManager().addUserToRole( username, roleName );
     }
 
     @PerformsDBMS
@@ -96,7 +96,7 @@ public class AuthProcedures
         {
             throw new AuthorizationViolationException( PERMISSION_DENIED );
         }
-        shiroSubject.getRoleManager().removeUserFromRole( username, roleName );
+        shiroSubject.getUserManager().removeUserFromRole( username, roleName );
     }
 
     @PerformsDBMS
@@ -141,8 +141,8 @@ public class AuthProcedures
             throws IllegalCredentialsException, IOException
     {
         ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
-        RoleManager roleManager = shiroSubject.getRoleManager();
-        return Stream.of( new UserResult( shiroSubject.name(), roleManager.getRoleNamesForUser( shiroSubject.name() ) ) );
+        EnterpriseUserManager userManager = shiroSubject.getUserManager();
+        return Stream.of( new UserResult( shiroSubject.name(), userManager.getRoleNamesForUser( shiroSubject.name() ) ) );
     }
 
     @PerformsDBMS
@@ -154,9 +154,9 @@ public class AuthProcedures
         {
             throw new AuthorizationViolationException( PERMISSION_DENIED );
         }
-        RoleManager roleManager = shiroSubject.getRoleManager();
+        EnterpriseUserManager userManager = shiroSubject.getUserManager();
         return shiroSubject.getUserManager().getAllUsernames().stream()
-                .map( u -> new UserResult( u, roleManager.getRoleNamesForUser( u ) ) );
+                .map( u -> new UserResult( u, userManager.getRoleNamesForUser( u ) ) );
     }
 
     @PerformsDBMS
@@ -168,9 +168,9 @@ public class AuthProcedures
         {
             throw new AuthorizationViolationException( PERMISSION_DENIED );
         }
-        RoleManager roleManager = shiroSubject.getRoleManager();
-        return roleManager.getAllRoleNames().stream()
-                .map( r -> new RoleResult( r, roleManager.getUsernamesForRole( r ) ) );
+        EnterpriseUserManager userManager = shiroSubject.getUserManager();
+        return userManager.getAllRoleNames().stream()
+                .map( r -> new RoleResult( r, userManager.getUsernamesForRole( r ) ) );
     }
 
     @PerformsDBMS
@@ -183,7 +183,7 @@ public class AuthProcedures
             {
                 throw new AuthorizationViolationException( PERMISSION_DENIED );
             }
-            return shiroSubject.getRoleManager().getRoleNamesForUser( username ).stream().map( StringResult::new );
+            return shiroSubject.getUserManager().getRoleNamesForUser( username ).stream().map( StringResult::new );
     }
 
     @PerformsDBMS
@@ -196,7 +196,7 @@ public class AuthProcedures
             {
                 throw new AuthorizationViolationException( PERMISSION_DENIED );
             }
-            return shiroSubject.getRoleManager().getUsernamesForRole( roleName ).stream().map( StringResult::new );
+            return shiroSubject.getUserManager().getUsernamesForRole( roleName ).stream().map( StringResult::new );
     }
 
     public class StringResult {

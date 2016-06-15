@@ -24,6 +24,7 @@ import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.cache.ehcache.EhCacheManager;
 import org.apache.shiro.mgt.DefaultSecurityManager;
 import org.apache.shiro.mgt.SecurityManager;
+import org.apache.shiro.realm.Realm;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.subject.SimplePrincipalCollection;
 import org.apache.shiro.subject.Subject;
@@ -33,7 +34,6 @@ import java.time.Clock;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
@@ -46,50 +46,50 @@ import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.auth.UserRepository;
 
-public class ShiroAuthManager extends BasicAuthManager implements RoleManager
+public class ShiroAuthManager extends BasicAuthManager implements EnterpriseAuthManager, EnterpriseUserManager
 {
-    private final SecurityManager securityManager;
+    protected SecurityManager securityManager;
     private final EhCacheManager cacheManager;
     private final FileUserRealm realm;
     private final RoleRepository roleRepository;
 
     public ShiroAuthManager( UserRepository userRepository, RoleRepository roleRepository,
-            PasswordPolicy passwordPolicy, AuthenticationStrategy authStrategy, boolean authEnabled )
+            PasswordPolicy passwordPolicy, AuthenticationStrategy authStrategy )
     {
-        super( userRepository, passwordPolicy, authStrategy, authEnabled );
+        super( userRepository, passwordPolicy, authStrategy, true /* auth always enabled */ );
 
-        realm = new FileUserRealm( userRepository, roleRepository );
+        realm = new FileUserRealm( userRepository, roleRepository, passwordPolicy, authStrategy, true );
         // TODO: Maybe MemoryConstrainedCacheManager is good enough if we do not need timeToLiveSeconds?
         // It would be one less dependency.
         // Or we could try to reuse Hazelcast which is already a dependency, but we would need to write some
         // glue code or use the HazelcastCacheManager from the Shiro Support repository.
         cacheManager = new EhCacheManager();
-        securityManager = new DefaultSecurityManager( realm );
         this.roleRepository = roleRepository;
     }
 
-    public ShiroAuthManager( UserRepository userRepository, RoleRepository roleRepository,
-            PasswordPolicy passwordPolicy, AuthenticationStrategy authStrategy )
+    protected SecurityManager createSecurityManager()
     {
-        this( userRepository, roleRepository, passwordPolicy, authStrategy, true );
+        return new DefaultSecurityManager( realm );
     }
 
     public ShiroAuthManager( UserRepository userRepository, RoleRepository roleRepository,
-            PasswordPolicy passwordPolicy, Clock clock, boolean authEnabled )
+            PasswordPolicy passwordPolicy, Clock clock )
     {
-        this( userRepository, roleRepository, passwordPolicy, new RateLimitedAuthenticationStrategy( clock, 3 ),
-                authEnabled );
+        this( userRepository, roleRepository, passwordPolicy, new RateLimitedAuthenticationStrategy( clock, 3 ) );
     }
 
     @Override
     public void init() throws Throwable
     {
+
         super.init();
 
         roleRepository.init();
         cacheManager.init();
         realm.setCacheManager( cacheManager );
-        realm.init();
+        realm.initialize();
+
+        securityManager = createSecurityManager();
     }
 
     @Override
@@ -163,8 +163,7 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
         // Start with an anonymous subject
         Subject subject = buildSubject( null );
 
-        UsernamePasswordToken token = new UsernamePasswordToken( username, password );
-        AuthenticationResult result = AuthenticationResult.SUCCESS;
+        AuthenticationResult result = AuthenticationResult.FAILURE;
 
         if ( !authStrategy.isAuthenticationPermitted( username ) )
         {
@@ -172,6 +171,7 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
         }
         else
         {
+            UsernamePasswordToken token = new UsernamePasswordToken( username, password );
             try
             {
                 subject.login( token );
@@ -179,31 +179,22 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
                 {
                     result = AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
                 }
+                else
+                {
+                    result = AuthenticationResult.SUCCESS;
+                }
             }
             catch ( AuthenticationException e )
             {
                 result = AuthenticationResult.FAILURE;
             }
+            finally
+            {
+                token.clear();
+            }
             authStrategy.updateWithAuthenticationResult( result, username );
         }
         return new ShiroAuthSubject( this, subject, result );
-    }
-
-    @Override
-    public void setPassword( AuthSubject authSubject, String username, String password ) throws IOException,
-            IllegalCredentialsException
-    {
-        ShiroAuthSubject shiroAuthSubject = ShiroAuthSubject.castOrFail( authSubject );
-
-        if ( !shiroAuthSubject.doesUsernameMatch( username ) )
-        {
-            throw new AuthorizationViolationException( "Invalid attempt to change the password for user " + username );
-        }
-
-        setUserPassword( username, password );
-
-        // This will invalidate the auth cache
-        authSubject.logout();
     }
 
     @Override
@@ -227,13 +218,15 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
         return realm.deleteUser( username );
     }
 
-    void suspendUser( String username ) throws IOException
+    @Override
+    public void suspendUser( String username ) throws IOException
     {
         assertAuthEnabled();
         realm.suspendUser( username );
     }
 
-    void activateUser( String username ) throws IOException
+    @Override
+    public void activateUser( String username ) throws IOException
     {
         assertAuthEnabled();
         realm.activateUser( username );
@@ -243,36 +236,33 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
     public Set<String> getAllRoleNames()
     {
         assertAuthEnabled();
-        return roleRepository.getAllRoleNames();
+        return realm.getAllRoleNames();
     }
 
     @Override
     public Set<String> getRoleNamesForUser( String username )
     {
         assertAuthEnabled();
-        if (users.getUserByName( username ) == null)
-        {
-            throw new IllegalArgumentException( "User " + username + " does not exist." );
-        }
-        return roleRepository.getRoleNamesByUsername( username );
+        return realm.getRoleNamesForUser( username );
     }
 
     @Override
     public Set<String> getUsernamesForRole( String roleName )
     {
         assertAuthEnabled();
-        RoleRecord role = roleRepository.getRoleByName( roleName );
-        if (role == null)
-        {
-            throw new IllegalArgumentException( "Role " + roleName + " does not exist." );
-        }
-        return role.users();
+        return realm.getUsernamesForRole( roleName );
     }
 
+    @Override
     public Set<String> getAllUsernames()
     {
         assertAuthEnabled();
         return realm.getAllUsernames();
+    }
+
+    protected Realm getInternalRealm()
+    {
+        return realm;
     }
 
     private Subject buildSubject( String username )
@@ -286,5 +276,11 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
         }
 
         return subjectBuilder.buildSubject();
+    }
+
+    @Override
+    public EnterpriseUserManager getUserManager()
+    {
+        return this;
     }
 }

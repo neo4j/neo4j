@@ -76,8 +76,8 @@ public class AuthProcedureTestBase
     public void setUp() throws Throwable
     {
         db = (GraphDatabaseAPI) new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase();
-        manager = new EnterpriseAuthManager( new InMemoryUserRepository(), new InMemoryRoleRepository(),
-                new BasicPasswordPolicy(), systemUTC(), true );
+        manager = new ShiroAuthManager( new InMemoryUserRepository(), new InMemoryRoleRepository(),
+                new BasicPasswordPolicy(), systemUTC() );
         manager.init();
         manager.start();
         manager.newUser( "noneSubject", "abc", false );
@@ -86,7 +86,7 @@ public class AuthProcedureTestBase
         manager.newUser( "schemaSubject", "abc", false );
         manager.newUser( "readWriteSubject", "abc", false );
         manager.newUser( "readSubject", "123", false );
-        // Currently admin role is created by default
+        // Currently admin, architect, publisher and reader roles are created by default
         manager.addUserToRole( "adminSubject", ADMIN );
         manager.addUserToRole( "schemaSubject", ARCHITECT );
         manager.addUserToRole( "readWriteSubject", PUBLISHER );

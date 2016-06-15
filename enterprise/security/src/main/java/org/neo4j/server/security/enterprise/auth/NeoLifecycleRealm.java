@@ -19,16 +19,10 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import java.time.Clock;
-import java.util.Map;
-
-import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-import org.neo4j.server.security.auth.PasswordPolicy;
-import org.neo4j.server.security.auth.UserRepository;
-
-public interface EnterpriseAuthManager extends AuthManager
+public interface NeoLifecycleRealm
 {
-    EnterpriseUserManager getUserManager();
+    void initialize() throws Throwable;
+    void start() throws Throwable;
+    void stop() throws Throwable;
+    void shutdown() throws Throwable;
 }

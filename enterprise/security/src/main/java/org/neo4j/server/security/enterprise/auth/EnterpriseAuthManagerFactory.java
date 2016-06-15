@@ -19,7 +19,11 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import org.apache.shiro.realm.Realm;
+
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -27,9 +31,11 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.auth.PasswordPolicy;
+import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.UserRepository;
 
 import static java.time.Clock.systemUTC;
@@ -51,6 +57,28 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
     @Override
     public AuthManager newInstance( Config config, LogProvider logProvider )
     {
+        FileUserRealm internalRealm = createInternalRealm( config, logProvider );
+
+        List<Realm> realms = new ArrayList<>( 2 );
+
+        realms.add( internalRealm );
+
+        if ( config.get( SecuritySettings.ldap_auth_enabled ) )
+        {
+            realms.add( new LdapRealm( config ) );
+        }
+
+        if ( config.get( SecuritySettings.external_auth_enabled ) )
+        {
+
+            // TODO: Load pluggable realms
+        }
+
+        return new MultiRealmAuthManager( internalRealm, realms );
+    }
+
+    private FileUserRealm createInternalRealm( Config config, LogProvider logProvider )
+    {
         // Resolve auth store file names
         File authStoreDir = config.get( DatabaseManagementSystemSettings.auth_store_directory );
 
@@ -71,7 +99,9 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
 
         final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
 
-        return new EnterpriseAuthManager( userRepository, roleRepository, passwordPolicy, systemUTC(),
-                config.get( GraphDatabaseSettings.auth_enabled ) );
+        AuthenticationStrategy authenticationStrategy = new RateLimitedAuthenticationStrategy( systemUTC(), 3 );
+
+        return new FileUserRealm( userRepository, roleRepository, passwordPolicy, authenticationStrategy,
+                true );
     }
 }

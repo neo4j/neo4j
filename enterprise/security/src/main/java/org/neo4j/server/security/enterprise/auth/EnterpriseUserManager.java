@@ -19,16 +19,21 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import java.time.Clock;
-import java.util.Map;
+import java.io.IOException;
+import java.util.Set;
 
-import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-import org.neo4j.server.security.auth.PasswordPolicy;
-import org.neo4j.server.security.auth.UserRepository;
+import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+import org.neo4j.server.security.auth.UserManager;
 
-public interface EnterpriseAuthManager extends AuthManager
+public interface EnterpriseUserManager extends UserManager, RoleManager
 {
-    EnterpriseUserManager getUserManager();
+    void setPassword( AuthSubject authSubject, String username, String password ) throws IOException,
+            IllegalCredentialsException;
+
+    void suspendUser( String username ) throws IOException;
+
+    void activateUser( String username ) throws IOException;
+
+    Set<String> getAllUsernames();
 }
