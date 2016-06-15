@@ -29,7 +29,6 @@ import org.neo4j.coreedge.catchup.storecopy.core.CoreStateType;
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
 import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.log.RaftLog;
-import org.neo4j.coreedge.raft.log.RaftLogCursor;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.monitoring.RaftLogCommitIndexMonitor;
 import org.neo4j.coreedge.raft.log.pruning.LogPruner;
@@ -129,7 +128,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine<Core
     private void submitApplyJob( long lastToApply )
     {
         applier.submit( ( status ) -> () -> {
-            try ( LogEntrySupplier logEntrySupplier = new LogEntrySupplier() )
+            try ( InFlightLogEntrySupplier logEntrySupplier = new InFlightLogEntrySupplier( raftLog, inFlightMap ) )
             {
                 lastApplyingStorage.persistStoreData( lastToApply );
                 for ( long logIndex = lastApplied + 1; !status.isCancelled() && logIndex <= lastToApply; logIndex++ )
@@ -202,59 +201,6 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine<Core
 
             batch.clear();
             maybeFlush();
-        }
-    }
-
-    private class LogEntrySupplier implements AutoCloseable
-    {
-        private RaftLogCursor cursor;
-        private boolean useInFlightMap = true;
-
-        public RaftLogEntry get( long logIndex ) throws IOException
-        {
-            RaftLogEntry entry = null;
-
-            if ( useInFlightMap )
-            {
-                entry = inFlightMap.retrieve( logIndex );
-            }
-
-            if ( entry == null )
-            {
-                useInFlightMap = false;
-                entry = getUsingCursor( logIndex );
-            }
-
-            inFlightMap.unregister( logIndex );
-
-            return entry;
-        }
-
-        private RaftLogEntry getUsingCursor( long logIndex ) throws IOException
-        {
-            if ( cursor == null )
-            {
-                cursor = raftLog.getEntryCursor( logIndex );
-            }
-
-            if ( cursor.next() )
-            {
-                assert cursor.index() == logIndex;
-                return cursor.get();
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        @Override
-        public void close() throws Exception
-        {
-            if ( cursor != null )
-            {
-                cursor.close();
-            }
         }
     }
 
