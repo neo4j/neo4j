@@ -29,15 +29,9 @@ import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.BasicAuthenticationResult;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
-import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.udc.UsageData;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -260,6 +254,23 @@ public class SessionStateMachineTest
 
         // Then
         assertThat( machine.state(), equalTo( SessionStateMachine.State.IN_TRANSACTION ) );
+    }
+
+
+    @Test
+    public void shouldRemainStoppedAfterInterrupted() throws Throwable
+    {
+        // Given
+        TestCallback callback = new TestCallback();
+
+        // When
+        machine.close();
+        machine.interrupt();
+        machine.reset( null, callback ); // could be any method call who invokes before
+
+        // Then
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.STOPPED ) );
+        assertThat( callback.completedCount, equalTo( 1 ) );
     }
 
     @Before

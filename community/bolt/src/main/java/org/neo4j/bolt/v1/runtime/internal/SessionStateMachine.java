@@ -85,7 +85,7 @@ public class SessionStateMachine implements Session, SessionState
                         catch ( AuthenticationException e )
                         {
                             ctx.error( new Neo4jError( e.status(), e.getMessage() ));
-                            return AUTH_FAILURE;
+                            return INIT_ERROR;
                         }
                         catch ( Throwable e )
                         {
@@ -95,10 +95,18 @@ public class SessionStateMachine implements Session, SessionState
                     }
 
                     @Override
+                    public State interrupt( SessionStateMachine ctx )
+                    {
+                        // this means that you cannot interrupt init
+                        // this ensures that a user has to either finish init or finish noImpl
+                        return UNINITIALIZED;
+                    }
+
+                    @Override
                     protected State onNoImplementation( SessionStateMachine ctx, String command )
                     {
-                        ctx.error( new Neo4jError( Status.Request.Invalid, "No operations allowed until you send an " +
-                                "INIT message." ) );
+                        ctx.error( new Neo4jError( Status.Security.Forbidden, "No operations allowed until you send an " +
+                                "INIT message successfully." ) );
                         return halt( ctx );
                     }
                 },
@@ -313,16 +321,15 @@ public class SessionStateMachine implements Session, SessionState
                         return ERROR;
                     }
                 },
-        /** Failed to authenticate, acknowledging the error here leads you back to UNINITIALIZED and you get to try again */
-        AUTH_FAILURE
+        /** Failed to authenticate, acknowledging the error leads you back to UNINITIALIZED and you get to try again.
+         * This state could be interrupted. Once interrupted, it requires reset to back to UNINITIALIZED.
+         * All other operation are illegal. */
+        INIT_ERROR
                 {
                     @Override
-                    public State reset( SessionStateMachine ctx )
+                    public State interrupt( SessionStateMachine ctx )
                     {
-                        // There may still be a transaction open, so do
-                        // an extra reset on the outcome of ackFailure to ensure we go
-                        // to idle state.
-                        return ackFailure( ctx ).reset( ctx );
+                        return INIT_INTERRUPTED;
                     }
 
                     @Override
@@ -334,8 +341,34 @@ public class SessionStateMachine implements Session, SessionState
                     @Override
                     protected State onNoImplementation( SessionStateMachine ctx, String command )
                     {
-                        ctx.ignored();
-                        return AUTH_FAILURE;
+                        // Just do the same as what UNINIT state will do
+                        return UNINITIALIZED.onNoImplementation( ctx, command );
+                    }
+                },
+
+        /** Interrupted during init_error, resting the error leads you back to UNINITIALIZED and you get to try again.
+         * The state will remain interrupted until the amount of reset messages received is the same as the count of
+         * interrupts.
+         */
+        INIT_INTERRUPTED
+                {
+                    @Override
+                    public State interrupt( SessionStateMachine ctx )
+                    {
+                        return INIT_INTERRUPTED;
+                    }
+
+                    @Override
+                    public State reset( SessionStateMachine ctx )
+                    {
+                        return reset(ctx, UNINITIALIZED);
+                    }
+
+                    @Override
+                    protected State onNoImplementation( SessionStateMachine ctx, String command )
+                    {
+                        // Just do the same as what UNINIT state will do
+                        return UNINITIALIZED.onNoImplementation( ctx, command );
                     }
                 },
 
@@ -352,22 +385,8 @@ public class SessionStateMachine implements Session, SessionState
                     @Override
                     public State reset( SessionStateMachine ctx )
                     {
-                        // If > 0 to guard against bugs making the counter negative
-                        if( ctx.interruptCounter.get() > 0 )
-                        {
-                            if( ctx.interruptCounter.decrementAndGet() > 0 )
-                            {
-                                // This happens when the user sends multiple
-                                // interrupts at the same time, we now demand
-                                // an equivalent number of RESET until we go back
-                                // to IDLE.
-                                ctx.ignored();
-                                return INTERRUPTED;
-                            }
-                        }
-                        return IDLE;
+                        return reset( ctx, IDLE );
                     }
-
 
                     @Override
                     public State interrupt( SessionStateMachine ctx )
@@ -386,6 +405,13 @@ public class SessionStateMachine implements Session, SessionState
         /** The state machine is permanently stopped. */
         STOPPED
                 {
+                    @Override
+                    public State interrupt( SessionStateMachine ctx )
+                    {
+                        // ignore all interrupts
+                        return STOPPED;
+                    }
+
                     @Override
                     public State halt( SessionStateMachine ctx )
                     {
@@ -445,6 +471,24 @@ public class SessionStateMachine implements Session, SessionState
         public State reset( SessionStateMachine ctx )
         {
             return onNoImplementation( ctx, "resetting the current session" );
+        }
+
+        State reset( SessionStateMachine ctx, State resetToState )
+        {
+            // If > 0 to guard against bugs making the counter negative
+            if( ctx.interruptCounter.get() > 0 )
+            {
+                if( ctx.interruptCounter.decrementAndGet() > 0 )
+                {
+                    // This happens when the user sends multiple
+                    // interrupts at the same time, we now demand
+                    // an equivalent number of RESET until we go back
+                    // to IDLE.
+                    ctx.ignored();
+                    return ctx.state;
+                }
+            }
+            return resetToState;
         }
 
         public State ackFailure( SessionStateMachine ctx )
@@ -541,6 +585,7 @@ public class SessionStateMachine implements Session, SessionState
             return outcome;
         }
     }
+
 
     private final String id = UUID.randomUUID().toString();
 
