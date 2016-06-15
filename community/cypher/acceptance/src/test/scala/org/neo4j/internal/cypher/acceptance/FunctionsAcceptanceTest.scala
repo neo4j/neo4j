@@ -766,4 +766,44 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     val result = executeWithAllPlanners("RETURN [x in [1, 2.3, true, 'apa' ] | toString(x) ] as col")
     result.toList should equal(List(Map("col"-> Seq("1", "2.3", "true", "apa"))))
   }
+
+  test("labels() should accept type Any") {
+    createLabeledNode("Foo")
+    createLabeledNode("Foo", "Bar")
+
+    val query = """
+      |MATCH (a)
+      |WITH [a, 1] AS list
+      |RETURN labels(list[0]) AS l
+    """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("l" -> List("Foo")), Map("l" -> List("Foo", "Bar"))))
+  }
+
+  test("labels() should fail statically on type Path") {
+    createLabeledNode("Foo")
+    createLabeledNode("Foo", "Bar")
+
+    val query = """
+      |MATCH p = (a)
+      |RETURN labels(p) AS l
+    """.stripMargin
+
+    a [SyntaxException] should be thrownBy executeWithAllPlanners(query)
+  }
+
+  test("labels() should fail at runtime on type Any with bad values") {
+    createLabeledNode("Foo")
+    createLabeledNode("Foo", "Bar")
+
+    val query = """
+                  |MATCH (a)
+                  |WITH [a, 1] AS list
+                  |RETURN labels(list[1]) AS l
+                """.stripMargin
+
+    a [ParameterWrongTypeException] should be thrownBy executeWithAllPlanners(query)
+  }
 }

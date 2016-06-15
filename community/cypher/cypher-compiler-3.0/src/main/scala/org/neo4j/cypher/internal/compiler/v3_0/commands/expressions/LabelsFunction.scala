@@ -20,33 +20,29 @@
 package org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_0.ParameterWrongTypeException
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.graphdb.Node
 
-case class LabelsFunction(nodeExpr: Expression) extends Expression {
+case class LabelsFunction(nodeExpr: Expression) extends NullInNullOutExpression(nodeExpr) {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = nodeExpr(ctx) match {
+  override def compute(value: Any, m: ExecutionContext)
+                      (implicit state: QueryState): Any = value match {
     case n: Node =>
-      val queryCtx: QueryContext = state.query
-      queryCtx.getLabelsForNode(n.getId).map { queryCtx.getLabelName }.toList
-    case null =>
-      null
-    case _ =>
-      throw new CypherTypeException("labels() expected a Node but was called with something else")
+      val ctx = state.query
+      ctx.getLabelsForNode(n.getId).map(ctx.getLabelName).toList
+    case x => throw new ParameterWrongTypeException("Expected a Node, got: " + x)
   }
 
-  def rewrite(f: (Expression) => Expression) = f(LabelsFunction(nodeExpr.rewrite(f)))
+  override def rewrite(f: (Expression) => Expression) = f(LabelsFunction(nodeExpr.rewrite(f)))
 
-  def arguments = Seq(nodeExpr)
+  override def arguments = Seq(nodeExpr)
 
-  def symbolTableDependencies = nodeExpr.symbolTableDependencies
+  override def symbolTableDependencies = nodeExpr.symbolTableDependencies
 
-  protected def calculateType(symbols: SymbolTable) = {
+  override def calculateType(symbols: SymbolTable) = {
     nodeExpr.evaluateType(CTNode, symbols)
     CTList(CTString)
   }
