@@ -45,7 +45,7 @@ case object Labels extends Function {
 
       case x =>
         val message = s"Type mismatch: expected Node but was ${x.mkString(", ")}"
-        SemanticCheckResult.error(s, SemanticError(message, invocation.position))
+        SemanticCheckResult.error(s, SemanticError(message, invocation.args.head.position))
     }
   }
 

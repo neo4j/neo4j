@@ -48,7 +48,7 @@ case object ToFloat extends Function {
 
       case x =>
         val message = s"Type mismatch: expected Number or String but was ${x.mkString(", ")}"
-        SemanticCheckResult.error(s, SemanticError(message, invocation.position))
+        SemanticCheckResult.error(s, SemanticError(message, invocation.args.head.position))
     }
   }
 }
