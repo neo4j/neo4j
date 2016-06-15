@@ -595,7 +595,6 @@ public interface Status
             ROLLBACK, NONE,
         }
 
-
         private enum PublishingPolicy
         {
             REPORTS_TO_CLIENT, REFERS_TO_LOG
