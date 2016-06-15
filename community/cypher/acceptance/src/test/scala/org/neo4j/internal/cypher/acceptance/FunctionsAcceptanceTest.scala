@@ -131,14 +131,20 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("foo" -> null, "empty" -> null)))
   }
 
-  test("toFloat should fail on type Any") {
+  test("toFloat should work on type Any") {
     // When
     val query = "WITH [3.4, 3, '5'] AS numbers RETURN [n in numbers | toFloat(n)] AS float_numbers"
-    val error = intercept[SyntaxException](executeWithAllPlannersAndCompatibilityMode(query))
 
-    // Then
-    error.getMessage should (include("Type mismatch: expected Float, Integer, Number or String but was Any")
-      or include("Type mismatch: expected Float, Integer or String but was Any") )
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("float_numbers" -> List(3.4, 3.0, 5.0))))
+  }
+
+  test("toFloat should fail statically on type Boolean") {
+    // When
+    val query = "RETURN toFloat(false)"
+
+    a [SyntaxException] should be thrownBy executeWithAllPlanners(query)
   }
 
   test("toFloat should work on string collection") {
