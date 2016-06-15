@@ -769,7 +769,7 @@ public class EnterpriseCoreEditionModule
                                    final DependencyResolver dependencyResolver )
     {
         life.addLifecycleListener( ( instance, from, to ) -> {
-            if ( instance instanceof DatabaseAvailability && to.equals( LifecycleStatus.STARTED ) )
+            if ( instance instanceof DatabaseAvailability && LifecycleStatus.STARTED.equals( to ) )
             {
                 doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );
             }

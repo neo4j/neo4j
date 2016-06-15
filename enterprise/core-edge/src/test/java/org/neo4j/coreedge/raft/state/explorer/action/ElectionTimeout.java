@@ -42,7 +42,7 @@ public class ElectionTimeout implements Action
     {
         ClusterState newClusterState = new ClusterState( previous );
         Queue<RaftMessages.RaftMessage<RaftTestMember>> newQueue = new LinkedList<>( previous.queues.get( member ) );
-        newQueue.offer( new RaftMessages.Timeout.Election<>( member, new StoreId( 1, 2, 3, 4, 5 ) ) );
+        newQueue.offer( new RaftMessages.Timeout.Election<>( member ) );
         newClusterState.queues.put( member, newQueue );
         return newClusterState;
     }

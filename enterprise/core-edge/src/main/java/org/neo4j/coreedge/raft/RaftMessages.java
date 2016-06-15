@@ -513,9 +513,9 @@ public interface RaftMessages
     {
         class Election<MEMBER> extends BaseMessage<MEMBER>
         {
-            public Election( MEMBER from, StoreId storeId )
+            public Election( MEMBER from )
             {
-                super( from, Type.ELECTION_TIMEOUT, storeId );
+                super( from, Type.ELECTION_TIMEOUT, null );
             }
 
             @Override
