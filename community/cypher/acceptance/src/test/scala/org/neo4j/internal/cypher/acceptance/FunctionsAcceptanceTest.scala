@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_0.{CRS, CartesianPoint, GeographicPoint}
-import org.neo4j.cypher.{ExecutionEngineFunSuite, InvalidArgumentException, NewPlannerTestSupport, SyntaxException}
+import org.neo4j.cypher._
 
 class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -75,14 +75,21 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("int_numbers" -> List(2, 2))))
   }
 
-  test("toInt should fail on type Any") {
+  test("toInt should accept type Any") {
     // When
     val query = "WITH [2, 2.9, '1.7'] AS numbers RETURN [n in numbers | toInt(n)] AS int_numbers"
-    val error = intercept[SyntaxException](executeWithAllPlannersAndCompatibilityMode(query))
 
-    // Then
-    error.getMessage should (include("Type mismatch: expected Float, Integer, Number or String but was Any")
-      or include("Type mismatch: expected Float, Integer or String but was Any") )
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("int_numbers" -> List(2, 2, 1))))
+  }
+
+  test("toInt should fail statically on type boolean") {
+    val query = "RETURN toInt(true)"
+
+    a [SyntaxException] should be thrownBy {
+      executeWithAllPlanners(query)
+    }
   }
 
   test("toInt should work on string collection") {
