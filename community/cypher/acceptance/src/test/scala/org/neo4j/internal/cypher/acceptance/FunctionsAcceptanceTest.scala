@@ -724,15 +724,41 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("type(r)" -> "T"), Map("type(r)" -> null)))
   }
 
-  test("type should fail nicely when not given a relationship")  {
-    // GIVEN
+  test("type() should accept type Any") {
     relate(createNode(), createNode(), "T")
-    val query: String = "MATCH (a)-[r]->() WITH [r, 1] as coll RETURN [x in coll | type(x) ]"
 
-    //Expect
-    a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER runtime=interpreted $query", Map.empty[String,Any], graph.session()))
-    a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER planner=cost $query", Map.empty[String,Any], graph.session()))
-    a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER planner=rule $query", Map.empty[String,Any], graph.session()))
+    val query = """
+      |MATCH (a)-[r]->()
+      |WITH [a, r, 1] AS list
+      |RETURN type(list[1]) AS t
+    """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("t" -> "T")))
+  }
+
+  test("type() should fail statically when given type Node") {
+    relate(createNode(), createNode(), "T")
+
+    val query = """
+      |MATCH (a)-[r]->()
+      |RETURN type(a) AS t
+    """.stripMargin
+
+    a [SyntaxException] should be thrownBy executeWithAllPlanners(query)
+  }
+
+  test("type() should fail at runtime when given type Any but bad value")  {
+    relate(createNode(), createNode(), "T")
+
+    val query = """
+                  |MATCH (a)-[r]->()
+                  |WITH [a, r, 1] AS list
+                  |RETURN type(list[0]) AS t
+                """.stripMargin
+
+    a [ParameterWrongTypeException] should be thrownBy executeWithAllPlanners(query)
   }
 
   test("should handle a collection of values that individually are OK") {

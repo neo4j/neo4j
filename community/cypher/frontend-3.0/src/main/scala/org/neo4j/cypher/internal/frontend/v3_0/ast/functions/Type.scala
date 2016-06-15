@@ -19,13 +19,33 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Function, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Function, FunctionInvocation}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
+import org.neo4j.cypher.internal.frontend.v3_0.{SemanticCheckResult, SemanticError, SemanticState, _}
 
-case object Type extends Function with SimpleTypedFunction {
+case object Type extends Function {
   def name = "type"
 
-  val signatures = Vector(
-    Signature(argumentTypes = Vector(CTRelationship), outputType = CTString)
-  )
+  override protected def semanticCheck(ctx: SemanticContext, invocation: FunctionInvocation): SemanticCheck =
+    checkMinArgs(invocation, 1) ifOkChain
+      checkMaxArgs(invocation, 1) ifOkChain
+      checkTypeOfArgument(invocation) ifOkChain
+      invocation.specifyType(CTString)
+
+  private def checkTypeOfArgument(invocation: FunctionInvocation): SemanticCheck = (s: SemanticState) => {
+    val e = invocation.args.head
+
+    s.expressionType(e).specified match {
+      case CTRelationship.invariant |
+           CTAny.invariant => SemanticCheckResult.success(s)
+
+      case
+        CTAny.covariant => SemanticCheckResult.success(s)
+
+      case x =>
+        val message = s"Type mismatch: expected Relationship but was ${x.mkString(", ")}"
+        SemanticCheckResult.error(s, SemanticError(message, invocation.position))
+    }
+  }
 }
