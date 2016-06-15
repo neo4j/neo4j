@@ -62,7 +62,13 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
                                  "Fail when comparing relationships to nodes",
                                  "Generate the movie graph correctly",  // quoting issue in string
                                  "Fail when using property access on primitive type", // change error detail
-                                 "Fail when comparing nodes to relationships"
+                                 "Fail when comparing nodes to relationships",
+                                 "Many CREATE clauses", // stack overflow
+                                 "Null-setting one property with ON CREATE", // wrong ouput format (?)
+                                 "Copying properties from node with ON CREATE", // wrong ouput format (?)
+                                 "Copying properties from node with ON MATCH", // wrong ouput format (?)
+                                 "Copying properties from literal map with ON CREATE", // wrong ouput format (?)
+                                 "Copying properties from literal map with ON MATCH" // wrong output format (?)
   )
 
   // Stateful

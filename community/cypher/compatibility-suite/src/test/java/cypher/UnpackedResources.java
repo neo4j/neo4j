@@ -85,8 +85,9 @@ public class UnpackedResources extends Enclosed
             if ( matcher.matches( next ) )
             {
                 File target = new File( targetDirectory, next.getFileName().toString() );
-//                Files.copy( next, target.toPath(), StandardCopyOption.REPLACE_EXISTING );
-                Files.copy( next, target.toPath() );
+                Files.copy( next, target.toPath()
+//                        , StandardCopyOption.REPLACE_EXISTING
+                );
                 System.out.println( "Unpacked " + target.getName() );
             }
         }
