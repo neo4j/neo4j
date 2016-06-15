@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.0.3-SNAPSHOT</version>
+    <version>3.0.4-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
@@ -11,7 +11,7 @@
 
   <groupId>org.neo4j.doc</groupId>
   <artifactId>neo4j-import-tool-docs</artifactId>
-  <version>3.0.3-SNAPSHOT</version>
+  <version>3.0.4-SNAPSHOT</version>
 
   <packaging>jar</packaging>
   <name>Neo4j - Import Tool Documentation</name>

@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j.doc</groupId>
     <artifactId>neo4j-cypher-docs-parent</artifactId>
-    <version>3.0.3-SNAPSHOT</version>
+    <version>3.0.4-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-cypher-docs</artifactId>
   <packaging>jar</packaging>
-  <version>3.0.3-SNAPSHOT</version>
+  <version>3.0.4-SNAPSHOT</version>
   <name>Neo4j - Cypher Documentation</name>
   <description>Neo4j query language documentation</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
