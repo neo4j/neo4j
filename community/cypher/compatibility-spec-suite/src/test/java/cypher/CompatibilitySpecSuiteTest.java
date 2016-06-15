@@ -23,8 +23,8 @@ import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
 import org.junit.runner.RunWith;
 
-@RunWith( UnpackedResources.class )
-public class CompatibilitySuiteTest
+@RunWith( CompatibilitySpecSuiteResources.class )
+public class CompatibilitySpecSuiteTest
 {
 
     // These two constants are only used to make testing and debugging easier.

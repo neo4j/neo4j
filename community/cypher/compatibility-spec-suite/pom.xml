@@ -11,11 +11,11 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>neo4j-cypher-acceptance</artifactId>
+  <artifactId>neo4j-cypher-compatibility-spec-suite</artifactId>
   <packaging>jar</packaging>
   <version>3.1.0-SNAPSHOT</version>
-  <name>Neo4j - Cypher Acceptance</name>
-  <description>Neo4j query language acceptance tests</description>
+  <name>Neo4j - Cypher Compatibility Specification Suite</name>
+  <description>Neo4j query language compatibility suite</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
@@ -48,11 +48,25 @@
     <version-package>cypher.internal</version-package>
     <scala.version>2.11.8</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
+    <opencypher.version>1.2016-06-15</opencypher.version>
   </properties>
+
+  <repositories>
+    <repository>
+      <id>neo4j-releases-repository</id>
+      <name>Neo4j Maven 2 releases repository</name>
+      <url>http://m2.neo4j.org/content/repositories/releases/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+    </repository>
+  </repositories>
 
   <build>
     <plugins>
-
       <plugin>
         <groupId>net.alchim31.maven</groupId>
         <artifactId>scala-maven-plugin</artifactId>
@@ -78,12 +92,6 @@
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
-      <version>${scala.version}</version>
-    </dependency>
-
-    <dependency>
-      <artifactId>scala-reflect</artifactId>
-      <groupId>org.scala-lang</groupId>
       <version>${scala.version}</version>
     </dependency>
 
@@ -121,18 +129,16 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher</artifactId>
       <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher</artifactId>
+      <artifactId>neo4j-cypher-spec-suite-tools</artifactId>
       <version>${project.version}</version>
-      <type>test-jar</type>
+      <scope>test</scope>
     </dependency>
 
     <!-- neo4j testing -->
@@ -140,9 +146,11 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
+      <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-io</artifactId>
@@ -151,92 +159,12 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- neo4j-cypher -->
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-3.1</artifactId>
-      <version>${project.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-kernel</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-lucene-index</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-graph-matching</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-graph-algo</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.scala-lang</groupId>
-          <artifactId>scala-library</artifactId>
-        </exclusion>
-        <exclusion>
-          <artifactId>scala-reflect</artifactId>
-          <groupId>org.scala-lang</groupId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.parboiled</groupId>
-          <artifactId>parboiled-scala_2.11</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>net.sf.opencsv</groupId>
-          <artifactId>opencsv</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
-          <artifactId>concurrentlinkedhashmap-lru</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <!-- neo4j-cypher test -->
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-3.1</artifactId>
+      <artifactId>neo4j-cypher-spec-suite-tools</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-frontend-3.1</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-
-    <!-- other -->
-
-    <dependency>
-      <groupId>com.novus</groupId>
-      <artifactId>salat-core_2.11</artifactId>
-      <version>1.9.9</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.scala-lang</groupId>
-          <artifactId>scala-library</artifactId>
-        </exclusion>
-        <exclusion>
-          <artifactId>scalap</artifactId>
-          <groupId>org.scala-lang</groupId>
-        </exclusion>
-      </exclusions>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>annotations</artifactId>
-    </dependency>
-
   </dependencies>
 </project>

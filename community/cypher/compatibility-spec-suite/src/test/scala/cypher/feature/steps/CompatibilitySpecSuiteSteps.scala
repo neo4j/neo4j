@@ -20,13 +20,13 @@
 package cypher.feature.steps
 
 import cypher.cucumber.db.{GraphArchiveLibrary, GraphFileRepository}
-import cypher.{CompatibilitySuiteTest, UnpackedResources}
+import cypher.{CompatibilitySpecSuiteTest, CompatibilitySpecSuiteResources}
 
 import scala.reflect.io.Path
 
-class CompatibilitySuiteSteps extends SpecSuiteSteps {
+class CompatibilitySpecSuiteSteps extends SpecSuiteSteps {
 
-  override val requiredScenarioName: String = CompatibilitySuiteTest.SCENARIO_NAME_REQUIRED.trim.toLowerCase
+  override val requiredScenarioName: String = CompatibilitySpecSuiteTest.SCENARIO_NAME_REQUIRED.trim.toLowerCase
 
   override val unsupportedScenarios = Set("Fail when adding new label predicate on already bound node 5",
     "Fail when trying to compare strings and numbers",
@@ -58,7 +58,7 @@ class CompatibilitySuiteSteps extends SpecSuiteSteps {
     "Copying properties from literal map with ON MATCH" // wrong output format (?)
   )
 
-  override val graphArchiveLibrary = new GraphArchiveLibrary(new GraphFileRepository(Path(UnpackedResources.targetDirectory("graphs"))))
+  override val graphArchiveLibrary = new GraphArchiveLibrary(new GraphFileRepository(Path(CompatibilitySpecSuiteResources.targetDirectory("graphs"))))
 }
 
 

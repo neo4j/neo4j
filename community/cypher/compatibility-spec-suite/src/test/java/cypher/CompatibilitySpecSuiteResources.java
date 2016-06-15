@@ -36,9 +36,9 @@ import org.junit.experimental.runners.Enclosed;
 import org.junit.runners.model.RunnerBuilder;
 import org.opencypher.tools.tck.TCKCucumberTemplate;
 
-public class UnpackedResources extends Enclosed
+public class CompatibilitySpecSuiteResources extends Enclosed
 {
-    public UnpackedResources( Class<?> klass, RunnerBuilder builder ) throws Throwable
+    public CompatibilitySpecSuiteResources( Class<?> klass, RunnerBuilder builder ) throws Throwable
     {
         super( klass, download( builder ) );
     }
@@ -105,7 +105,7 @@ public class UnpackedResources extends Enclosed
 
     private static File obtainTargetDirectory( boolean create, String suffix )
     {
-        File directory = new File( new File( "target" ), suffix ).getAbsoluteFile();
+        File directory = new File( new File ( new File( "target" ), "compatibility-spec-suite" ), suffix ).getAbsoluteFile();
         if ( !directory.exists() )
         {
             if ( !(create && directory.mkdirs()) )
