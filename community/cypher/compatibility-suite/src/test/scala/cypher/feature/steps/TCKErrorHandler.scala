@@ -152,6 +152,8 @@ case class TCKErrorHandler(typ: String, phase: String, detail: String) extends M
       detail should equal("InvalidArgumentValue")
     else if (msg.matches("The expression .+ should have been a node or a relationship, but got .+"))
       detail should equal("RequiresNodeOrRelationship")
+    else if (msg.matches("((Node)|(Relationship)) with id 0 has been deleted in this transaction"))
+      detail should equal("DeletedEntityAccess")
     else r = false
 
     r

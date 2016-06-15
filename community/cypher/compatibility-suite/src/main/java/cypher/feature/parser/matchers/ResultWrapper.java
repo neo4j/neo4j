@@ -20,9 +20,6 @@
 package cypher.feature.parser.matchers;
 
 import java.io.PrintWriter;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -38,7 +35,6 @@ import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.traversal.Paths;
 
 public class ResultWrapper implements Result
 {
@@ -139,7 +135,7 @@ public class ResultWrapper implements Result
     public <VisitationException extends Exception> void accept(
             ResultVisitor<VisitationException> visitor ) throws VisitationException
     {
-        inner.accept( visitor );
+        inner.accept( new ResultVisitorWrapper<>( visitor ) );
     }
 
     @Override
@@ -160,5 +156,92 @@ public class ResultWrapper implements Result
             Consumer<? super Map<String,Object>> action )
     {
         inner.forEachRemaining( action );
+    }
+
+    private class ResultVisitorWrapper<T extends Exception> implements ResultVisitor<T> {
+
+        private final ResultVisitor<T> inner;
+
+        private ResultVisitorWrapper( ResultVisitor<T> visitor )
+        {
+            this.inner = visitor;
+        }
+
+        @Override
+        public boolean visit( ResultRow row ) throws T
+        {
+            builder.append( "[" ).append( rowCounter++ ).append( "]   " );
+            builder.append( "actualRow: {" );
+            boolean result = inner.visit( new ResultRowWrapper( row ) );
+            builder.delete( builder.length() - 2, builder.length() );
+            builder.append( "}\n" );
+            return result;
+        }
+    }
+
+    private class ResultRowWrapper implements ResultRow {
+
+        private final ResultRow inner;
+
+        private ResultRowWrapper( ResultRow inner )
+        {
+            this.inner = inner;
+        }
+
+        @Override
+        public Node getNode( String key )
+        {
+            Node node = inner.getNode( key );
+            builder.append( key ).append( "=" ).append( TckSerializer.serialize( node ) ).append(", ");
+            return node;
+        }
+
+        @Override
+        public Relationship getRelationship( String key )
+        {
+            Relationship relationship = inner.getRelationship( key );
+            builder.append( key ).append( "=" ).append( TckSerializer.serialize( relationship ) ).append(", ");
+            return relationship;
+        }
+
+        @Override
+        public Object get( String key )
+        {
+            Object obj = inner.get( key );
+            builder.append( key ).append( "=" ).append( TckSerializer.serialize( obj ) ).append(", ");
+            return obj;
+        }
+
+        @Override
+        public String getString( String key )
+        {
+            String string = inner.getString( key );
+            builder.append( key ).append( "=" ).append( TckSerializer.serialize( string ) ).append(", ");
+            return string;
+        }
+
+        @Override
+        public Number getNumber( String key )
+        {
+            Number number = inner.getNumber( key );
+            builder.append( key ).append( "=" ).append( TckSerializer.serialize( number ) ).append(", ");
+            return number;
+        }
+
+        @Override
+        public Boolean getBoolean( String key )
+        {
+            Boolean aBoolean = inner.getBoolean( key );
+            builder.append( key ).append( "=" ).append( TckSerializer.serialize( aBoolean ) ).append(", ");
+            return aBoolean;
+        }
+
+        @Override
+        public Path getPath( String key )
+        {
+            Path path = inner.getPath( key );
+            builder.append( key ).append( "=" ).append( TckSerializer.serialize( path ) ).append(", ");
+            return path;
+        }
     }
 }
