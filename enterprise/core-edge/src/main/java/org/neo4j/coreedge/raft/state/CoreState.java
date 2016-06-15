@@ -291,9 +291,6 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine<Core
             throws InterruptedException, StoreCopyFailedException
     {
         applier.sync( true );
-
-        System.out.printf( "[%s] Downloading snapshot from: %s%n", myself, source );
-
         downloader.downloadSnapshot( source, this );
     }
 
