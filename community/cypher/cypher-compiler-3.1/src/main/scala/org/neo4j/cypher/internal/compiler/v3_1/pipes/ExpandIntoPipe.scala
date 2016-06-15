@@ -75,7 +75,7 @@ case class ExpandIntoPipe(source: Pipe,
   def planDescriptionWithoutCardinality =
     source.planDescription.andThen(this.id, "Expand(Into)", variables, ExpandExpression(fromName, relName, lazyTypes.names, toName, dir))
 
-  val symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
+  val symbols = source.symbols.add(fromName, CTNode).add(toName, CTNode).add(relName, CTRelationship)
 
   override def localEffects = Effects(ReadsAllNodes, ReadsAllRelationships)
 
