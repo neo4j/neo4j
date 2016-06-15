@@ -20,12 +20,12 @@
 package org.neo4j.kernel.api.security;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.LogProvider;
 
-import java.io.IOException;
+import java.util.Map;
 
 /**
  * An AuthManager is used to do basic authentication and user management.
@@ -43,12 +43,12 @@ public interface AuthManager extends Lifecycle
     }
 
     /**
-     * Log in using the provided username and password
-     * @param username The name of the user
-     * @param password The password of the user
+     * Log in using the provided authentication token
+     * @param authToken The authentication token to login with. Typically contains principals and credentials.
      * @return An AuthSubject representing the newly logged-in user
+     * @throws InvalidAuthTokenException if the authentication token is malformed
      */
-    AuthSubject login( String username, String password );
+    AuthSubject login( Map<String,Object> authToken ) throws InvalidAuthTokenException;
 
     /**
      * Implementation that does no authentication.
@@ -76,7 +76,7 @@ public interface AuthManager extends Lifecycle
         }
 
         @Override
-        public AuthSubject login( String username, String password )
+        public AuthSubject login( Map<String,Object> authToken )
         {
             return AuthSubject.AUTH_DISABLED;
         }

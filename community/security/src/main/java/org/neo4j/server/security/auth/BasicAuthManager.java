@@ -21,12 +21,15 @@ package org.neo4j.server.security.auth;
 
 import java.io.IOException;
 import java.time.Clock;
+import java.util.Map;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 /**
@@ -93,9 +96,13 @@ public class BasicAuthManager implements AuthManager, UserManager
     }
 
     @Override
-    public AuthSubject login( String username, String password )
+    public AuthSubject login( Map<String,Object> authToken ) throws InvalidAuthTokenException
     {
         assertAuthEnabled();
+
+        String username = AuthToken.safeCast( AuthToken.PRINCIPAL, authToken );
+        String password = AuthToken.safeCast( AuthToken.CREDENTIALS, authToken );
+
         User user = users.findByName( username );
         AuthenticationResult result = AuthenticationResult.FAILURE;
         if ( user != null )

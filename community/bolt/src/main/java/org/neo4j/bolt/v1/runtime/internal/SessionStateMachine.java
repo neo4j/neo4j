@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
@@ -80,7 +81,7 @@ public class SessionStateMachine implements Session, SessionState
                             ctx.credentialsExpired = authResult.credentialsExpired();
                             ctx.result( authResult.credentialsExpired() );
                             ctx.spi.udcRegisterClient( clientName );
-                            ctx.setQuerySourceFromClientNameAndPrincipal( clientName, authToken.get( Authentication.PRINCIPAL ) );
+                            ctx.setQuerySourceFromClientNameAndPrincipal( clientName, authToken.get( AuthToken.PRINCIPAL ) );
                             return IDLE;
                         }
                         catch ( AuthenticationException e )

@@ -44,6 +44,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 
 public class ShiroAuthManagerTest
 {
@@ -96,7 +97,7 @@ public class ShiroAuthManagerTest
         manager.start();
 
         // When
-        AuthenticationResult result = manager.login( "jake", "abc123" ).getAuthenticationResult();
+        AuthenticationResult result = manager.login( authToken( "jake", "abc123" ) ).getAuthenticationResult();
 
         // Then
         assertThat( result, equalTo( AuthenticationResult.SUCCESS ) );
@@ -112,7 +113,7 @@ public class ShiroAuthManagerTest
         when( authStrategy.isAuthenticationPermitted( user.name() )).thenReturn( false );
 
         // When
-        AuthSubject authSubject = manager.login( "jake", "abc123" );
+        AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) );
         AuthenticationResult result = authSubject.getAuthenticationResult();
 
         // Then
@@ -128,7 +129,7 @@ public class ShiroAuthManagerTest
         manager.start();
 
         // When
-        AuthenticationResult result = manager.login( "jake", "abc123" ).getAuthenticationResult();
+        AuthenticationResult result = manager.login( authToken( "jake", "abc123" ) ).getAuthenticationResult();
 
         // Then
         assertThat( result, equalTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED ) );
@@ -143,7 +144,7 @@ public class ShiroAuthManagerTest
         manager.start();
 
         // When
-        AuthSubject authSubject = manager.login( "unknown", "abc123" );
+        AuthSubject authSubject = manager.login( authToken( "unknown", "abc123" ) );
         AuthenticationResult result = authSubject.getAuthenticationResult();
 
         // Then
@@ -221,7 +222,7 @@ public class ShiroAuthManagerTest
         manager.suspendUser( "jake" );
 
         // Then
-        AuthSubject authSubject = manager.login( "jake", "abc123" );
+        AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) );
         assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.FAILURE ) );
     }
 
@@ -238,7 +239,7 @@ public class ShiroAuthManagerTest
         manager.activateUser( "jake" );
 
         // Then
-        AuthSubject authSubject = manager.login( "jake", "abc123" );
+        AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) );
         assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
     }
 
@@ -255,7 +256,7 @@ public class ShiroAuthManagerTest
         manager.suspendUser( "jake" );
 
         // Then
-        AuthSubject authSubject = manager.login( "jake", "abc123" );
+        AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) );
         assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.FAILURE ) );
     }
 
@@ -271,7 +272,7 @@ public class ShiroAuthManagerTest
         manager.activateUser( "jake" );
 
         // Then
-        AuthSubject authSubject = manager.login( "jake", "abc123" );
+        AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) );
         assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
     }
 
@@ -337,7 +338,7 @@ public class ShiroAuthManagerTest
         manager.start();
 
         // When
-        AuthSubject authSubject = manager.login( "neo", "abc123" );
+        AuthSubject authSubject = manager.login( authToken( "neo", "abc123" ) );
         assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED ) );
 
         authSubject.setPassword( "hello, world!" );
@@ -348,7 +349,7 @@ public class ShiroAuthManagerTest
         assertThat( users.findByName( "neo" ), equalTo( user ) );
 
         authSubject.logout();
-        authSubject = manager.login( "neo", "hello, world!" );
+        authSubject = manager.login( authToken( "neo", "hello, world!" ) );
         assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
     }
 
@@ -360,7 +361,7 @@ public class ShiroAuthManagerTest
         manager.start();
 
         // When
-        AuthSubject authSubject = manager.login( "neo", "wrong" );
+        AuthSubject authSubject = manager.login( authToken( "neo", "wrong" ) );
 
         // Then
         assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.FAILURE ) );
@@ -405,10 +406,10 @@ public class ShiroAuthManagerTest
         manager.start();
 
         // When
-        AuthSubject subject = manager.login( "neo4j", "neo4j");
+        AuthSubject subject = manager.login( authToken( "neo4j", "neo4j" ) );
         manager.setUserPassword( "neo4j", "1234" );
         subject.logout();
-        subject = manager.login( "neo4j", "1234");
+        subject = manager.login( authToken( "neo4j", "1234" ) );
 
         // Then
         assertTrue( subject.allowsReads() );
@@ -424,7 +425,7 @@ public class ShiroAuthManagerTest
         manager.start();
 
         // When
-        AuthSubject subject = manager.login( "morpheus", "abc123");
+        AuthSubject subject = manager.login( authToken( "morpheus", "abc123" ) );
 
         // Then
         assertTrue( subject.allowsReads() );
@@ -440,7 +441,7 @@ public class ShiroAuthManagerTest
         manager.start();
 
         // When
-        AuthSubject subject = manager.login( "trinity", "abc123");
+        AuthSubject subject = manager.login( authToken( "trinity", "abc123" ) );
 
         // Then
         assertTrue( subject.allowsReads() );
@@ -456,7 +457,7 @@ public class ShiroAuthManagerTest
         manager.start();
 
         // When
-        AuthSubject subject = manager.login( "tank", "abc123");
+        AuthSubject subject = manager.login( authToken( "tank", "abc123" ) );
 
         // Then
         assertTrue( "should allow reads", subject.allowsReads() );
@@ -472,7 +473,7 @@ public class ShiroAuthManagerTest
         manager.start();
 
         // When
-        AuthSubject subject = manager.login( "neo", "abc123");
+        AuthSubject subject = manager.login( authToken( "neo", "abc123" ) );
 
         // Then
         assertTrue( subject.allowsReads() );
@@ -488,7 +489,7 @@ public class ShiroAuthManagerTest
         manager.start();
 
         // When
-        AuthSubject subject = manager.login( "smith", "abc123");
+        AuthSubject subject = manager.login( authToken( "smith", "abc123" ) );
 
         // Then
         assertFalse( subject.allowsReads() );
@@ -504,7 +505,7 @@ public class ShiroAuthManagerTest
         manager.start();
 
         // When
-        AuthSubject subject = manager.login( "morpheus", "abc123");
+        AuthSubject subject = manager.login( authToken( "morpheus", "abc123" ) );
         assertTrue( subject.allowsReads() );
         assertTrue( subject.allowsWrites() );
         assertTrue( subject.allowsSchemaWrites() );
@@ -528,7 +529,7 @@ public class ShiroAuthManagerTest
 
         try
         {
-            manager.login( "foo", "bar" );
+            manager.login( authToken( "foo", "bar" ) );
             fail( "exception expected" );
         } catch ( IllegalStateException e )
         {

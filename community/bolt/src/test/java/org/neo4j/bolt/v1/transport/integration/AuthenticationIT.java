@@ -44,6 +44,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.message.Messages.init;
 import static org.neo4j.bolt.v1.messaging.message.Messages.pullAll;
@@ -128,6 +129,38 @@ public class AuthenticationIT
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyRecieves( msgFailure( Status.Security.Unauthorized,
                 String.format( "The client is unauthorized due to authentication failure. (ID:%s)", server.uniqueIdentier()) ) ) );
+    }
+
+    @Test
+    public void shouldFailIfMalformedAuthTokenWrongType() throws Throwable
+    {
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1",
+                                map( "principal", singletonList( "neo4j" ), "credentials", "neo4j", "scheme", "basic" ) ) ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves( msgFailure( Status.Security.Unauthorized,
+                String.format( "The value associated with the key `principal` must be a String but was: ArrayList (ID:%s)", server.uniqueIdentier()) ) ) );
+    }
+
+    @Test
+    public void shouldFailIfMalformedAuthTokenMissingKey() throws Throwable
+    {
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1",
+                                map( "principal", "neo4j", "this-should-have-been-credentials", "neo4j", "scheme", "basic" ) ) ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves( msgFailure( Status.Security.Unauthorized,
+                String.format( "The value associated with the key `credentials` must be a String but was: null (ID:%s)", server.uniqueIdentier()) ) ) );
     }
 
     @Test
