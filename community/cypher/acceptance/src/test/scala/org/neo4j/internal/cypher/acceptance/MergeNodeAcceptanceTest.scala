@@ -434,7 +434,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     countNodes() should equal(2)
   }
 
-  // TCK'd
+  // Not TCK material
   test("should handle running merge inside a foreach loop") {
     // given an empty database
 
@@ -676,7 +676,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
                                     Map("x" -> 2, "y" -> 2)))
   }
 
-  // TCK'd
+  // Not TCK material
   test("merge inside foreach should see variables introduced by update actions outside foreach") {
     // when
     val result = updateWithBothPlannersAndCompatibilityMode("CREATE (a {name: 'Start'}) FOREACH(x in [1,2,3] | MERGE (a)-[:X]->({id: x})) RETURN a.name")
