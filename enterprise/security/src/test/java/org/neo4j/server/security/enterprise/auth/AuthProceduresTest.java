@@ -45,6 +45,8 @@ import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 import static java.time.Clock.systemUTC;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -104,15 +106,97 @@ public class AuthProceduresTest
         manager.shutdown();
     }
 
+    //---------- Change own password -----------
+
+    // Enterprise version of test in BuiltInProceduresIT.callChangePasswordWithAccessModeInDbmsMode.
+    // Uses community edition procedure in BuiltInProcedures
     @Test
-    public void shouldAllowUserChangePassword() throws Exception
+    public void shouldChangeOwnPassword() throws Exception
     {
         testCallEmpty( db, readSubject, "CALL dbms.changePassword( '321' )" );
         AuthSubject subject = manager.login( authToken( "readSubject", "321" ) );
+
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
     }
 
-    //----------User creation -----------
+    //---------- Change user password -----------
+
+    // Should change password for admin subject and valid user
+    @Test
+    public void shouldChangeUserPassword() throws Exception
+    {
+        testCallEmpty( db, adminSubject, "CALL dbms.changeUserPassword( 'readSubject', '321' )" );
+        assertEquals( AuthenticationResult.FAILURE, manager.login( authToken( "readSubject", "123" ) )
+                .getAuthenticationResult() );
+        assertEquals( AuthenticationResult.SUCCESS, manager.login( authToken( "readSubject", "321" ) )
+                .getAuthenticationResult() );
+    }
+
+    // Should fail vaguely to change password for non-admin subject, regardless of user and password
+    @Test
+    public void shouldNotChangeUserPasswordIfNotAdmin() throws Exception
+    {
+        testCallFail( db, schemaSubject, "CALL dbms.changeUserPassword( 'readSubject', '321' )",
+                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
+        testCallFail( db, schemaSubject, "CALL dbms.changeUserPassword( 'jake', '321' )",
+                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
+        testCallFail( db, schemaSubject, "CALL dbms.changeUserPassword( 'readSubject', '' )",
+                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
+    }
+
+    // Should change own password for non-admin or admin subject
+    @Test
+    public void shouldChangeUserPasswordIfSameUser() throws Exception
+    {
+        testCallEmpty( db, readSubject, "CALL dbms.changeUserPassword( 'readSubject', '321' )" );
+        assertEquals( AuthenticationResult.FAILURE, manager.login( authToken( "readSubject", "123" ) )
+                .getAuthenticationResult() );
+        assertEquals( AuthenticationResult.SUCCESS, manager.login( authToken( "readSubject", "321" ) )
+                .getAuthenticationResult() );
+
+        testCallEmpty( db, adminSubject, "CALL dbms.changeUserPassword( 'adminSubject', 'cba' )" );
+        assertEquals( AuthenticationResult.FAILURE, manager.login( authToken( "adminSubject", "abc" ) )
+                .getAuthenticationResult() );
+        assertEquals( AuthenticationResult.SUCCESS, manager.login( authToken( "adminSubject", "cba" ) )
+                .getAuthenticationResult() );
+    }
+
+    // Should fail nicely to change own password for non-admin or admin subject if password invalid
+    @Test
+    public void shouldFailToChangeUserPasswordIfSameUserButInvalidPassword() throws Exception
+    {
+        testCallFail( db, readSubject, "CALL dbms.changeUserPassword( 'readSubject', '123' )",
+                QueryExecutionException.class, "Old password and new password cannot be the same" );
+
+        testCallFail( db, adminSubject, "CALL dbms.changeUserPassword( 'adminSubject', 'abc' )",
+                QueryExecutionException.class, "Old password and new password cannot be the same" );
+    }
+
+    // Should fail nicely to change password for admin subject and non-existing user
+    @Test
+    public void shouldNotChangeUserPasswordIfNonExistingUser() throws Exception
+    {
+        testCallFail( db, adminSubject, "CALL dbms.changeUserPassword( 'jake', '321' )",
+                QueryExecutionException.class, "User jake does not exist" );
+    }
+
+    // Should fail nicely to change password for admin subject and empty password
+    @Test
+    public void shouldNotChangeUserPasswordIfEmptyPassword() throws Exception
+    {
+        testCallFail( db, adminSubject, "CALL dbms.changeUserPassword( 'readSubject', '' )",
+                QueryExecutionException.class, "Password cannot be empty" );
+    }
+
+    // Should fail to change password for admin subject and same password
+    @Test
+    public void shouldNotChangeUserPasswordIfSamePassword() throws Exception
+    {
+        testCallFail( db, adminSubject, "CALL dbms.changeUserPassword( 'readSubject', '123' )",
+                QueryExecutionException.class, "Old password and new password cannot be the same" );
+    }
+
+    //---------- User creation -----------
 
     @Test
     public void shouldCreateUser() throws Exception
@@ -946,7 +1030,7 @@ public class AuthProceduresTest
         } );
     }
 
-    public static void testCallFail( GraphDatabaseAPI db, AuthSubject subject, String call,
+    private static void testCallFail( GraphDatabaseAPI db, AuthSubject subject, String call,
             Class expectedExceptionClass, String partOfErrorMsg )
     {
         try
@@ -957,22 +1041,21 @@ public class AuthProceduresTest
         catch ( Exception e )
         {
             assertEquals( expectedExceptionClass, e.getClass() );
-            assertTrue( "Exception should contain '" + partOfErrorMsg + "'",
-                    e.getMessage().contains( partOfErrorMsg ) );
+            assertThat( e.getMessage(), containsString( partOfErrorMsg ) );
         }
     }
 
-    public static void testCallEmpty( GraphDatabaseAPI db, AuthSubject subject, String call )
+    private static void testCallEmpty( GraphDatabaseAPI db, AuthSubject subject, String call )
     {
         testCallEmpty( db, subject, call, null );
     }
 
-    public static void testCallEmpty( GraphDatabaseAPI db, AuthSubject subject, String call, Map<String,Object> params )
+    private static void testCallEmpty( GraphDatabaseAPI db, AuthSubject subject, String call, Map<String,Object> params )
     {
         testResult( db, subject, call, params, ( res ) -> assertFalse( "Expected no results", res.hasNext() ) );
     }
 
-    public static void testCallCount( GraphDatabaseAPI db, AuthSubject subject, String call, Map<String,Object> params,
+    private static void testCallCount( GraphDatabaseAPI db, AuthSubject subject, String call, Map<String,Object> params,
             final int count )
     {
         testResult( db, subject, call, params, ( res ) -> {
@@ -987,18 +1070,18 @@ public class AuthProceduresTest
         } );
     }
 
-    public static void testResult( GraphDatabaseAPI db, AuthSubject subject, String call,
+    private static void testResult( GraphDatabaseAPI db, AuthSubject subject, String call,
             Consumer<Result> resultConsumer )
     {
         testResult( db, subject, call, null, resultConsumer );
     }
 
-    public static void testResult( GraphDatabaseAPI db, AuthSubject subject, String call, Map<String,Object> params,
+    private static void testResult( GraphDatabaseAPI db, AuthSubject subject, String call, Map<String,Object> params,
             Consumer<Result> resultConsumer )
     {
         try ( Transaction tx = db.beginTransaction( KernelTransaction.Type.explicit, subject ) )
         {
-            Map<String,Object> p = (params == null) ? Collections.<String,Object>emptyMap() : params;
+            Map<String,Object> p = (params == null) ? Collections.emptyMap() : params;
             resultConsumer.accept( db.execute( call, p ) );
             tx.success();
         }

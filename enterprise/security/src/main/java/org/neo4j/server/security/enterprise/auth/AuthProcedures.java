@@ -53,6 +53,26 @@ public class AuthProcedures
     }
 
     @PerformsDBMS
+    @Procedure( "dbms.changeUserPassword" )
+    public void changeUserPassword( @Name( "username" ) String username, @Name( "newPassword" ) String newPassword )
+            throws IllegalCredentialsException, IOException
+    {
+        ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
+        if ( shiroSubject.doesUsernameMatch( username ) )
+        {
+            shiroSubject.getUserManager().setPassword( shiroSubject, username, newPassword );
+        }
+        else if ( !shiroSubject.isAdmin() )
+        {
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
+        }
+        else
+        {
+            shiroSubject.getUserManager().setUserPassword( username, newPassword );
+        }
+    }
+
+    @PerformsDBMS
     @Procedure( "dbms.addUserToRole" )
     public void addUserToRole( @Name( "username" ) String username, @Name( "roleName" ) String roleName ) throws IOException
     {
