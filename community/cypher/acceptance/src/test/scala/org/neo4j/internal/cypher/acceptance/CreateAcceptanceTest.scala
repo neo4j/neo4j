@@ -26,6 +26,7 @@ import org.neo4j.graphdb.{Direction, Relationship, RelationshipType}
 class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport
   with CreateTempFileTestSupport {
 
+  // TCK'd
   test("create a single node") {
     val result = updateWithBothPlannersAndCompatibilityMode("create ()")
     assertStats(result, nodesCreated = 1)
@@ -33,6 +34,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     result.toList shouldBe empty
   }
 
+  // TCK'd
   test("create a single node with single label") {
     val result = updateWithBothPlannersAndCompatibilityMode("create (:A)")
     assertStats(result, nodesCreated = 1, labelsAdded = 1)
@@ -40,6 +42,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     result.toList shouldBe empty
   }
 
+  // TCK'd
   test("create a single node with multiple labels") {
     val result = updateWithBothPlannersAndCompatibilityMode("create (n:A:B:C:D)")
     assertStats(result, nodesCreated = 1, labelsAdded = 4)
@@ -47,6 +50,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     result.toList shouldBe empty
   }
 
+  // TCK'd
   test("combine match and create") {
     createNode()
     createNode()
@@ -56,6 +60,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     result.toList shouldBe empty
   }
 
+  // TCK'd
   test("combine match, with, and create") {
     createNode()
     createNode()
@@ -65,7 +70,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     result.toList shouldBe empty
   }
 
-
+  // TCK'd
   test("should not see updates created by itself") {
     createNode()
 
@@ -73,6 +78,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesCreated = 1)
   }
 
+  // TCK'd
   test("create a single node with properties") {
     val result = updateWithBothPlannersAndCompatibilityMode("create (n {prop: 'foo'}) return n.prop as p")
     assertStats(result, nodesCreated = 1, propertiesWritten = 1)
@@ -80,10 +86,12 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     result.toList should equal(List(Map("p" -> "foo")))
   }
 
+  // TCK'd
   test("using an undirected relationship pattern should fail on create") {
       intercept[SyntaxException](executeScalar[Relationship]("create (a {id: 2})-[r:KNOWS]-(b {id: 1}) RETURN r"))
   }
 
+  // TCK'd
   test("create node using null properties should just ignore those properties") {
     // when
     val result = updateWithBothPlannersAndCompatibilityMode("create (n {id: 12, property: null}) return n.id as id")
@@ -93,6 +101,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
    result.toList should equal(List(Map("id" -> 12)))
   }
 
+  // TCK'd
   test("create relationship using null properties should just ignore those properties") {
     // when
     val result = updateWithBothPlannersAndCompatibilityMode("create ()-[r:X {id: 12, property: null}]->() return r.id")
@@ -102,18 +111,21 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     result.toList should equal(List(Map("r.id" -> 12)))
   }
 
+  // TCK'd
   test("create simple pattern") {
     val result = updateWithBothPlannersAndCompatibilityMode("CREATE (a)-[r:R]->(b)")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
 
+  // TCK'd
   test("create simple loop") {
     val result = updateWithBothPlannersAndCompatibilityMode("CREATE (root: R)-[:LINK]->(root)")
 
     assertStats(result, nodesCreated = 1, relationshipsCreated = 1, labelsAdded = 1)
   }
 
+  // TCK'd
   test("create simple loop from match") {
     createLabeledNode("R")
     val result = updateWithBothPlannersAndCompatibilityMode("MATCH (root:R) CREATE (root)-[:LINK]->(root)")
@@ -121,18 +133,21 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, relationshipsCreated = 1)
   }
 
+  // TCK'd
   test("create both nodes and relationships") {
     val result = updateWithBothPlannersAndCompatibilityMode("CREATE (a), (b), (a)-[r:R]->(b)")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
 
+  // TCK'd
   test("create relationship with property") {
     val result = updateWithBothPlannersAndCompatibilityMode("CREATE (a)-[r:R {prop: 42}]->(b)")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 1)
   }
 
+  // TCK'd
   test("creates relationship in correct direction") {
     import scala.collection.JavaConverters._
     val start = createLabeledNode("Y")
@@ -148,6 +163,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     }
   }
 
+  // TCK'd
   test("creates one node, matches one and create relationship") {
     import scala.collection.JavaConverters._
     val start = createLabeledNode("Start")
@@ -161,6 +177,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     }
   }
 
+  // TCK'd
   test("single create after with") {
     //given
     createNode()
@@ -174,6 +191,8 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesCreated = 4)
     result should not(use("Apply"))
   }
+
+  // TCK'd
   test("create relationship with reversed direction") {
     val result = updateWithBothPlannersAndCompatibilityMode("CREATE (a)<-[r1:R]-(b)")
 
@@ -182,6 +201,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)<-[r1:R]-(b) RETURN *").toList should have size 1
   }
 
+  // TCK'd
   test("create relationship with multiple hops") {
     val result = updateWithBothPlannersAndCompatibilityMode("CREATE (a)-[r1:R]->(b)-[r2:R]->(c)")
 
@@ -190,6 +210,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)-[r1:R]->(b)-[r2:R]->(c) RETURN *").toList should have size 1
   }
 
+  // TCK'd
   test("create relationship with multiple hops and reversed direction") {
     val result = updateWithBothPlannersAndCompatibilityMode("CREATE (a)<-[r1:R]-(b)<-[r2:R]-(c)")
 
@@ -198,6 +219,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)<-[r1:R]-(b)<-[r2:R]-(c) RETURN *").toList should have size 1
   }
 
+  // TCK'd
   test("create relationship with multiple hops and changing directions") {
     val result = updateWithBothPlannersAndCompatibilityMode("CREATE (a:A)-[r1:R]->(b:B)<-[r2:R]-(c:C)")
 
@@ -206,6 +228,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a:A)-[r1:R]->(b:B)<-[r2:R]-(c:C) RETURN *").toList should have size 1
   }
 
+  //Not TCK material
   test("create relationship with multiple hops and changing directions 2") {
     val result = updateWithBothPlannersAndCompatibilityMode("CYPHER planner=rule CREATE (a:A)<-[r1:R]-(b:B)-[r2:R]->(c:C)")
 
@@ -214,6 +237,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a:A)<-[r1:R]-(b:B)-[r2:R]->(c:C) RETURN *").toList should have size 1
   }
 
+  // TCK'd
   test("create relationship with multiple hops and varying directions and types") {
     val result = updateWithBothPlannersAndCompatibilityMode("CREATE (a)-[r1:R1]->(b)<-[r2:R2]-(c)-[r3:R3]->(d)")
 
@@ -222,6 +246,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)-[r1:R1]->(b)<-[r2:R2]-(c)-[r3:R3]->(d) RETURN *").toList should have size 1
   }
 
+  // TCK'd
   test("should be possible to generate the movie graph") {
     val query = """
                   |CREATE (TheMatrix:Movie {title:'The Matrix', released:1999, tagline:'Welcome to the Real World'})
@@ -738,6 +763,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesCreated = 171, relationshipsCreated = 253, propertiesWritten = 564, labelsAdded = 171)
   }
 
+  // TCK'd
   test("should work when given a lot of create clauses") {
     val query = """create (hf:School {name : 'Hilly Fields Technical College'})
                   |create (hf)-[:STAFF]->(mrb:Teacher {name : 'Mr Balls'})
@@ -1527,6 +1553,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesCreated = 731, relationshipsCreated = 1247, propertiesWritten = 230, labelsAdded = 730)
   }
 
+  // TCK'd
   test("should not create nodes when aliases are applied to variable names") {
     createNode()
 
@@ -1537,6 +1564,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     result.toList should equal(List(Map("a" -> 0, "b" -> 0)))
   }
 
+  // TCK'd
   test("should create only one node when an alias is applied to a variable name") {
     createNode()
 
@@ -1547,6 +1575,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     result.toList should equal(List(Map("a" -> 0)))
   }
 
+  // TCK'd
   test("should not create nodes when aliases are applied to variable names multiple times") {
     createNode()
 
@@ -1557,6 +1586,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     result.toList should equal(List(Map("x" -> 0, "y" -> 0)))
   }
 
+  // TCK'd
   test("should create only one node when an alias is applied to a variable name multiple times") {
     createNode()
 
@@ -1567,6 +1597,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     result.toList should equal(List(Map("x" -> 0)))
   }
 
+  // TCK'd
   test("should have bound node recognized after projection with WITH + WITH") {
     val query = "CREATE (a) WITH a WITH * CREATE (b) CREATE (a)<-[:T]-(b)"
 
@@ -1575,6 +1606,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
 
+  // TCK'd
   test("should have bound node recognized after projection with WITH + UNWIND") {
     val query = "CREATE (a) WITH a UNWIND [0] AS i CREATE (b) CREATE (a)<-[:T]-(b)"
 
@@ -1583,6 +1615,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
 
+  //Not TCK material
   test("should have bound node recognized after projection with WITH + LOAD CSV") {
     val url = createCSVTempFileURL( writer => writer.println("Foo") )
 
@@ -1593,6 +1626,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
 
+  //Not TCK material
   test("should have bound node recognized after projection with WITH + CALL") {
     val query = "CREATE (a:L) WITH a CALL db.labels() YIELD label CREATE (b) CREATE (a)<-[:T]-(b)"
 
@@ -1601,6 +1635,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, labelsAdded = 1)
   }
 
+  //Not TCK material
   test("should have bound node recognized after projection with WITH + FOREACH") {
     val query = "CREATE (a) WITH a FOREACH (i in [] | SET a.prop = 1) CREATE (b) CREATE (a)<-[:T]-(b)"
 
@@ -1609,6 +1644,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
 
+  // TCK'd
   test("should have bound node recognized after projection with WITH + MERGE node") {
     val query = "CREATE (a) WITH a MERGE (c) CREATE (b) CREATE (a)<-[:T]-(b)"
 
@@ -1617,6 +1653,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
 
+  // TCK'd
   test("should have bound node recognized after projection with WITH + MERGE pattern") {
     val query = "CREATE (a) WITH a MERGE (c)-[:T]->() CREATE (b) CREATE (a)<-[:T]-(b)"
 
