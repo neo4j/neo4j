@@ -87,46 +87,6 @@
 
     <!-- shared versions are defined in the parent pom -->
 
-    <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>tck</artifactId>
-      <version>${opencypher.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>grammar</artifactId>
-      <version>${opencypher.version}</version>
-    </dependency>
-
-    <!-- JSON -->
-
-    <dependency>
-      <groupId>org.codehaus.jackson</groupId>
-      <artifactId>jackson-core-asl</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.codehaus.jackson</groupId>
-      <artifactId>jackson-mapper-asl</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <!-- Visualization -->
-
-    <dependency>
-      <groupId>org.jfree</groupId>
-      <artifactId>jfreechart</artifactId>
-      <version>1.0.19</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.xmlgraphics</groupId>
-      <artifactId>batik-svggen</artifactId>
-      <version>1.8</version>
-    </dependency>
-
     <!-- scala -->
 
     <dependency>
@@ -148,7 +108,6 @@
         </exclusion>
       </exclusions>
     </dependency>
-
     <dependency>
       <groupId>org.scalautils</groupId>
       <artifactId>scalautils_2.11</artifactId>
@@ -160,7 +119,6 @@
         </exclusion>
       </exclusions>
     </dependency>
-
     <dependency>
       <groupId>org.scalacheck</groupId>
       <artifactId>scalacheck_2.11</artifactId>
@@ -171,11 +129,6 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
@@ -183,14 +136,9 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-3.1</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-spec-suite-tools</artifactId>
       <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
 
     <!-- neo4j testing -->
@@ -198,6 +146,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
+      <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
@@ -205,15 +154,8 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-io</artifactId>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher</artifactId>
-      <type>test-jar</type>
       <version>${project.version}</version>
+      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
 
@@ -224,20 +166,5 @@
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
-
-    <!-- other -->
-
-    <dependency>
-      <groupId>com.novus</groupId>
-      <artifactId>salat-core_2.11</artifactId>
-      <version>1.9.9</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.scala-lang</groupId>
-          <artifactId>scala-library</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
   </dependencies>
 </project>

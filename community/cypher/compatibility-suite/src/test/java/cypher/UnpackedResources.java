@@ -105,7 +105,7 @@ public class UnpackedResources extends Enclosed
 
     private static File obtainTargetDirectory( boolean create, String suffix )
     {
-        File directory = new File( new File( "target" ), suffix );
+        File directory = new File( new File( "target" ), suffix ).getAbsoluteFile();
         if ( !directory.exists() )
         {
             if ( !(create && directory.mkdirs()) )

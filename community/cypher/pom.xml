@@ -36,6 +36,7 @@
     <module>frontend-3.1</module>
     <module>cypher-compiler-3.1</module>
     <module>cypher</module>
+    <module>spec-suite-tools</module>
     <module>acceptance</module>
     <module>compatibility-suite</module>
   </modules>

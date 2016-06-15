@@ -24,7 +24,7 @@ import cypher.{CompatibilitySuiteTest, UnpackedResources}
 
 import scala.reflect.io.Path
 
-class CypherTCKSteps extends SpecSuiteSteps {
+class CompatibilitySuiteSteps extends SpecSuiteSteps {
 
   override val requiredScenarioName: String = CompatibilitySuiteTest.SCENARIO_NAME_REQUIRED.trim.toLowerCase
 
@@ -51,14 +51,14 @@ class CypherTCKSteps extends SpecSuiteSteps {
     "Fail when using property access on primitive type", // change error detail
     "Fail when comparing nodes to relationships",
     "Many CREATE clauses", // stack overflow
-    "Null-setting one property with ON CREATE", // wrong ouput format (?)
-    "Copying properties from node with ON CREATE", // wrong ouput format (?)
-    "Copying properties from node with ON MATCH", // wrong ouput format (?)
-    "Copying properties from literal map with ON CREATE", // wrong ouput format (?)
+    "Null-setting one property with ON CREATE", // wrong output format (?)
+    "Copying properties from node with ON CREATE", // wrong output format (?)
+    "Copying properties from node with ON MATCH", // wrong output format (?)
+    "Copying properties from literal map with ON CREATE", // wrong output format (?)
     "Copying properties from literal map with ON MATCH" // wrong output format (?)
   )
 
-  override val graphArchiveLibrary = new GraphArchiveLibrary(new GraphFileRepository(Path(UnpackedResources.targetDirectory("graphs").getAbsoluteFile)))
+  override val graphArchiveLibrary = new GraphArchiveLibrary(new GraphFileRepository(Path(UnpackedResources.targetDirectory("graphs"))))
 }
 
 

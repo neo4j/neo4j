@@ -23,10 +23,6 @@ import java.nio.file.Files
 
 import scala.reflect.io.Path
 
-object GraphArchiveLibrary {
-  val default = new GraphArchiveLibrary(GraphFileRepository.default)
-}
-
 class GraphArchiveLibrary(val repository: GraphFileRepository) {
 
   def recipe(name: String) = repository.graphRecipeLoader(name)

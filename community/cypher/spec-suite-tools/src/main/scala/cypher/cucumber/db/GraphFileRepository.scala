@@ -21,24 +21,18 @@ package cypher.cucumber.db
 
 import java.util.UUID
 
-import cypher.UnpackedResources
-
 import scala.reflect.io.{File, Path}
 
-object GraphFileRepository {
-  val default = new GraphFileRepository(Path(UnpackedResources.targetDirectory("graphs").getAbsoluteFile))
-}
-
-class GraphFileRepository(graphs: Path) {
+class GraphFileRepository(root: Path) {
   self =>
 
   val graphRecipeLoader = GraphRecipeLoader.forRepository(self)
 
-  def graphImportFile(name: String) = graphs / File(s"$name.json")
-  def graphScriptFile(name: String) = graphs / File(s"$name.cypher")
-  def graphArchivePath(descriptor: GraphArchive.Descriptor) = graphs / Path(descriptor.toString)
+  def graphImportFile(name: String) = root / File(s"$name.json")
+  def graphScriptFile(name: String) = root / File(s"$name.cypher")
+  def graphArchivePath(descriptor: GraphArchive.Descriptor) = root / Path(descriptor.toString)
   def graphArchiveImportStatusFile(descriptor: GraphArchive.Descriptor) = graphArchivePath(descriptor) / "IMPORTED"
-  def temporarySnapshotPath = DeleteDirectory.onExit(graphs / Path(UUID.randomUUID().toString))
+  def temporarySnapshotPath = DeleteDirectory.onExit(root / Path(UUID.randomUUID().toString))
 }
 
 
