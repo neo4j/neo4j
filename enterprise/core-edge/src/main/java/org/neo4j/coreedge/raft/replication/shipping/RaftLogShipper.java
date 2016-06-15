@@ -41,6 +41,7 @@ import static java.lang.Long.min;
 import static java.lang.String.format;
 
 import static org.neo4j.coreedge.raft.RenewableTimeoutService.RenewableTimeout;
+import static org.neo4j.coreedge.raft.replication.shipping.RaftLogShipper.Mode.PIPELINE;
 import static org.neo4j.coreedge.raft.replication.shipping.RaftLogShipper.Timeouts.RESEND;
 
 /// Optimizations
@@ -155,25 +156,11 @@ public class RaftLogShipper<MEMBER>
     public synchronized void start()
     {
         log.info( "Starting log shipper: %s", statusAsString() );
-
-        try
-        {
-            timeoutService = new DelayedRenewableTimeoutService( clock, logProvider );
-            timeoutService.init();
-            timeoutService.start();
-        }
-        catch ( Throwable e )
-        {
-            // TODO: Think about how to handle this. We cannot be allowed to throw when
-            // TODO: starting the log shippers from the main RAFT handling. The timeout
-            // TODO: service is a LifeCycle.
-            // TODO: Should we have and use one system level timeout service instead?
-
-            log.error( "Failed to start log shipper " + statusAsString(), e );
-        }
-
+        timeoutService = new DelayedRenewableTimeoutService( clock, logProvider );
+        timeoutService.init();
+        timeoutService.start();
         sendSingle( raftLog.appendIndex(), lastLeaderContext );
-    }
+   }
 
     public synchronized void stop()
     {
@@ -222,7 +209,7 @@ public class RaftLogShipper<MEMBER>
                 if ( sendNextBatchAfterMatch( leaderContext ) )
                 {
                     log.info( "%s: caught up after mismatch, moving to PIPELINE mode", statusAsString() );
-                    mode = Mode.PIPELINE;
+                    mode = PIPELINE;
                 }
                 else
                 {
@@ -236,7 +223,7 @@ public class RaftLogShipper<MEMBER>
                     if ( sendNextBatchAfterMatch( leaderContext ) )
                     {
                         log.info( "%s: caught up, moving to PIPELINE mode", statusAsString() );
-                        mode = Mode.PIPELINE;
+                        mode = PIPELINE;
                     }
                 }
                 break;
@@ -300,49 +287,40 @@ public class RaftLogShipper<MEMBER>
 
     private synchronized void onScheduledTimeoutExpiry()
     {
-        try
+        if ( timedOut() )
         {
-            if ( timedOut() )
-            {
-                onTimeout();
-            }
-            else if ( timeoutAbsoluteMillis != 0 )
-            {
-                long timeLeft = timeoutAbsoluteMillis - clock.millis();
-
-                if ( timeLeft > 0 )
-                {
-                    scheduleTimeout( timeLeft );
-                }
-                else
-                {
-                    onTimeout();
-                }
-            }
+            onTimeout();
+            return;
         }
-        catch ( Throwable e )
+
+        if ( timeoutAbsoluteMillis <= 0 )
         {
-            log.error( "Exception during timeout handling: " + statusAsString(), e );
+            return;
+        }
+
+        long timeLeft = timeoutAbsoluteMillis - clock.millis();
+        if ( timeLeft > 0 )
+        {
+            scheduleTimeout( timeLeft );
+        }
+        else
+        {
+            onTimeout();
         }
     }
 
-    private void onTimeout() throws IOException
+    private void onTimeout()
     {
-        switch ( mode )
+        if ( mode == PIPELINE )
         {
-            case PIPELINE:
-            /* we leave pipelined mode here, because the follower seems
-             * unresponsive and we do not want to spam it with new entries */
-                log.info( "%s: timed out, moving to CATCHUP mode", statusAsString() );
-                mode = Mode.CATCHUP;
-            /* fallthrough */
-            case CATCHUP:
-            case MISMATCH:
-                if ( lastLeaderContext != null )
-                {
-                    sendSingle( lastSentIndex, lastLeaderContext );
-                }
-                break;
+            /* The follower seems unresponsive and we do not want to spam it with new entries */
+            log.info( "%s: timed out, moving to CATCHUP mode", statusAsString() );
+            mode = Mode.CATCHUP;
+        }
+
+        if ( lastLeaderContext != null )
+        {
+            sendSingle( lastSentIndex, lastLeaderContext );
         }
     }
 
@@ -417,8 +395,8 @@ public class RaftLogShipper<MEMBER>
         sendRange( logIndex, logIndex, leaderContext );
     }
 
-    private void sendNewEntries( long prevLogIndex, long prevLogTerm, RaftLogEntry[] newEntries, LeaderContext
-            leaderContext )
+    private void sendNewEntries( long prevLogIndex, long prevLogTerm, RaftLogEntry[] newEntries,
+                                 LeaderContext leaderContext )
     {
         scheduleTimeout( retryTimeMillis );
 

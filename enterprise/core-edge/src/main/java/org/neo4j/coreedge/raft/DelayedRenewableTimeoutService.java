@@ -61,7 +61,7 @@ public class DelayedRenewableTimeoutService extends LifecycleAdapter implements 
     private final Clock clock;
     private final Log log;
     private final Random random;
-    private final JobScheduler scheduler;
+    private final Neo4jJobScheduler scheduler;
     private JobScheduler.JobHandle jobHandle;
 
     public DelayedRenewableTimeoutService( Clock clock, LogProvider logProvider )
@@ -118,69 +118,60 @@ public class DelayedRenewableTimeoutService extends LifecycleAdapter implements 
     @Override
     public synchronized void run()
     {
-        try
+
+        long now = clock.millis();
+        Collection<ScheduledRenewableTimeout> triggered = new LinkedList<>();
+
+        synchronized ( timeouts )
         {
-            long now = clock.millis();
-            Collection<ScheduledRenewableTimeout> triggered = new LinkedList<>();
-
-            synchronized ( timeouts )
+            // Handle renewals
+            ScheduledRenewableTimeout renew;
+            while ( (renew = pendingRenewals.poll()) != null )
             {
-                // Handle renewals
-                ScheduledRenewableTimeout renew;
-                while ( (renew = pendingRenewals.poll()) != null )
-                {
-                    timeouts.remove( renew );
-                    renew.setTimeoutTimestamp( calcTimeoutTimestamp( renew.timeoutLength, renew.randomRange ) );
-                    timeouts.add( renew );
-                }
-
-                // Trigger timeouts
-                for ( ScheduledRenewableTimeout timeout : timeouts )
-                {
-                    if ( timeout.shouldTrigger( now ) )
-                    {
-                        triggered.add( timeout );
-                    }
-                    else
-                    {
-                        // Since the timeouts are sorted, the first timeout we hit that should not be triggered means
-                        // there are no others that should either, so we bail.
-                        break;
-                    }
-                }
+                timeouts.remove( renew );
+                renew.setTimeoutTimestamp( calcTimeoutTimestamp( renew.timeoutLength, renew.randomRange ) );
+                timeouts.add( renew );
             }
 
-            for ( ScheduledRenewableTimeout timeout : triggered )
+            // Trigger timeouts
+            for ( ScheduledRenewableTimeout timeout : timeouts )
             {
-                timeout.trigger();
-            }
-
-            synchronized ( timeouts )
-            {
-                timeouts.removeAll( triggered );
+                if ( timeout.shouldTrigger( now ) )
+                {
+                    triggered.add( timeout );
+                }
+                else
+                {
+                    // Since the timeouts are sorted, the first timeout we hit that should not be triggered means
+                    // there are no others that should either, so we bail.
+                    break;
+                }
             }
         }
-        catch ( Throwable e )
+
+        triggered.forEach( ScheduledRenewableTimeout::trigger );
+
+        synchronized ( timeouts )
         {
-            log.error( "Error handling timeouts", e );
+            timeouts.removeAll( triggered );
         }
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         scheduler.init();
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         jobHandle = scheduler.scheduleRecurring( new JobScheduler.Group( "Scheduler", POOLED ), this, TIMER_RESOLUTION,
                 TIMER_RESOLUTION_UNIT );
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         jobHandle.cancel( false );
         scheduler.stop();

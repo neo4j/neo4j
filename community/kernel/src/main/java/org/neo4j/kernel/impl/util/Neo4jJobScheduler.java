@@ -51,27 +51,13 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     @Override
     public Executor executor( final Group group )
     {
-        return new Executor()
-        {
-            @Override
-            public void execute( Runnable command )
-            {
-                schedule( group, command );
-            }
-        };
+        return job -> schedule( group, job );
     }
 
     @Override
     public ThreadFactory threadFactory( final Group group )
     {
-        return new ThreadFactory()
-        {
-            @Override
-            public Thread newThread( Runnable r )
-            {
-                return createNewThread( group, r, NO_METADATA );
-            }
-        };
+        return job -> createNewThread( group, job, NO_METADATA );
     }
 
     @Override
@@ -128,6 +114,11 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         default:
             throw new IllegalArgumentException( "Unsupported strategy to use for delayed jobs: " + group.strategy() );
         }
+    }
+
+    @Override
+    public void stop()
+    {
     }
 
     @Override
