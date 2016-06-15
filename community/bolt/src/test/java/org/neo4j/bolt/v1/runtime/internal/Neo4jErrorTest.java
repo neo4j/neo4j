@@ -21,11 +21,13 @@ package org.neo4j.bolt.v1.runtime.internal;
 
 import org.junit.Test;
 
+import org.neo4j.cypher.LoadExternalResourceException;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class Neo4jErrorTest
@@ -49,5 +51,15 @@ public class Neo4jErrorTest
 
         // Then
         assertEquals( error.status(), Status.Transaction.DeadlockDetected );
+    }
+
+    @Test
+    public void loadExternalResourceShouldNotReferToLog()
+    {
+        // Given
+        Neo4jError error = Neo4jError.from( new LoadExternalResourceException( "foo", null ) );
+
+        // Then
+        assertThat( error.status().code().classification().refersToLog(), is( false ) );
     }
 }

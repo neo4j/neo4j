@@ -216,7 +216,7 @@ public interface Status
                 "The database was unable to execute the statement." ),
 
         // transient errors
-        ExternalResourceFailed( TransientError,
+        ExternalResourceFailed( ClientError,
                 "Access to an external resource failed"),
 
         // client notifications (performance)
@@ -594,6 +594,7 @@ public interface Status
         {
             ROLLBACK, NONE,
         }
+
 
         private enum PublishingPolicy
         {
