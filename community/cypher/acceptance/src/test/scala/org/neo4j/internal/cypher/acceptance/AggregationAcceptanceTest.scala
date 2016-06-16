@@ -317,4 +317,12 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
 
     result.toList should equal(List(Map("max(i)" -> "b")))
   }
+
+  test("min() should aggregate strings") {
+    val query = "UNWIND ['a', 'b', 'B', null, 'abc', 'abc1'] AS i RETURN min(i)"
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("min(i)" -> "B")))
+  }
 }
