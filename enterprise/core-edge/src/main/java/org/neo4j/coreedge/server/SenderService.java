@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.server;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -71,7 +72,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
     }
 
     @Override
-    public void send( AdvertisedSocketAddress to, Message... messages )
+    public void send( AdvertisedSocketAddress to, Message message )
     {
         serviceLock.readLock().lock();
         try
@@ -81,13 +82,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
                 return;
             }
 
-            MessageQueueMonitor monitor = monitors.newMonitor( MessageQueueMonitor.class, NonBlockingChannel.class );
-            NonBlockingChannel nonBlockingChannel = getAndUpdateLife( to, monitor );
-            monitor.register( to.socketAddress() );
-            for ( Object msg : messages )
-            {
-                nonBlockingChannel.send( msg );
-            }
+            channel( to ).send( message );
         }
         finally
         {
@@ -95,13 +90,29 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
         }
     }
 
-    public int activeChannelCount()
+    @Override
+    public void send( AdvertisedSocketAddress to, Collection<Message> messages )
     {
-        return nonBlockingChannels.size();
+        serviceLock.readLock().lock();
+        try
+        {
+            if ( !senderServiceRunning )
+            {
+                return;
+            }
+
+            NonBlockingChannel channel = channel( to );
+            messages.forEach( channel::send );
+        }
+        finally
+        {
+            serviceLock.readLock().unlock();
+        }
     }
 
-    private NonBlockingChannel getAndUpdateLife( AdvertisedSocketAddress to, MessageQueueMonitor monitor )
+    private NonBlockingChannel channel( AdvertisedSocketAddress to )
     {
+        MessageQueueMonitor monitor = monitors.newMonitor( MessageQueueMonitor.class, NonBlockingChannel.class );
         NonBlockingChannel nonBlockingChannel = nonBlockingChannels.get( to );
 
         if ( nonBlockingChannel == null )
@@ -116,6 +127,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
             }
         }
 
+        monitor.register( to.socketAddress() );
         return nonBlockingChannel;
     }
 
@@ -175,5 +187,4 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
             serviceLock.writeLock().unlock();
         }
     }
-
 }

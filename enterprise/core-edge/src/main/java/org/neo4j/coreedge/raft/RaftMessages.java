@@ -25,8 +25,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import com.sun.org.apache.xml.internal.security.algorithms.MessageDigestAlgorithm;
-
 import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;

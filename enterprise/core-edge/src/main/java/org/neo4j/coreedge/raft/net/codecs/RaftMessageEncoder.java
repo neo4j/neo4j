@@ -135,6 +135,4 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Sto
         marshal.marshal( member.getCoreAddress(), buffer );
         marshal.marshal( member.getRaftAddress(), buffer );
     }
-
-
 }

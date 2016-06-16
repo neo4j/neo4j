@@ -19,6 +19,8 @@
  */
 package org.neo4j.coreedge.raft.net;
 
+import java.util.Collection;
+
 import org.neo4j.coreedge.network.Message;
 
 import org.neo4j.coreedge.server.logging.MessageLogger;
@@ -37,7 +39,14 @@ public class LoggingOutbound<MEMBER, MESSAGE extends Message> implements Outboun
     }
 
     @Override
-    public void send( MEMBER to, MESSAGE... messages )
+    public void send( MEMBER to, MESSAGE message )
+    {
+        messageLogger.log( me, to, message );
+        outbound.send( to, message );
+    }
+
+    @Override
+    public void send( MEMBER to, Collection<MESSAGE> messages )
     {
         messageLogger.log( me, to, messages );
         outbound.send( to, messages );

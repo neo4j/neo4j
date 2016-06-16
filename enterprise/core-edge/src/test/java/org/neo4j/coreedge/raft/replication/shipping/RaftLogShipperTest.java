@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.After;
@@ -47,6 +48,10 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.DoubleLatch;
+import org.neo4j.test.matchers.Matchers;
+
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -130,7 +135,7 @@ public class RaftLogShipperTest
         startLogShipper();
 
         // then
-        assertThat( outbound.sentTo( follower ), hasRaftLogEntries( entry1 ) );
+        assertThat( outbound.sentTo( follower ), Matchers.<RaftTestMember>hasRaftLogEntries( singletonList( entry1 ) ) );
     }
 
     @Test
@@ -146,7 +151,7 @@ public class RaftLogShipperTest
         logShipper.onMismatch( 0, new LeaderContext( 0, 0 ) );
 
         // then
-        assertThat( outbound.sentTo( follower ), hasRaftLogEntries( entry0 ) );
+        assertThat( outbound.sentTo( follower ), Matchers.<RaftTestMember>hasRaftLogEntries( singletonList( entry0 ) ) );
     }
 
     @Test
@@ -166,7 +171,7 @@ public class RaftLogShipperTest
 
         // then
         assertTrue( outbound.hasEntriesTo( follower, entry0 ) );
-        assertThat( outbound.sentTo( follower ), hasRaftLogEntries( entry0 ) );
+        assertThat( outbound.sentTo( follower ), Matchers.<RaftTestMember>hasRaftLogEntries( singletonList( entry0 ) ) );
     }
 
     @Test
@@ -186,7 +191,7 @@ public class RaftLogShipperTest
         logShipper.onMatch( 0, new LeaderContext( 0, 0 ) );
 
         // then
-        assertThat( outbound.sentTo( follower ), hasRaftLogEntries( entry1, entry2, entry3 ) );
+        assertThat( outbound.sentTo( follower ), Matchers.<RaftTestMember>hasRaftLogEntries( asList( entry1, entry2, entry3 ) ) );
     }
 
     @Test
@@ -207,7 +212,7 @@ public class RaftLogShipperTest
         logShipper.onNewEntries( 1, 0, new RaftLogEntry[]{entry2}, new LeaderContext( 0, 0 ) );
 
         // then
-        assertThat( outbound.sentTo( follower ), hasRaftLogEntries( entry1, entry2 ) );
+        assertThat( outbound.sentTo( follower ), Matchers.<RaftTestMember>hasRaftLogEntries( asList( entry1, entry2 ) ) );
     }
 
     @Test
@@ -244,7 +249,7 @@ public class RaftLogShipperTest
         logShipper.onMismatch( 1, new LeaderContext( 0, 0 ) );
 
         // then
-        assertThat( outbound.sentTo( follower ), hasRaftLogEntries( entry2 ) );
+        assertThat( outbound.sentTo( follower ), Matchers.<RaftTestMember>hasRaftLogEntries( singletonList( entry2 ) ) );
     }
 
     @Test
@@ -307,7 +312,7 @@ public class RaftLogShipperTest
 
         //then
         assertTrue( outbound.hasAnyEntriesTo( follower ) );
-        assertThat( outbound.sentTo( follower ), hasRaftLogEntries( entry3 ) );
+        assertThat( outbound.sentTo( follower ), Matchers.<RaftTestMember>hasRaftLogEntries( singletonList( entry3 ) ) );
     }
 
     @Test

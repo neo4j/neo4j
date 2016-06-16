@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.raft;
 
 import java.time.Clock;
+import java.util.Collection;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
@@ -61,7 +62,19 @@ public class RaftInstanceBuilder<MEMBER>
             NullLogProvider.getInstance() );
 
     private Inbound<RaftMessages.RaftMessage<MEMBER>> inbound = handler -> {};
-    private Outbound<MEMBER, RaftMessages.RaftMessage<MEMBER>> outbound = ( advertisedSocketAddress, messages ) -> {};
+    private Outbound<MEMBER, RaftMessages.RaftMessage<MEMBER>> outbound =
+            new Outbound<MEMBER, RaftMessages.RaftMessage<MEMBER>>()
+    {
+        @Override
+        public void send( MEMBER to, RaftMessages.RaftMessage<MEMBER> message )
+        {
+        }
+
+        @Override
+        public void send( MEMBER to, Collection<RaftMessages.RaftMessage<MEMBER>> raftMessages )
+        {
+        }
+    };
 
     private LogProvider logProvider = NullLogProvider.getInstance();
     private Clock clock = Clock.systemUTC();
