@@ -47,6 +47,7 @@ public interface TransactionIdStore
     long BASE_TX_ID = 1;
     long BASE_TX_CHECKSUM = 0;
     long BASE_TX_COMMIT_TIMESTAMP = 0;
+    long UNKNOWN_TX_COMMIT_TIMESTAMP = 1;
     long BASE_TX_LOG_VERSION = 0;
     long BASE_TX_LOG_BYTE_OFFSET = LOG_HEADER_SIZE;
 

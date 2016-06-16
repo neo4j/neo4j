@@ -36,6 +36,7 @@ import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -346,7 +347,15 @@ public class ConstraintHaIT
             // when
             try ( Transaction ignored = slave.beginTx() )
             {
-                createConstraint( slave, type, key );
+                try
+                {
+                    createConstraint( slave, type, key );
+                }
+                catch ( TransactionTerminatedException e )
+                {
+                    // Whatever retry
+                    createConstraint( slave, type, key );
+                }
                 fail( "We expected to not be able to create a constraint on a slave in a cluster." );
             }
             catch ( QueryExecutionException e )
@@ -488,6 +497,37 @@ public class ConstraintHaIT
                 assertThat( single( definition.getPropertyKeys() ), equalTo( key ) );
                 validateLabelOrRelationshipType( definition, type );
             }
+        }
+
+        @Test
+        public void shouldHandleSlaveWritingAfterCrash() throws Throwable
+        {
+            // Given
+            System.out.println( "--- STARTING CLUSTER ---" );
+            ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
+
+            System.out.println( "--- DATA TO MASTER AND SYNC ---" );
+            createEntityInTx( cluster.getMaster(), type( 7), key( 7 ), "Foo");
+            cluster.sync();
+
+            HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+            File slaveStoreDirectory = cluster.getStoreDir( slave );
+
+            // Crash the slave
+            System.out.println( "--- CRASHING SLAVE ---" );
+            ClusterManager.RepairKit shutdownSlave = cluster.shutdown( slave );
+            deleteRecursively( slaveStoreDirectory );
+
+            // When
+            System.out.println( "--- REPAIRING ---" );
+            slave = shutdownSlave.repair();
+
+            System.out.println();
+            System.out.println( " THE REAL DEAL STARTS HERE vv" );
+            System.out.println();
+
+            // Then
+            createEntityInTx( slave, type( 6 ), key( 6 ), "Bar" );
         }
 
         private static ThreadToStatementContextBridge threadToStatementContextBridge( HighlyAvailableGraphDatabase db )

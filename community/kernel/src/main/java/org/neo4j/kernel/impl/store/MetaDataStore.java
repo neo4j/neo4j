@@ -60,6 +60,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
      */
     public static final int RECORD_SIZE = 9;
     public static final String DEFAULT_NAME = "neostore";
+
     // Positions of meta-data records
 
     public enum Position
@@ -723,6 +724,14 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         lastClosedTransactionLogVersion = logVersion;
         lastClosedTransactionLogByteOffset = byteOffset;
         highestCommittedTransaction.set( transactionId, checksum, commitTimestamp );
+    }
+
+    // only for initialization
+    public void setLastCommitTimestamp( long commitTimestamp )
+    {
+        long txId = highestCommittedTransaction.get().transactionId();
+        long checksum = highestCommittedTransaction.get().checksum();
+        highestCommittedTransaction.set( txId, checksum, commitTimestamp );
     }
 
     @Override

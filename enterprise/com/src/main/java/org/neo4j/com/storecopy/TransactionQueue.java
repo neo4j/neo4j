@@ -70,11 +70,16 @@ public class TransactionQueue
 
     public CommittedTransactionRepresentation last()
     {
-        if ( queueIndex == 0 )
+        if ( isEmpty() )
         {
             throw new IllegalStateException( "Nothing in queue" );
         }
         return queue[queueIndex - 1].transaction;
+    }
+
+    public boolean isEmpty()
+    {
+        return queueIndex == 0;
     }
 
     private static class Transaction implements Access<Commitment>

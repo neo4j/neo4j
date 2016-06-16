@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 
@@ -42,6 +43,8 @@ public class LatestCheckPointFinder
     private final PhysicalLogFiles logFiles;
     private final FileSystemAbstraction fileSystem;
     private final LogEntryReader<ReadableLogChannel> logEntryReader;
+    public static final long NOT_FOUND_LAST_COMMIT_TIMESTAMP = -1;
+    private long lastCommitedTimestamp = NOT_FOUND_LAST_COMMIT_TIMESTAMP;
 
     public LatestCheckPointFinder( PhysicalLogFiles logFiles, FileSystemAbstraction fileSystem,
             LogEntryReader<ReadableLogChannel> logEntryReader )
@@ -54,7 +57,8 @@ public class LatestCheckPointFinder
     public LatestCheckPoint find( long fromVersionBackwards ) throws IOException
     {
         long version = fromVersionBackwards;
-        long versionToSearchForCommits = fromVersionBackwards;
+        long versionToSearchForLatestStartEntry = fromVersionBackwards;
+        long versionToSearchForLatestCommitTimestamp = fromVersionBackwards;
         LogEntryStart latestStartEntry = null;
         long oldestVersionFound = -1;
         while ( version >= INITIAL_LOG_VERSION )
@@ -81,9 +85,19 @@ public class LatestCheckPointFinder
                     {
                         latestCheckPoint = entry.as();
                     }
-                    if ( entry instanceof LogEntryStart && ( version == versionToSearchForCommits ) )
+                    else if ( entry instanceof LogEntryStart )
                     {
-                        latestStartEntry = entry.as();
+                        if ( version == versionToSearchForLatestStartEntry )
+                        {
+                            latestStartEntry = entry.as();
+                        }
+                    }
+                    else if ( entry instanceof LogEntryCommit )
+                    {
+                        if ( version == versionToSearchForLatestCommitTimestamp )
+                        {
+                            lastCommitedTimestamp = ((LogEntryCommit) entry).getTimeWritten();
+                        }
                     }
                 }
             }
@@ -100,11 +114,27 @@ public class LatestCheckPointFinder
             // if we have found no commits in the latest log, keep searching in the next one
             if ( latestStartEntry == null )
             {
-                versionToSearchForCommits--;
+                // No start entry found yet, keep searching in previous log
+                versionToSearchForLatestStartEntry--;
+            }
+            if ( lastCommitedTimestamp == NOT_FOUND_LAST_COMMIT_TIMESTAMP )
+            {
+                // No commit entry found yet, keep searching in previous log
+                versionToSearchForLatestCommitTimestamp--;
             }
         }
 
         return new LatestCheckPoint( null, latestStartEntry != null, oldestVersionFound );
+    }
+
+    public boolean hasFoundLastCommitTimestamp()
+    {
+        return lastCommitedTimestamp != NOT_FOUND_LAST_COMMIT_TIMESTAMP;
+    }
+
+    public long lastCommitedTimestamp()
+    {
+        return lastCommitedTimestamp;
     }
 
     public static class LatestCheckPoint

@@ -205,67 +205,89 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
 
     private void applyQueuedTransactions() throws IOException
     {
+        if ( transactionQueue.isEmpty() )
+        {
+            return;
+        }
+        System.out.println( System.identityHashCode( kernelTransactions ) );
+        System.out.println( "Applying" );
+        System.out.println( transactionQueue.last() );
+        System.out.println( "...with open transactions commit timestamp" );
         // Check timestamp on last transaction in queue
         long newLatestAppliedTime = transactionQueue.last().getCommitEntry().getTimeWritten();
         for ( KernelTransaction tx : kernelTransactions.activeTransactions() )
         {
             long commitTimestamp = ((KernelTransactionImplementation) tx).lastTransactionTimestampWhenStarted();
-            if ( commitTimestamp < newLatestAppliedTime - ID_REUSE_QUARANTINE_TIME )
+            System.out.print( "    " + commitTimestamp );
+            if ( commitTimestamp != TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP &&
+                  commitTimestamp < newLatestAppliedTime - ID_REUSE_QUARANTINE_TIME )
             {
                 // TODO: Make transaction terminate for correct reason. (With correct exception)
+                System.out.print( " KILLED" );
                 tx.markForTermination();
             }
+            System.out.println();
         }
 
-        // Synchronize to guard for concurrent shutdown
-        synchronized ( logFile )
+        try
         {
-            // Check rotation explicitly, since the version of append that we're calling isn't doing that.
-            logRotation.rotateLogIfNeeded( LogAppendEvent.NULL );
-
-            // Check kernel health after log rotation
-            if ( !kernelHealth.isHealthy() )
+            // Synchronize to guard for concurrent shutdown
+            synchronized ( logFile )
             {
-                Throwable causeOfPanic = kernelHealth.getCauseOfPanic();
-                log.error( msg + " Original kernel panic cause was:\n" + causeOfPanic.getMessage() );
-                throw new IOException( msg, causeOfPanic );
-            }
+                // Check rotation explicitly, since the version of append that we're calling isn't doing that.
+                logRotation.rotateLogIfNeeded( LogAppendEvent.NULL );
 
-            try
-            {
-                // Apply whatever is in the queue
-                if ( transactionQueue.accept( batchCommitter ) > 0 )
+                // Check kernel health after log rotation
+                if ( !kernelHealth.isHealthy() )
                 {
-                    // TODO if this instance is set to "slave_only" then we can actually skip the force call here.
-                    // Reason being that even if there would be a reordering in some layer where a store file would be
-                    // changed before that change would have ended up in the log, it would be fine sine as a slave
-                    // you would pull that transaction again anyhow before making changes to (after reading) any record.
-                    appender.force();
-                    try
+                    Throwable causeOfPanic = kernelHealth.getCauseOfPanic();
+                    log.error( msg + " Original kernel panic cause was:\n" + causeOfPanic.getMessage() );
+                    throw new IOException( msg, causeOfPanic );
+                }
+
+                try
+                {
+                    // Apply whatever is in the queue
+                    if ( transactionQueue.accept( batchCommitter ) > 0 )
                     {
-                        // Apply all transactions to the store. Only apply, i.e. mark as committed, not closed.
-                        // We mark as closed below.
-                        transactionQueue.accept( batchApplier );
-                        // Ensure that all changes are flushed to the store, we're doing some batching of transactions
-                        // here so some shortcuts are taken in places. Although now comes the snapshotTime where we must
-                        // ensure that all pending changes are applied and flushed properly.
-                        storeApplier.closeBatch();
-                    }
-                    finally
-                    {
-                        // Mark the applied transactions as closed. We must do this as a separate step after
-                        // applying them, with a closeBatch() call in between, otherwise there might be
-                        // threads waiting for transaction obligations to be fulfilled and since they are looking
-                        // at last closed transaction id they might get notified to continue before all data
-                        // has actually been flushed properly.
-                        transactionQueue.accept( batchCloser );
+                        // TODO if this instance is set to "slave_only" then we can actually skip the force call here.
+                        // Reason being that even if there would be a reordering in some layer where a store file would be
+
+                        // changed before that change would have ended up in the log, it would be fine sine as a slave
+                        // you would pull that transaction again anyhow before making changes to (after reading) any
+                        // record.
+                        appender.force();
+                        try
+                        {
+                            // Apply all transactions to the store. Only apply, i.e. mark as committed, not closed.
+                            // We mark as closed below.
+                            transactionQueue.accept( batchApplier );
+                            // Ensure that all changes are flushed to the store, we're doing some batching of transactions
+                            // here so some shortcuts are taken in places. Although now comes the snapshotTime where we must
+                            // ensure that all pending changes are applied and flushed properly.
+                            storeApplier.closeBatch();
+                        }
+                        finally
+                        {
+                            // Mark the applied transactions as closed. We must do this as a separate step after
+                            // applying them, with a closeBatch() call in between, otherwise there might be
+                            // threads waiting for transaction obligations to be fulfilled and since they are looking
+                            // at last closed transaction id they might get notified to continue before all data
+                            // has actually been flushed properly.
+                            transactionQueue.accept( batchCloser );
+                        }
                     }
                 }
+                finally
+                {
+                    transactionQueue.clear();
+                }
             }
-            finally
-            {
-                transactionQueue.clear();
-            }
+        }
+        catch ( Throwable t )
+        {
+            t.printStackTrace( System.out );
+            throw t;
         }
     }
 

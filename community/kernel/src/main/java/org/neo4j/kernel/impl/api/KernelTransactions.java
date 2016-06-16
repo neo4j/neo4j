@@ -179,6 +179,7 @@ public class KernelTransactions extends LifecycleAdapter
     @Override
     public KernelTransaction newInstance()
     {
+        System.out.println( "returning new transaction, I am " + System.identityHashCode( this ) );
         assertDatabaseIsRunning();
         TransactionId lastCommittedTransaction = neoStores.getMetaDataStore().getLastCommittedTransaction();
         return localTxPool.acquire().initialize( lastCommittedTransaction.transactionId(),
@@ -194,6 +195,7 @@ public class KernelTransactions extends LifecycleAdapter
         @Override
         protected void dispose( KernelTransactionImplementation tx )
         {
+            System.out.println( "Disposing: " + tx );
             allTransactions.remove( tx );
             tx.dispose();
             super.dispose( tx );
@@ -212,6 +214,10 @@ public class KernelTransactions extends LifecycleAdapter
             if ( tx.isOpen() )
             {
                 output.add( tx );
+            }
+            else
+            {
+                System.out.println( "Excluding " + tx );
             }
         }
 

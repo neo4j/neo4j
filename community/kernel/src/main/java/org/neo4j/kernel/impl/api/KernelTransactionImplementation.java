@@ -28,6 +28,7 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -249,6 +250,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         assert transactionEvent != null : "transactionEvent was null!";
         this.storeStatement = storeLayer.acquireStatement();
         this.closeListener = null;
+        System.out.println( "Init KTI with: lastTx=" + lastCommittedTx + ", lastTimeStamp=" + lastTimeStamp );
         return this;
     }
 
@@ -443,15 +445,20 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public void close() throws TransactionFailureException
     {
+        new Exception(  ).printStackTrace( System.out );
         assertTransactionOpen();
         assertTransactionNotClosing();
         closeCurrentStatementIfAny();
         closing = true;
         try
         {
-            if ( failure || !success )
+            if ( failure || !success || terminated )
             {
                 rollback();
+                if (terminated )
+                {
+                    throw new TransactionTerminatedException();
+                }
                 if ( success )
                 {
                     // Success was called, but also failure which means that the client code using this
