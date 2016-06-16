@@ -121,7 +121,8 @@ public interface Status
         MarkedAsFailed( ClientError, "Transaction was marked as both successful and failed. Failure takes precedence" +
                 " and so this transaction was rolled back although it may have looked like it was going to be " +
                 "committed" ),
-        Outdated( TransientError, "Transaction has seen state which has been outdated" )
+        Outdated( TransientError, "Transaction has seen state which has been invalidated by applied updates while "
+                + "transaction was active. Transaction should succeed if retried" )
         ;
 
 

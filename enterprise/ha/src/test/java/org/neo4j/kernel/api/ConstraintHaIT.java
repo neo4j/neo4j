@@ -519,18 +519,14 @@ public class ConstraintHaIT
             // When
             slave = shutdownSlave.repair();
 
-            System.out.println();
-            System.out.println( " THE REAL DEAL STARTS HERE vv" );
-            System.out.println();
-
             // Then
             try
             {
                 createEntityInTx( slave, type( 6 ), key( 6 ), "Bar" );
+                fail( "Should fail here, actually" );
             }
             catch ( TransientFailureException e )
             {
-                System.out.println( "YEAH" );
                 createEntityInTx( slave, type( 6 ), key( 6 ), "Bar" );
             }
         }

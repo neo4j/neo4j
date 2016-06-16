@@ -25,13 +25,18 @@ import org.neo4j.kernel.api.exceptions.Status;
 
 public class TransactionTermination
 {
+    /**
+     * Throws different user facing exception depending on {@code reason} of transaction termination.
+     *
+     * @param reason the {@link Status} given as reason for terminating a transaction.
+     */
     public static void throwCorrectExceptionBasedOnTerminationReason( Status reason )
     {
         if ( reason != null )
         {
             if ( reason.code().classification() == Status.Classification.TransientError )
             {
-                throw new TransientTransactionFailureException( "TODO really good description here" );
+                throw new TransientTransactionFailureException( reason.code().description() );
             }
             throw new TransactionTerminatedException();
         }
