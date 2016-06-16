@@ -64,7 +64,6 @@ public final class StoreIdMarshal
         }
         catch ( ReadPastEndException notEnoughBytes )
         {
-            System.out.println("Greetings.");
             return null;
         }
     }
