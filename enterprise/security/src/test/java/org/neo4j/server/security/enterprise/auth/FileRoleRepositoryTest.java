@@ -89,7 +89,7 @@ public class FileRoleRepositoryTest
         roleRepository.create( role );
 
         // When
-        RoleRecord result = roleRepository.findByName( role.name() );
+        RoleRecord result = roleRepository.getRoleByName( role.name() );
 
         // Then
         assertThat( result, equalTo( role ) );
@@ -107,7 +107,7 @@ public class FileRoleRepositoryTest
         roleRepository.start();
 
         // When
-        RoleRecord resultByName = roleRepository.findByName( role.name() );
+        RoleRecord resultByName = roleRepository.getRoleByName( role.name() );
 
         // Then
         assertThat( resultByName, equalTo( role ) );
@@ -125,7 +125,7 @@ public class FileRoleRepositoryTest
         roleRepository.delete( role );
 
         // Then
-        assertThat( roleRepository.findByName( role.name() ), nullValue() );
+        assertThat( roleRepository.getRoleByName( role.name() ), nullValue() );
     }
 
     @Test
@@ -135,14 +135,14 @@ public class FileRoleRepositoryTest
         FileRoleRepository roleRepository = new FileRoleRepository( roleFile, NullLogProvider.getInstance() );
 
         // When
-        assertTrue( roleRepository.isValidName( "neo4j" ) );
-        assertTrue( roleRepository.isValidName( "johnosbourne" ) );
-        assertTrue( roleRepository.isValidName( "john_osbourne" ) );
+        assertTrue( roleRepository.isValidRoleName( "neo4j" ) );
+        assertTrue( roleRepository.isValidRoleName( "johnosbourne" ) );
+        assertTrue( roleRepository.isValidRoleName( "john_osbourne" ) );
 
-        assertFalse( roleRepository.isValidName( ":" ) );
-        assertFalse( roleRepository.isValidName( "" ) );
-        assertFalse( roleRepository.isValidName( "john osbourne" ) );
-        assertFalse( roleRepository.isValidName( "john:osbourne" ) );
+        assertFalse( roleRepository.isValidRoleName( ":" ) );
+        assertFalse( roleRepository.isValidRoleName( "" ) );
+        assertFalse( roleRepository.isValidRoleName( "john osbourne" ) );
+        assertFalse( roleRepository.isValidRoleName( "john:osbourne" ) );
     }
 
     @Test
@@ -210,7 +210,7 @@ public class FileRoleRepositoryTest
             // Then continue
         }
 
-        assertThat( roleRepository.findByName( role.name() ), equalTo( role ) );
+        assertThat( roleRepository.getRoleByName( role.name() ), equalTo( role ) );
     }
 
     @Test

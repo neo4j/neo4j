@@ -25,9 +25,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
-import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -55,6 +57,8 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
 
     private final UserSerialization serialization = new UserSerialization();
 
+    private final Pattern usernamePattern = Pattern.compile( "^[a-zA-Z0-9_]+$" );
+
     public FileUserRepository( Path file, LogProvider logProvider )
     {
         this.authFile = file.toAbsolutePath();
@@ -62,9 +66,9 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
     }
 
     @Override
-    public User findByName( String name )
+    public User getUserByName( String username )
     {
-        return usersByName.get( name );
+        return usersByName.get( username );
     }
 
     @Override
@@ -79,7 +83,7 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
     @Override
     public void create( User user ) throws IllegalArgumentException, IOException
     {
-        if ( !isValidName( user.name() ) )
+        if ( !isValidUsername( user.name() ) )
         {
             throw new IllegalArgumentException( "'" + user.name() + "' is not a valid user name." );
         }
@@ -180,9 +184,15 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
     }
 
     @Override
-    public boolean isValidName( String name )
+    public boolean isValidUsername( String username )
     {
-        return name.matches( "^[a-zA-Z0-9_]+$" );
+        return usernamePattern.matcher( username ).matches();
+    }
+
+    @Override
+    public Set<String> getAllUsernames()
+    {
+        return users.stream().map( User::name ).collect( Collectors.toSet() );
     }
 
     private void saveUsersToFile() throws IOException

@@ -20,6 +20,7 @@
 package org.neo4j.server.security.enterprise.auth;
 
 import java.io.IOException;
+import java.util.Set;
 
 public interface RoleManager
 {
@@ -42,4 +43,10 @@ public interface RoleManager
      * @throws IOException
      */
     void removeUserFromRole( String username, String roleName ) throws IOException;
+
+    Set<String> getAllRoleNames();
+
+    Set<String> getRoleNamesForUser( String username );
+
+    Set<String> getUsernamesForRole( String roleName );
 }

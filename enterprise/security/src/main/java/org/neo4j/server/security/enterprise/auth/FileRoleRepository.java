@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -44,6 +45,8 @@ public class FileRoleRepository extends AbstractRoleRepository
 
     private final RoleSerialization serialization = new RoleSerialization();
 
+    private final Pattern roleNamePattern = Pattern.compile( "^[a-zA-Z0-9_]+$" );
+
     public FileRoleRepository( Path file, LogProvider logProvider )
     {
         this.roleFile = file.toAbsolutePath();
@@ -60,9 +63,9 @@ public class FileRoleRepository extends AbstractRoleRepository
     }
 
     @Override
-    public boolean isValidName( String name )
+    public boolean isValidRoleName( String roleName )
     {
-        return name.matches( "^[a-zA-Z0-9_]+$" );
+        return roleNamePattern.matcher( roleName ).matches();
     }
 
     @Override

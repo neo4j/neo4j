@@ -82,7 +82,7 @@ public class ShiroAuthManagerTest
         manager.start();
 
         // Then
-        final User user = users.findByName( "neo4j" );
+        final User user = users.getUserByName( "neo4j" );
         assertNotNull( user );
         assertTrue( user.credentials().matchesPassword( "neo4j" ) );
         assertTrue( user.passwordChangeRequired() );
@@ -161,7 +161,7 @@ public class ShiroAuthManagerTest
         manager.newUser( "foo", "bar", true );
 
         // Then
-        User user = users.findByName( "foo" );
+        User user = users.getUserByName( "foo" );
         assertNotNull( user );
         assertTrue( user.passwordChangeRequired() );
         assertTrue( user.credentials().matchesPassword( "bar" ) );
@@ -183,8 +183,8 @@ public class ShiroAuthManagerTest
         manager.deleteUser( "jake" );
 
         // Then
-        assertNull( users.findByName( "jake" ) );
-        assertNotNull( users.findByName( "craig" ) );
+        assertNull( users.getUserByName( "jake" ) );
+        assertNotNull( users.getUserByName( "craig" ) );
     }
 
     @Test
@@ -207,7 +207,7 @@ public class ShiroAuthManagerTest
         }
 
         // Then
-        assertNotNull( users.findByName( "jake" ) );
+        assertNotNull( users.getUserByName( "jake" ) );
     }
 
     @Test
@@ -327,7 +327,7 @@ public class ShiroAuthManagerTest
         // Then
         User user = manager.getUser( "jake" );
         assertTrue( user.credentials().matchesPassword( "hello, world!" ) );
-        assertThat( users.findByName( "jake" ), equalTo( user ) );
+        assertThat( users.getUserByName( "jake" ), equalTo( user ) );
     }
 
     @Test
@@ -346,7 +346,7 @@ public class ShiroAuthManagerTest
         // Then
         User user = manager.getUser( "neo" );
         assertTrue( user.credentials().matchesPassword( "hello, world!" ) );
-        assertThat( users.findByName( "neo" ), equalTo( user ) );
+        assertThat( users.getUserByName( "neo" ), equalTo( user ) );
 
         authSubject.logout();
         authSubject = manager.login( authToken( "neo", "hello, world!" ) );

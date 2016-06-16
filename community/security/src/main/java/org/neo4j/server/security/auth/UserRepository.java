@@ -20,6 +20,7 @@
 package org.neo4j.server.security.auth;
 
 import java.io.IOException;
+import java.util.Set;
 
 import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -30,7 +31,7 @@ import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
  */
 public interface UserRepository extends Lifecycle
 {
-    User findByName( String name );
+    User getUserByName( String username );
 
     /**
      * Create a user, given that the users token is unique.
@@ -57,5 +58,7 @@ public interface UserRepository extends Lifecycle
     int numberOfUsers();
 
     /** Utility for API consumers to tell if #create() will accept a given username */
-    boolean isValidName( String name );
+    boolean isValidUsername( String username );
+
+    Set<String> getAllUsernames();
 }

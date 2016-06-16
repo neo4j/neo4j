@@ -21,12 +21,14 @@ package org.neo4j.server.security.enterprise.auth;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.stream.Collectors;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
@@ -43,21 +45,22 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     protected volatile List<RoleRecord> roles = new ArrayList<>();
 
     @Override
-    public RoleRecord findByName( String name )
+    public RoleRecord getRoleByName( String roleName )
     {
-        return rolesByName.get( name );
+        return rolesByName.get( roleName );
     }
 
     @Override
-    public Set<String> findByUsername( String username )
+    public Set<String> getRoleNamesByUsername( String username )
     {
-        return rolesByUsername.get( username );
+        Set<String> roleNames = rolesByUsername.get( username );
+        return roleNames != null ? roleNames : Collections.emptySet();
     }
 
     @Override
     public void create( RoleRecord role ) throws IllegalArgumentException, IOException
     {
-        if ( !isValidName( role.name() ) )
+        if ( !isValidRoleName( role.name() ) )
         {
             throw new IllegalArgumentException( "'" + role.name() + "' is not a valid role name." );
         }
@@ -192,6 +195,12 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
                 }
             }
         }
+    }
+
+    @Override
+    public Set<String> getAllRoleNames()
+    {
+        return roles.stream().map( RoleRecord::name ).collect( Collectors.toSet() );
     }
 
     protected void populateUserMap( RoleRecord role )

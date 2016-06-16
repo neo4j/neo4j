@@ -87,7 +87,7 @@ public class FileUserRepositoryTest
         users.create( user );
 
         // When
-        User result = users.findByName( user.name() );
+        User result = users.getUserByName( user.name() );
 
         // Then
         assertThat( result, equalTo( user ) );
@@ -105,7 +105,7 @@ public class FileUserRepositoryTest
         users.start();
 
         // When
-        User resultByName = users.findByName( user.name() );
+        User resultByName = users.getUserByName( user.name() );
 
         // Then
         assertThat( resultByName, equalTo( user ) );
@@ -123,7 +123,7 @@ public class FileUserRepositoryTest
         users.delete( user );
 
         // Then
-        assertThat( users.findByName( user.name() ), nullValue() );
+        assertThat( users.getUserByName( user.name() ), nullValue() );
     }
 
     @Test
@@ -133,14 +133,14 @@ public class FileUserRepositoryTest
         FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
 
         // When
-        assertTrue( users.isValidName( "neo4j" ) );
-        assertTrue( users.isValidName( "johnosbourne" ) );
-        assertTrue( users.isValidName( "john_osbourne" ) );
+        assertTrue( users.isValidUsername( "neo4j" ) );
+        assertTrue( users.isValidUsername( "johnosbourne" ) );
+        assertTrue( users.isValidUsername( "john_osbourne" ) );
 
-        assertFalse( users.isValidName( ":" ) );
-        assertFalse( users.isValidName( "" ) );
-        assertFalse( users.isValidName( "john osbourne" ) );
-        assertFalse( users.isValidName( "john:osbourne" ) );
+        assertFalse( users.isValidUsername( ":" ) );
+        assertFalse( users.isValidUsername( "" ) );
+        assertFalse( users.isValidUsername( "john osbourne" ) );
+        assertFalse( users.isValidUsername( "john:osbourne" ) );
     }
 
     @Test
@@ -209,7 +209,7 @@ public class FileUserRepositoryTest
             // Then continue
         }
 
-        assertThat( users.findByName( user.name() ), equalTo( user ) );
+        assertThat( users.getUserByName( user.name() ), equalTo( user ) );
     }
 
     @Test
