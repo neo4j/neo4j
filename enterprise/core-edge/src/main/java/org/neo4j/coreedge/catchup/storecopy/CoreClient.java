@@ -23,6 +23,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.coreedge.catchup.RequestMessageType;
@@ -46,6 +47,8 @@ import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
+
+import static java.util.Arrays.asList;
 
 public abstract class CoreClient extends LifecycleAdapter implements StoreFileReceiver,
                                                                      StoreFileStreamingCompleteListener,
@@ -92,7 +95,7 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
 
     private void send( AdvertisedSocketAddress to, RequestMessageType messageType, Message contentMessage )
     {
-        senderService.send( to, messageType, contentMessage );
+        senderService.send( to, asList( messageType, contentMessage ) );
     }
 
     @Override

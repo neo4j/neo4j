@@ -27,6 +27,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
+import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
@@ -55,7 +56,7 @@ public class AppendEntriesMessageFlowTest
     private final StoreId storeId = new StoreId( 1, 2, 3, 4, 5 );
 
     @Mock
-    private Outbound<RaftTestMember> outbound;
+    private Outbound<RaftTestMember, RaftMessages.RaftMessage<RaftTestMember>> outbound;
     @Mock
     private LocalDatabase localDatabase;
 
@@ -87,7 +88,7 @@ public class AppendEntriesMessageFlowTest
         // then
         verify( outbound ).send( same( otherMember ),
                 eq( appendEntriesResponse().from( myself ).term( 0 ).appendIndex( -1 ).matchIndex( -1 ).failure()
-                        .storeId( storeId ).build() ) );
+                        .build() ) );
     }
 
     @Test
@@ -99,7 +100,7 @@ public class AppendEntriesMessageFlowTest
 
         // then
         verify( outbound ).send( same( otherMember ), eq( appendEntriesResponse().
-                appendIndex( 0 ).matchIndex( 0 ).from( myself ).term( 0 ).success().storeId( storeId ).build() ) );
+                appendIndex( 0 ).matchIndex( 0 ).from( myself ).term( 0 ).success().build() ) );
     }
 
     @Test
@@ -112,7 +113,7 @@ public class AppendEntriesMessageFlowTest
         // then
         verify( outbound ).send( same( otherMember ),
                 eq( appendEntriesResponse().from( myself ).term( 0 ).appendIndex( 0 ).matchIndex( 0 ).success()
-                        .storeId( storeId ).build() ) );
+                        .build() ) );
     }
 
     @Test
@@ -120,11 +121,11 @@ public class AppendEntriesMessageFlowTest
     {
         // when
         raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 0 ).prevLogIndex( 0 )
-                .prevLogTerm( 0 ).logEntry( new RaftLogEntry( 0, data ) ).storeId( storeId ).build() );
+                .prevLogTerm( 0 ).logEntry( new RaftLogEntry( 0, data ) ).build() );
 
         // then
         verify( outbound ).send( same( otherMember ),
-                eq( appendEntriesResponse().from( myself ).term( 0 ).failure().storeId( storeId ).build() ) );
+                eq( appendEntriesResponse().from( myself ).term( 0 ).failure().build() ) );
     }
 
     @Test
@@ -148,18 +149,18 @@ public class AppendEntriesMessageFlowTest
         // then
         InOrder invocationOrder = inOrder( outbound );
         invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
-                myself ).term( 0 ).appendIndex( 0 ).matchIndex( 0 ).success().storeId( storeId ).build() ) );
+                myself ).term( 0 ).appendIndex( 0 ).matchIndex( 0 ).success().build() ) );
         invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
-                myself ).term( 0 ).appendIndex( 1 ).matchIndex( 1 ).success().storeId( storeId ).build() ) );
+                myself ).term( 0 ).appendIndex( 1 ).matchIndex( 1 ).success().build() ) );
         invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
-                myself ).term( 0 ).appendIndex( 2 ).matchIndex( 2 ).success().storeId( storeId ).build() ) );
+                myself ).term( 0 ).appendIndex( 2 ).matchIndex( 2 ).success().build() ) );
 
         invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
-                myself ).term( 1 ).appendIndex( 3 ).matchIndex( 3 ).success().storeId( storeId ).build() ) );
+                myself ).term( 1 ).appendIndex( 3 ).matchIndex( 3 ).success().build() ) );
         invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
-                myself ).term( 1 ).appendIndex( 4 ).matchIndex( 4 ).success().storeId( storeId ).build() ) );
+                myself ).term( 1 ).appendIndex( 4 ).matchIndex( 4 ).success().build() ) );
         invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
-                myself ).term( 1 ).appendIndex( 5 ).matchIndex( 5 ).success().storeId( storeId ).build() ) );
+                myself ).term( 1 ).appendIndex( 5 ).matchIndex( 5 ).success().build() ) );
     }
 
     @Test
@@ -180,12 +181,12 @@ public class AppendEntriesMessageFlowTest
         // then
         InOrder invocationOrder = inOrder( outbound );
         invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
-                myself ).term( 0 ).matchIndex( 0 ).appendIndex( 0 ).success().storeId( storeId ).build() ) );
+                myself ).term( 0 ).matchIndex( 0 ).appendIndex( 0 ).success().build() ) );
         invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
-                myself ).term( 0 ).matchIndex( 1 ).appendIndex( 1 ).success().storeId( storeId ).build() ) );
+                myself ).term( 0 ).matchIndex( 1 ).appendIndex( 1 ).success().build() ) );
         invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
-                myself ).term( 0 ).matchIndex( 2 ).appendIndex( 2 ).success().storeId( storeId ).build() ) );
+                myself ).term( 0 ).matchIndex( 2 ).appendIndex( 2 ).success().build() ) );
         invocationOrder.verify( outbound, times( 1 ) ).send( same( otherMember ), eq( appendEntriesResponse().from(
-                myself ).term( 2 ).matchIndex( -1 ).appendIndex( 2 ).failure().storeId( storeId ).build() ) );
+                myself ).term( 2 ).matchIndex( -1 ).appendIndex( 2 ).failure().build() ) );
     }
 }

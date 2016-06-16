@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.raft;
 
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -40,9 +41,9 @@ public class RaftTestNetwork<T>
     private final Map<T, Outbound> outboundChannels = new HashMap<>();
 
     private final AtomicLong seqGen = new AtomicLong();
-    private final BiFunction<T/*from*/,T/*to*/,Long> latencySpecMillis;
+    private final BiFunction<T/*from*/, T/*to*/, Long> latencySpecMillis;
 
-    public RaftTestNetwork( BiFunction<T,T,Long> latencySpecMillis )
+    public RaftTestNetwork( BiFunction<T, T, Long> latencySpecMillis )
     {
         this.latencySpecMillis = latencySpecMillis;
     }
@@ -125,7 +126,7 @@ public class RaftTestNetwork<T>
         }
     }
 
-    public class Outbound implements org.neo4j.coreedge.raft.net.Outbound<T>
+    public class Outbound implements org.neo4j.coreedge.raft.net.Outbound<T, Message>
     {
         private NetworkThread networkThread;
         private volatile boolean disconnected = false;
@@ -149,14 +150,22 @@ public class RaftTestNetwork<T>
         }
 
         @Override
-        public void send( T destination, final Message... messages )
+        public void send( T destination, Message message )
+        {
+            doSend( destination, message, System.currentTimeMillis() );
+        }
+
+        @Override
+        public void send( T destination, Collection<Message> messages )
         {
             long now = System.currentTimeMillis();
-            for ( Message message : messages )
-            {
-                long atMillis = now + latencySpecMillis.apply( me, destination );
-                networkThread.scheduleDelivery( destination, message, atMillis );
-            }
+            messages.forEach( message -> doSend( destination, message, now ) );
+        }
+
+        private void doSend( T destination, Message message, long now )
+        {
+            long atMillis = now + latencySpecMillis.apply( me, destination );
+            networkThread.scheduleDelivery( destination, message, atMillis );
         }
 
         public void disconnect()
@@ -209,9 +218,13 @@ public class RaftTestNetwork<T>
                 public boolean equals( Object o )
                 {
                     if ( this == o )
-                    { return true; }
+                    {
+                        return true;
+                    }
                     if ( o == null || getClass() != o.getClass() )
-                    { return false; }
+                    {
+                        return false;
+                    }
                     MessageContext that = (MessageContext) o;
                     return seqNum == that.seqNum;
                 }
@@ -225,7 +238,7 @@ public class RaftTestNetwork<T>
 
             public synchronized void scheduleDelivery( T destination, Message message, long atMillis )
             {
-                if( !disconnected )
+                if ( !disconnected )
                 {
                     msgQueue.add( new MessageContext( destination, message, atMillis ) );
                     notifyAll();
@@ -235,18 +248,18 @@ public class RaftTestNetwork<T>
             @Override
             public synchronized void run()
             {
-                while( !done )
+                while ( !done )
                 {
                     long now = System.currentTimeMillis();
 
                     /* Process message ready for delivery */
                     Iterator<MessageContext> itr = msgQueue.iterator();
                     MessageContext context;
-                    while( itr.hasNext() && ( context = itr.next() ).atMillis <= now )
+                    while ( itr.hasNext() && (context = itr.next()).atMillis <= now )
                     {
                         itr.remove();
                         Inbound inbound = inboundChannels.get( context.destination );
-                        if( inbound != null )
+                        if ( inbound != null )
                         {
                             inbound.deliver( context.message );
                         }
@@ -259,12 +272,12 @@ public class RaftTestNetwork<T>
                         {
                             MessageContext first = msgQueue.first();
                             long waitTime = first.atMillis - System.currentTimeMillis();
-                            if( waitTime > 0 )
+                            if ( waitTime > 0 )
                             {
                                 wait( waitTime );
                             }
                         }
-                        catch( NoSuchElementException e )
+                        catch ( NoSuchElementException e )
                         {
                             wait( 1000 );
                         }
@@ -304,7 +317,7 @@ public class RaftTestNetwork<T>
 
         public synchronized void deliver( Message message )
         {
-            if( !disconnected )
+            if ( !disconnected )
             {
                 Q.add( message );
             }
@@ -340,12 +353,12 @@ public class RaftTestNetwork<T>
             @Override
             public void run()
             {
-                while( !done )
+                while ( !done )
                 {
                     try
                     {
                         Message message = Q.poll( 1, TimeUnit.SECONDS );
-                        if( message != null && handler != null )
+                        if ( message != null && handler != null )
                         {
                             handler.handle( message );
                         }

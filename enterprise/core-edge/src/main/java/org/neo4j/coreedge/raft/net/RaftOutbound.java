@@ -19,23 +19,42 @@
  */
 package org.neo4j.coreedge.raft.net;
 
-import org.neo4j.coreedge.network.Message;
+import java.util.Collection;
 
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
+import org.neo4j.coreedge.network.Message;
+import org.neo4j.coreedge.raft.RaftMessages.RaftMessage;
+import org.neo4j.coreedge.raft.RaftMessages.StoreIdAwareMessage;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 
-public class RaftOutbound implements Outbound<CoreMember>
-{
-    private final Outbound<AdvertisedSocketAddress> outbound;
+import static java.util.stream.Collectors.toList;
 
-    public RaftOutbound( Outbound<AdvertisedSocketAddress> outbound )
+public class RaftOutbound implements Outbound<CoreMember, RaftMessage<CoreMember>>
+{
+    private final Outbound<AdvertisedSocketAddress,Message> outbound;
+    private final LocalDatabase localDatabase;
+
+    public RaftOutbound( Outbound<AdvertisedSocketAddress,Message> outbound, LocalDatabase localDatabase )
     {
         this.outbound = outbound;
+        this.localDatabase = localDatabase;
     }
 
     @Override
-    public void send( CoreMember to, Message... message )
+    public void send( CoreMember to, RaftMessage<CoreMember> message )
     {
-        outbound.send( to.getRaftAddress(), message );
+        outbound.send( to.getRaftAddress(), storeIdify( message ) );
+    }
+
+    @Override
+    public void send( CoreMember to, Collection<RaftMessage<CoreMember>> raftMessages )
+    {
+        outbound.send( to.getRaftAddress(), raftMessages.stream().map( this::storeIdify ).collect( toList() ) );
+    }
+
+    private StoreIdAwareMessage<CoreMember> storeIdify( RaftMessage<CoreMember> m )
+    {
+        return new StoreIdAwareMessage<>( localDatabase.storeId(), m );
     }
 }

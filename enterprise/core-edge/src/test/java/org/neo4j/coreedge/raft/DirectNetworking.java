@@ -20,6 +20,8 @@
 package org.neo4j.coreedge.raft;
 
 import org.neo4j.coreedge.network.Message;
+
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -75,7 +77,8 @@ public class DirectNetworking
         disconnectedMembers.remove( id );
     }
 
-    public class Outbound implements org.neo4j.coreedge.raft.net.Outbound<RaftTestMember>
+    public class Outbound implements
+            org.neo4j.coreedge.raft.net.Outbound<RaftTestMember, RaftMessages.RaftMessage<RaftTestMember>>
     {
         private final long me;
 
@@ -85,19 +88,29 @@ public class DirectNetworking
         }
 
         @Override
-        public synchronized void send( RaftTestMember to, final Message... messages )
+        public void send( RaftTestMember to, RaftMessages.RaftMessage<RaftTestMember> message )
         {
-            if ( !messageQueues.containsKey( to.getId() ) ||
-                    disconnectedMembers.contains( to.getId() ) ||
-                    disconnectedMembers.contains( me ) )
-            {
-                return;
-            }
 
-            for ( Message message : messages )
+            if ( canDeliver( to ) )
             {
                 messageQueues.get( to.getId() ).add( message );
             }
+        }
+
+        @Override
+        public void send( RaftTestMember to, Collection<RaftMessages.RaftMessage<RaftTestMember>> messages )
+        {
+            if ( canDeliver( to ) )
+            {
+                messageQueues.get( to.getId() ).addAll( messages );
+            }
+        }
+
+        private boolean canDeliver( RaftTestMember to )
+        {
+            return messageQueues.containsKey( to.getId() ) &&
+                    !disconnectedMembers.contains( to.getId() ) &&
+                    !disconnectedMembers.contains( me );
         }
     }
 

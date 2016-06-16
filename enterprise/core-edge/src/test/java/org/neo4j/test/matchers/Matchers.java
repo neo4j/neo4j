@@ -20,6 +20,7 @@
 package org.neo4j.test.matchers;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -38,12 +39,12 @@ public final class Matchers
     {
     }
 
-    public static Matcher<? super List<Message>> hasMessage( RaftMessages.BaseMessage<RaftTestMember> message )
+    public static <MEMBER> Matcher<? super List<RaftMessages.RaftMessage<MEMBER>>> hasMessage( RaftMessages.BaseMessage<MEMBER> message )
     {
-        return new TypeSafeMatcher<List<Message>>()
+        return new TypeSafeMatcher<List<RaftMessages.RaftMessage<MEMBER>>>()
         {
             @Override
-            protected boolean matchesSafely( List<Message> messages )
+            protected boolean matchesSafely( List<RaftMessages.RaftMessage<MEMBER>> messages )
             {
                 return messages.contains( message );
             }
@@ -56,12 +57,12 @@ public final class Matchers
         };
     }
 
-    public static Matcher<? super List<Message>> hasRaftLogEntries( RaftLogEntry... expectedEntries )
+    public static <MEMBER> Matcher<? super List<RaftMessages.RaftMessage<MEMBER>>> hasRaftLogEntries( Collection<RaftLogEntry> expectedEntries )
     {
-        return new TypeSafeMatcher<List<Message>>()
+        return new TypeSafeMatcher<List<RaftMessages.RaftMessage<MEMBER>>>()
         {
             @Override
-            protected boolean matchesSafely( List<Message> messages )
+            protected boolean matchesSafely( List<RaftMessages.RaftMessage<MEMBER>> messages )
             {
                 List<RaftLogEntry> entries = messages.stream()
                         .filter( message -> message instanceof RaftMessages.AppendEntries.Request )
@@ -69,14 +70,14 @@ public final class Matchers
                         .flatMap( x -> Arrays.stream( x.entries() ) )
                         .collect( Collectors.toList() );
 
-                return entries.containsAll( Arrays.asList( expectedEntries ) );
+                return entries.containsAll( expectedEntries );
 
             }
 
             @Override
             public void describeTo( Description description )
             {
-                description.appendText( "log entries " + Arrays.toString( expectedEntries ) );
+                description.appendText( "log entries " + expectedEntries );
             }
         };
     }

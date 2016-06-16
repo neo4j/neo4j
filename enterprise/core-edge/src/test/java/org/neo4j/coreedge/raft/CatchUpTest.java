@@ -58,7 +58,7 @@ public class CatchUpTest
         // when
         fixture.members().withId( leader ).timeoutService().invokeTimeout( RaftInstance.Timeouts.ELECTION );
         net.processMessages();
-        fixture.members().withId( leader ).raftInstance().handle( new Request<>( leaderMember, valueOf( 42 ), storeId ) );
+        fixture.members().withId( leader ).raftInstance().handle( new Request<>( leaderMember, valueOf( 42 ) ) );
         net.processMessages();
 
         // then
@@ -91,10 +91,10 @@ public class CatchUpTest
         net.disconnect( sleepyId );
 
         // when
-        fixture.members().withId( leaderId ).raftInstance().handle( new Request<>( leader, valueOf( 10 ), storeId ) );
-        fixture.members().withId( leaderId ).raftInstance().handle( new Request<>( leader, valueOf( 20 ), storeId ) );
-        fixture.members().withId( leaderId ).raftInstance().handle( new Request<>( leader, valueOf( 30 ), storeId ) );
-        fixture.members().withId( leaderId ).raftInstance().handle( new Request<>( leader, valueOf( 40 ), storeId ) );
+        fixture.members().withId( leaderId ).raftInstance().handle( new Request<>( leader, valueOf( 10 ) ) );
+        fixture.members().withId( leaderId ).raftInstance().handle( new Request<>( leader, valueOf( 20 ) ) );
+        fixture.members().withId( leaderId ).raftInstance().handle( new Request<>( leader, valueOf( 30 ) ) );
+        fixture.members().withId( leaderId ).raftInstance().handle( new Request<>( leader, valueOf( 40 ) ) );
         net.processMessages();
 
         // then

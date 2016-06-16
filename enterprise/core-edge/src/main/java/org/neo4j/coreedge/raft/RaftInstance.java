@@ -30,6 +30,7 @@ import java.util.function.Supplier;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
 import org.neo4j.coreedge.helper.VolatileFuture;
+import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
@@ -51,6 +52,7 @@ import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.core.NotMyselfSelectionStrategy;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.kvstore.Rotation;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -110,7 +112,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>,
     private final VolatileFuture<MEMBER> volatileLeader = new VolatileFuture<>( null );
 
     private final CoreServerSelectionStrategy defaultStrategy;
-    private final Outbound<MEMBER> outbound;
+    private final Outbound<MEMBER, RaftMessages.RaftMessage<MEMBER>> outbound;
     private final Log log;
     private Role currentRole = Role.FOLLOWER;
 
@@ -121,7 +123,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>,
                          RaftStateMachine raftStateMachine, long electionTimeout, long heartbeatInterval,
                          RenewableTimeoutService renewableTimeoutService,
                          CoreServerSelectionStrategy defaultStrategy,
-                         final Outbound<MEMBER> outbound,
+                         Outbound<MEMBER, RaftMessages.RaftMessage<MEMBER>> outbound,
                          LogProvider logProvider, RaftMembershipManager<MEMBER> membershipManager,
                          RaftLogShippingManager<MEMBER> logShipping,
                          Supplier<DatabaseHealth> databaseHealthSupplier,
@@ -309,12 +311,11 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>,
     }
 
     @Override
-    public boolean validate( RaftMessages.RaftMessage<MEMBER> incomingMessage )
+    public boolean validate( RaftMessages.RaftMessage<MEMBER> incomingMessage, StoreId storeId )
     {
         try
         {
-            Outcome<MEMBER> outcome = currentRole.handler.validate( incomingMessage, state, log, localDatabase );
-
+            Outcome<MEMBER> outcome = currentRole.handler.validate( incomingMessage, storeId, state, localDatabase );
             boolean processable = outcome.isProcessable();
             if ( !processable )
             {

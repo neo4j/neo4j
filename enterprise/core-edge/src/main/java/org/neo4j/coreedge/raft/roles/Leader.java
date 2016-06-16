@@ -40,7 +40,6 @@ import org.neo4j.logging.Log;
 
 import static java.lang.Math.max;
 
-import static org.neo4j.coreedge.raft.roles.Role.CANDIDATE;
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 
@@ -57,7 +56,7 @@ public class Leader implements RaftMessageHandler
         long commitIndex = ctx.leaderCommit();
         long commitIndexTerm = ctx.entryLog().readEntryTerm( commitIndex );
         Heartbeat<MEMBER> heartbeat = new Heartbeat<>( ctx.myself(), ctx.term(), commitIndex,
-                commitIndexTerm, storeId );
+                commitIndexTerm );
         for ( MEMBER to : replicationTargets( ctx ) )
         {
             outcome.addOutgoingMessage( new RaftMessages.Directed<>( to, heartbeat ) );
@@ -103,7 +102,7 @@ public class Leader implements RaftMessageHandler
                 {
                     RaftMessages.AppendEntries.Response<MEMBER> appendResponse =
                             new RaftMessages.AppendEntries.Response<>( ctx.myself(), ctx.term(), false, req.prevLogIndex(),
-                                    ctx.entryLog().appendIndex(), localDatabase.storeId() );
+                                    ctx.entryLog().appendIndex() );
 
                     outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(), appendResponse ) );
                     break;
@@ -196,8 +195,7 @@ public class Leader implements RaftMessageHandler
                         // There are no earlier entries, message the follower that we have compacted so that
                         // it can take appropriate action.
                         outcome.addOutgoingMessage( new RaftMessages.Directed<>( response.from(),
-                                new RaftMessages.LogCompactionInfo<>( ctx.myself(), ctx.term(),
-                                        ctx.entryLog().prevIndex(), localDatabase.storeId() ) ) );
+                                new RaftMessages.LogCompactionInfo<>( ctx.myself(), ctx.term(), ctx.entryLog().prevIndex() ) ) );
                     }
                 }
                 break;
@@ -219,7 +217,7 @@ public class Leader implements RaftMessageHandler
                 }
 
                 outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(),
-                        new RaftMessages.Vote.Response<>( ctx.myself(), ctx.term(), false, localDatabase.storeId() ) ) );
+                        new RaftMessages.Vote.Response<>( ctx.myself(), ctx.term(), false ) ) );
                 break;
             }
 
@@ -244,8 +242,8 @@ public class Leader implements RaftMessageHandler
     }
 
     @Override
-    public <MEMBER> Outcome<MEMBER> validate( RaftMessages.RaftMessage<MEMBER> message, RaftState<MEMBER> ctx,
-                                              Log log, LocalDatabase localDatabase )
+    public <MEMBER> Outcome<MEMBER> validate( RaftMessages.RaftMessage<MEMBER> message, StoreId storeId,
+                                              RaftState<MEMBER> ctx, LocalDatabase localDatabase )
     {
         return new Outcome<>( LEADER, ctx );
     }

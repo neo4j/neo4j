@@ -44,6 +44,7 @@ import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.RaftDiscoveryServiceConnector;
+import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.BatchingMessageHandler;
 import org.neo4j.coreedge.raft.ContinuousJob;
 import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
@@ -290,7 +291,7 @@ public class EnterpriseCoreEditionModule
             messageLogger = new NullMessageLogger<>();
         }
 
-        LoggingOutbound<AdvertisedSocketAddress> loggingOutbound = new LoggingOutbound<>(
+        LoggingOutbound<AdvertisedSocketAddress,Message> loggingOutbound = new LoggingOutbound<>(
                 senderService, myself.getRaftAddress(), messageLogger );
 
         ListenSocketAddress raftListenAddress = config.get( CoreEdgeClusterSettings.raft_listen_address );
@@ -380,8 +381,8 @@ public class EnterpriseCoreEditionModule
         }
 
         RaftReplicator<CoreMember> replicator = new RaftReplicator<>( raft, myself,
-                new RaftOutbound( loggingOutbound ), sessionPool, progressTracker,
-                new ExponentialBackoffStrategy( 10, SECONDS ), localDatabase );
+                new RaftOutbound( loggingOutbound, localDatabase ), sessionPool, progressTracker,
+                new ExponentialBackoffStrategy( 10, SECONDS ) );
 
         dependencies.satisfyDependency( raft );
 
@@ -610,7 +611,7 @@ public class EnterpriseCoreEditionModule
     }
 
     private static RaftInstance<CoreMember> createRaft( LifeSupport life,
-                                                        Outbound<AdvertisedSocketAddress> outbound,
+                                                        Outbound<AdvertisedSocketAddress, Message> outbound,
                                                         CoreTopologyService discoveryService,
                                                         Config config,
                                                         MessageLogger<AdvertisedSocketAddress> messageLogger,
@@ -681,30 +682,30 @@ public class EnterpriseCoreEditionModule
 
         CoreMemberSetBuilder memberSetBuilder = new CoreMemberSetBuilder();
 
-        LeaderOnlyReplicator leaderOnlyReplicator = new LeaderOnlyReplicator<>( myself, myself.getRaftAddress(),
-                outbound );
+        RaftOutbound raftOutbound = new RaftOutbound( outbound, localDatabase );
+        LeaderOnlyReplicator<CoreMember> leaderOnlyReplicator = new LeaderOnlyReplicator<>( myself, raftOutbound );
 
         RaftMembershipManager<CoreMember> raftMembershipManager = new RaftMembershipManager<>( leaderOnlyReplicator,
                 memberSetBuilder, raftLog, logProvider, expectedClusterSize, electionTimeout, Clock.systemUTC(),
                 config.get( CoreEdgeClusterSettings.join_catch_up_timeout ), raftMembershipStorage, localDatabase );
 
-        RaftLogShippingManager<CoreMember> logShipping = new RaftLogShippingManager<>( new RaftOutbound( outbound ),
+        RaftLogShippingManager<CoreMember> logShipping = new RaftLogShippingManager<>( raftOutbound,
                 logProvider, raftLog,
                 Clock.systemUTC(), myself, raftMembershipManager, electionTimeout,
                 config.get( CoreEdgeClusterSettings.catchup_batch_size ),
                 config.get( CoreEdgeClusterSettings.log_shipping_max_lag ),
-                inFlightMap, localDatabase );
+                inFlightMap );
 
         RaftInstance<CoreMember> raftInstance = new RaftInstance<>(
                 myself, termState, voteState, raftLog, raftStateMachine, electionTimeout, heartbeatInterval,
                 raftTimeoutService, new NotMyselfSelectionStrategy( discoveryService, myself ),
-                new RaftOutbound( outbound ), logProvider,
+                raftOutbound, logProvider,
                 raftMembershipManager, logShipping, databaseHealthSupplier, inFlightMap, monitors, localDatabase );
 
         int queueSize = config.get( CoreEdgeClusterSettings.raft_in_queue_size );
         int maxBatch = config.get( CoreEdgeClusterSettings.raft_in_queue_max_batch );
         BatchingMessageHandler<CoreMember> batchingMessageHandler =
-                new BatchingMessageHandler<>( raftInstance, logProvider, queueSize, maxBatch, localDatabase );
+                new BatchingMessageHandler<>( raftInstance, logProvider, queueSize, maxBatch );
 
         life.add( new ContinuousJob( jobScheduler, new JobScheduler.Group( "raft-batch-handler", NEW_THREAD ),
                 batchingMessageHandler ) );
@@ -727,6 +728,7 @@ public class EnterpriseCoreEditionModule
 
     private static PrintWriter raftMessagesLog( File storeDir )
     {
+        //noinspection ResultOfMethodCallIgnored
         storeDir.mkdirs();
         try
         {

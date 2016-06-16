@@ -21,6 +21,7 @@ package org.neo4j.coreedge.raft;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -31,9 +32,9 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.server.RaftTestMember;
 
-public class OutboundMessageCollector implements Outbound<RaftTestMember>
+public class OutboundMessageCollector implements Outbound<RaftTestMember, RaftMessages.RaftMessage<RaftTestMember>>
 {
-    Map<RaftTestMember, List<Message>> sentMessages = new HashMap<>();
+    Map<RaftTestMember, List<RaftMessages.RaftMessage<RaftTestMember>>> sentMessages = new HashMap<>();
 
     public void clear()
     {
@@ -41,21 +42,31 @@ public class OutboundMessageCollector implements Outbound<RaftTestMember>
     }
 
     @Override
-    public void send( RaftTestMember to, Message... messages )
+    public void send( RaftTestMember to, RaftMessages.RaftMessage<RaftTestMember> message )
     {
-        List<Message> messagesToMember = sentMessages.get( to );
+        raftMessages( to ).add( message );
+    }
+
+    @Override
+    public void send( RaftTestMember to, Collection<RaftMessages.RaftMessage<RaftTestMember>> messages )
+    {
+        raftMessages( to ).addAll( messages );
+    }
+
+    private List<RaftMessages.RaftMessage<RaftTestMember>> raftMessages( RaftTestMember to )
+    {
+        List<RaftMessages.RaftMessage<RaftTestMember>> messagesToMember = sentMessages.get( to );
         if ( messagesToMember == null )
         {
             messagesToMember = new ArrayList<>();
             sentMessages.put( to, messagesToMember );
         }
-
-        Collections.addAll( messagesToMember, messages );
+        return messagesToMember;
     }
 
-    public List<Message> sentTo( RaftTestMember member )
+    public List<RaftMessages.RaftMessage<RaftTestMember>> sentTo( RaftTestMember member )
     {
-        List<Message> messages = sentMessages.get( member );
+        List<RaftMessages.RaftMessage<RaftTestMember>> messages = sentMessages.get( member );
 
         if ( messages == null )
         {
@@ -67,7 +78,7 @@ public class OutboundMessageCollector implements Outbound<RaftTestMember>
 
     public boolean hasAnyEntriesTo( RaftTestMember member )
     {
-        List<Message> messages = sentMessages.get( member );
+        List<RaftMessages.RaftMessage<RaftTestMember>> messages = sentMessages.get( member );
         return messages != null && messages.size() != 0;
     }
 
@@ -79,10 +90,7 @@ public class OutboundMessageCollector implements Outbound<RaftTestMember>
         {
             if ( message instanceof RaftMessages.AppendEntries.Request )
             {
-                for ( RaftLogEntry actualEntry : ((RaftMessages.AppendEntries.Request) message).entries() )
-                {
-                    actualMessages.add( actualEntry );
-                }
+                Collections.addAll( actualMessages, ((RaftMessages.AppendEntries.Request) message).entries() );
             }
         }
 

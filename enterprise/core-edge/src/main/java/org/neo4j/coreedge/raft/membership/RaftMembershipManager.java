@@ -269,7 +269,7 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
     @Override
     public void doConsensus( Set<MEMBER> newVotingMemberSet )
     {
-        replicator.replicate( memberSetBuilder.build( newVotingMemberSet ), localDatabase.storeId() );
+        replicator.replicate( memberSetBuilder.build( newVotingMemberSet ) );
     }
 
     @Override

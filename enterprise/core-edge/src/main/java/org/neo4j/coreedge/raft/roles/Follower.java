@@ -128,16 +128,16 @@ public class Follower implements RaftMessageHandler
     }
 
     @Override
-    public <MEMBER> Outcome<MEMBER> validate( RaftMessages.RaftMessage<MEMBER> message, RaftState<MEMBER> ctx,
-                                              Log log, LocalDatabase localDatabase )
+    public <MEMBER> Outcome<MEMBER> validate( RaftMessages.RaftMessage<MEMBER> message, StoreId storeId,
+                                              RaftState<MEMBER> ctx, LocalDatabase localDatabase )
     {
         localDatabase.assertHealthy( IllegalStateException.class );
         Outcome<MEMBER> outcome = new Outcome<>( FOLLOWER, ctx );
 
-        StoreId storeId = localDatabase.storeId();
+        StoreId localStoreId = localDatabase.storeId();
         if ( outcome.getLeader() != null &&
                 message.type() != RaftMessages.Type.HEARTBEAT_TIMEOUT &&
-                !storeId.theRealEquals( message.storeId() ) )
+                !localStoreId.theRealEquals( storeId ) )
         {
             if ( localDatabase.isEmpty() )
             {
@@ -146,7 +146,7 @@ public class Follower implements RaftMessageHandler
             }
             else if ( message.type() != RaftMessages.Type.VOTE_REQUEST )
             {
-                throw new MismatchingStoreIdException( message.storeId(), storeId );
+                throw new MismatchingStoreIdException( storeId, localStoreId );
             }
             else
             {

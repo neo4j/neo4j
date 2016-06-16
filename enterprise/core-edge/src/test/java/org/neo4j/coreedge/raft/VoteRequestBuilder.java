@@ -32,7 +32,7 @@ public class VoteRequestBuilder<MEMBER>
 
     public RaftMessages.Vote.Request<MEMBER> build()
     {
-        return new RaftMessages.Vote.Request<>( from, term, candidate, lastLogIndex, lastLogTerm, storeId );
+        return new RaftMessages.Vote.Request<>( from, term, candidate, lastLogIndex, lastLogTerm );
     }
 
     public VoteRequestBuilder<MEMBER> from( MEMBER from )

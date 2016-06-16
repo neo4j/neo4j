@@ -27,6 +27,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.DirectNetworking;
 import org.neo4j.coreedge.raft.RaftTestFixture;
 import org.neo4j.coreedge.raft.net.Inbound;
@@ -47,7 +48,7 @@ import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 public class RaftGroupMembershipTest
 {
     @Mock
-    private Outbound<RaftTestMember> outbound;
+    private Outbound<RaftTestMember, Message> outbound;
 
     @Mock
     private Inbound inbound;

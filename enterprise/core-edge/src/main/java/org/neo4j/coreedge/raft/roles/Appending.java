@@ -42,7 +42,7 @@ public class Appending
         if ( request.leaderTerm() < state.term() )
         {
             RaftMessages.AppendEntries.Response<MEMBER> appendResponse = new RaftMessages.AppendEntries.Response<>(
-                    state.myself(), state.term(), false, -1, state.entryLog().appendIndex(),localStoreId );
+                    state.myself(), state.term(), false, -1, state.entryLog().appendIndex() );
 
             outcome.addOutgoingMessage( new RaftMessages.Directed<>( request.from(), appendResponse ) );
             return;
@@ -57,7 +57,7 @@ public class Appending
         {
             assert request.prevLogIndex() > -1 && request.prevLogTerm() > -1;
             RaftMessages.AppendEntries.Response<MEMBER> appendResponse = new RaftMessages.AppendEntries.Response<>(
-                    state.myself(), request.leaderTerm(), false, -1, state.entryLog().appendIndex(), localStoreId );
+                    state.myself(), request.leaderTerm(), false, -1, state.entryLog().appendIndex() );
 
             outcome.addOutgoingMessage( new RaftMessages.Directed<>( request.from(), appendResponse ) );
             return;
@@ -108,7 +108,7 @@ public class Appending
         if ( endMatchIndex >= 0 )
         {
             RaftMessages.AppendEntries.Response<MEMBER> appendResponse = new RaftMessages.AppendEntries.Response<>(
-                    state.myself(), request.leaderTerm(), true, endMatchIndex, endMatchIndex, localStoreId );
+                    state.myself(), request.leaderTerm(), true, endMatchIndex, endMatchIndex );
             outcome.addOutgoingMessage( new RaftMessages.Directed<>( request.from(), appendResponse ) );
         }
     }

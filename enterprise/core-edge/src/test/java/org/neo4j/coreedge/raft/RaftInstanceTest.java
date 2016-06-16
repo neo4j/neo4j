@@ -389,16 +389,16 @@ public class RaftInstanceTest
         final RaftTestMember newMember = member( 99 );
         DirectNetworking.Inbound newMemberInbound = network.new Inbound( 99 );
         final OutboundMessageCollector messages = new OutboundMessageCollector();
-        newMemberInbound.registerHandler( new Inbound.MessageHandler()
+        newMemberInbound.registerHandler( new Inbound.MessageHandler<RaftMessages.RaftMessage<RaftTestMember>>()
         {
             @Override
-            public boolean validate( Message message )
+            public boolean validate( RaftMessages.RaftMessage<RaftTestMember> message, StoreId storeId )
             {
                 return true;
             }
 
             @Override
-            public void handle( Message message )
+            public void handle( RaftMessages.RaftMessage<RaftTestMember> message )
             {
                 messages.send( newMember, message );
             }
@@ -471,7 +471,7 @@ public class RaftInstanceTest
 
         // when
         raft.handle( new RaftMessages.AppendEntries.Request<>( member1, 0, -1, -1,
-                new RaftLogEntry[]{new RaftLogEntry( 0, new ReplicatedString( "hello" ) )}, 0, storeId ) );
+                new RaftLogEntry[]{new RaftLogEntry( 0, new ReplicatedString( "hello" ) )}, 0 ) );
 
         // then
         assertTrue( databaseHealth.hasPanicked() );

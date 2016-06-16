@@ -19,6 +19,8 @@
  */
 package org.neo4j.coreedge.raft.net;
 
+import java.util.Collection;
+
 import org.neo4j.coreedge.network.Message;
 
 /**
@@ -27,12 +29,19 @@ import org.neo4j.coreedge.network.Message;
  * delivered to the wrong host.
  * @param <MEMBER> The type of members that messages will be sent to.
  */
-public interface Outbound<MEMBER>
+public interface Outbound<MEMBER, MESSAGE extends Message>
 {
+    /**
+     * Asynchronous, best effort delivery to destination.
+     * @param to destination
+     * @param message The message to send
+     */
+    void send( MEMBER to, MESSAGE message );
+
     /**
      * Asynchronous, best effort delivery to destination.
      * @param to destination
      * @param messages The messages to send
      */
-    void send( MEMBER to, Message... messages );
+    void send( MEMBER to, Collection<MESSAGE> messages );
 }

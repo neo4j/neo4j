@@ -45,7 +45,7 @@ public class Election
 
         RaftMessages.Vote.Request<MEMBER> voteForMe =
                 new RaftMessages.Vote.Request<>( ctx.myself(), outcome.getTerm(), ctx.myself(), ctx.entryLog()
-                        .appendIndex(), ctx.entryLog().readEntryTerm( ctx.entryLog().appendIndex() ), storeId );
+                        .appendIndex(), ctx.entryLog().readEntryTerm( ctx.entryLog().appendIndex() ) );
 
         currentMembers.stream().filter( member -> !member.equals( ctx.myself() ) ).forEach( member ->
             outcome.addOutgoingMessage( new RaftMessages.Directed<>( member, voteForMe ) )

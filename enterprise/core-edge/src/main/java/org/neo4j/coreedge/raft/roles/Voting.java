@@ -51,7 +51,7 @@ public class Voting
 
         outcome.addOutgoingMessage( new RaftMessages.Directed<>( voteRequest.from(), new RaftMessages.Vote.Response<>(
                 state.myself(), outcome.getTerm(),
-                willVoteForCandidate, storeId ) ) );
+                willVoteForCandidate ) ) );
     }
 
     public static <MEMBER> boolean shouldVoteFor( MEMBER candidate, long contextTerm, long requestTerm,

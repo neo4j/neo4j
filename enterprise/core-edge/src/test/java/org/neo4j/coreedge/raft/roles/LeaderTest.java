@@ -385,7 +385,7 @@ public class LeaderTest
         Leader leader = new Leader();
 
         RaftMessages.NewEntry.Request<RaftTestMember> newEntryRequest = new RaftMessages.NewEntry.Request<>(
-                member( 9 ), CONTENT, localDatabase.storeId() );
+                member( 9 ), CONTENT );
 
         // when
         Outcome<RaftTestMember> outcome = leader.handle( newEntryRequest, state, log(), localDatabase );
@@ -413,7 +413,7 @@ public class LeaderTest
 
         int BATCH_SIZE = 3;
         RaftMessages.NewEntry.Batch<RaftTestMember> batchRequest =
-                new RaftMessages.NewEntry.Batch<>( BATCH_SIZE, localDatabase.storeId() );
+                new RaftMessages.NewEntry.Batch<>( BATCH_SIZE );
         batchRequest.add( valueOf( 0 ) );
         batchRequest.add( valueOf( 1 ) );
         batchRequest.add( valueOf( 2 ) );
@@ -461,7 +461,7 @@ public class LeaderTest
 
         // when a single instance responds (plus self == 2 out of 3 instances)
         Outcome<RaftTestMember> outcome = leader.handle(
-                new RaftMessages.AppendEntries.Response<>( member1, 0, true, 0, 0, localDatabase.storeId() ),
+                new RaftMessages.AppendEntries.Response<>( member1, 0, true, 0, 0 ),
                 state, log(), localDatabase );
 
         // then
@@ -490,7 +490,7 @@ public class LeaderTest
 
         // when
         Outcome<RaftTestMember> outcome =
-                leader.handle( new AppendEntries.Response<>( member1, 0, true, 2, 2, localDatabase.storeId() ),
+                leader.handle( new AppendEntries.Response<>( member1, 0, true, 2, 2 ),
                         state, log(), localDatabase );
 
         state.update( outcome );

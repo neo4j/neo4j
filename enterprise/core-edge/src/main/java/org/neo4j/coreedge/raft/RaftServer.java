@@ -42,6 +42,7 @@ import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.server.ListenSocketAddress;
 import org.neo4j.coreedge.server.logging.ExceptionLoggingHandler;
 import org.neo4j.helpers.NamedThreadFactory;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -123,13 +124,15 @@ public class RaftServer<MEMBER> extends LifecycleAdapter implements Inbound<Raft
         this.messageHandler = handler;
     }
 
-    private class RaftMessageHandler extends SimpleChannelInboundHandler<RaftMessages.RaftMessage<MEMBER>>
+    private class RaftMessageHandler extends SimpleChannelInboundHandler<RaftMessages.StoreIdAwareMessage<MEMBER>>
     {
         @Override
         protected void channelRead0( ChannelHandlerContext channelHandlerContext,
-                                     RaftMessages.RaftMessage<MEMBER> message ) throws Exception
+                                     RaftMessages.StoreIdAwareMessage<MEMBER> storeIdAwareMessage ) throws Exception
         {
-            if ( messageHandler.validate( message ) )
+            RaftMessages.RaftMessage<MEMBER> message = storeIdAwareMessage.message();
+            StoreId storeId = storeIdAwareMessage.storeId();
+            if ( messageHandler.validate( message, storeId ) )
             {
                 messageHandler.handle( message );
             }
