@@ -159,4 +159,19 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
       Map("coll" -> Seq(Seq(5, 4, 3), Seq(6, 4, 3)))
     ))
   }
+
+  test("simple expansion using pattern comprehension") {
+    val a = createNode("name" -> "Mats")
+    val b = createNode("name" -> "Max")
+    val c = createNode()
+    relate(a, b)
+    relate(b, c)
+    relate(c, a)
+
+    val query = "MATCH (a) RETURN [(a)-->() | a.name] AS list"
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("list" -> List("Mats")), Map("list" -> List("Max")), Map("list" -> List(null))))
+  }
 }
