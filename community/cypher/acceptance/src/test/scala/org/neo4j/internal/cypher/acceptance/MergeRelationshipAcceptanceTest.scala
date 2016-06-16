@@ -273,7 +273,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     result.toList should equal(List(Map("count(*)" -> 1)))
   }
 
-  // TCK'd
+  // Not TCK material
   test("when merging a pattern that includes a unique node constraint violation fail") {
     // given
     graph.createConstraint("Person", "id")

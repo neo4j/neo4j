@@ -120,7 +120,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     assertStats(result, nodesCreated = 0)
   }
 
-  // TCK'd
+  // Not TCK material
   test("merge node with prop and label and unique index") {
     // Given
     graph.createConstraint("Label", "prop")
@@ -133,7 +133,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     assertStats(result, nodesCreated = 0)
   }
 
-  // TCK'd
+  // Not TCK material
   test("merge node with prop and label and unique index when no match") {
     // Given
     graph.createConstraint("Label", "prop")
@@ -208,7 +208,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     props should equal(List(42))
   }
 
-  // TCK'd
+  // Not TCK material
   test("merge using unique constraint should update existing node") {
     // given
     graph.createConstraint("Person", "id")
@@ -231,7 +231,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     }
   }
 
-  // TCK'd
+  // Not TCK material
   test("merge using unique constraint should create missing node") {
     // given
     graph.createConstraint("Person", "id")
@@ -249,7 +249,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     }
   }
 
-  // TCK'd
+  // Not TCK material
   test("should match on merge using multiple unique indexes if only found single node for both indexes") {
     // given
     graph.createConstraint("Person", "id")
@@ -270,7 +270,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     }
   }
 
-  // TCK'd
+  // Not TCK material
   test("should match on merge using multiple unique indexes and labels if only found single node for both indexes") {
     // given
     graph.createConstraint("Person", "id")
@@ -291,7 +291,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     }
   }
 
-  // TCK'd
+  // Not TCK material
   test("should match on merge using multiple unique indexes using same key if only found single node for both indexes") {
     // given
     graph.createConstraint("Person", "id")
@@ -311,7 +311,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     }
   }
 
-  // TCK'd
+  // Not TCK material
   test("should fail on merge using multiple unique indexes using same key if found different nodes") {
     // given
     graph.createConstraint("Person", "id")
@@ -327,7 +327,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     countNodes() should equal(2)
   }
 
-  // TCK'd
+  // Not TCK material
   test("should create on merge using multiple unique indexes if found no nodes") {
     // given
     graph.createConstraint("Person", "id")
@@ -347,7 +347,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     }
   }
 
-  // TCK'd
+  // Not TCK material
   test("should create on merge using multiple unique indexes and labels if found no nodes") {
     // given
     graph.createConstraint("Person", "id")
@@ -367,7 +367,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     }
   }
 
-  // TCK'd
+  // Not TCK material
   test("should fail on merge using multiple unique indexes if found different nodes") {
     // given
     graph.createConstraint("Person", "id")
@@ -383,7 +383,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     countNodes() should equal(2)
   }
 
-//   TCK'd
+//   Not TCK material
   test("should fail on merge using multiple unique indexes if it found a node matching single property only") {
     // given
     graph.createConstraint("Person", "id")
@@ -399,7 +399,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     countNodes() should equal(1)
   }
 
-  // TCK'd
+  // Not TCK material
   test("should fail on merge using multiple unique indexes if it found a node matching single property only flipped order") {
     // given
     graph.createConstraint("Person", "id")
@@ -416,7 +416,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     countNodes() should equal(1)
   }
 
-  // TCK'd
+  // Not TCK material
   test("should fail on merge using multiple unique indexes and labels if found different nodes") {
     // given
     graph.createConstraint("Person", "id")
@@ -445,7 +445,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     assertStats(result, nodesCreated = 3, propertiesWritten = 3)
   }
 
-  // TCK'd
+  // Not TCK material
   test("unrelated nodes with same property should not clash") {
     // given
     graph.createConstraint("Person", "id")
@@ -469,7 +469,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesWritten = 1)
   }
 
-  // TCK'd
+  // Not TCK material
   test("works with index and constraint") {
     // given
     updateWithBothPlannersAndCompatibilityMode("create index on :Person(name)")
@@ -507,7 +507,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesWritten = 2)
   }
 
-  // TCK'd
+  // Not TCK material
   test("works with property repeated in literal map in set") {
     // given
     graph.createConstraint("Person","ssn")
@@ -520,7 +520,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesWritten = 3)
   }
 
-  // TCK'd
+  // Not TCK material
   test("works with property in map that gets set") {
     // given
     graph.createConstraint("Person","ssn")
@@ -706,7 +706,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     result.toList should equal(List(Map("labels" -> List("L", "B"))))
   }
 
-  // TCK'd
+  // Not TCK material
   test("merge with uniqueness constraints must properly handle multiple labels") {
     graph.createConstraint("L", "prop")
     val node = createLabeledNode(Map("prop" -> 42), "L", "A")
