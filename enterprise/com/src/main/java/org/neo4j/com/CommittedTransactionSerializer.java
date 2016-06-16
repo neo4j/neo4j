@@ -37,13 +37,11 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
  */
 public class CommittedTransactionSerializer implements Visitor<CommittedTransactionRepresentation,Exception>
 {
-    private final FlushableChannel channel;
     private final LogEntryWriter writer;
 
     public CommittedTransactionSerializer( FlushableChannel networkFlushableChannel )
     {
-        this.channel = networkFlushableChannel;
-        this.writer = new LogEntryWriter( channel );
+        this.writer = new LogEntryWriter( networkFlushableChannel );
     }
 
     @Override

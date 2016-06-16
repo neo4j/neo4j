@@ -74,9 +74,4 @@ public class TxPullResponse
     {
         return String.format( "TxPullResponse{storeId=%s, tx=%s}", storeId, tx );
     }
-
-    public boolean isEndOfTxStreamMarker()
-    {
-        return storeId.equals( StoreId.DEFAULT );
-    }
 }
