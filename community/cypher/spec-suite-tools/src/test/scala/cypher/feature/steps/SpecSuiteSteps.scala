@@ -71,7 +71,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
   Given(NAMED_GRAPH) { (dbName: String) =>
     ifEnabled {
-      initNamed(dbName)
+      lendForReadOnlyUse(dbName)
     }
   }
 
@@ -204,16 +204,15 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
       graph = builder.newGraphDatabase()
     }
 
-  private def initNamed(dbName: String) = {
-    val recipe = graphArchiveLibrary.recipe(dbName)
+  private def lendForReadOnlyUse(recipeName: String) = {
+    val recipe = graphArchiveLibrary.recipe(recipeName)
     val recommendedPcSize = recipe.recommendedPageCacheSize
     val pcSize = (recommendedPcSize/MB(32)+1)*MB(32)
-    // TODO: force read only
     val config = currentDatabaseConfig(pcSize.toString)
-    val archive = GraphArchive(recipe, config)
-    val path = graphArchiveLibrary.lendForReadingOnly(archive)(graphImporter)
+    val archiveUse = GraphArchive(recipe, config).readOnlyUse
+    val path = graphArchiveLibrary.lendForReadOnlyUse(archiveUse)(graphImporter)
     val builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(path.jfile)
-    builder.setConfig(config.asJava)
+    builder.setConfig(archiveUse.dbConfig.asJava)
     graph = builder.newGraphDatabase()
   }
 

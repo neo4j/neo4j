@@ -19,6 +19,7 @@
  */
 package cypher.cucumber.db
 
+import cypher.cucumber.db.GraphArchive.Use.{Updating, ReadOnly}
 import cypher.cucumber.db.GraphRecipe.CypherScript
 import org.json4s.JsonAST.JString
 import org.json4s.{CustomSerializer, Formats}
@@ -37,14 +38,34 @@ object GraphArchive {
                               dbConfig: Map[String, String] = Map.empty
                              ) {
 
+    self =>
     override val toString = {
       val code = hashCode()
       s"${recipe.name}-archive${if (code >= 0) "+" else ""}$code"
     }
 
     def scripts = recipe.scripts
+
+    def readOnlyUse = ReadOnly(self)
+    def updatingUse = Updating(self)
+  }
+
+  sealed trait Use {
+    def archive: Descriptor
+    def dbConfig: Map[String, String]
+  }
+
+  object Use {
+    final case class ReadOnly(archive: Descriptor) extends Use {
+      def dbConfig = archive.dbConfig + ("dbms.read_only" -> "true")
+    }
+
+    final case class Updating(archive: Descriptor) extends Use {
+      def dbConfig = archive.dbConfig
+    }
   }
 }
+
 
 object GraphRecipe {
 

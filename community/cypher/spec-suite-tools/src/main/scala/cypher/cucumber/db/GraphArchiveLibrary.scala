@@ -27,11 +27,11 @@ class GraphArchiveLibrary(val repository: GraphFileRepository) {
 
   def recipe(name: String) = repository.graphRecipeLoader(name)
 
-  def lendForReadingOnly(archive: GraphArchive.Descriptor)(implicit importer: GraphArchiveImporter): Path =
-    locateArchive(archive)
+  def lendForReadOnlyUse(archiveUse: GraphArchive.Use.ReadOnly)(implicit importer: GraphArchiveImporter): Path =
+    locateArchive(archiveUse.archive)
 
-  def copyForWriting(archive: GraphArchive.Descriptor)(implicit importer: GraphArchiveImporter): Path = {
-    val archivePath = locateArchive(archive)
+  def snapshotForUpdatingUse(archiveUse: GraphArchive.Use.Updating)(implicit importer: GraphArchiveImporter): Path = {
+    val archivePath = locateArchive(archiveUse.archive)
     val snapshotPath = repository.temporarySnapshotPath
     Files.copy(archivePath.jfile.toPath, snapshotPath.jfile.toPath)
     snapshotPath
