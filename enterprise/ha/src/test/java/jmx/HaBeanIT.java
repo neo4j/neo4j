@@ -91,7 +91,6 @@ public class HaBeanIT
     {
         assertTrue( "should be available", ha.isAvailable() );
         assertEquals( "should be master", HighAvailabilityModeSwitcher.MASTER, ha.getRole() );
-        assertEquals( "should be instance 1", "1", ha.getInstanceId() );
     }
 
     @Test
