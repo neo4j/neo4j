@@ -89,33 +89,6 @@ public class  DistributedOperation implements ReplicatedContent
         return new DistributedOperation( content, globalSession, localOperationId );
     }
 
-    public void serialize( ByteBuf buffer )
-    {
-        buffer.writeLong( globalSession().sessionId().getMostSignificantBits() );
-        buffer.writeLong( globalSession().sessionId().getLeastSignificantBits() );
-        new CoreMember.CoreMemberMarshal().marshal( (CoreMember) globalSession().owner(), buffer );
-
-        buffer.writeLong( operationId.localSessionId() );
-        buffer.writeLong( operationId.sequenceNumber() );
-
-        new CoreReplicatedContentMarshal().marshal( content, buffer );
-    }
-
-    public static ReplicatedContent deserialize( ByteBuf buffer )
-    {
-        long mostSigBits = buffer.readLong();
-        long leastSigBits =buffer.readLong();
-        CoreMember owner = new CoreMember.CoreMemberMarshal().unmarshal( buffer );
-        GlobalSession<CoreMember> globalSession = new GlobalSession<>( new UUID( mostSigBits, leastSigBits ), owner );
-
-        long localSessionId = buffer.readLong();
-        long sequenceNumber = buffer.readLong();
-        LocalOperationId localOperationId = new LocalOperationId( localSessionId, sequenceNumber );
-
-        ReplicatedContent content = new CoreReplicatedContentMarshal().unmarshal( buffer );
-        return new DistributedOperation( content, globalSession, localOperationId );
-    }
-
     @Override
     public String toString()
     {

@@ -19,7 +19,8 @@
  */
 package org.neo4j.coreedge.raft.net;
 
-import io.netty.buffer.ByteBuf;
+import java.io.IOException;
+
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,9 +33,12 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.net.codecs.RaftMessageDecoder;
 import org.neo4j.coreedge.raft.net.codecs.RaftMessageEncoder;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.ByteBufMarshal;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.storageengine.api.ReadPastEndException;
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.kernel.impl.store.StoreId;
 
 import static org.junit.Assert.assertEquals;
@@ -42,15 +46,15 @@ import static org.junit.Assert.assertEquals;
 @RunWith(MockitoJUnitRunner.class)
 public class RaftMessageProcessingTest
 {
-    private static ByteBufMarshal<ReplicatedContent> serializer = new ByteBufMarshal<ReplicatedContent>()
+    private static ChannelMarshal<ReplicatedContent> serializer = new ChannelMarshal<ReplicatedContent>()
     {
         @Override
-        public void marshal( ReplicatedContent content, ByteBuf buffer )
+        public void marshal( ReplicatedContent content, WritableChannel channel ) throws IOException
         {
             if ( content instanceof ReplicatedInteger )
             {
-                buffer.writeByte( 1 );
-                buffer.writeInt( ((ReplicatedInteger) content).get() );
+                channel.put( (byte) 1 );
+                channel.putInt( ((ReplicatedInteger) content).get() );
             }
             else
             {
@@ -59,23 +63,27 @@ public class RaftMessageProcessingTest
         }
 
         @Override
-        public ReplicatedContent unmarshal( ByteBuf buffer )
+        public ReplicatedContent unmarshal( ReadableChannel channel ) throws IOException
         {
-            byte type = buffer.readByte();
+            byte type = channel.get();
             final ReplicatedContent content;
             switch ( type )
             {
                 case 1:
-                    content = ReplicatedInteger.valueOf( buffer.readInt() );
+                    content = ReplicatedInteger.valueOf( channel.getInt() );
                     break;
                 default:
                     throw new IllegalArgumentException( String.format( "Unknown content type 0x%x", type ) );
             }
 
-            if ( buffer.readableBytes() != 0 )
+            try
             {
-                throw new IllegalArgumentException( "Bytes remain in buffer after deserialization (" + buffer
-                        .readableBytes() + " bytes)" );
+                channel.get();
+                throw new IllegalArgumentException( "Bytes remain in buffer after deserialization" );
+            }
+            catch ( ReadPastEndException e )
+            {
+                // expected
             }
             return content;
         }
@@ -95,7 +103,7 @@ public class RaftMessageProcessingTest
     {
         // given
         CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:9000" ),
-                new AdvertisedSocketAddress( "host1:9001" ), new AdvertisedSocketAddress( "host1:9002" ) );
+                new AdvertisedSocketAddress( "host1:9001" ) );
         RaftMessages.Vote.Request request = new RaftMessages.Vote.Request<>( member, 1, member, 1, 1, storeId );
 
         // when
@@ -111,7 +119,7 @@ public class RaftMessageProcessingTest
     {
         // given
         CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:9000" ),
-                new AdvertisedSocketAddress( "host1:9001" ), new AdvertisedSocketAddress( "host1:9002" ) );
+                new AdvertisedSocketAddress( "host1:9001" ) );
         RaftMessages.Vote.Response response = new RaftMessages.Vote.Response<>( member, 1, true, storeId );
 
         // when
@@ -127,11 +135,10 @@ public class RaftMessageProcessingTest
     {
         // given
         CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:9000" ),
-                new AdvertisedSocketAddress( "host1:9001" ), new AdvertisedSocketAddress( "host1:9002" ) );
+                new AdvertisedSocketAddress( "host1:9001" ) );
         RaftLogEntry logEntry = new RaftLogEntry( 1, ReplicatedInteger.valueOf( 1 ) );
         RaftMessages.AppendEntries.Request request =
-                new RaftMessages.AppendEntries.Request<>( member, 1, 1, 99, new RaftLogEntry[] { logEntry }, 1,
-                        storeId );
+                new RaftMessages.AppendEntries.Request<>( member, 1, 1, 99, new RaftLogEntry[]{ logEntry }, 1, storeId );
 
         // when
         channel.writeOutbound( request );
@@ -146,7 +153,7 @@ public class RaftMessageProcessingTest
     {
         // given
         CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:9000" ),
-                new AdvertisedSocketAddress( "host1:9001" ), new AdvertisedSocketAddress( "host1:9002" ) );
+                new AdvertisedSocketAddress( "host1:9001" ) );
         RaftMessages.AppendEntries.Response response =
                 new RaftMessages.AppendEntries.Response<>( member, 1, false, -1, 0, storeId );
 
@@ -163,7 +170,7 @@ public class RaftMessageProcessingTest
     {
         // given
         CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:9000" ),
-                new AdvertisedSocketAddress( "host1:9001" ), new AdvertisedSocketAddress( "host1:9002" ) );
+                new AdvertisedSocketAddress( "host1:9001" ) );
         RaftMessages.NewEntry.Request request =
                 new RaftMessages.NewEntry.Request<>( member, ReplicatedInteger.valueOf( 12 ), storeId );
 

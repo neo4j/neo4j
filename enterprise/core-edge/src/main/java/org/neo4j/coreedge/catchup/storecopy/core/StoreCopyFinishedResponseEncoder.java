@@ -29,7 +29,6 @@ import org.neo4j.coreedge.catchup.storecopy.StoreCopyFinishedResponse;
 
 public class StoreCopyFinishedResponseEncoder extends MessageToMessageEncoder<StoreCopyFinishedResponse>
 {
-
     @Override
     protected void encode( ChannelHandlerContext ctx, StoreCopyFinishedResponse msg, List<Object> out ) throws Exception
     {

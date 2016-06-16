@@ -26,8 +26,10 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Test;
 
+import org.neo4j.coreedge.catchup.storecopy.core.NetworkFlushableByteBuf;
 import org.neo4j.coreedge.raft.membership.CoreMemberSet;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
+import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
@@ -40,6 +42,8 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.storageengine.api.StorageCommand;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -48,8 +52,7 @@ public class RaftContentByteBufferMarshalTest
 {
     private CoreMember coreMember = new CoreMember(
             new AdvertisedSocketAddress( "core:1" ),
-            new AdvertisedSocketAddress( "raft:1" ),
-            new AdvertisedSocketAddress( "bolt:1" )
+            new AdvertisedSocketAddress( "raft:1" )
     );
 
     @Test
@@ -58,21 +61,17 @@ public class RaftContentByteBufferMarshalTest
         // given
         CoreReplicatedContentMarshal serializer = new CoreReplicatedContentMarshal();
         CoreMemberSet in = new CoreMemberSet( asSet(
-                new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
-                        new AdvertisedSocketAddress( "host1:1002" ), new AdvertisedSocketAddress( "host1:1003" )
+                new CoreMember(
+                        new AdvertisedSocketAddress( "host1:1001" ), new AdvertisedSocketAddress( "host1:1002" )
                 ),
-                new CoreMember( new AdvertisedSocketAddress( "host2:1002" ),
-                        new AdvertisedSocketAddress( "host2:1002" ), new AdvertisedSocketAddress( "host2:1003" )
+                new CoreMember(
+                        new AdvertisedSocketAddress( "host2:1002" ), new AdvertisedSocketAddress( "host2:1002" )
                 )
         ) );
 
         // when
         ByteBuf buf = Unpooled.buffer();
-        serializer.marshal( in, buf );
-        ReplicatedContent out = serializer.unmarshal( buf );
-
-        // then
-        assertEquals( in, out );
+        assertMarshalingEquality( serializer, buf, in );
     }
 
     @Test
@@ -95,10 +94,12 @@ public class RaftContentByteBufferMarshalTest
 
         // when
         ByteBuf buf = Unpooled.buffer();
-        serializer.marshal( in, buf );
-        ReplicatedTransaction out = (ReplicatedTransaction) serializer.unmarshal( buf );
+        serializer.marshal( in, new NetworkFlushableByteBuf( buf ) );
+        ReplicatedTransaction out =
+                (ReplicatedTransaction) serializer.unmarshal( new NetworkReadableClosableChannelNetty4( buf ) );
 
-        TransactionRepresentation txOut = ReplicatedTransactionFactory.extractTransactionRepresentation( out, extraHeader );
+        TransactionRepresentation txOut = ReplicatedTransactionFactory.extractTransactionRepresentation( out,
+                extraHeader );
 
         // then
         assertEquals( in, out );
@@ -138,10 +139,15 @@ public class RaftContentByteBufferMarshalTest
 
         // when
         ByteBuf buf = Unpooled.buffer();
-        serializer.marshal( in, buf );
-        ReplicatedContent out = serializer.unmarshal( buf );
+        assertMarshalingEquality( serializer, buf, in );
+    }
 
-        // then
-        assertEquals( in, out );
+    private void assertMarshalingEquality( CoreReplicatedContentMarshal marshal,
+                                           ByteBuf buffer,
+                                           ReplicatedContent replicatedTx ) throws java.io.IOException
+    {
+        marshal.marshal( replicatedTx, new NetworkFlushableByteBuf( buffer ) );
+
+        assertThat( marshal.unmarshal( new NetworkReadableClosableChannelNetty4( buffer ) ), equalTo( replicatedTx ) );
     }
 }

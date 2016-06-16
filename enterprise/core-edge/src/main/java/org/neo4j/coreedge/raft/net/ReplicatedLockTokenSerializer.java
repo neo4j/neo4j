@@ -21,8 +21,6 @@ package org.neo4j.coreedge.raft.net;
 
 import java.io.IOException;
 
-import io.netty.buffer.ByteBuf;
-
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
 import org.neo4j.storageengine.api.ReadableChannel;
@@ -41,20 +39,6 @@ public class ReplicatedLockTokenSerializer
     {
         int candidateId = channel.getInt();
         CoreMember owner = new CoreMember.CoreMemberMarshal().unmarshal( channel );
-
-        return new ReplicatedLockTokenRequest<>( owner, candidateId );
-    }
-
-    public static void marshal( ReplicatedLockTokenRequest<CoreMember> tokenRequest, ByteBuf buffer )
-    {
-        buffer.writeInt( tokenRequest.id() );
-        new CoreMember.CoreMemberMarshal().marshal( tokenRequest.owner(), buffer );
-    }
-
-    public static ReplicatedLockTokenRequest<CoreMember> unmarshal( ByteBuf buffer )
-    {
-        int candidateId = buffer.readInt();
-        CoreMember owner = new CoreMember.CoreMemberMarshal().unmarshal( buffer );
 
         return new ReplicatedLockTokenRequest<>( owner, candidateId );
     }

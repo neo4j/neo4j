@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import io.netty.buffer.ByteBuf;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
@@ -88,34 +87,6 @@ public class CoreMemberSetSerializer
         for ( int i = 0; i < memberCount; i++ )
         {
             members.add( coreMemberMarshal.unmarshal( channel ) );
-        }
-
-        return new CoreMemberSet( members );
-    }
-
-    public static void marshal( CoreMemberSet memberSet, ByteBuf buffer )
-    {
-        Set<CoreMember> members = memberSet.getMembers();
-        buffer.writeInt( members.size() );
-
-        CoreMember.CoreMemberMarshal coreMemberMarshal = new CoreMember.CoreMemberMarshal();
-
-        for ( CoreMember member : members )
-        {
-            coreMemberMarshal.marshal( member, buffer );
-        }
-    }
-
-    public static CoreMemberSet unmarshal( ByteBuf buffer )
-    {
-        HashSet<CoreMember> members = new HashSet<>();
-        int memberCount = buffer.readInt();
-
-        CoreMember.CoreMemberMarshal coreMemberMarshal = new CoreMember.CoreMemberMarshal();
-
-        for ( int i = 0; i < memberCount; i++ )
-        {
-            members.add( coreMemberMarshal.unmarshal( buffer ) );
         }
 
         return new CoreMemberSet( members );

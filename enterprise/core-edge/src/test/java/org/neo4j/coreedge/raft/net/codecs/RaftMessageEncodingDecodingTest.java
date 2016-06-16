@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.raft.net.codecs;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
@@ -35,9 +36,11 @@ import org.neo4j.coreedge.raft.VoteRequestBuilder;
 import org.neo4j.coreedge.raft.VoteResponseBuilder;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.ByteBufMarshal;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.kernel.impl.store.StoreId;
 
 import static org.junit.Assert.assertEquals;
@@ -50,7 +53,7 @@ public class RaftMessageEncodingDecodingTest
     public void shouldSerializeAppendRequestWithMultipleEntries() throws Exception
     {
         CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
-                new AdvertisedSocketAddress( "127.0.0.2:5001" ), new AdvertisedSocketAddress( "127.0.0.3:5001" ) );
+                new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
         RaftMessages.AppendEntries.Request<CoreMember> request = new AppendEntriesRequestBuilder<CoreMember>()
                 .from( sender )
                 .leaderCommit( 2 )
@@ -65,7 +68,7 @@ public class RaftMessageEncodingDecodingTest
     public void shouldSerializeAppendRequestWithNoEntries() throws Exception
     {
         CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
-                new AdvertisedSocketAddress( "127.0.0.2:5001" ), new AdvertisedSocketAddress( "127.0.0.3:5001" ) );
+                new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
         RaftMessages.AppendEntries.Request<CoreMember> request = new AppendEntriesRequestBuilder<CoreMember>()
                 .from( sender )
                 .leaderCommit( 2 )
@@ -78,7 +81,7 @@ public class RaftMessageEncodingDecodingTest
     public void shouldSerializeAppendResponse() throws Exception
     {
         CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
-                new AdvertisedSocketAddress( "127.0.0.2:5001" ), new AdvertisedSocketAddress( "127.0.0.3:5001" ) );
+                new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
         RaftMessages.AppendEntries.Response<CoreMember> request = new AppendEntriesResponseBuilder<CoreMember>()
                 .from( sender )
                 .success()
@@ -88,7 +91,7 @@ public class RaftMessageEncodingDecodingTest
     }
 
     @Test
-    public void shouldSerializeHeartbeats(  ) throws Exception
+    public void shouldSerializeHeartbeats() throws Exception
     {
         // Given
         RaftMessageEncoder encoder = new RaftMessageEncoder( marshal );
@@ -101,9 +104,9 @@ public class RaftMessageEncodingDecodingTest
 
         // When
         CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
-                new AdvertisedSocketAddress( "127.0.0.2:5001" ), new AdvertisedSocketAddress( "127.0.0.3:5001" ) );
-        RaftMessages.Heartbeat<CoreMember> message = new RaftMessages.Heartbeat<>( sender, 1, 2, 3,
-                new StoreId( 1, 2, 3, 4, 5 ) );
+                new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
+        RaftMessages.Heartbeat<CoreMember> message =
+                new RaftMessages.Heartbeat<>( sender, 1, 2, 3, new StoreId( 1, 2, 3, 4, 5 ) );
         encoder.encode( setupContext(), message, resultingBuffers );
 
         // Then
@@ -121,7 +124,7 @@ public class RaftMessageEncodingDecodingTest
     public void shouldSerializeVoteRequest() throws Exception
     {
         CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
-                new AdvertisedSocketAddress( "127.0.0.2:5001" ), new AdvertisedSocketAddress( "127.0.0.3:5001" ) );
+                new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
         RaftMessages.Vote.Request<Object> request = new VoteRequestBuilder<>()
                 .candidate( sender )
                 .from( sender )
@@ -136,7 +139,7 @@ public class RaftMessageEncodingDecodingTest
     public void shouldSerializeVoteResponse() throws Exception
     {
         CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
-                new AdvertisedSocketAddress( "127.0.0.2:5001" ), new AdvertisedSocketAddress( "127.0.0.3:5001" ) );
+                new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
         RaftMessages.Vote.Response<Object> request = new VoteResponseBuilder<>()
                 .from( sender )
                 .grant()
@@ -182,15 +185,15 @@ public class RaftMessageEncodingDecodingTest
      * assume that there is only a single entry in the stream, which allows for asserting no remaining bytes once the
      * first entry is read from the buffer.
      */
-    private static final ByteBufMarshal<ReplicatedContent> marshal = new ByteBufMarshal<ReplicatedContent>()
+    private static final ChannelMarshal<ReplicatedContent> marshal = new ChannelMarshal<ReplicatedContent>()
     {
         @Override
-        public void marshal( ReplicatedContent content, ByteBuf buffer )
+        public void marshal( ReplicatedContent content, WritableChannel channel ) throws IOException
         {
             if ( content instanceof ReplicatedInteger )
             {
-                buffer.writeByte( 1 );
-                buffer.writeInt( ((ReplicatedInteger) content).get() );
+                channel.put( (byte) 1 );
+                channel.putInt( ((ReplicatedInteger) content).get() );
             }
             else
             {
@@ -199,14 +202,14 @@ public class RaftMessageEncodingDecodingTest
         }
 
         @Override
-        public ReplicatedContent unmarshal( ByteBuf buffer )
+        public ReplicatedContent unmarshal( ReadableChannel channel ) throws IOException
         {
-            byte type = buffer.readByte();
+            byte type = channel.get();
             final ReplicatedContent content;
             switch ( type )
             {
                 case 1:
-                    content = ReplicatedInteger.valueOf( buffer.readInt() );
+                    content = ReplicatedInteger.valueOf( channel.getInt() );
                     break;
                 default:
                     throw new IllegalArgumentException( String.format( "Unknown content type 0x%x", type ) );
