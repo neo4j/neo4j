@@ -1061,23 +1061,17 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                 // mechanisms doesn't kick in. In this case there will be a log scan as part of this call.
                 if ( spi.hasFoundLastCommitedTimestamp() )
                 {
-                    System.out.println( "Collected timestamp from logs" );
                     metaDataStore.setLastCommitTimestamp( spi.lastCommitedTimestamp() );
                 }
                 else
                 {
-                    System.out.println( "Could not collect timestamps from logs. Trying the store." );
-                    System.out.println( "last commited tx" + metaDataStore.getLastCommittedTransaction() );
-                    System.out.println( "last commited id:" + metaDataStore.getLastCommittedTransactionId() );
                     if ( metaDataStore.getLastCommittedTransactionId() != TransactionIdStore.BASE_TX_ID )
                     {
-                        System.out.println( "Stuff in stores but no logs. UNKNOWN TIMESTAMP" );
                         // We haz stuff in store but no logz. Timestamps is unclearly known.
                         metaDataStore.setLastCommitTimestamp( TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP );
                     }
                     else
                     {
-                        System.out.println( "No stuff in stores. No logs. BASE TIMESTAMP" );
                         // We haz no stuffs in store... no logz (no shit Sherlock), but all is good
                         metaDataStore.setLastCommitTimestamp( TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP );
                     }

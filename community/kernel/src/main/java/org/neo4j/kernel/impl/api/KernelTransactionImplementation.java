@@ -28,7 +28,6 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -456,10 +455,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             if ( failure || !success || terminated )
             {
                 rollback();
-                if (terminated )
-                {
-                    throw new TransactionTerminatedException();
-                }
+//                if ( terminated )
+//                {
+//                    throwCorrectExceptionBasedOnTerminationReason( terminationReason );
+//                }
                 if ( success )
                 {
                     // Success was called, but also failure which means that the client code using this

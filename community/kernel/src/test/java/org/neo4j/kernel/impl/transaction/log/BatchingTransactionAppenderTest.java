@@ -392,7 +392,7 @@ public class BatchingTransactionAppenderTest
             assertTrue( contains( e, failureMessage, RuntimeException.class ) );
             verify( transactionIdStore, times( 1 ) ).nextCommittingTransactionId();
             verify( transactionIdStore, times( 1 ) ).transactionCommitted( eq( txId ), anyLong(),
-                    BASE_TX_COMMIT_TIMESTAMP);
+                    eq( BASE_TX_COMMIT_TIMESTAMP ) );
             verify( transactionIdStore, times( 1 ) ).transactionClosed( eq( txId ), anyLong(), anyLong() );
             verifyNoMoreInteractions( transactionIdStore );
         }
