@@ -25,20 +25,20 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.isEmptyString;
 import static org.junit.Assert.assertFalse;
 
-public class CompatibilitySpecSuiteTestConstantsTest
+public class AcceptanceSpecSuiteTestConstantsTest
 {
     @Test
     public void runsAllFeatures() {
-        assertThat( CompatibilitySpecSuiteTest.FEATURE_TO_RUN, isEmptyString());
+        assertThat( AcceptanceSpecSuiteTest.FEATURE_TO_RUN, isEmptyString());
     }
 
     @Test
     public void runsAllScenarios() {
-        assertThat( CompatibilitySpecSuiteTest.SCENARIO_NAME_REQUIRED, isEmptyString());
+        assertThat( AcceptanceSpecSuiteTest.SCENARIO_NAME_REQUIRED, isEmptyString());
     }
 
     @Test
     public void doesNotReplaceExistingByDefault() {
-        assertFalse( CompatibilitySpecSuiteTest.REPLACE_EXISTING );
+        assertFalse( AcceptanceSpecSuiteTest.REPLACE_EXISTING );
     }
 }

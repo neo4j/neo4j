@@ -22,8 +22,9 @@ package cypher.feature.steps
 import java.util
 
 import cucumber.api.DataTable
+import cypher.SpecSuiteResources
 import cypher.cucumber.db.DatabaseConfigProvider._
-import cypher.cucumber.db.{GraphArchive, GraphArchiveImporter, GraphArchiveLibrary}
+import cypher.cucumber.db.{GraphArchive, GraphArchiveImporter, GraphArchiveLibrary, GraphFileRepository}
 import cypher.feature.parser.matchers.ResultWrapper
 import cypher.feature.parser.{MatcherMatchingSupport, constructResultMatcher, parseParameters, statisticsParser}
 import org.neo4j.graphdb.factory.{GraphDatabaseFactory, GraphDatabaseSettings}
@@ -41,9 +42,11 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
   // Implement in subclasses
 
-  def requiredScenarioName: String
+  def specSuiteClass: Class[_]
   def unsupportedScenarios: Set[String]
-  def graphArchiveLibrary: GraphArchiveLibrary
+
+  lazy val graphArchiveLibrary = new GraphArchiveLibrary(new GraphFileRepository(Path(SpecSuiteResources.targetDirectory(specSuiteClass, "graphs"))))
+  lazy val requiredScenarioName = specSuiteClass.getField( "SCENARIO_NAME_REQUIRED" ).get( null ).toString.trim.toLowerCase
 
   // Stateful
 

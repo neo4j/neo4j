@@ -17,28 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cypher;
+package cypher.feature.steps
 
-import org.junit.Test;
+import cypher.AcceptanceSpecSuiteTest
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.isEmptyString;
-import static org.junit.Assert.assertFalse;
+class AcceptanceSpecSuiteSteps extends SpecSuiteSteps {
 
-public class CompatibilitySpecSuiteTestConstantsTest
-{
-    @Test
-    public void runsAllFeatures() {
-        assertThat( CompatibilitySpecSuiteTest.FEATURE_TO_RUN, isEmptyString());
-    }
+  override val specSuiteClass = classOf[AcceptanceSpecSuiteTest]
 
-    @Test
-    public void runsAllScenarios() {
-        assertThat( CompatibilitySpecSuiteTest.SCENARIO_NAME_REQUIRED, isEmptyString());
-    }
-
-    @Test
-    public void doesNotReplaceExistingByDefault() {
-        assertFalse( CompatibilitySpecSuiteTest.REPLACE_EXISTING );
-    }
+  override val unsupportedScenarios = Set[String](
+  )
 }
+
+

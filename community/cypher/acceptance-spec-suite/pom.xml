@@ -67,6 +67,7 @@
         <artifactId>scalastyle-maven-plugin</artifactId>
       </plugin>
     </plugins>
+
   </build>
 
   <dependencies>
@@ -84,6 +85,12 @@
     <dependency>
       <artifactId>scala-reflect</artifactId>
       <groupId>org.scala-lang</groupId>
+      <version>${scala.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scalap</artifactId>
       <version>${scala.version}</version>
     </dependency>
 
@@ -152,6 +159,7 @@
     </dependency>
 
     <!-- neo4j-cypher -->
+
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-compiler-3.1</artifactId>
@@ -209,6 +217,21 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-frontend-3.1</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-spec-suite-tools</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-spec-suite-tools</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

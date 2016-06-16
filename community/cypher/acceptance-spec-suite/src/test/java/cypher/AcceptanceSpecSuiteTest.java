@@ -24,8 +24,8 @@ import cucumber.api.junit.Cucumber;
 import org.junit.runner.RunWith;
 import org.opencypher.tools.tck.TCKCucumberTemplate;
 
-@RunWith( CompatibilitySpecSuiteResources.class )
-public class CompatibilitySpecSuiteTest
+@RunWith( AcceptanceSpecSuiteResources.class )
+public class AcceptanceSpecSuiteTest
 {
 
     // These two constants are only used to make testing and debugging easier.
@@ -85,10 +85,10 @@ public class CompatibilitySpecSuiteTest
 
     // constants for TCK configuration
 
-    public static final String SUITE_NAME = "compatibility-spec-suite";
+    public static final String SUITE_NAME = "acceptance-spec-suite";
 
     @SuppressWarnings( "unused" )
-    public static final Class<?> RESOURCE_CLASS = TCKCucumberTemplate.class;
+    public static final Class<?> RESOURCE_CLASS = AcceptanceSpecSuiteTest.class;
 
     private static final String DB_CONFIG = "cypher.cucumber.db.DatabaseConfigProvider:/db-config/";
     private static final String GLUE_PATH = "classpath:cypher/feature/steps";

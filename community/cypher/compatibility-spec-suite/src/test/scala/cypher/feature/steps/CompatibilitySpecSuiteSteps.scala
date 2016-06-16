@@ -20,15 +20,16 @@
 package cypher.feature.steps
 
 import cypher.cucumber.db.{GraphArchiveLibrary, GraphFileRepository}
-import cypher.{CompatibilitySpecSuiteTest, CompatibilitySpecSuiteResources}
+import cypher.{SpecSuiteResources, CompatibilitySpecSuiteTest, CompatibilitySpecSuiteResources}
 
 import scala.reflect.io.Path
 
 class CompatibilitySpecSuiteSteps extends SpecSuiteSteps {
 
-  override val requiredScenarioName: String = CompatibilitySpecSuiteTest.SCENARIO_NAME_REQUIRED.trim.toLowerCase
+  override val specSuiteClass = classOf[CompatibilitySpecSuiteTest]
 
-  override val unsupportedScenarios = Set("Fail when adding new label predicate on already bound node 5",
+  override val unsupportedScenarios = Set[String](
+    "Fail when adding new label predicate on already bound node 5",
     "Fail when trying to compare strings and numbers",
     "Handling property access on the Any type",
     "Failing when performing property access on a non-map 1",
@@ -57,8 +58,6 @@ class CompatibilitySpecSuiteSteps extends SpecSuiteSteps {
     "Copying properties from literal map with ON CREATE", // wrong output format (?)
     "Copying properties from literal map with ON MATCH" // wrong output format (?)
   )
-
-  override val graphArchiveLibrary = new GraphArchiveLibrary(new GraphFileRepository(Path(CompatibilitySpecSuiteResources.targetDirectory("graphs"))))
 }
 
 

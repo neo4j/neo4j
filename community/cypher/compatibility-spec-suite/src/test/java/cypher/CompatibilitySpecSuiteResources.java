@@ -19,101 +19,13 @@
  */
 package cypher;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.PathMatcher;
-import java.nio.file.StandardCopyOption;
-import java.util.Collections;
-import java.util.Iterator;
-
-import org.junit.experimental.runners.Enclosed;
 import org.junit.runners.model.RunnerBuilder;
 import org.opencypher.tools.tck.TCKCucumberTemplate;
 
-public class CompatibilitySpecSuiteResources extends Enclosed
+public class CompatibilitySpecSuiteResources extends SpecSuiteResources
 {
     public CompatibilitySpecSuiteResources( Class<?> klass, RunnerBuilder builder ) throws Throwable
     {
-        super( klass, download( builder ) );
-    }
-
-    private static RunnerBuilder download( RunnerBuilder builder )
-    {
-        unpackResources();
-        return builder;
-    }
-
-    private static void unpackResources()
-    {
-        File featuresDirectory = createTargetDirectory( "features" );
-        File graphsDirectory = createTargetDirectory( "graphs" );
-
-        URI uri;
-        try
-        {
-            uri = TCKCucumberTemplate.class.getResource( "" ).toURI();
-        }
-        catch ( URISyntaxException e )
-        {
-            throw new IllegalStateException( "Failed to find resources for TCK feature files in JAR!", e );
-        }
-        try ( FileSystem fileSystem = FileSystems.newFileSystem( uri, Collections.emptyMap() ) )
-        {
-            findAndUnpackTo( fileSystem, "glob:**/*.feature", featuresDirectory );
-            findAndUnpackTo( fileSystem, "glob:**/*.cypher", graphsDirectory );
-            findAndUnpackTo( fileSystem, "glob:**/*.json", graphsDirectory );
-        }
-        catch ( IOException e )
-        {
-            throw new IllegalStateException( "Unexpected error while unpacking Cypher TCK feature files", e );
-        }
-    }
-
-    private static void findAndUnpackTo( FileSystem sourceFileSystem, String sourcePattern, File targetDirectory ) throws IOException
-    {
-        System.out.println( "Unpacking to " + targetDirectory.getCanonicalPath() );
-        PathMatcher matcher = sourceFileSystem.getPathMatcher(sourcePattern);
-        for (Iterator<Path> it = Files.walk( sourceFileSystem.getPath( "/" ), 2 ).iterator(); it.hasNext(); )
-        {
-            Path next = it.next();
-            if ( matcher.matches( next ) )
-            {
-                File target = new File( targetDirectory, next.getFileName().toString() );
-                Files.copy( next, target.toPath()
-//                        , StandardCopyOption.REPLACE_EXISTING
-                );
-                System.out.println( "Unpacked " + target.getName() );
-            }
-        }
-    }
-
-    private static File createTargetDirectory( String suffix )
-    {
-        return obtainTargetDirectory( true, suffix );
-    }
-
-    public static File targetDirectory( String suffix )
-    {
-        return obtainTargetDirectory( false, suffix );
-    }
-
-    private static File obtainTargetDirectory( boolean create, String suffix )
-    {
-        File directory = new File( new File ( new File( "target" ), CompatibilitySpecSuiteTest.SUITE_NAME ), suffix ).getAbsoluteFile();
-        if ( !directory.exists() )
-        {
-            if ( !(create && directory.mkdirs()) )
-            {
-                throw new IllegalStateException(
-                        "Failed to create target directory for cypher feature files: " + directory );
-            }
-        }
-        return directory;
+        super( klass, download( klass, builder ) );
     }
 }

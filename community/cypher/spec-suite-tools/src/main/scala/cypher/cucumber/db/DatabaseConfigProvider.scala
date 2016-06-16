@@ -40,19 +40,24 @@ object DatabaseConfigProvider {
 
 class DatabaseConfigProvider(jsonFile: URI) extends CucumberAdapter {
 
-  // TODO: Use proper json4s parsing to a case class
   override def feature(feature: Feature): Unit = {
     val file = new JFile(getClass.getResource(jsonFile.getPath).getPath)
     assert(file.exists(), file + " should exist")
     val content = File.apply(file).slurp()
-    val json = scala.util.parsing.json.JSON.parseFull(content)
-    DatabaseConfigProvider.config = json match {
-      case Some(map: Map[_, _]) => map.asInstanceOf[Map[String, String]].map {
-        case ("planner", planner) => GraphDatabaseSettings.cypher_planner -> planner.toUpperCase
-        case ("runtime", runtime) => GraphDatabaseSettings.cypher_runtime -> runtime.toUpperCase
-        case (key, value) => throw new IllegalStateException(s"unsupported config: $key = $value")
+
+    {
+      import org.json4s._
+      import org.json4s.native.JsonMethods._
+
+      val json = parse(content)
+      DatabaseConfigProvider.config = json match {
+        case JObject(entries) => entries.toMap.asInstanceOf[Map[String, JValue]].map {
+          case ("planner", JString(planner)) => GraphDatabaseSettings.cypher_planner -> planner.toUpperCase
+          case ("runtime", JString(runtime)) => GraphDatabaseSettings.cypher_runtime -> runtime.toUpperCase
+          case (key, value) => throw new IllegalStateException(s"unsupported config: $key = $value")
+        }
+        case _ => throw new IllegalStateException(s"Unable to parse json file containing params at $file")
       }
-      case _ => throw new IllegalStateException(s"Unable to parse json file containing params at $file")
     }
   }
 }
