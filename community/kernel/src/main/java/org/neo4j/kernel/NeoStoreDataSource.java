@@ -535,7 +535,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             LegacyIndexApplierLookup legacyIndexApplierLookup =
                     dependencies.satisfyDependency( new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup ) );
 
-            boolean safeIdBuffering = FeatureToggles.flag( getClass(), "safeIdBuffering", false );
+            boolean safeIdBuffering = FeatureToggles.flag( getClass(), "safeIdBuffering", true );
             if ( safeIdBuffering )
             {
                 // This buffering id generator factory will have properly buffering id generators injected into
@@ -852,7 +852,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
 
     private Factory<StoreStatement> storeStatementFactory( final NeoStores neoStores )
     {
-        final LockService lockService = FeatureToggles.flag( getClass(), "propertyReadLocks", true ) ?
+        final LockService lockService = FeatureToggles.flag( getClass(), "propertyReadLocks", false ) ?
                 this.lockService : NO_LOCK_SERVICE;
         return new Factory<StoreStatement>()
         {
