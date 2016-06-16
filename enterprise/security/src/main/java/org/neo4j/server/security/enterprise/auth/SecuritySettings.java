@@ -39,11 +39,11 @@ public class SecuritySettings
 
     @Description( "Enable auth via external authentication providers." )
     public static final Setting<Boolean> external_auth_enabled =
-            setting( "dbms.security.external_auth_enabled", BOOLEAN, "true" );
+            setting( "dbms.security.external_auth_enabled", BOOLEAN, "false" );
 
-    @Description( "Enable auth via a configurable LDAP authentication provider." )
+    @Description( "Enable auth via a settings configurable LDAP authentication realm." )
     public static final Setting<Boolean> ldap_auth_enabled =
-            setting( "dbms.security.ldap.enabled", BOOLEAN, "true" );
+            setting( "dbms.security.ldap.enabled", BOOLEAN, "false" );
 
     @Description( "Hostname and port of LDAP server to use for authentication and authorization." )
     public static final Setting<HostnamePort> ldap_server =

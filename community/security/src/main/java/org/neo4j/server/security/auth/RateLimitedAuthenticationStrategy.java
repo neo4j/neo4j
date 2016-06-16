@@ -94,7 +94,7 @@ public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
     {
         AuthenticationMetadata authMetadata = authMetadataFor( user.name() );
 
-        if ( !isAuthenticationPermitted( user.name() ) )
+        if ( !authMetadata.authenticationPermitted() )
         {
             return AuthenticationResult.TOO_MANY_ATTEMPTS;
         }

@@ -23,11 +23,6 @@ import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.cache.ehcache.EhCacheManager;
 import org.apache.shiro.mgt.DefaultSecurityManager;
-import org.apache.shiro.mgt.SecurityManager;
-import org.apache.shiro.realm.Realm;
-import org.apache.shiro.subject.PrincipalCollection;
-import org.apache.shiro.subject.SimplePrincipalCollection;
-import org.apache.shiro.subject.Subject;
 
 import java.io.IOException;
 import java.time.Clock;
@@ -48,7 +43,7 @@ import org.neo4j.server.security.auth.UserRepository;
 
 public class ShiroAuthManager extends BasicAuthManager implements EnterpriseAuthManager, EnterpriseUserManager
 {
-    protected SecurityManager securityManager;
+    protected DefaultSecurityManager securityManager;
     private final EhCacheManager cacheManager;
     private final FileUserRealm realm;
     private final RoleRepository roleRepository;
@@ -67,7 +62,7 @@ public class ShiroAuthManager extends BasicAuthManager implements EnterpriseAuth
         this.roleRepository = roleRepository;
     }
 
-    protected SecurityManager createSecurityManager()
+    protected DefaultSecurityManager createSecurityManager()
     {
         return new DefaultSecurityManager( realm );
     }
@@ -90,6 +85,7 @@ public class ShiroAuthManager extends BasicAuthManager implements EnterpriseAuth
         realm.initialize();
 
         securityManager = createSecurityManager();
+        securityManager.setSubjectFactory( new ShiroSubjectFactory() );
     }
 
     @Override
@@ -161,7 +157,7 @@ public class ShiroAuthManager extends BasicAuthManager implements EnterpriseAuth
         String password = AuthToken.safeCast( AuthToken.CREDENTIALS, authToken );
 
         // Start with an anonymous subject
-        Subject subject = buildSubject( null );
+        ShiroSubject subject = new ShiroSubject( securityManager, AuthenticationResult.FAILURE );
 
         AuthenticationResult result = AuthenticationResult.FAILURE;
 
@@ -174,7 +170,7 @@ public class ShiroAuthManager extends BasicAuthManager implements EnterpriseAuth
             UsernamePasswordToken token = new UsernamePasswordToken( username, password );
             try
             {
-                subject.login( token );
+                subject = (ShiroSubject) securityManager.login( null, token );
                 if ( realm.findUser( username ).passwordChangeRequired() )
                 {
                     result = AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
@@ -194,7 +190,7 @@ public class ShiroAuthManager extends BasicAuthManager implements EnterpriseAuth
             }
             authStrategy.updateWithAuthenticationResult( result, username );
         }
-        return new ShiroAuthSubject( this, subject, result );
+        return new ShiroAuthSubject( this, subject );
     }
 
     @Override
@@ -258,24 +254,6 @@ public class ShiroAuthManager extends BasicAuthManager implements EnterpriseAuth
     {
         assertAuthEnabled();
         return realm.getAllUsernames();
-    }
-
-    protected Realm getInternalRealm()
-    {
-        return realm;
-    }
-
-    private Subject buildSubject( String username )
-    {
-        Subject.Builder subjectBuilder = new Subject.Builder( securityManager );
-
-        if ( username != null )
-        {
-            PrincipalCollection identity = new SimplePrincipalCollection( username, realm.getName() );
-            subjectBuilder = subjectBuilder.principals( identity );
-        }
-
-        return subjectBuilder.buildSubject();
     }
 
     @Override

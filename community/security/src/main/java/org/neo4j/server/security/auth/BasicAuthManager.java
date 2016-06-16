@@ -41,7 +41,7 @@ import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
  *       so the given UserRepository should not be added to another LifeSupport.
  * </p>
  */
-public class BasicAuthManager implements AuthManager, UserManager
+public class BasicAuthManager implements AuthManager, UserManager, UserManagerSupplier
 {
     protected final AuthenticationStrategy authStrategy;
     protected final UserRepository users;
@@ -205,5 +205,11 @@ public class BasicAuthManager implements AuthManager, UserManager
         {
             throw new IllegalArgumentException( "User name contains illegal characters. Please use simple ascii characters and numbers." );
         }
+    }
+
+    @Override
+    public UserManager getUserManager()
+    {
+        return this;
     }
 }

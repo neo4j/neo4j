@@ -25,11 +25,11 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import javax.ws.rs.core.HttpHeaders;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
+import org.neo4j.server.security.enterprise.auth.SecuritySettings;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -44,6 +44,7 @@ public class EnterpriseAuthenticationDocIT extends AuthenticationDocIT
         server = EnterpriseServerBuilder.server()
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
                 .withProperty( GraphDatabaseSettings.auth_manager.name(), "enterprise-auth-manager" )
+                .withProperty( SecuritySettings.ldap_auth_enabled.name(), "false" )
                 .build();
         server.start();
     }

@@ -45,6 +45,7 @@ public class LdapRealm extends JndiLdapRealm
         super();
         setRolePermissionResolver( rolePermissionResolver );
         configureRealm( config );
+        // TODO: Set NeoSubjectFactory on the SecurityManager
     }
 
     @Override

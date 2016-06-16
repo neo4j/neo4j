@@ -24,11 +24,9 @@ import org.apache.shiro.subject.Subject;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
-import org.neo4j.server.security.auth.UserManager;
 
 public class ShiroAuthSubject implements AuthSubject
 {
@@ -37,8 +35,7 @@ public class ShiroAuthSubject implements AuthSubject
     static final String READ = "data:read";
 
     private final EnterpriseAuthManager authManager;
-    private final Subject subject;
-    private final AuthenticationResult authenticationResult;
+    private final ShiroSubject subject;
 
     public static ShiroAuthSubject castOrFail( AuthSubject authSubject )
     {
@@ -49,11 +46,10 @@ public class ShiroAuthSubject implements AuthSubject
         return (ShiroAuthSubject) authSubject;
     }
 
-    public ShiroAuthSubject( EnterpriseAuthManager authManager, Subject subject, AuthenticationResult authenticationResult )
+    public ShiroAuthSubject( EnterpriseAuthManager authManager, ShiroSubject subject )
     {
         this.authManager = authManager;
         this.subject = subject;
-        this.authenticationResult = authenticationResult;
     }
 
     @Override
@@ -65,7 +61,7 @@ public class ShiroAuthSubject implements AuthSubject
     @Override
     public AuthenticationResult getAuthenticationResult()
     {
-        return authenticationResult;
+        return subject.getAuthenticationResult();
     }
 
     @Override

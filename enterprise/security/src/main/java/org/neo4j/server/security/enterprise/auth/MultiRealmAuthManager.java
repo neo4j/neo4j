@@ -20,13 +20,14 @@
 package org.neo4j.server.security.enterprise.auth;
 
 import org.apache.shiro.authc.AuthenticationException;
+import org.apache.shiro.authc.ExcessiveAttemptsException;
+import org.apache.shiro.authc.pam.FirstSuccessfulStrategy;
+import org.apache.shiro.authc.pam.ModularRealmAuthenticator;
 import org.apache.shiro.authc.pam.UnsupportedTokenException;
 import org.apache.shiro.cache.ehcache.EhCacheManager;
 import org.apache.shiro.mgt.DefaultSecurityManager;
-import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.realm.CachingRealm;
 import org.apache.shiro.realm.Realm;
-import org.apache.shiro.subject.Subject;
 import org.apache.shiro.util.Initializable;
 
 import java.util.Collection;
@@ -35,12 +36,13 @@ import java.util.Map;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
+import org.neo4j.server.security.auth.UserManagerSupplier;
 
-public class MultiRealmAuthManager implements EnterpriseAuthManager
+public class MultiRealmAuthManager implements EnterpriseAuthManager, UserManagerSupplier
 {
     private final EnterpriseUserManager userManager;
     private final Collection<Realm> realms;
-    private final SecurityManager securityManager;
+    private final DefaultSecurityManager securityManager;
     private final EhCacheManager cacheManager;
 
     public MultiRealmAuthManager( EnterpriseUserManager userManager, Collection<Realm> realms )
@@ -48,8 +50,11 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager
         this.userManager = userManager;
         this.realms = realms;
         securityManager = new DefaultSecurityManager( realms );
+        securityManager.setSubjectFactory( new ShiroSubjectFactory() );
+        ((ModularRealmAuthenticator) securityManager.getAuthenticator())
+                .setAuthenticationStrategy( new FirstSuccessfulStrategy() );
 
-        // TODO: This is a bit big for our current needs.
+        // TODO: This is a bit big dependency for our current needs.
         // Maybe MemoryConstrainedCacheManager is good enough if we do not need timeToLiveSeconds?
         cacheManager = new EhCacheManager();
     }
@@ -57,27 +62,29 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager
     @Override
     public AuthSubject login( Map<String,Object> authToken ) throws InvalidAuthTokenException
     {
-        Subject subject = new Subject.Builder( securityManager ).buildSubject();
+        ShiroSubject subject;
 
         ShiroAuthToken token = new ShiroAuthToken( authToken );
 
-        AuthenticationResult result = AuthenticationResult.FAILURE;
-
         try
         {
-            subject.login( token );
-            result = AuthenticationResult.SUCCESS;
+            subject = (ShiroSubject) securityManager.login( null, token );
         }
         catch ( UnsupportedTokenException e )
         {
             throw new InvalidAuthTokenException( e.getCause().getMessage() );
         }
+        catch ( ExcessiveAttemptsException e )
+        {
+            // NOTE: We only get this with single (internal) realm authentication
+            subject = new ShiroSubject( securityManager, AuthenticationResult.TOO_MANY_ATTEMPTS );
+        }
         catch ( AuthenticationException e )
         {
-            result = AuthenticationResult.FAILURE;
+            subject = new ShiroSubject( securityManager, AuthenticationResult.FAILURE );
         }
 
-        return new ShiroAuthSubject( this, subject, result );
+        return new ShiroAuthSubject( this, subject );
     }
 
     @Override
@@ -95,9 +102,9 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager
             {
                 ((CachingRealm) realm).setCacheManager( cacheManager );
             }
-            if ( realm instanceof NeoLifecycleRealm )
+            if ( realm instanceof ShiroRealmLifecycle )
             {
-                ((NeoLifecycleRealm) realm).initialize();
+                ((ShiroRealmLifecycle) realm).initialize();
             }
         }
     }
@@ -107,9 +114,9 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager
     {
         for ( Realm realm : realms )
         {
-            if ( realm instanceof NeoLifecycleRealm )
+            if ( realm instanceof ShiroRealmLifecycle )
             {
-                ((NeoLifecycleRealm) realm).start();
+                ((ShiroRealmLifecycle) realm).start();
             }
         }
     }
@@ -119,9 +126,9 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager
     {
         for ( Realm realm : realms )
         {
-            if ( realm instanceof NeoLifecycleRealm )
+            if ( realm instanceof ShiroRealmLifecycle )
             {
-                ((NeoLifecycleRealm) realm).stop();
+                ((ShiroRealmLifecycle) realm).stop();
             }
         }
     }
@@ -135,9 +142,9 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager
             {
                 ((CachingRealm) realm).setCacheManager( null );
             }
-            if ( realm instanceof NeoLifecycleRealm )
+            if ( realm instanceof ShiroRealmLifecycle )
             {
-                ((NeoLifecycleRealm) realm).shutdown();
+                ((ShiroRealmLifecycle) realm).shutdown();
             }
         }
         cacheManager.destroy();

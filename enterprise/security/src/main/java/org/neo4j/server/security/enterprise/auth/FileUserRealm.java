@@ -22,9 +22,11 @@ package org.neo4j.server.security.enterprise.auth;
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
-import org.apache.shiro.authc.SimpleAuthenticationInfo;
-import org.apache.shiro.authc.UsernamePasswordToken;
-import org.apache.shiro.authc.credential.CredentialsMatcher;
+import org.apache.shiro.authc.DisabledAccountException;
+import org.apache.shiro.authc.ExcessiveAttemptsException;
+import org.apache.shiro.authc.IncorrectCredentialsException;
+import org.apache.shiro.authc.UnknownAccountException;
+import org.apache.shiro.authc.credential.AllowAllCredentialsMatcher;
 import org.apache.shiro.authc.pam.UnsupportedTokenException;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.Permission;
@@ -47,6 +49,7 @@ import java.util.TreeSet;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthToken;
+import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
@@ -59,27 +62,13 @@ import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 /**
  * Shiro realm wrapping FileUserRepository
  */
-public class FileUserRealm extends AuthorizingRealm implements NeoLifecycleRealm, EnterpriseUserManager
+public class FileUserRealm extends AuthorizingRealm implements ShiroRealmLifecycle, EnterpriseUserManager
 {
     /**
      * This flag is used in the same way as User.PASSWORD_CHANGE_REQUIRED, but it's
      * placed here because of user suspension not being a part of community edition
      */
     public static final String IS_SUSPENDED = "is_suspended";
-
-    private final CredentialsMatcher credentialsMatcher =
-            ( AuthenticationToken token, AuthenticationInfo info ) ->
-            {
-                UsernamePasswordToken usernamePasswordToken = (UsernamePasswordToken) token;
-                String infoUserName = (String) info.getPrincipals().getPrimaryPrincipal();
-                Credential infoCredential = (Credential) info.getCredentials();
-
-                boolean userNameMatches = infoUserName.equals( usernamePasswordToken.getUsername() );
-                boolean credentialsMatches =
-                        infoCredential.matchesPassword( new String( usernamePasswordToken.getPassword() ) );
-
-                return userNameMatches && credentialsMatches;
-            };
 
     private final RolePermissionResolver rolePermissionResolver = new RolePermissionResolver()
     {
@@ -115,7 +104,7 @@ public class FileUserRealm extends AuthorizingRealm implements NeoLifecycleRealm
         this.passwordPolicy = passwordPolicy;
         this.authenticationStrategy = authenticationStrategy;
         this.authenticationEnabled = authenticationEnabled;
-        setCredentialsMatcher( credentialsMatcher );
+        setCredentialsMatcher( new AllowAllCredentialsMatcher() );
         setRolePermissionResolver( rolePermissionResolver );
 
         roles = new PredefinedRolesBuilder().buildRoles();
@@ -210,9 +199,11 @@ public class FileUserRealm extends AuthorizingRealm implements NeoLifecycleRealm
         ShiroAuthToken shiroAuthToken = (ShiroAuthToken) token;
 
         String username;
+        String password;
         try
         {
             username = AuthToken.safeCast( AuthToken.PRINCIPAL, shiroAuthToken.getMap() );
+            password = AuthToken.safeCast( AuthToken.CREDENTIALS, shiroAuthToken.getMap() );
         }
         catch ( InvalidAuthTokenException e )
         {
@@ -222,24 +213,33 @@ public class FileUserRealm extends AuthorizingRealm implements NeoLifecycleRealm
         User user = userRepository.getUserByName( username );
         if ( user == null )
         {
-            throw new AuthenticationException( "User " + username + " does not exist" );
+            throw new UnknownAccountException();
         }
 
-        SimpleAuthenticationInfo authenticationInfo =
-                new SimpleAuthenticationInfo( user.name(), user.credentials(), getName() );
+        AuthenticationResult result = authenticationStrategy.authenticate( user, password );
+
+        switch (result)
+        {
+        case FAILURE:
+            throw new IncorrectCredentialsException();
+        case TOO_MANY_ATTEMPTS:
+            throw new ExcessiveAttemptsException();
+        }
 
         // TODO: This will not work if AuthenticationInfo is cached,
         // unless you always do SecurityManager.logout properly (which will invalidate the cache)
         // For REST we may need to connect HttpSessionListener.sessionDestroyed with logout
         if ( user.hasFlag( FileUserRealm.IS_SUSPENDED ) )
         {
-            // We don' want un-authenticated users to learn anything about user suspension state
-            // (normally this assertion is done by Shiro after we return from this method)
-            assertCredentialsMatch( token, authenticationInfo );
-            throw new AuthenticationException( "User " + user.name() + " is suspended" );
+            throw new DisabledAccountException( "User " + user.name() + " is suspended" );
         }
 
-        return authenticationInfo;
+        if ( user.passwordChangeRequired() )
+        {
+            result = AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
+        }
+
+        return new ShiroAuthenticationInfo( user.name(), user.credentials(), getName(), result );
     }
 
     int numberOfUsers()
@@ -393,7 +393,7 @@ public class FileUserRealm extends AuthorizingRealm implements NeoLifecycleRealm
     @Override
     public User getUser( String username )
     {
-        return null;
+        return userRepository.getUserByName( username );
     }
 
     @Override

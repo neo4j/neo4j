@@ -155,7 +155,7 @@ public class AuthProcedures
             throw new AuthorizationViolationException( PERMISSION_DENIED );
         }
         EnterpriseUserManager userManager = shiroSubject.getUserManager();
-        return shiroSubject.getUserManager().getAllUsernames().stream()
+        return userManager.getAllUsernames().stream()
                 .map( u -> new UserResult( u, userManager.getRoleNamesForUser( u ) ) );
     }
 

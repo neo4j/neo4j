@@ -63,13 +63,12 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
 
         realms.add( internalRealm );
 
-        if ( config.get( SecuritySettings.ldap_auth_enabled ) )
-        {
-            realms.add( new LdapRealm( config ) );
-        }
-
         if ( config.get( SecuritySettings.external_auth_enabled ) )
         {
+            if ( config.get( SecuritySettings.ldap_auth_enabled ) )
+            {
+                realms.add( new LdapRealm( config ) );
+            }
 
             // TODO: Load pluggable realms
         }
