@@ -56,21 +56,58 @@ case class VarLengthExpandPipe(source: Pipe,
                               (val estimatedCardinality: Option[Double] = None)
                               (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
+   trait ContainsRelationship {
+    def contains(r : Relationship) : Boolean
+  }
+
+  /*
+  suggestion from SP
+  trait ContainsOps[T[X]] { def contains[X](container: T[X], elt: X): Boolean }
+
+  object SetOps extends ContainsOps[Set] { … }
+  object VecOps extends ContainsOps[Vector] { … }
+
+  def yourCode[T <: Iterable[Foo]](container: T, ops: ContainsOps[T]) { … ops.contains(container, elt) … }
+
+  */
   private def varLengthExpand(node: Node, state: QueryState, maxDepth: Option[Int],
                               row: ExecutionContext): Iterator[(Node, Seq[Relationship])] = {
-    val stack = new mutable.Stack[(Node, Seq[Relationship])]
-    stack.push((node, Seq.empty))
+    val maxDepthValue = maxDepth.getOrElse(Int.MaxValue)
 
-    new Iterator[(Node, Seq[Relationship])] {
-      def next(): (Node, Seq[Relationship]) = {
-        val (node, rels) = stack.pop()
-        if (rels.length < maxDepth.getOrElse(Int.MaxValue) && filteringStep.filterNode(row,state)(node)) {
-          val relationships: Iterator[Relationship] = state.query.getRelationshipsForIds(node, dir, types.types(state.query))
+    val nodeFilter: (Node) => Boolean = filteringStep.filterNode(row, state)
 
-          relationships.filter(filteringStep.filterRelationship(row, state)).foreach { rel =>
-            val otherNode = rel.getOtherNode(node)
-            if (!rels.contains(rel) && filteringStep.filterNode(row,state)(otherNode)) {
-              stack.push((otherNode, rels :+ rel))
+    val stack = new mutable.ArrayBuffer[(Node, Vector[Relationship])](1024*1024)
+    stack.append((node, Vector[Relationship]()))
+    val relSet = mutable.HashSet[Relationship]()
+    relSet.sizeHint(1024)
+
+    new Iterator[(Node, Vector[Relationship])] {
+      def next(): (Node, Vector[Relationship]) = {
+        val (node, rels: Vector[Relationship]) = stack.remove(stack.length-1)
+        if (rels.length < maxDepthValue && nodeFilter(node)) {
+          val relationships: Iterator[Relationship] = state.query
+            .getRelationshipsForIds(node, dir, types.types(state.query))
+            .filter(filteringStep.filterRelationship(row, state))
+
+          if (relationships.nonEmpty) {
+            // todo this code sucks, I need the scala way of unifying Vector.contains and Set.contains
+            val set = if (rels.lengthCompare(8) > 0) {
+              relSet.clear()
+              rels.foreach(relSet.add)
+              new ContainsRelationship {
+                override def contains(r: Relationship): Boolean = relSet.contains(r)
+              }
+            } else {
+              new ContainsRelationship {
+                override def contains(r: Relationship): Boolean = rels.contains(r)
+              }
+            }
+
+            relationships.foreach { rel =>
+              val otherNode = rel.getOtherNode(node)
+              if (!set.contains(rel) && nodeFilter(otherNode)) {
+                stack.append((otherNode, rels :+ rel))
+              }
             }
           }
         }
