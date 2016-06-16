@@ -31,7 +31,7 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.server.RaftTestMember;
 
-public class OutboundMessageCollector implements Outbound<RaftTestMember>
+public class OutboundMessageCollector implements Outbound<RaftTestMember, RaftMessages.RaftMessage<RaftTestMember>>
 {
     Map<RaftTestMember, List<Message>> sentMessages = new HashMap<>();
 
@@ -41,7 +41,7 @@ public class OutboundMessageCollector implements Outbound<RaftTestMember>
     }
 
     @Override
-    public void send( RaftTestMember to, Message... messages )
+    public void send( RaftTestMember to, RaftMessages.RaftMessage<RaftTestMember>... messages )
     {
         List<Message> messagesToMember = sentMessages.get( to );
         if ( messagesToMember == null )

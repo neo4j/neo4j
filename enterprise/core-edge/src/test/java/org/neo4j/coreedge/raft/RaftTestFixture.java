@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.net.Inbound;
@@ -54,7 +55,7 @@ public class RaftTestFixture
             fixtureMember.member = member( id );
 
             Inbound inbound = net.new Inbound( id );
-            Outbound<RaftTestMember> outbound = new LoggingOutbound<>( net.new Outbound( id ), fixtureMember.member,
+            Outbound<RaftTestMember,RaftMessages.RaftMessage<RaftTestMember>> outbound = new LoggingOutbound<>( net.new Outbound( id ), fixtureMember.member,
                     new NullMessageLogger<>() );
 
             fixtureMember.raftInstance = new RaftInstanceBuilder<>( fixtureMember.member, expectedClusterSize,

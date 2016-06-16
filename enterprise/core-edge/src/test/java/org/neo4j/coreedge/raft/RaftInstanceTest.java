@@ -389,16 +389,16 @@ public class RaftInstanceTest
         final RaftTestMember newMember = member( 99 );
         DirectNetworking.Inbound newMemberInbound = network.new Inbound( 99 );
         final OutboundMessageCollector messages = new OutboundMessageCollector();
-        newMemberInbound.registerHandler( new Inbound.MessageHandler()
+        newMemberInbound.registerHandler( new Inbound.MessageHandler<RaftMessages.RaftMessage<RaftTestMember>>()
         {
             @Override
-            public boolean validate( Message message, StoreId storeId )
+            public boolean validate( RaftMessages.RaftMessage<RaftTestMember> message, StoreId storeId )
             {
                 return true;
             }
 
             @Override
-            public void handle( Message message )
+            public void handle( RaftMessages.RaftMessage<RaftTestMember> message )
             {
                 messages.send( newMember, message );
             }

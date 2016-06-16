@@ -44,6 +44,7 @@ import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.RaftDiscoveryServiceConnector;
+import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.BatchingMessageHandler;
 import org.neo4j.coreedge.raft.ContinuousJob;
 import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
@@ -290,7 +291,7 @@ public class EnterpriseCoreEditionModule
             messageLogger = new NullMessageLogger<>();
         }
 
-        LoggingOutbound<AdvertisedSocketAddress> loggingOutbound = new LoggingOutbound<>(
+        LoggingOutbound<AdvertisedSocketAddress,Message> loggingOutbound = new LoggingOutbound<>(
                 senderService, myself.getRaftAddress(), messageLogger );
 
         ListenSocketAddress raftListenAddress = config.get( CoreEdgeClusterSettings.raft_listen_address );
@@ -381,7 +382,7 @@ public class EnterpriseCoreEditionModule
 
         RaftReplicator<CoreMember> replicator = new RaftReplicator<>( raft, myself,
                 new RaftOutbound( loggingOutbound, localDatabase ), sessionPool, progressTracker,
-                new ExponentialBackoffStrategy( 10, SECONDS ), localDatabase );
+                new ExponentialBackoffStrategy( 10, SECONDS ) );
 
         dependencies.satisfyDependency( raft );
 
@@ -610,7 +611,7 @@ public class EnterpriseCoreEditionModule
     }
 
     private static RaftInstance<CoreMember> createRaft( LifeSupport life,
-                                                        Outbound<AdvertisedSocketAddress> outbound,
+                                                        Outbound<AdvertisedSocketAddress, Message> outbound,
                                                         CoreTopologyService discoveryService,
                                                         Config config,
                                                         MessageLogger<AdvertisedSocketAddress> messageLogger,
@@ -693,7 +694,7 @@ public class EnterpriseCoreEditionModule
                 Clock.systemUTC(), myself, raftMembershipManager, electionTimeout,
                 config.get( CoreEdgeClusterSettings.catchup_batch_size ),
                 config.get( CoreEdgeClusterSettings.log_shipping_max_lag ),
-                inFlightMap, localDatabase );
+                inFlightMap );
 
         RaftInstance<CoreMember> raftInstance = new RaftInstance<>(
                 myself, termState, voteState, raftLog, raftStateMachine, electionTimeout, heartbeatInterval,

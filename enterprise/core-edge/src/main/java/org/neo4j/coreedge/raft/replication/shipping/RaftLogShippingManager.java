@@ -26,7 +26,9 @@ import java.util.HashSet;
 import java.util.Map;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
+import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.LeaderContext;
+import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
@@ -39,7 +41,7 @@ import static java.lang.String.format;
 
 public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
 {
-    private final Outbound<MEMBER> outbound;
+    private final Outbound<MEMBER,RaftMessages.RaftMessage<MEMBER>> outbound;
     private final LogProvider logProvider;
     private final ReadableRaftLog raftLog;
     private final Clock clock;
@@ -50,7 +52,6 @@ public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
     private final int catchupBatchSize;
     private final int maxAllowedShippingLag;
     private final InFlightMap<Long,RaftLogEntry> inFlightMap;
-    private final LocalDatabase localDatabase;
 
     private Map<MEMBER,RaftLogShipper> logShippers = new HashMap<>();
     private LeaderContext lastLeaderContext;
@@ -58,10 +59,11 @@ public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
     private boolean running;
     private boolean destroyed = false;
 
-    public RaftLogShippingManager( Outbound<MEMBER> outbound, LogProvider logProvider, ReadableRaftLog raftLog,
+    public RaftLogShippingManager( Outbound<MEMBER,RaftMessages.RaftMessage<MEMBER>> outbound, LogProvider logProvider,
+                                   ReadableRaftLog raftLog,
                                    Clock clock, MEMBER myself, RaftMembership<MEMBER> membership, long retryTimeMillis,
                                    int catchupBatchSize, int maxAllowedShippingLag,
-                                   InFlightMap<Long, RaftLogEntry> inFlightMap, LocalDatabase localDatabase )
+                                   InFlightMap<Long, RaftLogEntry> inFlightMap )
     {
         this.outbound = outbound;
         this.logProvider = logProvider;
@@ -73,8 +75,6 @@ public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
         this.catchupBatchSize = catchupBatchSize;
         this.maxAllowedShippingLag = maxAllowedShippingLag;
         this.inFlightMap = inFlightMap;
-        this.localDatabase = localDatabase;
-
         membership.registerListener( this );
     }
 

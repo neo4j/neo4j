@@ -42,7 +42,7 @@ import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
-public class SenderService extends LifecycleAdapter implements Outbound<AdvertisedSocketAddress>
+public class SenderService extends LifecycleAdapter implements Outbound<AdvertisedSocketAddress,Message>
 {
     private NonBlockingChannels nonBlockingChannels;
 

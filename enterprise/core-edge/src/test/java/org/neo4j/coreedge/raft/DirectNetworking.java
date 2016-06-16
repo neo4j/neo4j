@@ -75,7 +75,7 @@ public class DirectNetworking
         disconnectedMembers.remove( id );
     }
 
-    public class Outbound implements org.neo4j.coreedge.raft.net.Outbound<RaftTestMember>
+    public class Outbound implements org.neo4j.coreedge.raft.net.Outbound<RaftTestMember,RaftMessages.RaftMessage<RaftTestMember>>
     {
         private final long me;
 
@@ -85,7 +85,7 @@ public class DirectNetworking
         }
 
         @Override
-        public synchronized void send( RaftTestMember to, final Message... messages )
+        public synchronized void send( RaftTestMember to, final RaftMessages.RaftMessage<RaftTestMember>... messages )
         {
             if ( !messageQueues.containsKey( to.getId() ) ||
                     disconnectedMembers.contains( to.getId() ) ||

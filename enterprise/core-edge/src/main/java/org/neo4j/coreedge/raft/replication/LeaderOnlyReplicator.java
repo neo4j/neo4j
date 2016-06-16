@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.raft.replication;
 
+import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -27,16 +28,17 @@ import org.neo4j.kernel.impl.store.StoreId;
 public class LeaderOnlyReplicator<MEMBER>
 {
     private final MEMBER source;
-    private final Outbound<MEMBER> outbound;
+    private final Outbound<MEMBER, RaftMessages.RaftMessage<MEMBER>> outbound;
 
-    public LeaderOnlyReplicator( MEMBER source, Outbound<MEMBER> outbound )
+    public LeaderOnlyReplicator( MEMBER source, Outbound<MEMBER, RaftMessages.RaftMessage<MEMBER>> outbound )
     {
         this.source = source;
         this.outbound = outbound;
     }
 
-    public void replicate( ReplicatedContent content, StoreId storeId )
+    public void replicate( ReplicatedContent content )
     {
+        //noinspection unchecked
         outbound.send( source, new RaftMessages.NewEntry.Request<>( source, content ) );
     }
 }

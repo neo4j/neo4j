@@ -23,13 +23,13 @@ import org.neo4j.coreedge.network.Message;
 
 import org.neo4j.coreedge.server.logging.MessageLogger;
 
-public class LoggingOutbound<MEMBER> implements Outbound<MEMBER>
+public class LoggingOutbound<MEMBER, MESSAGE extends Message> implements Outbound<MEMBER, MESSAGE>
 {
-    private final Outbound<MEMBER> outbound;
+    private final Outbound<MEMBER,MESSAGE> outbound;
     private final MEMBER me;
     private final MessageLogger<MEMBER> messageLogger;
 
-    public LoggingOutbound( Outbound<MEMBER> outbound, MEMBER me, MessageLogger<MEMBER> messageLogger )
+    public LoggingOutbound( Outbound<MEMBER,MESSAGE> outbound, MEMBER me, MessageLogger<MEMBER> messageLogger )
     {
         this.outbound = outbound;
         this.me = me;
@@ -37,7 +37,7 @@ public class LoggingOutbound<MEMBER> implements Outbound<MEMBER>
     }
 
     @Override
-    public void send( MEMBER to, Message... messages )
+    public void send( MEMBER to, MESSAGE... messages )
     {
         messageLogger.log( me, to, messages );
         outbound.send( to, messages );

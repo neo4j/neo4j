@@ -22,8 +22,6 @@ package org.neo4j.coreedge.raft;
 import java.time.Clock;
 import java.util.function.Supplier;
 
-import org.mockito.cglib.core.Local;
-
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
@@ -63,7 +61,7 @@ public class RaftInstanceBuilder<MEMBER>
             NullLogProvider.getInstance() );
 
     private Inbound<RaftMessages.RaftMessage<MEMBER>> inbound = handler -> {};
-    private Outbound<MEMBER> outbound = ( advertisedSocketAddress, messages ) -> {};
+    private Outbound<MEMBER, RaftMessages.RaftMessage<MEMBER>> outbound = ( advertisedSocketAddress, messages ) -> {};
 
     private LogProvider logProvider = NullLogProvider.getInstance();
     private Clock clock = Clock.systemUTC();
@@ -98,7 +96,7 @@ public class RaftInstanceBuilder<MEMBER>
                 raftMembership, localDatabase );
         RaftLogShippingManager<MEMBER> logShipping =
                 new RaftLogShippingManager<>( outbound, logProvider, raftLog, clock, member, membershipManager,
-                        retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, inFlightMap, localDatabase );
+                        retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, inFlightMap );
 
         RaftInstance<MEMBER> raft = new RaftInstance<>( member, termState, voteState, raftLog, raftStateMachine, electionTimeout,
                 heartbeatInterval, renewableTimeoutService, mock( CoreServerSelectionStrategy.class ), outbound,
@@ -132,7 +130,7 @@ public class RaftInstanceBuilder<MEMBER>
         return this;
     }
 
-    public RaftInstanceBuilder<MEMBER> outbound( Outbound<MEMBER> outbound )
+    public RaftInstanceBuilder<MEMBER> outbound( Outbound<MEMBER,RaftMessages.RaftMessage<MEMBER>> outbound )
     {
         this.outbound = outbound;
         return this;

@@ -23,6 +23,7 @@ import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
+import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
 import org.neo4j.coreedge.raft.RaftMessages;
@@ -38,24 +39,23 @@ import org.neo4j.kernel.impl.util.Listener;
 public class RaftReplicator<MEMBER> implements Replicator<ReplicatedContent>, Listener<MEMBER>
 {
     private final MEMBER me;
-    private final Outbound<MEMBER> outbound;
+    private final Outbound<MEMBER, RaftMessages.RaftMessage<MEMBER>> outbound;
     private final ProgressTracker progressTracker;
     private final LocalSessionPool sessionPool;
     private final RetryStrategy retryStrategy;
-    private final LocalDatabase localDatabase;
 
     private MEMBER leader;
 
-    public RaftReplicator( LeaderLocator<MEMBER> leaderLocator, MEMBER me, Outbound<MEMBER> outbound,
+    public RaftReplicator( LeaderLocator<MEMBER> leaderLocator, MEMBER me,
+                           Outbound<MEMBER, RaftMessages.RaftMessage<MEMBER>> outbound,
                            LocalSessionPool<MEMBER> sessionPool, ProgressTracker progressTracker,
-                           RetryStrategy retryStrategy, LocalDatabase localDatabase )
+                           RetryStrategy retryStrategy )
     {
         this.me = me;
         this.outbound = outbound;
         this.progressTracker = progressTracker;
         this.sessionPool = sessionPool;
         this.retryStrategy = retryStrategy;
-        this.localDatabase = localDatabase;
 
         try
         {
@@ -79,6 +79,7 @@ public class RaftReplicator<MEMBER> implements Replicator<ReplicatedContent>, Li
         RetryStrategy.Timeout timeout = retryStrategy.newTimeout();
         do
         {
+            //noinspection unchecked
             outbound.send( leader, new RaftMessages.NewEntry.Request<>( me, operation ) );
             try
             {

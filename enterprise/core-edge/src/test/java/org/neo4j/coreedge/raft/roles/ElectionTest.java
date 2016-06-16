@@ -24,6 +24,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.ControlledRenewableTimeoutService;
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftInstanceBuilder;
@@ -61,12 +62,10 @@ public class ElectionTest
     private RaftTestMember member1 = member( 1 );
     private RaftTestMember member2 = member( 2 );
 
-    private RaftLog raftLog = new InMemoryRaftLog();
-
     @Mock
     private Inbound inbound;
-
-    private LogProvider logProvider = NullLogProvider.getInstance();
+    @Mock
+    private Outbound<RaftTestMember, RaftMessages.RaftMessage<RaftTestMember>> outbound;
 
     @Test
     public void candidateShouldWinElectionAndBecomeLeader() throws Exception
@@ -74,7 +73,6 @@ public class ElectionTest
         // given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
 
-        Outbound<RaftTestMember> outbound = mock( Outbound.class );
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .outbound( outbound )
                 .timeoutService( timeouts )
@@ -105,7 +103,6 @@ public class ElectionTest
         // given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
 
-        Outbound<RaftTestMember> outbound = mock( Outbound.class );
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .outbound( outbound )
                 .timeoutService( timeouts )
@@ -132,8 +129,6 @@ public class ElectionTest
     {
         // given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
-
-        Outbound<RaftTestMember> outbound = mock( Outbound.class );
 
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .outbound( outbound )

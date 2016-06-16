@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.time.Clock;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
+import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.raft.LeaderContext;
 import org.neo4j.coreedge.raft.RaftMessages;
@@ -94,7 +95,7 @@ public class RaftLogShipper<MEMBER>
         PIPELINE
     }
 
-    private final Outbound<MEMBER> outbound;
+    private final Outbound<MEMBER, RaftMessages.RaftMessage<MEMBER>> outbound;
     private final LogProvider logProvider;
     private final Log log;
     private final ReadableRaftLog raftLog;
@@ -126,7 +127,8 @@ public class RaftLogShipper<MEMBER>
 
     private Mode mode = Mode.MISMATCH;
 
-    RaftLogShipper( Outbound<MEMBER> outbound, LogProvider logProvider, ReadableRaftLog raftLog, Clock clock,
+    RaftLogShipper( Outbound<MEMBER, RaftMessages.RaftMessage<MEMBER>> outbound, LogProvider logProvider,
+                    ReadableRaftLog raftLog, Clock clock,
                     MEMBER leader, MEMBER follower, long leaderTerm, long leaderCommit, long retryTimeMillis,
                     int catchupBatchSize, int maxAllowedShippingLag, InFlightMap<Long, RaftLogEntry> inFlightMap )
     {

@@ -125,7 +125,7 @@ public class RaftTestNetwork<T>
         }
     }
 
-    public class Outbound implements org.neo4j.coreedge.raft.net.Outbound<T>
+    public class Outbound implements org.neo4j.coreedge.raft.net.Outbound<T, Message>
     {
         private NetworkThread networkThread;
         private volatile boolean disconnected = false;
