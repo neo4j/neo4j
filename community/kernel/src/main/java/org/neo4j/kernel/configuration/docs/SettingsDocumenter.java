@@ -225,7 +225,7 @@ public class SettingsDocumenter
 
     private String settingReferenceForHTML( String settingName )
     {
-        return "+<<config_" + settingName + "," + settingName + ">>+";
+        return "<<config_" + settingName + "," + settingName + ">>";
     }
 
     private String settingReferenceForPDF( String settingName )

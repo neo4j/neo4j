@@ -496,7 +496,7 @@ public class Settings
         @Override
         public String toString()
         {
-            return "a duration (valid units are `" + DURATION_UNITS.replace( ", ", "`, `" ) + "`)";
+            return "a duration (valid units are `" + DURATION_UNITS.replace( ", ", "`, `" ) + "`; default unit is `ms`)";
         }
     };
 

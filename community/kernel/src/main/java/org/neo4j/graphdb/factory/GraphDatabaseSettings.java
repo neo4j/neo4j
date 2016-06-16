@@ -254,8 +254,7 @@ public abstract class GraphDatabaseSettings
                   "Longer check-point intervals typically means that recovery will take longer to complete in case " +
                   "of a crash. On the other hand, a longer check-point interval can also reduce the I/O load that " +
                   "the database places on the system, as each check-point implies a flushing and forcing of all the " +
-                  "store files. The default is '5m' for a check-point every 5 minutes. Other supported units are 's' " +
-                  "for seconds, and 'ms' for milliseconds." )
+                  "store files." ) 
     public static final Setting<Long> check_point_interval_time = setting( "dbms.checkpoint.interval.time", DURATION, "5m" );
 
     @Description( "Limit the number of IOs the background checkpoint process will consume per second. " +
