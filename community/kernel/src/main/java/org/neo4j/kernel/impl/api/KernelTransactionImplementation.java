@@ -30,6 +30,7 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -491,15 +492,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             if ( failure || !success )
             {
                 rollback();
-                if ( success )
-                {
-                    // Success was called, but also failure which means that the client code using this
-                    // transaction passed through a happy path, but the transaction was still marked as
-                    // failed for one or more reasons. Tell the user that although it looked happy it
-                    // wasn't committed, but was instead rolled back.
-                    throw new TransactionFailureException( Status.Transaction.MarkedAsFailed,
-                            "Transaction rolled back even if marked as successful" );
-                }
+                failOnNonExplicitRollbackIfNeeded();
             }
             else
             {
@@ -529,6 +522,37 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             {
                 release();
             }
+        }
+    }
+
+    /**
+     * Throws exception if this transaction was marked as successful but failure flag has also been set to true.
+     * <p>
+     * This could happen when:
+     * <ul>
+     * <li>caller explicitly calls both {@link #success()} and {@link #failure()}</li>
+     * <li>caller explicitly calls {@link #success()} but transaction execution fails</li>
+     * <li>caller explicitly calls {@link #success()} but transaction is terminated</li>
+     * </ul>
+     * <p>
+     *
+     * @throws TransactionFailureException when execution failed
+     * @throws TransactionTerminatedException when transaction was terminated
+     */
+    private void failOnNonExplicitRollbackIfNeeded() throws TransactionFailureException
+    {
+        if ( success && terminated )
+        {
+            throw new TransactionTerminatedException();
+        }
+        if ( success )
+        {
+            // Success was called, but also failure which means that the client code using this
+            // transaction passed through a happy path, but the transaction was still marked as
+            // failed for one or more reasons. Tell the user that although it looked happy it
+            // wasn't committed, but was instead rolled back.
+            throw new TransactionFailureException( Status.Transaction.MarkedAsFailed,
+                    "Transaction rolled back even if marked as successful" );
         }
     }
 
@@ -729,6 +753,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             locks.close();
             locks = null;
+            terminated = false;
             pool.release( this );
             if ( storeStatement != null )
             {
