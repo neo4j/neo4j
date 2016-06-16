@@ -19,13 +19,13 @@
  */
 package org.neo4j.coreedge.raft.roles;
 
-import java.util.Arrays;
-import java.util.Collection;
-
 import org.hamcrest.Matchers;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.util.Arrays;
+import java.util.Collection;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.RaftMessages;
@@ -33,16 +33,13 @@ import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.RaftState;
-import org.neo4j.coreedge.server.RaftTestMember;
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.core.IsCollectionContaining.hasItem;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.coreedge.raft.TestMessageBuilders.heartbeat;
 import static org.neo4j.coreedge.raft.roles.AppendEntriesRequestTest.ContentGenerator.content;
 import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;
@@ -67,14 +64,14 @@ public class HeartbeatTest
     @Parameterized.Parameter(value = 1)
     public int leaderTermDifference;
 
-    private RaftTestMember myself = member( 0 );
-    private RaftTestMember leader = member( 1 );
+    private CoreMember myself = member( 0 );
+    private CoreMember leader = member( 1 );
 
     @Test
     public void shouldNotResultInCommitIfReferringToFutureEntries() throws Exception
     {
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
-        RaftState<RaftTestMember> state = raftState()
+        RaftState state = raftState()
                 .myself( myself )
                 .entryLog( raftLog )
                 .build();
@@ -82,14 +79,14 @@ public class HeartbeatTest
         long leaderTerm = state.term() + leaderTermDifference;
         raftLog.append( new RaftLogEntry( leaderTerm, content() ) );
 
-        RaftMessages.Heartbeat<RaftTestMember> heartbeat = heartbeat()
+        RaftMessages.Heartbeat heartbeat = heartbeat()
                 .from( leader )
                 .commitIndex( raftLog.appendIndex() + 1) // The leader is talking about committing stuff we don't know about
                 .commitIndexTerm( leaderTerm ) // And is in the same term
                 .leaderTerm( leaderTerm )
                 .build();
 
-        Outcome<RaftTestMember> outcome = role.handler.handle( heartbeat, state, log(), storeId );
+        Outcome outcome = role.handler.handle( heartbeat, state, log(), storeId );
 
         assertThat( outcome.getLogCommands(), empty());
     }
@@ -98,7 +95,7 @@ public class HeartbeatTest
     public void shouldNotResultInCommitIfHistoryMismatches() throws Exception
     {
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
-        RaftState<RaftTestMember> state = raftState()
+        RaftState state = raftState()
                 .myself( myself )
                 .entryLog( raftLog )
                 .build();
@@ -106,14 +103,14 @@ public class HeartbeatTest
         long leaderTerm = state.term() + leaderTermDifference;
         raftLog.append( new RaftLogEntry( leaderTerm, content() ) );
 
-        RaftMessages.Heartbeat<RaftTestMember> heartbeat = heartbeat()
+        RaftMessages.Heartbeat heartbeat = heartbeat()
                 .from( leader )
                 .commitIndex( raftLog.appendIndex()) // The leader is talking about committing stuff we don't know about
                 .commitIndexTerm( leaderTerm ) // And is in the same term
                 .leaderTerm( leaderTerm )
                 .build();
 
-        Outcome<RaftTestMember> outcome = role.handler.handle( heartbeat, state, log(), storeId );
+        Outcome outcome = role.handler.handle( heartbeat, state, log(), storeId );
 
         assertThat( outcome.getCommitIndex(), Matchers.equalTo(0L) );
     }
@@ -122,7 +119,7 @@ public class HeartbeatTest
     public void shouldResultInCommitIfHistoryMatches() throws Exception
     {
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
-        RaftState<RaftTestMember> state = raftState()
+        RaftState state = raftState()
                 .myself( myself )
                 .entryLog( raftLog )
                 .build();
@@ -130,14 +127,14 @@ public class HeartbeatTest
         long leaderTerm = state.term() + leaderTermDifference;
         raftLog.append( new RaftLogEntry( leaderTerm - 1, content() ) );
 
-        RaftMessages.Heartbeat<RaftTestMember> heartbeat = heartbeat()
+        RaftMessages.Heartbeat heartbeat = heartbeat()
                 .from( leader )
                 .commitIndex( raftLog.appendIndex()) // The leader is talking about committing stuff we don't know about
                 .commitIndexTerm( leaderTerm ) // And is in the same term
                 .leaderTerm( leaderTerm )
                 .build();
 
-        Outcome<RaftTestMember> outcome = role.handler.handle( heartbeat, state, log(), storeId );
+        Outcome outcome = role.handler.handle( heartbeat, state, log(), storeId );
 
         assertThat( outcome.getLogCommands(), empty() );
 

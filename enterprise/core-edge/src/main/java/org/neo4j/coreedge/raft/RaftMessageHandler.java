@@ -30,9 +30,9 @@ import org.neo4j.logging.Log;
 
 public interface RaftMessageHandler
 {
-    <MEMBER> Outcome<MEMBER> handle( RaftMessages.RaftMessage<MEMBER> message, ReadableRaftState<MEMBER> context,
-                                     Log log, LocalDatabase localDatabase ) throws IOException;
+    Outcome handle( RaftMessages.RaftMessage message, ReadableRaftState context, Log log, LocalDatabase localDatabase )
+            throws IOException;
 
-    <MEMBER> Outcome<MEMBER> validate( RaftMessages.RaftMessage<MEMBER> message, StoreId storeId,
-                                       RaftState<MEMBER> context, LocalDatabase localDatabase );
+    Outcome validate( RaftMessages.RaftMessage message, StoreId storeId,
+                                       RaftState context, Log log, LocalDatabase localDatabase );
 }

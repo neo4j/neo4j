@@ -33,13 +33,13 @@ import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.state.InFlightLogEntrySupplier;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.Long.max;
 import static java.lang.Long.min;
 import static java.lang.String.format;
-
 import static org.neo4j.coreedge.raft.RenewableTimeoutService.RenewableTimeout;
 import static org.neo4j.coreedge.raft.replication.shipping.RaftLogShipper.Mode.PIPELINE;
 import static org.neo4j.coreedge.raft.replication.shipping.RaftLogShipper.Timeouts.RESEND;
@@ -68,10 +68,8 @@ import static org.neo4j.coreedge.raft.replication.shipping.RaftLogShipper.Timeou
  * within the main raft state machine.
  * <p>
  * It is crucial that all actions happen within the context of the leaders state at some point in time.
- *
- * @param <MEMBER> The member type.
  */
-public class RaftLogShipper<MEMBER>
+public class RaftLogShipper
 {
     enum Mode
     {
@@ -95,14 +93,14 @@ public class RaftLogShipper<MEMBER>
         PIPELINE
     }
 
-    private final Outbound<MEMBER, RaftMessages.RaftMessage<MEMBER>> outbound;
+    private final Outbound<CoreMember, RaftMessages.RaftMessage> outbound;
     private final LogProvider logProvider;
     private final Log log;
     private final ReadableRaftLog raftLog;
     private final Clock clock;
 
-    private final MEMBER follower;
-    private final MEMBER leader;
+    private final CoreMember follower;
+    private final CoreMember leader;
 
     private DelayedRenewableTimeoutService timeoutService;
 
@@ -127,9 +125,9 @@ public class RaftLogShipper<MEMBER>
 
     private Mode mode = Mode.MISMATCH;
 
-    RaftLogShipper( Outbound<MEMBER, RaftMessages.RaftMessage<MEMBER>> outbound, LogProvider logProvider,
+    RaftLogShipper( Outbound<CoreMember, RaftMessages.RaftMessage> outbound, LogProvider logProvider,
                     ReadableRaftLog raftLog, Clock clock,
-                    MEMBER leader, MEMBER follower, long leaderTerm, long leaderCommit, long retryTimeMillis,
+                    CoreMember leader, CoreMember follower, long leaderTerm, long leaderCommit, long retryTimeMillis,
                     int catchupBatchSize, int maxAllowedShippingLag, InFlightMap<Long, RaftLogEntry> inFlightMap )
     {
         this.outbound = outbound;
@@ -377,8 +375,8 @@ public class RaftLogShipper<MEMBER>
          * request to allow us to send a commit. By Raft invariants, this means that the term for the committed
          * entry is the current term.
          */
-        RaftMessages.Heartbeat<MEMBER> appendRequest =
-                new RaftMessages.Heartbeat<>( leader, leaderContext.term, leaderContext.commitIndex,
+        RaftMessages.Heartbeat appendRequest =
+                new RaftMessages.Heartbeat( leader, leaderContext.term, leaderContext.commitIndex,
                         leaderContext.term );
 
         outbound.send( follower, appendRequest );
@@ -400,7 +398,7 @@ public class RaftLogShipper<MEMBER>
 
         lastSentIndex = prevLogIndex + 1;
 
-        RaftMessages.AppendEntries.Request<MEMBER> appendRequest = new RaftMessages.AppendEntries.Request<>(
+        RaftMessages.AppendEntries.Request appendRequest = new RaftMessages.AppendEntries.Request(
                 leader, leaderContext.term, prevLogIndex, prevLogTerm, newEntries, leaderContext.commitIndex
         );
 
@@ -436,13 +434,13 @@ public class RaftLogShipper<MEMBER>
                 log.warn( "%s aborting append entry request since someone has pruned away the entries we needed." +
                                 "Sending a LogCompactionInfo instead. Leader context=%s, prevLogTerm=%d",
                         statusAsString(), leaderContext, prevLogTerm );
-                outbound.send( follower, new RaftMessages.LogCompactionInfo<>( leader, leaderContext.term,
+                outbound.send( follower, new RaftMessages.LogCompactionInfo( leader, leaderContext.term,
                         prevLogIndex ) );
                 return;
             }
 
-            RaftMessages.AppendEntries.Request<MEMBER> appendRequest =
-                    new RaftMessages.AppendEntries.Request<>( leader, leaderContext.term, prevLogIndex, prevLogTerm,
+            RaftMessages.AppendEntries.Request appendRequest =
+                    new RaftMessages.AppendEntries.Request( leader, leaderContext.term, prevLogIndex, prevLogTerm,
                             entries, leaderContext.commitIndex );
 
             try ( InFlightLogEntrySupplier logEntrySupplier = new InFlightLogEntrySupplier( raftLog, inFlightMap ) )

@@ -23,16 +23,15 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.state.explorer.ClusterState;
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.coreedge.server.CoreMember;
 
 public class HeartbeatTimeout implements Action
 {
-    private final RaftTestMember member;
+    private final CoreMember member;
 
-    public HeartbeatTimeout( RaftTestMember member )
+    public HeartbeatTimeout( CoreMember member )
     {
         this.member = member;
     }
@@ -41,8 +40,8 @@ public class HeartbeatTimeout implements Action
     public ClusterState advance( ClusterState previous ) throws IOException
     {
         ClusterState newClusterState = new ClusterState( previous );
-        Queue<RaftMessages.RaftMessage<RaftTestMember>> newQueue = new LinkedList<>( previous.queues.get( member ) );
-        newQueue.offer( new RaftMessages.Timeout.Heartbeat<>( member ) );
+        Queue<RaftMessages.RaftMessage> newQueue = new LinkedList<>( previous.queues.get( member ) );
+        newQueue.offer( new RaftMessages.Timeout.Heartbeat( member ) );
         newClusterState.queues.put( member, newQueue );
         return newClusterState;
     }

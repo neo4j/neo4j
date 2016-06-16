@@ -19,18 +19,15 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import java.io.File;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
-
-import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.concurrent.TimeoutException;
+
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.SharedDiscoveryService;
 import org.neo4j.coreedge.raft.log.segmented.FileNames;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
@@ -41,17 +38,12 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.coreedge.ClusterRule;
-import org.neo4j.test.rule.TargetDirectory;
-
-import static java.util.Collections.emptyMap;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
 import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning_frequency;
 import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning_strategy;
@@ -77,7 +69,7 @@ public class CoreToCoreCopySnapshotIT
 
         // when
         CoreGraphDatabase follower = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.FOLLOWER );
-        follower.downloadSnapshot( leader.id().getCoreAddress() );
+        follower.downloadSnapshot( leader.id() );
 
         // then
         assertEquals( DbRepresentation.of( leader ), DbRepresentation.of( follower ) );
@@ -97,7 +89,7 @@ public class CoreToCoreCopySnapshotIT
 
         // when
         CoreGraphDatabase follower = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.FOLLOWER );
-        follower.downloadSnapshot( source.id().getCoreAddress() );
+        follower.downloadSnapshot( source.id() );
 
         // then
         assertEquals( DbRepresentation.of( source ), DbRepresentation.of( follower ) );
@@ -116,7 +108,7 @@ public class CoreToCoreCopySnapshotIT
 
         // when
         CoreGraphDatabase follower = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.FOLLOWER );
-        follower.downloadSnapshot( source.id().getCoreAddress() );
+        follower.downloadSnapshot( source.id() );
 
         // then
         assertEquals( DbRepresentation.of( source ), DbRepresentation.of( follower ) );
@@ -195,7 +187,7 @@ public class CoreToCoreCopySnapshotIT
         //then
         assertThat( leadersOldestLog, greaterThan( followersLastLog ) );
         //The cluster member should join. Otherwise this line will hang forever.
-        cluster.addCoreServerWithServerId( config.get( CoreEdgeClusterSettings.server_id ), 3 );
+        cluster.addCoreServerWithServerId( cluster.serverIdFor( follower ), 3 );
     }
 
     static void createData( GraphDatabaseService db, int size )

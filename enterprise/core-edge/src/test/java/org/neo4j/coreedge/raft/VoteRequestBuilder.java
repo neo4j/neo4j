@@ -19,47 +19,46 @@
  */
 package org.neo4j.coreedge.raft;
 
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.coreedge.server.CoreMember;
 
-public class VoteRequestBuilder<MEMBER>
+public class VoteRequestBuilder
 {
     private long term = -1;
-    private MEMBER from = null;
-    private MEMBER candidate;
+    private CoreMember from = null;
+    private CoreMember candidate;
     private long lastLogIndex;
     private long lastLogTerm;
-    private StoreId storeId = new StoreId( 1, 2, 3, 4, 5 );
 
-    public RaftMessages.Vote.Request<MEMBER> build()
+    public RaftMessages.Vote.Request build()
     {
-        return new RaftMessages.Vote.Request<>( from, term, candidate, lastLogIndex, lastLogTerm );
+        return new RaftMessages.Vote.Request( from, term, candidate, lastLogIndex, lastLogTerm );
     }
 
-    public VoteRequestBuilder<MEMBER> from( MEMBER from )
+    public VoteRequestBuilder from( CoreMember from )
     {
         this.from = from;
         return this;
     }
 
-    public VoteRequestBuilder<MEMBER> term( long term )
+    public VoteRequestBuilder term( long term )
     {
         this.term = term;
         return this;
     }
 
-    public VoteRequestBuilder<MEMBER> candidate( MEMBER candidate )
+    public VoteRequestBuilder candidate( CoreMember candidate )
     {
         this.candidate = candidate;
         return this;
     }
 
-    public VoteRequestBuilder<MEMBER> lastLogIndex( long lastLogIndex )
+    public VoteRequestBuilder lastLogIndex( long lastLogIndex )
     {
         this.lastLogIndex = lastLogIndex;
         return this;
     }
 
-    public VoteRequestBuilder<MEMBER> lastLogTerm( long lastLogTerm )
+    public VoteRequestBuilder lastLogTerm( long lastLogTerm )
     {
         this.lastLogTerm = lastLogTerm;
         return this;

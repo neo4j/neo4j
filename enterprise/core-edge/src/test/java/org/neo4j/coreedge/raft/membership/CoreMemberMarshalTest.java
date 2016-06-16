@@ -23,9 +23,10 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Test;
 
+import java.util.UUID;
+
 import org.neo4j.coreedge.raft.net.NetworkFlushableChannelNetty4;
 import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.storageengine.api.ReadPastEndException;
 
@@ -40,9 +41,7 @@ public class CoreMemberMarshalTest
         // given
         CoreMember.CoreMemberMarshal marshal = new CoreMember.CoreMemberMarshal();
 
-        final CoreMember member = new CoreMember(
-                new AdvertisedSocketAddress( "host1:1001" ), new AdvertisedSocketAddress( "host1:2001" )
-        );
+        final CoreMember member = new CoreMember( UUID.randomUUID() );
 
         // when
         ByteBuf buffer = Unpooled.buffer( 1_000 );
@@ -59,9 +58,7 @@ public class CoreMemberMarshalTest
         // given
         // a CoreMember and a ByteBuffer to write it to
         CoreMember.CoreMemberMarshal marshal = new CoreMember.CoreMemberMarshal();
-        final CoreMember aRealMember = new CoreMember(
-                new AdvertisedSocketAddress( "host1:1001" ), new AdvertisedSocketAddress( "host1:2001" )
-        );
+        final CoreMember aRealMember = new CoreMember( UUID.randomUUID() );
 
         ByteBuf buffer = Unpooled.buffer( 1000 );
 

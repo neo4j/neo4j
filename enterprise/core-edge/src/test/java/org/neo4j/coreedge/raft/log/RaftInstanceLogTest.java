@@ -25,16 +25,15 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftInstanceBuilder;
+import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.verify;
 import static org.neo4j.coreedge.raft.ReplicatedInteger.valueOf;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesRequest;
 import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
@@ -46,11 +45,11 @@ public class RaftInstanceLogTest
     @Mock
     RaftStateMachine raftStateMachine;
 
-    private RaftTestMember myself = member( 0 );
+    private CoreMember myself = member( 0 );
     private ReplicatedContent content = ReplicatedInteger.valueOf( 1 );
     private RaftLog testEntryLog;
 
-    private RaftInstance<RaftTestMember> raft;
+    private RaftInstance raft;
 
     @Before
     public void before() throws Exception
@@ -58,7 +57,7 @@ public class RaftInstanceLogTest
         // given
         testEntryLog = new InMemoryRaftLog();
 
-        raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .raftLog( testEntryLog )
                 .stateMachine( raftStateMachine )
                 .build();

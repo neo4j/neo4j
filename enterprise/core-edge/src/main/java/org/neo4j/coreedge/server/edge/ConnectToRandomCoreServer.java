@@ -25,7 +25,6 @@ import java.util.Random;
 import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 
 public class ConnectToRandomCoreServer implements CoreServerSelectionStrategy
@@ -39,7 +38,7 @@ public class ConnectToRandomCoreServer implements CoreServerSelectionStrategy
     }
 
     @Override
-    public AdvertisedSocketAddress coreServer() throws CoreServerSelectionException
+    public CoreMember coreServer() throws CoreServerSelectionException
     {
         final ClusterTopology clusterTopology = discoveryService.currentTopology();
 
@@ -59,6 +58,6 @@ public class ConnectToRandomCoreServer implements CoreServerSelectionStrategy
         }
         while ( skippedServers-- > 0 );
 
-        return member.getCoreAddress();
+        return member;
     }
 }

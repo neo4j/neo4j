@@ -31,24 +31,24 @@ import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
 import org.neo4j.coreedge.raft.replication.session.OperationContext;
 import org.neo4j.coreedge.raft.replication.tx.RetryStrategy;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.util.Listener;
 
 /**
  * A replicator implementation suitable in a RAFT context. Will handle resending due to timeouts and leader switches.
  */
-public class RaftReplicator<MEMBER> implements Replicator<ReplicatedContent>, Listener<MEMBER>
+public class RaftReplicator implements Replicator<ReplicatedContent>, Listener<CoreMember>
 {
-    private final MEMBER me;
-    private final Outbound<MEMBER, RaftMessages.RaftMessage<MEMBER>> outbound;
+    private final CoreMember me;
+    private final Outbound<CoreMember,RaftMessages.RaftMessage> outbound;
     private final ProgressTracker progressTracker;
     private final LocalSessionPool sessionPool;
     private final RetryStrategy retryStrategy;
 
-    private MEMBER leader;
+    private CoreMember leader;
 
-    public RaftReplicator( LeaderLocator<MEMBER> leaderLocator, MEMBER me,
-                           Outbound<MEMBER, RaftMessages.RaftMessage<MEMBER>> outbound,
-                           LocalSessionPool<MEMBER> sessionPool, ProgressTracker progressTracker,
+    public RaftReplicator( LeaderLocator leaderLocator, CoreMember me, Outbound<CoreMember,RaftMessages.RaftMessage> outbound,
+                           LocalSessionPool sessionPool, ProgressTracker progressTracker,
                            RetryStrategy retryStrategy )
     {
         this.me = me;
@@ -79,8 +79,7 @@ public class RaftReplicator<MEMBER> implements Replicator<ReplicatedContent>, Li
         RetryStrategy.Timeout timeout = retryStrategy.newTimeout();
         do
         {
-            //noinspection unchecked
-            outbound.send( leader, new RaftMessages.NewEntry.Request<>( me, operation ) );
+            outbound.send( leader, new RaftMessages.NewEntry.Request( me, operation ) );
             try
             {
                 progress.awaitReplication( timeout.getMillis() );
@@ -110,7 +109,7 @@ public class RaftReplicator<MEMBER> implements Replicator<ReplicatedContent>, Li
     }
 
     @Override
-    public void receive( MEMBER leader )
+    public void receive( CoreMember leader )
     {
         this.leader = leader;
         progressTracker.triggerReplicationEvent();

@@ -27,6 +27,7 @@ import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -58,24 +59,24 @@ import static java.lang.String.format;
  *
  * Only a single member change is handled at a time.
  */
-class RaftMembershipStateMachine<MEMBER>
+class RaftMembershipStateMachine
 {
     private final Log log;
-    public RaftMembershipStateMachineEventHandler<MEMBER> state = new Inactive();
+    public RaftMembershipStateMachineEventHandler state = new Inactive();
 
     private final ReadableRaftLog raftLog;
     private final Clock clock;
     private final long electionTimeout;
 
-    private final MembershipDriver<MEMBER> membershipDriver;
+    private final MembershipDriver membershipDriver;
     private long catchupTimeout;
-    private final RaftMembershipState<MEMBER> membershipState;
+    private final RaftMembershipState membershipState;
 
-    private MEMBER catchingUpMember;
+    private CoreMember catchingUpMember;
 
     RaftMembershipStateMachine( ReadableRaftLog raftLog, Clock clock, long electionTimeout,
-                                MembershipDriver<MEMBER> membershipDriver, LogProvider logProvider,
-                                long catchupTimeout, RaftMembershipState<MEMBER> membershipState )
+                                MembershipDriver membershipDriver, LogProvider logProvider,
+                                long catchupTimeout, RaftMembershipState membershipState )
     {
         this.raftLog = raftLog;
         this.clock = clock;
@@ -86,7 +87,7 @@ class RaftMembershipStateMachine<MEMBER>
         this.log = logProvider.getLog( getClass() );
     }
 
-    private synchronized void handleState( RaftMembershipStateMachineEventHandler<MEMBER> newState )
+    private synchronized void handleState( RaftMembershipStateMachineEventHandler newState )
     {
         RaftMembershipStateMachineEventHandler oldState = state;
         this.state = newState;
@@ -111,30 +112,30 @@ class RaftMembershipStateMachine<MEMBER>
         handleState( state.onRaftGroupCommitted() );
     }
 
-    void onFollowerStateChange( FollowerStates<MEMBER> followerStates )
+    void onFollowerStateChange( FollowerStates followerStates )
     {
         handleState( state.onFollowerStateChange( followerStates ) );
     }
 
-    void onMissingMember( MEMBER member )
+    void onMissingMember( CoreMember member )
     {
         handleState( state.onMissingMember( member ) );
     }
 
-    void onSuperfluousMember( MEMBER member )
+    void onSuperfluousMember( CoreMember member )
     {
         handleState( state.onSuperfluousMember( member ) );
     }
 
-    void onTargetChanged( Set<MEMBER> targetMembers )
+    void onTargetChanged( Set targetMembers )
     {
         handleState( state.onTargetChanged( targetMembers ) );
     }
 
-    private class Inactive extends RaftMembershipStateMachineEventHandler.Adapter<MEMBER>
+    private class Inactive extends RaftMembershipStateMachineEventHandler.Adapter
     {
         @Override
-        public RaftMembershipStateMachineEventHandler<MEMBER> onRole( Role role )
+        public RaftMembershipStateMachineEventHandler onRole( Role role )
         {
             if ( role == Role.LEADER )
             {
@@ -157,10 +158,10 @@ class RaftMembershipStateMachine<MEMBER>
         }
     }
 
-    abstract class ActiveBaseState extends RaftMembershipStateMachineEventHandler.Adapter<MEMBER>
+    abstract class ActiveBaseState extends RaftMembershipStateMachineEventHandler.Adapter
     {
         @Override
-        public RaftMembershipStateMachineEventHandler<MEMBER> onRole( Role role )
+        public RaftMembershipStateMachineEventHandler onRole( Role role )
         {
             if ( role != Role.LEADER )
             {
@@ -176,15 +177,15 @@ class RaftMembershipStateMachine<MEMBER>
     private class Idle extends ActiveBaseState
     {
         @Override
-        public RaftMembershipStateMachineEventHandler<MEMBER> onMissingMember( MEMBER member )
+        public RaftMembershipStateMachineEventHandler onMissingMember( CoreMember member )
         {
             return new CatchingUp( member );
         }
 
         @Override
-        public RaftMembershipStateMachineEventHandler<MEMBER> onSuperfluousMember( MEMBER member )
+        public RaftMembershipStateMachineEventHandler onSuperfluousMember( CoreMember member )
         {
-            Set<MEMBER> updatedVotingMembers = new HashSet<>( membershipState.votingMembers() );
+            Set updatedVotingMembers = new HashSet<>( membershipState.votingMembers() );
             updatedVotingMembers.remove( member );
             membershipDriver.doConsensus( updatedVotingMembers );
 
@@ -203,7 +204,7 @@ class RaftMembershipStateMachine<MEMBER>
         private final CatchupGoalTracker catchupGoalTracker;
         boolean movingToConsensus;
 
-        CatchingUp( MEMBER member )
+        CatchingUp( CoreMember member )
         {
             this.catchupGoalTracker = new CatchupGoalTracker( raftLog, clock, electionTimeout, catchupTimeout );
             catchingUpMember = member;
@@ -227,7 +228,7 @@ class RaftMembershipStateMachine<MEMBER>
         }
 
         @Override
-        public RaftMembershipStateMachineEventHandler<MEMBER> onRole( Role role )
+        public RaftMembershipStateMachineEventHandler onRole( Role role )
         {
             if ( role != Role.LEADER )
             {
@@ -240,7 +241,7 @@ class RaftMembershipStateMachine<MEMBER>
         }
 
         @Override
-        public RaftMembershipStateMachineEventHandler<MEMBER> onFollowerStateChange( FollowerStates<MEMBER> followerStates )
+        public RaftMembershipStateMachineEventHandler onFollowerStateChange( FollowerStates followerStates )
         {
             catchupGoalTracker.updateProgress( followerStates.get( catchingUpMember ) );
 
@@ -248,7 +249,7 @@ class RaftMembershipStateMachine<MEMBER>
             {
                 if ( catchupGoalTracker.isGoalAchieved() )
                 {
-                    Set<MEMBER> updatedVotingMembers = new HashSet<>( membershipState.votingMembers() );
+                    Set updatedVotingMembers = new HashSet<>( membershipState.votingMembers() );
                     updatedVotingMembers.add( catchingUpMember );
                     membershipDriver.doConsensus( updatedVotingMembers );
 
@@ -264,7 +265,7 @@ class RaftMembershipStateMachine<MEMBER>
         }
 
         @Override
-        public RaftMembershipStateMachineEventHandler<MEMBER> onTargetChanged( Set<MEMBER> targetMembers )
+        public RaftMembershipStateMachineEventHandler onTargetChanged( Set targetMembers )
         {
             if ( !targetMembers.contains( catchingUpMember ) )
             {
@@ -287,7 +288,7 @@ class RaftMembershipStateMachine<MEMBER>
     private class ConsensusInProgress extends ActiveBaseState
     {
         @Override
-        public RaftMembershipStateMachineEventHandler<MEMBER> onRaftGroupCommitted()
+        public RaftMembershipStateMachineEventHandler onRaftGroupCommitted()
         {
             return new Idle();
         }

@@ -34,7 +34,7 @@ import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.net.Outbound;
-import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -56,16 +56,16 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 @RunWith(MockitoJUnitRunner.class)
 public class ElectionTest
 {
-    private RaftTestMember myself = member( 0 );
+    private CoreMember myself = member( 0 );
 
     /* A few members that we use at will in tests. */
-    private RaftTestMember member1 = member( 1 );
-    private RaftTestMember member2 = member( 2 );
+    private CoreMember member1 = member( 1 );
+    private CoreMember member2 = member( 2 );
 
     @Mock
     private Inbound inbound;
     @Mock
-    private Outbound<RaftTestMember, RaftMessages.RaftMessage<RaftTestMember>> outbound;
+    private Outbound<CoreMember, RaftMessages.RaftMessage> outbound;
 
     @Test
     public void candidateShouldWinElectionAndBecomeLeader() throws Exception
@@ -73,7 +73,7 @@ public class ElectionTest
         // given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
 
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        RaftInstance raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .outbound( outbound )
                 .timeoutService( timeouts )
                 .build();
@@ -103,7 +103,7 @@ public class ElectionTest
         // given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
 
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        RaftInstance raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .outbound( outbound )
                 .timeoutService( timeouts )
                 .build();
@@ -130,7 +130,7 @@ public class ElectionTest
         // given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
 
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        RaftInstance raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .outbound( outbound )
                 .timeoutService( timeouts )
                 .build();

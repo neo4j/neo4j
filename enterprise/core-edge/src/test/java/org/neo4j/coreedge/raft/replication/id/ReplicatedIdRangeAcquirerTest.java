@@ -19,15 +19,15 @@
  */
 package org.neo4j.coreedge.raft.replication.id;
 
+import org.junit.Test;
+
 import java.util.HashSet;
 import java.util.Set;
-
-import org.junit.Test;
+import java.util.UUID;
 
 import org.neo4j.coreedge.raft.replication.DirectReplicator;
 import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
 import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.logging.NullLogProvider;
@@ -37,9 +37,9 @@ import static org.junit.Assert.assertTrue;
 public class ReplicatedIdRangeAcquirerTest
 {
     private final CoreMember memberA =
-            new CoreMember( new AdvertisedSocketAddress( "a:1" ), new AdvertisedSocketAddress( "a:2" ) );
+            new CoreMember( UUID.randomUUID() );
     private final CoreMember memberB =
-            new CoreMember( new AdvertisedSocketAddress( "b:1" ), new AdvertisedSocketAddress( "b:2" ) );
+            new CoreMember( UUID.randomUUID() );
 
     private final ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine(
             new InMemoryStateStorage<>( new IdAllocationState() ) );

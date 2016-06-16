@@ -19,13 +19,14 @@
  */
 package org.neo4j.coreedge.raft;
 
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 
 /**
  * The RAFT external entity that is interested in log entries and
  * typically applies them to a state machine.
  */
-public interface RaftStateMachine<MEMBER>
+public interface RaftStateMachine
 {
     /**
      * Called when the highest committed index increases.
@@ -40,5 +41,5 @@ public interface RaftStateMachine<MEMBER>
      * @param myself the requester
      * @param strategy the strategy on how to pick a core to download from
      */
-    default void notifyNeedFreshSnapshot( MEMBER myself, CoreServerSelectionStrategy strategy ) {}
+    default void notifyNeedFreshSnapshot( CoreMember myself, CoreServerSelectionStrategy strategy ) {}
 }

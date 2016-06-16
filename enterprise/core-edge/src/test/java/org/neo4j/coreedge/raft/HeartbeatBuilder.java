@@ -19,40 +19,39 @@
  */
 package org.neo4j.coreedge.raft;
 
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.coreedge.server.CoreMember;
 
-public class HeartbeatBuilder<MEMBER>
+public class HeartbeatBuilder
 {
     private long commitIndex = -1;
     private long leaderTerm = -1;
     private long commitIndexTerm = -1;
-    private MEMBER from = null;
-    private StoreId storeId = new StoreId( 1, 2, 3, 4, 5 );
+    private CoreMember from = null;
 
-    public RaftMessages.Heartbeat<MEMBER> build()
+    public RaftMessages.Heartbeat build()
     {
-        return new RaftMessages.Heartbeat<>( from, leaderTerm, commitIndex, commitIndexTerm );
+        return new RaftMessages.Heartbeat( from, leaderTerm, commitIndex, commitIndexTerm );
     }
 
-    public HeartbeatBuilder<MEMBER> from( MEMBER from )
+    public HeartbeatBuilder from( CoreMember from )
     {
         this.from = from;
         return this;
     }
 
-    public HeartbeatBuilder<MEMBER> leaderTerm( long leaderTerm )
+    public HeartbeatBuilder leaderTerm( long leaderTerm )
     {
         this.leaderTerm = leaderTerm;
         return this;
     }
 
-    public HeartbeatBuilder<MEMBER> commitIndex( long commitIndex )
+    public HeartbeatBuilder commitIndex( long commitIndex )
     {
         this.commitIndex = commitIndex;
         return this;
     }
 
-    public HeartbeatBuilder<MEMBER> commitIndexTerm( long commitIndexTerm )
+    public HeartbeatBuilder commitIndexTerm( long commitIndexTerm )
     {
         this.commitIndexTerm = commitIndexTerm;
         return this;

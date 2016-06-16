@@ -19,21 +19,39 @@
  */
 package org.neo4j.coreedge.discovery;
 
-import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.LogProvider;
+import com.hazelcast.core.MemberAttributeEvent;
+import com.hazelcast.core.MembershipEvent;
+import com.hazelcast.core.MembershipListener;
 
-public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
+import org.neo4j.logging.Log;
+
+public class MembershipListenerAdapter implements MembershipListener
 {
-    @Override
-    public CoreTopologyService coreDiscoveryService( Config config, CoreMember myself, LogProvider logProvider )
+    private final CoreTopologyService.Listener listener;
+    private final Log log;
+
+    MembershipListenerAdapter( CoreTopologyService.Listener listener, Log log )
     {
-        return new HazelcastServerLifecycle( config, myself, logProvider );
+        this.listener = listener;
+        this.log = log;
     }
 
     @Override
-    public EdgeTopologyService edgeDiscoveryService( Config config, LogProvider logProvider )
+    public void memberAdded( MembershipEvent membershipEvent )
     {
-        return new HazelcastClient( new HazelcastClientConnector( config ), logProvider );
+        log.info( "Member added %s", membershipEvent );
+        listener.onTopologyChange();
+    }
+
+    @Override
+    public void memberRemoved( MembershipEvent membershipEvent )
+    {
+        log.info( "Member removed %s", membershipEvent );
+        listener.onTopologyChange();
+    }
+
+    @Override
+    public void memberAttributeChanged( MemberAttributeEvent memberAttributeEvent )
+    {
     }
 }

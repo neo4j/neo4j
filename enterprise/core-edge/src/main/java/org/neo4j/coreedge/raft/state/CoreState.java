@@ -37,7 +37,6 @@ import org.neo4j.coreedge.raft.replication.DistributedOperation;
 import org.neo4j.coreedge.raft.replication.ProgressTracker;
 import org.neo4j.coreedge.raft.replication.session.GlobalSessionTrackerState;
 import org.neo4j.coreedge.raft.replication.tx.CoreReplicatedContent;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -48,14 +47,14 @@ import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 
-public class CoreState extends LifecycleAdapter implements RaftStateMachine<CoreMember>, LogPruner
+public class CoreState extends LifecycleAdapter implements RaftStateMachine, LogPruner
 {
     private static final long NOTHING = -1;
     private final RaftLog raftLog;
     private final StateStorage<Long> lastFlushedStorage;
     private final int flushEvery;
     private final ProgressTracker progressTracker;
-    private final StateStorage<GlobalSessionTrackerState<CoreMember>> sessionStorage;
+    private final StateStorage<GlobalSessionTrackerState> sessionStorage;
     private final Supplier<DatabaseHealth> dbHealth;
     private final InFlightMap<Long,RaftLogEntry> inFlightMap;
     private final Log log;
@@ -64,7 +63,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine<Core
     private final RaftLogCommitIndexMonitor commitIndexMonitor;
     private final OperationBatcher batcher;
 
-    private GlobalSessionTrackerState<CoreMember> sessionState = new GlobalSessionTrackerState<>();
+    private GlobalSessionTrackerState sessionState = new GlobalSessionTrackerState();
     private CoreStateMachines coreStateMachines;
 
     private long lastApplied = NOTHING;
@@ -79,7 +78,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine<Core
             LogProvider logProvider,
             ProgressTracker progressTracker,
             StateStorage<Long> lastFlushedStorage,
-            StateStorage<GlobalSessionTrackerState<CoreMember>> sessionStorage,
+            StateStorage<GlobalSessionTrackerState> sessionStorage,
             CoreStateApplier applier,
             CoreStateDownloader downloader,
             InFlightMap<Long,RaftLogEntry> inFlightMap,
@@ -225,11 +224,10 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine<Core
 
     /**
      * Attempts to download a fresh snapshot from another core instance.
-     *
-     * @param myself
+     *  @param myself
      * @param source The source address to attempt a download of a snapshot from.
      */
-    public synchronized void downloadSnapshot( CoreMember myself, AdvertisedSocketAddress source )
+    public synchronized void downloadSnapshot( CoreMember myself, CoreMember source )
             throws InterruptedException, StoreCopyFailedException
     {
         applier.sync( true );

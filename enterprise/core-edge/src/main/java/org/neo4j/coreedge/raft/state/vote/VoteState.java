@@ -23,31 +23,32 @@ import java.io.IOException;
 
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.raft.state.StateMarshal;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
-public class VoteState<MEMBER>
+public class VoteState
 {
-    private MEMBER votedFor;
+    private CoreMember votedFor;
     private long term = -1;
 
     public VoteState()
     {
     }
 
-    public VoteState( MEMBER votedFor, long term )
+    public VoteState( CoreMember votedFor, long term )
     {
         this.term = term;
         this.votedFor = votedFor;
     }
 
-    public MEMBER votedFor()
+    public CoreMember votedFor()
     {
         return votedFor;
     }
 
-    public boolean update( MEMBER votedFor, long term )
+    public boolean update( CoreMember votedFor, long term )
     {
         if ( termChanged( term ) )
         {
@@ -83,7 +84,7 @@ public class VoteState<MEMBER>
         return term;
     }
 
-    public static class Marshal<CoreMember> implements StateMarshal<VoteState<CoreMember>>
+    public static class Marshal implements StateMarshal<VoteState>
     {
         private final ChannelMarshal<CoreMember> memberMarshal;
 
@@ -93,14 +94,14 @@ public class VoteState<MEMBER>
         }
 
         @Override
-        public void marshal( VoteState<CoreMember> state, WritableChannel channel ) throws IOException
+        public void marshal( VoteState state, WritableChannel channel ) throws IOException
         {
             channel.putLong( state.term );
             memberMarshal.marshal( state.votedFor(), channel );
         }
 
         @Override
-        public VoteState<CoreMember> unmarshal( ReadableChannel source ) throws IOException
+        public VoteState unmarshal( ReadableChannel source ) throws IOException
         {
             try
             {
@@ -112,7 +113,7 @@ public class VoteState<MEMBER>
                     return null;
                 }
 
-                return new VoteState<>( member, term );
+                return new VoteState( member, term );
             }
             catch ( ReadPastEndException notEnoughBytes )
             {
@@ -121,13 +122,13 @@ public class VoteState<MEMBER>
         }
 
         @Override
-        public VoteState<CoreMember> startState()
+        public VoteState startState()
         {
-            return new VoteState<>();
+            return new VoteState();
         }
 
         @Override
-        public long ordinal( VoteState<CoreMember> state )
+        public long ordinal( VoteState state )
         {
             return state.term();
         }

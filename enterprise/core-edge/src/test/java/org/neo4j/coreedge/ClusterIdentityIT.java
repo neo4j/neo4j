@@ -19,17 +19,17 @@
  */
 package org.neo4j.coreedge;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
@@ -237,7 +237,7 @@ public class ClusterIdentityIT
         assertAllStoresHaveTheSameStoreId( coreStoreDirs, fs );
     }
 
-    private List<String> storeDirs( Set<CoreGraphDatabase> dbs )
+    private List<String> storeDirs( Collection<CoreGraphDatabase> dbs )
     {
         return dbs.stream().map( GraphDatabaseFacade::getStoreDir ).collect( Collectors.toList() );
     }

@@ -24,12 +24,13 @@ import java.io.IOException;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.store.StoreId;
 
 public class Voting
 {
-    public static <MEMBER> void handleVoteRequest( ReadableRaftState<MEMBER> state, Outcome<MEMBER> outcome,
-                                                   RaftMessages.Vote.Request<MEMBER> voteRequest,
+    public static  void handleVoteRequest( ReadableRaftState state, Outcome outcome,
+                                                   RaftMessages.Vote.Request voteRequest,
                                                    StoreId storeId ) throws IOException
     {
         if ( voteRequest.term() > state.term() )
@@ -49,15 +50,15 @@ public class Voting
             outcome.renewElectionTimeout();
         }
 
-        outcome.addOutgoingMessage( new RaftMessages.Directed<>( voteRequest.from(), new RaftMessages.Vote.Response<>(
+        outcome.addOutgoingMessage( new RaftMessages.Directed( voteRequest.from(), new RaftMessages.Vote.Response(
                 state.myself(), outcome.getTerm(),
                 willVoteForCandidate ) ) );
     }
 
-    public static <MEMBER> boolean shouldVoteFor( MEMBER candidate, long contextTerm, long requestTerm,
+    public static boolean shouldVoteFor( CoreMember candidate, long contextTerm, long requestTerm,
                                                   long contextLastLogTerm, long requestLastLogTerm,
                                                   long contextLastAppended, long requestLastLogIndex,
-                                                  MEMBER votedFor )
+                                                  CoreMember votedFor )
     {
         if ( requestTerm < contextTerm )
         {

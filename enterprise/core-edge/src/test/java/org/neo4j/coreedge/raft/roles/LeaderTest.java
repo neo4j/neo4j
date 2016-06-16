@@ -44,7 +44,7 @@ import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.raft.state.follower.FollowerState;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
-import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -68,11 +68,11 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 @RunWith(MockitoJUnitRunner.class)
 public class LeaderTest
 {
-    private RaftTestMember myself = member( 0 );
+    private CoreMember myself = member( 0 );
 
     /* A few members that we use at will in tests. */
-    private RaftTestMember member1 = member( 1 );
-    private RaftTestMember member2 = member( 2 );
+    private CoreMember member1 = member( 1 );
+    private CoreMember member2 = member( 2 );
 
     @Mock
     private Inbound inbound;
@@ -98,12 +98,12 @@ public class LeaderTest
          * - assumes that instance 2 is at an index less than 100 -say 84 but it has already been sent up to 100
          */
         Leader leader = new Leader();
-        RaftTestMember instance2 = new RaftTestMember( 2 );
+        CoreMember instance2 = member( 2 );
         FollowerState instance2State = createArtificialFollowerState( 84 );
 
-        ReadableRaftState<RaftTestMember> state = mock( ReadableRaftState.class );
+        ReadableRaftState state = mock( ReadableRaftState.class );
 
-        FollowerStates<RaftTestMember> followerState = new FollowerStates<>();
+        FollowerStates followerState = new FollowerStates<>();
         followerState = new FollowerStates<>( followerState, instance2, instance2State );
 
         ReadableRaftLog logMock = mock( ReadableRaftLog.class );
@@ -116,16 +116,16 @@ public class LeaderTest
 
         // when
         // that leader is asked to handle a response from that follower that says that the follower is up to date
-        RaftMessages.AppendEntries.Response<RaftTestMember> response = appendEntriesResponse().success()
+        RaftMessages.AppendEntries.Response response = appendEntriesResponse().success()
                 .matchIndex( 90 ).term( 4 ).from( instance2 ).build();
 
-        Outcome<RaftTestMember> outcome = leader.handle( response, state, mock( Log.class ), localDatabase );
+        Outcome outcome = leader.handle( response, state, mock( Log.class ), localDatabase );
 
         // then
         // The leader should not be trying to send any messages to that instance
         assertTrue( outcome.getOutgoingMessages().isEmpty() );
         // And the follower state should be updated
-        FollowerStates<RaftTestMember> leadersViewOfFollowerStates = outcome.getFollowerStates();
+        FollowerStates leadersViewOfFollowerStates = outcome.getFollowerStates();
         assertEquals( 90, leadersViewOfFollowerStates.get( instance2 ).getMatchIndex() );
     }
 
@@ -140,12 +140,12 @@ public class LeaderTest
          * - assumes that instance 2 is at an index less than 100 -say 84
          */
         Leader leader = new Leader();
-        RaftTestMember instance2 = new RaftTestMember( 2 );
+        CoreMember instance2 = member( 2 );
         FollowerState instance2State = createArtificialFollowerState( 84 );
 
-        ReadableRaftState<RaftTestMember> state = mock( ReadableRaftState.class );
+        ReadableRaftState state = mock( ReadableRaftState.class );
 
-        FollowerStates<RaftTestMember> followerState = new FollowerStates<>();
+        FollowerStates followerState = new FollowerStates<>();
         followerState = new FollowerStates<>( followerState, instance2, instance2State );
 
         ReadableRaftLog logMock = mock( ReadableRaftLog.class );
@@ -158,16 +158,16 @@ public class LeaderTest
 
         // when
         // that leader is asked to handle a response from that follower that says that the follower is up to date
-        RaftMessages.AppendEntries.Response<RaftTestMember> response = appendEntriesResponse().success()
+        RaftMessages.AppendEntries.Response response = appendEntriesResponse().success()
                 .matchIndex( 100 ).term( 4 ).from( instance2 ).build();
 
-        Outcome<RaftTestMember> outcome = leader.handle( response, state, mock( Log.class ), localDatabase );
+        Outcome outcome = leader.handle( response, state, mock( Log.class ), localDatabase );
 
         // then
         // The leader should not be trying to send any messages to that instance
         assertTrue( outcome.getOutgoingMessages().isEmpty() );
         // And the follower state should be updated
-        FollowerStates<RaftTestMember> updatedFollowerStates = outcome.getFollowerStates();
+        FollowerStates updatedFollowerStates = outcome.getFollowerStates();
         assertEquals( 100, updatedFollowerStates.get( instance2 ).getMatchIndex() );
     }
 
@@ -183,12 +183,12 @@ public class LeaderTest
          * - assumes that instance 2 is at an index less than 100 -say 50
          */
         Leader leader = new Leader();
-        RaftTestMember instance2 = new RaftTestMember( 2 );
+        CoreMember instance2 = member( 2 );
         FollowerState instance2State = createArtificialFollowerState( 50 );
 
-        ReadableRaftState<RaftTestMember> state = mock( ReadableRaftState.class );
+        ReadableRaftState state = mock( ReadableRaftState.class );
 
-        FollowerStates<RaftTestMember> followerState = new FollowerStates<>();
+        FollowerStates followerState = new FollowerStates<>();
         followerState = new FollowerStates<>( followerState, instance2, instance2State );
 
         ReadableRaftLog logMock = mock( ReadableRaftLog.class );
@@ -202,13 +202,13 @@ public class LeaderTest
 
         // when that leader is asked to handle a response from that follower that says that the follower is still
         // missing things
-        RaftMessages.AppendEntries.Response<RaftTestMember> response = appendEntriesResponse()
+        RaftMessages.AppendEntries.Response response = appendEntriesResponse()
                 .success()
                 .matchIndex( 89 )
                 .term( 231 )
                 .from( instance2 ).build();
 
-        Outcome<RaftTestMember> outcome = leader.handle( response, state, mock( Log.class ), localDatabase );
+        Outcome outcome = leader.handle( response, state, mock( Log.class ), localDatabase );
 
         // then
         int matchCount = 0;
@@ -235,13 +235,13 @@ public class LeaderTest
          * - assumes that instance 2 is fully caught up
          */
         Leader leader = new Leader();
-        RaftTestMember instance2 = new RaftTestMember( 2 );
+        CoreMember instance2 = member( 2 );
         int j = 100;
         FollowerState instance2State = createArtificialFollowerState( j );
 
-        ReadableRaftState<RaftTestMember> state = mock( ReadableRaftState.class );
+        ReadableRaftState state = mock( ReadableRaftState.class );
 
-        FollowerStates<RaftTestMember> followerState = new FollowerStates<>();
+        FollowerStates followerState = new FollowerStates<>();
         followerState = new FollowerStates<>( followerState, instance2, instance2State );
 
         ReadableRaftLog logMock = mock( ReadableRaftLog.class );
@@ -255,19 +255,19 @@ public class LeaderTest
 
         // when that leader is asked to handle a response from that follower that says that the follower is still
         // missing things
-        RaftMessages.AppendEntries.Response<RaftTestMember> response = appendEntriesResponse()
+        RaftMessages.AppendEntries.Response response = appendEntriesResponse()
                 .success()
                 .matchIndex( 80 )
                 .term( 4 )
                 .from( instance2 ).build();
 
-        Outcome<RaftTestMember> outcome = leader.handle( response, state, mock( Log.class ), localDatabase );
+        Outcome outcome = leader.handle( response, state, mock( Log.class ), localDatabase );
 
         // then the leader should not send anything, since this is a delayed, out of order response to a previous append
         // request
         assertTrue( outcome.getOutgoingMessages().isEmpty() );
         // The follower state should not be touched
-        FollowerStates<RaftTestMember> updatedFollowerStates = outcome.getFollowerStates();
+        FollowerStates updatedFollowerStates = outcome.getFollowerStates();
         assertEquals( 100, updatedFollowerStates.get( instance2 ).getMatchIndex() );
     }
 
@@ -288,12 +288,12 @@ public class LeaderTest
          * - assumes that instance 2 is fully caught up
          */
         Leader leader = new Leader();
-        RaftTestMember instance2 = new RaftTestMember( 2 );
+        CoreMember instance2 = member( 2 );
         FollowerState instance2State = createArtificialFollowerState( 100 );
 
-        ReadableRaftState<RaftTestMember> state = mock( ReadableRaftState.class );
+        ReadableRaftState state = mock( ReadableRaftState.class );
 
-        FollowerStates<RaftTestMember> followerState = new FollowerStates<>();
+        FollowerStates followerState = new FollowerStates<>();
         followerState = new FollowerStates<>( followerState, instance2, instance2State );
 
         RaftLog log = new InMemoryRaftLog();
@@ -310,13 +310,13 @@ public class LeaderTest
         // when
         // that leader is asked to handle a response from that follower that says that the follower is still missing
         // things
-        RaftMessages.AppendEntries.Response<RaftTestMember> response = appendEntriesResponse()
+        RaftMessages.AppendEntries.Response response = appendEntriesResponse()
                 .failure()
                 .matchIndex( -1 )
                 .term( 4 )
                 .from( instance2 ).build();
 
-        Outcome<RaftTestMember> outcome = leader.handle( response, state, mock( Log.class ), localDatabase );
+        Outcome outcome = leader.handle( response, state, mock( Log.class ), localDatabase );
 
         // then
         int mismatchCount = 0;
@@ -335,16 +335,16 @@ public class LeaderTest
     public void leaderShouldRejectAppendEntriesResponseWithNewerTermAndBecomeAFollower() throws Exception
     {
         // given
-        RaftState<RaftTestMember> state = raftState().myself( myself ).build();
+        RaftState state = raftState().myself( myself ).build();
 
         Leader leader = new Leader();
 
         // when
-        AppendEntries.Response<RaftTestMember> message = appendEntriesResponse()
+        AppendEntries.Response message = appendEntriesResponse()
                 .from( member1 )
                 .term( state.term() + 1 )
                 .build();
-        Outcome<RaftTestMember> outcome = leader.handle( message, state, log(), localDatabase );
+        Outcome outcome = leader.handle( message, state, log(), localDatabase );
 
         // then
         assertEquals( 0, count( outcome.getOutgoingMessages() ) );
@@ -359,14 +359,14 @@ public class LeaderTest
     public void leaderShouldSendHeartbeatsToAllClusterMembersOnReceiptOfHeartbeatTick() throws Exception
     {
         // given
-        RaftState<RaftTestMember> state = raftState()
+        RaftState state = raftState()
                 .votingMembers( asSet( myself, member1, member2 ) )
                 .build();
 
         Leader leader = new Leader();
 
         // when
-        Outcome<RaftTestMember> outcome = leader.handle( new Heartbeat<>( member1 ), state, log(), localDatabase );
+        Outcome outcome = leader.handle( new Heartbeat( member1 ), state, log(), localDatabase );
 
         // then
         assertTrue( messageFor( outcome, member1 ) instanceof RaftMessages.Heartbeat );
@@ -378,17 +378,17 @@ public class LeaderTest
             throws Exception
     {
         // given
-        RaftState<RaftTestMember> state = raftState()
+        RaftState state = raftState()
                 .votingMembers( asSet( myself, member1, member2 ) )
                 .build();
 
         Leader leader = new Leader();
 
-        RaftMessages.NewEntry.Request<RaftTestMember> newEntryRequest = new RaftMessages.NewEntry.Request<>(
+        RaftMessages.NewEntry.Request newEntryRequest = new RaftMessages.NewEntry.Request(
                 member( 9 ), CONTENT );
 
         // when
-        Outcome<RaftTestMember> outcome = leader.handle( newEntryRequest, state, log(), localDatabase );
+        Outcome outcome = leader.handle( newEntryRequest, state, log(), localDatabase );
         //state.update( outcome );
 
         // then
@@ -405,21 +405,21 @@ public class LeaderTest
     public void leaderShouldHandleBatch() throws Exception
     {
         // given
-        RaftState<RaftTestMember> state = raftState()
+        RaftState state = raftState()
                 .votingMembers( asSet( myself, member1, member2 ) )
                 .build();
 
         Leader leader = new Leader();
 
         int BATCH_SIZE = 3;
-        RaftMessages.NewEntry.Batch<RaftTestMember> batchRequest =
-                new RaftMessages.NewEntry.Batch<>( BATCH_SIZE );
+        RaftMessages.NewEntry.Batch batchRequest =
+                new RaftMessages.NewEntry.Batch( BATCH_SIZE );
         batchRequest.add( valueOf( 0 ) );
         batchRequest.add( valueOf( 1 ) );
         batchRequest.add( valueOf( 2 ) );
 
         // when
-        Outcome<RaftTestMember> outcome = leader.handle( batchRequest, state, log(), localDatabase );
+        Outcome outcome = leader.handle( batchRequest, state, log(), localDatabase );
 
         // then
         BatchAppendLogEntries logCommand = (BatchAppendLogEntries) single( outcome.getLogCommands() );
@@ -447,7 +447,7 @@ public class LeaderTest
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
         raftLog.append( new RaftLogEntry( 0, new ReplicatedString( "lalalala" ) ) );
 
-        RaftState<RaftTestMember> state = raftState().votingMembers( member1, member2 )
+        RaftState state = raftState().votingMembers( member1, member2 )
                 .term( 0 )
                 .lastLogIndexBeforeWeBecameLeader( -1 )
                 .leader( myself )
@@ -460,8 +460,8 @@ public class LeaderTest
         Leader leader = new Leader();
 
         // when a single instance responds (plus self == 2 out of 3 instances)
-        Outcome<RaftTestMember> outcome = leader.handle(
-                new RaftMessages.AppendEntries.Response<>( member1, 0, true, 0, 0 ),
+        Outcome outcome = leader.handle(
+                new RaftMessages.AppendEntries.Response( member1, 0, true, 0, 0 ),
                 state, log(), localDatabase );
 
         // then
@@ -479,7 +479,7 @@ public class LeaderTest
         raftLog.append( new RaftLogEntry( 0, new ReplicatedString( "second" ) ) );
         raftLog.append( new RaftLogEntry( 0, new ReplicatedString( "third" ) ) );
 
-        RaftState<RaftTestMember> state = raftState()
+        RaftState state = raftState()
                 .votingMembers( myself, member1, member2 )
                 .term( 0 ).entryLog( raftLog )
                 .messagesSentToFollower( member1, raftLog.appendIndex() + 1 )
@@ -489,8 +489,8 @@ public class LeaderTest
         Leader leader = new Leader();
 
         // when
-        Outcome<RaftTestMember> outcome =
-                leader.handle( new AppendEntries.Response<>( member1, 0, true, 2, 2 ),
+        Outcome outcome =
+                leader.handle( new AppendEntries.Response( member1, 0, true, 2, 2 ),
                         state, log(), localDatabase );
 
         state.update( outcome );

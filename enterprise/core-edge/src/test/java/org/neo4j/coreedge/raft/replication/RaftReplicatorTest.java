@@ -26,7 +26,6 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.RaftMessages;
@@ -37,7 +36,7 @@ import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
 import org.neo4j.coreedge.raft.replication.tx.ConstantTimeRetryStrategy;
 import org.neo4j.coreedge.raft.replication.tx.RetryStrategy;
 import org.neo4j.coreedge.raft.state.Result;
-import org.neo4j.register.Register;
+import org.neo4j.coreedge.server.CoreMember;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -53,11 +52,11 @@ public class RaftReplicatorTest
 {
     private static final int DEFAULT_TIMEOUT_MS = 15_000;
 
-    private LeaderLocator<Object> leaderLocator = mock( LeaderLocator.class );
-    private Object myself = new Object();
-    private Object leader = new Object();
-    private GlobalSession<Object> session = new GlobalSession<>( UUID.randomUUID(), myself );
-    private LocalSessionPool<Object> sessionPool = new LocalSessionPool<>( session );
+    private LeaderLocator leaderLocator = mock( LeaderLocator.class );
+    private CoreMember myself = new CoreMember( UUID.randomUUID() );
+    private CoreMember leader = new CoreMember( UUID.randomUUID() );
+    private GlobalSession session = new GlobalSession( UUID.randomUUID(), myself );
+    private LocalSessionPool sessionPool = new LocalSessionPool( session );
     private RetryStrategy retryStrategy = new ConstantTimeRetryStrategy( 1, SECONDS );
 
     @Test
@@ -66,10 +65,10 @@ public class RaftReplicatorTest
         // given
         when( leaderLocator.getLeader() ).thenReturn( leader );
         CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
-        CapturingOutbound<RaftMessages.RaftMessage<Object>> outbound = new CapturingOutbound<>();
+        CapturingOutbound<RaftMessages.RaftMessage> outbound = new CapturingOutbound<>();
 
-        RaftReplicator<Object> replicator =
-                new RaftReplicator<>( leaderLocator, myself, outbound, sessionPool,
+        RaftReplicator replicator =
+                new RaftReplicator( leaderLocator, myself, outbound, sessionPool,
                         capturedProgress, retryStrategy );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
@@ -97,8 +96,8 @@ public class RaftReplicatorTest
         CapturingOutbound outbound = new CapturingOutbound();
 
         ConstantTimeRetryStrategy retryStrategy = new ConstantTimeRetryStrategy( 100, MILLISECONDS );
-        RaftReplicator<Object> replicator =
-                new RaftReplicator<>( leaderLocator, myself, outbound, sessionPool, capturedProgress,
+        RaftReplicator replicator =
+                new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress,
                         retryStrategy );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
@@ -122,8 +121,8 @@ public class RaftReplicatorTest
         CapturingProgressTracker capturedProgress = new CapturingProgressTracker();
         CapturingOutbound outbound = new CapturingOutbound();
 
-        RaftReplicator<Object> replicator =
-                new RaftReplicator<>( leaderLocator, myself, outbound, sessionPool, capturedProgress,
+        RaftReplicator replicator =
+                new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress,
                         retryStrategy );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
@@ -146,7 +145,7 @@ public class RaftReplicatorTest
         assertEquals( 0, sessionPool.openSessionCount() );
     }
 
-    private Thread replicatingThread( RaftReplicator<Object> replicator, ReplicatedInteger content, boolean trackResult )
+    private Thread replicatingThread( RaftReplicator replicator, ReplicatedInteger content, boolean trackResult )
     {
         return new Thread( () -> {
             try
@@ -213,20 +212,20 @@ public class RaftReplicatorTest
         }
     }
 
-    private class CapturingOutbound<MESSAGE extends Message> implements Outbound<Object, MESSAGE>
+    private class CapturingOutbound<MESSAGE extends Message> implements Outbound<CoreMember, MESSAGE>
     {
-        private Object lastTo;
+        private CoreMember lastTo;
         private int count;
 
         @Override
-        public void send( Object to, MESSAGE message )
+        public void send( CoreMember to, MESSAGE message )
         {
             this.lastTo = to;
             this.count++;
         }
 
         @Override
-        public void send( Object to, Collection<MESSAGE> messages )
+        public void send( CoreMember to, Collection<MESSAGE> messages )
         {
             this.lastTo = to;
             this.count+=messages.size();

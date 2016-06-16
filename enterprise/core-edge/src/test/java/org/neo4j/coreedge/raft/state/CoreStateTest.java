@@ -38,7 +38,6 @@ import org.neo4j.coreedge.raft.replication.session.GlobalSessionTrackerState;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.raft.replication.tx.CoreReplicatedContent;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
-import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -65,13 +64,13 @@ public class CoreStateTest
     private final InMemoryRaftLog raftLog = spy( new InMemoryRaftLog() );
 
     private final InMemoryStateStorage<Long> lastFlushedStorage = new InMemoryStateStorage<>( -1L );
-    private final InMemoryStateStorage<GlobalSessionTrackerState<CoreMember>> sessionStorage =
-            new InMemoryStateStorage<>( new GlobalSessionTrackerState<>() );
+    private final InMemoryStateStorage<GlobalSessionTrackerState> sessionStorage =
+            new InMemoryStateStorage<>( new GlobalSessionTrackerState() );
 
     private final DatabaseHealth dbHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
             NullLogProvider.getInstance().getLog( getClass() ) );
 
-    private final GlobalSession<CoreMember> globalSession = new GlobalSession<>( UUID.randomUUID(), null );
+    private final GlobalSession globalSession = new GlobalSession( UUID.randomUUID(), null );
     private final int flushEvery = 10;
     private final int batchSize = 16;
 

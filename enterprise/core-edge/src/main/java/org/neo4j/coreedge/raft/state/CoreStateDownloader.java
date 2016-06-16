@@ -24,11 +24,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.coreedge.catchup.storecopy.CoreClient;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
-import org.neo4j.coreedge.catchup.storecopy.CoreClient;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -49,7 +49,7 @@ public class CoreStateDownloader
         this.log = logProvider.getLog( getClass() );
     }
 
-    synchronized void downloadSnapshot( AdvertisedSocketAddress source, CoreState coreState ) throws InterruptedException, StoreCopyFailedException
+    synchronized void downloadSnapshot( CoreMember source, CoreState coreState ) throws InterruptedException, StoreCopyFailedException
     {
         localDatabase.stop();
 

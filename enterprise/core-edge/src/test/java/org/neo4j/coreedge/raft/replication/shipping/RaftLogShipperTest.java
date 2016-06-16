@@ -19,16 +19,15 @@
  */
 package org.neo4j.coreedge.raft.replication.shipping;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.LeaderContext;
@@ -42,7 +41,7 @@ import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
-import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.logging.Log;
@@ -52,23 +51,21 @@ import org.neo4j.test.matchers.Matchers;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
+import static org.neo4j.coreedge.server.RaftTestMember.member;
 import static org.neo4j.test.matchers.Matchers.hasMessage;
-import static org.neo4j.test.matchers.Matchers.hasRaftLogEntries;
 
 public class RaftLogShipperTest
 {
     private OutboundMessageCollector outbound;
     private RaftLog raftLog;
     private Clock clock;
-    private RaftTestMember leader;
-    private RaftTestMember follower;
+    private CoreMember leader;
+    private CoreMember follower;
     private long leaderTerm;
     private long leaderCommit;
     private long retryTimeMillis;
@@ -77,7 +74,7 @@ public class RaftLogShipperTest
     private LogProvider logProvider;
     private Log log;
 
-    private RaftLogShipper<RaftTestMember> logShipper;
+    private RaftLogShipper logShipper;
 
     private RaftLogEntry entry0 = new RaftLogEntry( 0, ReplicatedInteger.valueOf( 1000 ) );
     private RaftLogEntry entry1 = new RaftLogEntry( 0, ReplicatedString.valueOf( "kedha" ) );
@@ -92,8 +89,8 @@ public class RaftLogShipperTest
         outbound = new OutboundMessageCollector();
         raftLog = new InMemoryRaftLog();
         clock = Clock.systemUTC();
-        leader = new RaftTestMember( 0 );
-        follower = new RaftTestMember( 1 );
+        leader = member( 0 );
+        follower = member( 1 );
         leaderTerm = 0;
         leaderCommit = 0;
         retryTimeMillis = 100000;
@@ -118,7 +115,7 @@ public class RaftLogShipperTest
         when( localDatabase.storeId() ).thenReturn( storeId );
 
         logShipper =
-                new RaftLogShipper<>( outbound, logProvider, raftLog, clock, leader, follower, leaderTerm, leaderCommit,
+                new RaftLogShipper( outbound, logProvider, raftLog, clock, leader, follower, leaderTerm, leaderCommit,
                         retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, new InFlightMap<>()
                 );
         logShipper.start();
@@ -135,7 +132,7 @@ public class RaftLogShipperTest
         startLogShipper();
 
         // then
-        assertThat( outbound.sentTo( follower ), Matchers.<RaftTestMember>hasRaftLogEntries( singletonList( entry1 ) ) );
+        assertThat( outbound.sentTo( follower ), Matchers.hasRaftLogEntries( singletonList( entry1 ) ) );
     }
 
     @Test
@@ -151,7 +148,7 @@ public class RaftLogShipperTest
         logShipper.onMismatch( 0, new LeaderContext( 0, 0 ) );
 
         // then
-        assertThat( outbound.sentTo( follower ), Matchers.<RaftTestMember>hasRaftLogEntries( singletonList( entry0 ) ) );
+        assertThat( outbound.sentTo( follower ), Matchers.hasRaftLogEntries( singletonList( entry0 ) ) );
     }
 
     @Test
@@ -171,7 +168,7 @@ public class RaftLogShipperTest
 
         // then
         assertTrue( outbound.hasEntriesTo( follower, entry0 ) );
-        assertThat( outbound.sentTo( follower ), Matchers.<RaftTestMember>hasRaftLogEntries( singletonList( entry0 ) ) );
+        assertThat( outbound.sentTo( follower ), Matchers.hasRaftLogEntries( singletonList( entry0 ) ) );
     }
 
     @Test
@@ -191,7 +188,7 @@ public class RaftLogShipperTest
         logShipper.onMatch( 0, new LeaderContext( 0, 0 ) );
 
         // then
-        assertThat( outbound.sentTo( follower ), Matchers.<RaftTestMember>hasRaftLogEntries( asList( entry1, entry2, entry3 ) ) );
+        assertThat( outbound.sentTo( follower ), Matchers.hasRaftLogEntries( asList( entry1, entry2, entry3 ) ) );
     }
 
     @Test
@@ -212,7 +209,7 @@ public class RaftLogShipperTest
         logShipper.onNewEntries( 1, 0, new RaftLogEntry[]{entry2}, new LeaderContext( 0, 0 ) );
 
         // then
-        assertThat( outbound.sentTo( follower ), Matchers.<RaftTestMember>hasRaftLogEntries( asList( entry1, entry2 ) ) );
+        assertThat( outbound.sentTo( follower ), Matchers.hasRaftLogEntries( asList( entry1, entry2 ) ) );
     }
 
     @Test
@@ -249,7 +246,7 @@ public class RaftLogShipperTest
         logShipper.onMismatch( 1, new LeaderContext( 0, 0 ) );
 
         // then
-        assertThat( outbound.sentTo( follower ), Matchers.<RaftTestMember>hasRaftLogEntries( singletonList( entry2 ) ) );
+        assertThat( outbound.sentTo( follower ), Matchers.hasRaftLogEntries( singletonList( entry2 ) ) );
     }
 
     @Test
@@ -312,7 +309,7 @@ public class RaftLogShipperTest
 
         //then
         assertTrue( outbound.hasAnyEntriesTo( follower ) );
-        assertThat( outbound.sentTo( follower ), Matchers.<RaftTestMember>hasRaftLogEntries( singletonList( entry3 ) ) );
+        assertThat( outbound.sentTo( follower ), Matchers.hasRaftLogEntries( singletonList( entry3 ) ) );
     }
 
     @Test
@@ -370,7 +367,7 @@ public class RaftLogShipperTest
         //then
         assertTrue( outbound.hasAnyEntriesTo( follower ) );
         assertThat( outbound.sentTo( follower ),
-                hasMessage( new RaftMessages.LogCompactionInfo<>( leader, 0, 1 ) ) );
+                hasMessage( new RaftMessages.LogCompactionInfo( leader, 0, 1 ) ) );
 
         pruningThread.join();
     }

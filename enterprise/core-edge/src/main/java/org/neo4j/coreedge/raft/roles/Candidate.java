@@ -39,16 +39,16 @@ import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 public class Candidate implements RaftMessageHandler
 {
     @Override
-    public <MEMBER> Outcome<MEMBER> handle( RaftMessages.RaftMessage<MEMBER> message, ReadableRaftState<MEMBER> ctx,
+    public  Outcome handle( RaftMessages.RaftMessage message, ReadableRaftState ctx,
                                             Log log, LocalDatabase localDatabase ) throws IOException
     {
-        Outcome<MEMBER> outcome = new Outcome<>( CANDIDATE, ctx );
+        Outcome outcome = new Outcome( CANDIDATE, ctx );
 
         switch ( message.type() )
         {
             case HEARTBEAT:
             {
-                RaftMessages.Heartbeat<MEMBER> req = (RaftMessages.Heartbeat<MEMBER>) message;
+                RaftMessages.Heartbeat req = (RaftMessages.Heartbeat) message;
 
                 if ( req.leaderTerm() < ctx.term() )
                 {
@@ -58,21 +58,21 @@ public class Candidate implements RaftMessageHandler
                 outcome.setNextRole( FOLLOWER );
                 log.info( "Moving to FOLLOWER state after receiving heartbeat from %s at term %d (i am at %d)%n",
                         req.from(), req.leaderTerm(), ctx.term() );
-                Heart.beat( ctx, outcome, (RaftMessages.Heartbeat<MEMBER>) message );
+                Heart.beat( ctx, outcome, (RaftMessages.Heartbeat) message );
                 break;
             }
 
             case APPEND_ENTRIES_REQUEST:
             {
-                RaftMessages.AppendEntries.Request<MEMBER> req = (RaftMessages.AppendEntries.Request<MEMBER>) message;
+                RaftMessages.AppendEntries.Request req = (RaftMessages.AppendEntries.Request) message;
 
                 if ( req.leaderTerm() < ctx.term() )
                 {
-                    RaftMessages.AppendEntries.Response<MEMBER> appendResponse =
-                            new RaftMessages.AppendEntries.Response<>( ctx.myself(), ctx.term(), false,
+                    RaftMessages.AppendEntries.Response appendResponse =
+                            new RaftMessages.AppendEntries.Response( ctx.myself(), ctx.term(), false,
                                     req.prevLogIndex(), ctx.entryLog().appendIndex() );
 
-                    outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(), appendResponse ) );
+                    outcome.addOutgoingMessage( new RaftMessages.Directed( req.from(), appendResponse ) );
                     break;
                 }
 
@@ -85,7 +85,7 @@ public class Candidate implements RaftMessageHandler
 
             case VOTE_RESPONSE:
             {
-                RaftMessages.Vote.Response<MEMBER> res = (RaftMessages.Vote.Response<MEMBER>) message;
+                RaftMessages.Vote.Response res = (RaftMessages.Vote.Response) message;
 
                 if ( res.term() > ctx.term() )
                 {
@@ -122,7 +122,7 @@ public class Candidate implements RaftMessageHandler
 
             case VOTE_REQUEST:
             {
-                RaftMessages.Vote.Request<MEMBER> req = (RaftMessages.Vote.Request<MEMBER>) message;
+                RaftMessages.Vote.Request req = (RaftMessages.Vote.Request) message;
                 if ( req.term() > ctx.term() )
                 {
                     outcome.getVotesForMe().clear();
@@ -133,14 +133,14 @@ public class Candidate implements RaftMessageHandler
                     break;
                 }
 
-                outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(),
-                        new RaftMessages.Vote.Response<>( ctx.myself(), outcome.getTerm(), false ) ) );
+                outcome.addOutgoingMessage( new RaftMessages.Directed( req.from(),
+                        new RaftMessages.Vote.Response( ctx.myself(), outcome.getTerm(), false ) ) );
                 break;
             }
 
             case ELECTION_TIMEOUT:
             {
-                if ( !Election.start( ctx, outcome, log, localDatabase.storeId() ) )
+                if ( !Election.start( ctx, outcome, log ) )
                 {
                     log.info( "Moving to FOLLOWER state after failing to start election" );
                     outcome.setNextRole( FOLLOWER );
@@ -153,9 +153,9 @@ public class Candidate implements RaftMessageHandler
     }
 
     @Override
-    public <MEMBER> Outcome<MEMBER> validate( RaftMessages.RaftMessage<MEMBER> message, StoreId storeId,
-                                              RaftState<MEMBER> ctx, LocalDatabase localDatabase )
+    public Outcome validate( RaftMessages.RaftMessage message, StoreId storeId,
+                              RaftState ctx, Log log, LocalDatabase localDatabase )
     {
-        return new Outcome<>( CANDIDATE, ctx );
+        return new Outcome( CANDIDATE, ctx );
     }
 }

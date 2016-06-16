@@ -30,26 +30,26 @@ import java.util.Set;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.RaftState;
-import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.coreedge.server.CoreMember;
 
 import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;
 
 public class ClusterState
 {
-    public final Map<RaftTestMember, Role> roles;
-    public final Map<RaftTestMember, ComparableRaftState> states;
-    public final Map<RaftTestMember, Queue<RaftMessages.RaftMessage<RaftTestMember>>> queues;
+    public final Map<CoreMember, Role> roles;
+    public final Map<CoreMember, ComparableRaftState> states;
+    public final Map<CoreMember, Queue<RaftMessages.RaftMessage>> queues;
 
-    public ClusterState( Set<RaftTestMember> members ) throws IOException
+    public ClusterState( Set<CoreMember> members ) throws IOException
     {
         this.roles = new HashMap<>();
         this.states = new HashMap<>();
         this.queues = new HashMap<>();
 
-        for ( RaftTestMember member : members )
+        for ( CoreMember member : members )
         {
             roles.put( member, Role.FOLLOWER );
-            RaftState<RaftTestMember> memberState = raftState().myself( member ).votingMembers( members ).build();
+            RaftState memberState = raftState().myself( member ).votingMembers( members ).build();
             states.put( member, new ComparableRaftState( memberState ) );
             queues.put( member, new LinkedList<>() );
         }
@@ -89,7 +89,7 @@ public class ClusterState
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
-        for ( RaftTestMember member : roles.keySet() )
+        for ( CoreMember member : roles.keySet() )
         {
             builder.append( member ).append( " : " ).append( roles.get( member ) ).append( "\n" );
             builder.append( "  state: " ).append( states.get( member ) ).append( "\n" );

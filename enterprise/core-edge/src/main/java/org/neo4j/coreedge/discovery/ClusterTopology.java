@@ -23,21 +23,20 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.coreedge.server.BoltAddress;
 import org.neo4j.coreedge.server.CoreMember;
 
 public class ClusterTopology
 {
-    private final Map<CoreMember, BoltAddress> coreMembers;
-    private final Set<BoltAddress> edgeBoltAddresses;
+    private final Map<CoreMember, CoreAddresses> coreMembers;
+    private final Set<EdgeAddresses> edgeAddresses;
     private final boolean canBeBootstrapped;
 
     public ClusterTopology( boolean canBeBootstrapped,
-                            Map<CoreMember, BoltAddress> coreMembers,
-                            Set<BoltAddress> edgeBoltAddresses )
+                            Map<CoreMember, CoreAddresses> coreMembers,
+                            Set<EdgeAddresses> edgeAddresses )
     {
         this.canBeBootstrapped = canBeBootstrapped;
-        this.edgeBoltAddresses = edgeBoltAddresses;
+        this.edgeAddresses = edgeAddresses;
         this.coreMembers = new HashMap<>( coreMembers );
     }
 
@@ -46,9 +45,9 @@ public class ClusterTopology
         return coreMembers.keySet();
     }
 
-    public Set<BoltAddress> edgeMembers()
+    public Set<EdgeAddresses> edgeMembers()
     {
-        return edgeBoltAddresses;
+        return edgeAddresses;
     }
 
     boolean canBeBootstrapped()
@@ -56,7 +55,7 @@ public class ClusterTopology
         return canBeBootstrapped;
     }
 
-    public BoltAddress boltAddress(CoreMember coreMember)
+    public CoreAddresses coreAddresses(CoreMember coreMember)
     {
          return coreMembers.get( coreMember );
     }
@@ -67,7 +66,7 @@ public class ClusterTopology
         return "TestOnlyClusterTopology{" +
                 "coreMembers.size()=" + coreMembers.size() +
                 ", bootstrappable=" + canBeBootstrapped() +
-                ", edgeMembers.size()=" + edgeBoltAddresses.size() +
+                ", edgeMembers.size()=" + edgeAddresses.size() +
                 '}';
     }
 }

@@ -25,11 +25,12 @@ import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.coreedge.discovery.ClusterTopology;
-import org.neo4j.coreedge.discovery.ReadOnlyTopologyService;
+import org.neo4j.coreedge.discovery.CoreAddresses;
+import org.neo4j.coreedge.discovery.CoreTopologyService;
+import org.neo4j.coreedge.discovery.EdgeAddresses;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.BoltAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
@@ -41,19 +42,18 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.stream.Collectors.toSet;
-
 import static org.neo4j.helpers.collection.Iterators.asRawIterator;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class AcquireEndpointsProcedure extends CallableProcedure.BasicProcedure
 {
     public static final String NAME = "acquireEndpoints";
-    private final ReadOnlyTopologyService discoveryService;
-    private final LeaderLocator<CoreMember> leaderLocator;
+    private final CoreTopologyService discoveryService;
+    private final LeaderLocator leaderLocator;
     private final Log log;
 
-    public AcquireEndpointsProcedure( ReadOnlyTopologyService discoveryService,
-                                      LeaderLocator<CoreMember> leaderLocator, LogProvider logProvider )
+    public AcquireEndpointsProcedure( CoreTopologyService discoveryService,
+                                      LeaderLocator leaderLocator, LogProvider logProvider )
     {
         super( procedureSignature( new ProcedureSignature.ProcedureName( new String[]{"dbms", "cluster"}, NAME ) )
                 .out( "address", Neo4jTypes.NTString ).out( "role", Neo4jTypes.NTString ).build() );
@@ -69,7 +69,7 @@ public class AcquireEndpointsProcedure extends CallableProcedure.BasicProcedure
         {
             CoreMember leader = leaderLocator.getLeader();
             AdvertisedSocketAddress leaderAddress =
-                    discoveryService.currentTopology().boltAddress( leader ).getAdvertisedAddress();
+                    discoveryService.currentTopology().coreAddresses( leader ).getBoltServer();
             Set<ReadWriteEndPoint> writeEndpoints = writeEndpoints( leaderAddress );
             Set<ReadWriteEndPoint> readEndpoints = readEndpoints( leaderAddress );
 
@@ -103,9 +103,9 @@ public class AcquireEndpointsProcedure extends CallableProcedure.BasicProcedure
         ClusterTopology clusterTopology = discoveryService.currentTopology();
 
         Stream<AdvertisedSocketAddress> readEdge = clusterTopology.edgeMembers().stream()
-                .map( BoltAddress::getAdvertisedAddress );
+                .map( EdgeAddresses::getBoltAddress );
         Stream<AdvertisedSocketAddress> readCore = clusterTopology.coreMembers().stream()
-                .map( clusterTopology::boltAddress ).map( BoltAddress::getAdvertisedAddress );
+                .map( clusterTopology::coreAddresses ).map( CoreAddresses::getBoltServer );
         Stream<AdvertisedSocketAddress> readLeader = Stream.of( leader );
 
         return Stream.concat( Stream.concat( readEdge, readCore ), readLeader ).map( ReadWriteEndPoint::read )

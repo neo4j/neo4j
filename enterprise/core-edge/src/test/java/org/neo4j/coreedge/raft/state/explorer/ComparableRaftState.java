@@ -32,27 +32,27 @@ import org.neo4j.coreedge.raft.outcome.LogCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
-import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.coreedge.server.CoreMember;
 
 import static java.lang.String.format;
 
-public class ComparableRaftState implements ReadableRaftState<RaftTestMember>
+public class ComparableRaftState implements ReadableRaftState
 {
-    protected final RaftTestMember myself;
-    protected final Set<RaftTestMember> votingMembers;
-    protected final Set<RaftTestMember> replicationMembers;
+    protected final CoreMember myself;
+    protected final Set votingMembers;
+    protected final Set replicationMembers;
     protected long term = 0;
-    protected RaftTestMember leader;
+    protected CoreMember leader;
     private long leaderCommit = -1;
-    protected RaftTestMember votedFor = null;
-    protected Set<RaftTestMember> votesForMe = new HashSet<>();
+    protected CoreMember votedFor = null;
+    protected Set votesForMe = new HashSet<>();
     protected long lastLogIndexBeforeWeBecameLeader = -1;
-    protected FollowerStates<RaftTestMember> followerStates = new FollowerStates<>();
+    protected FollowerStates followerStates = new FollowerStates<>();
     protected final RaftLog entryLog;
     protected final InFlightMap<Long,RaftLogEntry> inFlightMap;
     private long commitIndex = -1;
 
-    public ComparableRaftState( RaftTestMember myself, Set<RaftTestMember> votingMembers, Set<RaftTestMember> replicationMembers,
+    public ComparableRaftState( CoreMember myself, Set votingMembers, Set replicationMembers,
             RaftLog entryLog, InFlightMap<Long,RaftLogEntry> inFlightMap )
     {
         this.myself = myself;
@@ -62,26 +62,26 @@ public class ComparableRaftState implements ReadableRaftState<RaftTestMember>
         this.inFlightMap = inFlightMap;
     }
 
-    public ComparableRaftState( ReadableRaftState<RaftTestMember> original ) throws IOException
+    public ComparableRaftState( ReadableRaftState original ) throws IOException
     {
         this( original.myself(), original.votingMembers(), original.replicationMembers(), new ComparableRaftLog( original.entryLog() ),
                 new InFlightMap<>() );
     }
 
     @Override
-    public RaftTestMember myself()
+    public CoreMember myself()
     {
         return myself;
     }
 
     @Override
-    public Set<RaftTestMember> votingMembers()
+    public Set votingMembers()
     {
         return votingMembers;
     }
 
     @Override
-    public Set<RaftTestMember> replicationMembers()
+    public Set replicationMembers()
     {
         return replicationMembers;
     }
@@ -93,7 +93,7 @@ public class ComparableRaftState implements ReadableRaftState<RaftTestMember>
     }
 
     @Override
-    public RaftTestMember leader()
+    public CoreMember leader()
     {
         return leader;
     }
@@ -105,13 +105,13 @@ public class ComparableRaftState implements ReadableRaftState<RaftTestMember>
     }
 
     @Override
-    public RaftTestMember votedFor()
+    public CoreMember votedFor()
     {
         return votedFor;
     }
 
     @Override
-    public Set<RaftTestMember> votesForMe()
+    public Set votesForMe()
     {
         return votesForMe;
     }
@@ -123,7 +123,7 @@ public class ComparableRaftState implements ReadableRaftState<RaftTestMember>
     }
 
     @Override
-    public FollowerStates<RaftTestMember> followerStates()
+    public FollowerStates followerStates()
     {
         return followerStates;
     }
@@ -140,7 +140,7 @@ public class ComparableRaftState implements ReadableRaftState<RaftTestMember>
         return commitIndex;
     }
 
-    public void update( Outcome<RaftTestMember> outcome ) throws IOException
+    public void update( Outcome outcome ) throws IOException
     {
         term = outcome.getTerm();
         votedFor = outcome.getVotedFor();

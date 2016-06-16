@@ -19,8 +19,6 @@
  */
 package org.neo4j.coreedge.raft;
 
-import java.util.concurrent.TimeUnit;
-
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -35,6 +33,8 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.net.codecs.RaftMessageDecoder;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
@@ -47,12 +47,12 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class RaftServer<MEMBER> extends LifecycleAdapter implements Inbound<RaftMessages.RaftMessage<MEMBER>>
+public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages.RaftMessage>
 {
     private final ListenSocketAddress listenAddress;
     private final Log log;
     private final ChannelMarshal<ReplicatedContent> marshal;
-    private MessageHandler<RaftMessages.RaftMessage<MEMBER>> messageHandler;
+    private MessageHandler<RaftMessages.RaftMessage> messageHandler;
     private EventLoopGroup workerGroup;
     private Channel channel;
 
@@ -119,18 +119,18 @@ public class RaftServer<MEMBER> extends LifecycleAdapter implements Inbound<Raft
     }
 
     @Override
-    public void registerHandler( Inbound.MessageHandler<RaftMessages.RaftMessage<MEMBER>> handler )
+    public void registerHandler( Inbound.MessageHandler<RaftMessages.RaftMessage> handler )
     {
         this.messageHandler = handler;
     }
 
-    private class RaftMessageHandler extends SimpleChannelInboundHandler<RaftMessages.StoreIdAwareMessage<MEMBER>>
+    private class RaftMessageHandler extends SimpleChannelInboundHandler<RaftMessages.StoreIdAwareMessage>
     {
         @Override
         protected void channelRead0( ChannelHandlerContext channelHandlerContext,
-                                     RaftMessages.StoreIdAwareMessage<MEMBER> storeIdAwareMessage ) throws Exception
+                                     RaftMessages.StoreIdAwareMessage storeIdAwareMessage ) throws Exception
         {
-            RaftMessages.RaftMessage<MEMBER> message = storeIdAwareMessage.message();
+            RaftMessages.RaftMessage message = storeIdAwareMessage.message();
             StoreId storeId = storeIdAwareMessage.storeId();
             if ( messageHandler.validate( message, storeId ) )
             {

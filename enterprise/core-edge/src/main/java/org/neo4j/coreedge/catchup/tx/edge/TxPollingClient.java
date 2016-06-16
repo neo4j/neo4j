@@ -23,7 +23,7 @@ import org.neo4j.coreedge.catchup.storecopy.CoreClient;
 import org.neo4j.coreedge.raft.RenewableTimeoutService;
 import org.neo4j.coreedge.raft.RenewableTimeoutService.RenewableTimeout;
 import org.neo4j.coreedge.raft.RenewableTimeoutService.TimeoutName;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -175,7 +175,7 @@ public class TxPollingClient extends LifecycleAdapter implements TxPullListener
                 ctx.unexpectedCount = 0;
             }
 
-            AdvertisedSocketAddress transactionServer;
+            CoreMember transactionServer;
             try
             {
                 transactionServer = ctx.connectionStrategy.coreServer();

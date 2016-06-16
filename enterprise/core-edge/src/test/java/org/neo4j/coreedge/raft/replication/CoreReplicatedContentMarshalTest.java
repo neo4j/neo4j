@@ -19,12 +19,13 @@
  */
 package org.neo4j.coreedge.raft.replication;
 
-import java.util.ArrayList;
-import java.util.Collections;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.UUID;
 
 import org.neo4j.coreedge.catchup.storecopy.core.NetworkFlushableByteBuf;
 import org.neo4j.coreedge.raft.membership.CoreMemberSet;
@@ -36,7 +37,6 @@ import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequestSerialize
 import org.neo4j.coreedge.raft.replication.token.TokenType;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionFactory;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -46,7 +46,6 @@ import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class CoreReplicatedContentMarshalTest
@@ -85,9 +84,8 @@ public class CoreReplicatedContentMarshalTest
     {
         ByteBuf buffer = Unpooled.buffer();
         ReplicatedContent message = new CoreMemberSet( asSet(
-                new CoreMember( new AdvertisedSocketAddress( "host_a:1" ), new AdvertisedSocketAddress( "host_a:2" ) ),
-                new CoreMember( new AdvertisedSocketAddress( "host_b:101" ),
-                        new AdvertisedSocketAddress( "host_b:102" ) )
+                new CoreMember( UUID.randomUUID() ),
+                new CoreMember( UUID.randomUUID() )
         ) );
 
         assertMarshalingEquality( buffer, message );
@@ -98,10 +96,7 @@ public class CoreReplicatedContentMarshalTest
     {
         ByteBuf buffer = Unpooled.buffer();
         ReplicatedContent message = new ReplicatedIdAllocationRequest(
-                new CoreMember(
-                        new AdvertisedSocketAddress( "host_a:1" ),
-                        new AdvertisedSocketAddress( "host_a:2" )
-                ), IdType.PROPERTY, 100, 200 );
+                new CoreMember( UUID.randomUUID() ), IdType.PROPERTY, 100, 200 );
 
         assertMarshalingEquality( buffer, message );
     }

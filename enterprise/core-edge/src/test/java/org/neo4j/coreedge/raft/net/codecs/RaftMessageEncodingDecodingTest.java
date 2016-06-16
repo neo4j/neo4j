@@ -19,14 +19,15 @@
  */
 package org.neo4j.coreedge.raft.net.codecs;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.LinkedList;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.UUID;
 
 import org.neo4j.coreedge.raft.AppendEntriesRequestBuilder;
 import org.neo4j.coreedge.raft.AppendEntriesResponseBuilder;
@@ -37,11 +38,10 @@ import org.neo4j.coreedge.raft.VoteResponseBuilder;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
-import org.neo4j.kernel.impl.store.StoreId;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -55,9 +55,8 @@ public class RaftMessageEncodingDecodingTest
     @Test
     public void shouldSerializeAppendRequestWithMultipleEntries() throws Exception
     {
-        CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
-                new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
-        RaftMessages.AppendEntries.Request<CoreMember> request = new AppendEntriesRequestBuilder<CoreMember>()
+        CoreMember sender = new CoreMember( UUID.randomUUID() );
+        RaftMessages.AppendEntries.Request request = new AppendEntriesRequestBuilder()
                 .from( sender )
                 .leaderCommit( 2 )
                 .leaderTerm( 4 )
@@ -70,9 +69,8 @@ public class RaftMessageEncodingDecodingTest
     @Test
     public void shouldSerializeAppendRequestWithNoEntries() throws Exception
     {
-        CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
-                new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
-        RaftMessages.AppendEntries.Request<CoreMember> request = new AppendEntriesRequestBuilder<CoreMember>()
+        CoreMember sender = new CoreMember( UUID.randomUUID() );
+        RaftMessages.AppendEntries.Request request = new AppendEntriesRequestBuilder()
                 .from( sender )
                 .leaderCommit( 2 )
                 .leaderTerm( 4 )
@@ -83,9 +81,8 @@ public class RaftMessageEncodingDecodingTest
     @Test
     public void shouldSerializeAppendResponse() throws Exception
     {
-        CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
-                new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
-        RaftMessages.AppendEntries.Response<CoreMember> request = new AppendEntriesResponseBuilder<CoreMember>()
+        CoreMember sender = new CoreMember( UUID.randomUUID() );
+        RaftMessages.AppendEntries.Response request = new AppendEntriesResponseBuilder()
                 .from( sender )
                 .success()
                 .matchIndex( 12 )
@@ -106,10 +103,9 @@ public class RaftMessageEncodingDecodingTest
         ArrayList<Object> thingsRead = new ArrayList<>( 1 );
 
         // When
-        CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
-                new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
-        RaftMessages.StoreIdAwareMessage<CoreMember> message = new RaftMessages.StoreIdAwareMessage<>( storeId,
-        new RaftMessages.Heartbeat<>( sender, 1, 2, 3 ) );
+        CoreMember sender = new CoreMember( UUID.randomUUID() );
+        RaftMessages.StoreIdAwareMessage message = new RaftMessages.StoreIdAwareMessage( storeId,
+        new RaftMessages.Heartbeat( sender, 1, 2, 3 ) );
         encoder.encode( setupContext(), message, resultingBuffers );
 
         // Then
@@ -126,9 +122,8 @@ public class RaftMessageEncodingDecodingTest
     @Test
     public void shouldSerializeVoteRequest() throws Exception
     {
-        CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
-                new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
-        RaftMessages.Vote.Request<CoreMember> request = new VoteRequestBuilder<CoreMember>()
+        CoreMember sender = new CoreMember( UUID.randomUUID() );
+        RaftMessages.Vote.Request request = new VoteRequestBuilder()
                 .candidate( sender )
                 .from( sender )
                 .lastLogIndex( 2 )
@@ -141,9 +136,8 @@ public class RaftMessageEncodingDecodingTest
     @Test
     public void shouldSerializeVoteResponse() throws Exception
     {
-        CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
-                new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
-        RaftMessages.Vote.Response<CoreMember> request = new VoteResponseBuilder<CoreMember>()
+        CoreMember sender = new CoreMember( UUID.randomUUID() );
+        RaftMessages.Vote.Response request = new VoteResponseBuilder()
                 .from( sender )
                 .grant()
                 .term( 3 )
@@ -151,7 +145,7 @@ public class RaftMessageEncodingDecodingTest
         serializeReadBackAndVerifyMessage( request );
     }
 
-    private void serializeReadBackAndVerifyMessage( RaftMessages.RaftMessage<CoreMember> message ) throws Exception
+    private void serializeReadBackAndVerifyMessage( RaftMessages.RaftMessage message ) throws Exception
     {
         // Given
         RaftMessageEncoder encoder = new RaftMessageEncoder( marshal );
@@ -163,8 +157,8 @@ public class RaftMessageEncodingDecodingTest
         ArrayList<Object> thingsRead = new ArrayList<>( 1 );
 
         // When
-        RaftMessages.StoreIdAwareMessage<CoreMember> decoratedMessage =
-                new RaftMessages.StoreIdAwareMessage<>( storeId, message );
+        RaftMessages.StoreIdAwareMessage decoratedMessage =
+                new RaftMessages.StoreIdAwareMessage( storeId, message );
         encoder.encode( setupContext(), decoratedMessage, resultingBuffers );
 
         // Then

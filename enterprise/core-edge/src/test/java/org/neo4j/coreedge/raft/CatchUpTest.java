@@ -29,7 +29,7 @@ import org.neo4j.coreedge.raft.RaftMessages.NewEntry.Request;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.store.StoreId;
 
 import static org.hamcrest.CoreMatchers.hasItems;
@@ -37,6 +37,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.coreedge.raft.ReplicatedInteger.valueOf;
 import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
+import static org.neo4j.coreedge.server.RaftTestMember.member;
 
 public class CatchUpTest
 {
@@ -48,21 +49,21 @@ public class CatchUpTest
         DirectNetworking net = new DirectNetworking();
 
         // given
-        final long leader = 0;
-        final long[] allMembers = {leader, 1, 2};
+        final CoreMember leader = member( 0 );
+        final CoreMember[] allMembers = {leader, member( 1 ), member( 2 )};
 
         final RaftTestFixture fixture = new RaftTestFixture( net, 3, allMembers );
         fixture.members().withId( leader ).raftInstance().bootstrapWithInitialMembers( new RaftTestGroup( allMembers ) );
-        final RaftTestMember leaderMember = fixture.members().withId( leader ).member();
+        final CoreMember leaderMember = fixture.members().withId( leader ).member();
 
         // when
         fixture.members().withId( leader ).timeoutService().invokeTimeout( RaftInstance.Timeouts.ELECTION );
         net.processMessages();
-        fixture.members().withId( leader ).raftInstance().handle( new Request<>( leaderMember, valueOf( 42 ) ) );
+        fixture.members().withId( leader ).raftInstance().handle( new Request( leaderMember, valueOf( 42 ) ) );
         net.processMessages();
 
         // then
-        for ( long aMember : allMembers )
+        for ( CoreMember aMember : allMembers )
         {
             assertThat( integerValues( fixture.members().withId( aMember ).raftLog() ), hasItems( 42 ) );
         }
@@ -74,11 +75,11 @@ public class CatchUpTest
         DirectNetworking net = new DirectNetworking();
 
         // given
-        final long leaderId = 0;
-        final long sleepyId = 2;
+        final CoreMember leaderId = member( 0 );
+        final CoreMember sleepyId = member( 2 );
 
-        final long[] awakeMembers = {leaderId, 1};
-        final long[] allMembers = {leaderId, 1, sleepyId};
+        final CoreMember[] awakeMembers = {leaderId, member( 1 )};
+        final CoreMember[] allMembers = {leaderId, member( 1 ), sleepyId};
 
         RaftTestFixture fixture = new RaftTestFixture( net, 3, allMembers );
         fixture.members().withId( leaderId ).raftInstance().bootstrapWithInitialMembers( new RaftTestGroup( allMembers ) );
@@ -86,19 +87,19 @@ public class CatchUpTest
         fixture.members().withId( leaderId ).timeoutService().invokeTimeout( RaftInstance.Timeouts.ELECTION );
         net.processMessages();
 
-        final RaftTestMember leader = fixture.members().withId( leaderId ).member();
+        final CoreMember leader = fixture.members().withId( leaderId ).member();
 
         net.disconnect( sleepyId );
 
         // when
-        fixture.members().withId( leaderId ).raftInstance().handle( new Request<>( leader, valueOf( 10 ) ) );
-        fixture.members().withId( leaderId ).raftInstance().handle( new Request<>( leader, valueOf( 20 ) ) );
-        fixture.members().withId( leaderId ).raftInstance().handle( new Request<>( leader, valueOf( 30 ) ) );
-        fixture.members().withId( leaderId ).raftInstance().handle( new Request<>( leader, valueOf( 40 ) ) );
+        fixture.members().withId( leaderId ).raftInstance().handle( new Request( leader, valueOf( 10 ) ) );
+        fixture.members().withId( leaderId ).raftInstance().handle( new Request( leader, valueOf( 20 ) ) );
+        fixture.members().withId( leaderId ).raftInstance().handle( new Request( leader, valueOf( 30 ) ) );
+        fixture.members().withId( leaderId ).raftInstance().handle( new Request( leader, valueOf( 40 ) ) );
         net.processMessages();
 
         // then
-        for ( long awakeMember : awakeMembers )
+        for ( CoreMember awakeMember : awakeMembers )
         {
             assertThat( integerValues( fixture.members().withId( awakeMember ).raftLog() ),
                     hasItems( 10, 20, 30, 40 ) );

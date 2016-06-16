@@ -27,7 +27,7 @@ import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 
 import static org.neo4j.coreedge.server.RaftTestMember.member;
 
-public class RaftTestMemberSetBuilder implements RaftGroup.Builder<RaftTestMember>
+public class RaftTestMemberSetBuilder implements RaftGroup.Builder
 {
     public static RaftTestMemberSetBuilder INSTANCE = new RaftTestMemberSetBuilder();
 
@@ -36,14 +36,14 @@ public class RaftTestMemberSetBuilder implements RaftGroup.Builder<RaftTestMembe
     }
 
     @Override
-    public RaftGroup<RaftTestMember> build( Set<RaftTestMember> members )
+    public RaftGroup build( Set members )
     {
         return new RaftTestGroup( members );
     }
 
-    public static RaftGroup<RaftTestMember> memberSet( int... ids )
+    public static RaftGroup memberSet( int... ids )
     {
-        HashSet<RaftTestMember> members = new HashSet<>();
+        HashSet members = new HashSet<>();
         for ( int id : ids )
         {
             members.add( member( id ) );

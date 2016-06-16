@@ -19,12 +19,13 @@
  */
 package org.neo4j.coreedge.raft.log;
 
-import java.util.ArrayList;
-import java.util.Collection;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.UUID;
 
 import org.neo4j.coreedge.catchup.storecopy.core.NetworkFlushableByteBuf;
 import org.neo4j.coreedge.raft.membership.CoreMemberSet;
@@ -34,7 +35,6 @@ import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionFactory;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.store.id.IdType;
@@ -45,15 +45,11 @@ import org.neo4j.storageengine.api.StorageCommand;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class RaftContentByteBufferMarshalTest
 {
-    private CoreMember coreMember = new CoreMember(
-            new AdvertisedSocketAddress( "core:1" ),
-            new AdvertisedSocketAddress( "raft:1" )
-    );
+    private CoreMember coreMember = new CoreMember( UUID.randomUUID() );
 
     @Test
     public void shouldSerializeMemberSet() throws Exception
@@ -61,12 +57,8 @@ public class RaftContentByteBufferMarshalTest
         // given
         CoreReplicatedContentMarshal serializer = new CoreReplicatedContentMarshal();
         CoreMemberSet in = new CoreMemberSet( asSet(
-                new CoreMember(
-                        new AdvertisedSocketAddress( "host1:1001" ), new AdvertisedSocketAddress( "host1:1002" )
-                ),
-                new CoreMember(
-                        new AdvertisedSocketAddress( "host2:1002" ), new AdvertisedSocketAddress( "host2:1002" )
-                )
+                new CoreMember( UUID.randomUUID() ),
+                new CoreMember( UUID.randomUUID() )
         ) );
 
         // when

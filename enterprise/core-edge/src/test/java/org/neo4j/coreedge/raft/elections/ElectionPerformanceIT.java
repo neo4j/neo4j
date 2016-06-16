@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.RaftTestNetwork;
-import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 import org.neo4j.function.Predicates;
 
@@ -37,6 +37,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.neo4j.coreedge.server.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 /**
@@ -58,7 +59,7 @@ public class ElectionPerformanceIT
      * which should be the initial member set entry, making it possible for every member
      * to perform elections. We need this before we start disconnecting members.
      */
-    private class BootstrapWaiter implements RaftStateMachine<RaftTestMember>
+    private class BootstrapWaiter implements RaftStateMachine
     {
         private AtomicLong count = new AtomicLong();
 
@@ -69,7 +70,7 @@ public class ElectionPerformanceIT
         }
 
         @Override
-        public void notifyNeedFreshSnapshot( RaftTestMember myself, CoreServerSelectionStrategy strategy )
+        public void notifyNeedFreshSnapshot( CoreMember myself, CoreServerSelectionStrategy strategy )
         {
         }
 
@@ -93,8 +94,8 @@ public class ElectionPerformanceIT
         final long heartbeatInterval = 250L;
         final int iterations = 10;
 
-        RaftTestNetwork<RaftTestMember> net = new RaftTestNetwork<>( ( i, o ) -> networkLatency );
-        Set<Long> members = asSet( 0L, 1L, 2L );
+        RaftTestNetwork net = new RaftTestNetwork<>( ( i, o ) -> networkLatency );
+        Set<CoreMember> members = asSet( member( 0 ), member( 1 ), member( 2 ) );
         BootstrapWaiter bootstrapWaiter = new BootstrapWaiter();
         Fixture fixture = new Fixture( members, net, electionTimeout, heartbeatInterval, bootstrapWaiter );
         DisconnectLeaderScenario scenario = new DisconnectLeaderScenario( fixture, electionTimeout );
@@ -136,8 +137,8 @@ public class ElectionPerformanceIT
         final long heartbeatInterval = 15L;
         final int iterations = 100;
 
-        RaftTestNetwork<RaftTestMember> net = new RaftTestNetwork<>( ( i, o ) -> networkLatency );
-        Set<Long> members = asSet( 0L, 1L, 2L );
+        RaftTestNetwork net = new RaftTestNetwork<>( ( i, o ) -> networkLatency );
+        Set<CoreMember> members = asSet( member( 0 ), member( 1 ), member( 2 ) );
         BootstrapWaiter bootstrapWaiter = new BootstrapWaiter();
         Fixture fixture = new Fixture( members, net, electionTimeout, heartbeatInterval, bootstrapWaiter );
         DisconnectLeaderScenario scenario = new DisconnectLeaderScenario( fixture, electionTimeout );

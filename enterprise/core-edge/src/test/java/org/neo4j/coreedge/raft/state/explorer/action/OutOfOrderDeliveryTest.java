@@ -24,7 +24,6 @@ import org.junit.Test;
 import org.neo4j.coreedge.raft.RaftMessages.Timeout.Election;
 import org.neo4j.coreedge.raft.RaftMessages.Timeout.Heartbeat;
 import org.neo4j.coreedge.raft.state.explorer.ClusterState;
-import org.neo4j.kernel.impl.store.StoreId;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
@@ -37,14 +36,14 @@ public class OutOfOrderDeliveryTest
     {
         // given
         ClusterState clusterState = new ClusterState( asSet( member( 0 ) ) );
-        clusterState.queues.get( member( 0 ) ).add( new Election<>( member( 0 ) ) );
-        clusterState.queues.get( member( 0 ) ).add( new Heartbeat<>( member( 0 ) ) );
+        clusterState.queues.get( member( 0 ) ).add( new Election( member( 0 ) ) );
+        clusterState.queues.get( member( 0 ) ).add( new Heartbeat( member( 0 ) ) );
 
         // when
         ClusterState reOrdered = new OutOfOrderDelivery( member( 0 ) ).advance( clusterState );
 
         // then
-        assertEquals( new Heartbeat<>( member( 0 ) ), reOrdered.queues.get( member( 0 ) ).poll() );
-        assertEquals( new Election<>( member( 0 ) ), reOrdered.queues.get( member( 0 ) ).poll() );
+        assertEquals( new Heartbeat( member( 0 ) ), reOrdered.queues.get( member( 0 ) ).poll() );
+        assertEquals( new Election( member( 0 ) ), reOrdered.queues.get( member( 0 ) ).poll() );
     }
 }

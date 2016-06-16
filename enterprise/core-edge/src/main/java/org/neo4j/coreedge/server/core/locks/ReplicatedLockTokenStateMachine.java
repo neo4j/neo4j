@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.server.core.locks;
 
 import java.io.IOException;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 import org.neo4j.coreedge.raft.state.Result;
@@ -31,19 +30,19 @@ import org.neo4j.coreedge.raft.state.StateStorage;
  * Listens for {@link ReplicatedLockTokenRequest}. Keeps track of the current holder of the replicated token,
  * which is identified by a monotonically increasing id, and an owning member.
  */
-public class ReplicatedLockTokenStateMachine<MEMBER> implements StateMachine<ReplicatedLockTokenRequest<MEMBER>>
+public class ReplicatedLockTokenStateMachine implements StateMachine<ReplicatedLockTokenRequest>
 {
-    private ReplicatedLockTokenState<MEMBER> state;
-    private final StateStorage<ReplicatedLockTokenState<MEMBER>> storage;
+    private ReplicatedLockTokenState state;
+    private final StateStorage<ReplicatedLockTokenState> storage;
 
-    public ReplicatedLockTokenStateMachine( StateStorage<ReplicatedLockTokenState<MEMBER>> storage )
+    public ReplicatedLockTokenStateMachine( StateStorage<ReplicatedLockTokenState> storage )
     {
         this.storage = storage;
         this.state = storage.getInitialState();
     }
 
     @Override
-    public synchronized void applyCommand( ReplicatedLockTokenRequest<MEMBER> tokenRequest, long commandIndex,
+    public synchronized void applyCommand( ReplicatedLockTokenRequest tokenRequest, long commandIndex,
             Consumer<Result> callback )
     {
         if ( commandIndex <= state.ordinal() )
@@ -72,12 +71,12 @@ public class ReplicatedLockTokenStateMachine<MEMBER> implements StateMachine<Rep
         return storage.getInitialState().ordinal();
     }
 
-    public synchronized ReplicatedLockTokenState<MEMBER> snapshot()
+    public synchronized ReplicatedLockTokenState snapshot()
     {
         return state.newInstance();
     }
 
-    public synchronized void installSnapshot( ReplicatedLockTokenState<MEMBER> snapshot )
+    public synchronized void installSnapshot( ReplicatedLockTokenState snapshot )
     {
         state = snapshot;
     }
@@ -85,7 +84,7 @@ public class ReplicatedLockTokenStateMachine<MEMBER> implements StateMachine<Rep
     /**
      * @return The currently valid token.
      */
-    public synchronized ReplicatedLockTokenRequest<MEMBER> currentToken()
+    public synchronized ReplicatedLockTokenRequest currentToken()
     {
         return state.get();
     }

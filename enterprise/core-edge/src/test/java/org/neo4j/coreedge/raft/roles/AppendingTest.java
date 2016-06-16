@@ -19,6 +19,21 @@
  */
 package org.neo4j.coreedge.raft.roles;
 
+import org.hamcrest.Description;
+import org.hamcrest.TypeSafeMatcher;
+import org.junit.Test;
+
+import org.neo4j.coreedge.raft.RaftMessages;
+import org.neo4j.coreedge.raft.ReplicatedInteger;
+import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.raft.log.ReadableRaftLog;
+import org.neo4j.coreedge.raft.outcome.LogCommand;
+import org.neo4j.coreedge.raft.outcome.Outcome;
+import org.neo4j.coreedge.raft.outcome.TruncateLogCommand;
+import org.neo4j.coreedge.raft.state.ReadableRaftState;
+import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.kernel.impl.store.StoreId;
+
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
@@ -29,23 +44,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
 
-import org.hamcrest.Description;
-import org.hamcrest.TypeSafeMatcher;
-import org.junit.Test;
-import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.ReplicatedInteger;
-import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.ReadableRaftLog;
-import org.neo4j.coreedge.raft.outcome.LogCommand;
-import org.neo4j.coreedge.raft.outcome.Outcome;
-import org.neo4j.coreedge.raft.outcome.TruncateLogCommand;
-import org.neo4j.coreedge.raft.state.ReadableRaftState;
-import org.neo4j.coreedge.server.RaftTestMember;
-import org.neo4j.kernel.impl.store.StoreId;
-
 public class AppendingTest
 {
-    private RaftTestMember aMember = member( 0 );
+    private CoreMember aMember = member( 0 );
     private StoreId storeId = new StoreId( 1, 2, 3, 4, 5 );
 
     @Test
@@ -68,7 +69,7 @@ public class AppendingTest
         // when
         // the leader asks to append after the commit index an entry that mismatches on term
         Appending.handleAppendEntriesRequest( state, outcome,
-                new RaftMessages.AppendEntries.Request<>( aMember, localTermForAllEntries, appendIndex - 2,
+                new RaftMessages.AppendEntries.Request( aMember, localTermForAllEntries, appendIndex - 2,
                         localTermForAllEntries,
                         new RaftLogEntry[]{
                                 new RaftLogEntry( localTermForAllEntries + 1, ReplicatedInteger.valueOf( 2 ) )},
@@ -99,7 +100,7 @@ public class AppendingTest
         try
         {
             Appending.handleAppendEntriesRequest( state, outcome,
-                    new RaftMessages.AppendEntries.Request<>( aMember, localTermForAllEntries, commitIndex - 1,
+                    new RaftMessages.AppendEntries.Request( aMember, localTermForAllEntries, commitIndex - 1,
                             localTermForAllEntries,
                             new RaftLogEntry[]{
                                     new RaftLogEntry( localTermForAllEntries + 1, ReplicatedInteger.valueOf( 2 ) )},
@@ -132,7 +133,7 @@ public class AppendingTest
         try
         {
             Appending.handleAppendEntriesRequest( state, outcome,
-                    new RaftMessages.AppendEntries.Request<>( aMember, localTermForAllEntries, commitIndex - 2,
+                    new RaftMessages.AppendEntries.Request( aMember, localTermForAllEntries, commitIndex - 2,
                             localTermForAllEntries,
                             new RaftLogEntry[]{
                                     new RaftLogEntry( localTermForAllEntries + 1, ReplicatedInteger.valueOf( 2 ) )},
@@ -170,7 +171,7 @@ public class AppendingTest
         // an appendEntriesRequest arrives for appending entries before the prevIndex (for whatever reason)
         Outcome outcome = mock( Outcome.class );
         Appending.handleAppendEntriesRequest( state, outcome,
-                new RaftMessages.AppendEntries.Request<>( aMember, prevTerm, prevIndex - 2,
+                new RaftMessages.AppendEntries.Request( aMember, prevTerm, prevIndex - 2,
                         prevTerm,
                         new RaftLogEntry[]{
                                 new RaftLogEntry( prevTerm, ReplicatedInteger.valueOf( 2 ) )},

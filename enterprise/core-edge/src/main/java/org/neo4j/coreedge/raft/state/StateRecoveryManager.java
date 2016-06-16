@@ -25,6 +25,7 @@ import java.io.IOException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
+import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 
 public class StateRecoveryManager<STATE>
@@ -95,8 +96,7 @@ public class StateRecoveryManager<STATE>
         }
     }
 
-    public STATE readLastEntryFrom( File file )
-            throws IOException
+    public STATE readLastEntryFrom( File file ) throws IOException
     {
         try ( StoreChannel storeChannel = fileSystem.open( file, "r" ) )
         {
@@ -105,9 +105,16 @@ public class StateRecoveryManager<STATE>
             STATE result = marshal.startState();
             STATE lastRead;
 
-            while ( (lastRead = marshal.unmarshal( channel )) != null )
+            try
             {
-                result = lastRead;
+                while ( (lastRead = marshal.unmarshal( channel )) != null )
+                {
+                    result = lastRead;
+                }
+            }
+            catch ( ReadPastEndException e )
+            {
+                // ignore; just use previous complete entry
             }
 
             fileSystem.open( file, "r" ).close();

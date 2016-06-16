@@ -35,33 +35,34 @@ import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.membership.RaftMembership;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.outcome.ShipCommand;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 
-public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
+public class RaftLogShippingManager implements RaftMembership.Listener
 {
-    private final Outbound<MEMBER,RaftMessages.RaftMessage<MEMBER>> outbound;
+    private final Outbound<CoreMember, RaftMessages.RaftMessage> outbound;
     private final LogProvider logProvider;
     private final ReadableRaftLog raftLog;
     private final Clock clock;
-    private final MEMBER myself;
+    private final CoreMember myself;
 
-    private final RaftMembership<MEMBER> membership;
+    private final RaftMembership membership;
     private final long retryTimeMillis;
     private final int catchupBatchSize;
     private final int maxAllowedShippingLag;
     private final InFlightMap<Long,RaftLogEntry> inFlightMap;
 
-    private Map<MEMBER,RaftLogShipper> logShippers = new HashMap<>();
+    private Map<CoreMember,RaftLogShipper> logShippers = new HashMap<>();
     private LeaderContext lastLeaderContext;
 
     private boolean running;
     private boolean destroyed = false;
 
-    public RaftLogShippingManager( Outbound<MEMBER,RaftMessages.RaftMessage<MEMBER>> outbound, LogProvider logProvider,
+    public RaftLogShippingManager( Outbound<CoreMember,RaftMessages.RaftMessage> outbound, LogProvider logProvider,
                                    ReadableRaftLog raftLog,
-                                   Clock clock, MEMBER myself, RaftMembership<MEMBER> membership, long retryTimeMillis,
+                                   Clock clock, CoreMember myself, RaftMembership membership, long retryTimeMillis,
                                    int catchupBatchSize, int maxAllowedShippingLag,
                                    InFlightMap<Long, RaftLogEntry> inFlightMap )
     {
@@ -87,7 +88,7 @@ public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
 
         running = true;
 
-        for ( MEMBER member : membership.replicationMembers() )
+        for ( CoreMember member : membership.replicationMembers() )
         {
             ensureLogShipperRunning( member, initialLeaderContext );
         }
@@ -109,12 +110,12 @@ public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
         logShippers.clear();
     }
 
-    private RaftLogShipper ensureLogShipperRunning( MEMBER member, LeaderContext leaderContext )
+    private RaftLogShipper ensureLogShipperRunning( CoreMember member, LeaderContext leaderContext )
     {
         RaftLogShipper logShipper = logShippers.get( member );
         if ( logShipper == null && !member.equals( myself ) )
         {
-            logShipper = new RaftLogShipper<>( outbound, logProvider, raftLog, clock, myself, member,
+            logShipper = new RaftLogShipper( outbound, logProvider, raftLog, clock, myself, member,
                     leaderContext.term, leaderContext.commitIndex, retryTimeMillis, catchupBatchSize,
                     maxAllowedShippingLag, inFlightMap );
 
@@ -144,10 +145,10 @@ public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
         if ( lastLeaderContext == null || !running )
             return;
 
-        HashSet<MEMBER> toBeRemoved = new HashSet<>( logShippers.keySet() );
+        HashSet<CoreMember> toBeRemoved = new HashSet<>( logShippers.keySet() );
         toBeRemoved.removeAll( membership.replicationMembers() );
 
-        for ( MEMBER member : toBeRemoved )
+        for ( CoreMember member : toBeRemoved )
         {
             RaftLogShipper logShipper = logShippers.remove( member );
             if( logShipper != null )
@@ -156,7 +157,7 @@ public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
             }
         }
 
-        for ( MEMBER replicationMember : membership.replicationMembers() )
+        for ( CoreMember replicationMember : membership.replicationMembers() )
         {
             ensureLogShipperRunning( replicationMember, lastLeaderContext );
         }

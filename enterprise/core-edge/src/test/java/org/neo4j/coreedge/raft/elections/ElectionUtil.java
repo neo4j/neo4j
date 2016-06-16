@@ -29,20 +29,22 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.raft.RaftInstance;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.Listener;
 
 public class ElectionUtil
 {
-    public static <T> T waitForLeaderAgreement( Iterable<RaftInstance<T>> validRafts, long maxTimeMillis ) throws InterruptedException, TimeoutException
+    public static CoreMember waitForLeaderAgreement( Iterable<RaftInstance> validRafts, long maxTimeMillis ) throws
+            InterruptedException, TimeoutException
     {
         long viewCount = Iterables.count( validRafts );
 
-        Map<T,T> leaderViews = new HashMap<>();
-        CompletableFuture<T> futureAgreedLeader = new CompletableFuture<>();
+        Map<CoreMember, CoreMember> leaderViews = new HashMap<>();
+        CompletableFuture<CoreMember> futureAgreedLeader = new CompletableFuture<>();
 
         Collection<Runnable> destructors = new ArrayList<>();
-        for ( RaftInstance<T> raft : validRafts )
+        for ( RaftInstance raft : validRafts )
         {
             destructors.add( leaderViewUpdatingListener( raft, validRafts, leaderViews, viewCount, futureAgreedLeader ) );
         }
@@ -64,16 +66,17 @@ public class ElectionUtil
         }
     }
 
-    private static <T> Runnable leaderViewUpdatingListener( RaftInstance<T> raft, Iterable<RaftInstance<T>>
-            validRafts, Map<T,T> leaderViews, long viewCount, CompletableFuture<T> futureAgreedLeader )
+    private static Runnable leaderViewUpdatingListener( RaftInstance raft, Iterable<RaftInstance>
+            validRafts, Map<CoreMember,CoreMember> leaderViews, long viewCount, CompletableFuture<CoreMember>
+            futureAgreedLeader )
     {
-        Listener<T> listener = newLeader -> {
+        Listener<CoreMember> listener = newLeader -> {
             synchronized ( leaderViews )
             {
                 leaderViews.put( raft.identity(), newLeader );
 
                 boolean leaderIsValid = false;
-                for ( RaftInstance<T> validRaft : validRafts )
+                for ( RaftInstance validRaft : validRafts )
                 {
                     if ( validRaft.identity().equals( newLeader ) )
                     {

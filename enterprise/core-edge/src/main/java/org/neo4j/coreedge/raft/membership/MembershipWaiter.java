@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -45,14 +46,14 @@ import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
  * so all we look for is that we have caught up with where the leader was the <i>previous</i> time
  * that we checked.
  */
-public class MembershipWaiter<MEMBER>
+public class MembershipWaiter
 {
-    private final MEMBER myself;
+    private final CoreMember myself;
     private final JobScheduler jobScheduler;
     private final long maxCatchupLag;
     private final Log log;
 
-    public MembershipWaiter( MEMBER myself, JobScheduler jobScheduler, long maxCatchupLag, LogProvider logProvider )
+    public MembershipWaiter( CoreMember myself, JobScheduler jobScheduler, long maxCatchupLag, LogProvider logProvider )
     {
         this.myself = myself;
         this.jobScheduler = jobScheduler;
@@ -60,7 +61,7 @@ public class MembershipWaiter<MEMBER>
         this.log = logProvider.getLog( getClass() );
     }
 
-    public CompletableFuture<Boolean> waitUntilCaughtUpMember( ReadableRaftState<MEMBER> raftState )
+    public CompletableFuture<Boolean> waitUntilCaughtUpMember( ReadableRaftState raftState )
     {
         CompletableFuture<Boolean> catchUpFuture = new CompletableFuture<>();
 
@@ -75,12 +76,12 @@ public class MembershipWaiter<MEMBER>
 
     private class Evaluator implements Runnable
     {
-        private final ReadableRaftState<MEMBER> raftState;
+        private final ReadableRaftState raftState;
         private final CompletableFuture<Boolean> catchUpFuture;
 
         private long lastLeaderCommit;
 
-        private Evaluator( ReadableRaftState<MEMBER> raftState, CompletableFuture<Boolean> catchUpFuture )
+        private Evaluator( ReadableRaftState raftState, CompletableFuture<Boolean> catchUpFuture )
         {
             this.raftState = raftState;
             this.catchUpFuture = catchUpFuture;
@@ -97,7 +98,7 @@ public class MembershipWaiter<MEMBER>
 
         private boolean iAmAVotingMember()
         {
-            Set<MEMBER> votingMembers = raftState.votingMembers();
+            Set votingMembers = raftState.votingMembers();
             boolean votingMember = votingMembers.contains( myself );
             if ( !votingMember )
             {

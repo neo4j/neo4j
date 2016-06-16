@@ -36,10 +36,20 @@ class SharedDiscoveryEdgeClient extends LifecycleAdapter implements EdgeTopology
     }
 
     @Override
-    public void registerEdgeServer( AdvertisedSocketAddress address )
+    public void registerEdgeServer( AdvertisedSocketAddress boltAddress )
     {
-        sharedDiscoveryService.registerEdgeServer( address );
-        log.info( "Registered edge server at %s", address );
+        sharedDiscoveryService.registerEdgeServer( new EdgeAddresses( boltAddress ) );
+        log.info( "Registered edge server at %s", boltAddress );
+    }
+
+    @Override
+    public void addMembershipListener( Listener listener )
+    {
+    }
+
+    @Override
+    public void removeMembershipListener( Listener listener )
+    {
     }
 
     @Override

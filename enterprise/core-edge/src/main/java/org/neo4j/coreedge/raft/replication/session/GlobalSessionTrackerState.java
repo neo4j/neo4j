@@ -26,28 +26,27 @@ import java.util.UUID;
 
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.raft.state.StateMarshal;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
 /**
  * In memory implementation of {@link GlobalSessionTrackerState}.
- *
- * @param <MEMBER> The type of members tracked by this session tracker state
  */
-public class GlobalSessionTrackerState<MEMBER>
+public class GlobalSessionTrackerState
 {
     /**
      * Each owner can only have one local session tracker, identified by the unique global session ID.
      */
-    private Map<MEMBER, LocalSessionTracker> sessionTrackers = new HashMap<>();
+    private Map<CoreMember, LocalSessionTracker> sessionTrackers = new HashMap<>();
 
     private long logIndex = -1L;
 
     /**
      * Tracks the operation and returns true iff this operation should be allowed.
      */
-    public boolean validateOperation( GlobalSession<MEMBER> globalSession, LocalOperationId localOperationId )
+    public boolean validateOperation( GlobalSession globalSession, LocalOperationId localOperationId )
     {
         LocalSessionTracker existingSessionTracker = sessionTrackers.get( globalSession.owner() );
         if ( isNewSession( globalSession, existingSessionTracker ) )
@@ -60,14 +59,14 @@ public class GlobalSessionTrackerState<MEMBER>
         }
     }
 
-    public void update( GlobalSession<MEMBER> globalSession, LocalOperationId localOperationId, long logIndex )
+    public void update( GlobalSession globalSession, LocalOperationId localOperationId, long logIndex )
     {
         LocalSessionTracker localSessionTracker = validateGlobalSessionAndGetLocalSessionTracker( globalSession );
         localSessionTracker.validateAndTrackOperation( localOperationId );
         this.logIndex = logIndex;
     }
 
-    private boolean isNewSession( GlobalSession<MEMBER> globalSession, LocalSessionTracker existingSessionTracker )
+    private boolean isNewSession( GlobalSession globalSession, LocalSessionTracker existingSessionTracker )
     {
         return existingSessionTracker == null ||
                 !existingSessionTracker.globalSessionId.equals( globalSession.sessionId() );
@@ -83,7 +82,7 @@ public class GlobalSessionTrackerState<MEMBER>
         return logIndex;
     }
 
-    private LocalSessionTracker validateGlobalSessionAndGetLocalSessionTracker( GlobalSession<MEMBER> globalSession )
+    private LocalSessionTracker validateGlobalSessionAndGetLocalSessionTracker( GlobalSession globalSession )
     {
         LocalSessionTracker localSessionTracker = sessionTrackers.get( globalSession.owner() );
 
@@ -97,35 +96,35 @@ public class GlobalSessionTrackerState<MEMBER>
         return localSessionTracker;
     }
 
-    public GlobalSessionTrackerState<MEMBER> newInstance()
+    public GlobalSessionTrackerState newInstance()
     {
-        GlobalSessionTrackerState<MEMBER> copy = new GlobalSessionTrackerState<>();
-        for ( Map.Entry<MEMBER,LocalSessionTracker> entry : sessionTrackers.entrySet() )
+        GlobalSessionTrackerState copy = new GlobalSessionTrackerState();
+        for ( Map.Entry<CoreMember,LocalSessionTracker> entry : sessionTrackers.entrySet() )
         {
             copy.sessionTrackers.put( entry.getKey(), entry.getValue().newInstance() );
         }
         return copy;
     }
 
-    public static class Marshal<MEMBER> implements StateMarshal<GlobalSessionTrackerState<MEMBER>>
+    public static class Marshal implements StateMarshal<GlobalSessionTrackerState>
     {
-        private final ChannelMarshal<MEMBER> memberMarshal;
+        private final ChannelMarshal<CoreMember> memberMarshal;
 
-        public Marshal( ChannelMarshal<MEMBER> marshal )
+        public Marshal( ChannelMarshal<CoreMember> marshal )
         {
             this.memberMarshal = marshal;
         }
 
         @Override
-        public void marshal( GlobalSessionTrackerState<MEMBER> target, WritableChannel channel )
+        public void marshal( GlobalSessionTrackerState target, WritableChannel channel )
                 throws IOException
         {
-            final Map<MEMBER, LocalSessionTracker> sessionTrackers = target.sessionTrackers;
+            final Map<CoreMember, LocalSessionTracker> sessionTrackers = target.sessionTrackers;
 
             channel.putLong( target.logIndex );
             channel.putInt( sessionTrackers.size() );
 
-            for ( Map.Entry<MEMBER, LocalSessionTracker> entry : sessionTrackers.entrySet() )
+            for ( Map.Entry<CoreMember, LocalSessionTracker> entry : sessionTrackers.entrySet() )
             {
                 memberMarshal.marshal( entry.getKey(), channel );
                 final LocalSessionTracker localSessionTracker = entry.getValue();
@@ -147,17 +146,17 @@ public class GlobalSessionTrackerState<MEMBER>
         }
 
         @Override
-        public GlobalSessionTrackerState<MEMBER> unmarshal( ReadableChannel source ) throws IOException
+        public GlobalSessionTrackerState unmarshal( ReadableChannel source ) throws IOException
         {
             try
             {
                 final long logIndex = source.getLong();
                 final int sessionTrackerSize = source.getInt();
-                final Map<MEMBER, LocalSessionTracker> sessionTrackers = new HashMap<>();
+                final Map<CoreMember, LocalSessionTracker> sessionTrackers = new HashMap<>();
 
                 for ( int i = 0; i < sessionTrackerSize; i++ )
                 {
-                    final MEMBER unmarshal = memberMarshal.unmarshal( source );
+                    final CoreMember unmarshal = memberMarshal.unmarshal( source );
                     if ( unmarshal == null )
                     {
                         return null;
@@ -178,7 +177,7 @@ public class GlobalSessionTrackerState<MEMBER>
                     final LocalSessionTracker localSessionTracker = new LocalSessionTracker( globalSessionId, lastSequenceNumberPerSession );
                     sessionTrackers.put( unmarshal, localSessionTracker );
                 }
-                GlobalSessionTrackerState<MEMBER> result = new GlobalSessionTrackerState<>();
+                GlobalSessionTrackerState result = new GlobalSessionTrackerState();
                 result.sessionTrackers = sessionTrackers;
                 result.logIndex = logIndex;
                 return result;
@@ -190,13 +189,13 @@ public class GlobalSessionTrackerState<MEMBER>
         }
 
         @Override
-        public GlobalSessionTrackerState<MEMBER> startState()
+        public GlobalSessionTrackerState startState()
         {
-            return new GlobalSessionTrackerState<>();
+            return new GlobalSessionTrackerState();
         }
 
         @Override
-        public long ordinal( GlobalSessionTrackerState<MEMBER> state )
+        public long ordinal( GlobalSessionTrackerState state )
         {
             return state.logIndex();
         }

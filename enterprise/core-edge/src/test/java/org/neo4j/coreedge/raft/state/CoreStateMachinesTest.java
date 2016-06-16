@@ -33,7 +33,6 @@ import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenStateMachine;
 import org.neo4j.coreedge.raft.replication.token.TokenType;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionStateMachine;
-import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.core.RecoverTransactionLogState;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
@@ -113,7 +112,7 @@ public class CoreStateMachinesTest
     }
 
     @SuppressWarnings( "unchecked" )
-    private final ReplicatedTransactionStateMachine<CoreMember> txSM = mock( ReplicatedTransactionStateMachine.class );
+    private final ReplicatedTransactionStateMachine txSM = mock( ReplicatedTransactionStateMachine.class );
     @SuppressWarnings( "unchecked" )
     private final ReplicatedTokenStateMachine<Token> labelTokenSM = mock( ReplicatedTokenStateMachine.class );
     @SuppressWarnings( "unchecked" )
@@ -122,7 +121,7 @@ public class CoreStateMachinesTest
     @SuppressWarnings( "unchecked" )
     private final ReplicatedTokenStateMachine<Token> propertyKeyTokenSM = mock( ReplicatedTokenStateMachine.class );
     @SuppressWarnings( "unchecked" )
-    private final ReplicatedLockTokenStateMachine<CoreMember> lockTokenSM =
+    private final ReplicatedLockTokenStateMachine lockTokenSM =
             mock( ReplicatedLockTokenStateMachine.class );
     @SuppressWarnings( "unchecked" )
     private final ReplicatedIdAllocationStateMachine idAllocationSM = mock( ReplicatedIdAllocationStateMachine.class );
@@ -142,7 +141,7 @@ public class CoreStateMachinesTest
     }
 
     @SuppressWarnings( "unchecked" )
-    private final ReplicatedLockTokenRequest<CoreMember> lockTokenRequest = mock( ReplicatedLockTokenRequest.class );
+    private final ReplicatedLockTokenRequest lockTokenRequest = mock( ReplicatedLockTokenRequest.class );
 
     @SuppressWarnings( "unchecked" )
     private final Consumer<Result> callback = mock( Consumer.class );

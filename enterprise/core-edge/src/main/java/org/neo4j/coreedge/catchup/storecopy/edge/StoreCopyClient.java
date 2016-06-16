@@ -24,7 +24,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.neo4j.coreedge.catchup.storecopy.CoreClient;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.CoreMember;
 
 public class StoreCopyClient
 {
@@ -35,7 +35,7 @@ public class StoreCopyClient
         this.coreClient = coreClient;
     }
 
-    public long copyStoreFiles( AdvertisedSocketAddress from, StoreFileStreams storeFileStreams ) throws StoreCopyFailedException
+    public long copyStoreFiles( CoreMember from, StoreFileStreams storeFileStreams ) throws StoreCopyFailedException
     {
         coreClient.setStoreFileStreams( storeFileStreams );
 

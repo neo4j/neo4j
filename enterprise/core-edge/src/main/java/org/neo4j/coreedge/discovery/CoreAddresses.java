@@ -21,7 +21,32 @@ package org.neo4j.coreedge.discovery;
 
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 
-public interface EdgeTopologyService extends CoreTopologyService
+public class CoreAddresses
 {
-    void registerEdgeServer( AdvertisedSocketAddress address );
+    private final AdvertisedSocketAddress raftServer;
+    private final AdvertisedSocketAddress coreServer;
+    private final AdvertisedSocketAddress boltServer;
+
+    public CoreAddresses( AdvertisedSocketAddress raftServer, AdvertisedSocketAddress coreServer,
+            AdvertisedSocketAddress boltServer )
+    {
+        this.raftServer = raftServer;
+        this.coreServer = coreServer;
+        this.boltServer = boltServer;
+    }
+
+    public AdvertisedSocketAddress getRaftServer()
+    {
+        return raftServer;
+    }
+
+    public AdvertisedSocketAddress getCoreServer()
+    {
+        return coreServer;
+    }
+
+    public AdvertisedSocketAddress getBoltServer()
+    {
+        return boltServer;
+    }
 }

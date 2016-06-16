@@ -21,8 +21,9 @@ package org.neo4j.coreedge.server;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.UUID;
 
-import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.coreedge.raft.state.StateMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -30,19 +31,23 @@ import static java.lang.String.format;
 
 public class CoreMember
 {
-    private final AdvertisedSocketAddress coreAddress;
-    private final AdvertisedSocketAddress raftAddress;
+    private final UUID uuid;
 
-    public CoreMember( AdvertisedSocketAddress coreAddress, AdvertisedSocketAddress raftAddress )
+    public CoreMember( UUID uuid )
     {
-        this.coreAddress = coreAddress;
-        this.raftAddress = raftAddress;
+        Objects.requireNonNull( uuid );
+        this.uuid = uuid;
+    }
+
+    public UUID getUuid()
+    {
+        return uuid;
     }
 
     @Override
     public String toString()
     {
-        return format( "CoreMember{coreAddress=%s, raftAddress=%s}", coreAddress, raftAddress );
+        return format( "CoreMember{uuid=%s}", uuid );
     }
 
     @Override
@@ -56,77 +61,60 @@ public class CoreMember
         {
             return false;
         }
+
         CoreMember that = (CoreMember) o;
-        return Objects.equals( coreAddress, that.coreAddress ) &&
-                Objects.equals( raftAddress, that.raftAddress );
+        return Objects.equals( uuid, that.uuid );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( coreAddress, raftAddress );
+        return Objects.hash( uuid );
     }
 
-    public AdvertisedSocketAddress getCoreAddress()
+    public static class CoreMemberMarshal implements StateMarshal<CoreMember>
     {
-        return coreAddress;
-    }
-
-    public AdvertisedSocketAddress getRaftAddress()
-    {
-        return raftAddress;
-    }
-
-    /**
-     * Format:
-     * ┌────────────────────────────────────────────┐
-     * │core address ┌─────────────────────────────┐│
-     * │             │hostnameLength        4 bytes││
-     * │             │hostnameBytes        variable││
-     * │             │port                  4 bytes││
-     * │             └─────────────────────────────┘│
-     * │raft address ┌─────────────────────────────┐│
-     * │             │hostnameLength        4 bytes││
-     * │             │hostnameBytes        variable││
-     * │             │port                  4 bytes││
-     * │             └─────────────────────────────┘│
-     * └────────────────────────────────────────────┘
-     * <p/>
-     * This Marshal implementation can also serialize and deserialize null values. They are encoded as a CoreMember
-     * with empty strings in the address fields, so they still adhere to the format displayed above.
-     */
-    public static class CoreMemberMarshal implements ChannelMarshal<CoreMember>
-    {
-        final AdvertisedSocketAddress.AdvertisedSocketAddressChannelMarshal channelMarshal =
-                new AdvertisedSocketAddress.AdvertisedSocketAddressChannelMarshal();
-
         @Override
         public void marshal( CoreMember member, WritableChannel channel ) throws IOException
         {
             if ( member == null )
             {
-                channel.put( (byte) -1 );
+                channel.put( (byte) 0 );
             }
             else
             {
                 channel.put( (byte) 1 );
-                channelMarshal.marshal( member.getCoreAddress(), channel );
-                channelMarshal.marshal( member.getRaftAddress(), channel );
+                channel.putLong( member.uuid.getMostSignificantBits() );
+                channel.putLong( member.uuid.getLeastSignificantBits() );
             }
-
         }
 
         @Override
         public CoreMember unmarshal( ReadableChannel source ) throws IOException
         {
-            if ( source.get() == -1 )
+            byte marker = source.get();
+            if ( marker == 0 )
             {
                 return null;
             }
+            else
+            {
+                long mostSigBits = source.getLong();
+                long leastSigBits = source.getLong();
+                return new CoreMember( new UUID( mostSigBits, leastSigBits ) );
+            }
+        }
 
-            AdvertisedSocketAddress coreAddress = channelMarshal.unmarshal( source );
-            AdvertisedSocketAddress raftAddress = channelMarshal.unmarshal( source );
-            return new CoreMember( coreAddress, raftAddress );
+        @Override
+        public CoreMember startState()
+        {
+            return null;
+        }
+
+        @Override
+        public long ordinal( CoreMember coreMember )
+        {
+            return coreMember == null ? 0 : 1;
         }
     }
 }

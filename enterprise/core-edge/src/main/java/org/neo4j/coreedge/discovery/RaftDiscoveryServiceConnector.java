@@ -30,10 +30,10 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 public class RaftDiscoveryServiceConnector extends LifecycleAdapter implements CoreTopologyService.Listener
 {
     private final CoreTopologyService discoveryService;
-    private final RaftInstance<CoreMember> raftInstance;
+    private final RaftInstance raftInstance;
 
     public RaftDiscoveryServiceConnector( CoreTopologyService discoveryService,
-                                            RaftInstance<CoreMember> raftInstance )
+                                            RaftInstance raftInstance )
     {
         this.discoveryService = discoveryService;
         this.raftInstance = raftInstance;

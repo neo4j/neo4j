@@ -19,11 +19,14 @@
  */
 package org.neo4j.coreedge.raft.net.codecs;
 
+import io.netty.buffer.ByteBuf;
 import java.io.IOException;
 import java.util.List;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
+
+import java.util.List;
 
 import org.neo4j.coreedge.catchup.storecopy.core.NetworkFlushableByteBuf;
 import org.neo4j.coreedge.raft.RaftMessages;
@@ -32,11 +35,12 @@ import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.storeid.StoreIdMarshal;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.storageengine.api.WritableChannel;
 
-public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.StoreIdAwareMessage<CoreMember>>
+public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.StoreIdAwareMessage>
 {
     private final ChannelMarshal<ReplicatedContent> marshal;
 
@@ -47,35 +51,36 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Sto
 
     @Override
     protected synchronized void encode( ChannelHandlerContext ctx,
-                                        RaftMessages.StoreIdAwareMessage<CoreMember> decoratedMessage,
+                                        RaftMessages.StoreIdAwareMessage decoratedMessage,
                                         List<Object> list ) throws Exception
     {
-        RaftMessages.RaftMessage<CoreMember> message = decoratedMessage.message();
+        RaftMessages.RaftMessage message = decoratedMessage.message();
         StoreId storeId = decoratedMessage.storeId();
+        CoreMember.CoreMemberMarshal memberMarshal = new CoreMember.CoreMemberMarshal();
 
         NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( ctx.alloc().buffer() );
         StoreIdMarshal.marshal( storeId, channel );
         channel.putInt( message.type().ordinal() );
-        writeMember( message.from(), channel );
+        memberMarshal.marshal( message.from(), channel );
 
         if ( message instanceof RaftMessages.Vote.Request )
         {
-            RaftMessages.Vote.Request<CoreMember> voteRequest = (RaftMessages.Vote.Request<CoreMember>) message;
-            writeMember( voteRequest.candidate(), channel );
+            RaftMessages.Vote.Request voteRequest = (RaftMessages.Vote.Request) message;
+            memberMarshal.marshal( voteRequest.candidate(), channel );
             channel.putLong( voteRequest.term() );
             channel.putLong( voteRequest.lastLogIndex() );
             channel.putLong( voteRequest.lastLogTerm() );
         }
         else if ( message instanceof RaftMessages.Vote.Response )
         {
-            RaftMessages.Vote.Response<CoreMember> voteResponse = (RaftMessages.Vote.Response<CoreMember>) message;
+            RaftMessages.Vote.Response voteResponse = (RaftMessages.Vote.Response) message;
             channel.putLong( voteResponse.term() );
             channel.put( (byte) (voteResponse.voteGranted() ? 1 : 0) );
         }
         else if ( message instanceof RaftMessages.AppendEntries.Request )
         {
-            RaftMessages.AppendEntries.Request<CoreMember> appendRequest = (RaftMessages.AppendEntries
-                    .Request<CoreMember>) message;
+            RaftMessages.AppendEntries.Request appendRequest = (RaftMessages.AppendEntries
+                    .Request) message;
 
             channel.putLong( appendRequest.leaderTerm() );
             channel.putLong( appendRequest.prevLogIndex() );
@@ -92,8 +97,8 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Sto
         }
         else if ( message instanceof RaftMessages.AppendEntries.Response )
         {
-            RaftMessages.AppendEntries.Response<CoreMember> appendResponse =
-                    (RaftMessages.AppendEntries.Response<CoreMember>) message;
+            RaftMessages.AppendEntries.Response appendResponse =
+                    (RaftMessages.AppendEntries.Response) message;
 
             channel.putLong( appendResponse.term() );
             channel.put( (byte) (appendResponse.success() ? 1 : 0) );
@@ -102,20 +107,20 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Sto
         }
         else if ( message instanceof RaftMessages.NewEntry.Request )
         {
-            RaftMessages.NewEntry.Request<CoreMember> newEntryRequest = (RaftMessages.NewEntry
-                    .Request<CoreMember>) message;
+            RaftMessages.NewEntry.Request newEntryRequest = (RaftMessages.NewEntry
+                    .Request) message;
             marshal.marshal( newEntryRequest.content(), channel );
         }
         else if ( message instanceof RaftMessages.Heartbeat )
         {
-            RaftMessages.Heartbeat<CoreMember> heartbeat = (RaftMessages.Heartbeat<CoreMember>) message;
+            RaftMessages.Heartbeat heartbeat = (RaftMessages.Heartbeat) message;
             channel.putLong( heartbeat.leaderTerm() );
             channel.putLong( heartbeat.commitIndexTerm() );
             channel.putLong( heartbeat.commitIndex() );
         }
         else if( message instanceof RaftMessages.LogCompactionInfo )
         {
-            RaftMessages.LogCompactionInfo<CoreMember> logCompactionInfo = (RaftMessages.LogCompactionInfo<CoreMember>) message;
+            RaftMessages.LogCompactionInfo logCompactionInfo = (RaftMessages.LogCompactionInfo) message;
             channel.putLong( logCompactionInfo.leaderTerm() );
             channel.putLong( logCompactionInfo.prevIndex() );
         }
@@ -125,14 +130,5 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Sto
         }
 
         list.add( channel.buffer() );
-    }
-
-    private void writeMember( CoreMember member, WritableChannel buffer ) throws IOException
-    {
-        AdvertisedSocketAddress.AdvertisedSocketAddressChannelMarshal marshal =
-                new AdvertisedSocketAddress.AdvertisedSocketAddressChannelMarshal();
-
-        marshal.marshal( member.getCoreAddress(), buffer );
-        marshal.marshal( member.getRaftAddress(), buffer );
     }
 }

@@ -21,8 +21,9 @@ package org.neo4j.coreedge.raft.state;
 
 import org.junit.Test;
 
+import java.util.UUID;
+
 import org.neo4j.coreedge.raft.state.vote.VoteState;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 
 import static org.junit.Assert.assertEquals;
@@ -37,10 +38,8 @@ public class VoteStateTest
     public void shouldStoreVote() throws Exception
     {
         // given
-        VoteState<CoreMember> voteState = new VoteState<>();
-        CoreMember member = new CoreMember(
-                new AdvertisedSocketAddress( "host1:1001" ),
-                new AdvertisedSocketAddress( "host1:2001" ) );
+        VoteState voteState = new VoteState();
+        CoreMember member = new CoreMember( UUID.randomUUID() );
 
         // when
         voteState.update( member, 0 );
@@ -53,7 +52,7 @@ public class VoteStateTest
     public void shouldStartWithNoVote() throws Exception
     {
         // given
-        VoteState<CoreMember> voteState = new VoteState<>();
+        VoteState voteState = new VoteState();
 
         // then
         assertNull( voteState.votedFor() );
@@ -63,13 +62,9 @@ public class VoteStateTest
     public void shouldUpdateVote() throws Exception
     {
         // given
-        VoteState<CoreMember> voteState = new VoteState<>();
-        CoreMember member1 = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
-                new AdvertisedSocketAddress( "host1:2001" )
-        );
-        CoreMember member2 = new CoreMember( new AdvertisedSocketAddress( "host2:1001" ),
-                new AdvertisedSocketAddress( "host2:2001" )
-        );
+        VoteState voteState = new VoteState();
+        CoreMember member1 = new CoreMember( UUID.randomUUID() );
+        CoreMember member2 = new CoreMember( UUID.randomUUID() );
 
         // when
         voteState.update( member1, 0 );
@@ -83,10 +78,9 @@ public class VoteStateTest
     public void shouldClearVote() throws Exception
     {
         // given
-        VoteState<CoreMember> voteState = new VoteState<>();
-        CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
-                new AdvertisedSocketAddress( "host1:2001" )
-        );
+        VoteState voteState = new VoteState();
+        CoreMember member = new CoreMember( UUID.randomUUID() );
+
         voteState.update( member, 0 );
 
         // when
@@ -100,13 +94,9 @@ public class VoteStateTest
     public void shouldNotUpdateVoteForSameTerm() throws Exception
     {
         // given
-        VoteState<CoreMember> voteState = new VoteState<>();
-        CoreMember member1 = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
-                new AdvertisedSocketAddress( "host1:2001" )
-        );
-        CoreMember member2 = new CoreMember( new AdvertisedSocketAddress( "host2:1001" ),
-                new AdvertisedSocketAddress( "host2:2001" )
-        );
+        VoteState voteState = new VoteState();
+        CoreMember member1 = new CoreMember( UUID.randomUUID() );
+        CoreMember member2 = new CoreMember( UUID.randomUUID() );
 
         voteState.update( member1, 0 );
 
@@ -126,12 +116,10 @@ public class VoteStateTest
     public void shouldNotClearVoteForSameTerm() throws Exception
     {
         // given
-        VoteState<CoreMember> voteState = new VoteState<>();
-        CoreMember member1 = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
-                new AdvertisedSocketAddress( "host1:2001" )
-        );
+        VoteState voteState = new VoteState();
+        CoreMember member = new CoreMember( UUID.randomUUID() );
 
-        voteState.update( member1, 0 );
+        voteState.update( member, 0 );
 
         try
         {
@@ -149,13 +137,9 @@ public class VoteStateTest
     public void shouldReportNoUpdateWhenVoteStateUnchanged() throws Exception
     {
         // given
-        VoteState<CoreMember> voteState = new VoteState<>();
-        CoreMember member1 = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
-                new AdvertisedSocketAddress( "host1:2001" )
-        );
-        CoreMember member2 = new CoreMember( new AdvertisedSocketAddress( "host2:1001" ),
-                new AdvertisedSocketAddress( "host2:2001" )
-        );
+        VoteState voteState = new VoteState();
+        CoreMember member1 = new CoreMember( UUID.randomUUID() );
+        CoreMember member2 = new CoreMember( UUID.randomUUID() );
 
         // when
         assertTrue( voteState.update( null, 0 ) );

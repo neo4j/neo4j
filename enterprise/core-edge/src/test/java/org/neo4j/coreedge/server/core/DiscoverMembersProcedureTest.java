@@ -19,19 +19,21 @@
  */
 package org.neo4j.coreedge.server.core;
 
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.junit.Test;
-
 import org.neo4j.coreedge.discovery.ClusterTopology;
-import org.neo4j.coreedge.discovery.ReadOnlyTopologyService;
+import org.neo4j.coreedge.discovery.CoreAddresses;
+import org.neo4j.coreedge.discovery.CoreTopologyService;
+import org.neo4j.coreedge.discovery.EdgeAddresses;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.BoltAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.logging.NullLogProvider;
 
@@ -41,7 +43,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.Iterators.asList;
 
 public class DiscoverMembersProcedureTest
@@ -50,65 +51,64 @@ public class DiscoverMembersProcedureTest
     public void shouldOnlyReturnCoreMembers() throws Exception
     {
         // given
-        final ReadOnlyTopologyService coreTopologyService = mock( ReadOnlyTopologyService.class );
+        final CoreTopologyService coreTopologyService = mock( CoreTopologyService.class );
 
-        Map<CoreMember, BoltAddress> coreMembers = new HashMap<>();
-        coreMembers.put( coreMemberAtRaftPort( 9000 ), address( 1 ) );
-        coreMembers.put( coreMemberAtRaftPort( 9001 ), address( 2 ) );
-        coreMembers.put( coreMemberAtRaftPort( 9002 ), address( 3 ) );
+        Map<CoreMember,CoreAddresses> coreMembers = new HashMap<>();
+        coreMembers.put( coreMemberAtRaftPort( 9000 ), coreAddresses( 1 ) );
+        coreMembers.put( coreMemberAtRaftPort( 9001 ), coreAddresses( 2 ) );
+        coreMembers.put( coreMemberAtRaftPort( 9002 ), coreAddresses( 3 ) );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 4, 5, 6 ) );
         when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
 
-        final DiscoverMembersProcedure proc = new DiscoverMembersProcedure( coreTopologyService, NullLogProvider
-                .getInstance() );
+        final DiscoverMembersProcedure proc =
+                new DiscoverMembersProcedure( coreTopologyService, NullLogProvider.getInstance() );
 
         // when
         final List<Object[]> members = asList( proc.apply( null, new Object[0] ) );
 
         // then
-        assertThat( members, containsInAnyOrder(
-                new Object[]{address( 1 ).getAdvertisedAddress().toString()},
-                new Object[]{address( 2 ).getAdvertisedAddress().toString()},
-                new Object[]{address( 3 ).getAdvertisedAddress().toString()} ) );
+        assertThat( members, containsInAnyOrder( new Object[]{coreAddresses( 1 ).getRaftServer().toString()},
+                new Object[]{coreAddresses( 2 ).getRaftServer().toString()},
+                new Object[]{coreAddresses( 3 ).getRaftServer().toString()} ) );
     }
 
     @Test
     public void shouldReturnSelfIfOnlyMemberOfTheCluster() throws Exception
     {
-        final ReadOnlyTopologyService coreTopologyService = mock( ReadOnlyTopologyService.class );
+        final CoreTopologyService coreTopologyService = mock( CoreTopologyService.class );
 
-        Map<CoreMember, BoltAddress> coreMembers = new HashMap<>();
-        coreMembers.put( coreMemberAtRaftPort( 9000 ), address( 1 ) );
+        Map<CoreMember,CoreAddresses> coreMembers = new HashMap<>();
+        coreMembers.put( coreMemberAtRaftPort( 9000 ), coreAddresses( 1 ) );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 4, 5, 6 ) );
         when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
-        final DiscoverMembersProcedure proc = new DiscoverMembersProcedure( coreTopologyService, NullLogProvider
-                .getInstance() );
+        final DiscoverMembersProcedure proc =
+                new DiscoverMembersProcedure( coreTopologyService, NullLogProvider.getInstance() );
 
         // when
         final List<Object[]> members = asList( proc.apply( null, new Object[0] ) );
 
         // then
-        assertArrayEquals( members.get( 0 ), new Object[]{address( 1 ).getAdvertisedAddress().toString()} );
+        assertArrayEquals( members.get( 0 ), new Object[]{coreAddresses( 1 ).getRaftServer().toString()} );
     }
 
     @Test
     public void shouldReturnLimitedNumberOfAddresses() throws Exception
     {
         // given
-        final ReadOnlyTopologyService coreTopologyService = mock( ReadOnlyTopologyService.class );
+        final CoreTopologyService coreTopologyService = mock( CoreTopologyService.class );
 
-        Map<CoreMember, BoltAddress> coreMembers = new HashMap<>();
-        coreMembers.put( coreMemberAtRaftPort( 9000 ), address( 1 ) );
-        coreMembers.put( coreMemberAtRaftPort( 9001 ), address( 2 ) );
-        coreMembers.put( coreMemberAtRaftPort( 9002 ), address( 3 ) );
+        Map<CoreMember,CoreAddresses> coreMembers = new HashMap<>();
+        coreMembers.put( coreMemberAtRaftPort( 9000 ), coreAddresses( 1 ) );
+        coreMembers.put( coreMemberAtRaftPort( 9001 ), coreAddresses( 2 ) );
+        coreMembers.put( coreMemberAtRaftPort( 9002 ), coreAddresses( 3 ) );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 4, 5, 6 ) );
         when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
 
-        final DiscoverMembersProcedure proc = new DiscoverMembersProcedure( coreTopologyService, NullLogProvider
-                .getInstance() );
+        final DiscoverMembersProcedure proc =
+                new DiscoverMembersProcedure( coreTopologyService, NullLogProvider.getInstance() );
 
         // when
         final List<Object[]> members = asList( proc.apply( null, new Object[]{1} ) );
@@ -121,18 +121,18 @@ public class DiscoverMembersProcedureTest
     public void shouldReturnAllAddressesForStupidLimit() throws Exception
     {
         // given
-        final ReadOnlyTopologyService coreTopologyService = mock( ReadOnlyTopologyService.class );
+        final CoreTopologyService coreTopologyService = mock( CoreTopologyService.class );
 
-        Map<CoreMember, BoltAddress> coreMembers = new HashMap<>(  );
-        coreMembers.put( coreMemberAtRaftPort( 9000 ), address( 1 ) );
-        coreMembers.put( coreMemberAtRaftPort( 9001 ), address( 2 ) );
-        coreMembers.put( coreMemberAtRaftPort( 9002 ), address( 3 ) );
+        Map<CoreMember,CoreAddresses> coreMembers = new HashMap<>();
+        coreMembers.put( coreMemberAtRaftPort( 9000 ), coreAddresses( 1 ) );
+        coreMembers.put( coreMemberAtRaftPort( 9001 ), coreAddresses( 2 ) );
+        coreMembers.put( coreMemberAtRaftPort( 9002 ), coreAddresses( 3 ) );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 4, 5, 6 ) );
         when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
 
-        final DiscoverMembersProcedure proc = new DiscoverMembersProcedure( coreTopologyService, NullLogProvider
-                .getInstance() );
+        final DiscoverMembersProcedure proc =
+                new DiscoverMembersProcedure( coreTopologyService, NullLogProvider.getInstance() );
 
         // when
         final List<Object[]> members = asList( proc.apply( null, new Object[]{"bam"} ) );
@@ -143,18 +143,24 @@ public class DiscoverMembersProcedureTest
 
     static CoreMember coreMemberAtRaftPort( int raftPort )
     {
-        return new CoreMember(
-                null,
-                new AdvertisedSocketAddress( "127.0.0.1:" + raftPort ) );
+        return new CoreMember( UUID.randomUUID() );
     }
 
-    static Set<BoltAddress> addresses( int... ids )
+    static Set<EdgeAddresses> addresses( int... ids )
     {
-        return Arrays.stream( ids ).mapToObj( DiscoverMembersProcedureTest::address ).collect( Collectors.toSet() );
+        return Arrays.stream( ids ).mapToObj( DiscoverMembersProcedureTest::edgeAddresses )
+                .collect( Collectors.toSet() );
     }
 
-    static BoltAddress address( int id )
+    static CoreAddresses coreAddresses( int id )
     {
-        return new BoltAddress( new AdvertisedSocketAddress( "localhost:" + (3000 + id) ) );
+        AdvertisedSocketAddress advertisedSocketAddress = new AdvertisedSocketAddress( "localhost:" + (3000 + id) );
+        return new CoreAddresses( advertisedSocketAddress, advertisedSocketAddress, advertisedSocketAddress );
+    }
+
+    static EdgeAddresses edgeAddresses( int id )
+    {
+        AdvertisedSocketAddress advertisedSocketAddress = new AdvertisedSocketAddress( "localhost:" + (3000 + id) );
+        return new EdgeAddresses( advertisedSocketAddress );
     }
 }

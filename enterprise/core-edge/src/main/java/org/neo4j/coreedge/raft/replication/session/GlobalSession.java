@@ -21,14 +21,16 @@ package org.neo4j.coreedge.raft.replication.session;
 
 import java.util.UUID;
 
+import org.neo4j.coreedge.server.CoreMember;
+
 import static java.lang.String.format;
 
-public class GlobalSession<MEMBER>
+public class GlobalSession
 {
     private final UUID sessionId;
-    private final MEMBER owner;
+    private final CoreMember owner;
 
-    public GlobalSession( UUID sessionId, MEMBER owner )
+    public GlobalSession( UUID sessionId, CoreMember owner )
     {
         this.sessionId = sessionId;
         this.owner = owner;
@@ -39,7 +41,7 @@ public class GlobalSession<MEMBER>
         return sessionId;
     }
 
-    public MEMBER owner()
+    public CoreMember owner()
     {
         return owner;
     }

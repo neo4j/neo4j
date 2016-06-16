@@ -29,6 +29,7 @@ import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
+import org.neo4j.coreedge.server.CoreMember;
 
 /**
  * Holds the outcome of a RAFT role's handling of a message. The role handling logic is stateless
@@ -38,47 +39,47 @@ import org.neo4j.coreedge.raft.state.follower.FollowerStates;
  * A state update could be to change role, change term, etc.
  * A command could be to append to the RAFT log, tell the log shipper that there was a mismatch, etc.
  */
-public class Outcome<MEMBER> implements Message
+public class Outcome implements Message
 {
     /* Common */
     private Role nextRole;
 
     private long term;
-    private MEMBER leader;
+    private CoreMember leader;
 
     private long leaderCommit;
 
     private Collection<LogCommand> logCommands = new ArrayList<>();
-    private Collection<RaftMessages.Directed<MEMBER>> outgoingMessages = new ArrayList<>();
+    private Collection<RaftMessages.Directed> outgoingMessages = new ArrayList<>();
 
     private long commitIndex;
 
     private boolean processable;
 
     /* Follower */
-    private MEMBER votedFor;
+    private CoreMember votedFor;
     private boolean renewElectionTimeout;
     private boolean needsFreshSnapshot;
 
     /* Candidate */
-    private Set<MEMBER> votesForMe;
+    private Set<CoreMember> votesForMe;
     private long lastLogIndexBeforeWeBecameLeader;
 
     /* Leader */
-    private FollowerStates<MEMBER> followerStates;
+    private FollowerStates followerStates;
     private Collection<ShipCommand> shipCommands = new ArrayList<>();
     private boolean electedLeader;
     private boolean steppingDown;
 
-    public Outcome( Role currentRole, ReadableRaftState<MEMBER> ctx )
+    public Outcome( Role currentRole, ReadableRaftState ctx )
     {
         defaults( currentRole, ctx );
     }
 
-    public Outcome( Role nextRole, long term, MEMBER leader, long leaderCommit, MEMBER votedFor,
-                    Set<MEMBER> votesForMe, long lastLogIndexBeforeWeBecameLeader,
-                    FollowerStates<MEMBER> followerStates, boolean renewElectionTimeout,
-                    Collection<LogCommand> logCommands, Collection<RaftMessages.Directed<MEMBER>> outgoingMessages,
+    public Outcome( Role nextRole, long term, CoreMember leader, long leaderCommit, CoreMember votedFor,
+                    Set<CoreMember> votesForMe, long lastLogIndexBeforeWeBecameLeader,
+                    FollowerStates followerStates, boolean renewElectionTimeout,
+                    Collection<LogCommand> logCommands, Collection<RaftMessages.Directed> outgoingMessages,
                     Collection<ShipCommand> shipCommands, long commitIndex )
     {
         this.nextRole = nextRole;
@@ -97,7 +98,7 @@ public class Outcome<MEMBER> implements Message
         this.commitIndex = commitIndex;
     }
 
-    private void defaults( Role currentRole, ReadableRaftState<MEMBER> ctx )
+    private void defaults( Role currentRole, ReadableRaftState ctx )
     {
         nextRole = currentRole;
 
@@ -129,7 +130,7 @@ public class Outcome<MEMBER> implements Message
         this.term = nextTerm;
     }
 
-    public void setLeader( MEMBER leader )
+    public void setLeader( CoreMember leader )
     {
         this.leader = leader;
     }
@@ -144,12 +145,12 @@ public class Outcome<MEMBER> implements Message
         this.logCommands.add( logCommand );
     }
 
-    public void addOutgoingMessage( RaftMessages.Directed<MEMBER> message )
+    public void addOutgoingMessage( RaftMessages.Directed message )
     {
         this.outgoingMessages.add( message );
     }
 
-    public void setVotedFor( MEMBER votedFor )
+    public void setVotedFor( CoreMember votedFor )
     {
         this.votedFor = votedFor;
     }
@@ -174,7 +175,7 @@ public class Outcome<MEMBER> implements Message
         return processable;
     }
 
-    public void addVoteForMe( MEMBER voteFrom )
+    public void addVoteForMe( CoreMember voteFrom )
     {
         this.votesForMe.add( voteFrom );
     }
@@ -184,7 +185,7 @@ public class Outcome<MEMBER> implements Message
         this.lastLogIndexBeforeWeBecameLeader = lastLogIndexBeforeWeBecameLeader;
     }
 
-    public void replaceFollowerStates( FollowerStates<MEMBER> followerStates )
+    public void replaceFollowerStates( FollowerStates followerStates )
     {
         this.followerStates = followerStates;
     }
@@ -238,7 +239,7 @@ public class Outcome<MEMBER> implements Message
         return term;
     }
 
-    public MEMBER getLeader()
+    public CoreMember getLeader()
     {
         return leader;
     }
@@ -253,12 +254,12 @@ public class Outcome<MEMBER> implements Message
         return logCommands;
     }
 
-    public Collection<RaftMessages.Directed<MEMBER>> getOutgoingMessages()
+    public Collection<RaftMessages.Directed> getOutgoingMessages()
     {
         return outgoingMessages;
     }
 
-    public MEMBER getVotedFor()
+    public CoreMember getVotedFor()
     {
         return votedFor;
     }
@@ -273,7 +274,7 @@ public class Outcome<MEMBER> implements Message
         return needsFreshSnapshot;
     }
 
-    public Set<MEMBER> getVotesForMe()
+    public Set getVotesForMe()
     {
         return votesForMe;
     }
@@ -283,7 +284,7 @@ public class Outcome<MEMBER> implements Message
         return lastLogIndexBeforeWeBecameLeader;
     }
 
-    public FollowerStates<MEMBER> getFollowerStates()
+    public FollowerStates getFollowerStates()
     {
         return followerStates;
     }

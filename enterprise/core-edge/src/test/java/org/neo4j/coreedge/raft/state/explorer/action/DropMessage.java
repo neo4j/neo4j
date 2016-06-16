@@ -22,15 +22,15 @@ package org.neo4j.coreedge.raft.state.explorer.action;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.state.explorer.ClusterState;
+import org.neo4j.coreedge.server.CoreMember;
 
 public class DropMessage implements Action
 {
-    private final RaftTestMember member;
+    private final CoreMember member;
 
-    public DropMessage( RaftTestMember member )
+    public DropMessage( CoreMember member )
     {
         this.member = member;
     }
@@ -39,8 +39,8 @@ public class DropMessage implements Action
     public ClusterState advance( ClusterState previous )
     {
         ClusterState newClusterState = new ClusterState( previous );
-        Queue<RaftMessages.RaftMessage<RaftTestMember>> inboundQueue = new LinkedList<>( previous.queues.get( member ) );
-        RaftMessages.RaftMessage<RaftTestMember> message = inboundQueue.poll();
+        Queue<RaftMessages.RaftMessage> inboundQueue = new LinkedList<>( previous.queues.get( member ) );
+        RaftMessages.RaftMessage message = inboundQueue.poll();
         if ( message == null )
         {
             return previous;

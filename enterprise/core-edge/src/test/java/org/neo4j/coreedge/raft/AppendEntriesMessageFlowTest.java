@@ -27,11 +27,10 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.server.RaftTestMember;
-import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
 import org.neo4j.coreedge.raft.net.Outbound;
+import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
 import org.neo4j.kernel.impl.store.StoreId;
 
 import static org.mockito.Matchers.eq;
@@ -40,23 +39,22 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static org.neo4j.coreedge.server.RaftTestMember.member;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesRequest;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesResponse;
+import static org.neo4j.coreedge.server.RaftTestMember.member;
 
 @RunWith(MockitoJUnitRunner.class)
 public class AppendEntriesMessageFlowTest
 {
-    private RaftTestMember myself = member( 0 );
-    private RaftTestMember otherMember = member( 1 );
+    private CoreMember myself = member( 0 );
+    private CoreMember otherMember = member( 1 );
 
     private ReplicatedInteger data = ReplicatedInteger.valueOf( 1 );
 
     private final StoreId storeId = new StoreId( 1, 2, 3, 4, 5 );
 
     @Mock
-    private Outbound<RaftTestMember, RaftMessages.RaftMessage<RaftTestMember>> outbound;
+    private Outbound<CoreMember, RaftMessages.RaftMessage> outbound;
     @Mock
     private LocalDatabase localDatabase;
 
@@ -65,14 +63,14 @@ public class AppendEntriesMessageFlowTest
         return ReplicatedInteger.valueOf( value );
     }
 
-    private RaftInstance<RaftTestMember> raft;
+    private RaftInstance raft;
 
     @Before
     public void setup()
     {
         // given
         when( localDatabase.storeId() ).thenReturn( storeId );
-        raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .outbound( outbound )
                 .localDatabase( localDatabase )
                 .build();

@@ -19,13 +19,14 @@
  */
 package org.neo4j.coreedge.raft.roles;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-
+import org.hamcrest.Matchers;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.RaftMessages.AppendEntries.Response;
@@ -36,7 +37,7 @@ import org.neo4j.coreedge.raft.outcome.BatchAppendLogEntries;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.outcome.TruncateLogCommand;
 import org.neo4j.coreedge.raft.state.RaftState;
-import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 
@@ -47,14 +48,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.coreedge.raft.MessageUtils.messageFor;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesRequest;
 import static org.neo4j.coreedge.raft.roles.AppendEntriesRequestTest.ContentGenerator.content;
 import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
-
-import org.hamcrest.Matchers;
 
 @RunWith(Parameterized.class)
 public class AppendEntriesRequestTest
@@ -76,13 +74,13 @@ public class AppendEntriesRequestTest
     @Parameterized.Parameter(value = 1)
     public int leaderTermDifference;
 
-    private RaftTestMember myself = member( 0 );
-    private RaftTestMember leader = member( 1 );
+    private CoreMember myself = member( 0 );
+    private CoreMember leader = member( 1 );
 
     @Test
     public void shouldAcceptInitialEntry() throws Exception
     {
-        RaftState<RaftTestMember> state = raftState()
+        RaftState state = raftState()
                 .myself( myself )
                 .build();
 
@@ -90,7 +88,7 @@ public class AppendEntriesRequestTest
         RaftLogEntry logEntry = new RaftLogEntry( leaderTerm, content() );
 
         // when
-        Outcome<RaftTestMember> outcome = role.handler.handle( appendEntriesRequest()
+        Outcome outcome = role.handler.handle( appendEntriesRequest()
                 .from( leader )
                 .leaderTerm( leaderTerm )
                 .prevLogIndex( -1 )
@@ -106,7 +104,7 @@ public class AppendEntriesRequestTest
     @Test
     public void shouldAcceptInitialEntries() throws Exception
     {
-        RaftState<RaftTestMember> state = raftState()
+        RaftState state = raftState()
                 .myself( myself )
                 .build();
 
@@ -115,7 +113,7 @@ public class AppendEntriesRequestTest
         RaftLogEntry logEntry2 = new RaftLogEntry( leaderTerm, content() );
 
         // when
-        Outcome<RaftTestMember> outcome = role.handler.handle( appendEntriesRequest()
+        Outcome outcome = role.handler.handle( appendEntriesRequest()
                 .from( leader )
                 .leaderTerm( leaderTerm )
                 .prevLogIndex( -1 )
@@ -134,14 +132,14 @@ public class AppendEntriesRequestTest
     public void shouldRejectDiscontinuousEntries() throws Exception
     {
         // given
-        RaftState<RaftTestMember> state = raftState()
+        RaftState state = raftState()
                 .myself( myself )
                 .build();
 
         long leaderTerm = state.term() + leaderTermDifference;
 
         // when
-        Outcome<RaftTestMember> outcome = role.handler.handle( appendEntriesRequest()
+        Outcome outcome = role.handler.handle( appendEntriesRequest()
                 .from( leader )
                 .leaderTerm( leaderTerm )
                 .prevLogIndex( state.entryLog().appendIndex() + 1 )
@@ -159,7 +157,7 @@ public class AppendEntriesRequestTest
     public void shouldAcceptContinuousEntries() throws Exception
     {
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
-        RaftState<RaftTestMember> state = raftState()
+        RaftState state = raftState()
                 .myself( myself )
                 .entryLog( raftLog )
                 .build();
@@ -168,7 +166,7 @@ public class AppendEntriesRequestTest
         raftLog.append( new RaftLogEntry( leaderTerm, content() ) );
 
         // when
-        Outcome<RaftTestMember> outcome = role.handler.handle( appendEntriesRequest()
+        Outcome outcome = role.handler.handle( appendEntriesRequest()
                 .from( leader )
                 .leaderTerm( leaderTerm )
                 .prevLogIndex( raftLog.appendIndex() )
@@ -185,7 +183,7 @@ public class AppendEntriesRequestTest
     {
         // given
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
-        RaftState<RaftTestMember> state = raftState()
+        RaftState state = raftState()
                 .myself( myself )
                 .term( 5 )
                 .entryLog( raftLog )
@@ -195,7 +193,7 @@ public class AppendEntriesRequestTest
         raftLog.append( new RaftLogEntry( state.term() - 1, content() ) );
 
         // when
-        Outcome<RaftTestMember> outcome = role.handler.handle( appendEntriesRequest()
+        Outcome outcome = role.handler.handle( appendEntriesRequest()
                 .from( leader )
                 .leaderTerm( leaderTerm )
                 .prevLogIndex( raftLog.appendIndex() - 1 )
@@ -213,7 +211,7 @@ public class AppendEntriesRequestTest
     {
         // given
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
-        RaftState<RaftTestMember> state = raftState()
+        RaftState state = raftState()
                 .entryLog( raftLog )
                 .myself( myself )
                 .build();
@@ -222,7 +220,7 @@ public class AppendEntriesRequestTest
         raftLog.append( new RaftLogEntry( leaderTerm, content() ) );
 
         // when
-        Outcome<RaftTestMember> outcome = role.handler.handle( appendEntriesRequest()
+        Outcome outcome = role.handler.handle( appendEntriesRequest()
                 .from( leader )
                 .leaderTerm( leaderTerm )
                 .prevLogIndex( raftLog.appendIndex() )
@@ -240,7 +238,7 @@ public class AppendEntriesRequestTest
     {
         // given
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
-        RaftState<RaftTestMember> state = raftState()
+        RaftState state = raftState()
                 .entryLog( raftLog )
                 .myself( myself )
                 .build();
@@ -251,7 +249,7 @@ public class AppendEntriesRequestTest
         RaftLogEntry newLogEntry = new RaftLogEntry( leaderTerm, content() );
 
         // when
-        Outcome<RaftTestMember> outcome = role.handler.handle( appendEntriesRequest()
+        Outcome outcome = role.handler.handle( appendEntriesRequest()
                 .from( leader )
                 .leaderTerm( leaderTerm )
                 .prevLogIndex( raftLog.appendIndex() )
@@ -272,7 +270,7 @@ public class AppendEntriesRequestTest
     {
         // given
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
-        RaftState<RaftTestMember> state = raftState()
+        RaftState state = raftState()
                 .entryLog( raftLog )
                 .myself( myself )
                 .build();
@@ -282,7 +280,7 @@ public class AppendEntriesRequestTest
         raftLog.append( previouslyAppendedEntry );
 
         // when
-        Outcome<RaftTestMember> outcome = role.handler.handle( appendEntriesRequest()
+        Outcome outcome = role.handler.handle( appendEntriesRequest()
                 .from( leader )
                 .leaderTerm( leaderTerm )
                 .prevLogIndex( raftLog.appendIndex() + 1 )
@@ -295,7 +293,7 @@ public class AppendEntriesRequestTest
         assertThat( outcome.getLogCommands(), empty() );
     }
 
-    public RaftState<RaftTestMember> newState() throws IOException
+    public RaftState newState() throws IOException
     {
         return raftState().myself( myself ).build();
     }

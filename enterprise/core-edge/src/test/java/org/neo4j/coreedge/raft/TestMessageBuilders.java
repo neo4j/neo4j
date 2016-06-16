@@ -19,32 +19,30 @@
  */
 package org.neo4j.coreedge.raft;
 
-import org.neo4j.coreedge.server.RaftTestMember;
-
 public class TestMessageBuilders
 {
-    public static AppendEntriesRequestBuilder<RaftTestMember> appendEntriesRequest()
+    public static AppendEntriesRequestBuilder appendEntriesRequest()
     {
-        return new AppendEntriesRequestBuilder<>();
+        return new AppendEntriesRequestBuilder();
     }
 
-    public static AppendEntriesResponseBuilder<RaftTestMember> appendEntriesResponse()
+    public static AppendEntriesResponseBuilder appendEntriesResponse()
     {
-        return new AppendEntriesResponseBuilder<>();
+        return new AppendEntriesResponseBuilder();
     }
 
-    public static HeartbeatBuilder<RaftTestMember> heartbeat()
+    public static HeartbeatBuilder heartbeat()
     {
-        return new HeartbeatBuilder<>();
+        return new HeartbeatBuilder();
     }
 
-    public static VoteRequestBuilder<RaftTestMember> voteRequest()
+    public static VoteRequestBuilder voteRequest()
     {
-        return new VoteRequestBuilder<>();
+        return new VoteRequestBuilder();
     }
 
-    public static VoteResponseBuilder<RaftTestMember> voteResponse()
+    public static VoteResponseBuilder voteResponse()
     {
-        return new VoteResponseBuilder<>();
+        return new VoteResponseBuilder();
     }
 }

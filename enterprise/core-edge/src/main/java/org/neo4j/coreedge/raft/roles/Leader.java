@@ -34,6 +34,7 @@ import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.raft.state.follower.FollowerState;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.helpers.collection.FilteringIterable;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.logging.Log;
@@ -45,35 +46,35 @@ import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 
 public class Leader implements RaftMessageHandler
 {
-    private static <MEMBER> Iterable<MEMBER> replicationTargets( final ReadableRaftState<MEMBER> ctx )
+    private static Iterable<CoreMember> replicationTargets( final ReadableRaftState ctx )
     {
         return new FilteringIterable<>( ctx.replicationMembers(), member -> !member.equals( ctx.myself() ) );
     }
 
-    private static <MEMBER> void sendHeartbeats( ReadableRaftState<MEMBER> ctx,
-                                                 Outcome<MEMBER> outcome, StoreId storeId ) throws IOException
+    private static void sendHeartbeats( ReadableRaftState ctx,
+                                                 Outcome outcome, StoreId storeId ) throws IOException
     {
         long commitIndex = ctx.leaderCommit();
         long commitIndexTerm = ctx.entryLog().readEntryTerm( commitIndex );
-        Heartbeat<MEMBER> heartbeat = new Heartbeat<>( ctx.myself(), ctx.term(), commitIndex,
+        Heartbeat heartbeat = new Heartbeat( ctx.myself(), ctx.term(), commitIndex,
                 commitIndexTerm );
-        for ( MEMBER to : replicationTargets( ctx ) )
+        for ( CoreMember to : replicationTargets( ctx ) )
         {
-            outcome.addOutgoingMessage( new RaftMessages.Directed<>( to, heartbeat ) );
+            outcome.addOutgoingMessage( new RaftMessages.Directed( to, heartbeat ) );
         }
     }
 
     @Override
-    public <MEMBER> Outcome<MEMBER> handle( RaftMessages.RaftMessage<MEMBER> message, ReadableRaftState<MEMBER> ctx,
+    public  Outcome handle( RaftMessages.RaftMessage message, ReadableRaftState ctx,
                                             Log log, LocalDatabase localDatabase ) throws IOException
     {
-        Outcome<MEMBER> outcome = new Outcome<>( LEADER, ctx );
+        Outcome outcome = new Outcome( LEADER, ctx );
 
         switch ( message.type() )
         {
             case HEARTBEAT:
             {
-                Heartbeat<MEMBER> req = (Heartbeat<MEMBER>) message;
+                Heartbeat req = (Heartbeat) message;
 
                 if ( req.leaderTerm() < ctx.term() )
                 {
@@ -84,7 +85,7 @@ public class Leader implements RaftMessageHandler
                 outcome.setNextRole( FOLLOWER );
                 log.info( "Moving to FOLLOWER state after receiving heartbeat at term %d (my term is " +
                         "%d) from %s%n", req.leaderTerm(), ctx.term(), req.from() );
-                Heart.beat( ctx, outcome, (Heartbeat<MEMBER>) message );
+                Heart.beat( ctx, outcome, (Heartbeat) message );
                 break;
             }
 
@@ -96,15 +97,15 @@ public class Leader implements RaftMessageHandler
 
             case APPEND_ENTRIES_REQUEST:
             {
-                RaftMessages.AppendEntries.Request<MEMBER> req = (RaftMessages.AppendEntries.Request<MEMBER>) message;
+                RaftMessages.AppendEntries.Request req = (RaftMessages.AppendEntries.Request) message;
 
                 if ( req.leaderTerm() < ctx.term() )
                 {
-                    RaftMessages.AppendEntries.Response<MEMBER> appendResponse =
-                            new RaftMessages.AppendEntries.Response<>( ctx.myself(), ctx.term(), false, req.prevLogIndex(),
+                    RaftMessages.AppendEntries.Response appendResponse =
+                            new RaftMessages.AppendEntries.Response( ctx.myself(), ctx.term(), false, req.prevLogIndex(),
                                     ctx.entryLog().appendIndex() );
 
-                    outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(), appendResponse ) );
+                    outcome.addOutgoingMessage( new RaftMessages.Directed( req.from(), appendResponse ) );
                     break;
                 }
                 else if ( req.leaderTerm() == ctx.term() )
@@ -125,8 +126,8 @@ public class Leader implements RaftMessageHandler
 
             case APPEND_ENTRIES_RESPONSE:
             {
-                RaftMessages.AppendEntries.Response<MEMBER> response =
-                        (RaftMessages.AppendEntries.Response<MEMBER>) message;
+                RaftMessages.AppendEntries.Response response =
+                        (RaftMessages.AppendEntries.Response) message;
 
                 if ( response.term() < ctx.term() )
                 {
@@ -194,8 +195,8 @@ public class Leader implements RaftMessageHandler
                     {
                         // There are no earlier entries, message the follower that we have compacted so that
                         // it can take appropriate action.
-                        outcome.addOutgoingMessage( new RaftMessages.Directed<>( response.from(),
-                                new RaftMessages.LogCompactionInfo<>( ctx.myself(), ctx.term(), ctx.entryLog().prevIndex() ) ) );
+                        outcome.addOutgoingMessage( new RaftMessages.Directed( response.from(),
+                                new RaftMessages.LogCompactionInfo( ctx.myself(), ctx.term(), ctx.entryLog().prevIndex() ) ) );
                     }
                 }
                 break;
@@ -203,7 +204,7 @@ public class Leader implements RaftMessageHandler
 
             case VOTE_REQUEST:
             {
-                RaftMessages.Vote.Request<MEMBER> req = (RaftMessages.Vote.Request<MEMBER>) message;
+                RaftMessages.Vote.Request req = (RaftMessages.Vote.Request) message;
 
                 if ( req.term() > ctx.term() )
                 {
@@ -216,14 +217,14 @@ public class Leader implements RaftMessageHandler
                     break;
                 }
 
-                outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(),
-                        new RaftMessages.Vote.Response<>( ctx.myself(), ctx.term(), false ) ) );
+                outcome.addOutgoingMessage( new RaftMessages.Directed( req.from(),
+                        new RaftMessages.Vote.Response( ctx.myself(), ctx.term(), false ) ) );
                 break;
             }
 
             case NEW_ENTRY_REQUEST:
             {
-                RaftMessages.NewEntry.Request<MEMBER> req = (RaftMessages.NewEntry.Request<MEMBER>) message;
+                RaftMessages.NewEntry.Request req = (RaftMessages.NewEntry.Request) message;
                 ReplicatedContent content = req.content();
                 Appending.appendNewEntry( ctx, outcome, content );
                 break;
@@ -231,7 +232,7 @@ public class Leader implements RaftMessageHandler
 
             case NEW_BATCH_REQUEST:
             {
-                RaftMessages.NewEntry.Batch<MEMBER> req = (RaftMessages.NewEntry.Batch<MEMBER>) message;
+                RaftMessages.NewEntry.Batch req = (RaftMessages.NewEntry.Batch) message;
                 List<ReplicatedContent> contents = req.contents();
                 Appending.appendNewEntries( ctx, outcome, contents );
                 break;
@@ -242,9 +243,9 @@ public class Leader implements RaftMessageHandler
     }
 
     @Override
-    public <MEMBER> Outcome<MEMBER> validate( RaftMessages.RaftMessage<MEMBER> message, StoreId storeId,
-                                              RaftState<MEMBER> ctx, LocalDatabase localDatabase )
+    public Outcome validate( RaftMessages.RaftMessage message, StoreId storeId, RaftState ctx,
+                                              Log log, LocalDatabase localDatabase )
     {
-        return new Outcome<>( LEADER, ctx );
+        return new Outcome( LEADER, ctx );
     }
 }

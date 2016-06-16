@@ -19,8 +19,6 @@
  */
 package org.neo4j.coreedge.raft.replication;
 
-import io.netty.buffer.ByteBuf;
-
 import java.io.IOException;
 import java.util.UUID;
 
@@ -37,17 +35,17 @@ import org.neo4j.storageengine.api.WritableChannel;
 public class  DistributedOperation implements ReplicatedContent
 {
     private final ReplicatedContent content;
-    private final GlobalSession<CoreMember> globalSession;
+    private final GlobalSession globalSession;
     private final LocalOperationId operationId;
 
-    public DistributedOperation( ReplicatedContent content, GlobalSession<CoreMember> globalSession, LocalOperationId operationId )
+    public DistributedOperation( ReplicatedContent content, GlobalSession globalSession, LocalOperationId operationId )
     {
         this.content = content;
         this.globalSession = globalSession;
         this.operationId = operationId;
     }
 
-    public GlobalSession<CoreMember> globalSession()
+    public GlobalSession globalSession()
     {
         return globalSession;
     }
@@ -79,7 +77,7 @@ public class  DistributedOperation implements ReplicatedContent
         long mostSigBits = channel.getLong();
         long leastSigBits = channel.getLong();
         CoreMember owner = new CoreMember.CoreMemberMarshal().unmarshal( channel );
-        GlobalSession<CoreMember> globalSession = new GlobalSession<>( new UUID( mostSigBits, leastSigBits ), owner );
+        GlobalSession globalSession = new GlobalSession( new UUID( mostSigBits, leastSigBits ), owner );
 
         long localSessionId = channel.getLong();
         long sequenceNumber = channel.getLong();

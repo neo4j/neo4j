@@ -22,8 +22,6 @@ package org.neo4j.coreedge.raft.replication.tx;
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.replication.DirectReplicator;
-import org.neo4j.coreedge.server.RaftTestMember;
-import org.neo4j.coreedge.server.core.RecoverTransactionLogState;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -49,7 +47,7 @@ public class CommitProcessStateMachineCollaborationTest
 
         int finalLockSessionId = 24;
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
-        ReplicatedTransactionStateMachine<RaftTestMember> stateMachine = new ReplicatedTransactionStateMachine<>(
+        ReplicatedTransactionStateMachine stateMachine = new ReplicatedTransactionStateMachine(
                 lockState( finalLockSessionId ), 16, NullLogProvider.getInstance() );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
@@ -75,10 +73,10 @@ public class CommitProcessStateMachineCollaborationTest
         return physicalTx;
     }
 
-    public <MEMBER> ReplicatedLockTokenStateMachine<MEMBER> lockState( int lockSessionId )
+    public ReplicatedLockTokenStateMachine lockState( int lockSessionId )
     {
-        ReplicatedLockTokenStateMachine<MEMBER> lockState = mock( ReplicatedLockTokenStateMachine.class );
-        when( lockState.currentToken() ).thenReturn( new ReplicatedLockTokenRequest<>( null, lockSessionId ) );
+        ReplicatedLockTokenStateMachine lockState = mock( ReplicatedLockTokenStateMachine.class );
+        when( lockState.currentToken() ).thenReturn( new ReplicatedLockTokenRequest( null, lockSessionId ) );
         return lockState;
     }
 }

@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.raft.replication.token;
 
 import org.neo4j.coreedge.raft.replication.RaftReplicator;
-import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
@@ -33,7 +32,7 @@ public class ReplicatedRelationshipTypeTokenHolder extends
 {
     public ReplicatedRelationshipTypeTokenHolder(
             TokenRegistry<RelationshipTypeToken> registry,
-            RaftReplicator<CoreMember> replicator,
+            RaftReplicator replicator,
             IdGeneratorFactory idGeneratorFactory, Dependencies dependencies, Long timeoutMillis )
     {
         super( registry, replicator, idGeneratorFactory, IdType.RELATIONSHIP_TYPE_TOKEN, dependencies,

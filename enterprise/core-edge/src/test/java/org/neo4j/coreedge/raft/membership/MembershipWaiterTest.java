@@ -19,26 +19,23 @@
  */
 package org.neo4j.coreedge.raft.membership;
 
+import org.junit.Test;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
-
-import org.junit.Test;
 
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.raft.state.RaftStateBuilder;
-import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
 import static org.junit.Assert.fail;
-
-import static org.neo4j.coreedge.server.RaftTestMember.member;
 import static org.neo4j.coreedge.raft.ReplicatedInteger.valueOf;
+import static org.neo4j.coreedge.server.RaftTestMember.member;
 
 public class MembershipWaiterTest
 {
@@ -46,12 +43,12 @@ public class MembershipWaiterTest
     public void shouldReturnImmediatelyIfMemberAndCaughtUp() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        MembershipWaiter<RaftTestMember> waiter = new MembershipWaiter<>( member( 0 ), jobScheduler, 500,
+        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, 500,
                 NullLogProvider.getInstance() );
 
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
         raftLog.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
-        RaftState<RaftTestMember> raftState = RaftStateBuilder.raftState()
+        RaftState raftState = RaftStateBuilder.raftState()
                 .votingMembers( member( 0 ) )
                 .leaderCommit( 0 )
                 .entryLog( raftLog )
@@ -68,10 +65,10 @@ public class MembershipWaiterTest
     public void shouldTimeoutIfCaughtUpButNotMember() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        MembershipWaiter<RaftTestMember> waiter = new MembershipWaiter<>( member( 0 ), jobScheduler, 1,
+        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, 1,
                 NullLogProvider.getInstance());
 
-        RaftState<RaftTestMember> raftState = RaftStateBuilder.raftState()
+        RaftState raftState = RaftStateBuilder.raftState()
                 .votingMembers( member( 1 ) )
                 .leaderCommit( 0 )
                 .build();
@@ -95,10 +92,10 @@ public class MembershipWaiterTest
     public void shouldTimeoutIfMemberButNotCaughtUp() throws Exception
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        MembershipWaiter<RaftTestMember> waiter = new MembershipWaiter<>( member( 0 ), jobScheduler, 1,
+        MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, 1,
                 NullLogProvider.getInstance() );
 
-        RaftState<RaftTestMember> raftState = RaftStateBuilder.raftState()
+        RaftState raftState = RaftStateBuilder.raftState()
                 .votingMembers( member( 0 ), member( 1 ) )
                 .leaderCommit( 0 )
                 .build();

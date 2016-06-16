@@ -34,13 +34,12 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.logging.Log;
 
 import static java.lang.Long.min;
-
 import static org.neo4j.coreedge.raft.roles.Role.CANDIDATE;
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 
 public class Follower implements RaftMessageHandler
 {
-    public static <MEMBER> boolean logHistoryMatches( ReadableRaftState<MEMBER> ctx, long prevLogIndex,
+    public static boolean logHistoryMatches( ReadableRaftState ctx, long prevLogIndex,
                                                       long prevLogTerm )
             throws IOException
     {
@@ -54,8 +53,8 @@ public class Follower implements RaftMessageHandler
                 ctx.entryLog().readEntryTerm( prevLogIndex ) == prevLogTerm;
     }
 
-    public static <MEMBER> void commitToLogOnUpdate( ReadableRaftState<MEMBER> ctx, long indexOfLastNewEntry,
-                                                     long leaderCommit, Outcome<MEMBER> outcome )
+    public static void commitToLogOnUpdate(
+            ReadableRaftState ctx, long indexOfLastNewEntry, long leaderCommit, Outcome outcome )
     {
         long newCommitIndex = min( leaderCommit, indexOfLastNewEntry );
 
@@ -65,8 +64,8 @@ public class Follower implements RaftMessageHandler
         }
     }
 
-    public static <MEMBER> void handleLeaderLogCompaction( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome,
-                                                           RaftMessages.LogCompactionInfo<MEMBER> compactionInfo )
+    public static void handleLeaderLogCompaction(
+            ReadableRaftState ctx, Outcome outcome, RaftMessages.LogCompactionInfo compactionInfo )
     {
         if ( compactionInfo.leaderTerm() < ctx.term() )
         {
@@ -80,42 +79,42 @@ public class Follower implements RaftMessageHandler
     }
 
     @Override
-    public <MEMBER> Outcome<MEMBER> handle( RaftMessages.RaftMessage<MEMBER> message, ReadableRaftState<MEMBER> ctx,
-                                            Log log, LocalDatabase localDatabase ) throws IOException
+    public Outcome handle( RaftMessages.RaftMessage message, ReadableRaftState ctx, Log log,
+            LocalDatabase localDatabase ) throws IOException
     {
-        Outcome<MEMBER> outcome = new Outcome<>( FOLLOWER, ctx );
+        Outcome outcome = new Outcome( FOLLOWER, ctx );
 
         switch ( message.type() )
         {
             case HEARTBEAT:
             {
-                Heart.beat( ctx, outcome, (Heartbeat<MEMBER>) message );
+                Heart.beat( ctx, outcome, (Heartbeat) message );
                 break;
             }
 
             case APPEND_ENTRIES_REQUEST:
             {
-                Appending.handleAppendEntriesRequest( ctx, outcome, (AppendEntries.Request<MEMBER>) message,
+                Appending.handleAppendEntriesRequest( ctx, outcome, (AppendEntries.Request) message,
                         localDatabase.storeId() );
                 break;
             }
 
             case VOTE_REQUEST:
             {
-                Voting.handleVoteRequest( ctx, outcome, (RaftMessages.Vote.Request<MEMBER>) message,
+                Voting.handleVoteRequest( ctx, outcome, (RaftMessages.Vote.Request) message,
                         localDatabase.storeId() );
                 break;
             }
 
             case LOG_COMPACTION_INFO:
             {
-                handleLeaderLogCompaction( ctx, outcome, (RaftMessages.LogCompactionInfo<MEMBER>) message );
+                handleLeaderLogCompaction( ctx, outcome, (RaftMessages.LogCompactionInfo) message );
                 break;
             }
 
             case ELECTION_TIMEOUT:
             {
-                if ( Election.start( ctx, outcome, log, localDatabase.storeId() ) )
+                if ( Election.start( ctx, outcome, log ) )
                 {
                     outcome.setNextRole( CANDIDATE );
                     log.info( "Moving to CANDIDATE state after successfully starting election %n" );
@@ -128,11 +127,11 @@ public class Follower implements RaftMessageHandler
     }
 
     @Override
-    public <MEMBER> Outcome<MEMBER> validate( RaftMessages.RaftMessage<MEMBER> message, StoreId storeId,
-                                              RaftState<MEMBER> ctx, LocalDatabase localDatabase )
+    public Outcome validate( RaftMessages.RaftMessage message,StoreId storeId, RaftState ctx,
+            Log log, LocalDatabase localDatabase )
     {
         localDatabase.assertHealthy( IllegalStateException.class );
-        Outcome<MEMBER> outcome = new Outcome<>( FOLLOWER, ctx );
+        Outcome outcome = new Outcome( FOLLOWER, ctx );
 
         StoreId localStoreId = localDatabase.storeId();
         if ( outcome.getLeader() != null &&
@@ -156,5 +155,4 @@ public class Follower implements RaftMessageHandler
 
         return outcome;
     }
-
 }

@@ -22,7 +22,7 @@ package org.neo4j.coreedge.discovery;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.neo4j.coreedge.server.BoltAddress;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule;
@@ -35,15 +35,16 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
 {
     private final SharedDiscoveryService sharedDiscoveryService;
     private final CoreMember member;
-    private final BoltAddress boltAddress;
+    private final CoreAddresses coreAddresses;
     private final Set<Listener> listeners = new LinkedHashSet<>();
     private final Log log;
 
-    SharedDiscoveryCoreClient( Config config, SharedDiscoveryService sharedDiscoveryService, LogProvider logProvider )
+    SharedDiscoveryCoreClient( Config config, CoreMember member,
+            SharedDiscoveryService sharedDiscoveryService, LogProvider logProvider )
     {
         this.sharedDiscoveryService = sharedDiscoveryService;
-        this.member = toCoreMember( config );
-        this.boltAddress = extractBoltAddress( config );
+        this.member = member;
+        this.coreAddresses = extractAddresses( config );
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -62,7 +63,7 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     @Override
     public void start() throws InterruptedException
     {
-        sharedDiscoveryService.registerCoreServer( member, boltAddress, this );
+        sharedDiscoveryService.registerCoreServer( member, coreAddresses, this );
         log.info( "Registered core server %s", member );
         sharedDiscoveryService.waitForClusterFormation();
         log.info( "Cluster formed" );
@@ -71,7 +72,7 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     @Override
     public void stop()
     {
-        sharedDiscoveryService.unRegisterCoreServer( member, boltAddress, this );
+        sharedDiscoveryService.unRegisterCoreServer( member, this );
         log.info( "Unregistered core server %s", member );
     }
 
@@ -89,16 +90,12 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
         listeners.forEach( Listener::onTopologyChange );
     }
 
-    private static CoreMember toCoreMember( Config config )
+    private static CoreAddresses extractAddresses( Config config )
     {
-        return new CoreMember(
-                config.get( CoreEdgeClusterSettings.transaction_advertised_address ),
-                config.get( CoreEdgeClusterSettings.raft_advertised_address )
-        );
-    }
+        AdvertisedSocketAddress raftAddress = config.get( CoreEdgeClusterSettings.raft_advertised_address );
+        AdvertisedSocketAddress transactionSource = config.get( CoreEdgeClusterSettings.transaction_advertised_address );
+        AdvertisedSocketAddress boltAddress = EnterpriseEdgeEditionModule.extractBoltAddress( config );
 
-    private static BoltAddress extractBoltAddress( Config config )
-    {
-        return new BoltAddress( EnterpriseEdgeEditionModule.extractBoltAddress( config ) );
+        return new CoreAddresses( raftAddress, transactionSource, boltAddress );
     }
 }
