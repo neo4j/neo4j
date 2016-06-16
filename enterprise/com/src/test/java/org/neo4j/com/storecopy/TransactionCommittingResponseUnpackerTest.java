@@ -151,7 +151,7 @@ public class TransactionCommittingResponseUnpackerTest
 
         // Then
         verify( txIdStore, times( 1 ) ).transactionCommitted( eq( committingTransactionId ), anyLong(),
-                BASE_TX_COMMIT_TIMESTAMP );
+                eq( BASE_TX_COMMIT_TIMESTAMP ) );
         verify( txIdStore, times( 1 ) ).transactionClosed( eq( committingTransactionId ), anyLong(), anyLong() );
         verify( appender, times( 1 ) ).append( any( TransactionRepresentation.class ), anyLong() );
         verify( appender, times( 1 ) ).force();
@@ -325,7 +325,7 @@ public class TransactionCommittingResponseUnpackerTest
         TransactionAppender appender = mock( TransactionAppender.class );
         when( appender.append( any( TransactionRepresentation.class ), anyLong() ) ).thenReturn(
                 new FakeCommitment( BASE_TX_ID + 1, txIdStore ) );
-        LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
+        mock( LogicalTransactionStore.class );
 
         TransactionObligationFulfiller obligationFulfiller = mock( TransactionObligationFulfiller.class );
         LogFile logFile = mock( LogFile.class );
@@ -334,12 +334,10 @@ public class TransactionCommittingResponseUnpackerTest
         Throwable causeOfPanic = new Throwable( "BOOM!" );
         when( kernelHealth.getCauseOfPanic() ).thenReturn( causeOfPanic );
         LogRotation logRotation = mock( LogRotation.class );
-        Function<DependencyResolver,IndexUpdatesValidator> indexUpdatesValidatorFunction =
-                Functions.constant( mock( IndexUpdatesValidator.class ) );
+        Functions.constant( mock( IndexUpdatesValidator.class ) );
         BatchingTransactionRepresentationStoreApplier applier =
                 mock( BatchingTransactionRepresentationStoreApplier.class );
-        Function<DependencyResolver,BatchingTransactionRepresentationStoreApplier> transactionStoreApplierFunction =
-                Functions.constant( applier );
+        Functions.constant( applier );
 
         final TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
                 buildDependencies( logFile, logRotation, mock( IndexUpdatesValidator.class ), applier,
@@ -457,7 +455,7 @@ public class TransactionCommittingResponseUnpackerTest
         {
             // THEN apart from failing we don't want any committed/closed calls to TransactionIdStore
             verify( transactionIdStore, times( 0 ) ).transactionCommitted( anyLong(), anyLong(),
-                    BASE_TX_COMMIT_TIMESTAMP );
+                    eq( BASE_TX_COMMIT_TIMESTAMP ) );
             verify( transactionIdStore, times( 0 ) ).transactionClosed( anyLong(), anyLong(), anyLong() );
         }
     }
