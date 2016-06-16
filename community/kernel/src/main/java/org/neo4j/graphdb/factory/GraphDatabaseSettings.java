@@ -510,6 +510,10 @@ public abstract class GraphDatabaseSettings
 
     // Bolt Settings
 
+    @Description("Hostname/IP address and port that we can be connected to be the driver.")
+    public static final Setting<HostnamePort> bolt_advertised_address =
+            setting( "bolt_advertised_address", HOSTNAME_PORT, "localhost:7687" );
+
     @Group("dbms.connector")
     public static class Connector
     {

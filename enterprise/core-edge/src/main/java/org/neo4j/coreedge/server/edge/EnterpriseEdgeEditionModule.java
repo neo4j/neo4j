@@ -202,7 +202,8 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
     public static AdvertisedSocketAddress extractBoltAddress( Config config )
     {
-        return config.get( CoreEdgeClusterSettings.bolt_advertised_address );
+        HostnamePort address = config.get( GraphDatabaseSettings.bolt_advertised_address );
+        return new AdvertisedSocketAddress( address.toString() );
     }
 
     private void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,
