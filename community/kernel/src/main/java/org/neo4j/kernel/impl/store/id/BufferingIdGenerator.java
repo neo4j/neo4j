@@ -75,7 +75,7 @@ class BufferingIdGenerator extends IdGenerator.Delegate
     {
         if ( buffer != null )
         {
-            buffer.maintenance();
+            buffer.close();
         }
         super.close();
     }
