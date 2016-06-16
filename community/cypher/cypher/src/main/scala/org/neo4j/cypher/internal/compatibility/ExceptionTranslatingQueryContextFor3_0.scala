@@ -216,6 +216,9 @@ class ExceptionTranslatingQueryContextFor3_0(val inner: QueryContext) extends Qu
   override def getOptRelTypeId(relType: String) =
     translateException(inner.getOptRelTypeId(relType))
 
+  override def detachDeleteNode(node: Node) =
+    translateException(inner.detachDeleteNode(node))
+
   class ExceptionTranslatingOperations[T <: PropertyContainer](inner: Operations[T])
     extends DelegatingOperations[T](inner) {
     override def delete(obj: T) =

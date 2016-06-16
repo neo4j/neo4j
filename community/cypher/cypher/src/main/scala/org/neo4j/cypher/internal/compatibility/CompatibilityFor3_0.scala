@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultRow, InternalResultVisitor}
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v3_0.{CypherCompilerFactory, DPPlannerName, ExplainMode => ExplainModev3_0, IDPPlannerName, InfoLogger, Monitors, NormalMode => NormalModev3_0, PlannerName, ProfileMode => ProfileModev3_0, _}
+import org.neo4j.cypher.internal.compiler.v3_0.{CypherCompilerFactory, DPPlannerName, IDPPlannerName, InfoLogger, Monitors, PlannerName, ExplainMode => ExplainModev3_0, NormalMode => NormalModev3_0, ProfileMode => ProfileModev3_0, _}
 import org.neo4j.cypher.internal.compiler.{v3_0, v3_1}
 import org.neo4j.cypher.internal.frontend.v3_0.notification.{InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.cypher.internal.frontend.v3_0.spi.MapToPublicExceptions
@@ -526,7 +526,7 @@ case class CompatibilityFor3_0Cost(graph: GraphDatabaseQueryService,
     val runtimeName = runtime match {
       case CypherRuntime.default => None
       case CypherRuntime.interpreted => Some(InterpretedRuntimeName)
-      case CypherRuntime.compiled => Some(CompiledRuntimeName)
+      case CypherRuntime.compiled => throw new IllegalArgumentException("Compiled runtime is not supported in 3.0")
     }
     val updateStrategy = strategy match {
       case CypherUpdateStrategy.eager => Some(eagerUpdateStrategy)
@@ -535,7 +535,7 @@ case class CompatibilityFor3_0Cost(graph: GraphDatabaseQueryService,
 
     val logger = new StringInfoLogger3_0(log)
     val monitors = new WrappedMonitors3_0(kernelMonitors)
-    CypherCompilerFactory.costBasedCompiler(graph, config, clock, GeneratedQueryStructure, monitors, logger,
+    CypherCompilerFactory.costBasedCompiler(graph, config, clock, monitors, logger,
                                             rewriterSequencer, plannerName, runtimeName, updateStrategy, helpersv3_0.asPublicType)
   }
 
