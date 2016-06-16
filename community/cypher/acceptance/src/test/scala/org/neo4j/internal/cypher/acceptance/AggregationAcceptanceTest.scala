@@ -309,4 +309,12 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
 
     result1.size should equal(result2.size)
   }
+
+  test("max() should aggregate strings") {
+    val query = "UNWIND ['a', 'b', 'B', null, 'abc', 'abc1'] AS i RETURN max(i)"
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("max(i)" -> "b")))
+  }
 }
