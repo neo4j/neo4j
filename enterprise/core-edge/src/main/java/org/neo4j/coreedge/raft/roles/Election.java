@@ -47,13 +47,9 @@ public class Election
                 new RaftMessages.Vote.Request<>( ctx.myself(), outcome.getTerm(), ctx.myself(), ctx.entryLog()
                         .appendIndex(), ctx.entryLog().readEntryTerm( ctx.entryLog().appendIndex() ), storeId );
 
-        for ( MEMBER member : currentMembers )
-        {
-            if ( !member.equals( ctx.myself() ) )
-            {
-                outcome.addOutgoingMessage( new RaftMessages.Directed<>( member, voteForMe ) );
-            }
-        }
+        currentMembers.stream().filter( member -> !member.equals( ctx.myself() ) ).forEach( member ->
+            outcome.addOutgoingMessage( new RaftMessages.Directed<>( member, voteForMe ) )
+        );
 
         outcome.setVotedFor( ctx.myself() );
         log.info( "Election started with vote request: %s and members: %s%n", voteForMe, currentMembers );

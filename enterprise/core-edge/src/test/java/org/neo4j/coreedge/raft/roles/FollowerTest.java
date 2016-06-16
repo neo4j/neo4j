@@ -78,8 +78,7 @@ public class FollowerTest
                 .build();
 
         // when
-        Outcome<RaftTestMember> outcome = new Follower().handle(
-                new Election<>( myself, storeId.storeId() ), state, log(), storeId );
+        Outcome<RaftTestMember> outcome = new Follower().handle( new Election<>( myself ), state, log(), storeId );
 
         state.update( outcome );
 
@@ -102,7 +101,7 @@ public class FollowerTest
         Follower follower = new Follower();
 
         // when
-        Outcome outcome = follower.handle( new Election<>( myself, storeId.storeId() ), state, log(), storeId );
+        Outcome outcome = follower.handle( new Election<>( myself ), state, log(), storeId );
 
         // then
         assertEquals( CANDIDATE, outcome.getRole() );

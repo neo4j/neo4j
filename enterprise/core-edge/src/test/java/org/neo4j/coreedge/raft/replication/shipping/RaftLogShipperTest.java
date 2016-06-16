@@ -19,6 +19,9 @@
  */
 package org.neo4j.coreedge.raft.replication.shipping;
 
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -27,13 +30,18 @@ import java.io.IOException;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
+import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.LeaderContext;
 import org.neo4j.coreedge.raft.OutboundMessageCollector;
+import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.RaftMessages.AppendEntries;
 import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.ReplicatedString;
+import org.neo4j.coreedge.raft.log.DelegatingRaftLog;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
@@ -43,11 +51,17 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.test.DoubleLatch;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.test.matchers.Matchers.hasMessage;
+import static org.neo4j.test.matchers.Matchers.hasRaftLogEntries;
 
 public class RaftLogShipperTest
 {
@@ -70,6 +84,7 @@ public class RaftLogShipperTest
     private RaftLogEntry entry1 = new RaftLogEntry( 0, ReplicatedString.valueOf( "kedha" ) );
     private RaftLogEntry entry2 = new RaftLogEntry( 0, ReplicatedInteger.valueOf( 2000 ) );
     private RaftLogEntry entry3 = new RaftLogEntry( 0, ReplicatedString.valueOf( "chupchick" ) );
+    private StoreId storeId = new StoreId( 1, 2, 3, 4, 5 );
 
     @Before
     public void setup()
@@ -100,10 +115,13 @@ public class RaftLogShipperTest
 
     private void startLogShipper()
     {
+        LocalDatabase localDatabase = mock( LocalDatabase.class );
+        when(localDatabase.storeId()).thenReturn( storeId );
+
         logShipper =
                 new RaftLogShipper<>( outbound, logProvider, raftLog, clock, leader, follower, leaderTerm, leaderCommit,
                         retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, new InFlightMap<>(),
-                        mock( LocalDatabase.class ));
+                        localDatabase );
         logShipper.start();
     }
 
@@ -118,7 +136,7 @@ public class RaftLogShipperTest
         startLogShipper();
 
         // then
-        assertTrue( outbound.hasEntriesTo( follower, entry1 ) );
+        assertThat( outbound.sentTo( follower ), hasRaftLogEntries( entry1 ) );
     }
 
     @Test
@@ -134,7 +152,7 @@ public class RaftLogShipperTest
         logShipper.onMismatch( 0, new LeaderContext( 0, 0 ) );
 
         // then
-        assertTrue( outbound.hasEntriesTo( follower, entry0 ) );
+        assertThat( outbound.sentTo( follower ), hasRaftLogEntries( entry0 ) );
     }
 
     @Test
@@ -154,6 +172,7 @@ public class RaftLogShipperTest
 
         // then
         assertTrue( outbound.hasEntriesTo( follower, entry0 ) );
+        assertThat( outbound.sentTo( follower ), hasRaftLogEntries( entry0 ) );
     }
 
     @Test
@@ -173,7 +192,7 @@ public class RaftLogShipperTest
         logShipper.onMatch( 0, new LeaderContext( 0, 0 ) );
 
         // then
-        assertTrue( outbound.hasEntriesTo( follower, entry1, entry2, entry3 ) );
+        assertThat( outbound.sentTo( follower ), hasRaftLogEntries( entry1, entry2, entry3 ) );
     }
 
     @Test
@@ -189,12 +208,12 @@ public class RaftLogShipperTest
         outbound.clear();
 
         raftLog.append( entry1 );
-        logShipper.onNewEntries( 0, 0, new RaftLogEntry[]{ entry1 }, new LeaderContext( 0, 0 ) );
+        logShipper.onNewEntries( 0, 0, new RaftLogEntry[]{entry1}, new LeaderContext( 0, 0 ) );
         raftLog.append( entry2 );
-        logShipper.onNewEntries( 1, 0, new RaftLogEntry[]{ entry2 }, new LeaderContext( 0, 0 ) );
+        logShipper.onNewEntries( 1, 0, new RaftLogEntry[]{entry2}, new LeaderContext( 0, 0 ) );
 
         // then
-        assertTrue( outbound.hasEntriesTo( follower, entry1, entry2 ) );
+        assertThat( outbound.sentTo( follower ), hasRaftLogEntries( entry1, entry2)  );
     }
 
     @Test
@@ -206,8 +225,8 @@ public class RaftLogShipperTest
 
         // when
         outbound.clear();
-        logShipper.onNewEntries( 0, 0, new RaftLogEntry[]{ entry1 }, new LeaderContext( 0, 0 ) );
-        logShipper.onNewEntries( 1, 0, new RaftLogEntry[]{ entry2 }, new LeaderContext( 0, 0 ) );
+        logShipper.onNewEntries( 0, 0, new RaftLogEntry[]{entry1}, new LeaderContext( 0, 0 ) );
+        logShipper.onNewEntries( 1, 0, new RaftLogEntry[]{entry2}, new LeaderContext( 0, 0 ) );
 
         // then
         assertEquals( outbound.sentTo( follower ).size(), 0 );
@@ -223,15 +242,15 @@ public class RaftLogShipperTest
         raftLog.append( entry2 );
 
         logShipper.onMatch( 0, new LeaderContext( 0, 0 ) );
-        logShipper.onNewEntries( 0, 0, new RaftLogEntry[]{ entry1 }, new LeaderContext( 0, 0 ) );
-        logShipper.onNewEntries( 1, 0, new RaftLogEntry[]{ entry2 }, new LeaderContext( 0, 0 ) );
+        logShipper.onNewEntries( 0, 0, new RaftLogEntry[]{entry1}, new LeaderContext( 0, 0 ) );
+        logShipper.onNewEntries( 1, 0, new RaftLogEntry[]{entry2}, new LeaderContext( 0, 0 ) );
 
         // when
         outbound.clear();
         logShipper.onMismatch( 1, new LeaderContext( 0, 0 ) );
 
         // then
-        assertTrue( outbound.hasEntriesTo( follower, entry2 ) );
+        assertThat( outbound.sentTo( follower ), hasRaftLogEntries( entry2)  );
     }
 
     @Test
@@ -294,6 +313,67 @@ public class RaftLogShipperTest
 
         //then
         assertTrue( outbound.hasAnyEntriesTo( follower ) );
-        assertTrue( outbound.hasEntriesTo( follower, entry3) );
+        assertThat( outbound.sentTo( follower ), hasRaftLogEntries( entry3)  );
     }
+
+    @Test
+    public void shouldSendLogCompactionInfoToFollowerOnMatchIfEntryHasBeenPrunedAway() throws Exception
+    {
+        //given
+        AtomicBoolean afterInit = new AtomicBoolean();
+        final DoubleLatch latch = new DoubleLatch();
+        raftLog = new DelegatingRaftLog( raftLog )
+        {
+            @Override
+            public long readEntryTerm( long logIndex ) throws IOException
+            {
+                if ( afterInit.get() )
+                {
+                    latch.start();
+                    latch.awaitFinish();
+                }
+                return super.readEntryTerm( logIndex );
+            }
+        };
+
+        raftLog.append( entry0 );
+        raftLog.append( entry1 );
+        raftLog.append( entry2 );
+        raftLog.append( entry3 );
+
+        startLogShipper();
+
+        afterInit.set( true );
+
+        //when
+        outbound.clear();
+        Thread pruningThread = new Thread( "Pruning" )
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    latch.awaitStart();
+                    raftLog.prune( 2 );
+                    latch.finish();
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+        };
+
+        pruningThread.start();
+        logShipper.onMatch( 1, new LeaderContext( 0, 0 ) );
+
+        //then
+        assertTrue( outbound.hasAnyEntriesTo( follower ) );
+        assertThat( outbound.sentTo( follower ),
+                hasMessage( new RaftMessages.LogCompactionInfo<>( leader, 0, 1, storeId ))  );
+
+        pruningThread.join();
+    }
+
 }

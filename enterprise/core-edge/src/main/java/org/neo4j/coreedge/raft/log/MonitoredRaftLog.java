@@ -24,21 +24,20 @@ import java.io.IOException;
 import org.neo4j.coreedge.raft.log.monitoring.RaftLogAppendIndexMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
-public class MonitoredRaftLog implements RaftLog
+public class MonitoredRaftLog extends DelegatingRaftLog
 {
-    private final RaftLog delegate;
     private final RaftLogAppendIndexMonitor appendIndexMonitor;
 
     public MonitoredRaftLog( RaftLog delegate, Monitors monitors )
     {
-        this.delegate = delegate;
+        super( delegate );
         this.appendIndexMonitor = monitors.newMonitor( RaftLogAppendIndexMonitor.class, getClass() );
     }
 
     @Override
     public long append( RaftLogEntry... entries ) throws IOException
     {
-        long appendIndex = delegate.append( entries );
+        long appendIndex = super.append( entries );
         appendIndexMonitor.appendIndex( appendIndex );
         return appendIndex;
     }
@@ -46,43 +45,7 @@ public class MonitoredRaftLog implements RaftLog
     @Override
     public void truncate( long fromIndex ) throws IOException
     {
-        delegate.truncate( fromIndex );
-        appendIndexMonitor.appendIndex( delegate.appendIndex() );
-    }
-
-    @Override
-    public long prune( long safeIndex ) throws IOException
-    {
-        return delegate.prune( safeIndex );
-    }
-
-    @Override
-    public long appendIndex()
-    {
-        return delegate.appendIndex();
-    }
-
-    @Override
-    public long prevIndex()
-    {
-        return delegate.prevIndex();
-    }
-
-    @Override
-    public long readEntryTerm( long logIndex ) throws IOException
-    {
-        return delegate.readEntryTerm( logIndex );
-    }
-
-    @Override
-    public RaftLogCursor getEntryCursor( long fromIndex ) throws IOException
-    {
-        return delegate.getEntryCursor( fromIndex );
-    }
-
-    @Override
-    public long skip( long index, long term ) throws IOException
-    {
-        return delegate.skip( index, term );
+        super.truncate( fromIndex );
+        appendIndexMonitor.appendIndex( super.appendIndex() );
     }
 }
