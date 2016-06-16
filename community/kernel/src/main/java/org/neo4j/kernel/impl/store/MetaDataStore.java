@@ -729,9 +729,8 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
     // only for initialization
     public void setLastCommitTimestamp( long commitTimestamp )
     {
-        long txId = highestCommittedTransaction.get().transactionId();
-        long checksum = highestCommittedTransaction.get().checksum();
-        highestCommittedTransaction.set( txId, checksum, commitTimestamp );
+        TransactionId lastTx = highestCommittedTransaction.get();
+        highestCommittedTransaction.set( lastTx.transactionId(), lastTx.checksum(), commitTimestamp );
     }
 
     @Override

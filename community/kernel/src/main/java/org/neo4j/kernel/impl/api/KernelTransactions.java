@@ -31,6 +31,7 @@ import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -179,7 +180,6 @@ public class KernelTransactions extends LifecycleAdapter
     @Override
     public KernelTransaction newInstance()
     {
-        System.out.println( "returning new transaction, I am " + System.identityHashCode( this ) );
         assertDatabaseIsRunning();
         TransactionId lastCommittedTransaction = neoStores.getMetaDataStore().getLastCommittedTransaction();
         return localTxPool.acquire().initialize( lastCommittedTransaction.transactionId(),
@@ -195,7 +195,6 @@ public class KernelTransactions extends LifecycleAdapter
         @Override
         protected void dispose( KernelTransactionImplementation tx )
         {
-            System.out.println( "Disposing: " + tx );
             allTransactions.remove( tx );
             tx.dispose();
             super.dispose( tx );
@@ -214,10 +213,6 @@ public class KernelTransactions extends LifecycleAdapter
             if ( tx.isOpen() )
             {
                 output.add( tx );
-            }
-            else
-            {
-                System.out.println( "Excluding " + tx );
             }
         }
 
@@ -238,7 +233,7 @@ public class KernelTransactions extends LifecycleAdapter
         for ( KernelTransactionImplementation tx : allTransactions )
         {
             // We mark all transactions for termination since we want to be on the safe side here.
-            tx.markForTermination();
+            tx.markForTermination( Status.General.UnknownFailure );
         }
         localTxPool.disposeAll();
         globalTxPool.disposeAll();

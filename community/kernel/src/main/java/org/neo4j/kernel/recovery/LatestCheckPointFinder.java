@@ -40,11 +40,13 @@ import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_
 
 public class LatestCheckPointFinder
 {
+    private static final long NOT_FOUND = -1;
+    private static final long NOT_BEEN_RUN = -2;
+
     private final PhysicalLogFiles logFiles;
     private final FileSystemAbstraction fileSystem;
     private final LogEntryReader<ReadableLogChannel> logEntryReader;
-    public static final long NOT_FOUND_LAST_COMMIT_TIMESTAMP = -1;
-    private long lastCommitedTimestamp = NOT_FOUND_LAST_COMMIT_TIMESTAMP;
+    private long lastCommitedTimestamp = NOT_BEEN_RUN;
 
     public LatestCheckPointFinder( PhysicalLogFiles logFiles, FileSystemAbstraction fileSystem,
             LogEntryReader<ReadableLogChannel> logEntryReader )
@@ -56,6 +58,7 @@ public class LatestCheckPointFinder
 
     public LatestCheckPoint find( long fromVersionBackwards ) throws IOException
     {
+        lastCommitedTimestamp = NOT_FOUND;
         long version = fromVersionBackwards;
         long versionToSearchForLatestStartEntry = fromVersionBackwards;
         long versionToSearchForLatestCommitTimestamp = fromVersionBackwards;
@@ -117,7 +120,7 @@ public class LatestCheckPointFinder
                 // No start entry found yet, keep searching in previous log
                 versionToSearchForLatestStartEntry--;
             }
-            if ( lastCommitedTimestamp == NOT_FOUND_LAST_COMMIT_TIMESTAMP )
+            if ( lastCommitedTimestamp == NOT_FOUND )
             {
                 // No commit entry found yet, keep searching in previous log
                 versionToSearchForLatestCommitTimestamp--;
@@ -129,12 +132,17 @@ public class LatestCheckPointFinder
 
     public boolean hasFoundLastCommitTimestamp()
     {
-        return lastCommitedTimestamp != NOT_FOUND_LAST_COMMIT_TIMESTAMP;
+        return lastCommitedTimestamp != NOT_FOUND;
     }
 
     public long lastCommitedTimestamp()
     {
         return lastCommitedTimestamp;
+    }
+
+    boolean hasBeenRun()
+    {
+        return lastCommitedTimestamp != NOT_BEEN_RUN;
     }
 
     public static class LatestCheckPoint

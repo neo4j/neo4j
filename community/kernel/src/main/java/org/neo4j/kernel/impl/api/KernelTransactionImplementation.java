@@ -170,6 +170,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private boolean closing, closed;
     private boolean failure, success;
     private volatile boolean terminated;
+    private Status terminationReason;
     // Some header information
     private long startTimeMillis;
     private long lastTransactionIdWhenStarted;
@@ -239,6 +240,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp )
     {
         this.locks = locksManager.newClient();
+        this.terminationReason = null;
         this.closing = closed = failure = success = terminated = false;
         this.transactionType = TransactionType.ANY;
         this.beforeHookInvoked = false;
@@ -250,7 +252,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         assert transactionEvent != null : "transactionEvent was null!";
         this.storeStatement = storeLayer.acquireStatement();
         this.closeListener = null;
-        System.out.println( "Init KTI with: lastTx=" + lastCommittedTx + ", lastTimeStamp=" + lastTimeStamp );
         return this;
     }
 
@@ -272,17 +273,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public boolean shouldBeTerminated()
+    public Status shouldBeTerminated()
     {
-        return terminated;
+        return terminated ? terminationReason : null;
     }
 
     @Override
-    public void markForTermination()
+    public void markForTermination( Status reason )
     {
         if ( !terminated )
         {
             failure = true;
+            terminationReason = reason;
             terminated = true;
             transactionMonitor.transactionTerminated();
         }
@@ -445,7 +447,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public void close() throws TransactionFailureException
     {
-        new Exception(  ).printStackTrace( System.out );
         assertTransactionOpen();
         assertTransactionNotClosing();
         closeCurrentStatementIfAny();

@@ -144,9 +144,18 @@ public class DefaultRecoverySPI implements Recovery.SPI
     }
 
     @Override
-    public boolean hasFoundLastCommitedTimestamp()
+    public boolean hasFoundLastCommitedTimestamp() throws IOException
     {
+        ensureCheckedLatestCheckpointPosition();
         return checkPointFinder.hasFoundLastCommitTimestamp();
+    }
+
+    private void ensureCheckedLatestCheckpointPosition() throws IOException
+    {
+        if ( !checkPointFinder.hasBeenRun() )
+        {
+            getPositionToRecoverFrom(); // which will do it
+        }
     }
 
     @Override

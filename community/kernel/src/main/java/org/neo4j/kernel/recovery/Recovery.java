@@ -52,11 +52,11 @@ public class Recovery extends LifecycleAdapter
 
         LogPosition getPositionToRecoverFrom() throws IOException;
 
+        void recoveryRequired();
+
         long lastCommitedTimestamp();
 
-        public void recoveryRequired();
-
-        boolean hasFoundLastCommitedTimestamp();
+        boolean hasFoundLastCommitedTimestamp() throws IOException;
     }
 
     private final SPI spi;

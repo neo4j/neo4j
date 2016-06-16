@@ -1078,6 +1078,10 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             @Override
             public void start() throws Throwable
             {
+                // Normally we get here after recovery have been or at least checked, at which point we
+                // know whether or not there's a commit time stamp in our transaction log and if so what it is.
+                // In HA though, we may just call start() after a store copy and so the normal recovery
+                // mechanisms doesn't kick in. In this case there will be a log scan as part of this call.
                 if ( spi.hasFoundLastCommitedTimestamp() )
                 {
                     System.out.println( "Collected timestamp from logs" );
