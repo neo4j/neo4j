@@ -43,7 +43,6 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -86,12 +85,28 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     public EphemeralFileSystemAbstraction()
     {
         this.files = new ConcurrentHashMap<>();
+        initCurrentWorkingDirectory();
+    }
+
+    private void initCurrentWorkingDirectory()
+    {
+        try
+        {
+            mkdirs( new File( "." ).getCanonicalFile() );
+        }
+        catch ( IOException e )
+        {
+            System.err.println(
+                    "WARNING: EphemeralFileSystemAbstraction could not initialise current working directory" );
+            e.printStackTrace();
+        }
     }
 
     private EphemeralFileSystemAbstraction( Set<File> directories, Map<File,EphemeralFileData> files )
     {
         this.files = new ConcurrentHashMap<>( files );
         this.directories.addAll( directories );
+        initCurrentWorkingDirectory();
     }
 
     /**
@@ -222,7 +237,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public synchronized StoreChannel open( File fileName, String mode ) throws IOException
     {
-        EphemeralFileData data = files.get( fileName );
+        EphemeralFileData data = files.get( canonicalFile( fileName ) );
         if ( data != null )
         {
             return new StoreFileChannel( new EphemeralFileChannel(
@@ -266,7 +281,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         }
 
         EphemeralFileData data = new EphemeralFileData();
-        free( files.put( fileName, data ) );
+        free( files.put( canonicalFile( fileName ), data ) );
         return new StoreFileChannel(
                 new EphemeralFileChannel( data, new FileStillOpenException( fileName.getPath() ) ) );
     }
@@ -274,20 +289,36 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public long getFileSize( File fileName )
     {
-        EphemeralFileData file = files.get( fileName );
+        EphemeralFileData file = files.get( canonicalFile( fileName ) );
         return file == null ? 0 : file.size();
     }
 
     @Override
     public boolean fileExists( File file )
     {
-        return directories.contains( file.getAbsoluteFile() ) || files.containsKey( file );
+        file = canonicalFile( file );
+        return directories.contains( file ) || files.containsKey( file );
+    }
+
+    private File canonicalFile( File file )
+    {
+        try
+        {
+            return file.getCanonicalFile();
+        }
+        catch ( IOException e )
+        {
+            System.err.println( "WARNING: EphemeralFileSystemAbstraction could not canonicalise file: " + file );
+            e.printStackTrace();
+        }
+        // Ugly fallback
+        return file.getAbsoluteFile();
     }
 
     @Override
     public boolean isDirectory( File file )
     {
-        return directories.contains( file.getAbsoluteFile() );
+        return directories.contains( canonicalFile( file ) );
     }
 
     @Override
@@ -298,14 +329,14 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             return false;
         }
 
-        directories.add( directory.getAbsoluteFile() );
+        directories.add( canonicalFile( directory ) );
         return true;
     }
 
     @Override
     public void mkdirs( File directory )
     {
-        File currentDirectory = directory.getAbsoluteFile();
+        File currentDirectory = canonicalFile( directory );
 
         while ( currentDirectory != null )
         {
@@ -317,7 +348,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public boolean deleteFile( File fileName )
     {
-        EphemeralFileData removed = files.remove( fileName );
+        EphemeralFileData removed = files.remove( canonicalFile( fileName ) );
         free( removed );
         return removed != null;
     }
@@ -325,7 +356,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public void deleteRecursively( File directory ) throws IOException
     {
-        List<String> directoryPathItems = splitPath( directory );
+        List<String> directoryPathItems = splitPath( canonicalFile( directory ) );
         for ( Map.Entry<File,EphemeralFileData> file : files.entrySet() )
         {
             File fileName = file.getKey();
@@ -340,6 +371,8 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public boolean renameFile( File from, File to ) throws IOException
     {
+        from = canonicalFile( from );
+        to = canonicalFile( to );
         if ( !files.containsKey( from ) )
         {
             throw new IOException( "'" + from + "' doesn't exist" );
@@ -355,6 +388,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public File[] listFiles( File directory )
     {
+        directory = canonicalFile( directory );
         if ( files.containsKey( directory ) )
         {
             // This means that you're trying to list files on a file, not a directory.
@@ -380,6 +414,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public File[] listFiles( File directory, FilenameFilter filter )
     {
+        directory = canonicalFile( directory );
         if ( files.containsKey( directory ) )
         // This means that you're trying to list files on a file, not a directory.
         {
@@ -429,18 +464,18 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public void moveToDirectory( File file, File toDirectory ) throws IOException
     {
-        EphemeralFileData fileToMove = files.remove( file );
+        EphemeralFileData fileToMove = files.remove( canonicalFile( file ) );
         if ( fileToMove == null )
         {
             throw new FileNotFoundException( file.getPath() );
         }
-        files.put( new File( toDirectory, file.getName() ), fileToMove );
+        files.put( canonicalFile( new File( toDirectory, file.getName() ) ), fileToMove );
     }
 
     @Override
     public void copyFile( File from, File to ) throws IOException
     {
-        EphemeralFileData data = files.get( from );
+        EphemeralFileData data = files.get( canonicalFile( from ) );
         if ( data == null )
         {
             throw new FileNotFoundException( "File " + from + " not found" );
@@ -478,14 +513,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         List<File> names = new ArrayList<>( files.size() );
         names.addAll( files.keySet() );
 
-        Collections.sort( names, new Comparator<File>()
-        {
-            @Override
-            public int compare( File o1, File o2 )
-            {
-                return o1.getAbsolutePath().compareTo( o2.getAbsolutePath() );
-            }
-        } );
+        Collections.sort( names, ( o1, o2 ) -> o1.getAbsolutePath().compareTo( o2.getAbsolutePath() ) );
 
         for ( File name : names )
         {
@@ -556,7 +584,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public void truncate( File file, long size ) throws IOException
     {
-        EphemeralFileData data = files.get( file );
+        EphemeralFileData data = files.get( canonicalFile( file ) );
         if ( data == null )
         {
             throw new FileNotFoundException( "File " + file + " not found" );
