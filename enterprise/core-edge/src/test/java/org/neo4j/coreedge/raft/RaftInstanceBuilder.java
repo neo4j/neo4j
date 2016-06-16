@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 import org.mockito.cglib.core.Local;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
+import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
@@ -91,8 +92,7 @@ public class RaftInstanceBuilder<MEMBER>
 
     public RaftInstance<MEMBER> build()
     {
-        LeaderOnlyReplicator<MEMBER, MEMBER> leaderOnlyReplicator = new LeaderOnlyReplicator<>( member, member,
-                outbound );
+        LeaderOnlyReplicator<MEMBER> leaderOnlyReplicator = new LeaderOnlyReplicator<>( member, outbound );
         RaftMembershipManager<MEMBER> membershipManager = new RaftMembershipManager<>( leaderOnlyReplicator,
                 memberSetBuilder, raftLog, logProvider, expectedClusterSize, electionTimeout, clock, catchupTimeout,
                 raftMembership, localDatabase );
@@ -138,7 +138,7 @@ public class RaftInstanceBuilder<MEMBER>
         return this;
     }
 
-    public RaftInstanceBuilder<MEMBER> inbound( Inbound inbound )
+    public RaftInstanceBuilder<MEMBER> inbound( Inbound<RaftMessages.RaftMessage<MEMBER>> inbound )
     {
         this.inbound = inbound;
         return this;

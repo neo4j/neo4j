@@ -34,8 +34,8 @@ public class RaftOutbound implements Outbound<CoreMember>
     }
 
     @Override
-    public void send( CoreMember to, Message... message )
+    public void send( CoreMember to, Message... messages )
     {
-        outbound.send( to.getRaftAddress(), message );
+        outbound.send( to.getRaftAddress(), messages );
     }
 }
