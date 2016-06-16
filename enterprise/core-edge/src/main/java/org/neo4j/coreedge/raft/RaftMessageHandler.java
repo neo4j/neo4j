@@ -25,6 +25,7 @@ import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.logging.Log;
 
 public interface RaftMessageHandler
@@ -32,6 +33,6 @@ public interface RaftMessageHandler
     <MEMBER> Outcome<MEMBER> handle( RaftMessages.RaftMessage<MEMBER> message, ReadableRaftState<MEMBER> context,
                                      Log log, LocalDatabase localDatabase ) throws IOException;
 
-    <MEMBER> Outcome<MEMBER> validate( RaftMessages.RaftMessage<MEMBER> message, RaftState<MEMBER> context,
-                                       Log log, LocalDatabase localDatabase );
+    <MEMBER> Outcome<MEMBER> validate( RaftMessages.RaftMessage<MEMBER> message, StoreId storeId,
+                                       RaftState<MEMBER> context, LocalDatabase localDatabase );
 }

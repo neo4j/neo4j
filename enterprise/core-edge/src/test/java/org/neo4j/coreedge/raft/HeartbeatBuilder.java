@@ -31,7 +31,7 @@ public class HeartbeatBuilder<MEMBER>
 
     public RaftMessages.Heartbeat<MEMBER> build()
     {
-        return new RaftMessages.Heartbeat<>( from, leaderTerm, commitIndex, commitIndexTerm, storeId );
+        return new RaftMessages.Heartbeat<>( from, leaderTerm, commitIndex, commitIndexTerm );
     }
 
     public HeartbeatBuilder<MEMBER> from( MEMBER from )

@@ -51,6 +51,7 @@ import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.core.NotMyselfSelectionStrategy;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.kvstore.Rotation;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -309,12 +310,11 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>,
     }
 
     @Override
-    public boolean validate( RaftMessages.RaftMessage<MEMBER> incomingMessage )
+    public boolean validate( RaftMessages.RaftMessage<MEMBER> incomingMessage, StoreId storeId )
     {
         try
         {
-            Outcome<MEMBER> outcome = currentRole.handler.validate( incomingMessage, state, log, localDatabase );
-
+            Outcome<MEMBER> outcome = currentRole.handler.validate( incomingMessage, storeId, state, localDatabase );
             boolean processable = outcome.isProcessable();
             if ( !processable )
             {

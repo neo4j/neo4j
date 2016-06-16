@@ -27,6 +27,7 @@ import java.util.concurrent.BlockingQueue;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.RaftMessages.RaftMessage;
 import org.neo4j.coreedge.raft.net.Inbound.MessageHandler;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -36,17 +37,15 @@ public class BatchingMessageHandler<MEMBER> implements Runnable, MessageHandler<
 {
     private final Log log;
     private final MessageHandler<RaftMessage<MEMBER>> innerHandler;
-    private final LocalDatabase localDatabase;
 
     private final BlockingQueue<RaftMessage<MEMBER>> messageQueue;
     private final int maxBatch;
     private final List<RaftMessage<MEMBER>> batch;
 
     public BatchingMessageHandler( MessageHandler<RaftMessage<MEMBER>> innerHandler, LogProvider logProvider,
-                                   int queueSize, int maxBatch, LocalDatabase localDatabase )
+                                   int queueSize, int maxBatch )
     {
         this.innerHandler = innerHandler;
-        this.localDatabase = localDatabase;
         this.log = logProvider.getLog( getClass() );
         this.maxBatch = maxBatch;
 
@@ -55,9 +54,9 @@ public class BatchingMessageHandler<MEMBER> implements Runnable, MessageHandler<
     }
 
     @Override
-    public boolean validate( RaftMessage<MEMBER> message )
+    public boolean validate( RaftMessage<MEMBER> message, StoreId storeId )
     {
-        return innerHandler.validate( message );
+        return innerHandler.validate( message, storeId );
     }
 
     @Override
@@ -115,7 +114,7 @@ public class BatchingMessageHandler<MEMBER> implements Runnable, MessageHandler<
 
                 if ( batchRequest == null )
                 {
-                    batchRequest = new RaftMessages.NewEntry.Batch<>( batch.size(), localDatabase.storeId() );
+                    batchRequest = new RaftMessages.NewEntry.Batch<>( batch.size() );
                 }
                 batchRequest.add( newEntryRequest.content() );
             }

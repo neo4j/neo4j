@@ -34,7 +34,7 @@ public class AppendEntriesResponseBuilder<MEMBER>
     {
         // a response of false should always have a match index of -1
         assert !(success == false && matchIndex != -1);
-        return new RaftMessages.AppendEntries.Response<>( from, term, success, matchIndex, appendIndex, storeId );
+        return new RaftMessages.AppendEntries.Response<>( from, term, success, matchIndex, appendIndex );
     }
 
     public AppendEntriesResponseBuilder<MEMBER> from( MEMBER from )

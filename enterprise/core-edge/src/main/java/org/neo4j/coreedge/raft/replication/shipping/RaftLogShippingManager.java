@@ -116,7 +116,7 @@ public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
         {
             logShipper = new RaftLogShipper<>( outbound, logProvider, raftLog, clock, myself, member,
                     leaderContext.term, leaderContext.commitIndex, retryTimeMillis, catchupBatchSize,
-                    maxAllowedShippingLag, inFlightMap, localDatabase );
+                    maxAllowedShippingLag, inFlightMap );
 
             logShippers.put( member, logShipper );
 

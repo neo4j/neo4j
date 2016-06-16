@@ -21,8 +21,6 @@ package org.neo4j.coreedge.raft.replication;
 
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.net.Outbound;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.store.StoreId;
 
 
@@ -39,6 +37,6 @@ public class LeaderOnlyReplicator<MEMBER>
 
     public void replicate( ReplicatedContent content, StoreId storeId )
     {
-        outbound.send( source, new RaftMessages.NewEntry.Request<>( source, content, storeId ) );
+        outbound.send( source, new RaftMessages.NewEntry.Request<>( source, content ) );
     }
 }

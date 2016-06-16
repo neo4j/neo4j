@@ -94,4 +94,9 @@ public class NetworkFlushableByteBuf implements FlushableChannel
     {
         return null;
     }
+
+    public ByteBuf buffer()
+    {
+        return delegate;
+    }
 }

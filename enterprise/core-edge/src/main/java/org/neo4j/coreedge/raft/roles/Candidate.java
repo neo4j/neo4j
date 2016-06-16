@@ -28,6 +28,7 @@ import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.coreedge.raft.MajorityIncludingSelfQuorum.isQuorum;
@@ -69,7 +70,7 @@ public class Candidate implements RaftMessageHandler
                 {
                     RaftMessages.AppendEntries.Response<MEMBER> appendResponse =
                             new RaftMessages.AppendEntries.Response<>( ctx.myself(), ctx.term(), false,
-                                    req.prevLogIndex(), ctx.entryLog().appendIndex(), localDatabase.storeId() );
+                                    req.prevLogIndex(), ctx.entryLog().appendIndex() );
 
                     outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(), appendResponse ) );
                     break;
@@ -133,7 +134,7 @@ public class Candidate implements RaftMessageHandler
                 }
 
                 outcome.addOutgoingMessage( new RaftMessages.Directed<>( req.from(),
-                        new RaftMessages.Vote.Response<>( ctx.myself(), outcome.getTerm(), false, localDatabase.storeId() ) ) );
+                        new RaftMessages.Vote.Response<>( ctx.myself(), outcome.getTerm(), false ) ) );
                 break;
             }
 
@@ -152,8 +153,8 @@ public class Candidate implements RaftMessageHandler
     }
 
     @Override
-    public <MEMBER> Outcome<MEMBER> validate( RaftMessages.RaftMessage<MEMBER> message, RaftState<MEMBER> ctx,
-                                              Log log, LocalDatabase localDatabase )
+    public <MEMBER> Outcome<MEMBER> validate( RaftMessages.RaftMessage<MEMBER> message, StoreId storeId,
+                                              RaftState<MEMBER> ctx, LocalDatabase localDatabase )
     {
         return new Outcome<>( CANDIDATE, ctx );
     }

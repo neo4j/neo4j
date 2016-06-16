@@ -392,7 +392,7 @@ public class RaftInstanceTest
         newMemberInbound.registerHandler( new Inbound.MessageHandler()
         {
             @Override
-            public boolean validate( Message message )
+            public boolean validate( Message message, StoreId storeId )
             {
                 return true;
             }
@@ -471,7 +471,7 @@ public class RaftInstanceTest
 
         // when
         raft.handle( new RaftMessages.AppendEntries.Request<>( member1, 0, -1, -1,
-                new RaftLogEntry[]{new RaftLogEntry( 0, new ReplicatedString( "hello" ) )}, 0, storeId ) );
+                new RaftLogEntry[]{new RaftLogEntry( 0, new ReplicatedString( "hello" ) )}, 0 ) );
 
         // then
         assertTrue( databaseHealth.hasPanicked() );

@@ -22,7 +22,6 @@ package org.neo4j.coreedge.raft.net.codecs;
 import java.io.IOException;
 import java.util.List;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
@@ -30,13 +29,14 @@ import org.neo4j.coreedge.catchup.storecopy.core.NetworkFlushableByteBuf;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.raft.replication.storeid.StoreIdMarshal;
+import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.storageengine.api.WritableChannel;
 
-public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.RaftMessage<CoreMember>>
+public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.StoreIdAwareMessage<CoreMember>>
 {
     private final ChannelMarshal<ReplicatedContent> marshal;
 
@@ -46,15 +46,17 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Raf
     }
 
     @Override
-    protected synchronized void encode( ChannelHandlerContext ctx, RaftMessages.RaftMessage<CoreMember> message,
+    protected synchronized void encode( ChannelHandlerContext ctx,
+                                        RaftMessages.StoreIdAwareMessage<CoreMember> decoratedMessage,
                                         List<Object> list ) throws Exception
     {
-        ByteBuf buffer = ctx.alloc().buffer();
-        WritableChannel channel = new NetworkFlushableByteBuf( buffer );
+        RaftMessages.RaftMessage<CoreMember> message = decoratedMessage.message();
+        StoreId storeId = decoratedMessage.storeId();
 
+        NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( ctx.alloc().buffer() );
+        StoreIdMarshal.marshal( storeId, channel );
         channel.putInt( message.type().ordinal() );
         writeMember( message.from(), channel );
-        StoreIdMarshal.marshal( message.storeId(), channel );
 
         if ( message instanceof RaftMessages.Vote.Request )
         {
@@ -122,7 +124,7 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Raf
             throw new IllegalArgumentException( "Unknown message type" );
         }
 
-        list.add( buffer );
+        list.add( channel.buffer() );
     }
 
     private void writeMember( CoreMember member, WritableChannel buffer ) throws IOException
@@ -133,4 +135,6 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Raf
         marshal.marshal( member.getCoreAddress(), buffer );
         marshal.marshal( member.getRaftAddress(), buffer );
     }
+
+
 }

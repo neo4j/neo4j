@@ -380,7 +380,7 @@ public class EnterpriseCoreEditionModule
         }
 
         RaftReplicator<CoreMember> replicator = new RaftReplicator<>( raft, myself,
-                new RaftOutbound( loggingOutbound ), sessionPool, progressTracker,
+                new RaftOutbound( loggingOutbound, localDatabase ), sessionPool, progressTracker,
                 new ExponentialBackoffStrategy( 10, SECONDS ), localDatabase );
 
         dependencies.satisfyDependency( raft );
@@ -681,7 +681,7 @@ public class EnterpriseCoreEditionModule
 
         CoreMemberSetBuilder memberSetBuilder = new CoreMemberSetBuilder();
 
-        RaftOutbound raftOutbound = new RaftOutbound( outbound );
+        RaftOutbound raftOutbound = new RaftOutbound( outbound, localDatabase );
         LeaderOnlyReplicator<CoreMember> leaderOnlyReplicator = new LeaderOnlyReplicator<>( myself, raftOutbound );
 
         RaftMembershipManager<CoreMember> raftMembershipManager = new RaftMembershipManager<>( leaderOnlyReplicator,
@@ -704,7 +704,7 @@ public class EnterpriseCoreEditionModule
         int queueSize = config.get( CoreEdgeClusterSettings.raft_in_queue_size );
         int maxBatch = config.get( CoreEdgeClusterSettings.raft_in_queue_max_batch );
         BatchingMessageHandler<CoreMember> batchingMessageHandler =
-                new BatchingMessageHandler<>( raftInstance, logProvider, queueSize, maxBatch, localDatabase );
+                new BatchingMessageHandler<>( raftInstance, logProvider, queueSize, maxBatch );
 
         life.add( new ContinuousJob( jobScheduler, new JobScheduler.Group( "raft-batch-handler", NEW_THREAD ),
                 batchingMessageHandler ) );

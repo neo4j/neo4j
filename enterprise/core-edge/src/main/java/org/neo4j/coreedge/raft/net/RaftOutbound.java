@@ -19,23 +19,35 @@
  */
 package org.neo4j.coreedge.raft.net;
 
+import java.util.Arrays;
+
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.network.Message;
 
+import org.neo4j.coreedge.raft.RaftMessages;
+import org.neo4j.coreedge.raft.RaftMessages.RaftMessage;
+import org.neo4j.coreedge.raft.RaftMessages.StoreIdAwareMessage;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 
 public class RaftOutbound implements Outbound<CoreMember>
 {
     private final Outbound<AdvertisedSocketAddress> outbound;
+    private final LocalDatabase localDatabase;
 
-    public RaftOutbound( Outbound<AdvertisedSocketAddress> outbound )
+    public RaftOutbound( Outbound<AdvertisedSocketAddress> outbound, LocalDatabase localDatabase )
     {
         this.outbound = outbound;
+        this.localDatabase = localDatabase;
     }
 
     @Override
     public void send( CoreMember to, Message... messages )
     {
-        outbound.send( to.getRaftAddress(), messages );
+        @SuppressWarnings("unchecked")
+        StoreIdAwareMessage<CoreMember>[] storeIdAwareMessages = Arrays.stream( messages ).
+                map( m -> new StoreIdAwareMessage<>( localDatabase.storeId(), (RaftMessage<CoreMember>) m ) ).
+                toArray( StoreIdAwareMessage[]::new );
+        outbound.send( to.getRaftAddress(), storeIdAwareMessages );
     }
 }

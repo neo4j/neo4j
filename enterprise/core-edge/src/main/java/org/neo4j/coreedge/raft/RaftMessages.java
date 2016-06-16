@@ -25,6 +25,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import com.sun.org.apache.xml.internal.security.algorithms.MessageDigestAlgorithm;
+
 import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
@@ -60,7 +62,6 @@ public interface RaftMessages
     {
         MEMBER from();
         Type type();
-        StoreId storeId();
     }
 
     class Directed<MEMBER>
@@ -100,10 +101,9 @@ public interface RaftMessages
             private long lastLogIndex;
             private long lastLogTerm;
 
-            public Request( MEMBER from, long term, MEMBER candidate, long lastLogIndex, long lastLogTerm,
-                    StoreId storeId)
+            public Request( MEMBER from, long term, MEMBER candidate, long lastLogIndex, long lastLogTerm )
             {
-                super( from, Type.VOTE_REQUEST, storeId );
+                super( from, Type.VOTE_REQUEST );
                 this.term = term;
                 this.candidate = candidate;
                 this.lastLogIndex = lastLogIndex;
@@ -171,9 +171,9 @@ public interface RaftMessages
             private long term;
             private boolean voteGranted;
 
-            public Response( MEMBER from, long term, boolean voteGranted, StoreId storeId )
+            public Response( MEMBER from, long term, boolean voteGranted )
             {
-                super( from, Type.VOTE_RESPONSE, storeId );
+                super( from, Type.VOTE_RESPONSE );
                 this.term = term;
                 this.voteGranted = voteGranted;
             }
@@ -233,9 +233,9 @@ public interface RaftMessages
             private long leaderCommit;
 
             public Request( MEMBER from, long leaderTerm, long prevLogIndex, long prevLogTerm,
-                            RaftLogEntry[] entries, long leaderCommit, StoreId storeId )
+                            RaftLogEntry[] entries, long leaderCommit )
             {
-                super( from, Type.APPEND_ENTRIES_REQUEST, storeId );
+                super( from, Type.APPEND_ENTRIES_REQUEST );
                 Objects.requireNonNull( entries );
                 assert !((prevLogIndex == -1 && prevLogTerm != -1) || (prevLogTerm == -1 && prevLogIndex != -1)) :
                         format( "prevLogIndex was %d and prevLogTerm was %d", prevLogIndex, prevLogTerm );
@@ -312,10 +312,9 @@ public interface RaftMessages
             private long matchIndex;
             private long appendIndex;
 
-            public Response( MEMBER from, long term, boolean success, long matchIndex, long appendIndex,
-                             StoreId storeId )
+            public Response( MEMBER from, long term, boolean success, long matchIndex, long appendIndex )
             {
-                super( from, Type.APPEND_ENTRIES_RESPONSE, storeId );
+                super( from, Type.APPEND_ENTRIES_RESPONSE );
                 this.term = term;
                 this.success = success;
                 this.matchIndex = matchIndex;
@@ -373,8 +372,8 @@ public interface RaftMessages
             @Override
             public String toString()
             {
-                return format( "AppendEntries.Response from %s {term=%d, storeId=%s, success=%s, matchIndex=%d, appendIndex=%d}",
-                        from, term, storeId(), success, matchIndex, appendIndex );
+                return format( "AppendEntries.Response from %s {term=%d, success=%s, matchIndex=%d, appendIndex=%d}",
+                        from, term, success, matchIndex, appendIndex );
             }
         }
     }
@@ -385,9 +384,9 @@ public interface RaftMessages
         private long commitIndex;
         private long commitIndexTerm;
 
-        public Heartbeat( MEMBER from, long leaderTerm, long commitIndex, long commitIndexTerm, StoreId storeId )
+        public Heartbeat( MEMBER from, long leaderTerm, long commitIndex, long commitIndexTerm )
         {
-            super( from, Type.HEARTBEAT, storeId );
+            super( from, Type.HEARTBEAT );
             this.leaderTerm = leaderTerm;
             this.commitIndex = commitIndex;
             this.commitIndexTerm = commitIndexTerm;
@@ -454,9 +453,9 @@ public interface RaftMessages
         private long leaderTerm;
         private long prevIndex;
 
-        public LogCompactionInfo( MEMBER from, long leaderTerm, long prevIndex, StoreId storeId )
+        public LogCompactionInfo( MEMBER from, long leaderTerm, long prevIndex )
         {
-            super( from, Type.LOG_COMPACTION_INFO, storeId );
+            super( from, Type.LOG_COMPACTION_INFO );
             this.leaderTerm = leaderTerm;
             this.prevIndex = prevIndex;
         }
@@ -515,7 +514,7 @@ public interface RaftMessages
         {
             public Election( MEMBER from )
             {
-                super( from, Type.ELECTION_TIMEOUT, null );
+                super( from, Type.ELECTION_TIMEOUT );
             }
 
             @Override
@@ -529,7 +528,7 @@ public interface RaftMessages
         {
             public Heartbeat( MEMBER from )
             {
-                super( from, Type.HEARTBEAT_TIMEOUT, null );
+                super( from, Type.HEARTBEAT_TIMEOUT );
             }
 
             @Override
@@ -546,9 +545,9 @@ public interface RaftMessages
         {
             private ReplicatedContent content;
 
-            public Request( MEMBER from, ReplicatedContent content, StoreId storeId )
+            public Request( MEMBER from, ReplicatedContent content )
             {
-                super( from, Type.NEW_ENTRY_REQUEST, storeId );
+                super( from, Type.NEW_ENTRY_REQUEST );
                 this.content = content;
             }
 
@@ -591,9 +590,9 @@ public interface RaftMessages
         {
             private List<ReplicatedContent> list;
 
-            public Batch( int batchSize, StoreId storeId )
+            public Batch( int batchSize )
             {
-                super( null, Type.NEW_BATCH_REQUEST, storeId );
+                super( null, Type.NEW_BATCH_REQUEST );
                 list = new ArrayList<>( batchSize );
             }
 
@@ -636,17 +635,61 @@ public interface RaftMessages
         }
     }
 
+    class StoreIdAwareMessage<MEMBER> implements Message
+    {
+        private final StoreId storeId;
+        private final RaftMessage<MEMBER> message;
+
+        public StoreIdAwareMessage( StoreId storeId, RaftMessage<MEMBER> message )
+        {
+            Objects.requireNonNull( message );
+            this.storeId = storeId;
+            this.message = message;
+        }
+
+        public StoreId storeId()
+        {
+            return storeId;
+        }
+
+        public RaftMessage<MEMBER>  message()
+        {
+            return message;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            StoreIdAwareMessage<?> that = (StoreIdAwareMessage<?>) o;
+            return Objects.equals( message, that.message ) &&
+                    (storeId == that.storeId || (storeId != null && storeId.theRealEquals( that.storeId )));
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = 31 + (storeId == null ? 0 : storeId.theRealHashCode());
+            return 31 * result + Objects.hash( message );
+        }
+    }
+
     abstract class BaseMessage<MEMBER> implements RaftMessage<MEMBER>
     {
         protected MEMBER from;
         private Type type;
-        private StoreId storeId;
 
-        public BaseMessage( MEMBER from, Type type, StoreId storeId )
+        public BaseMessage( MEMBER from, Type type )
         {
             this.from = from;
             this.type = type;
-            this.storeId = storeId;
         }
 
         @Override
@@ -662,12 +705,6 @@ public interface RaftMessages
         }
 
         @Override
-        public StoreId storeId()
-        {
-            return storeId;
-        }
-
-        @Override
         public boolean equals( Object o )
         {
             if ( this == o )
@@ -679,16 +716,13 @@ public interface RaftMessages
                 return false;
             }
             BaseMessage<?> that = (BaseMessage<?>) o;
-            return Objects.equals( from, that.from ) &&
-                    type == that.type &&
-                    ((storeId == that.storeId) || (storeId != null && storeId.theRealEquals( that.storeId )));
+            return Objects.equals( from, that.from ) && type == that.type;
         }
 
         @Override
         public int hashCode()
         {
-            int result = storeId == null ? 0 : storeId.theRealHashCode();
-            return 31 * result + Objects.hash( from, type  );
+            return Objects.hash( from, type );
         }
     }
 }

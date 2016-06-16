@@ -72,7 +72,7 @@ public class AppendingTest
                         localTermForAllEntries,
                         new RaftLogEntry[]{
                                 new RaftLogEntry( localTermForAllEntries + 1, ReplicatedInteger.valueOf( 2 ) )},
-                        appendIndex + 3, storeId ), storeId );
+                        appendIndex + 3 ), storeId );
 
         // then
         // we must produce a TruncateLogCommand at the earliest mismatching index
@@ -103,7 +103,7 @@ public class AppendingTest
                             localTermForAllEntries,
                             new RaftLogEntry[]{
                                     new RaftLogEntry( localTermForAllEntries + 1, ReplicatedInteger.valueOf( 2 ) )},
-                            commitIndex + 3, storeId ), storeId );
+                            commitIndex + 3 ), storeId );
             fail( "Appending should not allow truncation at or before the commit index" );
         }
         catch ( IllegalStateException expected )
@@ -136,7 +136,7 @@ public class AppendingTest
                             localTermForAllEntries,
                             new RaftLogEntry[]{
                                     new RaftLogEntry( localTermForAllEntries + 1, ReplicatedInteger.valueOf( 2 ) )},
-                            commitIndex + 3, storeId ), storeId );
+                            commitIndex + 3 ), storeId );
             fail( "Appending should not allow truncation at or before the commit index" );
         }
         catch ( IllegalStateException expected )
@@ -174,7 +174,7 @@ public class AppendingTest
                         prevTerm,
                         new RaftLogEntry[]{
                                 new RaftLogEntry( prevTerm, ReplicatedInteger.valueOf( 2 ) )},
-                        commitIndex + 3, storeId ), storeId );
+                        commitIndex + 3 ), storeId );
 
         // then
         // there should be no truncate commands. Actually, the whole thing should be a no op

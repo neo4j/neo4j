@@ -36,7 +36,6 @@ import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.server.RaftTestMember;
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 
@@ -152,14 +151,14 @@ public class FollowerTest
                 new RaftLogEntry[]{
                         new RaftLogEntry( 2, ContentGenerator.content() ),
                 },
-                -1, storeId.storeId() ), state, log(), storeId ) );
+                -1 ), state, log(), storeId ) );
 
         RaftLogEntry[] entries = {
                 new RaftLogEntry( 1, new ReplicatedString( "commit this!" ) ),
         };
 
         Outcome<RaftTestMember> outcome = follower.handle(
-                new AppendEntries.Request<>( member1, 1, -1, -1, entries, -1, storeId.storeId() ), state, log(), storeId );
+                new AppendEntries.Request<>( member1, 1, -1, -1, entries, -1 ), state, log(), storeId );
         state.update( outcome );
 
         // then
@@ -182,7 +181,7 @@ public class FollowerTest
 
         // when receiving AppEntries with high leader commit (3)
         Outcome<RaftTestMember> outcome = follower.handle( new AppendEntries.Request<>( myself, 0, 2, 0,
-                new RaftLogEntry[] { new RaftLogEntry( 0, ContentGenerator.content() ) }, 3, storeId.storeId() ), state, log(),
+                new RaftLogEntry[] { new RaftLogEntry( 0, ContentGenerator.content() ) }, 3 ), state, log(),
                 storeId );
 
         state.update( outcome );
@@ -242,7 +241,7 @@ public class FollowerTest
 
         Follower follower = new Follower();
 
-        Outcome<RaftTestMember> outcome = follower.handle( new RaftMessages.Heartbeat<>( myself, 1, 1, 1, storeId.storeId() ),
+        Outcome<RaftTestMember> outcome = follower.handle( new RaftMessages.Heartbeat<>( myself, 1, 1, 1 ),
                 state, log(), storeId );
 
         // then
@@ -260,7 +259,7 @@ public class FollowerTest
 
         Follower follower = new Follower();
 
-        Outcome<RaftTestMember> outcome = follower.handle( new RaftMessages.Heartbeat<>( myself, 1, 1, 1, storeId.storeId() ),
+        Outcome<RaftTestMember> outcome = follower.handle( new RaftMessages.Heartbeat<>( myself, 1, 1, 1 ),
                 state, log(), storeId );
 
         // then
@@ -275,13 +274,13 @@ public class FollowerTest
             if ( i == 0 )
             {
                 raft.update( follower.handle( new AppendEntries.Request<>( myself, term, i - 1, -1,
-                        new RaftLogEntry[] { new RaftLogEntry( term, ContentGenerator.content() ) }, -1,
-                        storeId.storeId() ), raft, log(), storeId ) );
+                        new RaftLogEntry[] { new RaftLogEntry( term, ContentGenerator.content() ) }, -1
+                ), raft, log(), storeId ) );
             }
             else
             {
                 raft.update( follower.handle( new AppendEntries.Request<>( myself, term, i - 1, term,
-                        new RaftLogEntry[]{new RaftLogEntry( term, ContentGenerator.content() )}, -1, storeId.storeId() ), raft,
+                        new RaftLogEntry[]{new RaftLogEntry( term, ContentGenerator.content() )}, -1 ), raft,
                         log(), storeId ) );
             }
         }

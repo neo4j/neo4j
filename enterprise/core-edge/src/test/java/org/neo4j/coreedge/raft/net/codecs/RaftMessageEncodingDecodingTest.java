@@ -49,6 +49,9 @@ import static org.mockito.Mockito.when;
 
 public class RaftMessageEncodingDecodingTest
 {
+
+    private StoreId storeId = new StoreId( 1, 2, 3, 4, 5 );
+
     @Test
     public void shouldSerializeAppendRequestWithMultipleEntries() throws Exception
     {
@@ -105,8 +108,8 @@ public class RaftMessageEncodingDecodingTest
         // When
         CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
                 new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
-        RaftMessages.Heartbeat<CoreMember> message = new RaftMessages.Heartbeat<>( sender, 1, 2, 3,
-                new StoreId( 1, 2, 3, 4, 5 ) );
+        RaftMessages.StoreIdAwareMessage<CoreMember> message = new RaftMessages.StoreIdAwareMessage<>( storeId,
+        new RaftMessages.Heartbeat<>( sender, 1, 2, 3 ) );
         encoder.encode( setupContext(), message, resultingBuffers );
 
         // Then
@@ -125,7 +128,7 @@ public class RaftMessageEncodingDecodingTest
     {
         CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
                 new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
-        RaftMessages.Vote.Request<Object> request = new VoteRequestBuilder<>()
+        RaftMessages.Vote.Request<CoreMember> request = new VoteRequestBuilder<CoreMember>()
                 .candidate( sender )
                 .from( sender )
                 .lastLogIndex( 2 )
@@ -140,7 +143,7 @@ public class RaftMessageEncodingDecodingTest
     {
         CoreMember sender = new CoreMember( new AdvertisedSocketAddress( "127.0.0.1:5001" ),
                 new AdvertisedSocketAddress( "127.0.0.2:5001" ) );
-        RaftMessages.Vote.Response<Object> request = new VoteResponseBuilder<>()
+        RaftMessages.Vote.Response<CoreMember> request = new VoteResponseBuilder<CoreMember>()
                 .from( sender )
                 .grant()
                 .term( 3 )
@@ -148,7 +151,7 @@ public class RaftMessageEncodingDecodingTest
         serializeReadBackAndVerifyMessage( request );
     }
 
-    private void serializeReadBackAndVerifyMessage( RaftMessages.RaftMessage message ) throws Exception
+    private void serializeReadBackAndVerifyMessage( RaftMessages.RaftMessage<CoreMember> message ) throws Exception
     {
         // Given
         RaftMessageEncoder encoder = new RaftMessageEncoder( marshal );
@@ -160,7 +163,9 @@ public class RaftMessageEncodingDecodingTest
         ArrayList<Object> thingsRead = new ArrayList<>( 1 );
 
         // When
-        encoder.encode( setupContext(), message, resultingBuffers );
+        RaftMessages.StoreIdAwareMessage<CoreMember> decoratedMessage =
+                new RaftMessages.StoreIdAwareMessage<>( storeId, message );
+        encoder.encode( setupContext(), decoratedMessage, resultingBuffers );
 
         // Then
         assertEquals( 1, resultingBuffers.size() );
@@ -170,7 +175,7 @@ public class RaftMessageEncodingDecodingTest
 
         // Then
         assertEquals( 1, thingsRead.size() );
-        assertEquals( message, thingsRead.get( 0 ) );
+        assertEquals( decoratedMessage, thingsRead.get( 0 ) );
     }
 
     private static ChannelHandlerContext setupContext()

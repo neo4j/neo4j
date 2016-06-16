@@ -25,15 +25,11 @@ import java.util.function.BiConsumer;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
-import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.net.Outbound;
-import org.neo4j.coreedge.raft.net.RaftOutbound;
 import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
 import org.neo4j.coreedge.raft.replication.session.OperationContext;
-import org.neo4j.coreedge.raft.replication.tx.ExponentialBackoffStrategy;
 import org.neo4j.coreedge.raft.replication.tx.RetryStrategy;
-import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.util.Listener;
 
 /**
@@ -83,7 +79,7 @@ public class RaftReplicator<MEMBER> implements Replicator<ReplicatedContent>, Li
         RetryStrategy.Timeout timeout = retryStrategy.newTimeout();
         do
         {
-            outbound.send( leader, new RaftMessages.NewEntry.Request<>( me, operation, localDatabase.storeId() ) );
+            outbound.send( leader, new RaftMessages.NewEntry.Request<>( me, operation ) );
             try
             {
                 progress.awaitReplication( timeout.getMillis() );

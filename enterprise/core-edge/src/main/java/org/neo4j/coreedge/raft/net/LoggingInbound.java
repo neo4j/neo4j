@@ -23,6 +23,7 @@ import org.neo4j.coreedge.network.Message;
 
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.logging.MessageLogger;
+import org.neo4j.kernel.impl.store.StoreId;
 
 public class LoggingInbound<M extends Message> implements Inbound<M>
 {
@@ -44,9 +45,9 @@ public class LoggingInbound<M extends Message> implements Inbound<M>
         inbound.registerHandler( new MessageHandler<M>()
         {
             @Override
-            public boolean validate( M message )
+            public boolean validate( M message, StoreId storeId )
             {
-                return handler.validate( message );
+                return handler.validate( message, storeId );
             }
 
             public synchronized void handle( M message )
