@@ -19,11 +19,11 @@
  */
 package org.neo4j.coreedge.catchup.tx.core;
 
-import java.util.List;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
+
+import java.util.List;
 
 import org.neo4j.com.CommittedTransactionSerializer;
 import org.neo4j.coreedge.catchup.storecopy.core.NetworkFlushableByteBuf;
@@ -36,8 +36,9 @@ public class TxPullResponseEncoder extends MessageToMessageEncoder<TxPullRespons
     protected void encode( ChannelHandlerContext ctx, TxPullResponse response, List<Object> out ) throws Exception
     {
         ByteBuf encoded = ctx.alloc().buffer();
-        StoreIdMarshal.marshal( response.storeId(), encoded );
-        new CommittedTransactionSerializer( new NetworkFlushableByteBuf( encoded ) ).visit( response.tx() );
+        NetworkFlushableByteBuf channel = new NetworkFlushableByteBuf( encoded );
+        StoreIdMarshal.marshal( response.storeId(), channel );
+        new CommittedTransactionSerializer( channel ).visit( response.tx() );
         out.add( encoded );
     }
 }

@@ -19,32 +19,31 @@
  */
 package org.neo4j.coreedge.discovery;
 
-import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.coreedge.server.BoltAddress;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.helpers.collection.Iterables;
 
 public class ClusterTopology
 {
-    private final ArrayList<CoreMember> coreMembers;
-    private final Set<BoltAddress> boltAddresses;
+    private final Map<CoreMember, BoltAddress> coreMembers;
     private final Set<BoltAddress> edgeBoltAddresses;
     private final boolean canBeBootstrapped;
 
-    ClusterTopology( boolean canBeBootstrapped, Set<CoreMember> coreMembers,
-                     Set<BoltAddress> coreBoltAddresses, Set<BoltAddress> edgeBoltAddresses )
+    public ClusterTopology( boolean canBeBootstrapped,
+                            Map<CoreMember, BoltAddress> coreMembers,
+                            Set<BoltAddress> edgeBoltAddresses )
     {
         this.canBeBootstrapped = canBeBootstrapped;
-        this.boltAddresses = coreBoltAddresses;
         this.edgeBoltAddresses = edgeBoltAddresses;
-        this.coreMembers = new ArrayList<>( coreMembers );
+        this.coreMembers = new HashMap<>( coreMembers );
     }
 
     public Set<CoreMember> coreMembers()
     {
-        return Iterables.asSet( coreMembers );
+        return coreMembers.keySet();
     }
 
     public Set<BoltAddress> edgeMembers()
@@ -52,14 +51,14 @@ public class ClusterTopology
         return edgeBoltAddresses;
     }
 
-    public boolean canBeBootstrapped()
+    boolean canBeBootstrapped()
     {
         return canBeBootstrapped;
     }
 
-    public Set<BoltAddress> boltCoreMembers()
+    public BoltAddress boltAddress(CoreMember coreMember)
     {
-        return boltAddresses;
+         return coreMembers.get( coreMember );
     }
 
     @Override

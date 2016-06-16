@@ -27,6 +27,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
+import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
 import org.neo4j.coreedge.raft.state.CoreSnapshot;
 
 import static org.neo4j.coreedge.catchup.CatchupClientProtocol.NextMessage;
@@ -45,7 +46,7 @@ public class CoreSnapshotDecoder extends MessageToMessageDecoder<ByteBuf>
     {
         if ( protocol.isExpecting( NextMessage.CORE_SNAPSHOT ) )
         {
-            out.add( new CoreSnapshot.Marshal().unmarshal( msg ) );
+            out.add( new CoreSnapshot.Marshal().unmarshal( new NetworkReadableClosableChannelNetty4( msg ) ) );
         }
         else
         {

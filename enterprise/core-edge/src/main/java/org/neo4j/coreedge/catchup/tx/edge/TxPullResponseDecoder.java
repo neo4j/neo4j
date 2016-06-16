@@ -19,14 +19,15 @@
  */
 package org.neo4j.coreedge.catchup.tx.edge;
 
-import java.util.List;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
+import java.util.List;
+
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
+import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
 import org.neo4j.coreedge.raft.replication.storeid.StoreIdMarshal;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -51,12 +52,11 @@ public class TxPullResponseDecoder extends MessageToMessageDecoder<ByteBuf>
     {
         if ( protocol.isExpecting( NextMessage.TX_PULL_RESPONSE ) )
         {
-            StoreId storeId = StoreIdMarshal.unmarshal( msg );
-
-            NetworkReadableClosableByteBuf logChannel = new NetworkReadableClosableByteBuf( msg );
-            LogEntryReader<NetworkReadableClosableByteBuf> reader = new VersionAwareLogEntryReader<>(
+            NetworkReadableClosableChannelNetty4 logChannel = new NetworkReadableClosableChannelNetty4( msg );
+            StoreId storeId = StoreIdMarshal.unmarshal( logChannel );
+            LogEntryReader<NetworkReadableClosableChannelNetty4> reader = new VersionAwareLogEntryReader<>(
                     new RecordStorageCommandReaderFactory() );
-            PhysicalTransactionCursor<NetworkReadableClosableByteBuf> transactionCursor =
+            PhysicalTransactionCursor<NetworkReadableClosableChannelNetty4> transactionCursor =
                     new PhysicalTransactionCursor<>( logChannel, reader );
 
             transactionCursor.next();

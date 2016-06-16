@@ -19,6 +19,8 @@
  */
 package org.neo4j.coreedge.raft;
 
+import java.util.concurrent.TimeUnit;
+
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -33,14 +35,12 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 
-import java.util.concurrent.TimeUnit;
-
 import org.neo4j.coreedge.raft.net.Inbound;
+import org.neo4j.coreedge.raft.net.codecs.RaftMessageDecoder;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.server.ByteBufMarshal;
+import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.server.ListenSocketAddress;
 import org.neo4j.coreedge.server.logging.ExceptionLoggingHandler;
-import org.neo4j.coreedge.raft.net.codecs.RaftMessageDecoder;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -50,14 +50,14 @@ public class RaftServer<MEMBER> extends LifecycleAdapter implements Inbound<Raft
 {
     private final ListenSocketAddress listenAddress;
     private final Log log;
-    private final ByteBufMarshal<ReplicatedContent> marshal;
+    private final ChannelMarshal<ReplicatedContent> marshal;
     private MessageHandler<RaftMessages.RaftMessage<MEMBER>> messageHandler;
     private EventLoopGroup workerGroup;
     private Channel channel;
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "raft-server" );
 
-    public RaftServer( ByteBufMarshal<ReplicatedContent> marshal, ListenSocketAddress listenAddress, LogProvider logProvider )
+    public RaftServer( ChannelMarshal<ReplicatedContent> marshal, ListenSocketAddress listenAddress, LogProvider logProvider )
     {
         this.marshal = marshal;
         this.listenAddress = listenAddress;
