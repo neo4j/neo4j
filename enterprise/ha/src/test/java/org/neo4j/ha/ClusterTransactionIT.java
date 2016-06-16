@@ -19,12 +19,12 @@
  */
 package org.neo4j.ha;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.FutureTask;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.concurrent.Callable;
+import java.util.concurrent.FutureTask;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -55,8 +55,8 @@ public class ClusterTransactionIT
     public void setUp() throws Exception
     {
         cluster = clusterRule.withProvider( clusterOfSize( 3 ) )
-                .withSharedSetting( HaSettings.ha_server, ":6001-6005" )
-                .withSharedSetting( HaSettings.tx_push_factor, "2" ).startCluster();
+                             .withSharedSetting( HaSettings.ha_server, ":6001-6005" )
+                             .withSharedSetting( HaSettings.tx_push_factor, "2" ).startCluster();
 
         cluster.await( ClusterManager.allSeesAllAsAvailable() );
     }

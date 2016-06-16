@@ -206,10 +206,6 @@ class SlaveLocksClient implements Locks.Client
             endLockSessionOnMaster( false );
             stopped = true;
         }
-        else
-        {
-            throw new UnsupportedOperationException( "Lock client stop is unsupported on slave side." );
-        }
     }
 
     @Override

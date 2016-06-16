@@ -55,6 +55,7 @@ import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -65,6 +66,7 @@ import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 public class SlaveLocksClientTest
 {
     private Master master;
+    private Locks lockManager;
     private Locks.Client local;
     private SlaveLocksClient client;
     private AvailabilityGuard availabilityGuard;
@@ -73,10 +75,9 @@ public class SlaveLocksClientTest
     public void setUp() throws Exception
     {
         master = mock( Master.class );
-        RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
         availabilityGuard = new AvailabilityGuard( new FakeClock(), NullLog.getInstance() );
 
-        Locks lockManager = new CommunityLockManger();
+        lockManager = new CommunityLockManger();
         local = spy( lockManager.newClient() );
 
         LockResult lockResultOk = new LockResult( LockStatus.OK_LOCKED );
@@ -87,9 +88,7 @@ public class SlaveLocksClientTest
 
         whenMasterAcquireExclusive().thenReturn( responseOk );
 
-        client = new SlaveLocksClient( master, local, lockManager, mock( RequestContextFactory.class ),
-                availabilityGuard,
-                true );
+        client = newSlaveLocksClient( lockManager, true );
     }
 
     private OngoingStubbing<Response<LockResult>> whenMasterAcquireShared()
@@ -424,6 +423,23 @@ public class SlaveLocksClientTest
         {
             assertEquals( error, e );
         }
+    }
+
+    @Test
+    public void stopDoesNothingWhenLocksAreNotTxTerminationAware()
+    {
+        SlaveLocksClient client = newSlaveLocksClient( lockManager, false );
+
+        client.stop();
+
+        verify( local, never() ).stop();
+        verify( master, never() ).endLockSession( any( RequestContext.class ), anyBoolean() );
+    }
+
+    private SlaveLocksClient newSlaveLocksClient( Locks lockManager, boolean txTerminationAwareLocks )
+    {
+        return new SlaveLocksClient( master, local, lockManager, mock( RequestContextFactory.class ),
+                availabilityGuard, txTerminationAwareLocks );
     }
 
     private SlaveLocksClient stoppedClient()
