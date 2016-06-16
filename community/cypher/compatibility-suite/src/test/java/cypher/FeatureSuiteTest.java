@@ -23,7 +23,7 @@ import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
 import org.junit.runner.RunWith;
 
-@RunWith( UnpackedFeatures.class )
+@RunWith( UnpackedResources.class )
 public class FeatureSuiteTest
 {
 
@@ -37,7 +37,6 @@ public class FeatureSuiteTest
     @RunWith( Cucumber.class )
     @CucumberOptions(
             plugin = {
-                    NAMED_GRAPHS_DBS,
                     DB_CONFIG + "rule.json",
                     HTML_REPORT + "rule",
                     JSON_REPORT + "rule"
@@ -53,7 +52,6 @@ public class FeatureSuiteTest
     @RunWith( Cucumber.class )
     @CucumberOptions(
             plugin = {
-                    NAMED_GRAPHS_DBS,
                     DB_CONFIG + "cost.json",
                     HTML_REPORT + "cost",
                     JSON_REPORT + "cost"
@@ -69,7 +67,6 @@ public class FeatureSuiteTest
     @RunWith( Cucumber.class )
     @CucumberOptions(
             plugin = {
-                    NAMED_GRAPHS_DBS,
                     DB_CONFIG + "cost-compiled.json",
                     HTML_REPORT + "cost-compiled",
                     JSON_REPORT + "cost-compiled"
@@ -84,8 +81,7 @@ public class FeatureSuiteTest
 
     // constants for TCK configuration
 
-    private static final String NAMED_GRAPHS_DBS = "cypher.cucumber.db.DatabaseProvider:target/dbs";
-    private static final String DB_CONFIG = "cypher.cucumber.db.DatabaseConfigProvider:/cypher/db/config/";
+    private static final String DB_CONFIG = "cypher.cucumber.db.DatabaseConfigProvider:/db-config/";
     private static final String HTML_REPORT = "html:target/";
     private static final String JSON_REPORT = "cypher.feature.reporting.CypherResultReporter:target/";
     private static final String GLUE_PATH = "classpath:cypher/feature/steps";

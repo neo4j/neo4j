@@ -40,6 +40,7 @@ object DatabaseConfigProvider {
 
 class DatabaseConfigProvider(jsonFile: URI) extends CucumberAdapter {
 
+  // TODO: Use proper json4s parsing to a case class
   override def feature(feature: Feature): Unit = {
     val file = new JFile(getClass.getResource(jsonFile.getPath).getPath)
     assert(file.exists(), file + " should exist")
