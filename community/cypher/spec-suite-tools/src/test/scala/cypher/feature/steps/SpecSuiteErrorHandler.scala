@@ -26,7 +26,7 @@ import org.scalatest.{Assertions, Matchers}
 
 import scala.util.{Failure, Success, Try}
 
-case class TCKErrorHandler(typ: String, phase: String, detail: String) extends Matchers with Assertions {
+case class SpecSuiteErrorHandler(typ: String, phase: String, detail: String) extends Matchers with Assertions {
 
   def check(result: Try[Result]) = {
     phase match {

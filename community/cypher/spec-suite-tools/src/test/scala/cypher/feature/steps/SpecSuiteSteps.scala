@@ -135,7 +135,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
   Then(EXPECT_ERROR) { (typ: String, phase: String, detail: String) =>
     ifEnabled {
-      TCKErrorHandler(typ, phase, detail).check(result)
+      SpecSuiteErrorHandler(typ, phase, detail).check(result)
     }
   }
 

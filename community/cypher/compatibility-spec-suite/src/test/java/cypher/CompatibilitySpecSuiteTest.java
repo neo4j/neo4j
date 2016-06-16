@@ -81,9 +81,10 @@ public class CompatibilitySpecSuiteTest
 
     // constants for TCK configuration
 
+    public static final String SUITE_NAME = "compatibility-spec-suite";
     private static final String DB_CONFIG = "cypher.cucumber.db.DatabaseConfigProvider:/db-config/";
-    private static final String HTML_REPORT = "html:target/";
-    private static final String JSON_REPORT = "cypher.feature.reporting.CypherResultReporter:target/";
     private static final String GLUE_PATH = "classpath:cypher/feature/steps";
-    private static final String FEATURE_PATH = "target/features/";
+    private static final String FEATURE_PATH = "target/" + SUITE_NAME + "/features/";
+    private static final String HTML_REPORT = "html:target/" + SUITE_NAME + "/";
+    private static final String JSON_REPORT = "cypher.feature.reporting.CypherResultReporter:target/" + SUITE_NAME + "/";
 }

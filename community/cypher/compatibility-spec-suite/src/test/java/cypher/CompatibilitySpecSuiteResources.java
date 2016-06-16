@@ -105,7 +105,7 @@ public class CompatibilitySpecSuiteResources extends Enclosed
 
     private static File obtainTargetDirectory( boolean create, String suffix )
     {
-        File directory = new File( new File ( new File( "target" ), "compatibility-spec-suite" ), suffix ).getAbsoluteFile();
+        File directory = new File( new File ( new File( "target" ), CompatibilitySpecSuiteTest.SUITE_NAME ), suffix ).getAbsoluteFile();
         if ( !directory.exists() )
         {
             if ( !(create && directory.mkdirs()) )
