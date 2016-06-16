@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.store.id;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.function.Supplier;
@@ -41,7 +39,8 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
     // TODO: How do Slave and Master agree on this, and what is a good quarantine time?
     public static final long ID_REUSE_QUARANTINE_TIME = TimeUnit.HOURS.toMillis( 1 );
     private final Clock clock;
-    private final Map<IdType, BufferingIdGenerator> overriddenIdGenerators = new HashMap<>();
+    private final BufferingIdGenerator[] overriddenIdGenerators =
+            new BufferingIdGenerator[IdType.getAllIdTypes().size()];
     private Supplier<KernelTransactionsSnapshot> boundaries;
     private IdReuseEligibility eligibleForReuse;
 
@@ -55,7 +54,7 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
     {
         this.boundaries = boundaries;
         this.eligibleForReuse = eligibleForReuse;
-        for ( BufferingIdGenerator generator : overriddenIdGenerators.values() )
+        for ( BufferingIdGenerator generator : overriddenIdGenerators )
         {
             if ( generator != null )
             {
@@ -93,7 +92,7 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
             {
                 bufferingGenerator.initialize( boundaries, eligibleForReuse );
             }
-            overriddenIdGenerators.put( idType, bufferingGenerator );
+            overriddenIdGenerators[idType.ordinal()] = bufferingGenerator;
             generator = bufferingGenerator;
         }
         return generator;
@@ -102,13 +101,13 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
     @Override
     public IdGenerator get( IdType idType )
     {
-        IdGenerator generator = overriddenIdGenerators.get( idType );
+        IdGenerator generator = overriddenIdGenerators[idType.ordinal()];
         return generator != null ? generator : super.get( idType );
     }
 
     public void maintenance()
     {
-        for ( BufferingIdGenerator generator : overriddenIdGenerators.values() )
+        for ( BufferingIdGenerator generator : overriddenIdGenerators )
         {
             if ( generator != null )
             {
@@ -119,7 +118,7 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
 
     public void clear()
     {
-        for ( BufferingIdGenerator generator : overriddenIdGenerators.values() )
+        for ( BufferingIdGenerator generator : overriddenIdGenerators )
         {
             if ( generator != null )
             {

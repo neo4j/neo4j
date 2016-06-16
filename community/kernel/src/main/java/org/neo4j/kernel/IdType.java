@@ -72,7 +72,7 @@ public class IdType
 
     private final long max;
     private boolean allowAggressiveReuse;
-    private Name name;
+    private final Name name;
 
     private IdType( Name name, boolean allowAggressiveReuse )
     {
@@ -84,6 +84,11 @@ public class IdType
         this.allowAggressiveReuse = allowAggressiveReuse;
         this.name = name;
         this.max = (long) Math.pow( 2, bits ) - 1;
+    }
+
+    public int ordinal()
+    {
+        return name.ordinal();
     }
 
     public long getMaxValue()
