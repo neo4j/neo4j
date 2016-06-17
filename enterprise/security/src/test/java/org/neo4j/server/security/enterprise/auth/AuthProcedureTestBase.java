@@ -58,12 +58,12 @@ import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.R
 
 public class AuthProcedureTestBase
 {
-    protected ShiroAuthSubject adminSubject;
-    protected ShiroAuthSubject schemaSubject;
-    protected ShiroAuthSubject writeSubject;
-    protected ShiroAuthSubject readSubject;
-    protected ShiroAuthSubject pwdSubject;
-    protected ShiroAuthSubject noneSubject;
+    protected EnterpriseAuthSubject adminSubject;
+    protected EnterpriseAuthSubject schemaSubject;
+    protected EnterpriseAuthSubject writeSubject;
+    protected EnterpriseAuthSubject readSubject;
+    protected EnterpriseAuthSubject pwdSubject;
+    protected EnterpriseAuthSubject noneSubject;
 
     protected String[] initialUsers = { "adminSubject", "readSubject", "schemaSubject",
         "readWriteSubject", "pwdSubject", "noneSubject", "neo4j" };
@@ -294,13 +294,13 @@ public class AuthProcedureTestBase
         }
     }
 
-    protected void testUnAunthenticated( ShiroAuthSubject subject )
+    protected void testUnAunthenticated( EnterpriseAuthSubject subject )
     {
         //TODO: improve me to be less gullible!
-        assertFalse( subject.getSubject().isAuthenticated() );
+        assertFalse( subject.getShiroSubject().isAuthenticated() );
     }
 
-    protected void testUnAunthenticated( ShiroAuthSubject subject, String call )
+    protected void testUnAunthenticated( EnterpriseAuthSubject subject, String call )
     {
         //TODO: OMG improve thrown exception
         try

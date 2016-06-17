@@ -149,7 +149,7 @@ public class ShiroAuthManager extends BasicAuthManager implements EnterpriseAuth
     }
 
     @Override
-    public ShiroAuthSubject login( Map<String,Object> authToken ) throws InvalidAuthTokenException
+    public EnterpriseAuthSubject login( Map<String,Object> authToken ) throws InvalidAuthTokenException
     {
         assertAuthEnabled();
 
@@ -190,7 +190,7 @@ public class ShiroAuthManager extends BasicAuthManager implements EnterpriseAuth
             }
             authStrategy.updateWithAuthenticationResult( result, username );
         }
-        return new ShiroAuthSubject( this, subject );
+        return new EnterpriseAuthSubject( this, subject );
     }
 
     @Override

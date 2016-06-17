@@ -52,7 +52,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
         testCallEmpty( readSubject, "CALL dbms.changePassword( '321' )" );
         testUnAunthenticated( readSubject );
 
-        ShiroAuthSubject subject = manager.login( authToken( "readSubject", "321" ) );
+        EnterpriseAuthSubject subject = manager.login( authToken( "readSubject", "321" ) );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
     }
 
@@ -336,17 +336,17 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldAddUserToRole() throws Exception
     {
-        assertFalse( "Should not have role publisher", readSubject.getSubject().hasRole( PUBLISHER ) );
+        assertFalse( "Should not have role publisher", readSubject.getShiroSubject().hasRole( PUBLISHER ) );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('readSubject', '" + PUBLISHER + "')" );
-        assertTrue( "Should have role publisher", readSubject.getSubject().hasRole( PUBLISHER ) );
+        assertTrue( "Should have role publisher", readSubject.getShiroSubject().hasRole( PUBLISHER ) );
     }
 
     @Test
     public void shouldAddRetainUserInRole() throws Exception
     {
-        assertTrue( "Should have role reader", readSubject.getSubject().hasRole( READER ) );
+        assertTrue( "Should have role reader", readSubject.getShiroSubject().hasRole( READER ) );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('readSubject', '" + READER + "')" );
-        assertTrue( "Should have still have role reader", readSubject.getSubject().hasRole( READER ) );
+        assertTrue( "Should have still have role reader", readSubject.getShiroSubject().hasRole( READER ) );
     }
 
     @Test
@@ -390,15 +390,15 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     public void shouldRemoveUserFromRole() throws Exception
     {
         testCallEmpty( adminSubject, "CALL dbms.removeUserFromRole('readSubject', '" + READER + "')" );
-        assertFalse( "Should not have role reader", readSubject.getSubject().hasRole( READER ) );
+        assertFalse( "Should not have role reader", readSubject.getShiroSubject().hasRole( READER ) );
     }
 
     @Test
     public void shouldKeepUserOutOfRole() throws Exception
     {
-        assertFalse( "Should not have role publisher", readSubject.getSubject().hasRole( PUBLISHER ) );
+        assertFalse( "Should not have role publisher", readSubject.getShiroSubject().hasRole( PUBLISHER ) );
         testCallEmpty( adminSubject, "CALL dbms.removeUserFromRole('readSubject', '" + PUBLISHER + "')" );
-        assertFalse( "Should not have role publisher", readSubject.getSubject().hasRole( PUBLISHER ) );
+        assertFalse( "Should not have role publisher", readSubject.getShiroSubject().hasRole( PUBLISHER ) );
     }
 
     @Test
@@ -452,22 +452,22 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     public void shouldAllowAddingAndRemovingUserFromMultipleRoles() throws Exception
     {
         assertFalse( "Should not have role publisher",
-                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PUBLISHER ) );
+                EnterpriseAuthSubject.castOrFail( readSubject ).getShiroSubject().hasRole( PUBLISHER ) );
         assertFalse( "Should not have role architect",
-                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( ARCHITECT ) );
+                EnterpriseAuthSubject.castOrFail( readSubject ).getShiroSubject().hasRole( ARCHITECT ) );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('readSubject', '" + PUBLISHER + "')" );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('readSubject', '" + ARCHITECT + "')" );
         assertTrue( "Should have role publisher",
-                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PUBLISHER ) );
+                EnterpriseAuthSubject.castOrFail( readSubject ).getShiroSubject().hasRole( PUBLISHER ) );
         assertTrue( "Should have role architect",
-                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( ARCHITECT ) );
+                EnterpriseAuthSubject.castOrFail( readSubject ).getShiroSubject().hasRole( ARCHITECT ) );
 
         testCallEmpty( adminSubject, "CALL dbms.removeUserFromRole('readSubject', '" + PUBLISHER + "')" );
         testCallEmpty( adminSubject, "CALL dbms.removeUserFromRole('readSubject', '" + ARCHITECT + "')" );
         assertFalse( "Should not have role publisher",
-                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PUBLISHER ) );
+                EnterpriseAuthSubject.castOrFail( readSubject ).getShiroSubject().hasRole( PUBLISHER ) );
         assertFalse( "Should not have role architect",
-                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( ARCHITECT ) );
+                EnterpriseAuthSubject.castOrFail( readSubject ).getShiroSubject().hasRole( ARCHITECT ) );
     }
 
     //---------- list users -----------
@@ -661,7 +661,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
 
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', true)" );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + ARCHITECT + "')" );
-        ShiroAuthSubject henrik = manager.login( authToken( "Henrik", "bar" ) );
+        EnterpriseAuthSubject henrik = manager.login( authToken( "Henrik", "bar" ) );
         assertEquals( AuthenticationResult.PASSWORD_CHANGE_REQUIRED, henrik.getAuthenticationResult() );
         testFailRead( henrik, 3 );
         testFailWrite( henrik );
@@ -670,7 +670,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
 
         testCallEmpty( adminSubject, "CALL dbms.createUser('Olivia', 'bar', true)" );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Olivia', '" + ADMIN + "')" );
-        ShiroAuthSubject olivia = manager.login( authToken( "Olivia", "bar" ) );
+        EnterpriseAuthSubject olivia = manager.login( authToken( "Olivia", "bar" ) );
         assertEquals( AuthenticationResult.PASSWORD_CHANGE_REQUIRED, olivia.getAuthenticationResult() );
         testFailRead( olivia, 3 );
         testFailWrite( olivia );

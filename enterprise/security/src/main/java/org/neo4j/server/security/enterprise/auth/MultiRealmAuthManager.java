@@ -84,7 +84,7 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager, UserManager
             subject = new ShiroSubject( securityManager, AuthenticationResult.FAILURE );
         }
 
-        return new ShiroAuthSubject( this, subject );
+        return new EnterpriseAuthSubject( this, subject );
     }
 
     @Override

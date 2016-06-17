@@ -257,9 +257,9 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements ShiroReal
     public void setPassword( AuthSubject authSubject, String username, String password ) throws IOException,
             IllegalCredentialsException
     {
-        ShiroAuthSubject shiroAuthSubject = ShiroAuthSubject.castOrFail( authSubject );
+        EnterpriseAuthSubject enterpriseAuthSubject = EnterpriseAuthSubject.castOrFail( authSubject );
 
-        if ( !shiroAuthSubject.doesUsernameMatch( username ) )
+        if ( !enterpriseAuthSubject.doesUsernameMatch( username ) )
         {
             throw new AuthorizationViolationException( "Invalid attempt to change the password for user " + username );
         }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.apache.shiro.subject.Subject;
-
 import java.io.IOException;
 
 import org.neo4j.kernel.api.security.AccessMode;
@@ -28,46 +26,46 @@ import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 
-public class ShiroAuthSubject implements AuthSubject
+public class EnterpriseAuthSubject implements AuthSubject
 {
     static final String SCHEMA_READ_WRITE = "schema:read,write";
     static final String READ_WRITE = "data:read,write";
     static final String READ = "data:read";
 
     private final EnterpriseAuthManager authManager;
-    private final ShiroSubject subject;
+    private final ShiroSubject shiroSubject;
 
-    public static ShiroAuthSubject castOrFail( AuthSubject authSubject )
+    public static EnterpriseAuthSubject castOrFail( AuthSubject authSubject )
     {
-        if ( !(authSubject instanceof ShiroAuthSubject) )
+        if ( !(authSubject instanceof EnterpriseAuthSubject) )
         {
             throw new IllegalArgumentException( "Incorrect AuthSubject type " + authSubject.getClass().getTypeName() );
         }
-        return (ShiroAuthSubject) authSubject;
+        return (EnterpriseAuthSubject) authSubject;
     }
 
-    public ShiroAuthSubject( EnterpriseAuthManager authManager, ShiroSubject subject )
+    public EnterpriseAuthSubject( EnterpriseAuthManager authManager, ShiroSubject shiroSubject )
     {
         this.authManager = authManager;
-        this.subject = subject;
+        this.shiroSubject = shiroSubject;
     }
 
     @Override
     public void logout()
     {
-        subject.logout();
+        shiroSubject.logout();
     }
 
     @Override
     public AuthenticationResult getAuthenticationResult()
     {
-        return subject.getAuthenticationResult();
+        return shiroSubject.getAuthenticationResult();
     }
 
     @Override
     public void setPassword( String password ) throws IOException, IllegalCredentialsException
     {
-        authManager.getUserManager().setPassword( this, (String) subject.getPrincipal(), password );
+        authManager.getUserManager().setPassword( this, (String) shiroSubject.getPrincipal(), password );
     }
 
     public EnterpriseUserManager getUserManager()
@@ -77,12 +75,12 @@ public class ShiroAuthSubject implements AuthSubject
 
     public boolean isAdmin()
     {
-        return subject.isPermitted( "*" );
+        return shiroSubject.isPermitted( "*" );
     }
 
     public boolean doesUsernameMatch( String username )
     {
-        Object principal = subject.getPrincipal();
+        Object principal = shiroSubject.getPrincipal();
         return principal != null && username.equals( principal );
     }
 
@@ -107,27 +105,27 @@ public class ShiroAuthSubject implements AuthSubject
     @Override
     public String name()
     {
-        return subject.getPrincipal().toString();
+        return shiroSubject.getPrincipal().toString();
     }
 
-    Subject getSubject()
+    ShiroSubject getShiroSubject()
     {
-        return subject;
+        return shiroSubject;
     }
 
     private AccessMode.Static getAccessMode()
     {
-        if ( subject.isAuthenticated() )
+        if ( shiroSubject.isAuthenticated() )
         {
-            if ( subject.isPermitted( SCHEMA_READ_WRITE ) )
+            if ( shiroSubject.isPermitted( SCHEMA_READ_WRITE ) )
             {
                 return AccessMode.Static.FULL;
             }
-            else if ( subject.isPermitted( READ_WRITE ) )
+            else if ( shiroSubject.isPermitted( READ_WRITE ) )
             {
                 return AccessMode.Static.WRITE;
             }
-            else if ( subject.isPermitted( READ ) )
+            else if ( shiroSubject.isPermitted( READ ) )
             {
                 return AccessMode.Static.READ;
             }
