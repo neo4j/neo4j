@@ -21,7 +21,6 @@ package org.neo4j.coreedge.server.edge;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
-import org.neo4j.coreedge.catchup.tx.edge.TxPollingClient;
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.raft.replication.tx.RetryStrategy;
@@ -38,7 +37,7 @@ public class EdgeServerStartupProcess implements Lifecycle
 {
     private final StoreFetcher storeFetcher;
     private final LocalDatabase localDatabase;
-    private final TxPollingClient txPuller;
+    private final Lifecycle txPulling;
     private final DataSourceManager dataSourceManager;
     private final CoreServerSelectionStrategy connectionStrategy;
     private final Log log;
@@ -46,16 +45,18 @@ public class EdgeServerStartupProcess implements Lifecycle
     private final Config config;
     private final RetryStrategy.Timeout timeout;
 
-    public EdgeServerStartupProcess( StoreFetcher storeFetcher, LocalDatabase localDatabase,
-                                     TxPollingClient txPuller,
-                                     DataSourceManager dataSourceManager,
-                                     CoreServerSelectionStrategy connectionStrategy,
-                                     RetryStrategy retryStrategy,
-                                     LogProvider logProvider, EdgeTopologyService discoveryService, Config config )
+    public EdgeServerStartupProcess(
+            StoreFetcher storeFetcher,
+            LocalDatabase localDatabase,
+            Lifecycle txPulling,
+            DataSourceManager dataSourceManager,
+            CoreServerSelectionStrategy connectionStrategy,
+            RetryStrategy retryStrategy,
+            LogProvider logProvider, EdgeTopologyService discoveryService, Config config )
     {
         this.storeFetcher = storeFetcher;
         this.localDatabase = localDatabase;
-        this.txPuller = txPuller;
+        this.txPulling = txPulling;
         this.dataSourceManager = dataSourceManager;
         this.connectionStrategy = connectionStrategy;
         this.timeout = retryStrategy.newTimeout();
@@ -68,6 +69,7 @@ public class EdgeServerStartupProcess implements Lifecycle
     public void init() throws Throwable
     {
         dataSourceManager.init();
+        txPulling.init();
     }
 
     @Override
@@ -97,20 +99,20 @@ public class EdgeServerStartupProcess implements Lifecycle
         } while ( !copiedStore );
 
         dataSourceManager.start();
-        txPuller.startPolling();
+        txPulling.start();
     }
 
     @Override
     public void stop() throws Throwable
     {
-        txPuller.stop();
+        txPulling.stop();
         dataSourceManager.stop();
     }
 
     @Override
     public void shutdown() throws Throwable
     {
+        txPulling.shutdown();
         dataSourceManager.shutdown();
     }
-
 }

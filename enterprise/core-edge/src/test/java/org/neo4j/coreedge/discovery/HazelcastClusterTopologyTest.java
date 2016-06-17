@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.catchup.tx.edge.TxPollingClient;
 import org.neo4j.coreedge.raft.replication.tx.ConstantTimeRetryStrategy;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
@@ -34,6 +33,7 @@ import org.neo4j.coreedge.server.edge.EdgeServerStartupProcess;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Matchers.anyObject;
@@ -64,7 +64,7 @@ public class HazelcastClusterTopologyTest
 
         final EdgeServerStartupProcess startupProcess = new EdgeServerStartupProcess( null,
                 mock( LocalDatabase.class ),
-                mock( TxPollingClient.class ),
+                mock( Lifecycle.class ),
                 mock( DataSourceManager.class ),
                 connectionStrategy,
                 new ConstantTimeRetryStrategy( 1, TimeUnit.MILLISECONDS ),

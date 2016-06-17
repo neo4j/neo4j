@@ -155,18 +155,9 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
     }
 
     @Override
-    public void onTxReceived( TxPullResponse tx ) throws IOException
+    public void onTxReceived( final TxPullResponse tx )
     {
-        txPullResponseListeners.notify( listener -> {
-            try
-            {
-                listener.onTxReceived( tx );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-        } );
+        txPullResponseListeners.notify( listener -> listener.onTxReceived( tx ) );
     }
 
     @Override

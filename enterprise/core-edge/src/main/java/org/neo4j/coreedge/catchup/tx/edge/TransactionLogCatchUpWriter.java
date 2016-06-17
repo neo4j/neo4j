@@ -37,6 +37,8 @@ import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static java.lang.Math.max;
 
@@ -51,11 +53,13 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
     private final PhysicalLogFiles logFiles;
     private final ReadOnlyLogVersionRepository logVersionRepository;
     private final TransactionLogWriter writer;
+    private final Log log;
 
-    public TransactionLogCatchUpWriter( File storeDir, FileSystemAbstraction fs, PageCache pageCache ) throws
+    public TransactionLogCatchUpWriter( File storeDir, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider ) throws
             IOException
     {
         this.fs = fs;
+        this.log = logProvider.getLog( getClass() );
         this.life = new LifeSupport();
 
         logFiles = new PhysicalLogFiles( storeDir, fs );
@@ -72,10 +76,17 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
     }
 
     @Override
-    public void onTxReceived( TxPullResponse txPullResponse ) throws IOException
+    public void onTxReceived( TxPullResponse txPullResponse )
     {
         CommittedTransactionRepresentation tx = txPullResponse.tx();
-        writer.append( tx.getTransactionRepresentation(), tx.getCommitEntry().getTxId() );
+        try
+        {
+            writer.append( tx.getTransactionRepresentation(), tx.getCommitEntry().getTxId() );
+        }
+        catch ( IOException e )
+        {
+            log.error( "Failed when appending to transaction log", e );
+        }
     }
 
     public void setCorrectTransactionId( long endTxId ) throws IOException

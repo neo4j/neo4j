@@ -19,90 +19,98 @@
  */
 package org.neo4j.coreedge.catchup.tx.edge;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.coreedge.catchup.storecopy.CoreClient;
+import org.neo4j.coreedge.raft.ControlledRenewableTimeoutService;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.OnDemandJobScheduler;
 
-import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.coreedge.catchup.tx.edge.TxPollingClient.Timeouts.TX_PULLER_TIMEOUT;
+import static org.neo4j.kernel.impl.store.StoreId.DEFAULT;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class TxPollingClientTest
 {
-    @Test
-    public void shouldPollViaScheduler() throws Exception
+    private final CoreClient coreClient = mock( CoreClient.class );
+    private final CoreServerSelectionStrategy serverSelection = mock( CoreServerSelectionStrategy.class );
+    private final AdvertisedSocketAddress coreServer = mock( AdvertisedSocketAddress.class );
+    private final TransactionIdStore idStore = mock( TransactionIdStore.class );
+
+    private final BatchingTxApplier txApplier = mock( BatchingTxApplier.class );
+    private final ControlledRenewableTimeoutService timeoutService = new ControlledRenewableTimeoutService();
+
+    private final long txPullTimeoutMillis = 100;
+
+    private final TxPollingClient txPuller = new TxPollingClient( NullLogProvider.getInstance(), coreClient, serverSelection,
+            timeoutService, txPullTimeoutMillis, txApplier );
+
+    @Before
+    public void before() throws Throwable
     {
-        // given
-        CoreClient coreClient = mock( CoreClient.class );
-        OnDemandJobScheduler scheduler = new OnDemandJobScheduler();
-
-        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 14L );
-
-        TxPollingClient txPollingClient = new TxPollingClient( scheduler, 10, () -> transactionIdStore, coreClient,
-                null, mock( CoreServerSelectionStrategy.class ), NullLogProvider.getInstance() );
-        txPollingClient.startPolling();
-
-        // when
-        scheduler.runJob();
-
-        // then
-        verify( coreClient ).pollForTransactions( any( AdvertisedSocketAddress.class ), eq( 14L ) );
+        when( idStore.getLastCommittedTransactionId() ).thenReturn( BASE_TX_ID );
+        when( serverSelection.coreServer() ).thenReturn( coreServer );
+        txPuller.start();
     }
 
     @Test
-    public void shouldRegisterTxPullListener() throws Exception
+    public void shouldSendPullRequestOnTick() throws Throwable
     {
         // given
-        TxPullResponseListener listener = mock( TxPullResponseListener.class );
-        CoreClient coreClient = mock( CoreClient.class );
-
-        TxPollingClient txPollingClient = new TxPollingClient( new OnDemandJobScheduler(), 10,
-                () -> mock( TransactionIdStore.class ), coreClient, listener,
-                mock( CoreServerSelectionStrategy.class ), NullLogProvider.getInstance() );
+        long lastAppliedTxId = 99L;
+        when( txApplier.lastAppliedTxId() ).thenReturn( lastAppliedTxId );
 
         // when
-        txPollingClient.startPolling();
+        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
         // then
-        verify( coreClient ).addTxPullResponseListener( listener );
+        verify( coreClient ).pollForTransactions( coreServer, lastAppliedTxId );
     }
 
     @Test
-    public void pollJobShouldLogExceptions() throws Exception
+    public void shouldNotScheduleNewPullIfThereIsWorkPending() throws Exception
     {
         // given
-        RuntimeException exception = new RuntimeException( "Deliberate" );
-
-        CoreClient coreClient = mock( CoreClient.class );
-        doThrow( exception ).when( coreClient )
-                .pollForTransactions( any( AdvertisedSocketAddress.class ), anyLong() );
-
-        OnDemandJobScheduler scheduler = new OnDemandJobScheduler();
-        AssertableLogProvider assertableLogProvider = new AssertableLogProvider();
-        TxPollingClient txPollingClient = new TxPollingClient( scheduler, 10, () -> mock( TransactionIdStore.class ),
-                coreClient, null, mock( CoreServerSelectionStrategy.class ), assertableLogProvider );
-        txPollingClient.startPolling();
+        when( txApplier.workPending() ).thenReturn( true );
 
         // when
-        scheduler.runJob();
+        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
         // then
-        assertableLogProvider.assertAtLeastOnce( inLog( TxPollingClient.class )
-                .warn( equalTo( "Tx pull attempt failed, will retry at the next regularly scheduled polling attempt." ),
-                        equalTo( exception ) ) );
+        verify( coreClient, never() ).pollForTransactions( any( AdvertisedSocketAddress.class ), anyLong() );
+    }
+
+    @Test
+    public void shouldResetTxReceivedTimeoutOnTxReceived() throws Throwable
+    {
+        // given
+        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+
+        // when
+        txPuller.onTxReceived( new TxPullResponse( DEFAULT, mock( CommittedTransactionRepresentation.class ) ) );
+
+        // then
+        verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ), times( 2 ) ).renew();
+    }
+
+    @Test
+    public void shouldRenewTxPullTimeoutOnTick() throws Throwable
+    {
+        // when
+        timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
+
+        // then
+        verify( timeoutService.getTimeout( TX_PULLER_TIMEOUT ) ).renew();
     }
 }

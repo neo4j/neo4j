@@ -19,17 +19,6 @@
  */
 package org.neo4j.coreedge.catchup.tx.edge;
 
-import java.io.File;
-import java.io.IOException;
-
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.logging.LogProvider;
-
-public class TransactionLogCatchUpFactory
+interface TxPullListener extends TxPullResponseListener, TxStreamCompleteListener
 {
-    public TransactionLogCatchUpWriter create( File storeDir, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider ) throws IOException
-    {
-        return new TransactionLogCatchUpWriter( storeDir, fs, pageCache, logProvider );
-    }
 }

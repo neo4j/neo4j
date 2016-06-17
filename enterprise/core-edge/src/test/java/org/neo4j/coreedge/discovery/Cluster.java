@@ -445,7 +445,7 @@ public class Cluster implements AutoCloseable
         edgeServers.add( startEdgeServer( serverId, advertisedAddresses, stringMap(), emptyMap(), recordFormat ) );
     }
 
-    public void addEdgeServerWithFileLocation( int serverId )
+    public void addEdgeServerWithId( int serverId )
     {
         addEdgeServerWithFileLocation( serverId, StandardV3_0.NAME );
     }

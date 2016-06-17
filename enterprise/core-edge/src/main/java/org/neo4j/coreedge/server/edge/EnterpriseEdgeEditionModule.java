@@ -20,7 +20,7 @@
 package org.neo4j.coreedge.server.edge;
 
 import java.io.File;
-import java.util.List;
+import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -31,21 +31,20 @@ import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
 import org.neo4j.coreedge.catchup.storecopy.edge.EdgeToCoreClient;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyClient;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
-import org.neo4j.coreedge.catchup.tx.edge.ApplyPulledTransactions;
-import org.neo4j.coreedge.catchup.tx.edge.TransactionApplier;
+import org.neo4j.coreedge.catchup.tx.edge.BatchingTxApplier;
 import org.neo4j.coreedge.catchup.tx.edge.TransactionLogCatchUpFactory;
-import org.neo4j.coreedge.catchup.tx.edge.TxPollingClient;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
+import org.neo4j.coreedge.catchup.tx.edge.TxPollingClient;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
+import org.neo4j.coreedge.raft.ContinuousJob;
+import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.raft.replication.tx.ExponentialBackoffStrategy;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.NonBlockingChannels;
-import org.neo4j.coreedge.server.core.NoBoltConnectivityException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -55,6 +54,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
@@ -67,11 +68,12 @@ import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
@@ -81,15 +83,12 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.udc.UsageData;
 
 import static java.util.Collections.singletonMap;
-import static java.util.stream.Collectors.toList;
-
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
-import static org.neo4j.kernel.configuration.GroupSettingSupport.enumerate;
 import static org.neo4j.kernel.impl.factory.CommunityEditionModule.createLockManager;
+import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
 
 /**
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
@@ -159,9 +158,6 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         discoveryService = discoveryServiceFactory.edgeDiscoveryService( config, logProvider);
         life.add(dependencies.satisfyDependency( discoveryService ));
 
-        Supplier<TransactionApplier> transactionApplierSupplier =
-                () -> new TransactionApplier( platformModule.dependencies );
-
         NonBlockingChannels nonBlockingChannels = new NonBlockingChannels();
         EdgeToCoreClient.ChannelInitializer channelInitializer = new EdgeToCoreClient.ChannelInitializer( logProvider, nonBlockingChannels );
         int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
@@ -169,25 +165,32 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 channelInitializer, platformModule.monitors, maxQueueSize, nonBlockingChannels ) );
         channelInitializer.setOwner( edgeToCoreClient );
 
-        Supplier<TransactionIdStore> transactionIdStoreSupplier =
-                () -> platformModule.dependencies.resolveDependency( TransactionIdStore.class ) ;
+        final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
-        ApplyPulledTransactions applyPulledTransactions =
-                new ApplyPulledTransactions( logProvider, transactionApplierSupplier, transactionIdStoreSupplier,
-                        platformModule.monitors );
+        Supplier<TransactionCommitProcess> writableCommitProcess = () -> new TransactionRepresentationCommitProcess(
+                dependencies.resolveDependency( TransactionAppender.class ),
+                dependencies.resolveDependency( StorageEngine.class ) );
 
-        TxPollingClient txPollingClient = life.add(
-                new TxPollingClient( platformModule.jobScheduler, config.get( CoreEdgeClusterSettings.pull_interval ),
-                        platformModule.dependencies.provideDependency( TransactionIdStore.class ), edgeToCoreClient,
-                        applyPulledTransactions, new ConnectToRandomCoreServer( discoveryService ), NullLogProvider
-                        .getInstance() ) );
+        LifeSupport txPulling = new LifeSupport();
+        int maxBatchSize = config.get( CoreEdgeClusterSettings.edge_transaction_applier_batch_size );
+        BatchingTxApplier batchingTxApplier = new BatchingTxApplier( maxBatchSize, dependencies.provideDependency( TransactionIdStore.class ),
+                writableCommitProcess, databaseHealthSupplier, platformModule.monitors, logProvider );
+        ContinuousJob txApplyJob = new ContinuousJob( platformModule.jobScheduler, new JobScheduler.Group( "tx-applier", NEW_THREAD ), batchingTxApplier );
+
+        DelayedRenewableTimeoutService txPullerTimeoutService = new DelayedRenewableTimeoutService( Clock.systemUTC(), logProvider );
+        TxPollingClient txPuller = new TxPollingClient( logProvider,
+                edgeToCoreClient, new ConnectToRandomCoreServer( discoveryService ),
+                txPullerTimeoutService, config.get( CoreEdgeClusterSettings.pull_interval ), batchingTxApplier );
+
+        txPulling.add( batchingTxApplier );
+        txPulling.add( txApplyJob );
+        txPulling.add( txPuller );
+        txPulling.add( txPullerTimeoutService );
 
         StoreFetcher storeFetcher = new StoreFetcher( platformModule.logging.getInternalLogProvider(),
                 new DefaultFileSystemAbstraction(), platformModule.pageCache,
                 new StoreCopyClient( edgeToCoreClient ), new TxPullClient( edgeToCoreClient ),
                 new TransactionLogCatchUpFactory() );
-
-        final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
         life.add( new EdgeServerStartupProcess( storeFetcher,
                 new LocalDatabase( platformModule.storeDir,
@@ -196,7 +199,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                         dependencies.provideDependency( NeoStoreDataSource.class ),
                         dependencies.provideDependency( TransactionIdStore.class ),
                         databaseHealthSupplier),
-                txPollingClient, platformModule.dataSourceManager, new ConnectToRandomCoreServer( discoveryService ),
+                txPulling, platformModule.dataSourceManager, new ConnectToRandomCoreServer( discoveryService ),
                 new ExponentialBackoffStrategy( 1, TimeUnit.SECONDS ), logProvider, discoveryService, config ) );
     }
 

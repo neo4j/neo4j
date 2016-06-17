@@ -28,10 +28,8 @@ import org.junit.Test;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
-import org.neo4j.coreedge.catchup.tx.edge.TxPollingClient;
 import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
-import org.neo4j.coreedge.discovery.HazelcastClusterTopology;
 import org.neo4j.coreedge.raft.replication.tx.ConstantTimeRetryStrategy;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
@@ -40,6 +38,7 @@ import org.neo4j.coreedge.server.edge.EdgeServerStartupProcess;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -75,9 +74,10 @@ public class EdgeServerStartupProcessTest
         when( localDatabase.isEmpty() ).thenReturn( true );
 
         DataSourceManager dataSourceManager = mock( DataSourceManager.class );
-        TxPollingClient txPuller = mock( TxPollingClient.class );
+        Lifecycle txPulling = mock( Lifecycle.class );
+
         EdgeServerStartupProcess edgeServerStartupProcess = new EdgeServerStartupProcess( storeFetcher, localDatabase,
-                txPuller, dataSourceManager, new AlwaysChooseFirstServer( hazelcastTopology ),
+                txPulling, dataSourceManager, new AlwaysChooseFirstServer( hazelcastTopology ),
                 new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(),
                 mock( EdgeTopologyService.class ), config );
 
@@ -87,7 +87,7 @@ public class EdgeServerStartupProcessTest
         // then
         verify( localDatabase ).copyStoreFrom( coreServerAddress, storeFetcher );
         verify( dataSourceManager ).start();
-        verify( txPuller ).startPolling();
+        verify( txPulling ).start();
     }
 
     @Test
@@ -106,9 +106,9 @@ public class EdgeServerStartupProcessTest
         when( localDatabase.isEmpty() ).thenReturn( true );
 
         DataSourceManager dataSourceManager = mock( DataSourceManager.class );
-        TxPollingClient txPuller = mock( TxPollingClient.class );
+        Lifecycle txPulling = mock( Lifecycle.class );
         EdgeServerStartupProcess edgeServerStartupProcess = new EdgeServerStartupProcess( storeFetcher, localDatabase,
-                txPuller, dataSourceManager, new AlwaysChooseFirstServer( hazelcastTopology ),
+                txPulling, dataSourceManager, new AlwaysChooseFirstServer( hazelcastTopology ),
                 new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(),
                 mock( EdgeTopologyService.class ), null );
 
@@ -116,7 +116,7 @@ public class EdgeServerStartupProcessTest
         edgeServerStartupProcess.stop();
 
         // then
-        verify( txPuller ).stop();
+        verify( txPulling ).stop();
         verify( dataSourceManager ).stop();
     }
 
