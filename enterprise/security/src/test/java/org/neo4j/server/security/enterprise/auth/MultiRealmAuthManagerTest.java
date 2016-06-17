@@ -23,15 +23,16 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collections;
+
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.Credential;
+import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.User;
-
-import org.neo4j.server.security.auth.InMemoryUserRepository;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -41,18 +42,19 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 
-public class ShiroAuthManagerTest
+public class MultiRealmAuthManagerTest
 {
     private InMemoryUserRepository users;
     private InMemoryRoleRepository roles;
     private AuthenticationStrategy authStrategy;
     private PasswordPolicy passwordPolicy;
-    private ShiroAuthManager manager;
+    private InternalFlatFileRealm internalFlatFileRealm;
+    private MultiRealmAuthManager manager;
+    private EnterpriseUserManager userManager;
 
     @Before
     public void setUp() throws Throwable
@@ -60,10 +62,12 @@ public class ShiroAuthManagerTest
         users = new InMemoryUserRepository();
         roles = new InMemoryRoleRepository();
         authStrategy = mock( AuthenticationStrategy.class );
-        when( authStrategy.isAuthenticationPermitted( anyString() ) ).thenReturn( true );
         passwordPolicy = mock( PasswordPolicy.class );
-        manager = new ShiroAuthManager( users, roles, passwordPolicy, authStrategy );
+
+        internalFlatFileRealm = new InternalFlatFileRealm( users, roles, passwordPolicy, authStrategy, true );
+        manager = new MultiRealmAuthManager( internalFlatFileRealm, Collections.singleton( internalFlatFileRealm ));
         manager.init();
+        userManager = manager.getUserManager();
     }
 
     @After
@@ -92,9 +96,9 @@ public class ShiroAuthManagerTest
     public void shouldFindAndAuthenticateUserSuccessfully() throws Throwable
     {
         // Given
-        final User user = newUser( "jake", "abc123" , false );
-        users.create( user );
+        users.create( newUser( "jake", "abc123" , false ) );
         manager.start();
+        setMockAuthenticationStrategyResult( "jake", "abc123", AuthenticationResult.SUCCESS );
 
         // When
         AuthenticationResult result = manager.login( authToken( "jake", "abc123" ) ).getAuthenticationResult();
@@ -107,10 +111,9 @@ public class ShiroAuthManagerTest
     public void shouldFindAndAuthenticateUserAndReturnAuthStrategyResult() throws Throwable
     {
         // Given
-        final User user = newUser( "jake", "abc123" , true );
-        users.create( user );
+        users.create( newUser( "jake", "abc123" , true ) );
         manager.start();
-        when( authStrategy.isAuthenticationPermitted( user.name() )).thenReturn( false );
+        setMockAuthenticationStrategyResult( "jake", "abc123", AuthenticationResult.TOO_MANY_ATTEMPTS );
 
         // When
         AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) );
@@ -124,9 +127,9 @@ public class ShiroAuthManagerTest
     public void shouldFindAndAuthenticateUserAndReturnPasswordChangeIfRequired() throws Throwable
     {
         // Given
-        final User user = newUser( "jake", "abc123" , true );
-        users.create( user );
+        users.create( newUser( "jake", "abc123" , true ) );
         manager.start();
+        setMockAuthenticationStrategyResult( "jake", "abc123", AuthenticationResult.SUCCESS );
 
         // When
         AuthenticationResult result = manager.login( authToken( "jake", "abc123" ) ).getAuthenticationResult();
@@ -139,8 +142,6 @@ public class ShiroAuthManagerTest
     public void shouldFailAuthenticationIfUserIsNotFound() throws Throwable
     {
         // Given
-        final User user = newUser( "jake", "abc123" , true );
-        users.create( user );
         manager.start();
 
         // When
@@ -158,7 +159,7 @@ public class ShiroAuthManagerTest
         manager.start();
 
         // When
-        manager.newUser( "foo", "bar", true );
+        userManager.newUser( "foo", "bar", true );
 
         // Then
         User user = users.getUserByName( "foo" );
@@ -180,7 +181,7 @@ public class ShiroAuthManagerTest
         manager.start();
 
         // When
-        manager.deleteUser( "jake" );
+        userManager.deleteUser( "jake" );
 
         // Then
         assertNull( users.getUserByName( "jake" ) );
@@ -198,7 +199,7 @@ public class ShiroAuthManagerTest
         // When
         try
         {
-            manager.deleteUser( "unknown" );
+            userManager.deleteUser( "unknown" );
             fail("Should throw exception on deleting unknown user");
         }
         catch ( IllegalArgumentException e )
@@ -219,9 +220,10 @@ public class ShiroAuthManagerTest
         manager.start();
 
         // When
-        manager.suspendUser( "jake" );
+        userManager.suspendUser( "jake" );
 
         // Then
+        setMockAuthenticationStrategyResult( "jake", "abc123", AuthenticationResult.SUCCESS );
         AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) );
         assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.FAILURE ) );
     }
@@ -230,13 +232,14 @@ public class ShiroAuthManagerTest
     public void shouldActivateExistingUser() throws Throwable
     {
         // Given
-        final User user = newUser( "jake", "abc123", false );
-        users.create( user );
+        users.create( newUser( "jake", "abc123", false ) );
         manager.start();
-        manager.suspendUser( "jake" );
+
+        userManager.suspendUser( "jake" );
 
         // When
-        manager.activateUser( "jake" );
+        userManager.activateUser( "jake" );
+        setMockAuthenticationStrategyResult( "jake", "abc123", AuthenticationResult.SUCCESS );
 
         // Then
         AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) );
@@ -250,10 +253,11 @@ public class ShiroAuthManagerTest
         final User user = newUser( "jake", "abc123", false );
         users.create( user );
         manager.start();
-        manager.suspendUser( "jake" );
+        userManager.suspendUser( "jake" );
 
         // When
-        manager.suspendUser( "jake" );
+        userManager.suspendUser( "jake" );
+        setMockAuthenticationStrategyResult( "jake", "abc123", AuthenticationResult.SUCCESS );
 
         // Then
         AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) );
@@ -267,9 +271,11 @@ public class ShiroAuthManagerTest
         final User user = newUser( "jake", "abc123", false );
         users.create( user );
         manager.start();
+        when( authStrategy.authenticate( user, "abc123" ) ).thenReturn( AuthenticationResult.SUCCESS );
 
         // When
-        manager.activateUser( "jake" );
+        userManager.activateUser( "jake" );
+        setMockAuthenticationStrategyResult( "jake", "abc123", AuthenticationResult.SUCCESS );
 
         // Then
         AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) );
@@ -285,7 +291,7 @@ public class ShiroAuthManagerTest
         // When
         try
         {
-            manager.suspendUser( "jake" );
+            userManager.suspendUser( "jake" );
             fail( "Should throw exception on suspending unknown user" );
         }
         catch ( IllegalArgumentException e )
@@ -304,7 +310,7 @@ public class ShiroAuthManagerTest
         // When
         try
         {
-            manager.activateUser( "jake" );
+            userManager.activateUser( "jake" );
             fail( "Should throw exception on activating unknown user" );
         }
         catch ( IllegalArgumentException e )
@@ -322,10 +328,10 @@ public class ShiroAuthManagerTest
         manager.start();
 
         // When
-        manager.setUserPassword( "jake", "hello, world!" );
+        userManager.setUserPassword( "jake", "hello, world!" );
 
         // Then
-        User user = manager.getUser( "jake" );
+        User user = userManager.getUser( "jake" );
         assertTrue( user.credentials().matchesPassword( "hello, world!" ) );
         assertThat( users.getUserByName( "jake" ), equalTo( user ) );
     }
@@ -336,17 +342,20 @@ public class ShiroAuthManagerTest
         // Given
         users.create( newUser( "neo", "abc123", true ) );
         manager.start();
+        setMockAuthenticationStrategyResult( "neo", "abc123", AuthenticationResult.SUCCESS );
 
         // When
         AuthSubject authSubject = manager.login( authToken( "neo", "abc123" ) );
         assertThat( authSubject.getAuthenticationResult(), equalTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED ) );
 
         authSubject.setPassword( "hello, world!" );
+        setMockAuthenticationStrategyResult( "neo", "hello, world!", AuthenticationResult.SUCCESS );
 
         // Then
-        User user = manager.getUser( "neo" );
-        assertTrue( user.credentials().matchesPassword( "hello, world!" ) );
-        assertThat( users.getUserByName( "neo" ), equalTo( user ) );
+        final User updatedUser = userManager.getUser( "neo" );
+
+        assertTrue( updatedUser.credentials().matchesPassword( "hello, world!" ) );
+        assertThat( users.getUserByName( "neo" ), equalTo( updatedUser ) );
 
         authSubject.logout();
         authSubject = manager.login( authToken( "neo", "hello, world!" ) );
@@ -359,6 +368,8 @@ public class ShiroAuthManagerTest
         // Given
         users.create( newUser( "neo", "abc123", true ) );
         manager.start();
+        setMockAuthenticationStrategyResult( "neo", "abc123", AuthenticationResult.SUCCESS );
+        setMockAuthenticationStrategyResult( "neo", "wrong", AuthenticationResult.FAILURE );
 
         // When
         AuthSubject authSubject = manager.login( authToken( "neo", "wrong" ) );
@@ -376,7 +387,7 @@ public class ShiroAuthManagerTest
         // When
         try
         {
-            manager.setUserPassword( "unknown", "hello, world!" );
+            userManager.setUserPassword( "unknown", "hello, world!" );
             fail( "exception expected" );
         }
         catch ( IllegalCredentialsException e )
@@ -387,16 +398,25 @@ public class ShiroAuthManagerTest
 
     private void createTestUsers() throws Throwable
     {
-        manager.newUser( "morpheus", "abc123", false );
-        manager.newRole( "admin", "morpheus" );
-        manager.newUser( "trinity", "abc123", false );
-        manager.newRole( "architect", "trinity" );
-        manager.newUser( "tank", "abc123", false );
-        manager.newRole( "publisher", "tank" );
-        manager.newUser( "neo", "abc123", false );
-        manager.newRole( "reader", "neo" );
-        manager.newUser( "smith", "abc123", false );
-        manager.newRole( "agent", "smith" );
+        userManager.newUser( "morpheus", "abc123", false );
+        userManager.newRole( "admin", "morpheus" );
+        setMockAuthenticationStrategyResult( "morpheus", "abc123", AuthenticationResult.SUCCESS );
+
+        userManager.newUser( "trinity", "abc123", false );
+        userManager.newRole( "architect", "trinity" );
+        setMockAuthenticationStrategyResult( "trinity", "abc123", AuthenticationResult.SUCCESS );
+
+        userManager.newUser( "tank", "abc123", false );
+        userManager.newRole( "publisher", "tank" );
+        setMockAuthenticationStrategyResult( "tank", "abc123", AuthenticationResult.SUCCESS );
+
+        userManager.newUser( "neo", "abc123", false );
+        userManager.newRole( "reader", "neo" );
+        setMockAuthenticationStrategyResult( "neo", "abc123", AuthenticationResult.SUCCESS );
+
+        userManager.newUser( "smith", "abc123", false );
+        userManager.newRole( "agent", "smith" );
+        setMockAuthenticationStrategyResult( "smith", "abc123", AuthenticationResult.SUCCESS );
     }
 
     @Test
@@ -404,11 +424,14 @@ public class ShiroAuthManagerTest
     {
         // Given
         manager.start();
+        setMockAuthenticationStrategyResult( "neo4j", "neo4j", AuthenticationResult.SUCCESS );
 
         // When
         AuthSubject subject = manager.login( authToken( "neo4j", "neo4j" ) );
-        manager.setUserPassword( "neo4j", "1234" );
+        userManager.setUserPassword( "neo4j", "1234" );
         subject.logout();
+
+        setMockAuthenticationStrategyResult( "neo4j", "1234", AuthenticationResult.SUCCESS );
         subject = manager.login( authToken( "neo4j", "1234" ) );
 
         // Then
@@ -523,5 +546,11 @@ public class ShiroAuthManagerTest
         return new User.Builder( userName, Credential.forPassword( password ))
                     .withRequiredPasswordChange( pwdChange )
                     .build();
+    }
+
+    private void setMockAuthenticationStrategyResult( String username, String password, AuthenticationResult result )
+    {
+        final User user = users.getUserByName( username );
+        when( authStrategy.authenticate( user, password ) ).thenReturn( result );
     }
 }
