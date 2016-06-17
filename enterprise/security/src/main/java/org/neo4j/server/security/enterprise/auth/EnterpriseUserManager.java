@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 import org.neo4j.server.security.auth.UserManager;
 
-public interface EnterpriseUserManager extends UserManager, RoleManager
+public interface EnterpriseUserManager extends UserManager
 {
     void setPassword( AuthSubject authSubject, String username, String password ) throws IOException,
             IllegalCredentialsException;
@@ -36,4 +36,30 @@ public interface EnterpriseUserManager extends UserManager, RoleManager
     void activateUser( String username ) throws IOException;
 
     Set<String> getAllUsernames();
+
+    /**
+     * Add a user to a role. The role has to exist.
+     *
+     * @param username
+     * @param roleName
+     * @throws IllegalArgumentException if the role does not exist
+     * @throws IOException
+     */
+    void addUserToRole( String username, String roleName ) throws IOException;
+
+    /**
+     * Remove a user from a role.
+     *
+     * @param username
+     * @param roleName
+     * @throws IllegalArgumentException if the username or the role does not exist
+     * @throws IOException
+     */
+    void removeUserFromRole( String username, String roleName ) throws IOException;
+
+    Set<String> getAllRoleNames();
+
+    Set<String> getRoleNamesForUser( String username );
+
+    Set<String> getUsernamesForRole( String roleName );
 }
