@@ -66,6 +66,12 @@ public class ReplicatedLockTokenStateMachine<MEMBER> implements StateMachine<Rep
         storage.persistStoreData( state );
     }
 
+    @Override
+    public long lastAppliedIndex()
+    {
+        return storage.getInitialState().ordinal();
+    }
+
     public synchronized ReplicatedLockTokenState<MEMBER> snapshot()
     {
         return state.newInstance();

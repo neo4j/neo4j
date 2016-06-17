@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.core.CoreStateType;
 import org.neo4j.coreedge.raft.log.MonitoredRaftLog;
+import org.neo4j.coreedge.raft.outcome.ShipCommand;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationStateMachine;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequest;
@@ -38,6 +39,8 @@ import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.storageengine.api.Token;
+
+import static java.lang.Math.max;
 
 public class CoreStateMachines
 {
@@ -196,5 +199,18 @@ public class CoreStateMachines
             runningBatch = false;
             replicatedTxStateMachine.ensuredApplied();
         }
+    }
+
+    public long getApplyingIndex()
+    {
+        long lastAppliedTxIndex = replicatedTxStateMachine.lastAppliedIndex();
+        assert lastAppliedTxIndex == labelTokenStateMachine.lastAppliedIndex();
+        assert lastAppliedTxIndex == relationshipTypeTokenStateMachine.lastAppliedIndex();
+        assert lastAppliedTxIndex == propertyKeyTokenStateMachine.lastAppliedIndex();
+
+        long lastAppliedLockTokenIndex = replicatedLockTokenStateMachine.lastAppliedIndex();
+        long lastAppliedIdAllocationIndex = idAllocationStateMachine.lastAppliedIndex();
+
+        return max( max( lastAppliedLockTokenIndex, lastAppliedIdAllocationIndex ), lastAppliedIdAllocationIndex );
     }
 }

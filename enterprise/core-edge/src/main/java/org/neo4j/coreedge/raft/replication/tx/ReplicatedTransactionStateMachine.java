@@ -67,12 +67,6 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine<R
     }
 
     @Override
-    public void flush() throws IOException
-    {
-        // implicitly flushed
-    }
-
-    @Override
     public synchronized void applyCommand( ReplicatedTransaction replicatedTx, long commandIndex, Consumer<Result> callback )
     {
         if ( commandIndex <= lastCommittedIndex )
@@ -108,6 +102,18 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine<R
                 throw panicException( e );
             }
         }
+    }
+
+    @Override
+    public void flush() throws IOException
+    {
+        // implicitly flushed
+    }
+
+    @Override
+    public long lastAppliedIndex()
+    {
+        return lastCommittedIndex;
     }
 
     public synchronized void ensuredApplied()

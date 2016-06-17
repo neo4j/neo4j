@@ -76,6 +76,12 @@ public class ReplicatedIdAllocationStateMachine implements StateMachine<Replicat
         storage.persistStoreData( state );
     }
 
+    @Override
+    public long lastAppliedIndex()
+    {
+        return storage.getInitialState().logIndex();
+    }
+
     public synchronized IdAllocationState snapshot()
     {
         return state.newInstance();

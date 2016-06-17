@@ -55,7 +55,6 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine<Core
     private final StateStorage<Long> lastFlushedStorage;
     private final int flushEvery;
     private final ProgressTracker progressTracker;
-    private final StateStorage<Long> lastApplyingStorage;
     private final StateStorage<GlobalSessionTrackerState<CoreMember>> sessionStorage;
     private final Supplier<DatabaseHealth> dbHealth;
     private final InFlightMap<Long,RaftLogEntry> inFlightMap;
@@ -80,7 +79,6 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine<Core
             LogProvider logProvider,
             ProgressTracker progressTracker,
             StateStorage<Long> lastFlushedStorage,
-            StateStorage<Long> lastApplyingStorage,
             StateStorage<GlobalSessionTrackerState<CoreMember>> sessionStorage,
             CoreStateApplier applier,
             CoreStateDownloader downloader,
@@ -91,7 +89,6 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine<Core
         this.lastFlushedStorage = lastFlushedStorage;
         this.flushEvery = flushEvery;
         this.progressTracker = progressTracker;
-        this.lastApplyingStorage = lastApplyingStorage;
         this.sessionStorage = sessionStorage;
         this.applier = applier;
         this.downloader = downloader;
@@ -130,7 +127,6 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine<Core
         applier.submit( ( status ) -> () -> {
             try ( InFlightLogEntrySupplier logEntrySupplier = new InFlightLogEntrySupplier( raftLog, inFlightMap ) )
             {
-                lastApplyingStorage.persistStoreData( lastToApply );
                 for ( long logIndex = lastApplied + 1; !status.isCancelled() && logIndex <= lastToApply; logIndex++ )
                 {
                     RaftLogEntry entry = logEntrySupplier.get( logIndex );
@@ -284,7 +280,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine<Core
         log.info( format( "Restoring last applied index to %d", lastApplied ) );
         sessionState = sessionStorage.getInitialState();
 
-        submitApplyJob( lastApplyingStorage.getInitialState() );
+        submitApplyJob( coreStateMachines.getApplyingIndex() );
         applier.sync( false );
     }
 

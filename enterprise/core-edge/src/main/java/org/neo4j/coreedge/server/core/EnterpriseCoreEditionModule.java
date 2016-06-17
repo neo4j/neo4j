@@ -335,11 +335,6 @@ public class EnterpriseCoreEditionModule
                     new LongIndexMarshal(), config.get( CoreEdgeClusterSettings.last_flushed_state_size ),
                     databaseHealthSupplier, logProvider ) );
 
-            DurableStateStorage<Long> lastApplyingStorage = life.add( new DurableStateStorage<>(
-                    fileSystem, new File( clusterStateDirectory, "last-applying-state" ), "last-applying",
-                    new LongIndexMarshal(), config.get( CoreEdgeClusterSettings.last_flushed_state_size ),
-                    databaseHealthSupplier, logProvider ) );
-
             StateStorage<GlobalSessionTrackerState<CoreMember>> sessionTrackerStorage;
             try
             {
@@ -364,7 +359,7 @@ public class EnterpriseCoreEditionModule
             coreState = new CoreState(
                     raftLog, config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
                     config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),
-                    databaseHealthSupplier, logProvider, progressTracker, lastFlushedStorage, lastApplyingStorage,
+                    databaseHealthSupplier, logProvider, progressTracker, lastFlushedStorage,
                     sessionTrackerStorage, applier, downloader, inFlightMap, platformModule.monitors );
 
             raft = createRaft( life, loggingOutbound, discoveryService, config, messageLogger, raftLog,

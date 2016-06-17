@@ -39,4 +39,10 @@ public interface StateMachine<Command>
      * @throws IOException
      */
     void flush() throws IOException;
+
+    /**
+     * Return the index of the last applied command by this state machine.
+     * @return the last applied index for this state machine
+     */
+    long lastAppliedIndex();
 }
