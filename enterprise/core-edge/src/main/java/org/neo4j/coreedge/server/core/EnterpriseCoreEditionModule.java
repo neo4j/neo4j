@@ -551,9 +551,9 @@ public class EnterpriseCoreEditionModule
             {
                 long rotateAtSize = config.get( CoreEdgeClusterSettings.raft_log_rotation_size );
                 String pruneConf = config.get( CoreEdgeClusterSettings.raft_log_pruning_strategy );
-                int entryCacheSize = config.get( CoreEdgeClusterSettings.raft_log_entry_cache_size );
-                int metaDataCacheSize = config.get( CoreEdgeClusterSettings.raft_log_meta_data_cache_size );
-                int headerCacheSize = config.get( CoreEdgeClusterSettings.raft_log_header_cache_size );
+                int entryCacheSize = 32;
+                int metaDataCacheSize = 100_000;
+                int headerCacheSize = 10;
 
                 return life.add( new PhysicalRaftLog(
                         fileSystem,
@@ -566,9 +566,7 @@ public class EnterpriseCoreEditionModule
             case SEGMENTED:
             {
                 long rotateAtSize = config.get( CoreEdgeClusterSettings.raft_log_rotation_size );
-                int metaDataCacheSize = config.get( CoreEdgeClusterSettings.raft_log_meta_data_cache_size );
                 String pruningStrategyConfig = config.get( CoreEdgeClusterSettings.raft_log_pruning_strategy );
-                int entryCacheSize = config.get( CoreEdgeClusterSettings.raft_log_entry_cache_size );
 
                 return life.add( new SegmentedRaftLog(
                         fileSystem,
@@ -576,7 +574,6 @@ public class EnterpriseCoreEditionModule
                         rotateAtSize,
                         marshal,
                         logProvider,
-                        entryCacheSize,
                         pruningStrategyConfig ) );
             }
 

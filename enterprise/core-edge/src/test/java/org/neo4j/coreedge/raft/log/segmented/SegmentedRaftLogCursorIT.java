@@ -61,7 +61,7 @@ public class SegmentedRaftLogCursorIT
 
         SegmentedRaftLog newRaftLog =
                 new SegmentedRaftLog( fileSystem, directory, rotateAtSize, new DummyRaftableContentSerializer(),
-                        NullLogProvider.getInstance(), 1000, pruneStrategy );
+                        NullLogProvider.getInstance(), pruneStrategy );
         life.add( newRaftLog );
         life.init();
         life.start();

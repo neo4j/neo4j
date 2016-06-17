@@ -62,7 +62,7 @@ public class SegmentedRaftLogRotationTest
 
         SegmentedRaftLog newRaftLog = new SegmentedRaftLog( fileSystem, directory, rotateAtSize,
                 new DummyRaftableContentSerializer(),
-                NullLogProvider.getInstance(), 1000, raft_log_pruning_strategy.getDefaultValue() );
+                NullLogProvider.getInstance(), raft_log_pruning_strategy.getDefaultValue() );
         life.add( newRaftLog );
         life.init();
         life.start();

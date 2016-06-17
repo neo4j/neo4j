@@ -29,7 +29,6 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.cursor.IOCursor;
-import org.neo4j.helpers.collection.LruCache;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.LogProvider;
@@ -64,13 +63,12 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
 
     private boolean needsRecovery;
     private final LogProvider logProvider;
-    private final LruCache<Long,RaftLogEntry> entryCache; // TODO: replace with ring buffer, limit based on size
     private final SegmentedRaftLogPruner segmentedRaftLogPruner;
 
     private State state;
 
     public SegmentedRaftLog( FileSystemAbstraction fileSystem, File directory, long rotateAtSize,
-            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider, int entryCacheSize,
+            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider,
             String pruningStrategyConfig )
     {
         this.fileSystem = fileSystem;
@@ -80,7 +78,6 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
 
         this.fileNames = new FileNames( directory );
         this.logProvider = logProvider;
-        this.entryCache = entryCacheSize >= 1 ? new LruCache<>( "raft-log-entry-cache", entryCacheSize ) : null;
         this.segmentedRaftLogPruner = new SegmentedRaftLogPruner( pruningStrategyConfig, logProvider );
     }
 
@@ -115,7 +112,6 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
                 state.appendIndex++;
                 updateTerm( entry );
                 state.segments.last().write( state.appendIndex, entry );
-                cacheEntry( entry );
             }
             state.segments.last().flush();
         }
@@ -163,8 +159,6 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
             throw new IllegalArgumentException( "Cannot truncate at index " + fromIndex + " when append index is " +
                     state.appendIndex );
         }
-
-        invalidateCache();
 
         long newAppendIndex = fromIndex - 1;
         long newTerm = readEntryTerm( newAppendIndex );
@@ -228,12 +222,6 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
 
     private RaftLogEntry readLogEntry( long logIndex ) throws IOException
     {
-        RaftLogEntry entry = getFromCache( logIndex );
-        if ( entry != null )
-        {
-            return entry;
-        }
-
         try ( IOCursor<EntryRecord> cursor = new EntryCursor( state.segments, logIndex ) )
         {
             return cursor.next() ? cursor.get().logEntry() : null;
@@ -266,26 +254,5 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
         state.prevIndex = oldestNotDisposed.header().prevIndex();
         state.prevTerm = oldestNotDisposed.header().prevTerm();
         return state.prevIndex;
-    }
-
-    private void cacheEntry( RaftLogEntry entry )
-    {
-        if( entryCache != null )
-        {
-            entryCache.put( state.appendIndex, entry );
-        }
-    }
-
-    private RaftLogEntry getFromCache( long logIndex )
-    {
-        return entryCache != null ? entryCache.get( logIndex ) : null;
-    }
-
-    private void invalidateCache()
-    {
-        if ( entryCache != null )
-        {
-            entryCache.clear();
-        }
     }
 }

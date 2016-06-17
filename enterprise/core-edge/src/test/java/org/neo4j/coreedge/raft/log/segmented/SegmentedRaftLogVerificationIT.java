@@ -44,7 +44,7 @@ public class SegmentedRaftLogVerificationIT extends RaftLogVerificationIT
         int entryCacheSize = 4;
 
         SegmentedRaftLog newRaftLog = new SegmentedRaftLog( fsa, directory, rotateAtSizeBytes,
-                new DummyRaftableContentSerializer(), NullLogProvider.getInstance(), entryCacheSize,
+                new DummyRaftableContentSerializer(), NullLogProvider.getInstance(),
                 raft_log_pruning_strategy.getDefaultValue() );
 
         newRaftLog.init();
