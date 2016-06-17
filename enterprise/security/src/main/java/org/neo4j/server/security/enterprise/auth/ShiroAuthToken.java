@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 
 public class ShiroAuthToken implements AuthenticationToken
 {
-    private Map<String,Object> authToken;
+    private final Map<String,Object> authToken;
 
     public ShiroAuthToken( Map<String,Object> authToken )
     {
@@ -52,7 +52,7 @@ public class ShiroAuthToken implements AuthenticationToken
         return AuthToken.safeCast( AuthToken.SCHEME_KEY, authToken );
     }
 
-    public Map<String,Object> getMap()
+    Map<String,Object> getAuthTokenMap()
     {
         return authToken;
     }

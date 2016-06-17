@@ -209,8 +209,8 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements ShiroReal
         String password;
         try
         {
-            username = AuthToken.safeCast( AuthToken.PRINCIPAL, shiroAuthToken.getMap() );
-            password = AuthToken.safeCast( AuthToken.CREDENTIALS, shiroAuthToken.getMap() );
+            username = AuthToken.safeCast( AuthToken.PRINCIPAL, shiroAuthToken.getAuthTokenMap() );
+            password = AuthToken.safeCast( AuthToken.CREDENTIALS, shiroAuthToken.getAuthTokenMap() );
         }
         catch ( InvalidAuthTokenException e )
         {
