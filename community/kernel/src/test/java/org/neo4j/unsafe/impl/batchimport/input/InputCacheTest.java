@@ -99,7 +99,7 @@ public class InputCacheTest
             // WHEN/THEN
             try ( InputIterator<InputNode> reader = cache.nodes( MAIN, true ).iterator() )
             {
-                reader.setNumberOfProcessors( 50 );
+                reader.processors( 50 - reader.processors( 0 ) );
                 Iterator<InputNode> expected = nodes.iterator();
                 while ( expected.hasNext() )
                 {
@@ -141,7 +141,7 @@ public class InputCacheTest
             // WHEN/THEN
             try ( InputIterator<InputRelationship> reader = cache.relationships( MAIN, true ).iterator() )
             {
-                reader.setNumberOfProcessors( 50 );
+                reader.processors( 50 - reader.processors( 0 ) );
                 Iterator<InputRelationship> expected = relationships.iterator();
                 while ( expected.hasNext() )
                 {
@@ -186,7 +186,7 @@ public class InputCacheTest
             {
                 try ( InputIterator<InputRelationship> reader = cache.relationships( MAIN, false ).iterator() )
                 {
-                    reader.setNumberOfProcessors( i );
+                    reader.processors( i - reader.processors( 0 ) );
                     long time = currentTimeMillis();
                     count( reader );
                     time = currentTimeMillis() - time;

@@ -87,22 +87,9 @@ public class EntityDataGenerator<T> extends InputIterator.Adapter<T>
         processing.shutdown( false );
     }
 
-    // We have to let our processing framework know about changes in processor count assigned to us
     @Override
-    public int numberOfProcessors()
+    public int processors( int delta )
     {
-        return processing.numberOfProcessors();
-    }
-
-    @Override
-    public boolean incrementNumberOfProcessors()
-    {
-        return processing.incrementNumberOfProcessors();
-    }
-
-    @Override
-    public boolean decrementNumberOfProcessors()
-    {
-        return processing.decrementNumberOfProcessors();
+        return processing.processors( delta );
     }
 }

@@ -47,7 +47,7 @@ public class ProcessorStepTest
         StageControl control = mock( StageControl.class );
         MyProcessorStep step = new MyProcessorStep( control, 0 );
         step.start( ORDER_PROCESS );
-        step.setNumberOfProcessors( 5 );
+        step.processors( 4 ); // now at 5
 
         // WHEN
         int batches = 10;
@@ -75,7 +75,7 @@ public class ProcessorStepTest
         final int processors = 2;
         final ProcessorStep<Void> step = new BlockingProcessorStep( control, processors, latch );
         step.start( ORDER_PROCESS );
-        step.setNumberOfProcessors( 2 );
+        step.processors( 1 ); // now at 2
         // adding two should be fine
         for ( int i = 0; i < processors+1 /* +1 since we allow queueing one more*/; i++ )
         {
@@ -99,9 +99,9 @@ public class ProcessorStepTest
         final CountDownLatch latch = new CountDownLatch( 1 );
         final ProcessorStep<Void> step = new BlockingProcessorStep( control, 0, latch );
         step.start( ORDER_PROCESS );
-        step.setNumberOfProcessors( 3 );
+        step.processors( 2 ); // now at 3
         // adding two should be fine
-        for ( int i = 0; i < step.numberOfProcessors()+1 /* +1 since we allow queueing one more*/; i++ )
+        for ( int i = 0; i < step.processors( 0 )+1 /* +1 since we allow queueing one more*/; i++ )
         {
             step.receive( i, null );
         }
@@ -112,7 +112,7 @@ public class ProcessorStepTest
             @Override
             public Void doWork( Void state ) throws Exception
             {
-                step.receive( step.numberOfProcessors(), null );
+                step.receive( step.processors( 0 ), null );
                 return null;
             }
         } );

@@ -286,21 +286,9 @@ abstract class InputEntityReader<ENTITY extends InputEntity> extends InputIterat
     }
 
     @Override
-    public boolean incrementNumberOfProcessors()
+    public int processors( int delta )
     {
-        return processing.incrementNumberOfProcessors();
-    }
-
-    @Override
-    public boolean decrementNumberOfProcessors()
-    {
-        return processing.decrementNumberOfProcessors();
-    }
-
-    @Override
-    public int numberOfProcessors()
-    {
-        return processing.numberOfProcessors();
+        return processing.processors( delta );
     }
 
     private class BatchProvidingIterator extends PrefetchingIterator<byte[]>

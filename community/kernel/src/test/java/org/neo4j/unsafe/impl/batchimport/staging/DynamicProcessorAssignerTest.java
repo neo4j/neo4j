@@ -54,8 +54,8 @@ public class DynamicProcessorAssignerTest
         assigner.check( execution );
 
         // THEN
-        assertEquals( 5, slowStep.numberOfProcessors() );
-        assertEquals( 1, fastStep.numberOfProcessors() );
+        assertEquals( 5, slowStep.processors( 0 ) );
+        assertEquals( 1, fastStep.processors( 0 ) );
     }
 
     @Test
@@ -78,8 +78,7 @@ public class DynamicProcessorAssignerTest
         assigner.check( execution );
 
         // THEN one processor should be removed from the fast step
-        verify( fastStep, times( 0 ) ).incrementNumberOfProcessors();
-        verify( fastStep, times( 1 ) ).decrementNumberOfProcessors();
+        verify( fastStep, times( 1 ) ).processors( -1 );
     }
 
     @Test
@@ -100,8 +99,8 @@ public class DynamicProcessorAssignerTest
         assigner.check( execution );
 
         // THEN one processor should be removed from the fast step
-        verify( fastStep, times( 0 ) ).incrementNumberOfProcessors();
-        verify( fastStep, times( 0 ) ).decrementNumberOfProcessors();
+        verify( fastStep, times( 0 ) ).processors( 1 );
+        verify( fastStep, times( 0 ) ).processors( -1 );
     }
 
     @Test
@@ -121,8 +120,8 @@ public class DynamicProcessorAssignerTest
         assigner.check( execution );
 
         // THEN
-        assertEquals( 1, aStep.numberOfProcessors() );
-        assertEquals( 1, anotherStep.numberOfProcessors() );
+        assertEquals( 1, aStep.processors( 0 ) );
+        assertEquals( 1, anotherStep.processors( 0 ) );
     }
 
     @Test
@@ -147,7 +146,7 @@ public class DynamicProcessorAssignerTest
         assigner.check( execution );
 
         // THEN
-        verify( fast ).decrementNumberOfProcessors();
+        verify( fast ).processors( -1 );
     }
 
     private Configuration movingAverageConfig( final int movingAverage )

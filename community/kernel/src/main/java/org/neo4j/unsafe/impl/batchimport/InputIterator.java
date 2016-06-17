@@ -105,21 +105,9 @@ public interface InputIterator<T> extends ResourceIterator<T>, SourceTraceabilit
         }
 
         @Override
-        public int numberOfProcessors()
+        public int processors( int delta )
         {
-            return actual.numberOfProcessors();
-        }
-
-        @Override
-        public boolean incrementNumberOfProcessors()
-        {
-            return actual.incrementNumberOfProcessors();
-        }
-
-        @Override
-        public boolean decrementNumberOfProcessors()
-        {
-            return actual.decrementNumberOfProcessors();
+            return actual.processors( delta );
         }
     }
 

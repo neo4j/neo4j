@@ -69,22 +69,9 @@ public class IteratorBatcherStep<T> extends IoProducerStep
         return data.position();
     }
 
-    // We have to let our processing framework know about changes in processor count assigned to us
     @Override
-    public int numberOfProcessors()
+    public int processors( int delta )
     {
-        return data.numberOfProcessors();
-    }
-
-    @Override
-    public boolean incrementNumberOfProcessors()
-    {
-        return data.incrementNumberOfProcessors();
-    }
-
-    @Override
-    public boolean decrementNumberOfProcessors()
-    {
-        return data.decrementNumberOfProcessors();
+        return data.processors( delta );
     }
 }

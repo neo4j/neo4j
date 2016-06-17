@@ -31,7 +31,6 @@ import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy.Park;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -85,7 +84,7 @@ public class DynamicTaskExecutorTest
         executor.submit( task1 );
         task1.latch.awaitStart();
         executor.submit( task2 );
-        executor.setNumberOfProcessors( 2 );
+        executor.processors( 1 ); // now at 2
         while ( task2.executed == 0 )
         {   // With one additional worker, the second task can execute even if task one is still executing
         }
@@ -118,7 +117,7 @@ public class DynamicTaskExecutorTest
         task2.latch.awaitStart();
         executor.submit( task3 );
         executor.submit( task4 );
-        executor.setNumberOfProcessors( 1 );
+        executor.processors( -1 ); // it started at 2 ^^^
         task1.latch.finish();
         task2.latch.finish();
         task3.latch.awaitStart();
@@ -280,16 +279,20 @@ public class DynamicTaskExecutorTest
     public void shouldRespectMaxProcessors() throws Exception
     {
         // GIVEN
-        final TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 4, 10, PARK,
+        int maxProcessors = 4;
+        final TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, maxProcessors, 10, PARK,
                 getClass().getSimpleName() );
 
         // WHEN/THEN
-        assertEquals( 1, executor.numberOfProcessors() );
-        assertFalse( executor.decrementNumberOfProcessors() );
-        assertTrue( executor.incrementNumberOfProcessors() );
-        assertEquals( 2, executor.numberOfProcessors() );
-        executor.setNumberOfProcessors( 10 );
-        assertEquals( 4, executor.numberOfProcessors() );
+        assertEquals( 1, executor.processors( 0 ) );
+        assertEquals( 2, executor.processors( 1 ) );
+        assertEquals( 4, executor.processors( 3 ) /*would have gone to 5 otherwise*/ );
+        assertEquals( 4, executor.processors( 0 ) );
+        assertEquals( 4, executor.processors( 1 ) );
+        assertEquals( 3, executor.processors( -1 ) );
+        assertEquals( 1, executor.processors( -2 ) );
+        assertEquals( 1, executor.processors( -2 ) );
+        assertEquals( 1, executor.processors( 0 ) );
         executor.shutdown( SF_AWAIT_ALL_COMPLETED );
     }
 

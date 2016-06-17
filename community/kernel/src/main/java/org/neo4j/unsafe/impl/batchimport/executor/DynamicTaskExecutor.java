@@ -27,7 +27,11 @@ import java.util.concurrent.BlockingQueue;
 import java.util.function.Supplier;
 
 import org.neo4j.function.Suppliers;
+
+import static java.lang.Integer.max;
+import static java.lang.Integer.min;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**
@@ -68,51 +72,45 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
         this.processorThreadNamePrefix = processorThreadNamePrefix;
         this.initialLocalState = initialLocalState;
         this.queue = new ArrayBlockingQueue<>( maxQueueSize );
-        setNumberOfProcessors( initialProcessorCount );
+        processors( initialProcessorCount );
     }
 
     @Override
-    public int numberOfProcessors()
+    public int processors( int delta )
     {
+        if ( shutDown || delta == 0 )
+        {
+            return processors.length;
+        }
+
+        int requestedNumber = processors.length + delta;
+        if ( delta > 0 )
+        {
+            requestedNumber = min( requestedNumber, maxProcessorCount );
+            if ( requestedNumber > processors.length )
+            {
+                Processor[] newProcessors = Arrays.copyOf( processors, requestedNumber );
+                for ( int i = processors.length; i < requestedNumber; i++ )
+                {
+                    newProcessors[i] = new Processor( processorThreadNamePrefix + "-" + i );
+                }
+                this.processors = newProcessors;
+            }
+        }
+        else
+        {
+            requestedNumber = max( 1, requestedNumber );
+            if ( requestedNumber < processors.length )
+            {
+                Processor[] newProcessors = Arrays.copyOf( processors, requestedNumber );
+                for ( int i = newProcessors.length; i < processors.length; i++ )
+                {
+                    processors[i].shutDown = true;
+                }
+                this.processors = newProcessors;
+            }
+        }
         return processors.length;
-    }
-
-    @Override
-    public synchronized boolean incrementNumberOfProcessors()
-    {
-        if ( shutDown )
-        {
-            return false;
-        }
-        int currentNumber = numberOfProcessors();
-        if ( currentNumber >= maxProcessorCount )
-        {
-            return false;
-        }
-
-        Processor[] newProcessors = Arrays.copyOf( processors, currentNumber + 1 );
-        newProcessors[currentNumber] = new Processor( processorThreadNamePrefix + "-" + currentNumber );
-        this.processors = newProcessors;
-        return true;
-    }
-
-    @Override
-    public synchronized boolean decrementNumberOfProcessors()
-    {
-        if ( shutDown )
-        {
-            return false;
-        }
-        int currentNumber = numberOfProcessors();
-        if ( currentNumber == 1 )
-        {
-            return false;
-        }
-
-        Processor[] newProcessors = Arrays.copyOf( processors, currentNumber - 1 );
-        processors[currentNumber-1].shutDown = true;
-        processors = newProcessors;
-        return true;
     }
 
     @Override

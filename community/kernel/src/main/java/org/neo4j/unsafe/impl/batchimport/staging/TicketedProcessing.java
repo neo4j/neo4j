@@ -184,20 +184,8 @@ public class TicketedProcessing<FROM,STATE,TO> implements Parallelizable
     }
 
     @Override
-    public int numberOfProcessors()
+    public int processors( int delta )
     {
-        return executor.numberOfProcessors();
-    }
-
-    @Override
-    public boolean incrementNumberOfProcessors()
-    {
-        return executor.incrementNumberOfProcessors();
-    }
-
-    @Override
-    public boolean decrementNumberOfProcessors()
-    {
-        return executor.decrementNumberOfProcessors();
+        return executor.processors( delta );
     }
 }

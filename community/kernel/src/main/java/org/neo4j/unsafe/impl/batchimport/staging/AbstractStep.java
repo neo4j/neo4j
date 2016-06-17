@@ -173,7 +173,7 @@ public abstract class AbstractStep<T> implements Step<T>
     protected void collectStatsProviders( Collection<StatsProvider> into )
     {
         into.add( new ProcessingStats( doneBatches.get()+queuedBatches.get(), doneBatches.get(),
-                totalProcessingTime.total(), totalProcessingTime.average() / numberOfProcessors(),
+                totalProcessingTime.total(), totalProcessingTime.average() / processors( 0 ),
                 upstreamIdleTime.get(), downstreamIdleTime.get() ) );
         into.addAll( additionalStatsProvider );
     }
@@ -240,6 +240,6 @@ public abstract class AbstractStep<T> implements Step<T>
     public String toString()
     {
         return format( "%s[%s, processors:%d, batches:%d", getClass().getSimpleName(),
-                name, numberOfProcessors(), doneBatches.get() );
+                name, processors( 0 ), doneBatches.get() );
     }
 }

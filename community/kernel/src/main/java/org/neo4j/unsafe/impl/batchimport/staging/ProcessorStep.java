@@ -87,7 +87,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     public long receive( final long ticket, final T batch )
     {
         // Don't go too far ahead
-        long idleTime = await( catchUp, executor.numberOfProcessors(), healthChecker, park );
+        long idleTime = await( catchUp, executor.processors( 0 ), healthChecker, park );
         incrementQueue();
         executor.submit( sender -> {
             assertHealthy();
@@ -182,21 +182,9 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     }
 
     @Override
-    public int numberOfProcessors()
+    public int processors( int delta )
     {
-        return executor.numberOfProcessors();
-    }
-
-    @Override
-    public boolean incrementNumberOfProcessors()
-    {
-        return executor.incrementNumberOfProcessors();
-    }
-
-    @Override
-    public boolean decrementNumberOfProcessors()
-    {
-        return executor.decrementNumberOfProcessors();
+        return executor.processors( delta );
     }
 
     @SuppressWarnings( "unchecked" )

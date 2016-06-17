@@ -21,85 +21,27 @@ package org.neo4j.unsafe.impl.batchimport;
 
 /**
  * Represents something that can be parallelizable, in this case that means the ability to dynamically change
- * the number of processors executing that tasks ahead.
+ * the number of processors executing tasks.
  */
 public interface Parallelizable
 {
     /**
-     * @return number of processors processing incoming tasks in parallel.
+     * Change number of processors assigned to this {@link Parallelizable}. Accepts a {@code delta},
+     * which may specify positive or negative value, even zero. This instances may have internal constraints
+     * in the number of processors, min or max, which may be assigned and so potentially the change will
+     * only be partially accepted or not at all. This is why this call returns the total number of processors
+     * this instance now has accepted after any effect of this call.
+     *
+     * {@link Parallelizable} is used in many call stacks where call delegation is predominant and so
+     * reducing number of methods to delegate is favored. This is why this method looks and functions
+     * like this, it can cater for incrementing, decrementing and even getting number of processors.
+     *
+     * @param delta number of processors to add or remove, i.e. negative or positive value. A value of
+     * zero will result in merely the current number of assigned processors to be returned.
+     * @return the number of assigned processors as a result this call.
      */
-    default int numberOfProcessors()
+    default int processors( int delta )
     {
         return 1;
-    }
-
-    /**
-     * Increments number of processors that processes tasks in parallel.
-     *
-     * @return {@code true} if one more processor was assigned, otherwise {@code false}.
-     */
-    default boolean incrementNumberOfProcessors()
-    {
-        return false;
-    }
-
-    /**
-     * Decrements number of processors that processes tasks in parallel.
-     *
-     * @return {@code true} if one processor was unassigned, otherwise {@code false}.
-     */
-    default boolean decrementNumberOfProcessors()
-    {
-        return false;
-    }
-
-    /**
-     * Tries to set specified number of processors. If {@code processors} would be out of bounds
-     * for what this instance can assign then a value within bounds will be set instead.
-     *
-     * @param processors number of desired processors.
-     * @return number of actual processors after this call.
-     */
-    default int setNumberOfProcessors( int processors )
-    {
-        int current;
-        while ( (current = numberOfProcessors()) != processors )
-        {
-            boolean success = current < processors ? incrementNumberOfProcessors() :
-                decrementNumberOfProcessors();
-            if ( !success )
-            {
-                break;
-            }
-        }
-        return current;
-    }
-
-    class Delegate implements Parallelizable
-    {
-        protected final Parallelizable actual;
-
-        public Delegate( Parallelizable actual )
-        {
-            this.actual = actual;
-        }
-
-        @Override
-        public int numberOfProcessors()
-        {
-            return actual.numberOfProcessors();
-        }
-
-        @Override
-        public boolean incrementNumberOfProcessors()
-        {
-            return actual.incrementNumberOfProcessors();
-        }
-
-        @Override
-        public boolean decrementNumberOfProcessors()
-        {
-            return actual.decrementNumberOfProcessors();
-        }
     }
 }

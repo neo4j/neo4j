@@ -57,7 +57,7 @@ public class TicketedProcessingTest
         int processorCount = Runtime.getRuntime().availableProcessors();
         TicketedProcessing<Integer,Void,Integer> processing = new TicketedProcessing<>(
                 "Doubler", processorCount, processor, () -> null );
-        processing.setNumberOfProcessors( processorCount );
+        processing.processors( processorCount - processing.processors( 0 ) );
 
         // WHEN
         Future<Void> assertions = asserter.execute( new WorkerCommand<Void,Void>()
