@@ -231,4 +231,9 @@ public abstract class IoPrimitiveUtils
         }
         return (int) value;
     }
+
+    public static int shortToUnsignedInt( short value )
+    {
+        return value & 0xFFFF;
+    }
 }
