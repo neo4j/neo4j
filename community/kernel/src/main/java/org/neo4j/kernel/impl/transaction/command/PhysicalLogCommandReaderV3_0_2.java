@@ -61,6 +61,7 @@ import static org.neo4j.kernel.impl.util.Bits.bitFlag;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bMap;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.shortToUnsignedInt;
 
 public class PhysicalLogCommandReaderV3_0_2 extends BaseCommandReader
 {
@@ -209,7 +210,7 @@ public class PhysicalLogCommandReaderV3_0_2 extends BaseCommandReader
         boolean requireSecondaryUnit = bitFlag( flags, Record.REQUIRE_SECONDARY_UNIT );
         boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );
 
-        int type = channel.getShort();
+        int type = shortToUnsignedInt( channel.getShort() );
         RelationshipGroupRecord record = new RelationshipGroupRecord( id, type );
         record.setInUse( inUse );
         record.setNext( channel.getLong() );
