@@ -304,7 +304,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
                    |WITH user, friendships[toInt(rand() * size(friendships))] AS selectedFriendship
                    |RETURN id(selectedFriendship) AS friendshipId, selectedFriendship.propFive AS propertyValue""".stripMargin
 
-    // TODO: this can be executed with the compatibility mode when we'll depend on the 2.3.4 cypher-compiler
+    // TODO: this can be executed with the compatibility mode when we'll depend on the 2.3.5 cypher-compiler
     val result1 = executeWithCostPlannerOnly(query1).toList
     val result2 = executeWithCostPlannerOnly(query2).toList
 
