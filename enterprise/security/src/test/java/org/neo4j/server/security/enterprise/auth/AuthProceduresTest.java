@@ -241,7 +241,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     public void shouldSuspendUser() throws Exception
     {
         testCallEmpty( adminSubject, "CALL dbms.suspendUser('readSubject')" );
-        assertTrue( manager.getUser( "readSubject" ).hasFlag( FileUserRealm.IS_SUSPENDED ) );
+        assertTrue( manager.getUser( "readSubject" ).hasFlag( InternalFlatFileRealm.IS_SUSPENDED ) );
     }
 
     @Test
@@ -249,7 +249,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     {
         testCallEmpty( adminSubject, "CALL dbms.suspendUser('readSubject')" );
         testCallEmpty( adminSubject, "CALL dbms.suspendUser('readSubject')" );
-        assertTrue( manager.getUser( "readSubject" ).hasFlag( FileUserRealm.IS_SUSPENDED ) );
+        assertTrue( manager.getUser( "readSubject" ).hasFlag( InternalFlatFileRealm.IS_SUSPENDED ) );
     }
 
     @Test
@@ -287,7 +287,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     {
         manager.suspendUser( "readSubject" );
         testCallEmpty( adminSubject, "CALL dbms.activateUser('readSubject')" );
-        assertFalse( manager.getUser( "readSubject" ).hasFlag( FileUserRealm.IS_SUSPENDED ) );
+        assertFalse( manager.getUser( "readSubject" ).hasFlag( InternalFlatFileRealm.IS_SUSPENDED ) );
     }
 
     @Test
@@ -296,7 +296,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
         manager.suspendUser( "readSubject" );
         testCallEmpty( adminSubject, "CALL dbms.activateUser('readSubject')" );
         testCallEmpty( adminSubject, "CALL dbms.activateUser('readSubject')" );
-        assertFalse( manager.getUser( "readSubject" ).hasFlag( FileUserRealm.IS_SUSPENDED ) );
+        assertFalse( manager.getUser( "readSubject" ).hasFlag( InternalFlatFileRealm.IS_SUSPENDED ) );
     }
 
     /*

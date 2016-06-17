@@ -44,7 +44,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class FileUserRealmTest
+public class InternalFlatFileRealmTest
 {
     RoleRepository roleRepository;
     UserRepository userRepository;
@@ -54,7 +54,7 @@ public class FileUserRealmTest
     private static final String USERNAME = "neo4j";
     private static final String ROLE = "admin";
 
-    public FileUserRealmTest() throws Exception
+    public InternalFlatFileRealmTest() throws Exception
     {
         super();
         setup();
@@ -96,7 +96,7 @@ public class FileUserRealmTest
 
         try
         {
-            runner.runTests( getClass(), FileUserRealm.class );
+            runner.runTests( getClass(), InternalFlatFileRealm.class );
         }
         // We need to work around an issue that we do not get failures from the test framework
         catch ( final RuntimeException e )
@@ -119,8 +119,8 @@ public class FileUserRealmTest
         // Create a code position for where we want to break in the main thread
         CodePosition codePosition = getCodePositionAfterCall( "addUserToRole", "getUserByName" );
 
-        FileUserRealm realm = new FileUserRealm( userRepository, roleRepository, passwordPolicy, authenticationStrategy,
-                true );
+        InternalFlatFileRealm realm = new InternalFlatFileRealm( userRepository, roleRepository, passwordPolicy,
+                authenticationStrategy, true );
 
         // When
         RunResult result = InterleavedRunner.interleave(
@@ -142,8 +142,8 @@ public class FileUserRealmTest
         // Create a code position for where we want to break in the main thread
         CodePosition codePosition = getCodePositionAfterCall( "deleteUser", "getUserByName" );
 
-        FileUserRealm realm = new FileUserRealm( userRepository, roleRepository, passwordPolicy, authenticationStrategy,
-                true );
+        InternalFlatFileRealm realm = new InternalFlatFileRealm( userRepository, roleRepository, passwordPolicy,
+                authenticationStrategy, true );
 
         // When
         RunResult result = InterleavedRunner.interleave(
@@ -159,29 +159,29 @@ public class FileUserRealmTest
 
     private CodePosition getCodePositionAfterCall( String caller, String called )
     {
-        ClassInstrumentation instrumentation = Instrumentation.getClassInstrumentation( FileUserRealm.class );
+        ClassInstrumentation instrumentation = Instrumentation.getClassInstrumentation( InternalFlatFileRealm.class );
         CodePosition codePosition = instrumentation.afterCall( caller, called );
         return codePosition;
     }
 
     // Base class for the main thread
-    private class AdminMain extends MainRunnableImpl<FileUserRealm>
+    private class AdminMain extends MainRunnableImpl<InternalFlatFileRealm>
     {
-        protected FileUserRealm realm;
+        protected InternalFlatFileRealm realm;
 
-        public AdminMain( FileUserRealm realm )
+        public AdminMain( InternalFlatFileRealm realm )
         {
             this.realm = realm;
         }
 
         @Override
-        public Class<FileUserRealm> getClassUnderTest()
+        public Class<InternalFlatFileRealm> getClassUnderTest()
         {
-            return FileUserRealm.class;
+            return InternalFlatFileRealm.class;
         }
 
         @Override
-        public FileUserRealm getMainObject()
+        public InternalFlatFileRealm getMainObject()
         {
             return realm;
         }
@@ -193,9 +193,9 @@ public class FileUserRealmTest
     }
 
     // Base class for the secondary thread
-    private class AdminSecondary extends SecondaryRunnableImpl<FileUserRealm,AdminMain>
+    private class AdminSecondary extends SecondaryRunnableImpl<InternalFlatFileRealm,AdminMain>
     {
-        protected FileUserRealm realm;
+        protected InternalFlatFileRealm realm;
 
         @Override
         public void initialize( AdminMain main ) throws Exception
@@ -216,7 +216,7 @@ public class FileUserRealmTest
     // Add user to role
     private class AddUserToRoleInMain extends AdminMain
     {
-        public AddUserToRoleInMain( FileUserRealm realm )
+        public AddUserToRoleInMain( InternalFlatFileRealm realm )
         {
             super( realm );
         }
@@ -241,7 +241,7 @@ public class FileUserRealmTest
     // Delete user
     private class DeleteUserInMain extends AdminMain
     {
-        public DeleteUserInMain( FileUserRealm realm )
+        public DeleteUserInMain( InternalFlatFileRealm realm )
         {
             super( realm );
         }

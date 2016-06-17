@@ -57,7 +57,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
     @Override
     public AuthManager newInstance( Config config, LogProvider logProvider )
     {
-        FileUserRealm internalRealm = createInternalRealm( config, logProvider );
+        InternalFlatFileRealm internalRealm = createInternalRealm( config, logProvider );
 
         List<Realm> realms = new ArrayList<>( 2 );
 
@@ -76,7 +76,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
         return new MultiRealmAuthManager( internalRealm, realms );
     }
 
-    private FileUserRealm createInternalRealm( Config config, LogProvider logProvider )
+    private InternalFlatFileRealm createInternalRealm( Config config, LogProvider logProvider )
     {
         // Resolve auth store file names
         File authStoreDir = config.get( DatabaseManagementSystemSettings.auth_store_directory );
@@ -100,7 +100,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
 
         AuthenticationStrategy authenticationStrategy = new RateLimitedAuthenticationStrategy( systemUTC(), 3 );
 
-        return new FileUserRealm( userRepository, roleRepository, passwordPolicy, authenticationStrategy,
+        return new InternalFlatFileRealm( userRepository, roleRepository, passwordPolicy, authenticationStrategy,
                 true );
     }
 }

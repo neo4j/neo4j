@@ -45,7 +45,7 @@ public class ShiroAuthManager extends BasicAuthManager implements EnterpriseAuth
 {
     protected DefaultSecurityManager securityManager;
     private final EhCacheManager cacheManager;
-    private final FileUserRealm realm;
+    private final InternalFlatFileRealm realm;
     private final RoleRepository roleRepository;
 
     public ShiroAuthManager( UserRepository userRepository, RoleRepository roleRepository,
@@ -53,7 +53,7 @@ public class ShiroAuthManager extends BasicAuthManager implements EnterpriseAuth
     {
         super( userRepository, passwordPolicy, authStrategy, true /* auth always enabled */ );
 
-        realm = new FileUserRealm( userRepository, roleRepository, passwordPolicy, authStrategy, true );
+        realm = new InternalFlatFileRealm( userRepository, roleRepository, passwordPolicy, authStrategy, true );
         // TODO: Maybe MemoryConstrainedCacheManager is good enough if we do not need timeToLiveSeconds?
         // It would be one less dependency.
         // Or we could try to reuse Hazelcast which is already a dependency, but we would need to write some

@@ -60,9 +60,9 @@ import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 /**
- * Shiro realm wrapping FileUserRepository
+ * Shiro realm wrapping FileUserRepository and FileRoleRepository
  */
-public class FileUserRealm extends AuthorizingRealm implements ShiroRealmLifecycle, EnterpriseUserManager
+public class InternalFlatFileRealm extends AuthorizingRealm implements ShiroRealmLifecycle, EnterpriseUserManager
 {
     /**
      * This flag is used in the same way as User.PASSWORD_CHANGE_REQUIRED, but it's
@@ -94,8 +94,9 @@ public class FileUserRealm extends AuthorizingRealm implements ShiroRealmLifecyc
     private final boolean authenticationEnabled;
     private final Map<String,SimpleRole> roles;
 
-    public FileUserRealm( UserRepository userRepository, RoleRepository roleRepository, PasswordPolicy passwordPolicy,
-            AuthenticationStrategy authenticationStrategy, boolean authenticationEnabled )
+    public InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
+            PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy,
+            boolean authenticationEnabled )
     {
         super();
 
@@ -229,7 +230,7 @@ public class FileUserRealm extends AuthorizingRealm implements ShiroRealmLifecyc
         // TODO: This will not work if AuthenticationInfo is cached,
         // unless you always do SecurityManager.logout properly (which will invalidate the cache)
         // For REST we may need to connect HttpSessionListener.sessionDestroyed with logout
-        if ( user.hasFlag( FileUserRealm.IS_SUSPENDED ) )
+        if ( user.hasFlag( InternalFlatFileRealm.IS_SUSPENDED ) )
         {
             throw new DisabledAccountException( "User " + user.name() + " is suspended" );
         }
