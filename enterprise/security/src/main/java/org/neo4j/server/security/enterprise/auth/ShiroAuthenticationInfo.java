@@ -26,7 +26,13 @@ import org.neo4j.kernel.api.security.AuthenticationResult;
 
 public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo
 {
-    AuthenticationResult authenticationResult;
+    private AuthenticationResult authenticationResult;
+
+    public ShiroAuthenticationInfo()
+    {
+        super();
+        this.authenticationResult = AuthenticationResult.FAILURE;
+    }
 
     public ShiroAuthenticationInfo( Object principal, Object credentials, String realmName,
             AuthenticationResult authenticationResult )
@@ -43,12 +49,19 @@ public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo
     @Override
     public void merge( AuthenticationInfo info )
     {
+        if (info == null || info.getPrincipals() == null || info.getPrincipals().isEmpty()) {
+            return;
+        }
+
         super.merge( info );
+
         if ( info instanceof ShiroAuthenticationInfo )
         {
-            AuthenticationResult result = ((ShiroAuthenticationInfo) info).authenticationResult;
-            // TODO: Merge AuthenticationResult
-            authenticationResult = result;
+            authenticationResult = ((ShiroAuthenticationInfo) info).getAuthenticationResult();
+        }
+        else
+        {
+            authenticationResult = AuthenticationResult.SUCCESS;
         }
     }
 }

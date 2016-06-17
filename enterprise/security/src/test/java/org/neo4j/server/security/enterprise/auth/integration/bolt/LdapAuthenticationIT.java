@@ -64,11 +64,11 @@ public class LdapAuthenticationIT
             settings.put( GraphDatabaseSettings.auth_manager, "enterprise-auth-manager" );
             settings.put( SecuritySettings.external_auth_enabled, "true" );
             settings.put( SecuritySettings.ldap_auth_enabled, "true" );
-            // TODO: This is configuration for a temporary external ldap test server
-            settings.put( SecuritySettings.ldap_server, "ldap.forumsys.com:389" );
-            settings.put( SecuritySettings.ldap_user_dn_template, "uid={0},dc=example,dc=com" );
-            settings.put( SecuritySettings.ldap_system_username, "xcn=read-only-admin,dc=example,dc=com" );
-            settings.put( SecuritySettings.ldap_system_password, "password" );
+            // TODO: This is the configuration for an ldap test server
+            settings.put( SecuritySettings.ldap_server, "localhost:9000" );
+            settings.put( SecuritySettings.ldap_user_dn_template, "cn={0},ou=users,dc=example,dc=com" );
+            //settings.put( SecuritySettings.ldap_system_username, "xcn=read-only-admin,dc=example,dc=com" );
+            //settings.put( SecuritySettings.ldap_system_password, "password" );
         };
     }
 
@@ -78,7 +78,6 @@ public class LdapAuthenticationIT
 
     protected Connection client;
 
-
     @Test
     public void shouldBeAbleToLoginWithLdap() throws Throwable
     {
@@ -86,8 +85,8 @@ public class LdapAuthenticationIT
         client.connect( address )
                 .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1", map( "principal", "einstein",
-                                "credentials", "password", "scheme", "basic" ) ) ) );
+                        init( "TestClient/1.1", map( "principal", "neo",
+                                "credentials", "abc123", "scheme", "basic" ) ) ) );
 
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );

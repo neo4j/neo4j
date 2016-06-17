@@ -52,7 +52,7 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager, UserManager
         securityManager = new DefaultSecurityManager( realms );
         securityManager.setSubjectFactory( new ShiroSubjectFactory() );
         ((ModularRealmAuthenticator) securityManager.getAuthenticator())
-                .setAuthenticationStrategy( new FirstSuccessfulStrategy() );
+                .setAuthenticationStrategy( new ShiroAuthenticationStrategy() );
 
         // TODO: This is a bit big dependency for our current needs.
         // Maybe MemoryConstrainedCacheManager is good enough if we do not need timeToLiveSeconds?
