@@ -29,6 +29,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.stresstests.transaction.checkpoint.tracers.TimerTransactionTracer;
@@ -52,10 +53,10 @@ public class CheckPointingLogRotationStressTesting
     private static final String DEFAULT_STORE_DIR = new File( getProperty( "java.io.tmpdir" ), "store" ).getPath();
     private static final String DEFAULT_NODE_COUNT = "100000";
     private static final String DEFAULT_WORKER_THREADS = "16";
-    private static final String DEFAULT_PAGE_CACHE_MEMORY = "2g";
+    private static final String DEFAULT_PAGE_CACHE_MEMORY = "4g";
     private static final String DEFAULT_PAGE_SIZE = "8k";
 
-    private static final int CHECK_POINT_INTERVAL_SECONDS = 60;
+    private static final int CHECK_POINT_INTERVAL_MINUTES = 1;
 
     @Test
     public void shouldBehaveCorrectlyUnderStress() throws Throwable
@@ -81,7 +82,8 @@ public class CheckPointingLogRotationStressTesting
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.pagecache_memory, pageCacheMemory )
                 .setConfig( GraphDatabaseSettings.mapped_memory_page_size, pageSize )
-                .setConfig( GraphDatabaseSettings.check_point_interval_time, CHECK_POINT_INTERVAL_SECONDS + "s" )
+                .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.FALSE )
+                .setConfig( GraphDatabaseSettings.check_point_interval_time, CHECK_POINT_INTERVAL_MINUTES + "m" )
                 .setConfig( GraphDatabaseFacadeFactory.Configuration.tracer, "timer" )
                 .newGraphDatabase();
 
@@ -89,7 +91,7 @@ public class CheckPointingLogRotationStressTesting
         try ( Workload workload = new Workload( db, defaultRandomMutation( nodeCount, db ), threads ) )
         {
             // make sure to run at least one checkpoint during warmup
-            long warmUpTimeMillis = TimeUnit.SECONDS.toMillis( CHECK_POINT_INTERVAL_SECONDS + 30 );
+            long warmUpTimeMillis = TimeUnit.SECONDS.toMillis( CHECK_POINT_INTERVAL_MINUTES * 2 );
             workload.run( warmUpTimeMillis, Workload.TransactionThroughput.NONE );
         }
 
