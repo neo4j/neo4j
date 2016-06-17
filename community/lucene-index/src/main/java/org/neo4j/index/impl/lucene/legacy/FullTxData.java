@@ -379,7 +379,7 @@ class FullTxData extends TxData
             IndexReader newReader = this.reader == null ?
                                     DirectoryReader.open( this.writer ) :
                                     DirectoryReader.openIfChanged( (DirectoryReader) this.reader );
-            if ( newReader == this.reader )
+            if ( newReader == null || newReader == this.reader )
             {
                 return this.searcher;
             }
