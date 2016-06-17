@@ -153,7 +153,7 @@ trait CompatibilityFor2_2 {
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer) = new ParsedQuery {
     val offset_2_3 = preParsedQuery.offset
     val offset_2_2 = InputPositionForV_2_2(offset_2_3.offset, offset_2_3.line, offset_2_3.column)
-    val preparedQueryForV_2_2 = Try(compiler.prepareQuery(preParsedQuery.statement, preParsedQuery.rawStatement, Some(offset_2_2)))
+    val preparedQueryForV_2_2 = Try(compiler.prepareQuery(preParsedQuery.statement, Some(RawQuery(preParsedQuery.rawStatement, offset_2_2))))
 
     def isPeriodicCommit = preparedQueryForV_2_2.map(_.isPeriodicCommit).getOrElse(false)
 
