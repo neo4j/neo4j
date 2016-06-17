@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.Map;
 
 import org.neo4j.graphdb.QueryExecutionException;
+import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 
 import static org.junit.Assert.assertEquals;
@@ -52,7 +53,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
         testCallEmpty( readSubject, "CALL dbms.changePassword( '321' )" );
         testUnAunthenticated( readSubject );
 
-        EnterpriseAuthSubject subject = manager.login( authToken( "readSubject", "321" ) );
+        AuthSubject subject = manager.login( authToken( "readSubject", "321" ) );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
     }
 
@@ -151,7 +152,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     public void shouldCreateUser() throws Exception
     {
         testCallEmpty( adminSubject, "CALL dbms.createUser('craig', '1234', true)" );
-        assertNotNull( "User craig should exist", manager.getUser( "craig" ) );
+        assertNotNull( "User craig should exist", userManager.getUser( "craig" ) );
     }
 
     /*
@@ -200,13 +201,13 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     public void shouldDeleteUser() throws Exception
     {
         testCallEmpty( adminSubject, "CALL dbms.deleteUser('noneSubject')" );
-        assertNull( "User noneSubject should not exist", manager.getUser( "noneSubject" ) );
+        assertNull( "User noneSubject should not exist", userManager.getUser( "noneSubject" ) );
 
-        manager.addUserToRole( "readSubject", PUBLISHER );
+        userManager.addUserToRole( "readSubject", PUBLISHER );
         testCallEmpty( adminSubject, "CALL dbms.deleteUser('readSubject')" );
-        assertNull( "User readSubject should not exist", manager.getUser( "readSubject" ) );
-        assertFalse( manager.getUsernamesForRole( READER ).contains( "readSubject" ) );
-        assertFalse( manager.getUsernamesForRole( PUBLISHER ).contains( "readSubject" ) );
+        assertNull( "User readSubject should not exist", userManager.getUser( "readSubject" ) );
+        assertFalse( userManager.getUsernamesForRole( READER ).contains( "readSubject" ) );
+        assertFalse( userManager.getUsernamesForRole( PUBLISHER ).contains( "readSubject" ) );
     }
 
     @Test
@@ -241,7 +242,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     public void shouldSuspendUser() throws Exception
     {
         testCallEmpty( adminSubject, "CALL dbms.suspendUser('readSubject')" );
-        assertTrue( manager.getUser( "readSubject" ).hasFlag( InternalFlatFileRealm.IS_SUSPENDED ) );
+        assertTrue( userManager.getUser( "readSubject" ).hasFlag( InternalFlatFileRealm.IS_SUSPENDED ) );
     }
 
     @Test
@@ -249,7 +250,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     {
         testCallEmpty( adminSubject, "CALL dbms.suspendUser('readSubject')" );
         testCallEmpty( adminSubject, "CALL dbms.suspendUser('readSubject')" );
-        assertTrue( manager.getUser( "readSubject" ).hasFlag( InternalFlatFileRealm.IS_SUSPENDED ) );
+        assertTrue( userManager.getUser( "readSubject" ).hasFlag( InternalFlatFileRealm.IS_SUSPENDED ) );
     }
 
     @Test
@@ -285,18 +286,18 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldActivateUser() throws Exception
     {
-        manager.suspendUser( "readSubject" );
+        userManager.suspendUser( "readSubject" );
         testCallEmpty( adminSubject, "CALL dbms.activateUser('readSubject')" );
-        assertFalse( manager.getUser( "readSubject" ).hasFlag( InternalFlatFileRealm.IS_SUSPENDED ) );
+        assertFalse( userManager.getUser( "readSubject" ).hasFlag( InternalFlatFileRealm.IS_SUSPENDED ) );
     }
 
     @Test
     public void shouldActivateActiveUser() throws Exception
     {
-        manager.suspendUser( "readSubject" );
+        userManager.suspendUser( "readSubject" );
         testCallEmpty( adminSubject, "CALL dbms.activateUser('readSubject')" );
         testCallEmpty( adminSubject, "CALL dbms.activateUser('readSubject')" );
-        assertFalse( manager.getUser( "readSubject" ).hasFlag( InternalFlatFileRealm.IS_SUSPENDED ) );
+        assertFalse( userManager.getUser( "readSubject" ).hasFlag( InternalFlatFileRealm.IS_SUSPENDED ) );
     }
 
     /*
@@ -312,7 +313,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldFailToActivateIfNotAdmin() throws Exception
     {
-        manager.suspendUser( "readSubject" );
+        userManager.suspendUser( "readSubject" );
         testCallFail( schemaSubject, "CALL dbms.activateUser('readSubject')",
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
         testCallFail( schemaSubject, "CALL dbms.activateUser('Craig')",
@@ -491,7 +492,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
                 "noneSubject", listOf( ),
                 "neo4j", listOf( ADMIN )
         );
-        manager.addUserToRole( "readWriteSubject", READER );
+        userManager.addUserToRole( "readWriteSubject", READER );
         testResult( adminSubject, "CALL dbms.listUsers()",
                 r -> resultContainsMap( r, "username", "roles", expected ) );
     }
@@ -499,7 +500,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldShowCurrentUser() throws Exception
     {
-        manager.addUserToRole( "readWriteSubject", READER );
+        userManager.addUserToRole( "readWriteSubject", READER );
         testResult( adminSubject, "CALL dbms.showCurrentUser()",
                 r -> resultContainsMap( r, "username", "roles", map( "adminSubject", listOf( ADMIN ) ) ) );
         testResult( readSubject, "CALL dbms.showCurrentUser()",

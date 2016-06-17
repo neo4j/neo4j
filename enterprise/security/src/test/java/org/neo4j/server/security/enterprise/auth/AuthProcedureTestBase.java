@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
+import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 import static java.time.Clock.systemUTC;
@@ -70,28 +71,32 @@ public class AuthProcedureTestBase
     protected String[] initialRoles = { "admin", "architect", "publisher", "reader", "empty" };
 
     protected GraphDatabaseAPI db;
-    protected ShiroAuthManager manager;
+    protected MultiRealmAuthManager manager;
+    protected InternalFlatFileRealm internalRealm;
+    protected EnterpriseUserManager userManager;
 
     @Before
     public void setUp() throws Throwable
     {
         db = (GraphDatabaseAPI) new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase();
-        manager = new ShiroAuthManager( new InMemoryUserRepository(), new InMemoryRoleRepository(),
-                new BasicPasswordPolicy(), systemUTC() );
+        internalRealm = new InternalFlatFileRealm( new InMemoryUserRepository(), new InMemoryRoleRepository(),
+                new BasicPasswordPolicy(), new RateLimitedAuthenticationStrategy( systemUTC(), 3 ), true );
+        manager = new MultiRealmAuthManager( internalRealm, Collections.singletonList( internalRealm ) );
         manager.init();
         manager.start();
-        manager.newUser( "noneSubject", "abc", false );
-        manager.newUser( "pwdSubject", "abc", true );
-        manager.newUser( "adminSubject", "abc", false );
-        manager.newUser( "schemaSubject", "abc", false );
-        manager.newUser( "readWriteSubject", "abc", false );
-        manager.newUser( "readSubject", "123", false );
+        userManager = manager.getUserManager();
+        userManager.newUser( "noneSubject", "abc", false );
+        userManager.newUser( "pwdSubject", "abc", true );
+        userManager.newUser( "adminSubject", "abc", false );
+        userManager.newUser( "schemaSubject", "abc", false );
+        userManager.newUser( "readWriteSubject", "abc", false );
+        userManager.newUser( "readSubject", "123", false );
         // Currently admin, architect, publisher and reader roles are created by default
-        manager.addUserToRole( "adminSubject", ADMIN );
-        manager.addUserToRole( "schemaSubject", ARCHITECT );
-        manager.addUserToRole( "readWriteSubject", PUBLISHER );
-        manager.addUserToRole( "readSubject", READER );
-        manager.newRole( "empty" );
+        userManager.addUserToRole( "adminSubject", ADMIN );
+        userManager.addUserToRole( "schemaSubject", ARCHITECT );
+        userManager.addUserToRole( "readWriteSubject", PUBLISHER );
+        userManager.addUserToRole( "readSubject", READER );
+        userManager.newRole( "empty" );
         noneSubject = manager.login( authToken( "noneSubject", "abc" ) );
         pwdSubject = manager.login( authToken( "pwdSubject", "abc" ) );
         readSubject = manager.login( authToken( "readSubject", "123" ) );
@@ -294,10 +299,11 @@ public class AuthProcedureTestBase
         }
     }
 
-    protected void testUnAunthenticated( EnterpriseAuthSubject subject )
+    protected void testUnAunthenticated( AuthSubject subject )
     {
         //TODO: improve me to be less gullible!
-        assertFalse( subject.getShiroSubject().isAuthenticated() );
+        assertTrue( subject instanceof EnterpriseAuthSubject );
+        assertFalse( ((EnterpriseAuthSubject) subject).getShiroSubject().isAuthenticated() );
     }
 
     protected void testUnAunthenticated( EnterpriseAuthSubject subject, String call )

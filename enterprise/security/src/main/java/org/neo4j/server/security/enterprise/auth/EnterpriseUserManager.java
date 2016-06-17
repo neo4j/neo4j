@@ -37,6 +37,8 @@ public interface EnterpriseUserManager extends UserManager
 
     Set<String> getAllUsernames();
 
+    RoleRecord newRole( String roleName, String... usernames ) throws IOException;
+
     /**
      * Add a user to a role. The role has to exist.
      *

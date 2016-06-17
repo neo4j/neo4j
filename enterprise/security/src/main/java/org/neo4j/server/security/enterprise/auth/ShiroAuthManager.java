@@ -141,7 +141,8 @@ public class ShiroAuthManager extends BasicAuthManager implements EnterpriseAuth
         return realm.newUser( username, initialPassword, requirePasswordChange );
     }
 
-    public RoleRecord newRole( String roleName, String... users ) throws IOException, IllegalCredentialsException
+    @Override
+    public RoleRecord newRole( String roleName, String... users ) throws IOException
     {
         assertAuthEnabled();
 

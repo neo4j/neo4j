@@ -231,8 +231,7 @@ public class AuthScenariosIT extends AuthProcedureTestBase
         AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         testCallEmpty( adminSubject, "CALL dbms.deleteUser('Henrik')" );
-        testCallFail( subject, "MATCH (n:Node) RETURN n",
-                AuthenticationException.class, "User Henrik does not exist" );
+        testFailRead( subject, 3 );
     }
 
     //---------- Role management -----------

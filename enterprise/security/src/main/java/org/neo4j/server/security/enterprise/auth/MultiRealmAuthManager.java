@@ -60,7 +60,7 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager, UserManager
     }
 
     @Override
-    public AuthSubject login( Map<String,Object> authToken ) throws InvalidAuthTokenException
+    public EnterpriseAuthSubject login( Map<String,Object> authToken ) throws InvalidAuthTokenException
     {
         ShiroSubject subject;
 

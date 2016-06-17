@@ -124,14 +124,20 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements ShiroReal
         userRepository.start();
         roleRepository.start();
 
-        if ( numberOfUsers() == 0 )
+        if ( authenticationEnabled )
         {
-            newUser( "neo4j", "neo4j", true );
-
             if ( numberOfRoles() == 0 )
             {
+                for ( String role : roles.keySet() )
+                {
+                    newRole( role );
+                }
+            }
+            if ( numberOfUsers() == 0 )
+            {
+                newUser( "neo4j", "neo4j", true );
                 // Make the default user admin for now
-                newRole( PredefinedRolesBuilder.ADMIN, "neo4j" );
+                addUserToRole( "neo4j", PredefinedRolesBuilder.ADMIN );
             }
         }
     }
@@ -276,6 +282,8 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements ShiroReal
     {
         assertValidUsername( username );
 
+        passwordPolicy.validatePassword( initialPassword );
+
         User user = new User.Builder()
                 .withName( username )
                 .withCredentials( Credential.forPassword( initialPassword ) )
@@ -286,7 +294,8 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements ShiroReal
         return user;
     }
 
-    RoleRecord newRole( String roleName, String... usernames ) throws IOException
+    @Override
+    public RoleRecord newRole( String roleName, String... usernames ) throws IOException
     {
         assertValidRoleName( roleName );
         for ( String username : usernames )
