@@ -34,9 +34,10 @@ import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.logging.NullLog;
 import org.neo4j.server.configuration.ConfigLoader;
 
+import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class ConvertNonCoreEdgeStoreCli
+public class GenerateClusterSeedCli
 {
     public static void main( String[] incomingArguments ) throws Throwable
     {
@@ -50,14 +51,10 @@ public class ConvertNonCoreEdgeStoreCli
         File homeDir = args.interpretOption( "home-dir", Converters.<File>mandatory(), File::new );
         String databaseName = args.interpretOption( "database", Converters.<String>mandatory(), s -> s );
         String configPath = args.interpretOption( "config", Converters.<String>mandatory(), s -> s );
-        String clusterSeed = args.interpretOption( "cluster-seed", Converters.<String>optional(), s -> s );
-
         Config config = createConfig( homeDir, databaseName, configPath );
 
-        new ConvertClassicStoreCommand( new ConversionVerifier() ).convert(
-                config.get( DatabaseManagementSystemSettings.database_path ),
-                config.get( GraphDatabaseSettings.record_format ),
-                clusterSeed );
+        SourceMetadata metadata = new GenerateClusterSeedCommand().generate( config.get( database_path ) );
+        System.out.println( "Cluster Seed: " + metadata.getConversionId() );
     }
 
     private static Config createConfig( File homeDir, String databaseName, String configPath )
@@ -77,9 +74,9 @@ public class ConvertNonCoreEdgeStoreCli
 
     private static void printUsage( PrintStream out )
     {
-        out.println( "Neo4j Classic to Core Format Conversion Tool" );
-        for ( String line : Args.splitLongLine( "The classic  to core conversion tool is used to convert a classic"
-                + "Neo4j store into one which has a core friendly format.", 80 ) )
+        out.println( "Neo4j Generate Cluster Seed Tool" );
+        for ( String line : Args.splitLongLine( "The generate cluster seed tool generates a cluster seed to be used " +
+                "on a backed up Neo4j database by the Core Conversion Tool.", 80 ) )
         {
             out.println( "\t" + line );
         }
@@ -88,6 +85,6 @@ public class ConvertNonCoreEdgeStoreCli
         out.println( "--home-dir <path-to-neo4j-directory>" );
         out.println( "--database <database-name>" );
         out.println( "--config <path-to-config-directory>" );
-        out.println( "--cluster-seed <value returned from generate-cluster-seed command>" );
+        out.println( "Returns Cluster Seed to be used with the core-convert tool." );
     }
 }

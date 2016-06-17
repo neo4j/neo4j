@@ -21,9 +21,7 @@ package org.neo4j.coreedge;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
@@ -46,11 +44,10 @@ import org.neo4j.test.coreedge.ClusterRule;
 import org.neo4j.test.rule.SuppressOutput;
 
 import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.coreedge.TestStoreId.assertAllStoresHaveTheSameStoreId;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.TIME;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TIME;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TRANSACTION_ID;
 import static org.neo4j.test.rule.SuppressOutput.suppress;
 
 public class ClusterIdentityIT
@@ -89,7 +86,7 @@ public class ClusterIdentityIT
         cluster.shutdown();
 
         // THEN
-        assertAllStoresHaveTheSameStoreId( coreStoreDirs );
+        assertAllStoresHaveTheSameStoreId( coreStoreDirs, fs );
     }
 
     @Test
@@ -118,7 +115,7 @@ public class ClusterIdentityIT
         cluster.shutdown();
 
         // THEN
-        assertAllStoresHaveTheSameStoreId( coreStoreDirs );
+        assertAllStoresHaveTheSameStoreId( coreStoreDirs, fs );
     }
 
     @Test
@@ -176,7 +173,7 @@ public class ClusterIdentityIT
 
         List<String> coreStoreDirs = storeDirs( cluster.coreServers() );
         cluster.shutdown();
-        assertAllStoresHaveTheSameStoreId( coreStoreDirs );
+        assertAllStoresHaveTheSameStoreId( coreStoreDirs, fs );
     }
 
     @Test
@@ -237,7 +234,7 @@ public class ClusterIdentityIT
 
         List<String> coreStoreDirs = storeDirs( cluster.coreServers() );
         cluster.shutdown();
-        assertAllStoresHaveTheSameStoreId( coreStoreDirs );
+        assertAllStoresHaveTheSameStoreId( coreStoreDirs, fs );
     }
 
     private List<String> storeDirs( Set<CoreGraphDatabase> dbs )
@@ -266,66 +263,4 @@ public class ClusterIdentityIT
         }
     }
 
-    private void assertAllStoresHaveTheSameStoreId( List<String> coreStoreDirs ) throws IOException
-    {
-        Set<StoreId> storeIds = new HashSet<>();
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
-        {
-            for ( String coreStoreDir : coreStoreDirs )
-            {
-                File metadataStore = new File( coreStoreDir, MetaDataStore.DEFAULT_NAME );
-
-                long creationTime = MetaDataStore.getRecord( pageCache, metadataStore, TIME );
-                long randomNumber = MetaDataStore.getRecord( pageCache, metadataStore, RANDOM_NUMBER );
-                long upgradeTime = MetaDataStore.getRecord( pageCache, metadataStore, UPGRADE_TIME );
-                long upgradeId = MetaDataStore.getRecord( pageCache, metadataStore, UPGRADE_TRANSACTION_ID );
-
-                storeIds.add( new StoreId( creationTime, randomNumber, upgradeTime, upgradeId ) );
-            }
-        }
-
-        assertEquals( 1, storeIds.size() );
-    }
-
-    private static class StoreId
-    {
-
-        private final long creationTime;
-        private final long randomNumber;
-        private final long upgradeTime;
-        private final long upgradeId;
-
-        public StoreId( long creationTime, long randomNumber, long upgradeTime, long upgradeId )
-        {
-
-            this.creationTime = creationTime;
-            this.randomNumber = randomNumber;
-            this.upgradeTime = upgradeTime;
-            this.upgradeId = upgradeId;
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
-                return true;
-            }
-            if ( o == null || getClass() != o.getClass() )
-            {
-                return false;
-            }
-            StoreId storeId = (StoreId) o;
-            return creationTime == storeId.creationTime &&
-                    randomNumber == storeId.randomNumber &&
-                    upgradeTime == storeId.upgradeTime &&
-                    upgradeId == storeId.upgradeId;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash( creationTime, randomNumber, upgradeTime, upgradeId );
-        }
-    }
 }

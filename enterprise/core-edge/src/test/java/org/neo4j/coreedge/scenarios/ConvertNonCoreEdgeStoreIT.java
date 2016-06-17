@@ -30,10 +30,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 
+import org.neo4j.coreedge.convert.ConversionVerifier;
 import org.neo4j.coreedge.convert.ConvertClassicStoreCommand;
+import org.neo4j.coreedge.convert.GenerateClusterSeedCommand;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.SharedDiscoveryService;
-import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -95,11 +96,15 @@ public class ConvertNonCoreEdgeStoreIT
 
         File classicNeo4jStore = createClassicNeo4jStore( dbDir, 10, recordFormat );
 
+        File firstServerStoreDir = new File( dbDir, "server-core-" + 0 );
+        FileUtils.copyRecursively( classicNeo4jStore, firstServerStoreDir );
+        String conversionMetadata = new GenerateClusterSeedCommand().generate( firstServerStoreDir).getConversionId();
+
         for ( int serverId = 0; serverId < 3; serverId++ )
         {
             File destination = new File( dbDir, "server-core-" + serverId );
             FileUtils.copyRecursively( classicNeo4jStore, destination );
-            new ConvertClassicStoreCommand( destination, recordFormat ).execute();
+            new ConvertClassicStoreCommand( new ConversionVerifier() ).convert( destination, recordFormat, conversionMetadata );
         }
 
         cluster = Cluster.start( dbDir, 3, 0, new SharedDiscoveryService(), recordFormat );

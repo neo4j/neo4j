@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
@@ -32,7 +33,11 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.backup.OnlineBackupSettings;
+import org.neo4j.coreedge.TestStoreId;
+import org.neo4j.coreedge.convert.ConversionVerifier;
 import org.neo4j.coreedge.convert.ConvertClassicStoreCommand;
+import org.neo4j.coreedge.convert.GenerateClusterSeedCommand;
+import org.neo4j.coreedge.convert.SourceMetadata;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
@@ -42,24 +47,26 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.restore.RestoreDatabaseCommand;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.coreedge.ClusterRule;
-import org.neo4j.test.rule.SuppressOutput;
+
+import static java.util.stream.Collectors.toList;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
+import static org.neo4j.coreedge.TestStoreId.assertAllStoresHaveTheSameStoreId;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.rule.SuppressOutput.suppress;
 
 public class BackupCoreIT
 {
-    @Rule
-    public SuppressOutput suppressOutput = suppress( SuppressOutput.System.out, SuppressOutput.System.err );
+//    @Rule
+//    public SuppressOutput suppressOutput = suppress( SuppressOutput.System.out, SuppressOutput.System.err );
 
     @Rule
     public ClusterRule clusterRule = new ClusterRule( BackupCoreIT.class )
@@ -69,6 +76,7 @@ public class BackupCoreIT
             .withInstanceCoreParam( OnlineBackupSettings.online_backup_server, serverId -> (":" + (8000 + serverId) ) );
     private Cluster cluster;
     private File backupPath;
+    private DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     @Before
     public void setup() throws Exception
@@ -127,24 +135,39 @@ public class BackupCoreIT
 
         // when we shutdown the cluster we lose the number of core servers so we won't go through the for loop unless
         // we capture the count beforehand
-        int numberOfCoreServers = cluster.coreServers().size();
+        List<String> dbPaths = cluster.coreServers().stream().map( GraphDatabaseFacade::getStoreDir ).collect( toList() );
+        int numberOfCoreServers = dbPaths.size();
 
         cluster.shutdown();
+        assertAllStoresHaveTheSameStoreId( dbPaths, fs );
+        TestStoreId storeId = TestStoreId.readStoreId( dbPaths.get( 0 ), fs );
 
         // when
+        File initialStoreDir = cluster.coreServerStoreDirectory( 0 );
+        restoreDatabase( initialStoreDir, backupPath );
+        String conversionMetadata = new GenerateClusterSeedCommand().generate( initialStoreDir).getConversionId();
+
+        ConvertClassicStoreCommand convertClassicStoreCommand = new ConvertClassicStoreCommand( new ConversionVerifier() );
         for ( int i = 0; i < numberOfCoreServers; i++ )
         {
             File coreStoreDir = cluster.coreServerStoreDirectory( i );
             restoreDatabase( coreStoreDir, backupPath );
-            ConvertClassicStoreCommand convertCommand = new ConvertClassicStoreCommand( coreStoreDir, StandardV3_0.NAME );
-            convertCommand.execute();
+            convertClassicStoreCommand.convert( coreStoreDir, StandardV3_0.NAME , conversionMetadata );
         }
 
         cluster.start();
 
         // then
-        Stream<DbRepresentation> dbRepresentations = cluster.coreServers().stream().map( DbRepresentation::of );
+        Set<CoreGraphDatabase> coreGraphDatabases = cluster.coreServers();
+        Stream<DbRepresentation> dbRepresentations = coreGraphDatabases.stream().map( DbRepresentation::of );
         dbRepresentations.forEach( afterReSeed -> assertEquals( beforeBackup, afterReSeed ) );
+
+        List<String> afterRestoreDbPaths = coreGraphDatabases.stream().map( GraphDatabaseFacade::getStoreDir ).collect( toList() );
+        cluster.shutdown();
+
+        assertAllStoresHaveTheSameStoreId( afterRestoreDbPaths, fs );
+        TestStoreId afterRestoreStoreId = TestStoreId.readStoreId( afterRestoreDbPaths.get( 0 ), fs );
+        assertNotEquals( storeId, afterRestoreStoreId );
     }
 
     private void restoreDatabase( File coreStoreDir, File backupPath ) throws IOException
