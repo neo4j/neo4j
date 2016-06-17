@@ -50,6 +50,7 @@ import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_
 import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.util.Bits.bitFlag;
 import static org.neo4j.kernel.impl.util.Bits.notFlag;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.shortToUnsignedInt;
 
 public class PhysicalLogCommandReaderV2_1 extends BaseCommandReader
 {
@@ -168,7 +169,7 @@ public class PhysicalLogCommandReaderV2_1 extends BaseCommandReader
         {
             throw new IOException( "Illegal in use flag: " + inUseByte );
         }
-        int type = channel.getShort();
+        int type = shortToUnsignedInt( channel.getShort() );
         RelationshipGroupRecord record = new RelationshipGroupRecord( id, type );
         record.setInUse( inUse );
         record.setNext( channel.getLong() );
