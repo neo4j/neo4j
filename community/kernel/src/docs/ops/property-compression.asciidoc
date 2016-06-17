@@ -51,6 +51,8 @@ The various classes for short strings are:
 In addition to the string's contents, the number of characters also determines if the string can be inlined or not. Each class has its own character count limits, which are
 
 .Character count limits
+// allow others (e.g. training docs) to include this table
+// tag::characterCountLimitsTable[]
 [options="header",cols="10,3m", width="50%"]
 |============================================
 | String class | Character count limit
@@ -61,6 +63,7 @@ In addition to the string's contents, the number of characters also determines i
 | Latin1 | 27
 | UTF-8 | 14
 |============================================
+// end::characterCountLimitsTable[]
 
 That means that the largest inline-able string is 54 characters long and must be of the Numerical class and also that all Strings of size 14 or less will always be inlined.
 
