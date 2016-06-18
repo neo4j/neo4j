@@ -50,7 +50,7 @@ public class ConvertNonCoreEdgeStoreCli
         File homeDir = args.interpretOption( "home-dir", Converters.<File>mandatory(), File::new );
         String databaseName = args.interpretOption( "database", Converters.<String>mandatory(), s -> s );
         String configPath = args.interpretOption( "config", Converters.<String>mandatory(), s -> s );
-        String clusterSeed = args.interpretOption( "cluster-seed", Converters.<String>optional(), s -> s );
+        String clusterSeed = args.interpretOption( "cluster-seed", Converters.<String>mandatory(), s -> s );
 
         Config config = createConfig( homeDir, databaseName, configPath );
 
