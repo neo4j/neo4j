@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.convert;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collections;
 
 import org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding;
@@ -29,11 +30,15 @@ import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
+import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdType;
@@ -46,6 +51,8 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.*;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.TIME;
 import static org.neo4j.kernel.impl.store.StoreFactory.*;
 import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_KEY_TOKEN_NAMES_STORE_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME;
@@ -68,30 +75,78 @@ import static org.neo4j.kernel.impl.store.id.IdType.STRING_BLOCK;
 
 public class ConvertClassicStoreCommand
 {
-    private File databaseDir;
-    private String recordFormat;
+    private final ConversionVerifier conversionVerifier;
 
-    public ConvertClassicStoreCommand( File databaseDir, String recordFormat )
+    public ConvertClassicStoreCommand( ConversionVerifier conversionVerifier )
     {
-        this.databaseDir = databaseDir;
-        this.recordFormat = recordFormat;
+        this.conversionVerifier = conversionVerifier;
     }
 
-    public void execute() throws Throwable
+    public void convert( File databaseDir, String recordFormat, String conversionId ) throws Throwable
     {
-        appendNullTransactionLogEntryToSetRaftIndexToMinusOne( databaseDir );
+        SourceMetadata metadata = SourceMetadata.create( conversionId );
+        verify( databaseDir, metadata );
+        changeStoreId( databaseDir, metadata );
+        appendNullTransactionLogEntryToSetRaftIndexToMinusOne( databaseDir, recordFormat );
         addIdAllocationState( databaseDir );
     }
 
-    private void appendNullTransactionLogEntryToSetRaftIndexToMinusOne( File dbDir) throws TransactionFailureException
+    private void verify( File databaseDir, SourceMetadata metadata ) throws IOException
     {
+        TargetMetadata targetMetadata = targetMetadata( databaseDir );
+        conversionVerifier.conversionGuard( metadata, targetMetadata );
+    }
 
+    private TargetMetadata targetMetadata( File databaseDir ) throws IOException
+    {
+        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        File metadataStore = new File( databaseDir, MetaDataStore.DEFAULT_NAME );
+        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
+        {
+            StoreId before = readStoreId( metadataStore, pageCache );
+            long lastTxId = MetaDataStore.getRecord( pageCache, metadataStore, LAST_TRANSACTION_ID );
+            return new TargetMetadata( before, lastTxId );
+        }
+    }
+
+    private SourceMetadata changeStoreId( File storeDir, SourceMetadata conversionId ) throws IOException
+    {
+        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        File metadataStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
+        {
+            StoreId before = readStoreId( metadataStore, pageCache );
+
+            long lastTxId = MetaDataStore.getRecord( pageCache, metadataStore, LAST_TRANSACTION_ID );
+
+            Long upgradeTime = conversionId == null ? System.currentTimeMillis() : conversionId.after().getUpgradeTime();
+            MetaDataStore.setRecord( pageCache, metadataStore, UPGRADE_TIME, upgradeTime );
+
+            StoreId after = readStoreId( metadataStore, pageCache );
+            return new SourceMetadata( before, after, lastTxId );
+        }
+    }
+
+    private StoreId readStoreId( File metadataStore, PageCache pageCache ) throws IOException
+    {
+        long creationTime = MetaDataStore.getRecord( pageCache, metadataStore, TIME );
+        long randomNumber = MetaDataStore.getRecord( pageCache, metadataStore, RANDOM_NUMBER );
+        long upgradeTime = MetaDataStore.getRecord( pageCache, metadataStore, UPGRADE_TIME );
+        long upgradeId = MetaDataStore.getRecord( pageCache, metadataStore, UPGRADE_TRANSACTION_ID );
+        long storeVersion = MetaDataStore.getRecord( pageCache, metadataStore, STORE_VERSION );
+        return new StoreId( creationTime, randomNumber, storeVersion, upgradeTime, upgradeId );
+    }
+
+    private void appendNullTransactionLogEntryToSetRaftIndexToMinusOne( File dbDir, String recordFormat ) throws
+            TransactionFailureException
+    {
         GraphDatabaseBuilder builder = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder( dbDir )
                 .setConfig( GraphDatabaseSettings.record_format, recordFormat );
 
         GraphDatabaseAPI db = (GraphDatabaseAPI) builder.newGraphDatabase();
 
-        TransactionCommitProcess commitProcess = db.getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
+        TransactionCommitProcess commitProcess = db.getDependencyResolver().resolveDependency(
+                TransactionCommitProcess.class );
 
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( Collections.emptyList() );
         byte[] txHeaderBytes = LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader( -1 );

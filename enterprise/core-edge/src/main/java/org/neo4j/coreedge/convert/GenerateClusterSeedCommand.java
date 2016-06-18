@@ -1,0 +1,70 @@
+/*
+ * Copyright (c) 2002-2016 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.coreedge.convert;
+
+import java.io.File;
+import java.io.IOException;
+
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
+import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.StoreId;
+
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.TIME;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TIME;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TRANSACTION_ID;
+import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
+
+public class GenerateClusterSeedCommand
+{
+    public SourceMetadata generate( File databaseDir ) throws Throwable
+    {
+        return metadata( databaseDir );
+    }
+
+    private SourceMetadata metadata( File storeDir ) throws IOException
+    {
+        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        File metadataStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
+        {
+            StoreId before = storeId( metadataStore, pageCache, getRecord( pageCache, metadataStore, UPGRADE_TIME ) );
+            StoreId after = storeId( metadataStore, pageCache, System.currentTimeMillis() );
+            long lastTxId = getRecord( pageCache, metadataStore, LAST_TRANSACTION_ID );
+
+            return new SourceMetadata( before, after, lastTxId );
+        }
+    }
+
+    private StoreId storeId( File metadataStore, PageCache pageCache, long upgradeTime ) throws IOException
+    {
+        long creationTime = getRecord( pageCache, metadataStore, TIME );
+        long randomNumber = getRecord( pageCache, metadataStore, RANDOM_NUMBER );
+        long upgradeId = getRecord( pageCache, metadataStore, UPGRADE_TRANSACTION_ID );
+        long storeVersion = getRecord( pageCache, metadataStore, STORE_VERSION );
+        return new StoreId( creationTime, randomNumber, storeVersion, upgradeTime, upgradeId );
+    }
+
+}

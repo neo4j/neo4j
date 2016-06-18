@@ -105,12 +105,18 @@ cmd_core_convert() {
   exec "${JAVA_CMD}" -cp "${CLASSPATH}" -Dfile.encoding=UTF-8 "org.neo4j.coreedge.convert.ConvertNonCoreEdgeStoreCli" --home-dir=${NEO4J_HOME} --config=${NEO4J_CONF} "$@"
 }
 
-
 cmd_restore() {
   setup_environment
   check_java
   build_classpath
   exec "${JAVA_CMD}" -cp "${CLASSPATH}" -Dfile.encoding=UTF-8 "org.neo4j.restore.RestoreDatabaseCli" --home-dir=${NEO4J_HOME} --config=${NEO4J_CONF} "$@"
+}
+
+cmd_generate_cluster_seed() {
+  setup_environment
+  check_java
+  build_classpath
+  exec "${JAVA_CMD}" -cp "${CLASSPATH}" -Dfile.encoding=UTF-8 "org.neo4j.coreedge.convert.GenerateClusterSeedCli" --home-dir=${NEO4J_HOME} --config=${NEO4J_CONF} "$@"
 }
 
 bad_usage() {
@@ -132,6 +138,10 @@ usage() {
       Import a database from a pre-3.0 Neo4j installation. <source-directory> is the database location (e.g.
       <neo4j-root>/data/graph.db).
 
+  ${PROGRAM} generate-cluster-seed --database=<database-name>
+
+    Generates a cluster seed to be used with the core-convert command when restoring a backup for a core-edge cluster
+
   ${PROGRAM} core-convert --database=<database-name>
 
     Converts a database created in a non core-edge Neo4j installation into one that is core format friendly.
@@ -152,11 +162,12 @@ main() {
   declare -r command="$1"
   shift
   case "${command}" in
-    import)         cmd_import "$@" ;;
-    core-convert)   cmd_core_convert "$@" ;;
-    restore)        cmd_restore "$@" ;;
-    help|--help|-h) usage ;;
-    *)              bad_usage "unrecognised command '${command}'" ;;
+    import)                 cmd_import "$@" ;;
+    core-convert)           cmd_core_convert "$@" ;;
+    generate-cluster-seed)  cmd_generate_cluster_seed "$@" ;;
+    restore)                cmd_restore "$@" ;;
+    help|--help|-h)         usage ;;
+    *)                      bad_usage "unrecognised command '${command}'" ;;
   esac
 }
 
