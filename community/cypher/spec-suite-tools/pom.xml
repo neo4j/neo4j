@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>cypher-parent</artifactId>
@@ -8,11 +11,11 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>neo4j-cypher-compiler-3.1</artifactId>
+  <artifactId>neo4j-cypher-spec-suite-tools</artifactId>
   <packaging>jar</packaging>
   <version>3.1.0-SNAPSHOT</version>
-  <name>Neo4j - Cypher Compiler 3.1</name>
-  <description>Compiler for Cypher 3.1</description>
+  <name>Neo4j - Cypher Specification Suite Tools</name>
+  <description>Neo4j query language test suite tools</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
@@ -20,12 +23,6 @@
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
     <url>https://github.com/neo4j/neo4j</url>
   </scm>
-
-  <properties>
-    <version-package>cypher.internal.compiler.v3_1</version-package>
-    <scala.version>2.11.8</scala.version>
-    <scala.binary.version>2.11</scala.binary.version>
-  </properties>
 
   <licenses>
     <license>
@@ -47,20 +44,35 @@
     </license>
   </licenses>
 
+  <properties>
+    <version-package>cypher.internal</version-package>
+    <scala.version>2.11.8</scala.version>
+    <scala.binary.version>2.11</scala.binary.version>
+    <opencypher.version>1.2016-06-15</opencypher.version>
+  </properties>
+
+  <repositories>
+    <repository>
+      <id>neo4j-releases-repository</id>
+      <name>Neo4j Maven 2 releases repository</name>
+      <url>http://m2.neo4j.org/content/repositories/releases/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+    </repository>
+  </repositories>
+
   <build>
     <plugins>
-
       <plugin>
         <groupId>net.alchim31.maven</groupId>
         <artifactId>scala-maven-plugin</artifactId>
         <configuration>
           <scalaVersion>${scala.version}</scalaVersion>
           <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
-          <args>
-            <arg>-Xmax-classfile-name</arg>
-            <arg>100</arg>
-            <arg>-Xlint</arg>
-          </args>
         </configuration>
       </plugin>
 
@@ -75,17 +87,37 @@
 
     <!-- shared versions are defined in the parent pom -->
 
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>tck</artifactId>
+      <version>${opencypher.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>grammar</artifactId>
+      <version>${opencypher.version}</version>
+    </dependency>
+
+    <!-- Visualization -->
+
+    <dependency>
+      <groupId>org.jfree</groupId>
+      <artifactId>jfreechart</artifactId>
+      <version>1.0.19</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.xmlgraphics</groupId>
+      <artifactId>batik-svggen</artifactId>
+      <version>1.8</version>
+    </dependency>
+
     <!-- scala -->
 
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
-      <version>${scala.version}</version>
-    </dependency>
-
-    <dependency>
-      <artifactId>scala-reflect</artifactId>
-      <groupId>org.scala-lang</groupId>
       <version>${scala.version}</version>
     </dependency>
 
@@ -102,7 +134,17 @@
         </exclusion>
       </exclusions>
     </dependency>
-
+    <dependency>
+      <groupId>org.scalautils</groupId>
+      <artifactId>scalautils_2.11</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>scala-library</artifactId>
+          <groupId>org.scala-lang</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
     <dependency>
       <groupId>org.scalacheck</groupId>
       <artifactId>scalacheck_2.11</artifactId>
@@ -114,27 +156,11 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <scope>provided</scope>
     </dependency>
+
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-io</artifactId>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-graph-matching</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-graph-algo</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-frontend-3.1</artifactId>
+      <artifactId>neo4j-cypher-compiler-3.1</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -149,30 +175,24 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-frontend-3.1</artifactId>
+      <artifactId>neo4j-cypher</artifactId>
       <version>${project.version}</version>
-      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
 
     <!-- other -->
 
     <dependency>
-      <groupId>org.parboiled</groupId>
-      <artifactId>parboiled-scala_2.11</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
-      <artifactId>concurrentlinkedhashmap-lru</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-      <scope>test</scope>
+      <groupId>com.novus</groupId>
+      <artifactId>salat-core_2.11</artifactId>
+      <version>1.9.9</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.scala-lang</groupId>
+          <artifactId>scala-library</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
   </dependencies>
-
 </project>

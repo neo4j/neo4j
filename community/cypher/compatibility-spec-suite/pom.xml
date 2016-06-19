@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>cypher-parent</artifactId>
@@ -8,12 +11,11 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>neo4j-cypher-frontend-3.1</artifactId>
+  <artifactId>neo4j-cypher-compatibility-spec-suite</artifactId>
   <packaging>jar</packaging>
   <version>3.1.0-SNAPSHOT</version>
-  <name>Neo4j - Cypher Frontend 3.1</name>
-
-  <description>Front end of the Cypher compiler</description>
+  <name>Neo4j - Cypher Compatibility Specification Suite</name>
+  <description>Neo4j query language compatibility suite</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
@@ -21,12 +23,6 @@
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
     <url>https://github.com/neo4j/neo4j</url>
   </scm>
-
-  <properties>
-    <version-package>cypher.internal.frontend.v3_1</version-package>
-    <scala.version>2.11.8</scala.version>
-    <scala.binary.version>2.11</scala.binary.version>
-  </properties>
 
   <licenses>
     <license>
@@ -48,20 +44,35 @@
     </license>
   </licenses>
 
+  <properties>
+    <version-package>cypher.internal</version-package>
+    <scala.version>2.11.8</scala.version>
+    <scala.binary.version>2.11</scala.binary.version>
+    <opencypher.version>1.2016-06-15</opencypher.version>
+  </properties>
+
+  <repositories>
+    <repository>
+      <id>neo4j-releases-repository</id>
+      <name>Neo4j Maven 2 releases repository</name>
+      <url>http://m2.neo4j.org/content/repositories/releases/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+    </repository>
+  </repositories>
+
   <build>
     <plugins>
-
       <plugin>
         <groupId>net.alchim31.maven</groupId>
         <artifactId>scala-maven-plugin</artifactId>
         <configuration>
           <scalaVersion>${scala.version}</scalaVersion>
           <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
-          <args>
-            <arg>-Xmax-classfile-name</arg>
-            <arg>100</arg>
-            <arg>-Xlint</arg>
-          </args>
         </configuration>
       </plugin>
 
@@ -84,12 +95,6 @@
       <version>${scala.version}</version>
     </dependency>
 
-    <dependency>
-      <artifactId>scala-reflect</artifactId>
-      <groupId>org.scala-lang</groupId>
-      <version>${scala.version}</version>
-    </dependency>
-
     <!-- scala test dependencies -->
 
     <dependency>
@@ -104,58 +109,62 @@
       </exclusions>
     </dependency>
     <dependency>
+      <groupId>org.scalautils</groupId>
+      <artifactId>scalautils_2.11</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>scala-library</artifactId>
+          <groupId>org.scala-lang</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
       <groupId>org.scalacheck</groupId>
       <artifactId>scalacheck_2.11</artifactId>
       <scope>test</scope>
     </dependency>
 
-    <!-- other -->
+    <!-- neo4j -->
 
     <dependency>
-      <groupId>org.parboiled</groupId>
-      <artifactId>parboiled-scala_2.11</artifactId>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-spec-suite-tools</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
 
+    <!-- neo4j testing -->
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-io</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-spec-suite-tools</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
-
-  <profiles>
-    <profile>
-      <id>neo-full-build-with-javadoc</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>fullBuild</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-jar-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>generate-dummy-javadocs-jar</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>jar</goal>
-                </goals>
-                <configuration>
-                  <classifier>javadoc</classifier>
-                  <excludes>
-                    <exclude>**</exclude>
-                  </excludes>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
-
 </project>
