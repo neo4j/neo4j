@@ -363,4 +363,15 @@ case class RelationshipPattern(
   def isSingleLength = length.isEmpty
 
   def isDirected = direction != SemanticDirection.BOTH
+
+  def maxDepth: Option[Int] = length match {
+    case Some(Some(ast.Range(_, Some(i)))) => Some(i.value.toInt)
+    case _                                 => None
+  }
+
+  def minDepth: Option[Int] = length match {
+    case Some(Some(ast.Range(Some(i), _))) => Some(i.value.toInt)
+    case _                                 => None
+  }
+
 }

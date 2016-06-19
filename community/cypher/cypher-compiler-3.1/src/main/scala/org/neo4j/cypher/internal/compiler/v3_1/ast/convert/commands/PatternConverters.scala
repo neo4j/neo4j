@@ -186,21 +186,12 @@ object PatternConverters {
         val startNode = node.asAbstractPatterns.head.asInstanceOf[ParsedEntity]
         val endNode = chain.rightNode.asAbstractPatterns.head.asInstanceOf[ParsedEntity]
 
-        val maxDepth = chain.relationship.length match {
-          case Some(Some(ast.Range(_, Some(i)))) => Some(i.value.toInt)
-          case _                                 => None
-        }
-
-        val minDepth = chain.relationship.length match {
-          case Some(Some(ast.Range(Some(i), _))) => Some(i.value.toInt)
-          case _                                 => None
-        }
-
+        val typeNames = chain.relationship.types.map(_.name)
         chain.relationship.length match {
           case None =>
             ParsedRelation(
               chain.relationship.legacyName, props, startNode, endNode,
-              chain.relationship.types.map(_.name), chain.relationship.direction, chain.relationship.optional)
+              typeNames, chain.relationship.direction, chain.relationship.optional)
 
           case _    =>
             val (relName, relIterator) = chain.relationship.variable match {
@@ -210,8 +201,8 @@ object PatternConverters {
                 (chain.relationship.legacyName, None)
             }
 
-            ParsedVarLengthRelation(relName, props, startNode, endNode, chain.relationship.types.map(_.name),
-              chain.relationship.direction, chain.relationship.optional, minDepth, maxDepth, relIterator)
+            ParsedVarLengthRelation(relName, props, startNode, endNode, typeNames, chain.relationship.direction,
+              chain.relationship.optional, chain.relationship.minDepth, chain.relationship.maxDepth, relIterator)
         }
       }
 
