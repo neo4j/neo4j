@@ -24,7 +24,9 @@ import java.security.{DigestInputStream, MessageDigest}
 
 import cypher.cucumber.db.GraphRecipe.CypherScript
 
+import scala.io.Codec
 import scala.reflect.io.File
+import scala.util.Try
 
 object GraphRecipeLoader {
   def forRepository(repository: GraphFileRepository) =
@@ -41,9 +43,10 @@ object GraphRecipeLoader {
     implicit val formats = DefaultFormats + new GraphRecipe.AdviceSerializer
 
     val file = repository.graphImportFile(name)
-    val json = file
-      .safeSlurp()
-      .getOrElse(throw new IllegalArgumentException(s"$file should exist"))
+    val json =
+      Try(file.slurp(Codec.UTF8))
+        .toOption
+        .getOrElse(throw new IllegalArgumentException(s"$file should exist"))
 
 
     val parsed = parse(json)
