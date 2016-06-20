@@ -21,16 +21,10 @@ package org.neo4j.coreedge.raft.log;
 
 import org.junit.Test;
 
-import java.io.File;
-
 import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.log.monitoring.RaftLogAppendIndexMonitor;
 import org.neo4j.coreedge.raft.log.monitoring.RaftLogCommitIndexMonitor;
-import org.neo4j.coreedge.raft.log.naive.NaiveDurableRaftLog;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
 
@@ -40,11 +34,6 @@ public class MonitoredRaftLogTest
     public void shouldMonitorAppendIndexAndCommitIndex() throws Exception
     {
         // Given
-        FileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
-
-        File directory = new File( "." );
-        fsa.create( directory );
-
         Monitors monitors = new Monitors();
         StubRaftLogAppendIndexMonitor appendMonitor = new StubRaftLogAppendIndexMonitor();
         monitors.addMonitorListener( appendMonitor );
@@ -52,9 +41,7 @@ public class MonitoredRaftLogTest
         StubRaftLogCommitIndexMonitor commitMonitor = new StubRaftLogCommitIndexMonitor();
         monitors.addMonitorListener( commitMonitor );
 
-        MonitoredRaftLog log = new MonitoredRaftLog(
-                new NaiveDurableRaftLog( fsa, directory, new DummyRaftableContentSerializer(),
-                        NullLogProvider.getInstance() ), monitors );
+        MonitoredRaftLog log = new MonitoredRaftLog( new InMemoryRaftLog(), monitors );
 
         // When
         log.append( new RaftLogEntry( 0, ReplicatedInteger.valueOf( 1 ) ) );
