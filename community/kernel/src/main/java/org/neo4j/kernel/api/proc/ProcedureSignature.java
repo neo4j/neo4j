@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType;
@@ -96,11 +97,18 @@ public class ProcedureSignature
     {
         private final String name;
         private final AnyType type;
+        private final Optional<Object> defaultValue;
 
-        public FieldSignature( String name, AnyType type )
+        public FieldSignature( String name, AnyType type)
+        {
+            this(name, type, Optional.empty());
+        }
+
+        public FieldSignature( String name, AnyType type, Optional<Object> defaultValue )
         {
             this.name = name;
             this.type = type;
+            this.defaultValue = defaultValue;
         }
 
         public String name()
@@ -111,6 +119,11 @@ public class ProcedureSignature
         public AnyType neo4jType()
         {
             return type;
+        }
+
+        public Optional<Object> defaultValue()
+        {
+            return defaultValue;
         }
 
         @Override
@@ -253,7 +266,7 @@ public class ProcedureSignature
         /** Define an input field */
         public Builder in( String name, AnyType type )
         {
-            inputSignature.add( new FieldSignature( name, type ) );
+            inputSignature.add( new FieldSignature( name, type) );
             return this;
         }
 

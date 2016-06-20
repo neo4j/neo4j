@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.frontend.v3_1.ast.UnresolvedCall
 import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
 
 case class ProcedureSignature(name: QualifiedProcedureName,
-                              inputSignature: Seq[FieldSignature],
-                              outputSignature: Option[Seq[FieldSignature]],
+                              inputSignature: IndexedSeq[FieldSignature],
+                              outputSignature: Option[IndexedSeq[FieldSignature]],
                               accessMode: ProcedureAccessMode = ProcedureReadOnlyAccess) {
 
   def outputFields = outputSignature.getOrElse(Seq.empty)
@@ -41,7 +41,7 @@ case class QualifiedProcedureName(namespace: Seq[String], name: String) {
   override def toString = s"""${namespace.mkString(".")}.$name"""
 }
 
-case class FieldSignature(name: String, typ: CypherType)
+case class FieldSignature(name: String, typ: CypherType, default: Option[AnyRef] = None)
 
 sealed trait ProcedureAccessMode
 

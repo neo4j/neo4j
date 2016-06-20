@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.PatternConve
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.StatementConverters
 import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v3_1.commands.EntityProducerFactory
-import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{AggregationExpression, Expression => CommandExpression}
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{AggregationExpression, Expression => CommandExpression, Literal}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.{True, _}
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.builders.prepare.KeyTokenResolver
@@ -314,7 +314,9 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
 
     case ProcedureCall(_, call@ResolvedCall(signature, callArguments, callResults, _, _)) =>
       val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-      val callArgumentCommands = callArguments.map(toCommandExpression)
+      val callArgumentCommands = callArguments.map(Some(_)).zipAll(signature.inputSignature.map(_.default), None, None).map {
+        case (given, default) => given.map(toCommandExpression).getOrElse(Literal(default.get))
+      }
       val rowProcessing = ProcedureCallRowProcessing(signature)
       ProcedureCallPipe(source, signature.name, callMode, callArgumentCommands, rowProcessing, call.callResultTypes, call.callResultIndices)()
 

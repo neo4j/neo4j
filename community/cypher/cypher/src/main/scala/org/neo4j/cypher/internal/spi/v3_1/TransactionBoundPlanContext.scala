@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.spi.v3_1
 
+import java.util.Optional
+
 import org.neo4j.cypher.MissingIndexException
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.EntityProducer
@@ -130,12 +132,14 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
   override def procedureSignature(name: QualifiedProcedureName) = {
     val kn = new KernelProcedureSignature.ProcedureName(name.namespace.asJava, name.name)
     val ks = tc.statement.readOperations().procedureGet(kn)
-    val input = ks.inputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType())))
-    val output = if (ks.isVoid) None else Some(ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()))))
+    val input = ks.inputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()))).toIndexedSeq
+    val output = if (ks.isVoid) None else Some(ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()))).toIndexedSeq)
     val mode = asCypherProcMode(ks.mode())
 
     ProcedureSignature(name, input, output, mode)
   }
+
+  private def asOption[T](optional: Optional[T]): Option[T] = if (optional.isPresent) Some(optional.get()) else None
 
   private def asCypherProcMode(mode: KernelProcedureSignature.Mode): ProcedureAccessMode = mode match {
     case KernelProcedureSignature.Mode.READ_ONLY => ProcedureReadOnlyAccess

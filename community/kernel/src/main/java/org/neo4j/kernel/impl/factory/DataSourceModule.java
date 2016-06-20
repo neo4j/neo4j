@@ -354,9 +354,9 @@ public class DataSourceModule
         platform.life.add( procedures );
         platform.dependencies.satisfyDependency( procedures );
 
-        procedures.registerType( Node.class, new SimpleConverter( NTNode, Node.class ) );
-        procedures.registerType( Relationship.class, new SimpleConverter( NTRelationship, Relationship.class ) );
-        procedures.registerType( Path.class, new SimpleConverter( NTPath, Path.class ) );
+        procedures.registerType( Node.class, new SimpleConverter( NTNode, Node.class) );
+        procedures.registerType( Relationship.class, new SimpleConverter( NTRelationship, Relationship.class) );
+        procedures.registerType( Path.class, new SimpleConverter( NTPath, Path.class) );
 
         // Register injected public API components
         Log proceduresLog = platform.logging.getUserLog( Procedures.class  );

@@ -37,4 +37,13 @@ public @interface Name
      * @return the name of this input argument.
      */
     String value();
+
+    String defaultValue() default DEFAULT_VALUE;
+
+    /*
+     * Defaults in annotation requires compile time constants, the only way
+     * to check if a returned defaultValue() is a default is to use a constant
+     * that is highly unlikely to be used in real code.
+     */
+    String DEFAULT_VALUE = " <[6795b15e-8693-4a21-b57a-4a7b87f09a5a]> ";
 }

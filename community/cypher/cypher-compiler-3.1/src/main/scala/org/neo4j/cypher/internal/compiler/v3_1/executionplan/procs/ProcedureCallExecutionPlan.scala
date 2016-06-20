@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_1.executionplan.procs
 
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{ExecutionPlan, InternalExecutionResult, ProcedureCallMode, READ_ONLY}
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.{Counter, RuntimeJavaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.{ExternalCSVResource, QueryState}
@@ -47,7 +49,8 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                       publicTypeConverter: Any => Any)
   extends ExecutionPlan {
 
-  private val argExprCommands = argExprs.map(toCommandExpression)
+  private val argExprCommands: Seq[expressions.Expression] =  argExprs.map(toCommandExpression) ++
+    signature.inputSignature.drop(argExprs.size).flatMap(_.default).map(Literal(_))
 
   override def run(ctx: QueryContext, planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult = {
     val input = evaluateArguments(ctx, params)

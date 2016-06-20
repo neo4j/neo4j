@@ -24,11 +24,14 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType;
+import org.neo4j.procedure.Name;
 
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTAny;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTBoolean;
@@ -50,6 +53,7 @@ public class TypeMappers
     {
         AnyType type();
         Object toNeoValue( Object javaValue ) throws ProcedureException;
+        Optional<Object> defaultValue(Name parameter);
     }
 
     private final Map<Type,NeoValueConverter> javaToNeo = new HashMap<>();
@@ -125,17 +129,19 @@ public class TypeMappers
     }
 
     private final NeoValueConverter TO_ANY = new SimpleConverter( NTAny, Object.class );
-    private final NeoValueConverter TO_STRING = new SimpleConverter( NTString, String.class );
-    private final NeoValueConverter TO_INTEGER = new SimpleConverter( NTInteger, Long.class );
-    private final NeoValueConverter TO_FLOAT = new SimpleConverter( NTFloat, Double.class );
-    private final NeoValueConverter TO_NUMBER = new SimpleConverter( NTNumber, Number.class );
-    private final NeoValueConverter TO_BOOLEAN = new SimpleConverter( NTBoolean, Boolean.class );
-    private final NeoValueConverter TO_MAP = new SimpleConverter( NTMap, Map.class );
+    private final NeoValueConverter TO_STRING = new SimpleConverter( NTString, String.class, s -> s);
+    private final NeoValueConverter TO_INTEGER = new SimpleConverter( NTInteger, Long.class, Long::parseLong );
+    private final NeoValueConverter TO_FLOAT = new SimpleConverter( NTFloat, Double.class, Double::parseDouble);
+    private final NeoValueConverter TO_NUMBER = new SimpleConverter( NTNumber, Number.class, Boolean::parseBoolean);
+    private final NeoValueConverter TO_BOOLEAN = new SimpleConverter( NTBoolean, Boolean.class, Boolean::parseBoolean);
+    private final NeoValueConverter TO_MAP = new SimpleConverter( NTMap, Map.class);
     private final NeoValueConverter TO_LIST = toList( TO_ANY );
 
     private NeoValueConverter toList( NeoValueConverter inner )
     {
-        return new SimpleConverter( NTList( inner.type() ), List.class );
+        return new SimpleConverter( NTList( inner.type() ), List.class,s -> {
+            throw new UnsupportedOperationException("Default values for type List is not supported" );
+        } );
     }
 
     private ProcedureException javaToNeoMappingError( Type cls )
@@ -153,11 +159,33 @@ public class TypeMappers
     {
         private final AnyType type;
         private final Class<?> javaClass;
+        private final Function<String,Object> defaultConverter;
 
-        public SimpleConverter( AnyType type, Class<?> javaClass )
+        public SimpleConverter( AnyType type, Class<?> javaClass)
+        {
+            this( type, javaClass, s -> {
+                throw new UnsupportedOperationException( String.format("Default values for type %s is not supported", javaClass.getSimpleName() ));
+            } );
+        }
+
+        public SimpleConverter( AnyType type, Class<?> javaClass, Function<String,Object> defaultConverter )
         {
             this.type = type;
             this.javaClass = javaClass;
+            this.defaultConverter = defaultConverter;
+        }
+
+        public Optional<Object> defaultValue(Name parameter)
+        {
+            String defaultValue = parameter.defaultValue();
+            if ( defaultValue.equals( Name.DEFAULT_VALUE ) )
+            {
+                return Optional.empty();
+            }
+            else
+            {
+                return Optional.of( defaultConverter.apply( defaultValue ) );
+            }
         }
 
         @Override
