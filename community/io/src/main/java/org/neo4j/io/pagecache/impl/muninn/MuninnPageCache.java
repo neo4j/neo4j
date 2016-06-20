@@ -280,6 +280,7 @@ public class MuninnPageCache implements PageCache
                     "Cannot map files with a filePageSize (" + filePageSize + ") that is greater than the " +
                     "cachePageSize (" + cachePageSize + ")" );
         }
+        file = file.getCanonicalFile();
         boolean createIfNotExists = false;
         boolean truncateExisting = false;
         boolean deleteOnClose = false;
