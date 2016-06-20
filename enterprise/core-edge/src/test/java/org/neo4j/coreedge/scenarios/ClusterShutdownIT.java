@@ -19,7 +19,6 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,7 +42,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
 
-@Ignore
 @RunWith( Parameterized.class )
 public class ClusterShutdownIT
 {
