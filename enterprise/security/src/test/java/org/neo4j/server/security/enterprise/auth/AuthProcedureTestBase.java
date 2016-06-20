@@ -59,14 +59,15 @@ import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.R
 
 public class AuthProcedureTestBase
 {
-    protected AuthSubject adminSubject;
-    protected AuthSubject schemaSubject;
-    protected AuthSubject writeSubject;
-    protected AuthSubject readSubject;
-    protected AuthSubject noneSubject;
+    protected ShiroAuthSubject adminSubject;
+    protected ShiroAuthSubject schemaSubject;
+    protected ShiroAuthSubject writeSubject;
+    protected ShiroAuthSubject readSubject;
+    protected ShiroAuthSubject pwdSubject;
+    protected ShiroAuthSubject noneSubject;
 
     protected String[] initialUsers = { "adminSubject", "readSubject", "schemaSubject",
-        "readWriteSubject", "noneSubject", "neo4j" };
+        "readWriteSubject", "pwdSubject", "noneSubject", "neo4j" };
     protected String[] initialRoles = { "admin", "architect", "publisher", "reader", "empty" };
 
     protected GraphDatabaseAPI db;
@@ -81,6 +82,7 @@ public class AuthProcedureTestBase
         manager.init();
         manager.start();
         manager.newUser( "noneSubject", "abc", false );
+        manager.newUser( "pwdSubject", "abc", true );
         manager.newUser( "adminSubject", "abc", false );
         manager.newUser( "schemaSubject", "abc", false );
         manager.newUser( "readWriteSubject", "abc", false );
@@ -92,6 +94,7 @@ public class AuthProcedureTestBase
         manager.newRole( READER, "readSubject" );
         manager.newRole( "empty" );
         noneSubject = manager.login( authToken( "noneSubject", "abc" ) );
+        pwdSubject = manager.login( authToken( "pwdSubject", "abc" ) );
         readSubject = manager.login( authToken( "readSubject", "123" ) );
         writeSubject = manager.login( authToken( "readWriteSubject", "abc" ) );
         schemaSubject = manager.login( authToken( "schemaSubject", "abc" ) );
@@ -119,12 +122,12 @@ public class AuthProcedureTestBase
 
     //------------- Helper functions---------------
 
-    protected void testSuccessfulReadAction( AuthSubject subject, int count )
+    protected void testSuccessfulRead( AuthSubject subject, int count )
     {
         testCallCount( subject, "MATCH (n) RETURN n", null, count );
     }
 
-    protected void testFailReadAction( AuthSubject subject, int count )
+    protected void testFailRead( AuthSubject subject, int count )
     {
         // TODO: this should be permission denied instead
         testCallFail( subject,
@@ -132,12 +135,12 @@ public class AuthProcedureTestBase
                 AuthorizationViolationException.class, "Read operations are not allowed" );
     }
 
-    protected void testSuccessfulWriteAction( AuthSubject subject )
+    protected void testSuccessfulWrite( AuthSubject subject )
     {
         testCallEmpty( subject, "CREATE (:Node)" );
     }
 
-    protected void testFailWriteAction( AuthSubject subject )
+    protected void testFailWrite( AuthSubject subject )
     {
         // TODO: this should be permission denied instead
         testCallFail( subject,
@@ -145,7 +148,7 @@ public class AuthProcedureTestBase
                 AuthorizationViolationException.class, "Write operations are not allowed" );
     }
 
-    protected void testSuccessfulSchemaAction( AuthSubject subject )
+    protected void testSuccessfulSchema( AuthSubject subject )
     {
         testCallEmpty( subject, "CREATE INDEX ON :Node(number)" );
     }
@@ -162,15 +165,19 @@ public class AuthProcedureTestBase
     {
         testCallFail( subject, "CALL dbms.createUser('Craig', 'foo', false)", QueryExecutionException.class,
                 AuthProcedures.PERMISSION_DENIED );
+        testCallFail( subject, "CALL dbms.createUser('Craig', '', false)", QueryExecutionException.class,
+                AuthProcedures.PERMISSION_DENIED );
+        testCallFail( subject, "CALL dbms.createUser('', 'foo', false)", QueryExecutionException.class,
+                AuthProcedures.PERMISSION_DENIED );
     }
 
-    protected void testFailAddUserToRoleAction( AuthSubject subject )
+    protected void testFailAddUserToRole( AuthSubject subject )
     {
         testCallFail( subject, "CALL dbms.addUserToRole('Craig', '" + PUBLISHER + "')",
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
     }
 
-    protected void testFailRemoveUserFromRoleAction( AuthSubject subject )
+    protected void testFailRemoveUserFromRole( AuthSubject subject )
     {
         testCallFail( subject, "CALL dbms.removeUserFromRole('Craig', '" + PUBLISHER + "')",
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
@@ -180,9 +187,11 @@ public class AuthProcedureTestBase
     {
         testCallFail( subject, "CALL dbms.deleteUser('Craig')", QueryExecutionException.class,
                 AuthProcedures.PERMISSION_DENIED );
+        testCallFail( subject, "CALL dbms.deleteUser('')", QueryExecutionException.class,
+                AuthProcedures.PERMISSION_DENIED );
     }
 
-    protected void testSuccessfulListUsersAction( AuthSubject subject, String[] users )
+    protected void testSuccessfulListUsers( AuthSubject subject, String[] users )
     {
         testResult( subject, "CALL dbms.listUsers() YIELD username AS users RETURN users",
                 r -> resultKeyIsArray( r, "users", users ) );
@@ -195,7 +204,7 @@ public class AuthProcedureTestBase
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
     }
 
-    protected void testSuccessfulListRolesAction( AuthSubject subject, String[] roles )
+    protected void testSuccessfulListRoles( AuthSubject subject, String[] roles )
     {
         testResult( subject, "CALL dbms.listRoles() YIELD role AS roles RETURN roles",
                 r -> resultKeyIsArray( r, "roles", roles ) );
@@ -288,8 +297,22 @@ public class AuthProcedureTestBase
 
     protected void testUnAunthenticated( ShiroAuthSubject subject )
     {
-        //TODO: inprove me to be less gullible!
-        assert( subject.getSubject().isAuthenticated() );
+        //TODO: improve me to be less gullible!
+        assertFalse( subject.getSubject().isAuthenticated() );
+    }
+
+    protected void testUnAunthenticated( ShiroAuthSubject subject, String call )
+    {
+        //TODO: OMG improve thrown exception
+        try
+        {
+            testCallEmpty( subject, call, null );
+            fail( "Allowed un-authenticated query!" );
+        }
+        catch ( Exception e )
+        {
+            assertEquals( NullPointerException.class, e.getClass() );
+        }
     }
 
     protected void testCallEmpty( AuthSubject subject, String call )

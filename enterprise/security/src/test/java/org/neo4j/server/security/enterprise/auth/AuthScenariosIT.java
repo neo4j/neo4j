@@ -68,12 +68,12 @@ public class AuthScenariosIT extends AuthProcedureTestBase
         assertEquals( AuthenticationResult.FAILURE, subject.getAuthenticationResult() );
         subject = manager.login( authToken( "Henrik", "bar" ) );
         assertEquals( AuthenticationResult.PASSWORD_CHANGE_REQUIRED, subject.getAuthenticationResult() );
-        testFailReadAction( subject, 3 );
+        testFailRead( subject, 3 );
         testCallEmpty( subject, "CALL dbms.changePassword( 'foo' )" );
         subject = manager.login( authToken( "Henrik", "foo" ) );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
-        testFailWriteAction( subject );
-        testSuccessfulReadAction( subject, 3 );
+        testFailWrite( subject );
+        testSuccessfulRead( subject, 3 );
     }
 
     /*
@@ -94,10 +94,10 @@ public class AuthScenariosIT extends AuthProcedureTestBase
         testCallEmpty( subject, "CALL dbms.changePassword( 'foo' )" );
         subject = manager.login( authToken( "Henrik", "foo" ) );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
-        testFailReadAction( subject, 3 );
+        testFailRead( subject, 3 );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
-        testFailWriteAction( subject );
-        testSuccessfulReadAction( subject, 3 );
+        testFailWrite( subject );
+        testSuccessfulRead( subject, 3 );
     }
 
     /*
@@ -116,10 +116,10 @@ public class AuthScenariosIT extends AuthProcedureTestBase
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
-        testFailReadAction( subject, 3 );
+        testFailRead( subject, 3 );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
-        testSuccessfulWriteAction( subject );
-        testSuccessfulReadAction( subject, 4 );
+        testSuccessfulWrite( subject );
+        testSuccessfulRead( subject, 4 );
         testFailSchema( subject );
     }
 
@@ -143,14 +143,14 @@ public class AuthScenariosIT extends AuthProcedureTestBase
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
-        testFailReadAction( subject, 3 );
-        testFailWriteAction( subject );
+        testFailRead( subject, 3 );
+        testFailWrite( subject );
         testFailSchema( subject );
         testFailCreateUser( subject );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + ARCHITECT + "')" );
-        testSuccessfulWriteAction( subject );
-        testSuccessfulReadAction( subject, 4 );
-        testSuccessfulSchemaAction( subject );
+        testSuccessfulWrite( subject );
+        testSuccessfulRead( subject, 4 );
+        testSuccessfulSchema( subject );
         testFailCreateUser( subject );
     }
 
@@ -255,12 +255,12 @@ public class AuthScenariosIT extends AuthProcedureTestBase
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
         AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
-        testSuccessfulWriteAction( subject );
+        testSuccessfulWrite( subject );
         testCallEmpty( adminSubject, "CALL dbms.removeUserFromRole('Henrik', '" + PUBLISHER + "')" );
-        testFailReadAction( subject, 4 );
+        testFailRead( subject, 4 );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
-        testFailWriteAction( subject );
-        testSuccessfulReadAction( subject, 4 );
+        testFailWrite( subject );
+        testSuccessfulRead( subject, 4 );
     }
 
     /*
@@ -277,10 +277,10 @@ public class AuthScenariosIT extends AuthProcedureTestBase
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
-        testFailWriteAction( subject );
+        testFailWrite( subject );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
-        testSuccessfulWriteAction( subject );
+        testSuccessfulWrite( subject );
     }
 
     /*
@@ -302,11 +302,11 @@ public class AuthScenariosIT extends AuthProcedureTestBase
         AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
-        testSuccessfulWriteAction( subject );
-        testSuccessfulReadAction( subject, 4 );
+        testSuccessfulWrite( subject );
+        testSuccessfulRead( subject, 4 );
         testCallEmpty( adminSubject, "CALL dbms.removeUserFromRole('Henrik', '" + PUBLISHER + "')" );
-        testFailWriteAction( subject );
-        testSuccessfulReadAction( subject, 4 );
+        testFailWrite( subject );
+        testSuccessfulRead( subject, 4 );
     }
 
     /*
@@ -328,12 +328,12 @@ public class AuthScenariosIT extends AuthProcedureTestBase
         AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
-        testSuccessfulWriteAction( subject );
-        testSuccessfulReadAction( subject, 4 );
+        testSuccessfulWrite( subject );
+        testSuccessfulRead( subject, 4 );
         testCallEmpty( adminSubject, "CALL dbms.removeUserFromRole('Henrik', '" + READER + "')" );
         testCallEmpty( adminSubject, "CALL dbms.removeUserFromRole('Henrik', '" + PUBLISHER + "')" );
-        testFailWriteAction( subject );
-        testFailReadAction( subject, 4 );
+        testFailWrite( subject );
+        testFailRead( subject, 4 );
     }
 
     //---------- User suspension -----------
@@ -373,9 +373,9 @@ public class AuthScenariosIT extends AuthProcedureTestBase
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
         AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
-        testSuccessfulReadAction( subject, 3 );
+        testSuccessfulRead( subject, 3 );
         testCallEmpty( adminSubject, "CALL dbms.suspendUser('Henrik')" );
-        testFailReadAction( subject, 3 );
+        testFailRead( subject, 3 );
 
         // TODO: Check that user session is terminated instead of checking failed read
         subject = manager.login( authToken( "Henrik", "bar" ) );
@@ -417,14 +417,14 @@ public class AuthScenariosIT extends AuthProcedureTestBase
     @Test
     public void userListing() throws Exception
     {
-        testSuccessfulListUsersAction( adminSubject, initialUsers );
+        testSuccessfulListUsers( adminSubject, initialUsers );
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
-        testSuccessfulListUsersAction( adminSubject, with( initialUsers, "Henrik" ) );
+        testSuccessfulListUsers( adminSubject, with( initialUsers, "Henrik" ) );
         AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         testFailListUsers( subject, 6 );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + ADMIN + "')" );
-        testSuccessfulListUsersAction( subject, with( initialUsers, "Henrik" ) );
+        testSuccessfulListUsers( subject, with( initialUsers, "Henrik" ) );
     }
 
     /*
@@ -442,9 +442,9 @@ public class AuthScenariosIT extends AuthProcedureTestBase
         AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         testFailListRoles( subject );
-        testSuccessfulListRolesAction( adminSubject, initialRoles );
+        testSuccessfulListRoles( adminSubject, initialRoles );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + ADMIN + "')" );
-        testSuccessfulListRolesAction( subject, initialRoles );
+        testSuccessfulListRoles( subject, initialRoles );
     }
 
     /*
@@ -522,16 +522,16 @@ public class AuthScenariosIT extends AuthProcedureTestBase
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
         AuthSubject subject = manager.login( authToken( "Henrik", "abc" ) );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
-        testSuccessfulReadAction( subject, 3 );
+        testSuccessfulRead( subject, 3 );
         testCallEmpty( subject, "CALL dbms.changeUserPassword('Henrik', '123')" );
         //TODO: uncomment the next line and make the test pass
-        //testSuccessfulReadAction( subject, 3 );
+        //testSuccessfulRead( subject, 3 );
         subject.logout();
         subject = manager.login( authToken( "Henrik", "abc" ) );
         assertEquals( AuthenticationResult.FAILURE, subject.getAuthenticationResult() );
         subject = manager.login( authToken( "Henrik", "123" ) );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
-        testSuccessfulReadAction( subject, 3 );
+        testSuccessfulRead( subject, 3 );
     }
 
     /*
@@ -553,14 +553,14 @@ public class AuthScenariosIT extends AuthProcedureTestBase
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
         AuthSubject subject = manager.login( authToken( "Henrik", "abc" ) );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
-        testSuccessfulReadAction( subject, 3 );
+        testSuccessfulRead( subject, 3 );
         testCallEmpty( adminSubject, "CALL dbms.changeUserPassword('Henrik', '123')" );
         subject.logout();
         subject = manager.login( authToken( "Henrik", "abc" ) );
         assertEquals( AuthenticationResult.FAILURE, subject.getAuthenticationResult() );
         subject = manager.login( authToken( "Henrik", "123" ) );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
-        testSuccessfulReadAction( subject, 3 );
+        testSuccessfulRead( subject, 3 );
     }
 
     /*
@@ -579,7 +579,7 @@ public class AuthScenariosIT extends AuthProcedureTestBase
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
         AuthSubject subject = manager.login( authToken( "Henrik", "abc" ) );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
-        testSuccessfulReadAction( subject, 3 );
+        testSuccessfulRead( subject, 3 );
         testCallFail( subject, "CALL dbms.changeUserPassword('Craig', '123')",
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
     }

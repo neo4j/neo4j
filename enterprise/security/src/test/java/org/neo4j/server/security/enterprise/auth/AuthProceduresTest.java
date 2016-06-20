@@ -24,7 +24,6 @@ import org.junit.Test;
 import java.util.Map;
 
 import org.neo4j.graphdb.QueryExecutionException;
-import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 
 import static org.junit.Assert.assertEquals;
@@ -40,6 +39,7 @@ import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.A
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.PUBLISHER;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READER;
 
+// TODO: homogenize "'' does not exist" type error messages. In short, add quotes in the right places
 public class AuthProceduresTest extends AuthProcedureTestBase
 {
 
@@ -51,11 +51,25 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     public void shouldChangeOwnPassword() throws Exception
     {
         testCallEmpty( readSubject, "CALL dbms.changePassword( '321' )" );
-        AuthSubject subject = manager.login( authToken( "readSubject", "321" ) );
+        testUnAunthenticated( readSubject );
+
+        ShiroAuthSubject subject = manager.login( authToken( "readSubject", "321" ) );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
     }
 
-    //---------- Change user password -----------
+    /*
+    TODO: uncomment and fix
+    @Test
+    public void shouldNotChangeOwnPasswordIfNewPasswordInvalid() throws Exception
+    {
+        testCallFail( readSubject, "CALL dbms.changePassword( '' )", QueryExecutionException.class,
+                "Password cannot be empty" );
+        testCallFail( readSubject, "CALL dbms.changePassword( '321' )", QueryExecutionException.class,
+                "Old password and new password cannot be the same" );
+    }
+    */
+
+    //---------- change user password -----------
 
     // Should change password for admin subject and valid user
     @Test
@@ -132,7 +146,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
                 QueryExecutionException.class, "Old password and new password cannot be the same" );
     }
 
-    //---------- User creation -----------
+    //---------- create user -----------
 
     @Test
     public void shouldCreateUser() throws Exception
@@ -141,7 +155,10 @@ public class AuthProceduresTest extends AuthProcedureTestBase
         assertNotNull( "User craig should exist", manager.getUser( "craig" ) );
     }
 
+    /*
+    TODO: uncomment and fix
     @Test
+<<<<<<< 061656f5c3e1c3445f51c0387f2876d6c19e437d
     public void shouldNotCreateUserWithEmptyPassword() throws Exception
     {
         testCallFail( db, adminSubject, "CALL dbms.createUser('craig', '', true)", QueryExecutionException.class,
@@ -150,61 +167,294 @@ public class AuthProceduresTest extends AuthProcedureTestBase
 
     @Test
     public void shouldNotCreateExistingUser() throws Exception
+=======
+    public void shouldNotCreateUserIfInvalidUsername() throws Exception
+>>>>>>> Vastly increased AuthProcedures unit test coverage.
     {
+        testCallFail( adminSubject, "CALL dbms.createUser('', '1234', true)", QueryExecutionException.class,
+                "Username cannot be empty" );
+        testCallFail( adminSubject, "CALL dbms.createUser('&%ss!', '1234', true)", QueryExecutionException.class,
+                "Username cannot be empty" );
+        testCallFail( adminSubject, "CALL dbms.createUser('&%ss!', '', true)", QueryExecutionException.class,
+                "Username cannot be empty" );
+    }
+    */
 
-        testCallEmpty( adminSubject, "CALL dbms.createUser('craig', '1234', true)" );
-        assertNotNull( "User craig should exist", manager.getUser( "craig" ) );
-        testCallFail( adminSubject, "CALL dbms.createUser('craig', '1234', true)", QueryExecutionException.class,
-                "The specified user already exists" );
+    /*
+    TODO: uncomment and fix
+    @Test
+    public void shouldNotCreateUserIfInvalidPassword() throws Exception
+    {
+        testCallFail( adminSubject, "CALL dbms.createUser('craig', '', true)", QueryExecutionException.class,
+                "Password cannot be empty" );
+    }
+    */
+
+    @Test
+    public void shouldNotCreateExistingUser() throws Exception
+    {
+        testCallFail( adminSubject, "CALL dbms.createUser('readSubject', '1234', true)",
+                QueryExecutionException.class, "The specified user already exists" );
+        testCallFail( adminSubject, "CALL dbms.createUser('readSubject', '', true)",
+                QueryExecutionException.class, "The specified user already exists" );
     }
 
     @Test
     public void shouldNotAllowNonAdminCreateUser() throws Exception
     {
-        testFailCreateUser( noneSubject );
+        testFailCreateUser( pwdSubject );
         testFailCreateUser( readSubject );
         testFailCreateUser( writeSubject );
         testFailCreateUser( schemaSubject );
     }
 
-    //----------User and role management-----------
+    //---------- delete user -----------
+
     @Test
-    public void shouldAllowAddingAndRemovingUserFromRole() throws Exception
+    public void shouldDeleteUser() throws Exception
     {
-        assertFalse( "Should not have role publisher",
-                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PUBLISHER ) );
-        testCallEmpty( adminSubject, "CALL dbms.addUserToRole('readSubject', '" + PUBLISHER + "')" );
-        assertTrue( "Should have role publisher",
-                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PUBLISHER ) );
-        testCallEmpty( adminSubject, "CALL dbms.removeUserFromRole('readSubject', '" + PUBLISHER + "')" );
-        assertFalse( "Should not have role publisher",
-                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PUBLISHER ) );
+        testCallEmpty( adminSubject, "CALL dbms.deleteUser('readSubject')" );
+        assertNull( "User readSubject should not exist", manager.getUser( "readSubject" ) );
     }
 
     @Test
-    public void shouldAllowAddingUserToRoleMultipleTimes() throws Exception
+    public void shouldNotDeleteUserIfNotAdmin() throws Exception
     {
-        assertFalse( "Should not have role publisher",
-                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PUBLISHER ) );
-        testCallEmpty( adminSubject, "CALL dbms.addUserToRole('readSubject', '" + PUBLISHER + "')" );
-        testCallEmpty( adminSubject, "CALL dbms.addUserToRole('readSubject', '" + PUBLISHER + "')" );
-        assertTrue( "Should have role publisher",
-                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PUBLISHER ) );
+        testFailDeleteUser( pwdSubject );
+        testFailDeleteUser( readSubject );
+        testFailDeleteUser( writeSubject );
+        testFailDeleteUser( schemaSubject );
     }
 
     @Test
-    public void shouldAllowRemovingUserFromRoleMultipleTimes() throws Exception
+    public void shouldNotAllowDeletingNonExistingUser() throws Exception
     {
-        assertFalse( "Should not have role publisher",
-                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PUBLISHER ) );
-        testCallEmpty( adminSubject, "CALL dbms.addUserToRole('readSubject', '" + PUBLISHER + "')" );
-        assertTrue( "Should have role publisher",
-                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PUBLISHER ) );
-        testCallEmpty( adminSubject, "CALL dbms.removeUserFromRole('readSubject', '" + PUBLISHER + "')" );
-        testCallEmpty( adminSubject, "CALL dbms.removeUserFromRole('readSubject', '" + PUBLISHER + "')" );
-        assertFalse( "Should not have role publisher",
-                ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PUBLISHER ) );
+        testCallFail( adminSubject, "CALL dbms.deleteUser('Craig')",
+                QueryExecutionException.class, "The user 'Craig' does not exist" );
     }
+
+    /*
+    TODO: uncomment and fix
+    @Test
+    public void shouldNotAllowDeletingYourself() throws Exception
+    {
+        testCallFail( adminSubject, "CALL dbms.deleteUser('" + adminSubject.name() + "')",
+                QueryExecutionException.class, "Deleting yourself is not allowed" );
+    }
+    */
+
+    //---------- suspend user -----------
+
+    @Test
+    public void shouldSuspendUser() throws Exception
+    {
+        testCallEmpty( adminSubject, "CALL dbms.suspendUser('readSubject')" );
+        assertTrue( manager.getUser( "readSubject" ).hasFlag( FileUserRealm.IS_SUSPENDED ) );
+    }
+
+    @Test
+    public void shouldSuspendSuspendedUser() throws Exception
+    {
+        testCallEmpty( adminSubject, "CALL dbms.suspendUser('readSubject')" );
+        testCallEmpty( adminSubject, "CALL dbms.suspendUser('readSubject')" );
+        assertTrue( manager.getUser( "readSubject" ).hasFlag( FileUserRealm.IS_SUSPENDED ) );
+    }
+
+    @Test
+    public void shouldFailToSuspendNonExistingUser() throws Exception
+    {
+        testCallFail( adminSubject, "CALL dbms.suspendUser('Craig')",
+                QueryExecutionException.class, "User Craig does not exist" );
+    }
+
+    @Test
+    public void shouldFailToSuspendIfNotAdmin() throws Exception
+    {
+        testCallFail( schemaSubject, "CALL dbms.suspendUser('readSubject')",
+                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
+        testCallFail( schemaSubject, "CALL dbms.suspendUser('Craig')",
+                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
+        testCallFail( schemaSubject, "CALL dbms.suspendUser('')",
+                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
+    }
+
+    /*
+    TODO: uncomment and fix
+    @Test
+    public void shouldFailToSuspendYourself() throws Exception
+    {
+        testCallFail( adminSubject, "CALL dbms.suspendUser('" + adminSubject.name() + "')",
+                QueryExecutionException.class, "Suspending yourself is not allowed" );
+    }
+    */
+
+    //---------- activate user -----------
+
+    @Test
+    public void shouldActivateUser() throws Exception
+    {
+        manager.suspendUser( "readSubject" );
+        testCallEmpty( adminSubject, "CALL dbms.activateUser('readSubject')" );
+        assertFalse( manager.getUser( "readSubject" ).hasFlag( FileUserRealm.IS_SUSPENDED ) );
+    }
+
+    @Test
+    public void shouldActivateActiveUser() throws Exception
+    {
+        manager.suspendUser( "readSubject" );
+        testCallEmpty( adminSubject, "CALL dbms.activateUser('readSubject')" );
+        testCallEmpty( adminSubject, "CALL dbms.activateUser('readSubject')" );
+        assertFalse( manager.getUser( "readSubject" ).hasFlag( FileUserRealm.IS_SUSPENDED ) );
+    }
+
+    /*
+    TODO: uncomment and fix
+    @Test
+    public void shouldFailToActivateNonExistingUser() throws Exception
+    {
+        testCallFail( adminSubject, "CALL dbms.activateUser('Craig')",
+                QueryExecutionException.class, "User 'Craig' does not exist" );
+    }
+     */
+
+    @Test
+    public void shouldFailToActivateIfNotAdmin() throws Exception
+    {
+        manager.suspendUser( "readSubject" );
+        testCallFail( schemaSubject, "CALL dbms.activateUser('readSubject')",
+                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
+        testCallFail( schemaSubject, "CALL dbms.activateUser('Craig')",
+                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
+        testCallFail( schemaSubject, "CALL dbms.activateUser('')",
+                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
+    }
+
+    /*
+    TODO: uncomment and fix
+    @Test
+    public void shouldFailToActivateYourself() throws Exception
+    {
+        testCallFail( adminSubject, "CALL dbms.activateUser('" + adminSubject.name() + "')",
+                QueryExecutionException.class, "Activating yourself is not allowed" );
+    }
+     */
+
+    //---------- add user to role -----------
+
+    @Test
+    public void shouldAddUserToRole() throws Exception
+    {
+        assertFalse( "Should not have role publisher", readSubject.getSubject().hasRole( PUBLISHER ) );
+        testCallEmpty( adminSubject, "CALL dbms.addUserToRole('readSubject', '" + PUBLISHER + "')" );
+        assertTrue( "Should have role publisher", readSubject.getSubject().hasRole( PUBLISHER ) );
+    }
+
+    @Test
+    public void shouldAddRetainUserInRole() throws Exception
+    {
+        assertTrue( "Should have role reader", readSubject.getSubject().hasRole( READER ) );
+        testCallEmpty( adminSubject, "CALL dbms.addUserToRole('readSubject', '" + READER + "')" );
+        assertTrue( "Should have still have role reader", readSubject.getSubject().hasRole( READER ) );
+    }
+
+    @Test
+    public void shouldFailToAddNonExistingUserToRole() throws Exception
+    {
+        testCallFail( adminSubject, "CALL dbms.addUserToRole('Olivia', '" + PUBLISHER + "')",
+                QueryExecutionException.class, "User Olivia does not exist" );
+        testCallFail( adminSubject, "CALL dbms.addUserToRole('Olivia', 'thisRoleDoesNotExist')",
+                QueryExecutionException.class, "User Olivia does not exist" );
+        testCallFail( adminSubject, "CALL dbms.addUserToRole('Olivia', '')",
+                QueryExecutionException.class, "User Olivia does not exist" );
+    }
+
+    @Test
+    public void shouldFailToAddUserToNonExistingRole() throws Exception
+    {
+        testCallFail( adminSubject, "CALL dbms.addUserToRole('readSubject', 'thisRoleDoesNotExist')",
+                QueryExecutionException.class, "Role thisRoleDoesNotExist does not exist" );
+        testCallFail( adminSubject, "CALL dbms.addUserToRole('readSubject', '')",
+                QueryExecutionException.class, "Role  does not exist" );
+    }
+
+    @Test
+    public void shouldFailToAddUserToRoleIfNotAdmin() throws Exception
+    {
+        testFailAddUserToRole( pwdSubject );
+        testFailAddUserToRole( readSubject );
+        testFailAddUserToRole( writeSubject );
+
+        testCallFail( schemaSubject, "CALL dbms.addUserToRole('readSubject', '" + PUBLISHER + "')",
+                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
+        testCallFail( schemaSubject, "CALL dbms.addUserToRole('Olivia', '" + PUBLISHER + "')",
+                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
+        testCallFail( schemaSubject, "CALL dbms.addUserToRole('Olivia', 'thisRoleDoesNotExist')",
+                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
+    }
+
+    //---------- remove user from role -----------
+
+    @Test
+    public void shouldRemoveUserFromRole() throws Exception
+    {
+        testCallEmpty( adminSubject, "CALL dbms.removeUserFromRole('readSubject', '" + READER + "')" );
+        assertFalse( "Should not have role reader", readSubject.getSubject().hasRole( READER ) );
+    }
+
+    @Test
+    public void shouldKeepUserOutOfRole() throws Exception
+    {
+        assertFalse( "Should not have role publisher", readSubject.getSubject().hasRole( PUBLISHER ) );
+        testCallEmpty( adminSubject, "CALL dbms.removeUserFromRole('readSubject', '" + PUBLISHER + "')" );
+        assertFalse( "Should not have role publisher", readSubject.getSubject().hasRole( PUBLISHER ) );
+    }
+
+    @Test
+    public void shouldFailToRemoveNonExistingUserFromRole() throws Exception
+    {
+        testCallFail( adminSubject, "CALL dbms.removeUserFromRole('Olivia', '" + PUBLISHER + "')",
+                QueryExecutionException.class, "User Olivia does not exist" );
+        testCallFail( adminSubject, "CALL dbms.removeUserFromRole('Olivia', 'thisRoleDoesNotExist')",
+                QueryExecutionException.class, "User Olivia does not exist" );
+        testCallFail( adminSubject, "CALL dbms.removeUserFromRole('Olivia', '')",
+                QueryExecutionException.class, "User Olivia does not exist" );
+    }
+
+    @Test
+    public void shouldFailToRemoveUserFromNonExistingRole() throws Exception
+    {
+        testCallFail( adminSubject, "CALL dbms.removeUserFromRole('readSubject', 'thisRoleDoesNotExist')",
+                QueryExecutionException.class, "Role thisRoleDoesNotExist does not exist" );
+        testCallFail( adminSubject, "CALL dbms.removeUserFromRole('readSubject', '')",
+                QueryExecutionException.class, "Role  does not exist" );
+    }
+
+    @Test
+    public void shouldFailToRemoveUserFromRoleIfNotAdmin() throws Exception
+    {
+        testFailRemoveUserFromRole( pwdSubject );
+        testFailRemoveUserFromRole( readSubject );
+        testFailRemoveUserFromRole( writeSubject );
+
+        testCallFail( schemaSubject, "CALL dbms.removeUserFromRole('readSubject', '" + READER + "')",
+                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
+        testCallFail( schemaSubject, "CALL dbms.removeUserFromRole('Olivia', '" + READER + "')",
+                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
+        testCallFail( schemaSubject, "CALL dbms.removeUserFromRole('Olivia', 'thisRoleDoesNotExist')",
+                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
+    }
+
+    /*
+    TODO: uncomment and fix
+    @Test
+    public void shouldFailToRemoveYourselfFromAdminRole() throws Exception
+    {
+        testCallFail( adminSubject, "CALL dbms.removeUserFromRole('" + adminSubject.name() + "', '" + ADMIN + "')",
+                QueryExecutionException.class, "Remove yourself from admin role is not allowed" );
+    }
+    */
+
+    //---------- manage multiple roles -----------
 
     @Test
     public void shouldAllowAddingAndRemovingUserFromMultipleRoles() throws Exception
@@ -228,95 +478,13 @@ public class AuthProceduresTest extends AuthProcedureTestBase
                 ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( ARCHITECT ) );
     }
 
-    @Test
-    public void shouldNotAllowNonAdminAddingUserToRole() throws Exception
-    {
-        testFailAddUserToRoleAction( noneSubject );
-        testFailAddUserToRoleAction( readSubject );
-        testFailAddUserToRoleAction( writeSubject );
-        testFailAddUserToRoleAction( schemaSubject );
-    }
+    //---------- list users -----------
 
     @Test
-    public void shouldNotAllowNonAdminRemovingUserFromRole() throws Exception
-    {
-        testFailRemoveUserFromRoleAction( noneSubject );
-        testFailRemoveUserFromRoleAction( readSubject );
-        testFailRemoveUserFromRoleAction( writeSubject );
-        testFailRemoveUserFromRoleAction( schemaSubject );
-    }
-
-    //----------User deletion -----------
-
-    @Test
-    public void shouldDeleteUser() throws Exception
-    {
-        testCallEmpty( adminSubject, "CALL dbms.createUser('Craig', '1234', true)" );
-        assertNotNull( "User Craig should exist", manager.getUser( "Craig" ) );
-        testCallEmpty( adminSubject, "CALL dbms.deleteUser('Craig')" );
-        assertNull( "User Craig should not exist", manager.getUser( "Craig" ) );
-    }
-
-    @Test
-    public void shouldNotAllowNonAdminDeleteUser() throws Exception
-    {
-        testFailDeleteUser( noneSubject );
-        testFailDeleteUser( readSubject );
-        testFailDeleteUser( writeSubject );
-        testFailDeleteUser( schemaSubject );
-    }
-
-    @Test
-    public void shouldNotAllowDeletingNonExistingUser() throws Exception
-    {
-        testCallEmpty( adminSubject, "CALL dbms.createUser('Craig', '1234', true)" );
-        assertNotNull( "User Craig should exist", manager.getUser( "Craig" ) );
-        testCallEmpty( adminSubject, "CALL dbms.deleteUser('Craig')" );
-        assertNull( "User Craig should not exist", manager.getUser( "Craig" ) );
-        testCallFail( adminSubject, "CALL dbms.deleteUser('Craig')", QueryExecutionException.class,
-                "The user 'Craig' does not exist" );
-    }
-
-    //----------User suspension scenarios-----------
-
-    @Test
-    public void shouldSuspendUser() throws Exception
-    {
-        testCallEmpty( adminSubject, "CALL dbms.suspendUser('readSubject')" );
-        assertTrue( manager.getUser( "readSubject" ).hasFlag( FileUserRealm.IS_SUSPENDED ) );
-    }
-
-    @Test
-    public void shouldActivateUser() throws Exception
-    {
-        manager.suspendUser( "readSubject" );
-        testCallEmpty( adminSubject, "CALL dbms.activateUser('readSubject')" );
-        assertFalse( manager.getUser( "readSubject" ).hasFlag( FileUserRealm.IS_SUSPENDED ) );
-    }
-
-    @Test
-    public void shouldFailOnNonAdminSuspend() throws Exception
-    {
-        testCallFail( schemaSubject, "CALL dbms.suspendUser('readSubject')",
-                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
-    }
-
-    @Test
-    public void shouldFailOnNonAdminActivate() throws Exception
-    {
-        manager.suspendUser( "readSubject" );
-        testCallFail( schemaSubject, "CALL dbms.activateUser('readSubject')",
-                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
-    }
-
-    //----------List users/roles-----------
-
-    @Test
-    public void shouldReturnUsers() throws Exception
+    public void shouldListUsers() throws Exception
     {
         testResult( adminSubject, "CALL dbms.listUsers() YIELD username",
-                r -> resultKeyIs( r, "username", "adminSubject", "readSubject", "schemaSubject",
-                        "readWriteSubject", "noneSubject", "neo4j" ) );
+                r -> resultKeyIs( r, "username", initialUsers ) );
     }
 
     @Test
@@ -355,17 +523,19 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldNotAllowNonAdminListUsers() throws Exception
     {
-        testFailListUsers( noneSubject, 5 );
+        testFailListUsers( pwdSubject, 5 );
         testFailListUsers( readSubject, 5 );
         testFailListUsers( writeSubject, 5 );
         testFailListUsers( schemaSubject, 5 );
     }
 
+    //---------- list roles -----------
+
     @Test
-    public void shouldReturnRoles() throws Exception
+    public void shouldListRoles() throws Exception
     {
         testResult( adminSubject, "CALL dbms.listRoles() YIELD role AS roles RETURN roles",
-                r -> resultKeyIs( r, "roles", ADMIN, ARCHITECT, PUBLISHER, READER, "empty" ) );
+                r -> resultKeyIs( r, "roles", initialRoles ) );
     }
 
     @Test
@@ -385,33 +555,21 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldNotAllowNonAdminListRoles() throws Exception
     {
-        testFailListRoles( noneSubject );
+        testFailListRoles( pwdSubject );
         testFailListRoles( readSubject );
         testFailListRoles( writeSubject );
         testFailListRoles( schemaSubject );
     }
+
+    //---------- list roles for user -----------
 
     @Test
     public void shouldListRolesForUser() throws Exception
     {
         testResult( adminSubject, "CALL dbms.listRolesForUser('adminSubject') YIELD value as roles RETURN roles",
                 r -> resultKeyIs( r, "roles", ADMIN ) );
-    }
-
-    @Test
-    public void shouldNotAllowNonAdminListUserRoles() throws Exception
-    {
-        testFailListUserRoles( noneSubject, "adminSubject" );
-        testFailListUserRoles( readSubject, "adminSubject" );
-        testFailListUserRoles( writeSubject, "adminSubject" );
-        testFailListUserRoles( schemaSubject, "adminSubject" );
-    }
-
-    @Test
-    public void shouldFailToListRolesForUnknownUser() throws Exception
-    {
-        testCallFail( adminSubject, "CALL dbms.listRolesForUser('Henrik') YIELD value as roles RETURN roles",
-                QueryExecutionException.class, "User Henrik does not exist." );
+        testResult( adminSubject, "CALL dbms.listRolesForUser('readSubject') YIELD value as roles RETURN roles",
+                r -> resultKeyIs( r, "roles", READER ) );
     }
 
     @Test
@@ -422,6 +580,38 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     }
 
     @Test
+    public void shouldNotListRolesForNonExistingUser() throws Exception
+    {
+        testCallFail( adminSubject, "CALL dbms.listRolesForUser('Petra') YIELD value as roles RETURN roles",
+                QueryExecutionException.class, "User Petra does not exist" );
+        testCallFail( adminSubject, "CALL dbms.listRolesForUser('') YIELD value as roles RETURN roles",
+                QueryExecutionException.class, "User  does not exist" );
+    }
+
+    /*
+    TODO: uncommend and fix
+    @Test
+    public void shouldListOwnRolesRoles() throws Exception
+    {
+        testResult( adminSubject, "CALL dbms.listRolesForUser('adminSubject') YIELD value as roles RETURN roles",
+                r -> resultKeyIs( r, "roles", ADMIN ) );
+        testResult( readSubject, "CALL dbms.listRolesForUser('readSubject') YIELD value as roles RETURN roles",
+                r -> resultKeyIs( r, "roles", READER ) );
+    }
+     */
+
+    @Test
+    public void shouldNotAllowNonAdminListUserRoles() throws Exception
+    {
+        testFailListUserRoles( pwdSubject, "adminSubject" );
+        testFailListUserRoles( readSubject, "adminSubject" );
+        testFailListUserRoles( writeSubject, "adminSubject" );
+        testFailListUserRoles( schemaSubject, "adminSubject" );
+    }
+
+    //---------- list users for role -----------
+
+    @Test
     public void shouldListUsersForRole() throws Exception
     {
         testResult( adminSubject, "CALL dbms.listUsersForRole('admin') YIELD value as users RETURN users",
@@ -429,24 +619,133 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     }
 
     @Test
-    public void shouldNotAllowNonAdminListRoleUsers() throws Exception
+    public void shouldListNoUsersForRoleWithNoUsers() throws Exception
     {
-        testFailListRoleUsers( noneSubject, ADMIN );
+        testCallEmpty( adminSubject, "CALL dbms.listUsersForRole('empty') YIELD value as users RETURN users" );
+    }
+
+    @Test
+    public void shouldNotListUsersForNonExistingRole() throws Exception
+    {
+        testCallFail( adminSubject, "CALL dbms.listUsersForRole('poodle') YIELD value as users RETURN users",
+                QueryExecutionException.class, "Role poodle does not exist" );
+        testCallFail( adminSubject, "CALL dbms.listUsersForRole('') YIELD value as users RETURN users",
+                QueryExecutionException.class, "Role  does not exist" );
+    }
+
+    @Test
+    public void shouldNotListUsersForRoleIfNotAdmin() throws Exception
+    {
+        testFailListRoleUsers( pwdSubject, ADMIN );
         testFailListRoleUsers( readSubject, ADMIN );
         testFailListRoleUsers( writeSubject, ADMIN );
         testFailListRoleUsers( schemaSubject, ADMIN );
     }
 
+    //---------- permissions -----------
+
+    /*
+    TODO: uncomment and fix un-authentication handling
     @Test
-    public void shouldFailToListUsersForUnknownRole() throws Exception
+    public void shouldSetCorrectUnAuthenticatedPermissions() throws Exception
     {
-        testCallFail( adminSubject, "CALL dbms.listUsersForRole('Foo') YIELD value as users RETURN users",
-                QueryExecutionException.class, "Role Foo does not exist." );
+        pwdSubject.logout();
+        testUnAunthenticated( pwdSubject, "MATCH (n) RETURN n" );
+        testUnAunthenticated( pwdSubject, "CREATE (:Node)" );
+        testUnAunthenticated( pwdSubject, "CREATE INDEX ON :Node(number)" );
+        testUnAunthenticated( pwdSubject, "CALL dbms.changePassword( '321' )" );
+        testUnAunthenticated( pwdSubject, "CALL dbms.createUser('Henrik', 'bar', true)" );
+    }
+    */
+
+    @Test
+    public void shouldSetCorrectPasswordChangeRequiredPermissions() throws Exception
+    {
+        testFailRead( pwdSubject, 3 );
+        testFailWrite( pwdSubject );
+        testFailSchema( pwdSubject );
+        testCallEmpty( pwdSubject, "CALL dbms.changePassword( '321' )" );
+
+        testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', true)" );
+        testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + ARCHITECT + "')" );
+        ShiroAuthSubject henrik = manager.login( authToken( "Henrik", "bar" ) );
+        assertEquals( AuthenticationResult.PASSWORD_CHANGE_REQUIRED, henrik.getAuthenticationResult() );
+        testFailRead( henrik, 3 );
+        testFailWrite( henrik );
+        testFailSchema( henrik );
+        testCallEmpty( henrik, "CALL dbms.changePassword( '321' )" );
+
+        testCallEmpty( adminSubject, "CALL dbms.createUser('Olivia', 'bar', true)" );
+        testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Olivia', '" + ADMIN + "')" );
+        ShiroAuthSubject olivia = manager.login( authToken( "Olivia", "bar" ) );
+        assertEquals( AuthenticationResult.PASSWORD_CHANGE_REQUIRED, olivia.getAuthenticationResult() );
+        testFailRead( olivia, 3 );
+        testFailWrite( olivia );
+        testFailSchema( olivia );
+        testCallFail( olivia, "CALL dbms.createUser('OliviasFriend', 'bar', false)",
+                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
+        testCallEmpty( olivia, "CALL dbms.changePassword( '321' )" );
     }
 
     @Test
-    public void shouldListNoUsersForRoleWithNoUsers() throws Exception
+    public void shouldSetCorrectNoRolePermissions() throws Exception
     {
-        testCallEmpty( adminSubject, "CALL dbms.listUsersForRole('empty') YIELD value as users RETURN users" );
+        testFailRead( noneSubject, 3 );
+        testFailWrite( noneSubject );
+        testFailSchema( noneSubject );
+        testFailCreateUser( noneSubject );
+        testCallEmpty( noneSubject, "CALL dbms.changePassword( '321' )" );
+    }
+
+    @Test
+    public void shouldSetCorrectReaderPermissions() throws Exception
+    {
+        testSuccessfulRead( readSubject, 3 );
+        testFailWrite( readSubject );
+        testFailSchema( readSubject );
+        testFailCreateUser( readSubject );
+        testCallEmpty( readSubject, "CALL dbms.changePassword( '321' )" );
+    }
+
+    @Test
+    public void shouldSetCorrectPublisherPermissions() throws Exception
+    {
+        testSuccessfulRead( writeSubject, 3 );
+        testSuccessfulWrite( writeSubject );
+        testFailSchema( writeSubject );
+        testFailCreateUser( writeSubject );
+        testCallEmpty( writeSubject, "CALL dbms.changePassword( '321' )" );
+    }
+
+    @Test
+    public void shouldSetCorrectSchemaPermissions() throws Exception
+    {
+        testSuccessfulRead( schemaSubject, 3 );
+        testSuccessfulWrite( schemaSubject );
+        testSuccessfulSchema( schemaSubject );
+        testFailCreateUser( schemaSubject );
+        testCallEmpty( schemaSubject, "CALL dbms.changePassword( '321' )" );
+    }
+
+    @Test
+    public void shouldSetCorrectAdminPermissions() throws Exception
+    {
+        testSuccessfulRead( adminSubject, 3 );
+        testSuccessfulWrite( adminSubject );
+        testSuccessfulSchema( adminSubject );
+        testCallEmpty( adminSubject, "CALL dbms.createUser('Olivia', 'bar', true)" );
+        testCallEmpty( adminSubject, "CALL dbms.changePassword( '321' )" );
+    }
+
+    @Test
+    public void shouldSetCorrectMultiRolePermissions() throws Exception
+    {
+        testCallEmpty( adminSubject, "CALL dbms.addUserToRole('schemaSubject', '" + READER + "')" );
+
+        testSuccessfulRead( schemaSubject, 3 );
+        testSuccessfulWrite( schemaSubject );
+        testSuccessfulSchema( schemaSubject );
+        testFailCreateUser( schemaSubject );
+        testCallEmpty( schemaSubject, "CALL dbms.changePassword( '321' )" );
     }
 }
