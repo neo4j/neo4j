@@ -64,6 +64,10 @@ public class AuthProcedureTestBase
     protected AuthSubject readSubject;
     protected AuthSubject noneSubject;
 
+    protected String[] initialUsers = { "adminSubject", "readSubject", "schemaSubject",
+        "readWriteSubject", "noneSubject", "neo4j" };
+    protected String[] initialRoles = { "admin", "architect", "publisher", "reader", "empty" };
+
     protected GraphDatabaseAPI db;
     protected ShiroAuthManager manager;
 
@@ -102,12 +106,17 @@ public class AuthProcedureTestBase
         manager.shutdown();
     }
 
-    //------------- Helper functions---------------
+    protected String[] with( String[] strs, String... moreStr )
+    {
+        return Stream.concat( Arrays.stream(strs), Arrays.stream( moreStr ) ).toArray( String[]::new );
+    }
 
     protected List<String> listOf( String... values )
     {
         return Stream.of( values ).collect( Collectors.toList() );
     }
+
+    //------------- Helper functions---------------
 
     protected void testSuccessfulReadAction( AuthSubject subject, int count )
     {
@@ -172,9 +181,10 @@ public class AuthProcedureTestBase
                 AuthProcedures.PERMISSION_DENIED );
     }
 
-    protected void testSuccessfulListUsersAction( AuthSubject subject, int count )
+    protected void testSuccessfulListUsersAction( AuthSubject subject, String[] users )
     {
-        testCallCount( db, subject, "CALL dbms.listUsers() YIELD value AS users RETURN users", null, count );
+        testResult( db, subject, "CALL dbms.listUsers() YIELD username AS users RETURN users",
+                r -> resultKeyIsArray( r, "users", users ) );
     }
 
     protected void testFailListUsers( AuthSubject subject, int count )
@@ -184,9 +194,10 @@ public class AuthProcedureTestBase
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
     }
 
-    protected void testSuccessfulListRolesAction( AuthSubject subject )
+    protected void testSuccessfulListRolesAction( AuthSubject subject, String[] roles )
     {
-        testCallCount( db, subject, "CALL dbms.listRoles() YIELD value AS roles RETURN roles", null, 5 );
+        testResult( db, subject, "CALL dbms.listRoles() YIELD role AS roles RETURN roles",
+                r -> resultKeyIsArray( r, "roles", roles ) );
     }
 
     protected void testFailListRoles( AuthSubject subject )
@@ -215,8 +226,13 @@ public class AuthProcedureTestBase
         return r.stream().map( s -> s.get( key ) ).collect( Collectors.toList() );
     }
 
-    protected void resultContainsInAnyOrder( Result r, String key, Object... items )
+    protected void resultKeyIs( Result r, String key, String... items )
     {
+        resultKeyIsArray( r, key, items );
+    }
+
+    protected void resultKeyIsArray( Result r, String key, String[] items )
+        {
         List<Object> results = getObjectsAsList( r, key );
         Assert.assertThat( results, containsInAnyOrder( items ) );
         assertEquals( Arrays.asList( items ).size(), results.size() );

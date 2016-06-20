@@ -19,42 +19,20 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.apache.shiro.authc.AuthenticationException;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.neo4j.graphdb.QueryExecutionException;
-import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.server.security.auth.BasicPasswordPolicy;
-import org.neo4j.server.security.auth.InMemoryUserRepository;
-import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
-import static java.time.Clock.systemUTC;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
@@ -290,7 +268,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     }
 
     @Test
-    public void shouldAllowDeletingUserMultipleTimes() throws Exception
+    public void shouldNotAllowDeletingNonExistingUser() throws Exception
     {
         testCallEmpty( db, adminSubject, "CALL dbms.createUser('Craig', '1234', true)" );
         assertNotNull( "User Craig should exist", manager.getUser( "Craig" ) );
@@ -338,7 +316,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     public void shouldReturnUsers() throws Exception
     {
         testResult( db, adminSubject, "CALL dbms.listUsers() YIELD username",
-                r -> resultContainsInAnyOrder( r, "username", "adminSubject", "readSubject", "schemaSubject",
+                r -> resultKeyIs( r, "username", "adminSubject", "readSubject", "schemaSubject",
                         "readWriteSubject", "noneSubject", "neo4j" ) );
     }
 
@@ -388,7 +366,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     public void shouldReturnRoles() throws Exception
     {
         testResult( db, adminSubject, "CALL dbms.listRoles() YIELD role AS roles RETURN roles",
-                r -> resultContainsInAnyOrder( r, "roles", ADMIN, ARCHITECT, PUBLISHER, READER, "empty" ) );
+                r -> resultKeyIs( r, "roles", ADMIN, ARCHITECT, PUBLISHER, READER, "empty" ) );
     }
 
     @Test
@@ -418,7 +396,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     public void shouldListRolesForUser() throws Exception
     {
         testResult( db, adminSubject, "CALL dbms.listRolesForUser('adminSubject') YIELD value as roles RETURN roles",
-                r -> resultContainsInAnyOrder( r, "roles", ADMIN ) );
+                r -> resultKeyIs( r, "roles", ADMIN ) );
     }
 
     @Test
@@ -448,7 +426,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     public void shouldListUsersForRole() throws Exception
     {
         testResult( db, adminSubject, "CALL dbms.listUsersForRole('admin') YIELD value as users RETURN users",
-                r -> resultContainsInAnyOrder( r, "users", adminSubject.name(), "neo4j" ) );
+                r -> resultKeyIs( r, "users", adminSubject.name(), "neo4j" ) );
     }
 
     @Test
