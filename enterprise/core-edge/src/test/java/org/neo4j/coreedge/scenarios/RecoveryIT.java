@@ -19,7 +19,6 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,19 +27,17 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.concurrent.ExecutionException;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.SharedDiscoveryService;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLogProvider;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.coreedge.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
@@ -51,25 +48,15 @@ import static org.neo4j.graphdb.Label.label;
 public class RecoveryIT
 {
     @Rule
-    public final TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
-
-    private Cluster cluster;
-
-    @After
-    public void shutdown() throws ExecutionException, InterruptedException
-    {
-        if ( cluster != null )
-        {
-            cluster.shutdown();
-        }
-    }
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+            .withNumberOfCoreServers( 3 )
+            .withNumberOfEdgeServers( 0 );
 
     @Test
     public void shouldBeConsistentAfterShutdown() throws Exception
     {
         // given
-        File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0, new SharedDiscoveryService() );
+        Cluster cluster = clusterRule.startCluster();
 
         HashSet<File> storeDirs = new HashSet<>();
 
@@ -101,10 +88,8 @@ public class RecoveryIT
     public void singleServerWithinClusterShouldBeConsistentAfterRestart() throws Exception
     {
         // given
-        int clusterSize = 3;
-        File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, clusterSize, 0, new SharedDiscoveryService() );
-
+        Cluster cluster = clusterRule.startCluster();
+        int clusterSize = cluster.numberOfCoreServers();
         ArrayList<String> storeDirs = new ArrayList<>();
 
         for ( int i = 0; i < clusterSize; i++ )

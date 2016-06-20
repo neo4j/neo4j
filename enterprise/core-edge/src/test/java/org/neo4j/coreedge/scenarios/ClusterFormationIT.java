@@ -19,47 +19,39 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
-import org.neo4j.coreedge.discovery.SharedDiscoveryService;
-import org.neo4j.coreedge.discovery.SharedDiscoveryService;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.coreedge.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
 
 public class ClusterFormationIT
 {
     @Rule
-    public final TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+            .withNumberOfCoreServers( 3 )
+            .withNumberOfEdgeServers( 0 );
 
     private Cluster cluster;
 
-    @After
-    public void shutdown() throws ExecutionException, InterruptedException
+    @Before
+    public void setup() throws Exception
     {
-        if ( cluster != null )
-        {
-            cluster.shutdown();
-        }
+        cluster = clusterRule.startCluster();
     }
 
     @Test
     public void shouldBeAbleToAddAndRemoveCoreServers() throws Exception
     {
-        // given
-        cluster = Cluster.start( dir.directory(), 3, 0, new SharedDiscoveryService() );
-
         // when
         cluster.removeCoreServerWithServerId( 0 );
         cluster.addCoreServerWithServerId( 0, 3 );
@@ -84,10 +76,8 @@ public class ClusterFormationIT
     public void shouldBeAbleToAddAndRemoveCoreServersUnderModestLoad() throws Exception
     {
         // given
-        cluster = Cluster.start( dir.directory(), 3, 0, new SharedDiscoveryService() );
-
         ExecutorService executorService = Executors.newSingleThreadExecutor();
-        executorService.submit( (Runnable) () -> {
+        executorService.submit( () -> {
             CoreGraphDatabase leader = cluster.getDbWithRole( Role.LEADER );
             try ( Transaction tx = leader.beginTx() )
             {
@@ -121,16 +111,12 @@ public class ClusterFormationIT
     @Test
     public void shouldBeAbleToRestartTheCluster() throws Exception
     {
-        // when
-        final DiscoveryServiceFactory discoveryServiceFactory = new SharedDiscoveryService();
-        cluster = Cluster.start( dir.directory(), 3, 0, discoveryServiceFactory );
-
-        // then
+        // when started then
         assertEquals( 3, cluster.numberOfCoreServers() );
 
         // when
         cluster.shutdown();
-        cluster = Cluster.start( dir.directory(), 3, 0, discoveryServiceFactory );
+        cluster.start();
 
         // then
         assertEquals( 3, cluster.numberOfCoreServers() );
@@ -139,8 +125,10 @@ public class ClusterFormationIT
         cluster.removeCoreServerWithServerId( 1 );
         cluster.addCoreServerWithServerId( 3, 3 );
         cluster.shutdown();
-        cluster = Cluster.start( dir.directory(), 3, 0, discoveryServiceFactory );
 
+        cluster.start();
+
+        // then
         assertEquals( 3, cluster.numberOfCoreServers() );
     }
 }

@@ -41,6 +41,7 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.test.coreedge.ClusterRule;
 import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertTrue;
@@ -50,25 +51,15 @@ import static org.neo4j.graphdb.Label.label;
 public class RestartIT
 {
     @Rule
-    public final TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
-
-    private Cluster cluster;
-
-    @After
-    public void shutdown() throws ExecutionException, InterruptedException
-    {
-        if ( cluster != null )
-        {
-            cluster.shutdown();
-        }
-    }
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+            .withNumberOfCoreServers( 3 )
+            .withNumberOfEdgeServers( 0 );
 
     @Test
     public void restartFirstServer() throws Exception
     {
         // given
-        File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0, new SharedDiscoveryService() );
+        Cluster cluster = clusterRule.startCluster();
 
         // when
         cluster.removeCoreServerWithServerId( 0 );
@@ -82,8 +73,7 @@ public class RestartIT
     public void restartSecondServer() throws Exception
     {
         // given
-        File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0, new SharedDiscoveryService() );
+        Cluster cluster = clusterRule.startCluster();
 
         // when
         cluster.removeCoreServerWithServerId( 1 );
@@ -97,8 +87,7 @@ public class RestartIT
     public void restartWhileDoingTransactions() throws Exception
     {
         // given
-        File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0, new SharedDiscoveryService() );
+        Cluster cluster = clusterRule.startCluster();
 
         // when
         final GraphDatabaseService coreDB = cluster.getCoreServerById( 0 );
@@ -126,15 +115,13 @@ public class RestartIT
         // then
         done.set( true );
         executor.shutdown();
-        cluster.shutdown();
     }
 
     @Test
     public void edgeTest() throws Exception
     {
         // given
-        File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 2, 1, new SharedDiscoveryService() );
+        Cluster cluster = clusterRule.withNumberOfCoreServers( 2 ).withNumberOfEdgeServers( 1 ).startCluster();
 
         // when
         final GraphDatabaseService coreDB = cluster.awaitLeader( 5000 );

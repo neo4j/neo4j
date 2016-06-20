@@ -22,8 +22,10 @@ package org.neo4j.coreedge.scenarios;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-import java.io.File;
+import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,40 +33,47 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.SharedDiscoveryService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.coreedge.ClusterRule;
 
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
 
 @Ignore
+@RunWith( Parameterized.class )
 public class ClusterShutdownIT
 {
     @Rule
-    public final TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
+    public final ClusterRule clusterRule =
+            new ClusterRule( getClass() ).withNumberOfCoreServers( 3 ).withNumberOfEdgeServers( 0 );
+
+    @Parameterized.Parameter()
+    public Collection<Integer> shutdownOrder;
+
+    @Parameterized.Parameters( name = "shutdown order: {0}" )
+    public static Collection<Collection<Integer>> shutdownOrders()
+    {
+        return asList( asList( 0, 1, 2 ), asList( 1, 2, 0 ), asList( 2, 0, 1 ) );
+    }
 
     @Test
     public void shouldShutdownEvenThoughWaitingForLock() throws Exception
     {
-        final int clusterSize = 3;
+        Cluster cluster = clusterRule.startCluster();
 
-        // We test a reasonable set of permutations.
-        int[][] shutdownOrders = {{0, 1, 2}, {1, 2, 0}, {2, 0, 1}};
-
-        for ( int victimId = 0; victimId < clusterSize; victimId++ )
+        for ( int victimId = 0; victimId < cluster.numberOfCoreServers(); victimId++ )
         {
-            for ( int[] shutdownOrder : shutdownOrders )
-            {
-                shouldShutdownEvenThoughWaitingForLock0( clusterSize, victimId, shutdownOrder );
-            }
+            assertTrue( cluster.getCoreServerById( victimId ).isAvailable( 1000 ) );
+            shouldShutdownEvenThoughWaitingForLock0( cluster, victimId, shutdownOrder );
         }
     }
 
-    private void shouldShutdownEvenThoughWaitingForLock0( int clusterSize, int victimId, int[] shutdownOrder ) throws
-            Exception
+    private void shouldShutdownEvenThoughWaitingForLock0( Cluster cluster, int victimId, Collection<Integer> shutdownOrder )
+            throws Exception
     {
         final int LONG_TIME = 60_000;
         final int LONGER_TIME = 2 * LONG_TIME;
@@ -74,11 +83,6 @@ public class ClusterShutdownIT
         // parallel, not on the main thread.
         final ExecutorService shutdownExecutor = Executors.newFixedThreadPool( 1 ); // Shutdowns are executed
         // serially, not on the main thread.
-
-        final File dbDir = dir.directory();
-
-        // given - a cluster
-        final Cluster cluster = Cluster.start( dbDir, clusterSize, 0, new SharedDiscoveryService() );
 
         try
         {
@@ -95,24 +99,19 @@ public class ClusterShutdownIT
             final AtomicInteger numberOfInstancesReady = new AtomicInteger();
             for ( int i = 0; i < NUMBER_OF_LOCK_ACQUIRERS; i++ )
             {
-                txExecutor.execute( new Runnable()
-                {
-                    @Override
-                    public void run()
+                txExecutor.execute( () -> {
+                    try ( Transaction tx = victimDB.beginTx() )
                     {
-                        try ( Transaction tx = victimDB.beginTx() )
-                        {
-                            numberOfInstancesReady.incrementAndGet();
+                        numberOfInstancesReady.incrementAndGet();
 
-                            tx.acquireWriteLock( someNode.get() );
-                            Thread.sleep( LONGER_TIME );
+                        tx.acquireWriteLock( someNode.get() );
+                        Thread.sleep( LONGER_TIME );
 
-                            tx.success();
-                        }
-                        catch ( Exception e )
-                        {
-                            /* Since we are shutting down, a plethora of possible exceptions are expected. */
-                        }
+                        tx.success();
+                    }
+                    catch ( Exception e )
+                    {
+                        /* Since we are shutting down, a plethora of possible exceptions are expected. */
                     }
                 } );
             }
@@ -122,19 +121,14 @@ public class ClusterShutdownIT
                 Thread.sleep( 100 );
             }
 
-            final CountDownLatch shutdownLatch = new CountDownLatch( clusterSize );
+            final CountDownLatch shutdownLatch = new CountDownLatch( cluster.numberOfCoreServers() );
 
             // then - shutdown in any order should still be possible
-            for ( final Integer id : shutdownOrder )
+            for ( final int id : shutdownOrder )
             {
-                shutdownExecutor.execute( new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        cluster.getCoreServerById( id ).shutdown();
-                        shutdownLatch.countDown();
-                    }
+                shutdownExecutor.execute( () -> {
+                    cluster.getCoreServerById( id ).shutdown();
+                    shutdownLatch.countDown();
                 } );
             }
 
@@ -147,8 +141,6 @@ public class ClusterShutdownIT
         {
             txExecutor.shutdownNow();
             shutdownExecutor.shutdownNow();
-
-            cluster.shutdown();
         }
     }
 }

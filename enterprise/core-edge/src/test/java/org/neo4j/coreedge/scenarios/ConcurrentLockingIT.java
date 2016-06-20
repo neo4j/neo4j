@@ -19,11 +19,13 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import java.io.File;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -31,25 +33,18 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.coreedge.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
@@ -57,34 +52,22 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 public class ConcurrentLockingIT
 {
     @Rule
-    public final TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
-
-    private Cluster cluster;
-
-    @After
-    public void shutdown() throws ExecutionException, InterruptedException
-    {
-        if ( cluster != null )
-        {
-            cluster.shutdown();
-        }
-    }
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+            .withNumberOfCoreServers( 5 )
+            .withNumberOfEdgeServers( 0 );
 
     @Test
     public void shouldConcurrentlyLock() throws Exception
     {
-        final int coreServerCount = 5;
         final int workersPerCorServer = 5;
         final long nodeCount = 10;
         final long durationMillis = 20_000;
 
         // given
-        File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, coreServerCount, 0);
+        Cluster cluster = clusterRule.startCluster();
+        ExecutorService executor = Executors.newFixedThreadPool( cluster.numberOfCoreServers() * workersPerCorServer );
 
-        ExecutorService executor = Executors.newFixedThreadPool( coreServerCount * workersPerCorServer );
-
-        createNodes( nodeCount );
+        createNodes( nodeCount, cluster );
 
         ArrayList<Callable<Long>> workerThreads = new ArrayList<>();
 
@@ -156,7 +139,7 @@ public class ConcurrentLockingIT
         executor.awaitTermination( durationMillis + 5_000, TimeUnit.MILLISECONDS );
     }
 
-    public void createNodes( long nodeCount ) throws Exception
+    private void createNodes( long nodeCount, Cluster cluster ) throws Exception
     {
         GraphDatabaseService coreServer = cluster.awaitLeader( 5000 );
         try ( Transaction tx = coreServer.beginTx() )

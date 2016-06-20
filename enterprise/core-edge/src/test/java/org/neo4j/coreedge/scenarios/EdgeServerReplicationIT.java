@@ -19,20 +19,16 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BinaryOperator;
 
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.SharedDiscoveryService;
 import org.neo4j.coreedge.raft.log.segmented.FileNames;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
@@ -48,10 +44,8 @@ import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.logging.Log;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.coreedge.ClusterRule;
 
-import static java.io.File.pathSeparator;
-import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -71,24 +65,15 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 public class EdgeServerReplicationIT
 {
     @Rule
-    public final TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
-
-    private Cluster cluster;
-
-    @After
-    public void shutdown() throws ExecutionException, InterruptedException
-    {
-        if ( cluster != null )
-        {
-            cluster.shutdown();
-        }
-    }
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+            .withNumberOfCoreServers( 3 )
+            .withNumberOfEdgeServers( 1 );
 
     @Test
     public void shouldNotBeAbleToWriteToEdge() throws Exception
     {
         // given
-        cluster = Cluster.start( dir.directory(), 3, 1, new SharedDiscoveryService() );
+        Cluster cluster = clusterRule.startCluster();
 
         GraphDatabaseService edgeDB = cluster.findAnEdgeServer();
 
@@ -114,7 +99,7 @@ public class EdgeServerReplicationIT
     public void allServersBecomeAvailable() throws Exception
     {
         // given
-        cluster = Cluster.start( dir.directory(), 3, 1, new SharedDiscoveryService() );
+        Cluster cluster = clusterRule.startCluster();
 
         // then
         for ( final EdgeGraphDatabase edgeGraphDatabase : cluster.edgeServers() )
@@ -128,8 +113,7 @@ public class EdgeServerReplicationIT
     public void shouldEventuallyPullTransactionDownToAllEdgeServers() throws Exception
     {
         // given
-        final SharedDiscoveryService discoveryServiceFactory = new SharedDiscoveryService();
-        cluster = Cluster.start( dir.directory(), 3, 0, discoveryServiceFactory );
+        Cluster cluster = clusterRule.withNumberOfEdgeServers( 0 ).startCluster();
         int nodesBeforeEdgeServerStarts = 1;
 
         // when
@@ -139,7 +123,7 @@ public class EdgeServerReplicationIT
                 Node node = db.createNode();
                 node.setProperty( "foobar", "baz_bat" );
             }
-        } );
+        }, cluster );
 
         cluster.addEdgeServerWithId( 0 );
 
@@ -147,7 +131,7 @@ public class EdgeServerReplicationIT
         executeOnLeaderWithRetry( db -> {
             Node node = db.createNode();
             node.setProperty( "foobar", "baz_bat" );
-        } );
+        }, cluster );
 
         // then
         for ( final GraphDatabaseService edgeDB : cluster.edgeServers() )
@@ -171,10 +155,9 @@ public class EdgeServerReplicationIT
     @Test
     public void shouldShutdownRatherThanPullUpdatesFromCoreServerWithDifferentStoreIfServerHasData() throws Exception
     {
-        File edgeDatabaseStoreFileLocation = createExistingEdgeStore( dir.directory().getAbsolutePath() +
-                pathSeparator + "edgeStore" );
-
-        cluster = Cluster.start( dir.directory(), 3, 0, new SharedDiscoveryService() );
+        File edgeDatabaseStoreFileLocation = clusterRule.testDirectory().directory( "edgeStore" );
+        createExistingEdgeStore( edgeDatabaseStoreFileLocation );
+        Cluster cluster = clusterRule.withNumberOfEdgeServers( 0 ).startCluster();
 
         executeOnLeaderWithRetry( db -> {
             for ( int i = 0; i < 10; i++ )
@@ -182,7 +165,7 @@ public class EdgeServerReplicationIT
                 Node node = db.createNode();
                 node.setProperty( "foobar", "baz_bat" );
             }
-        } );
+        }, cluster );
 
         try
         {
@@ -199,10 +182,7 @@ public class EdgeServerReplicationIT
     public void shouldThrowExceptionIfEdgeRecordFormatDiffersToCoreRecordFormat() throws Exception
     {
         // given
-        String coreRecordFormat = HighLimit.NAME;
-        String edgeRecordFormat = StandardV3_0.NAME;
-
-        cluster = Cluster.start( dir.directory(), 3, 0, new SharedDiscoveryService(), coreRecordFormat );
+        Cluster cluster = clusterRule.withNumberOfEdgeServers( 0 ).withRecordFormat( HighLimit.NAME ).startCluster();
 
         // when
         executeOnLeaderWithRetry( db -> {
@@ -211,11 +191,11 @@ public class EdgeServerReplicationIT
                 Node node = db.createNode();
                 node.setProperty( "foobar", "baz_bat" );
             }
-        } );
+        }, cluster );
 
         try
         {
-            cluster.addEdgeServerWithFileLocation( 0, edgeRecordFormat );
+            cluster.addEdgeServerWithFileLocation( 0, StandardV3_0.NAME );
         }
         catch ( Exception e )
         {
@@ -234,8 +214,11 @@ public class EdgeServerReplicationIT
                 CoreEdgeClusterSettings.state_machine_flush_window_size.name(), "1",
                 CoreEdgeClusterSettings.raft_log_pruning_strategy.name(), "1 entries"
         );
-        cluster = Cluster.start( dir.cleanDirectory( "db" ), 3, 0, new SharedDiscoveryService(),
-                params,  emptyMap(), HighLimit.NAME );
+        Cluster cluster = clusterRule
+                .withNumberOfEdgeServers( 0 )
+                .withSharedCoreParams( params )
+                .withRecordFormat( HighLimit.NAME )
+                .startCluster();
 
         cluster.coreTx( ( db, tx ) -> {
             Node node = db.createNode( Label.label( "L" ) );
@@ -279,14 +262,11 @@ public class EdgeServerReplicationIT
         File raftLogDir = new File( new File( storeDir, CLUSTER_STATE_DIRECTORY_NAME ), SEGMENTED_LOG_DIRECTORY_NAME );
         SortedMap<Long,File> logs =
                 new FileNames( raftLogDir ).getAllFiles( new DefaultFileSystemAbstraction(), mock( Log.class ) );
-        return logs.keySet().stream().reduce( operator ).get();
+        return logs.keySet().stream().reduce( operator ).orElseThrow( IllegalStateException::new );
     }
 
-    private File createExistingEdgeStore( String path )
+    private void createExistingEdgeStore( File dir )
     {
-        File dir = new File( path );
-        dir.mkdirs();
-
         GraphDatabaseService db =
                 new TestGraphDatabaseFactory().newEmbeddedDatabase( Cluster.edgeServerStoreDirectory( dir, 1966 ) );
 
@@ -297,11 +277,9 @@ public class EdgeServerReplicationIT
         }
 
         db.shutdown();
-
-        return dir;
     }
 
-    private GraphDatabaseService executeOnLeaderWithRetry( Workload workload ) throws TimeoutException
+    private GraphDatabaseService executeOnLeaderWithRetry( Workload workload, Cluster cluster ) throws TimeoutException
     {
         CoreGraphDatabase coreDB;
         while ( true )

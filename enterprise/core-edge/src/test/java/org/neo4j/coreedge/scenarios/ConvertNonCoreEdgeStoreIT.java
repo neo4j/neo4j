@@ -19,7 +19,6 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,13 +27,11 @@ import org.junit.runners.Parameterized;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.concurrent.ExecutionException;
 
 import org.neo4j.coreedge.convert.ConversionVerifier;
 import org.neo4j.coreedge.convert.ConvertClassicStoreCommand;
 import org.neo4j.coreedge.convert.GenerateClusterSeedCommand;
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.SharedDiscoveryService;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -48,11 +45,12 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.coreedge.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.coreedge.discovery.Cluster.coreServerStoreDirectory;
 import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_advertised_address;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -61,6 +59,14 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 @RunWith(Parameterized.class)
 public class ConvertNonCoreEdgeStoreIT
 {
+    private static final int CLUSTER_SIZE = 3;
+    @Rule
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+            .withNumberOfCoreServers( CLUSTER_SIZE )
+            .withNumberOfEdgeServers( 0 );
+
+    @Parameterized.Parameter()
+    public String recordFormat;
 
     @Parameterized.Parameters(name = "Record format: {0}")
     public static Collection<Object> data()
@@ -70,44 +76,24 @@ public class ConvertNonCoreEdgeStoreIT
         } );
     }
 
-    @Parameterized.Parameter(value = 0)
-    public String recordFormat;
-
-    @Rule
-    public final TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
-
-    private Cluster cluster;
-
-    @After
-    public void shutdown() throws ExecutionException, InterruptedException
-    {
-        if ( cluster != null )
-        {
-            cluster.shutdown();
-        }
-    }
-
     @Test
     public void shouldReplicateTransactionToCoreServers() throws Throwable
     {
         // given
-        File dbDir = dir.directory();
-        FileUtils.deleteRecursively( dbDir );
-
+        File dbDir = clusterRule.testDirectory().cleanDirectory( "classic-db" );
         File classicNeo4jStore = createClassicNeo4jStore( dbDir, 10, recordFormat );
 
-        File firstServerStoreDir = new File( dbDir, "server-core-" + 0 );
-        FileUtils.copyRecursively( classicNeo4jStore, firstServerStoreDir );
-        String conversionMetadata = new GenerateClusterSeedCommand().generate( firstServerStoreDir).getConversionId();
+        File clusterDirectory = clusterRule.clusterDirectory();
+        String conversionMetadata = new GenerateClusterSeedCommand().generate( classicNeo4jStore ).getConversionId();
 
-        for ( int serverId = 0; serverId < 3; serverId++ )
+        for ( int serverId = 0; serverId < CLUSTER_SIZE; serverId++ )
         {
-            File destination = new File( dbDir, "server-core-" + serverId );
+            File destination = coreServerStoreDirectory( clusterDirectory, serverId );
             FileUtils.copyRecursively( classicNeo4jStore, destination );
             new ConvertClassicStoreCommand( new ConversionVerifier() ).convert( destination, recordFormat, conversionMetadata );
         }
 
-        cluster = Cluster.start( dbDir, 3, 0, new SharedDiscoveryService(), recordFormat );
+        Cluster cluster = clusterRule.withRecordFormat( recordFormat ).startCluster();
 
         // when
         GraphDatabaseService coreDB = cluster.awaitLeader( 5000 );

@@ -19,27 +19,23 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import java.io.File;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.SharedDiscoveryService;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.DbRepresentation;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.coreedge.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 
@@ -48,27 +44,21 @@ public class CoreServerReplicationIT
     private static final int DEFAULT_TIMEOUT_MS = 15_000;
 
     @Rule
-    public final TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+            .withNumberOfCoreServers( 3 )
+            .withNumberOfEdgeServers( 0 );
 
     private Cluster cluster;
 
-    @After
-    public void shutdown() throws ExecutionException, InterruptedException
+    @Before
+    public void setup() throws Exception
     {
-        if ( cluster != null )
-        {
-            cluster.shutdown();
-            cluster = null;
-        }
+        cluster = clusterRule.startCluster();
     }
 
     @Test
     public void shouldReplicateTransactionsToCoreServers() throws Exception
     {
-        // given
-        File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0, new SharedDiscoveryService() );
-
         // when
         cluster.coreTx( ( db, tx ) -> {
             Node node = db.createNode( label( "boo" ) );
@@ -89,9 +79,6 @@ public class CoreServerReplicationIT
     public void shouldReplicateTransactionToCoreServerAddedAfterInitialStartUp() throws Exception
     {
         // given
-        File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0, new SharedDiscoveryService() );
-
         cluster.addCoreServerWithServerId( 3, 4 );
 
         cluster.coreTx( ( db, tx ) -> {
@@ -117,9 +104,6 @@ public class CoreServerReplicationIT
     public void shouldReplicateTransactionAfterLeaderWasRemovedFromCluster() throws Exception
     {
         // given
-        File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0, new SharedDiscoveryService() );
-
         cluster.coreTx( ( db, tx ) -> {
             Node node = db.createNode();
             node.setProperty( "foobar", "baz_bat" );
@@ -142,10 +126,6 @@ public class CoreServerReplicationIT
     @Test
     public void shouldReplicateToCoreServersAddedAfterInitialTransactions() throws Exception
     {
-        // given
-        File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0, new SharedDiscoveryService() );
-
         // when
         CoreGraphDatabase last = null;
         for ( int i = 0; i < 15; i++ )
