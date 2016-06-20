@@ -19,101 +19,82 @@
  */
 package org.neo4j.coreedge.raft.log.segmented;
 
-import org.junit.After;
-import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.concurrent.atomic.AtomicLong;
+import java.io.IOException;
+import java.util.stream.Stream;
 
 import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.raft.log.DummyRaftableContentSerializer;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.rule.Resources;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
 import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning_strategy;
+import static org.neo4j.test.rule.Resources.InitialLifecycle.STARTED;
+import static org.neo4j.test.rule.Resources.TestPath.EXISTING_DIRECTORY;
 
 public class SegmentedRaftLogRotationTest
 {
-    private LifeSupport life = new LifeSupport();
-    private FileSystemAbstraction fileSystem;
+    private final static int ROTATE_AT_SIZE_IN_BYTES = 100;
 
-    @After
-    public void tearDown() throws Throwable
+    @Rule
+    public final Resources resourceManager = new Resources( EXISTING_DIRECTORY );
+
+    private SegmentedRaftLog createRaftLog( long rotateAtSize ) throws IOException
     {
-        life.stop();
-        life.shutdown();
-    }
-
-    private SegmentedRaftLog createRaftLog( long rotateAtSize )
-    {
-        if ( fileSystem == null )
-        {
-            fileSystem = new EphemeralFileSystemAbstraction();
-        }
-        File directory = new File( SEGMENTED_LOG_DIRECTORY_NAME );
-        fileSystem.mkdir( directory );
-
-        SegmentedRaftLog newRaftLog = new SegmentedRaftLog( fileSystem, directory, rotateAtSize,
-                new DummyRaftableContentSerializer(),
-                NullLogProvider.getInstance(), raft_log_pruning_strategy.getDefaultValue() );
-        life.add( newRaftLog );
-        life.init();
-        life.start();
-        return newRaftLog;
-    }
-
-    @Ignore( "This test is stupid - rewrite" )
-    public void shouldRotateOnAppendWhenRotateSizeIsReached() throws Exception
-    {
-        // Given
-        AtomicLong currentVersion = new AtomicLong();
-        int rotateAtSize = 100;
-        SegmentedRaftLog log = createRaftLog( rotateAtSize );
-
-        StringBuilder builder = new StringBuilder();
-        for ( int i = 0; i < rotateAtSize; i++ )
-        {
-            builder.append( "i" );
-        }
-
-        // When
-        ReplicatedString stringThatIsMoreThan100Bytes = new ReplicatedString( builder.toString() );
-        log.append( new RaftLogEntry( 0, stringThatIsMoreThan100Bytes ) );
-
-        // Then
-        assertEquals( 1, currentVersion.get() );
+        return new SegmentedRaftLog( resourceManager.fileSystem(), resourceManager.testPath(), rotateAtSize,
+                new DummyRaftableContentSerializer(), NullLogProvider.getInstance(),
+                raft_log_pruning_strategy.getDefaultValue() );
     }
 
     @Test
+    @Resources.Life( STARTED )
+    public void shouldRotateOnAppendWhenRotateSizeIsReached() throws Exception
+    {
+        // When
+        SegmentedRaftLog log = resourceManager.managed( createRaftLog( ROTATE_AT_SIZE_IN_BYTES ) );
+        log.append( new RaftLogEntry( 0, replicatedStringOfBytes( ROTATE_AT_SIZE_IN_BYTES ) ) );
+
+        // Then
+        File[] files = resourceManager.fileSystem().listFiles( resourceManager.testPath() );
+        assertEquals( 2, files.length );
+    }
+
+    @Test
+    @Resources.Life( STARTED )
     public void shouldBeAbleToRecoverToLatestStateAfterRotation() throws Throwable
     {
-        int rotateAtSize = 100;
-        SegmentedRaftLog log = createRaftLog( rotateAtSize );
-
-        StringBuilder builder = new StringBuilder();
-        for ( int i = 0; i < rotateAtSize - 40; i++ )
+        // Given
+        int term = 0;
+        long indexToRestoreTo;
+        try ( Lifespan lifespan = new Lifespan() )
         {
-            builder.append( "i" );
+            SegmentedRaftLog log = lifespan.add( createRaftLog( ROTATE_AT_SIZE_IN_BYTES ) );
+            log.append( new RaftLogEntry( term, replicatedStringOfBytes( ROTATE_AT_SIZE_IN_BYTES - 40 ) ) );
+            indexToRestoreTo = log.append( new RaftLogEntry( term, ReplicatedInteger.valueOf( 1 ) ) );
         }
 
-        ReplicatedString stringThatGetsTheSizeToAlmost100Bytes = new ReplicatedString( builder.toString() );
-        int term = 0;
-        log.append( new RaftLogEntry( term, stringThatGetsTheSizeToAlmost100Bytes ) );
-        long indexToRestoreTo = log.append( new RaftLogEntry( term, ReplicatedInteger.valueOf( 1 ) ) );
-
         // When
-        life.remove( log );
-        log = createRaftLog( rotateAtSize );
+        SegmentedRaftLog log = resourceManager.managed( createRaftLog( ROTATE_AT_SIZE_IN_BYTES ) );
 
         // Then
         assertEquals( indexToRestoreTo, log.appendIndex() );
         assertEquals( term, log.readEntryTerm( indexToRestoreTo ) );
+    }
+
+    private ReplicatedString replicatedStringOfBytes( int size )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( int i = 0; i < size; i++ )
+        {
+            builder.append( "i" );
+        }
+        return new ReplicatedString( builder.toString() );
     }
 }
