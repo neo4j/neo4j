@@ -139,7 +139,7 @@ public class ForsetiClient extends Locks.ClientAdapter
                 {
                     // We already have a lock on this, just increment our local reference counter.
                     heldShareLocks.put( resourceId, heldCount + 1 );
-                    return;
+                    continue;
                 }
                 // Second, check if we hold it as an exclusive lock
                 if( heldExclusiveLocks.containsKey( resourceId ) )
@@ -147,7 +147,7 @@ public class ForsetiClient extends Locks.ClientAdapter
                     // We already have an exclusive lock, so just leave that in place. When the exclusive lock is released,
                     // it will be automatically downgraded to a shared lock, since we bumped the share lock reference count.
                     heldShareLocks.put( resourceId, 1 );
-                    return;
+                    continue;
                 }
                 // We don't hold the lock, so we need to grab it via the global lock map
                 int tries = 0;
@@ -236,7 +236,7 @@ public class ForsetiClient extends Locks.ClientAdapter
                 {
                     // We already have a lock on this, just increment our local reference counter.
                     heldLocks.put( resourceId, heldCount + 1 );
-                    return;
+                    continue;
                 }
                 // Grab the global lock
                 ForsetiLockManager.Lock existingLock;
