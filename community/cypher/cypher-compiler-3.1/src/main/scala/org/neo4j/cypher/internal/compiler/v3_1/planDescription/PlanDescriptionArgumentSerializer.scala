@@ -55,12 +55,23 @@ object PlanDescriptionArgumentSerializer {
       case Runtime(runtime) => runtime
       case SourceCode(className, sourceCode) => sourceCode
       case RuntimeImpl(runtimeName) => runtimeName
-      case ExpandExpression(from, rel, typeNames, to, dir: SemanticDirection, varLength) =>
+      case ExpandExpression(from, rel, typeNames, to, dir: SemanticDirection, min, varLength) =>
         val left = if (dir == SemanticDirection.INCOMING) "<-" else "-"
         val right = if (dir == SemanticDirection.OUTGOING) "->" else "-"
-        val asterisk = if (varLength) "*" else ""
+
+        val length = (min, varLength) match {
+          case (1, None) => ""
+          case (0, None) => "*0..1"
+          case (x, None) => throw new RuntimeException("this should never happen")
+          case (0, Some(None)) => "*0.."
+          case (1, Some(None)) => "*.."
+          case (0, Some(Some(x))) => s"*0..$x"
+          case (1, Some(Some(x))) => s"*..$x"
+          case (f, Some(Some(t))) => s"*$f..$t"
+        }
+
         val types = typeNames.mkString(":", "|:", "")
-        val relInfo = if (!varLength && typeNames.isEmpty && rel.unnamed) "" else s"[$rel$types$asterisk]"
+        val relInfo = if (length.isEmpty && typeNames.isEmpty && rel.unnamed) "" else s"[$rel$types$length]"
         s"($from)$left$relInfo$right($to)"
       case CountNodesExpression(ident, label) =>
         val node = label.map(l => ":" + l.name).mkString

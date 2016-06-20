@@ -35,6 +35,6 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
   }
 
   test("ExpandExpression should look like Cypher syntax") {
-    serialize(new ExpandExpression("a", "r", Seq("LIKES", "LOVES"), "b", SemanticDirection.OUTGOING, false)) should equal ("(a)-[r:LIKES|:LOVES]->(b)")
+    serialize(new ExpandExpression("a", "r", Seq("LIKES", "LOVES"), "b", SemanticDirection.OUTGOING, 1, None)) should equal ("(a)-[r:LIKES|:LOVES]->(b)")
   }
 }

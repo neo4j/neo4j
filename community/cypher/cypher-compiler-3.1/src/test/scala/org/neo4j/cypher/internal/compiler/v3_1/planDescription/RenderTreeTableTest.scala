@@ -310,11 +310,11 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val expandPipe = VarLengthExpandPipe(pipe, "from", "rel", "to", SemanticDirection.INCOMING, SemanticDirection.OUTGOING, LazyTypes.empty, 0, None, nodeInScope = false)(Some(1L))(mock[PipeMonitor])
 
     renderAsTreeTable(expandPipe.planDescription) should equal(
-      """+-----------------------+----------------+-----------+----------------------+
-        || Operator              | Estimated Rows | Variables | Other                |
-        |+-----------------------+----------------+-----------+----------------------+
-        || +VarLengthExpand(All) |              1 | rel, to   | (from)-[rel:*]->(to) |
-        |+-----------------------+----------------+-----------+----------------------+
+      """+-----------------------+----------------+-----------+-------------------------+
+        || Operator              | Estimated Rows | Variables | Other                   |
+        |+-----------------------+----------------+-----------+-------------------------+
+        || +VarLengthExpand(All) |              1 | rel, to   | (from)-[rel:*0..]->(to) |
+        |+-----------------------+----------------+-----------+-------------------------+
         |""".stripMargin)
   }
 
@@ -322,7 +322,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val arguments = Seq(
       Rows(42),
       DbHits(33),
-      ExpandExpression("  UNNAMED123", "R", Seq("WHOOP"), "  UNNAMED24", SemanticDirection.OUTGOING),
+      ExpandExpression("  UNNAMED123", "R", Seq("WHOOP"), "  UNNAMED24", SemanticDirection.OUTGOING, 1, None),
       EstimatedRows(1))
 
     val plan = PlanDescriptionImpl(new Id, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  FRESHID12", "  AGGREGATION255"))
@@ -339,7 +339,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val arguments = Seq(
       Rows(42),
       DbHits(33),
-      ExpandExpression("source", "through", Seq("SOME","OTHER","THING"), "target", SemanticDirection.OUTGOING),
+      ExpandExpression("source", "through", Seq("SOME","OTHER","THING"), "target", SemanticDirection.OUTGOING, 1, None),
       EstimatedRows(1))
 
     val plan = PlanDescriptionImpl(new Id, "NAME", NoChildren, arguments, Set("n"))

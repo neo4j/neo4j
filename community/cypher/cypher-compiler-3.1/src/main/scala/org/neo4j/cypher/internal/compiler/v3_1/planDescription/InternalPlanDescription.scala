@@ -111,8 +111,15 @@ object InternalPlanDescription {
     case class RuntimeImpl(value: String) extends Argument{
       override def name = "runtime-impl"
     }
+
+
+    /*
+    length = None           -> a single hop relationship
+    length = Some(None)     -> unlimited var length relationship
+    length = Some(Some(18)) -> var length relationship limited to 18 hops
+     */
     case class ExpandExpression(from: String, relName: String, relTypes:Seq[String], to: String,
-                                direction: SemanticDirection, varLength: Boolean = false) extends Argument
+                                direction: SemanticDirection, minLength: Int, varLength: Option[Option[Int]]) extends Argument
     case class CountNodesExpression(ident: String, label: Option[LazyLabel]) extends Argument
     case class CountRelationshipsExpression(ident: String, startLabel: Option[LazyLabel],
                                             typeNames: LazyTypes, endLabel: Option[LazyLabel]) extends Argument
