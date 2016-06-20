@@ -19,10 +19,20 @@
  */
 package org.neo4j.server.security.enterprise.auth.integration.bolt;
 
+import org.apache.directory.server.annotations.CreateLdapServer;
+import org.apache.directory.server.annotations.CreateTransport;
+import org.apache.directory.server.core.annotations.ApplyLdifFiles;
+import org.apache.directory.server.core.annotations.ContextEntry;
+import org.apache.directory.server.core.annotations.CreateDS;
+import org.apache.directory.server.core.annotations.CreatePartition;
+import org.apache.directory.server.core.annotations.LoadSchema;
+import org.apache.directory.server.core.integ.AbstractLdapTestUnit;
+import org.apache.directory.server.core.integ.FrameworkRunner;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.Map;
 import java.util.function.Consumer;
@@ -47,7 +57,22 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyRecieves;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
-public class LdapAuthenticationIT
+@RunWith( FrameworkRunner.class )
+@CreateDS(
+        name = "Test",
+        partitions = {@CreatePartition(
+                name = "example",
+                suffix = "dc=example,dc=com", contextEntry = @ContextEntry(
+                entryLdif = "dn: dc=example,dc=com\n" +
+                        "dc: example\n" +
+                        "o: example\n" +
+                        "objectClass: top\n" +
+                        "objectClass: dcObject\n" +
+                        "objectClass: organization\n\n" ) )}, loadedSchemas = {
+        @LoadSchema( name = "nis", enabled = true ),
+        @LoadSchema( name = "posix", enabled = false )} )
+@CreateLdapServer( transports = {@CreateTransport( protocol = "LDAP", port = 10389, address = "0.0.0.0" )} )
+public class LdapAuthenticationIT extends AbstractLdapTestUnit
 {
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getTestGraphDatabaseFactory(), getSettingsFunction() );
@@ -65,10 +90,10 @@ public class LdapAuthenticationIT
             settings.put( SecuritySettings.external_auth_enabled, "true" );
             settings.put( SecuritySettings.ldap_auth_enabled, "true" );
             // TODO: This is the configuration for an ldap test server
-            settings.put( SecuritySettings.ldap_server, "localhost:9000" );
+            settings.put( SecuritySettings.ldap_server, "0.0.0.0:10389" );
             settings.put( SecuritySettings.ldap_user_dn_template, "cn={0},ou=users,dc=example,dc=com" );
-            //settings.put( SecuritySettings.ldap_system_username, "xcn=read-only-admin,dc=example,dc=com" );
-            //settings.put( SecuritySettings.ldap_system_password, "password" );
+            //settings.put( SecuritySettings.ldap_system_username, "uid=admin,ou=system" );
+            //settings.put( SecuritySettings.ldap_system_password, "secret" );
         };
     }
 
@@ -79,6 +104,7 @@ public class LdapAuthenticationIT
     protected Connection client;
 
     @Test
+    @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldBeAbleToLoginWithLdap() throws Throwable
     {
         // When

@@ -168,6 +168,12 @@
       <version>1.0</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.apache.directory.server</groupId>
+      <artifactId>apacheds-server-integ</artifactId>
+      <version>2.0.0-M21</version>
+      <scope>test</scope>
+    </dependency>
     <!-- http://mvnrepository.com/artifact/com.googlecode.thread-weaver/threadweaver -->
     <dependency>
       <groupId>com.googlecode.thread-weaver</groupId>
