@@ -122,7 +122,7 @@ public class RecordStorageEngineRule extends ExternalResource
         private DatabaseHealth databaseHealth = new DatabaseHealth(
                 new DatabasePanicEventGenerator( new KernelEventHandlers( NullLog.getInstance() ) ),
                 NullLog.getInstance() );
-        private File storeDirectory = new File( "graph.db" );
+        private File storeDirectory = new File( "/graph.db" );
         private SchemaIndexProvider schemaIndexProvider = SchemaIndexProvider.NO_INDEX_PROVIDER;
 
         public Builder( FileSystemAbstraction fs, PageCache pageCache )

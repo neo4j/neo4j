@@ -150,13 +150,14 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         return fixture.getFileSystemAbstraction();
     }
 
-    protected final File file( String pathname )
+    protected final File file( String pathname ) throws IOException
     {
         return fixture.file( pathname );
     }
 
     protected void ensureExists( File file ) throws IOException
     {
+        fs.mkdirs( file.getParentFile() );
         fs.create( file ).close();
     }
 
@@ -328,9 +329,9 @@ public abstract class PageCacheTestSupport<T extends PageCache>
             return this;
         }
 
-        public final File file( String pathname )
+        public final File file( String pathname ) throws IOException
         {
-            return fileConstructor.apply( pathname );
+            return fileConstructor.apply( pathname ).getCanonicalFile();
         }
 
         public final Fixture<T> withFileConstructor( Function<String,File> fileConstructor )
