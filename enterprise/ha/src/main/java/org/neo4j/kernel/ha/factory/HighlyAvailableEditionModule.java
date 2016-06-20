@@ -52,6 +52,7 @@ import org.neo4j.function.Function;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -129,6 +130,7 @@ import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionConfigurator;
+import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -201,9 +203,11 @@ public class HighlyAvailableEditionModule
                 serverId.toIntegerIndex(),
                 dependencies.provideDependency( TransactionIdStore.class ) ) );
 
+        final long idReuseSafeZone =
+                config.get( EnterpriseEditionSettings.id_reuse_safe_zone_time );
         TransactionCommittingResponseUnpacker responseUnpacker = dependencies.satisfyDependency(
-                new TransactionCommittingResponseUnpacker( new DefaultUnpackerDependencies( dependencies ),
-                        config.get( HaSettings.pull_apply_batch_size ) ) );
+                new TransactionCommittingResponseUnpacker( new DefaultUnpackerDependencies( dependencies,
+                        idReuseSafeZone ), config.get( HaSettings.pull_apply_batch_size ) ) );
 
         Supplier<KernelAPI> kernelProvider = dependencies.provideDependency( KernelAPI.class );
 
@@ -559,7 +563,27 @@ public class HighlyAvailableEditionModule
             @Override
             public boolean test( KernelTransactionsSnapshot snapshot )
             {
-                return HighAvailabilityModeSwitcher.MASTER.equals( members.getCurrentMemberRole() );
+                switch ( members.getCurrentMemberRole() )
+                {
+                case HighAvailabilityModeSwitcher.SLAVE:
+                    // If we're slave right now then just release them because the id generators in slave mode
+                    // will throw them away anyway, no need to keep them in memory. The architecture around
+                    // how buffering is done isn't a 100% fit for HA since the wrapping if IdGeneratorFactory
+                    // where the buffering takes place is done in a place which is oblivious to HA and roles
+                    // which means that buffering will always take place. For now we'll have to live with
+                    // always buffering and only just release them as soon as possible when slave.
+                    return true;
+                case HighAvailabilityModeSwitcher.MASTER:
+                    // If we're master then we have to keep these ids around during the configured safe zone time
+                    // so that slaves have a chance to read consistently as well (slaves will know and compensate
+                    // for falling outside of safe zone).
+                    return Clock.SYSTEM_CLOCK.currentTimeMillis() - snapshot.snapshotTime() >= idReuseSafeZone;
+                default:
+                    // If we're anything other than slave, i.e. also pending then retain the ids since we're
+                    // not quite sure what state we're in at the moment and we clear the id buffers anyway
+                    // during state switch.
+                    return false;
+                }
             }
         };
 

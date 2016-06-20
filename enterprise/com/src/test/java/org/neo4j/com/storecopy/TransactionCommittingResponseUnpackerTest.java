@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionObligationResponse;
@@ -521,6 +520,12 @@ public class TransactionCommittingResponseUnpackerTest
             public LogService logService()
             {
                 return logging;
+            }
+
+            @Override
+            public long idReuseSafeZoneTime()
+            {
+                return 0;
             }
         };
     }

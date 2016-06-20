@@ -301,7 +301,7 @@ class BackupService
 
         ProgressTxHandler handler = new ProgressTxHandler();
         TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
-                new DefaultUnpackerDependencies( resolver ) );
+                new DefaultUnpackerDependencies( resolver, 0 ) );
 
         Monitors monitors = resolver.resolveDependency( Monitors.class );
         LogProvider logProvider = resolver.resolveDependency( LogService.class ).getInternalLogProvider();

@@ -184,6 +184,7 @@ import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
@@ -541,7 +542,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                 // This buffering id generator factory will have properly buffering id generators injected into
                 // the stores. The buffering depends on knowledge about active transactions,
                 // so we'll initialize it below when all those components have been instantiated.
-                bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( idGeneratorFactory, Clock.SYSTEM_CLOCK );
+                bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( idGeneratorFactory );
                 storeFactory.setIdGeneratorFactory( bufferingIdGeneratorFactory );
             }
 

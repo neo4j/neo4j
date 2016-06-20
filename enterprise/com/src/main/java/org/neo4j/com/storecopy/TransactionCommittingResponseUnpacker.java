@@ -52,7 +52,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
-import static org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory.ID_REUSE_QUARANTINE_TIME;
 
 /**
  * Receives and unpacks {@link Response responses}.
@@ -87,6 +86,8 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         KernelTransactions kernelTransactions();
 
         LogService logService();
+
+        long idReuseSafeZoneTime();
     }
 
     public static final int DEFAULT_BATCH_SIZE = 100;
@@ -150,6 +151,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     private KernelHealth kernelHealth;
     private Log log;
     private KernelTransactions kernelTransactions;
+    private long idReuseSafeZoneTime;
     private volatile boolean stopped;
 
     public TransactionCommittingResponseUnpacker( Dependencies dependencies )
@@ -216,7 +218,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         {
             long commitTimestamp = ((KernelTransactionImplementation) tx).lastTransactionTimestampWhenStarted();
             if ( commitTimestamp != TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP &&
-                  commitTimestamp < newLatestAppliedTime - ID_REUSE_QUARANTINE_TIME )
+                  commitTimestamp < newLatestAppliedTime - idReuseSafeZoneTime )
             {
                 tx.markForTermination( Status.Transaction.Outdated );
             }
@@ -293,6 +295,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         this.kernelHealth = dependencies.kernelHealth();
         this.log = dependencies.logService().getInternalLogProvider().getLog( getClass() );
         this.kernelTransactions = dependencies.kernelTransactions();
+        this.idReuseSafeZoneTime = dependencies.idReuseSafeZoneTime();
         this.stopped = false;
     }
 

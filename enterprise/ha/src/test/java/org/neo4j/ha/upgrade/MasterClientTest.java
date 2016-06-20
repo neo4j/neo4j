@@ -168,7 +168,7 @@ public class MasterClientTest
                 NullLogService.getInstance()
         );
 
-        TransactionCommittingResponseUnpacker.Dependencies dependencies = new DefaultUnpackerDependencies( deps )
+        TransactionCommittingResponseUnpacker.Dependencies dependencies = new DefaultUnpackerDependencies( deps, 0 )
         {
             @Override
             public BatchingTransactionRepresentationStoreApplier transactionRepresentationStoreApplier()

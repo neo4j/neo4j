@@ -27,13 +27,18 @@ import org.neo4j.graphdb.factory.Description;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Settings;
 
+import static org.neo4j.kernel.configuration.Settings.setting;
+
 /**
  * Enterprise edition specific settings
  */
 public class EnterpriseEditionSettings
 {
     @Description( "Specified names of id types that should be reused." )
-    static Setting<List<String>> idTypesToReuse =
+    public static Setting<List<String>> idTypesToReuse =
             Settings.setting( "dbms.ids.reuse.types.override", Settings.STRING_LIST, IdType.Name.RELATIONSHIP.name() );
 
+    @Description( "Time to retain ids before reuse" )
+    public static final Setting<Long> id_reuse_safe_zone_time =
+            setting( "dbms.id_reuse_safe_zone", Settings.DURATION, "1h" );
 }

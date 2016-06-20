@@ -45,10 +45,12 @@ import org.neo4j.kernel.impl.util.IdOrderingQueue;
 public class DefaultUnpackerDependencies implements TransactionCommittingResponseUnpacker.Dependencies
 {
     private final DependencyResolver resolver;
+    private final long idReuseSafeZoneTime;
 
-    public DefaultUnpackerDependencies( DependencyResolver resolver )
+    public DefaultUnpackerDependencies( DependencyResolver resolver, long idReuseSafeZoneTime )
     {
         this.resolver = resolver;
+        this.idReuseSafeZoneTime = idReuseSafeZoneTime;
     }
 
     @Override
@@ -134,5 +136,11 @@ public class DefaultUnpackerDependencies implements TransactionCommittingRespons
     public LogService logService()
     {
         return resolver.resolveDependency( LogService.class );
+    }
+
+    @Override
+    public long idReuseSafeZoneTime()
+    {
+        return idReuseSafeZoneTime;
     }
 }
