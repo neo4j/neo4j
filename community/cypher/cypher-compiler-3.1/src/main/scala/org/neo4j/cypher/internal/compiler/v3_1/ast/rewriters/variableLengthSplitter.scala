@@ -39,22 +39,28 @@ case object variableLengthSplitter extends Rewriter {
     case pattern@RelationshipChain(leftPattern, rel@RelationshipPattern(None, _, types, Some(Some(range)), props, dir), _)
       if range.lower.isEmpty && range.upper.exists(_.value > 1) =>
 
+      val pos = rel.position
+
       val totalLength = range.upper.get.value
       val half = totalLength / 2
-      val one = UnsignedDecimalIntegerLiteral(1)(pattern.position)
+      val one = UnsignedDecimalIntegerLiteral(1)(pos)
       val lhsRange =
-        Some(Some(Range(Some(one), Some(UnsignedDecimalIntegerLiteral(half)(pattern.position)))(range.position)))
+        Some(Some(Range(Some(one), Some(UnsignedDecimalIntegerLiteral(half)(pos)))(pos)))
 
-      val relationshipPattern = rel.copy(length = lhsRange)(rel.position.bumped())
-      val newNode = NodePattern(None, List(), None)(rel.position.bumped().bumped())
-      val newChain = RelationshipChain(leftPattern, relationshipPattern, newNode)(rel.position)
-      val rhsUpper = Some(UnsignedDecimalIntegerLiteral(half + (totalLength % 2))(range.position))
-      val rhsRange = Range(Some(UnsignedDecimalIntegerLiteral("0")(range.position)), rhsUpper)(rel.position)
+      val relationshipPattern = rel.copy(length = lhsRange)(pos.bumped())
+      val newNode = NodePattern(None, List(), None)(pos.bumped().bumped())
+      val newChain = RelationshipChain(leftPattern, relationshipPattern, newNode)(pos)
+      val rhsUpper = Some(UnsignedDecimalIntegerLiteral(half + (totalLength % 2))(pos))
+      val rhsRange = Range(Some(UnsignedDecimalIntegerLiteral(0)(pos)), rhsUpper)(pos)
 
-      val newShorterVarLength = rel.copy(length = Some(Some(rhsRange)))(rel.position)
+      val newShorterVarLength = rel.copy(length = Some(Some(rhsRange)))(pos)
 
-      pattern.copy(element = newChain, relationship = newShorterVarLength)(pattern.position)
+      pattern.copy(element = newChain, relationship = newShorterVarLength)(pos)
   }
 
-  private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
+  private val doNotDescendInto: (AnyRef) => Boolean = x =>
+    x.isInstanceOf[ShortestPaths] ||
+    x.isInstanceOf[Expression]
+
+  private val instance = bottomUp(rewriter, doNotDescendInto)
 }

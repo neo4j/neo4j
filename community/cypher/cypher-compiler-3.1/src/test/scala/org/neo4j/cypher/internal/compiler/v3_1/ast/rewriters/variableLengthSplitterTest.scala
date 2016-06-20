@@ -28,6 +28,8 @@ class variableLengthSplitterTest extends CypherFunSuite with RewriteTest {
   shouldNotBeRewritten("match (n)-[r]->(m) return *")
   shouldNotBeRewritten("match (a)-[*0..2]->(b) return *")
   shouldNotBeRewritten("match (a)-[*..1]->()-[*0..1]->(b) return *")
+  shouldNotBeRewritten("match (a)-[*1..2]->()-[*0..2]->(b) return *")
+  shouldNotBeRewritten("match (a),(b) match p = shortestPath( (a)-[*..2]->(b) ) return *")
 
   shouldBeRewritten(
     "match (a)-[*..2]->(b) return *",
@@ -53,6 +55,10 @@ class variableLengthSplitterTest extends CypherFunSuite with RewriteTest {
   shouldBeRewritten(
     "match (a)-[*..4]->(b) return *",
     "match (a)-[*1..2]->()-[*0..2]->(b) return *")
+  shouldBeRewritten(
+    "match p = (a)-[*..2]->(b) return *",
+    "match p = (a)-[*1..1]->()-[*0..1]->(b) return *")
+
 
   private def shouldBeRewritten(from: String, to: String): Unit = test("rewrites: " + from) {
     assertRewrite(from, to)
