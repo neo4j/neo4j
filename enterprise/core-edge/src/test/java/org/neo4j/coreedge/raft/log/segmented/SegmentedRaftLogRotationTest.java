@@ -41,7 +41,7 @@ import static org.neo4j.test.rule.Resources.TestPath.EXISTING_DIRECTORY;
 
 public class SegmentedRaftLogRotationTest
 {
-    private final static int ROTATE_AT_SIZE_IN_BYTES = 100;
+    private static final int ROTATE_AT_SIZE_IN_BYTES = 100;
 
     @Rule
     public final Resources resourceManager = new Resources( EXISTING_DIRECTORY );
