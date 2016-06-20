@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import org.apache.shiro.authc.AuthenticationInfo;
+import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.Permission;
 import org.apache.shiro.authz.SimpleAuthorizationInfo;
@@ -32,7 +34,9 @@ import org.apache.shiro.subject.PrincipalCollection;
 import java.util.Collection;
 import java.util.Collections;
 import javax.naming.NamingException;
+import javax.naming.ldap.LdapContext;
 
+import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.configuration.Config;
 
 /**
@@ -45,7 +49,6 @@ public class LdapRealm extends JndiLdapRealm
         super();
         setRolePermissionResolver( rolePermissionResolver );
         configureRealm( config );
-        // TODO: Set NeoSubjectFactory on the SecurityManager
     }
 
     @Override
@@ -54,6 +57,15 @@ public class LdapRealm extends JndiLdapRealm
     {
         // TODO: This is just temporary
         return new SimpleAuthorizationInfo( Collections.singleton( PredefinedRolesBuilder.READER ) );
+    }
+
+    @Override
+    protected AuthenticationInfo createAuthenticationInfo(AuthenticationToken token, Object ldapPrincipal,
+            Object ldapCredentials, LdapContext ldapContext)
+            throws NamingException {
+        // NOTE: This will be called only if authentication with the ldap context was successful
+        return new ShiroAuthenticationInfo( token.getPrincipal(), token.getCredentials(), getName(),
+                AuthenticationResult.SUCCESS );
     }
 
     private final RolePermissionResolver rolePermissionResolver = new RolePermissionResolver()

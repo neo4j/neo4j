@@ -62,7 +62,7 @@ import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 /**
  * Shiro realm wrapping FileUserRepository and FileRoleRepository
  */
-public class InternalFlatFileRealm extends AuthorizingRealm implements ShiroRealmLifecycle, EnterpriseUserManager
+public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, EnterpriseUserManager
 {
     /**
      * This flag is used in the same way as User.PASSWORD_CHANGE_REQUIRED, but it's

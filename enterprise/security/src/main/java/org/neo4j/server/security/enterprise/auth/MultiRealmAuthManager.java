@@ -21,7 +21,6 @@ package org.neo4j.server.security.enterprise.auth;
 
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.ExcessiveAttemptsException;
-import org.apache.shiro.authc.pam.FirstSuccessfulStrategy;
 import org.apache.shiro.authc.pam.ModularRealmAuthenticator;
 import org.apache.shiro.authc.pam.UnsupportedTokenException;
 import org.apache.shiro.cache.ehcache.EhCacheManager;
@@ -102,9 +101,9 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager, UserManager
             {
                 ((CachingRealm) realm).setCacheManager( cacheManager );
             }
-            if ( realm instanceof ShiroRealmLifecycle )
+            if ( realm instanceof RealmLifecycle )
             {
-                ((ShiroRealmLifecycle) realm).initialize();
+                ((RealmLifecycle) realm).initialize();
             }
         }
     }
@@ -114,9 +113,9 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager, UserManager
     {
         for ( Realm realm : realms )
         {
-            if ( realm instanceof ShiroRealmLifecycle )
+            if ( realm instanceof RealmLifecycle )
             {
-                ((ShiroRealmLifecycle) realm).start();
+                ((RealmLifecycle) realm).start();
             }
         }
     }
@@ -126,9 +125,9 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager, UserManager
     {
         for ( Realm realm : realms )
         {
-            if ( realm instanceof ShiroRealmLifecycle )
+            if ( realm instanceof RealmLifecycle )
             {
-                ((ShiroRealmLifecycle) realm).stop();
+                ((RealmLifecycle) realm).stop();
             }
         }
     }
@@ -142,9 +141,9 @@ public class MultiRealmAuthManager implements EnterpriseAuthManager, UserManager
             {
                 ((CachingRealm) realm).setCacheManager( null );
             }
-            if ( realm instanceof ShiroRealmLifecycle )
+            if ( realm instanceof RealmLifecycle )
             {
-                ((ShiroRealmLifecycle) realm).shutdown();
+                ((RealmLifecycle) realm).shutdown();
             }
         }
         cacheManager.destroy();

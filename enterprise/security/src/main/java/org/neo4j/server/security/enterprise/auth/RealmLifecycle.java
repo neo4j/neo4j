@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-public interface ShiroRealmLifecycle
+public interface RealmLifecycle
 {
     void initialize() throws Throwable;
     void start() throws Throwable;
