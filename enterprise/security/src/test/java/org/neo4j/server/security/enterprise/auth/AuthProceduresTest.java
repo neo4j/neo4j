@@ -50,9 +50,8 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldChangeOwnPassword() throws Exception
     {
-        testCallEmpty( db, readSubject, "CALL dbms.changePassword( '321' )" );
+        testCallEmpty( readSubject, "CALL dbms.changePassword( '321' )" );
         AuthSubject subject = manager.login( authToken( "readSubject", "321" ) );
-
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
     }
 
@@ -62,7 +61,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldChangeUserPassword() throws Exception
     {
-        testCallEmpty( db, adminSubject, "CALL dbms.changeUserPassword( 'readSubject', '321' )" );
+        testCallEmpty( adminSubject, "CALL dbms.changeUserPassword( 'readSubject', '321' )" );
         assertEquals( AuthenticationResult.FAILURE, manager.login( authToken( "readSubject", "123" ) )
                 .getAuthenticationResult() );
         assertEquals( AuthenticationResult.SUCCESS, manager.login( authToken( "readSubject", "321" ) )
@@ -73,11 +72,11 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldNotChangeUserPasswordIfNotAdmin() throws Exception
     {
-        testCallFail( db, schemaSubject, "CALL dbms.changeUserPassword( 'readSubject', '321' )",
+        testCallFail( schemaSubject, "CALL dbms.changeUserPassword( 'readSubject', '321' )",
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
-        testCallFail( db, schemaSubject, "CALL dbms.changeUserPassword( 'jake', '321' )",
+        testCallFail( schemaSubject, "CALL dbms.changeUserPassword( 'jake', '321' )",
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
-        testCallFail( db, schemaSubject, "CALL dbms.changeUserPassword( 'readSubject', '' )",
+        testCallFail( schemaSubject, "CALL dbms.changeUserPassword( 'readSubject', '' )",
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
     }
 
@@ -85,13 +84,13 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldChangeUserPasswordIfSameUser() throws Exception
     {
-        testCallEmpty( db, readSubject, "CALL dbms.changeUserPassword( 'readSubject', '321' )" );
+        testCallEmpty( readSubject, "CALL dbms.changeUserPassword( 'readSubject', '321' )" );
         assertEquals( AuthenticationResult.FAILURE, manager.login( authToken( "readSubject", "123" ) )
                 .getAuthenticationResult() );
         assertEquals( AuthenticationResult.SUCCESS, manager.login( authToken( "readSubject", "321" ) )
                 .getAuthenticationResult() );
 
-        testCallEmpty( db, adminSubject, "CALL dbms.changeUserPassword( 'adminSubject', 'cba' )" );
+        testCallEmpty( adminSubject, "CALL dbms.changeUserPassword( 'adminSubject', 'cba' )" );
         assertEquals( AuthenticationResult.FAILURE, manager.login( authToken( "adminSubject", "abc" ) )
                 .getAuthenticationResult() );
         assertEquals( AuthenticationResult.SUCCESS, manager.login( authToken( "adminSubject", "cba" ) )
@@ -102,10 +101,10 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldFailToChangeUserPasswordIfSameUserButInvalidPassword() throws Exception
     {
-        testCallFail( db, readSubject, "CALL dbms.changeUserPassword( 'readSubject', '123' )",
+        testCallFail( readSubject, "CALL dbms.changeUserPassword( 'readSubject', '123' )",
                 QueryExecutionException.class, "Old password and new password cannot be the same" );
 
-        testCallFail( db, adminSubject, "CALL dbms.changeUserPassword( 'adminSubject', 'abc' )",
+        testCallFail( adminSubject, "CALL dbms.changeUserPassword( 'adminSubject', 'abc' )",
                 QueryExecutionException.class, "Old password and new password cannot be the same" );
     }
 
@@ -113,7 +112,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldNotChangeUserPasswordIfNonExistingUser() throws Exception
     {
-        testCallFail( db, adminSubject, "CALL dbms.changeUserPassword( 'jake', '321' )",
+        testCallFail( adminSubject, "CALL dbms.changeUserPassword( 'jake', '321' )",
                 QueryExecutionException.class, "User jake does not exist" );
     }
 
@@ -121,7 +120,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldNotChangeUserPasswordIfEmptyPassword() throws Exception
     {
-        testCallFail( db, adminSubject, "CALL dbms.changeUserPassword( 'readSubject', '' )",
+        testCallFail( adminSubject, "CALL dbms.changeUserPassword( 'readSubject', '' )",
                 QueryExecutionException.class, "Password cannot be empty" );
     }
 
@@ -129,7 +128,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldNotChangeUserPasswordIfSamePassword() throws Exception
     {
-        testCallFail( db, adminSubject, "CALL dbms.changeUserPassword( 'readSubject', '123' )",
+        testCallFail( adminSubject, "CALL dbms.changeUserPassword( 'readSubject', '123' )",
                 QueryExecutionException.class, "Old password and new password cannot be the same" );
     }
 
@@ -138,7 +137,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldCreateUser() throws Exception
     {
-        testCallEmpty( db, adminSubject, "CALL dbms.createUser('craig', '1234', true)" );
+        testCallEmpty( adminSubject, "CALL dbms.createUser('craig', '1234', true)" );
         assertNotNull( "User craig should exist", manager.getUser( "craig" ) );
     }
 
@@ -153,9 +152,9 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     public void shouldNotCreateExistingUser() throws Exception
     {
 
-        testCallEmpty( db, adminSubject, "CALL dbms.createUser('craig', '1234', true)" );
+        testCallEmpty( adminSubject, "CALL dbms.createUser('craig', '1234', true)" );
         assertNotNull( "User craig should exist", manager.getUser( "craig" ) );
-        testCallFail( db, adminSubject, "CALL dbms.createUser('craig', '1234', true)", QueryExecutionException.class,
+        testCallFail( adminSubject, "CALL dbms.createUser('craig', '1234', true)", QueryExecutionException.class,
                 "The specified user already exists" );
     }
 
@@ -174,10 +173,10 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     {
         assertFalse( "Should not have role publisher",
                 ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PUBLISHER ) );
-        testCallEmpty( db, adminSubject, "CALL dbms.addUserToRole('readSubject', '" + PUBLISHER + "')" );
+        testCallEmpty( adminSubject, "CALL dbms.addUserToRole('readSubject', '" + PUBLISHER + "')" );
         assertTrue( "Should have role publisher",
                 ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PUBLISHER ) );
-        testCallEmpty( db, adminSubject, "CALL dbms.removeUserFromRole('readSubject', '" + PUBLISHER + "')" );
+        testCallEmpty( adminSubject, "CALL dbms.removeUserFromRole('readSubject', '" + PUBLISHER + "')" );
         assertFalse( "Should not have role publisher",
                 ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PUBLISHER ) );
     }
@@ -187,8 +186,8 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     {
         assertFalse( "Should not have role publisher",
                 ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PUBLISHER ) );
-        testCallEmpty( db, adminSubject, "CALL dbms.addUserToRole('readSubject', '" + PUBLISHER + "')" );
-        testCallEmpty( db, adminSubject, "CALL dbms.addUserToRole('readSubject', '" + PUBLISHER + "')" );
+        testCallEmpty( adminSubject, "CALL dbms.addUserToRole('readSubject', '" + PUBLISHER + "')" );
+        testCallEmpty( adminSubject, "CALL dbms.addUserToRole('readSubject', '" + PUBLISHER + "')" );
         assertTrue( "Should have role publisher",
                 ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PUBLISHER ) );
     }
@@ -198,11 +197,11 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     {
         assertFalse( "Should not have role publisher",
                 ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PUBLISHER ) );
-        testCallEmpty( db, adminSubject, "CALL dbms.addUserToRole('readSubject', '" + PUBLISHER + "')" );
+        testCallEmpty( adminSubject, "CALL dbms.addUserToRole('readSubject', '" + PUBLISHER + "')" );
         assertTrue( "Should have role publisher",
                 ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PUBLISHER ) );
-        testCallEmpty( db, adminSubject, "CALL dbms.removeUserFromRole('readSubject', '" + PUBLISHER + "')" );
-        testCallEmpty( db, adminSubject, "CALL dbms.removeUserFromRole('readSubject', '" + PUBLISHER + "')" );
+        testCallEmpty( adminSubject, "CALL dbms.removeUserFromRole('readSubject', '" + PUBLISHER + "')" );
+        testCallEmpty( adminSubject, "CALL dbms.removeUserFromRole('readSubject', '" + PUBLISHER + "')" );
         assertFalse( "Should not have role publisher",
                 ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PUBLISHER ) );
     }
@@ -214,15 +213,15 @@ public class AuthProceduresTest extends AuthProcedureTestBase
                 ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PUBLISHER ) );
         assertFalse( "Should not have role architect",
                 ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( ARCHITECT ) );
-        testCallEmpty( db, adminSubject, "CALL dbms.addUserToRole('readSubject', '" + PUBLISHER + "')" );
-        testCallEmpty( db, adminSubject, "CALL dbms.addUserToRole('readSubject', '" + ARCHITECT + "')" );
+        testCallEmpty( adminSubject, "CALL dbms.addUserToRole('readSubject', '" + PUBLISHER + "')" );
+        testCallEmpty( adminSubject, "CALL dbms.addUserToRole('readSubject', '" + ARCHITECT + "')" );
         assertTrue( "Should have role publisher",
                 ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PUBLISHER ) );
         assertTrue( "Should have role architect",
                 ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( ARCHITECT ) );
 
-        testCallEmpty( db, adminSubject, "CALL dbms.removeUserFromRole('readSubject', '" + PUBLISHER + "')" );
-        testCallEmpty( db, adminSubject, "CALL dbms.removeUserFromRole('readSubject', '" + ARCHITECT + "')" );
+        testCallEmpty( adminSubject, "CALL dbms.removeUserFromRole('readSubject', '" + PUBLISHER + "')" );
+        testCallEmpty( adminSubject, "CALL dbms.removeUserFromRole('readSubject', '" + ARCHITECT + "')" );
         assertFalse( "Should not have role publisher",
                 ShiroAuthSubject.castOrFail( readSubject ).getSubject().hasRole( PUBLISHER ) );
         assertFalse( "Should not have role architect",
@@ -252,9 +251,9 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldDeleteUser() throws Exception
     {
-        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Craig', '1234', true)" );
+        testCallEmpty( adminSubject, "CALL dbms.createUser('Craig', '1234', true)" );
         assertNotNull( "User Craig should exist", manager.getUser( "Craig" ) );
-        testCallEmpty( db, adminSubject, "CALL dbms.deleteUser('Craig')" );
+        testCallEmpty( adminSubject, "CALL dbms.deleteUser('Craig')" );
         assertNull( "User Craig should not exist", manager.getUser( "Craig" ) );
     }
 
@@ -270,11 +269,11 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldNotAllowDeletingNonExistingUser() throws Exception
     {
-        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Craig', '1234', true)" );
+        testCallEmpty( adminSubject, "CALL dbms.createUser('Craig', '1234', true)" );
         assertNotNull( "User Craig should exist", manager.getUser( "Craig" ) );
-        testCallEmpty( db, adminSubject, "CALL dbms.deleteUser('Craig')" );
+        testCallEmpty( adminSubject, "CALL dbms.deleteUser('Craig')" );
         assertNull( "User Craig should not exist", manager.getUser( "Craig" ) );
-        testCallFail( db, adminSubject, "CALL dbms.deleteUser('Craig')", QueryExecutionException.class,
+        testCallFail( adminSubject, "CALL dbms.deleteUser('Craig')", QueryExecutionException.class,
                 "The user 'Craig' does not exist" );
     }
 
@@ -283,7 +282,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldSuspendUser() throws Exception
     {
-        testCallEmpty( db, adminSubject, "CALL dbms.suspendUser('readSubject')" );
+        testCallEmpty( adminSubject, "CALL dbms.suspendUser('readSubject')" );
         assertTrue( manager.getUser( "readSubject" ).hasFlag( FileUserRealm.IS_SUSPENDED ) );
     }
 
@@ -291,14 +290,14 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     public void shouldActivateUser() throws Exception
     {
         manager.suspendUser( "readSubject" );
-        testCallEmpty( db, adminSubject, "CALL dbms.activateUser('readSubject')" );
+        testCallEmpty( adminSubject, "CALL dbms.activateUser('readSubject')" );
         assertFalse( manager.getUser( "readSubject" ).hasFlag( FileUserRealm.IS_SUSPENDED ) );
     }
 
     @Test
     public void shouldFailOnNonAdminSuspend() throws Exception
     {
-        testCallFail( db, schemaSubject, "CALL dbms.suspendUser('readSubject')",
+        testCallFail( schemaSubject, "CALL dbms.suspendUser('readSubject')",
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
     }
 
@@ -306,7 +305,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     public void shouldFailOnNonAdminActivate() throws Exception
     {
         manager.suspendUser( "readSubject" );
-        testCallFail( db, schemaSubject, "CALL dbms.activateUser('readSubject')",
+        testCallFail( schemaSubject, "CALL dbms.activateUser('readSubject')",
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
     }
 
@@ -315,7 +314,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldReturnUsers() throws Exception
     {
-        testResult( db, adminSubject, "CALL dbms.listUsers() YIELD username",
+        testResult( adminSubject, "CALL dbms.listUsers() YIELD username",
                 r -> resultKeyIs( r, "username", "adminSubject", "readSubject", "schemaSubject",
                         "readWriteSubject", "noneSubject", "neo4j" ) );
     }
@@ -332,7 +331,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
                 "neo4j", listOf( ADMIN )
         );
         manager.addUserToRole( "readWriteSubject", READER );
-        testResult( db, adminSubject, "CALL dbms.listUsers()",
+        testResult( adminSubject, "CALL dbms.listUsers()",
                 r -> resultContainsMap( r, "username", "roles", expected ) );
     }
 
@@ -340,16 +339,16 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     public void shouldShowCurrentUser() throws Exception
     {
         manager.addUserToRole( "readWriteSubject", READER );
-        testResult( db, adminSubject, "CALL dbms.showCurrentUser()",
+        testResult( adminSubject, "CALL dbms.showCurrentUser()",
                 r -> resultContainsMap( r, "username", "roles", map( "adminSubject", listOf( ADMIN ) ) ) );
-        testResult( db, readSubject, "CALL dbms.showCurrentUser()",
+        testResult( readSubject, "CALL dbms.showCurrentUser()",
                 r -> resultContainsMap( r, "username", "roles", map( "readSubject", listOf( READER ) ) ) );
-        testResult( db, schemaSubject, "CALL dbms.showCurrentUser()",
+        testResult( schemaSubject, "CALL dbms.showCurrentUser()",
                 r -> resultContainsMap( r, "username", "roles", map( "schemaSubject", listOf( ARCHITECT ) ) ) );
-        testResult( db, writeSubject, "CALL dbms.showCurrentUser()",
+        testResult( writeSubject, "CALL dbms.showCurrentUser()",
                 r -> resultContainsMap( r, "username", "roles",
                         map( "readWriteSubject", listOf( READER, PUBLISHER ) ) ) );
-        testResult( db, noneSubject, "CALL dbms.showCurrentUser()",
+        testResult( noneSubject, "CALL dbms.showCurrentUser()",
                 r -> resultContainsMap( r, "username", "roles", map( "noneSubject", listOf() ) ) );
     }
 
@@ -365,7 +364,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldReturnRoles() throws Exception
     {
-        testResult( db, adminSubject, "CALL dbms.listRoles() YIELD role AS roles RETURN roles",
+        testResult( adminSubject, "CALL dbms.listRoles() YIELD role AS roles RETURN roles",
                 r -> resultKeyIs( r, "roles", ADMIN, ARCHITECT, PUBLISHER, READER, "empty" ) );
     }
 
@@ -379,7 +378,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
                 PUBLISHER, listOf( "readWriteSubject" ),
                 "empty", listOf()
         );
-        testResult( db, adminSubject, "CALL dbms.listRoles()",
+        testResult( adminSubject, "CALL dbms.listRoles()",
                 r -> resultContainsMap( r, "role", "users", expected ) );
     }
 
@@ -395,7 +394,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldListRolesForUser() throws Exception
     {
-        testResult( db, adminSubject, "CALL dbms.listRolesForUser('adminSubject') YIELD value as roles RETURN roles",
+        testResult( adminSubject, "CALL dbms.listRolesForUser('adminSubject') YIELD value as roles RETURN roles",
                 r -> resultKeyIs( r, "roles", ADMIN ) );
     }
 
@@ -411,21 +410,21 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldFailToListRolesForUnknownUser() throws Exception
     {
-        testCallFail( db, adminSubject, "CALL dbms.listRolesForUser('Henrik') YIELD value as roles RETURN roles",
+        testCallFail( adminSubject, "CALL dbms.listRolesForUser('Henrik') YIELD value as roles RETURN roles",
                 QueryExecutionException.class, "User Henrik does not exist." );
     }
 
     @Test
     public void shouldListNoRolesForUserWithNoRoles() throws Exception
     {
-        testCallEmpty( db, adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
-        testCallEmpty( db, adminSubject, "CALL dbms.listRolesForUser('Henrik') YIELD value as roles RETURN roles" );
+        testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
+        testCallEmpty( adminSubject, "CALL dbms.listRolesForUser('Henrik') YIELD value as roles RETURN roles" );
     }
 
     @Test
     public void shouldListUsersForRole() throws Exception
     {
-        testResult( db, adminSubject, "CALL dbms.listUsersForRole('admin') YIELD value as users RETURN users",
+        testResult( adminSubject, "CALL dbms.listUsersForRole('admin') YIELD value as users RETURN users",
                 r -> resultKeyIs( r, "users", adminSubject.name(), "neo4j" ) );
     }
 
@@ -441,13 +440,13 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldFailToListUsersForUnknownRole() throws Exception
     {
-        testCallFail( db, adminSubject, "CALL dbms.listUsersForRole('Foo') YIELD value as users RETURN users",
+        testCallFail( adminSubject, "CALL dbms.listUsersForRole('Foo') YIELD value as users RETURN users",
                 QueryExecutionException.class, "Role Foo does not exist." );
     }
 
     @Test
     public void shouldListNoUsersForRoleWithNoUsers() throws Exception
     {
-        testCallEmpty( db, adminSubject, "CALL dbms.listUsersForRole('empty') YIELD value as users RETURN users" );
+        testCallEmpty( adminSubject, "CALL dbms.listUsersForRole('empty') YIELD value as users RETURN users" );
     }
 }

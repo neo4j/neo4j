@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import org.apache.shiro.authc.AuthenticationException;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -120,103 +121,103 @@ public class AuthProcedureTestBase
 
     protected void testSuccessfulReadAction( AuthSubject subject, int count )
     {
-        testCallCount( db, subject, "MATCH (n) RETURN n", null, count );
+        testCallCount( subject, "MATCH (n) RETURN n", null, count );
     }
 
     protected void testFailReadAction( AuthSubject subject, int count )
     {
         // TODO: this should be permission denied instead
-        testCallFail( db, subject,
+        testCallFail( subject,
                 "MATCH (n) RETURN n",
                 AuthorizationViolationException.class, "Read operations are not allowed" );
     }
 
     protected void testSuccessfulWriteAction( AuthSubject subject )
     {
-        testCallEmpty( db, subject, "CREATE (:Node)" );
+        testCallEmpty( subject, "CREATE (:Node)" );
     }
 
     protected void testFailWriteAction( AuthSubject subject )
     {
         // TODO: this should be permission denied instead
-        testCallFail( db, subject,
+        testCallFail( subject,
                 "CREATE (:Node)",
                 AuthorizationViolationException.class, "Write operations are not allowed" );
     }
 
     protected void testSuccessfulSchemaAction( AuthSubject subject )
     {
-        testCallEmpty( db, subject, "CREATE INDEX ON :Node(number)" );
+        testCallEmpty( subject, "CREATE INDEX ON :Node(number)" );
     }
 
     protected void testFailSchema( AuthSubject subject )
     {
         // TODO: this should be permission denied instead
-        testCallFail( db, subject,
+        testCallFail( subject,
                 "CREATE INDEX ON :Node(number)",
                 AuthorizationViolationException.class, "Schema operations are not allowed" );
     }
 
     protected void testFailCreateUser( AuthSubject subject )
     {
-        testCallFail( db, subject, "CALL dbms.createUser('Craig', 'foo', false)", QueryExecutionException.class,
+        testCallFail( subject, "CALL dbms.createUser('Craig', 'foo', false)", QueryExecutionException.class,
                 AuthProcedures.PERMISSION_DENIED );
     }
 
     protected void testFailAddUserToRoleAction( AuthSubject subject )
     {
-        testCallFail( db, subject, "CALL dbms.addUserToRole('Craig', '" + PUBLISHER + "')",
+        testCallFail( subject, "CALL dbms.addUserToRole('Craig', '" + PUBLISHER + "')",
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
     }
 
     protected void testFailRemoveUserFromRoleAction( AuthSubject subject )
     {
-        testCallFail( db, subject, "CALL dbms.removeUserFromRole('Craig', '" + PUBLISHER + "')",
+        testCallFail( subject, "CALL dbms.removeUserFromRole('Craig', '" + PUBLISHER + "')",
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
     }
 
     protected void testFailDeleteUser( AuthSubject subject )
     {
-        testCallFail( db, subject, "CALL dbms.deleteUser('Craig')", QueryExecutionException.class,
+        testCallFail( subject, "CALL dbms.deleteUser('Craig')", QueryExecutionException.class,
                 AuthProcedures.PERMISSION_DENIED );
     }
 
     protected void testSuccessfulListUsersAction( AuthSubject subject, String[] users )
     {
-        testResult( db, subject, "CALL dbms.listUsers() YIELD username AS users RETURN users",
+        testResult( subject, "CALL dbms.listUsers() YIELD username AS users RETURN users",
                 r -> resultKeyIsArray( r, "users", users ) );
     }
 
     protected void testFailListUsers( AuthSubject subject, int count )
     {
-        testCallFail( db, subject,
+        testCallFail( subject,
                 "CALL dbms.listUsers() YIELD value AS users RETURN users",
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
     }
 
     protected void testSuccessfulListRolesAction( AuthSubject subject, String[] roles )
     {
-        testResult( db, subject, "CALL dbms.listRoles() YIELD role AS roles RETURN roles",
+        testResult( subject, "CALL dbms.listRoles() YIELD role AS roles RETURN roles",
                 r -> resultKeyIsArray( r, "roles", roles ) );
     }
 
     protected void testFailListRoles( AuthSubject subject )
     {
-        testCallFail( db, subject,
+        testCallFail( subject,
                 "CALL dbms.listRoles() YIELD value AS roles RETURN roles",
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
     }
 
     protected void testFailListUserRoles( AuthSubject subject, String username )
     {
-        testCallFail( db, subject,
+        testCallFail( subject,
                 "CALL dbms.listRolesForUser('" + username + "') YIELD value AS roles RETURN count(roles)",
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
     }
 
     protected void testFailListRoleUsers( AuthSubject subject, String roleName )
     {
-        testCallFail( db, subject,
+        testCallFail( subject,
                 "CALL dbms.listUsersForRole('" + roleName + "') YIELD value AS users RETURN count(users)",
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
     }
@@ -252,16 +253,15 @@ public class AuthProcedureTestBase
         } );
     }
 
-    protected static void testCall( GraphDatabaseAPI db, AuthSubject subject, String call,
-            Consumer<Map<String,Object>> consumer )
+    protected void testCall( AuthSubject subject, String call, Consumer<Map<String,Object>> consumer )
     {
-        testCall( db, subject, call, null, consumer );
+        testCall( subject, call, null, consumer );
     }
 
-    protected static void testCall( GraphDatabaseAPI db, AuthSubject subject, String call, Map<String,Object> params,
+    protected void testCall( AuthSubject subject, String call, Map<String,Object> params,
             Consumer<Map<String,Object>> consumer )
     {
-        testResult( db, subject, call, params, ( res ) -> {
+        testResult( subject, call, params, ( res ) -> {
             if ( res.hasNext() )
             {
                 Map<String,Object> row = res.next();
@@ -271,12 +271,12 @@ public class AuthProcedureTestBase
         } );
     }
 
-    protected static void testCallFail( GraphDatabaseAPI db, AuthSubject subject, String call,
+    protected void testCallFail( AuthSubject subject, String call,
             Class expectedExceptionClass, String partOfErrorMsg )
     {
         try
         {
-            testCallEmpty( db, subject, call, null );
+            testCallEmpty( subject, call, null );
             fail( "Expected exception to be thrown" );
         }
         catch ( Exception e )
@@ -286,20 +286,26 @@ public class AuthProcedureTestBase
         }
     }
 
-    protected static void testCallEmpty( GraphDatabaseAPI db, AuthSubject subject, String call )
+    protected void testUnAunthenticated( ShiroAuthSubject subject )
     {
-        testCallEmpty( db, subject, call, null );
+        //TODO: inprove me to be less gullible!
+        assert( subject.getSubject().isAuthenticated() );
     }
 
-    protected static void testCallEmpty( GraphDatabaseAPI db, AuthSubject subject, String call, Map<String,Object> params )
+    protected void testCallEmpty( AuthSubject subject, String call )
     {
-        testResult( db, subject, call, params, ( res ) -> assertFalse( "Expected no results", res.hasNext() ) );
+        testCallEmpty( subject, call, null );
     }
 
-    protected static void testCallCount( GraphDatabaseAPI db, AuthSubject subject, String call, Map<String,Object> params,
+    protected void testCallEmpty( AuthSubject subject, String call, Map<String,Object> params )
+    {
+        testResult( subject, call, params, ( res ) -> assertFalse( "Expected no results", res.hasNext() ) );
+    }
+
+    protected void testCallCount( AuthSubject subject, String call, Map<String,Object> params,
             final int count )
     {
-        testResult( db, subject, call, params, ( res ) -> {
+        testResult( subject, call, params, ( res ) -> {
             int left = count;
             while ( left > 0 )
             {
@@ -311,13 +317,13 @@ public class AuthProcedureTestBase
         } );
     }
 
-    protected static void testResult( GraphDatabaseAPI db, AuthSubject subject, String call,
+    protected void testResult( AuthSubject subject, String call,
             Consumer<Result> resultConsumer )
     {
-        testResult( db, subject, call, null, resultConsumer );
+        testResult( subject, call, null, resultConsumer );
     }
 
-    protected static void testResult( GraphDatabaseAPI db, AuthSubject subject, String call, Map<String,Object> params,
+    protected void testResult( AuthSubject subject, String call, Map<String,Object> params,
             Consumer<Result> resultConsumer )
     {
         try ( Transaction tx = db.beginTransaction( KernelTransaction.Type.explicit, subject ) )
