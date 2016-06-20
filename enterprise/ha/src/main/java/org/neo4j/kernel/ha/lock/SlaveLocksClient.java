@@ -142,15 +142,6 @@ class SlaveLocksClient extends Locks.ClientAdapter
             AcquireLockTimeoutException
     {
         Map<Long, AtomicInteger> lockMap = getLockMap( exclusiveLocks, resourceType );
-
-//        for ( long resourceId : resourceIds )
-//        {
-//            AtomicInteger preExistingLock = lockMap.get( resourceId );
-//            if ( preExistingLock != null )
-//            {
-//                // We already hold this lock, just increment the local reference count
-//                preExistingLock.incrementAndGet();
-//            }
         long[] newResourceIds = onlyFirstTimeLocks( lockMap, resourceIds );
         if ( newResourceIds.length > 0 )
         {

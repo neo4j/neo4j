@@ -52,8 +52,15 @@ public class DeferringLocksTest
         ResourceType[] types = ResourceTypes.values();
         for ( int i = 0; i < 10_000; i++ )
         {
-            Resource resource = new Resource( random.among( types ), abs( random.nextLong() ), true );
-            client.acquireExclusive( resource.resourceType, resource.resourceId );
+            Resource resource = new Resource( random.among( types ), abs( random.nextLong() ), random.nextBoolean() );
+            if ( resource.exclusive )
+            {
+                client.acquireExclusive( resource.resourceType, resource.resourceId );
+            }
+            else
+            {
+                client.acquireShared( resource.resourceType, resource.resourceId );
+            }
             expected.add( resource );
         }
         actualClient.assertRegisteredLocks( new HashSet<Resource>() );
