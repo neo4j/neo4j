@@ -83,6 +83,7 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.util.collection.ArrayCollection;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
@@ -95,6 +96,9 @@ import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
  */
 public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder
 {
+    private static final boolean CHECK_TERMINATION_ON_CLOSE =
+            FeatureToggles.flag( KernelTransactionImplementation.class, "check_termination_on_close", true );
+
     /*
      * IMPORTANT:
      * This class is pooled and re-used. If you add *any* state to it, you *must* make sure that the #initialize()
@@ -455,10 +459,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             if ( failure || !success || terminated )
             {
                 rollback();
-//                if ( terminated )
-//                {
-//                    throwCorrectExceptionBasedOnTerminationReason( terminationReason );
-//                }
+                if ( CHECK_TERMINATION_ON_CLOSE && terminated )
+                {
+                    TransactionTermination.throwCorrectExceptionBasedOnTerminationReason( terminationReason );
+                }
                 if ( success )
                 {
                     // Success was called, but also failure which means that the client code using this
