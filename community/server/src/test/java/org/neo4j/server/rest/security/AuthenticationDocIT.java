@@ -328,7 +328,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         server.start();
     }
 
-    private String challengeResponse( String username, String password )
+    protected String challengeResponse( String username, String password )
     {
         return "Basic " + base64( username + ":" + password );
     }
