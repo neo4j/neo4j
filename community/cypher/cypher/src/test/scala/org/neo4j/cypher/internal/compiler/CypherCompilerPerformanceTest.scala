@@ -29,7 +29,7 @@ import scala.concurrent.duration._
 
 class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
 
-  val NUMBER_OF_RUNS = 5
+  val NUMBER_OF_RUNS = 10
 
   val warmup =
     """MATCH (n:Person)-[:KNOWS]->(c:City)
@@ -97,7 +97,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
 
   test("plans are built fast enough") {
     val queries = List(foo1, foo2, socnet1, socnet9, qmul1)
-    plan(10)(warmup)
+    plan(NUMBER_OF_RUNS)(warmup)
 
     queries.foreach(assertIsPlannedTimely)
   }
@@ -106,27 +106,26 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
     val result = plan(NUMBER_OF_RUNS)(query)
 
     withClue("Planning of the first query took too long:\n" + result.description) {
-      result.prepareAndPlanFirstNanos shouldBe <(1.second.toNanos)
+      result.prepareAndPlanFirstNanos shouldBe <(3.second.toNanos)
     }
 
-    withClue("Avg planning took too long:\n" + result.description) {
-      result.prepareAndPlanAvgNanos shouldBe <(1.second.toNanos)
+    withClue("Median planning took too long:\n" + result.description) {
+      result.prepareAndPlanMedianNanos shouldBe <(1.5.second.toNanos)
     }
   }
 
   def plan(times: Int)(query: String): PlanningResult = {
-    var (prepareTotal, planTotal) = (0L, 0L)
-    val (prepareFirst, planFirst) = plan(query)
+    val prepareAndPlanTimes = (1 to times).map(i => plan(query)).toArray
 
-    var count = 2
-    while (count <= times) {
-      val (prepareTime, planTime) = plan(query)
-      prepareTotal = prepareTotal + prepareTime
-      planTotal = planTotal + planTime
-      count += 1
-    }
-    val prepareAvg = (prepareTotal + prepareFirst) / times
-    val planAvg = (planTotal + planFirst) / times
+    val totalTimes = prepareAndPlanTimes.map(t => t._1 + t._2)
+    val prepareTimes = prepareAndPlanTimes.map(_._1)
+    val planTimes = prepareAndPlanTimes.map(_._2)
+
+    val (prepareFirst, planFirst) = prepareAndPlanTimes(0)
+
+    val totalMedian = median(totalTimes)
+    val prepareMedian = median(prepareTimes)
+    val planMedian = median(planTimes)
 
     val description =
       s"""
@@ -135,15 +134,30 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
          |  * First plan time: ${ms(planFirst)}
          |  * First total time: ${ms(prepareFirst + planFirst)}
          |  * Number of runs: $times
-         |  * Average prepare time: ${ms(prepareAvg)} (excluding first ${ms(prepareTotal / (times - 1))})
-         |  * Average planning time: ${ms(planAvg)} (excluding first ${ms(planTotal / (times - 1))})
-         |  * Average total time: ${ms(prepareAvg + planAvg)} (excluding first ${ms((prepareTotal + planTotal) / (times - 1))})\n
+         |  * Median prepare time: ${ms(prepareMedian)}
+         |  * Median planning time: ${ms(planMedian)}
+         |  * Median total time: ${ms(totalMedian)}
+         |
+         |  * Prepare times: ${ms(prepareTimes)}
+         |  * Plan times: ${ms(planTimes)}
+         |  * Total times: ${ms(totalTimes)}
          """.stripMargin
 
-    PlanningResult(description, prepareFirst + planFirst, prepareAvg + planAvg)
+    PlanningResult(description, totalTimes(0), totalMedian)
   }
 
-  def ms(valueNanos: Long) = valueNanos.nanos.toMillis + "ms"
+  def ms(valueNanos: Long): String = valueNanos.nanos.toMillis + "ms"
+
+  def ms(valuesNanos: Seq[Long]): String = valuesNanos.map(ms).mkString(", ")
+
+  def median(values: Seq[Long]): Long = {
+    val sorted = values.sorted
+    val mid = sorted.size / 2
+    if (sorted.size % 2 != 0)
+      sorted(mid)
+    else
+      (sorted(mid - 1) + sorted(mid)) / 2
+  }
 
   def indent(text: String, indent: String = "    ") =
     indent + text.replace("\n", s"\n$indent")
@@ -194,6 +208,6 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
     def info(message: String){}
   }
 
-  case class PlanningResult(description: String, prepareAndPlanFirstNanos: Long, prepareAndPlanAvgNanos: Long)
+  case class PlanningResult(description: String, prepareAndPlanFirstNanos: Long, prepareAndPlanMedianNanos: Long)
 
 }
