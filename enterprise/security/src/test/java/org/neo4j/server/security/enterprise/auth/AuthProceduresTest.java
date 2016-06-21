@@ -84,11 +84,11 @@ public class AuthProceduresTest
         manager.newUser( "schemaSubject", "abc", false );
         manager.newUser( "readWriteSubject", "abc", false );
         manager.newUser( "readSubject", "123", false );
-        // Currently admin role is created by default
+        // Currently admin, architect, publisher and reader roles are created by default
         manager.addUserToRole( "adminSubject", ADMIN );
-        manager.newRole( ARCHITECT, "schemaSubject" );
-        manager.newRole( PUBLISHER, "readWriteSubject" );
-        manager.newRole( READER, "readSubject" );
+        manager.addUserToRole( "schemaSubject", ARCHITECT );
+        manager.addUserToRole( "readWriteSubject", PUBLISHER );
+        manager.addUserToRole( "readSubject", READER );
         manager.newRole( "empty" );
         noneSubject = manager.login( authToken( "noneSubject", "abc" ) );
         readSubject = manager.login( authToken( "readSubject", "123" ) );
