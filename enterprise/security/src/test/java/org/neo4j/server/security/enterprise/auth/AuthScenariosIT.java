@@ -23,11 +23,9 @@ import org.apache.shiro.authc.AuthenticationException;
 import org.junit.Test;
 
 import org.neo4j.graphdb.QueryExecutionException;
-import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.PUBLISHER;
@@ -43,7 +41,7 @@ import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.R
 
     -- johan teleman
  */
-public class AuthScenariosIT extends AuthProcedureTestBase
+abstract class AuthScenariosIT extends NeoShallowEmbeddedTestBase
 {
     //---------- User creation -----------
 
@@ -59,17 +57,17 @@ public class AuthScenariosIT extends AuthProcedureTestBase
     Henrik logs off
     */
     @Test
-    public void userCreation1() throws Exception
+    public void userCreation1() throws Throwable
     {
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', true)" );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
-        AuthSubject subject = manager.login( authToken( "Henrik", "foo" ) );
+        EnterpriseAuthSubject subject = neo.login( "Henrik", "foo" );
         assertEquals( AuthenticationResult.FAILURE, subject.getAuthenticationResult() );
-        subject = manager.login( authToken( "Henrik", "bar" ) );
+        subject = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.PASSWORD_CHANGE_REQUIRED, subject.getAuthenticationResult() );
         testFailRead( subject, 3 );
         testCallEmpty( subject, "CALL dbms.changePassword( 'foo' )" );
-        subject = manager.login( authToken( "Henrik", "foo" ) );
+        subject = neo.login( "Henrik", "foo" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         testFailWrite( subject );
         testSuccessfulRead( subject, 3 );
@@ -85,13 +83,13 @@ public class AuthScenariosIT extends AuthProcedureTestBase
     Henrik logs off
     */
     @Test
-    public void userCreation2() throws Exception
+    public void userCreation2() throws Throwable
     {
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', true)" );
-        AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
+        EnterpriseAuthSubject subject = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.PASSWORD_CHANGE_REQUIRED, subject.getAuthenticationResult() );
         testCallEmpty( subject, "CALL dbms.changePassword( 'foo' )" );
-        subject = manager.login( authToken( "Henrik", "foo" ) );
+        subject = neo.login( "Henrik", "foo" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         testFailRead( subject, 3 );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
@@ -110,10 +108,10 @@ public class AuthScenariosIT extends AuthProcedureTestBase
     Henrik logs off
     */
     @Test
-    public void userCreation3() throws Exception
+    public void userCreation3() throws Throwable
     {
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
-        AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
+        EnterpriseAuthSubject subject = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         testFailRead( subject, 3 );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
@@ -137,10 +135,10 @@ public class AuthScenariosIT extends AuthProcedureTestBase
     Henrik logs off
     */
     @Test
-    public void userCreation4() throws Exception
+    public void userCreation4() throws Throwable
     {
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
-        AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
+        EnterpriseAuthSubject subject = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         testFailRead( subject, 3 );
         testFailWrite( subject );
@@ -161,11 +159,11 @@ public class AuthScenariosIT extends AuthProcedureTestBase
     Henrik logs off
      */
     @Test
-    public void userCreation5() throws Exception
+    public void userCreation5() throws Throwable
     {
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
-        AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
+        EnterpriseAuthSubject subject = neo.login( "Henrik", "bar" );
         testFailCreateUser( subject );
     }
 
@@ -177,11 +175,11 @@ public class AuthScenariosIT extends AuthProcedureTestBase
     Henrik logs in with correct password → fail
     */
     @Test
-    public void userDeletion1() throws Exception
+    public void userDeletion1() throws Throwable
     {
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         testCallEmpty( adminSubject, "CALL dbms.deleteUser('Henrik')" );
-        AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
+        EnterpriseAuthSubject subject = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.FAILURE, subject.getAuthenticationResult() );
     }
 
@@ -191,7 +189,7 @@ public class AuthScenariosIT extends AuthProcedureTestBase
     Admin adds user Henrik to role Publisher → fail
     */
     @Test
-    public void userDeletion2() throws Exception
+    public void userDeletion2() throws Throwable
     {
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         testCallEmpty( adminSubject, "CALL dbms.deleteUser('Henrik')" );
@@ -206,7 +204,7 @@ public class AuthScenariosIT extends AuthProcedureTestBase
     Admin removes user Henrik from role Publisher → fail
     */
     @Test
-    public void userDeletion3() throws Exception
+    public void userDeletion3() throws Throwable
     {
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
@@ -223,11 +221,11 @@ public class AuthScenariosIT extends AuthProcedureTestBase
     Henrik starts transaction with read query → fail
     */
     @Test
-    public void userDeletion4() throws Exception
+    public void userDeletion4() throws Throwable
     {
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
-        AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
+        EnterpriseAuthSubject subject = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         testCallEmpty( adminSubject, "CALL dbms.deleteUser('Henrik')" );
         testFailRead( subject, 3 );
@@ -247,11 +245,11 @@ public class AuthScenariosIT extends AuthProcedureTestBase
     Henrik starts transaction with read query → ok
     */
     @Test
-    public void roleManagement1() throws Exception
+    public void roleManagement1() throws Throwable
     {
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
-        AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
+        EnterpriseAuthSubject subject = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         testSuccessfulWrite( subject );
         testCallEmpty( adminSubject, "CALL dbms.removeUserFromRole('Henrik', '" + PUBLISHER + "')" );
@@ -270,10 +268,10 @@ public class AuthScenariosIT extends AuthProcedureTestBase
     Henrik starts transaction with write query → ok
     */
     @Test
-    public void roleManagement2() throws Exception
+    public void roleManagement2() throws Throwable
     {
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
-        AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
+        EnterpriseAuthSubject subject = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         testFailWrite( subject );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
@@ -293,11 +291,11 @@ public class AuthScenariosIT extends AuthProcedureTestBase
     Henrik starts transaction with read query → ok
     */
     @Test
-    public void roleManagement3() throws Exception
+    public void roleManagement3() throws Throwable
     {
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
-        AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
+        EnterpriseAuthSubject subject = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
         testSuccessfulWrite( subject );
@@ -319,11 +317,11 @@ public class AuthScenariosIT extends AuthProcedureTestBase
     Henrik starts transaction with read query → permission denied
      */
     @Test
-    public void roleManagement4() throws Exception
+    public void roleManagement4() throws Throwable
     {
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
-        AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
+        EnterpriseAuthSubject subject = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
         testSuccessfulWrite( subject );
@@ -344,14 +342,14 @@ public class AuthScenariosIT extends AuthProcedureTestBase
     User Henrik logs in with correct password → fail
      */
     @Test
-    public void userSuspension1() throws Exception
+    public void userSuspension1() throws Throwable
     {
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
-        AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
+        EnterpriseAuthSubject subject = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         subject.logout();
         testCallEmpty( adminSubject, "CALL dbms.suspendUser('Henrik')" );
-        subject = manager.login( authToken( "Henrik", "bar" ) );
+        subject = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.FAILURE, subject.getAuthenticationResult() );
     }
 
@@ -365,18 +363,17 @@ public class AuthScenariosIT extends AuthProcedureTestBase
     Henrik logs in with correct password → fail
      */
     @Test
-    public void userSuspension2() throws Exception
+    public void userSuspension2() throws Throwable
     {
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
-        AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
+        EnterpriseAuthSubject subject = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         testSuccessfulRead( subject, 3 );
         testCallEmpty( adminSubject, "CALL dbms.suspendUser('Henrik')" );
-        testFailRead( subject, 3 );
+        testUnAuthenticated( subject );
 
-        // TODO: Check that user session is terminated instead of checking failed read
-        subject = manager.login( authToken( "Henrik", "bar" ) );
+        subject = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.FAILURE, subject.getAuthenticationResult() );
     }
 
@@ -390,14 +387,14 @@ public class AuthScenariosIT extends AuthProcedureTestBase
     Henrik logs in with correct password → ok
      */
     @Test
-    public void userActivation1() throws Exception
+    public void userActivation1() throws Throwable
     {
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         testCallEmpty( adminSubject, "CALL dbms.suspendUser('Henrik')" );
-        AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
+        EnterpriseAuthSubject subject = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.FAILURE, subject.getAuthenticationResult() );
         testCallEmpty( adminSubject, "CALL dbms.activateUser('Henrik')" );
-        subject = manager.login( authToken( "Henrik", "bar" ) );
+        subject = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
     }
 
@@ -413,12 +410,12 @@ public class AuthScenariosIT extends AuthProcedureTestBase
     Henrik lists all users → ok
     */
     @Test
-    public void userListing() throws Exception
+    public void userListing() throws Throwable
     {
         testSuccessfulListUsers( adminSubject, initialUsers );
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         testSuccessfulListUsers( adminSubject, with( initialUsers, "Henrik" ) );
-        AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
+        EnterpriseAuthSubject subject = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         testFailListUsers( subject, 6 );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + ADMIN + "')" );
@@ -434,10 +431,10 @@ public class AuthScenariosIT extends AuthProcedureTestBase
     Henrik lists all roles → ok
     */
     @Test
-    public void rolesListing() throws Exception
+    public void rolesListing() throws Throwable
     {
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
-        AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
+        EnterpriseAuthSubject subject = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         testFailListRoles( subject );
         testSuccessfulListRoles( adminSubject, initialRoles );
@@ -456,16 +453,16 @@ public class AuthScenariosIT extends AuthProcedureTestBase
     Henrik lists all roles for user Henrik → ok
     */
     @Test
-    public void listingUserRoles() throws Exception
+    public void listingUserRoles() throws Throwable
     {
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         testCallEmpty( adminSubject, "CALL dbms.createUser('Craig', 'foo', false)" );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Craig', '" + PUBLISHER + "')" );
-        AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
+        EnterpriseAuthSubject subject = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
 
         testFailListUserRoles( subject, "Craig" );
-        testResult( adminSubject, "CALL dbms.listRolesForUser('Craig') YIELD value as roles RETURN roles",
+        executeQuery( adminSubject, "CALL dbms.listRolesForUser('Craig') YIELD value as roles RETURN roles",
                 r -> assertKeyIs( r, "roles", PUBLISHER ) );
 
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
@@ -484,16 +481,16 @@ public class AuthScenariosIT extends AuthProcedureTestBase
     Admin lists all users for role Publisher → ok
     */
     @Test
-    public void listingRoleUsers() throws Exception
+    public void listingRoleUsers() throws Throwable
     {
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         testCallEmpty( adminSubject, "CALL dbms.createUser('Craig', 'foo', false)" );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Craig', '" + PUBLISHER + "')" );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
-        AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
+        EnterpriseAuthSubject subject = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         testFailListRoleUsers( subject, PUBLISHER );
-        testResult( adminSubject,
+        executeQuery( adminSubject,
                 "CALL dbms.listUsersForRole('" + PUBLISHER + "') YIELD value as users RETURN users",
                 r -> assertKeyIs( r, "users", "Henrik", "Craig", writeSubject.name() ) );
     }
@@ -514,20 +511,20 @@ public class AuthScenariosIT extends AuthProcedureTestBase
     Henrik logs out
      */
     @Test
-    public void changeUserPassword1() throws Exception
+    public void changeUserPassword1() throws Throwable
     {
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'abc', false)" );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
-        AuthSubject subject = manager.login( authToken( "Henrik", "abc" ) );
+        EnterpriseAuthSubject subject = neo.login( "Henrik", "abc" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         testSuccessfulRead( subject, 3 );
         testCallEmpty( subject, "CALL dbms.changeUserPassword('Henrik', '123')" );
         //TODO: uncomment the next line and make the test pass
         //testSuccessfulRead( subject, 3 );
         subject.logout();
-        subject = manager.login( authToken( "Henrik", "abc" ) );
+        subject = neo.login( "Henrik", "abc" );
         assertEquals( AuthenticationResult.FAILURE, subject.getAuthenticationResult() );
-        subject = manager.login( authToken( "Henrik", "123" ) );
+        subject = neo.login( "Henrik", "123" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         testSuccessfulRead( subject, 3 );
     }
@@ -545,18 +542,18 @@ public class AuthScenariosIT extends AuthProcedureTestBase
     Henrik logs out
      */
     @Test
-    public void changeUserPassword2() throws Exception
+    public void changeUserPassword2() throws Throwable
     {
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'abc', false)" );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
-        AuthSubject subject = manager.login( authToken( "Henrik", "abc" ) );
+        EnterpriseAuthSubject subject = neo.login( "Henrik", "abc" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         testSuccessfulRead( subject, 3 );
         testCallEmpty( adminSubject, "CALL dbms.changeUserPassword('Henrik', '123')" );
         subject.logout();
-        subject = manager.login( authToken( "Henrik", "abc" ) );
+        subject = neo.login( "Henrik", "abc" );
         assertEquals( AuthenticationResult.FAILURE, subject.getAuthenticationResult() );
-        subject = manager.login( authToken( "Henrik", "123" ) );
+        subject = neo.login( "Henrik", "123" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         testSuccessfulRead( subject, 3 );
     }
@@ -570,12 +567,12 @@ public class AuthScenariosIT extends AuthProcedureTestBase
     Henrik changes Craig’s password to 123 → fail
      */
     @Test
-    public void changeUserPassword3() throws Exception
+    public void changeUserPassword3() throws Throwable
     {
         testCallEmpty( adminSubject, "CALL dbms.createUser('Craig', 'abc', false)" );
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'abc', false)" );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
-        AuthSubject subject = manager.login( authToken( "Henrik", "abc" ) );
+        EnterpriseAuthSubject subject = neo.login( "Henrik", "abc" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         testSuccessfulRead( subject, 3 );
         testCallFail( subject, "CALL dbms.changeUserPassword('Craig', '123')",

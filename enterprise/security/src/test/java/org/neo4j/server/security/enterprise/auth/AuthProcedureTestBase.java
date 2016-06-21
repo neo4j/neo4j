@@ -24,7 +24,6 @@ import org.junit.Assert;
 import org.junit.Before;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -33,17 +32,8 @@ import java.util.stream.Stream;
 
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.server.security.auth.BasicPasswordPolicy;
-import org.neo4j.server.security.auth.InMemoryUserRepository;
-import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
-import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
-import static java.time.Clock.systemUTC;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -51,67 +41,63 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.PUBLISHER;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READER;
 
-public class AuthProcedureTestBase
+abstract class AuthProcedureTestBase<S>
 {
-    protected EnterpriseAuthSubject adminSubject;
-    protected EnterpriseAuthSubject schemaSubject;
-    protected EnterpriseAuthSubject writeSubject;
-    protected EnterpriseAuthSubject readSubject;
-    protected EnterpriseAuthSubject pwdSubject;
-    protected EnterpriseAuthSubject noneSubject;
+    final String EMPTY_ROLE = "empty";
 
-    protected String[] initialUsers = { "adminSubject", "readSubject", "schemaSubject",
+    S adminSubject;
+    S schemaSubject;
+    S writeSubject;
+    S readSubject;
+    S pwdSubject;
+    S noneSubject;
+
+    String[] initialUsers = { "adminSubject", "readSubject", "schemaSubject",
         "readWriteSubject", "pwdSubject", "noneSubject", "neo4j" };
-    protected String[] initialRoles = { "admin", "architect", "publisher", "reader", "empty" };
+    String[] initialRoles = { ADMIN, ARCHITECT, PUBLISHER, READER, EMPTY_ROLE };
 
-    protected GraphDatabaseAPI db;
-    protected MultiRealmAuthManager manager;
-    protected InternalFlatFileRealm internalRealm;
     protected EnterpriseUserManager userManager;
+
+    protected NeoInteractionLevel<S> neo;
 
     @Before
     public void setUp() throws Throwable
     {
-        db = (GraphDatabaseAPI) new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase();
-        internalRealm = new InternalFlatFileRealm( new InMemoryUserRepository(), new InMemoryRoleRepository(),
-                new BasicPasswordPolicy(), new RateLimitedAuthenticationStrategy( systemUTC(), 3 ) );
-        manager = new MultiRealmAuthManager( internalRealm, Collections.singletonList( internalRealm ) );
-        manager.init();
-        manager.start();
-        userManager = manager.getUserManager();
+        neo = setUpNeoServer();
+        userManager = neo.getManager();
+
         userManager.newUser( "noneSubject", "abc", false );
         userManager.newUser( "pwdSubject", "abc", true );
         userManager.newUser( "adminSubject", "abc", false );
         userManager.newUser( "schemaSubject", "abc", false );
         userManager.newUser( "readWriteSubject", "abc", false );
         userManager.newUser( "readSubject", "123", false );
-        // Currently admin, architect, publisher and reader roles are created by default
+        // Currently admin role is created by default
         userManager.addUserToRole( "adminSubject", ADMIN );
         userManager.addUserToRole( "schemaSubject", ARCHITECT );
         userManager.addUserToRole( "readWriteSubject", PUBLISHER );
         userManager.addUserToRole( "readSubject", READER );
-        userManager.newRole( "empty" );
-        noneSubject = manager.login( authToken( "noneSubject", "abc" ) );
-        pwdSubject = manager.login( authToken( "pwdSubject", "abc" ) );
-        readSubject = manager.login( authToken( "readSubject", "123" ) );
-        writeSubject = manager.login( authToken( "readWriteSubject", "abc" ) );
-        schemaSubject = manager.login( authToken( "schemaSubject", "abc" ) );
-        adminSubject = manager.login( authToken( "adminSubject", "abc" ) );
-        db.execute( "UNWIND range(0,2) AS number CREATE (:Node {number:number})" );
+        userManager.newRole( EMPTY_ROLE );
+        noneSubject = neo.login( "noneSubject", "abc" );
+        pwdSubject = neo.login( "pwdSubject", "abc" );
+        readSubject = neo.login( "readSubject", "123" );
+        writeSubject = neo.login( "readWriteSubject", "abc" );
+        schemaSubject = neo.login( "schemaSubject", "abc" );
+        adminSubject = neo.login( "adminSubject", "abc" );
+        executeQuery( writeSubject, "UNWIND range(0,2) AS number CREATE (:Node {number:number})" );
     }
+
+    abstract NeoInteractionLevel<S> setUpNeoServer() throws Throwable;
 
     @After
     public void tearDown() throws Throwable
     {
-        db.shutdown();
-        manager.stop();
-        manager.shutdown();
+        neo.tearDown();
     }
 
     protected String[] with( String[] strs, String... moreStr )
@@ -126,12 +112,12 @@ public class AuthProcedureTestBase
 
     //------------- Helper functions---------------
 
-    protected void testSuccessfulRead( AuthSubject subject, int count )
+    void testSuccessfulRead( S subject, int count )
     {
         testCallCount( subject, "MATCH (n) RETURN n", null, count );
     }
 
-    protected void testFailRead( AuthSubject subject, int count )
+    void testFailRead( S subject, int count )
     {
         // TODO: this should be permission denied instead
         testCallFail( subject,
@@ -139,12 +125,12 @@ public class AuthProcedureTestBase
                 AuthorizationViolationException.class, "Read operations are not allowed" );
     }
 
-    protected void testSuccessfulWrite( AuthSubject subject )
+    void testSuccessfulWrite( S subject )
     {
         testCallEmpty( subject, "CREATE (:Node)" );
     }
 
-    protected void testFailWrite( AuthSubject subject )
+    void testFailWrite( S subject )
     {
         // TODO: this should be permission denied instead
         testCallFail( subject,
@@ -152,12 +138,12 @@ public class AuthProcedureTestBase
                 AuthorizationViolationException.class, "Write operations are not allowed" );
     }
 
-    protected void testSuccessfulSchema( AuthSubject subject )
+    void testSuccessfulSchema( S subject )
     {
         testCallEmpty( subject, "CREATE INDEX ON :Node(number)" );
     }
 
-    protected void testFailSchema( AuthSubject subject )
+    void testFailSchema( S subject )
     {
         // TODO: this should be permission denied instead
         testCallFail( subject,
@@ -165,7 +151,7 @@ public class AuthProcedureTestBase
                 AuthorizationViolationException.class, "Schema operations are not allowed" );
     }
 
-    protected void testFailCreateUser( AuthSubject subject )
+    void testFailCreateUser( S subject )
     {
         testCallFail( subject, "CALL dbms.createUser('Craig', 'foo', false)", QueryExecutionException.class,
                 AuthProcedures.PERMISSION_DENIED );
@@ -175,19 +161,19 @@ public class AuthProcedureTestBase
                 AuthProcedures.PERMISSION_DENIED );
     }
 
-    protected void testFailAddUserToRole( AuthSubject subject )
+    void testFailAddUserToRole( S subject )
     {
         testCallFail( subject, "CALL dbms.addUserToRole('Craig', '" + PUBLISHER + "')",
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
     }
 
-    protected void testFailRemoveUserFromRole( AuthSubject subject )
+    void testFailRemoveUserFromRole( S subject )
     {
         testCallFail( subject, "CALL dbms.removeUserFromRole('Craig', '" + PUBLISHER + "')",
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
     }
 
-    protected void testFailDeleteUser( AuthSubject subject )
+    void testFailDeleteUser( S subject )
     {
         testCallFail( subject, "CALL dbms.deleteUser('Craig')", QueryExecutionException.class,
                 AuthProcedures.PERMISSION_DENIED );
@@ -195,64 +181,64 @@ public class AuthProcedureTestBase
                 AuthProcedures.PERMISSION_DENIED );
     }
 
-    protected void testSuccessfulListUsers( AuthSubject subject, String[] users )
+    void testSuccessfulListUsers( S subject, String[] users )
     {
-        testResult( subject, "CALL dbms.listUsers() YIELD username",
-                r -> assertKeyIsArray( r, "username", users ) );
+        executeQuery( subject, "CALL dbms.listUsers() YIELD value AS users RETURN users",
+                r -> assertKeyIsArray( r, "users", users ) );
     }
 
-    protected void testFailListUsers( AuthSubject subject, int count )
+    void testFailListUsers( S subject, int count )
     {
         testCallFail( subject,
                 "CALL dbms.listUsers() YIELD username",
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
     }
 
-    protected void testSuccessfulListRoles( AuthSubject subject, String[] roles )
+    void testSuccessfulListRoles( S subject, String[] roles )
     {
-        testResult( subject, "CALL dbms.listRoles() YIELD role",
-                r -> assertKeyIsArray( r, "role", roles ) );
+        executeQuery( subject, "CALL dbms.listRoles() YIELD value AS roles RETURN roles",
+                r -> assertKeyIsArray( r, "roles", roles ) );
     }
 
-    protected void testFailListRoles( AuthSubject subject )
+    void testFailListRoles( S subject )
     {
         testCallFail( subject,
                 "CALL dbms.listRoles() YIELD role",
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
     }
 
-    protected void testFailListUserRoles( AuthSubject subject, String username )
+    void testFailListUserRoles( S subject, String username )
     {
         testCallFail( subject,
                 "CALL dbms.listRolesForUser('" + username + "') YIELD value AS roles RETURN count(roles)",
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
     }
 
-    protected void testFailListRoleUsers( AuthSubject subject, String roleName )
+    void testFailListRoleUsers( S subject, String roleName )
     {
         testCallFail( subject,
                 "CALL dbms.listUsersForRole('" + roleName + "') YIELD value AS users RETURN count(users)",
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
     }
 
-    protected List<Object> getObjectsAsList( Result r, String key )
+    List<Object> getObjectsAsList( Result r, String key )
     {
         return r.stream().map( s -> s.get( key ) ).collect( Collectors.toList() );
     }
 
-    protected void assertKeyIs( Result r, String key, String... items )
+    void assertKeyIs( Result r, String key, String... items )
     {
         assertKeyIsArray( r, key, items );
     }
 
-    protected void assertKeyIsArray( Result r, String key, String[] items )
+    void assertKeyIsArray( Result r, String key, String[] items )
     {
         List<Object> results = getObjectsAsList( r, key );
         Assert.assertThat( results, containsInAnyOrder( items ) );
         assertEquals( Arrays.asList( items ).size(), results.size() );
     }
 
-    protected void resultContainsMap( Result r, String keyKey, String valueKey, Map<String,Object> expected )
+    protected void assertKeyIsMap( Result r, String keyKey, String valueKey, Map<String,Object> expected )
     {
         r.stream().forEach( s -> {
             String key = (String) s.get( keyKey );
@@ -266,25 +252,8 @@ public class AuthProcedureTestBase
         } );
     }
 
-    protected void testCall( AuthSubject subject, String call, Consumer<Map<String,Object>> consumer )
-    {
-        testCall( subject, call, null, consumer );
-    }
 
-    protected void testCall( AuthSubject subject, String call, Map<String,Object> params,
-            Consumer<Map<String,Object>> consumer )
-    {
-        testResult( subject, call, params, ( res ) -> {
-            if ( res.hasNext() )
-            {
-                Map<String,Object> row = res.next();
-                consumer.accept( row );
-            }
-            assertFalse( res.hasNext() );
-        } );
-    }
-
-    protected void testCallFail( AuthSubject subject, String call,
+    void testCallFail( S subject, String call,
             Class expectedExceptionClass, String partOfErrorMsg )
     {
         try
@@ -299,14 +268,12 @@ public class AuthProcedureTestBase
         }
     }
 
-    protected void testUnAunthenticated( AuthSubject subject )
+    void testUnAuthenticated( S subject )
     {
-        //TODO: improve me to be less gullible!
-        assertTrue( subject instanceof EnterpriseAuthSubject );
-        assertFalse( ((EnterpriseAuthSubject) subject).getShiroSubject().isAuthenticated() );
+        assertFalse( neo.isAuthenticated( subject ) );
     }
 
-    protected void testUnAunthenticated( EnterpriseAuthSubject subject, String call )
+    protected void testUnAuthenticated( S subject, String call )
     {
         //TODO: OMG improve thrown exception
         try
@@ -320,20 +287,20 @@ public class AuthProcedureTestBase
         }
     }
 
-    protected void testCallEmpty( AuthSubject subject, String call )
+    void testCallEmpty( S subject, String call )
     {
         testCallEmpty( subject, call, null );
     }
 
-    protected void testCallEmpty( AuthSubject subject, String call, Map<String,Object> params )
+    void testCallEmpty( S subject, String call, Map<String,Object> params )
     {
-        testResult( subject, call, params, ( res ) -> assertFalse( "Expected no results", res.hasNext() ) );
+        neo.executeQuery( subject, call, params, ( res ) -> assertFalse( "Expected no results", res.hasNext() ) );
     }
 
-    protected void testCallCount( AuthSubject subject, String call, Map<String,Object> params,
+    void testCallCount( S subject, String call, Map<String,Object> params,
             final int count )
     {
-        testResult( subject, call, params, ( res ) -> {
+        neo.executeQuery( subject, call, params, ( res ) -> {
             int left = count;
             while ( left > 0 )
             {
@@ -345,20 +312,13 @@ public class AuthProcedureTestBase
         } );
     }
 
-    protected void testResult( AuthSubject subject, String call,
-            Consumer<Result> resultConsumer )
+    void executeQuery( S subject, String call )
     {
-        testResult( subject, call, null, resultConsumer );
+        neo.executeQuery( subject, call, null, r -> {} );
     }
 
-    protected void testResult( AuthSubject subject, String call, Map<String,Object> params,
-            Consumer<Result> resultConsumer )
+    void executeQuery( S subject, String call, Consumer<Result> resultConsumer )
     {
-        try ( Transaction tx = db.beginTransaction( KernelTransaction.Type.explicit, subject ) )
-        {
-            Map<String,Object> p = (params == null) ? Collections.emptyMap() : params;
-            resultConsumer.accept( db.execute( call, p ) );
-            tx.success();
-        }
+        neo.executeQuery( subject, call, null, resultConsumer );
     }
 }

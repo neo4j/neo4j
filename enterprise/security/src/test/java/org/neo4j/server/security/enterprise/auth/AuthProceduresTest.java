@@ -41,19 +41,19 @@ import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.P
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READER;
 
 // TODO: homogenize "'' does not exist" type error messages. In short, add quotes in the right places
-public class AuthProceduresTest extends AuthProcedureTestBase
+public class AuthProceduresTest extends NeoShallowEmbeddedTestBase
 {
     //---------- Change own password -----------
 
     // Enterprise version of test in BuiltInProceduresIT.callChangePasswordWithAccessModeInDbmsMode.
     // Uses community edition procedure in BuiltInProcedures
     @Test
-    public void shouldChangeOwnPassword() throws Exception
+    public void shouldChangeOwnPassword() throws Throwable
     {
         testCallEmpty( readSubject, "CALL dbms.changePassword( '321' )" );
-        testUnAunthenticated( readSubject );
+        testUnAuthenticated( readSubject );
 
-        AuthSubject subject = manager.login( authToken( "readSubject", "321" ) );
+        AuthSubject subject = neo.login( "readSubject", "321" );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
     }
 
@@ -73,12 +73,12 @@ public class AuthProceduresTest extends AuthProcedureTestBase
 
     // Should change password for admin subject and valid user
     @Test
-    public void shouldChangeUserPassword() throws Exception
+    public void shouldChangeUserPassword() throws Throwable
     {
         testCallEmpty( adminSubject, "CALL dbms.changeUserPassword( 'readSubject', '321' )" );
-        assertEquals( AuthenticationResult.FAILURE, manager.login( authToken( "readSubject", "123" ) )
+        assertEquals( AuthenticationResult.FAILURE, neo.login( "readSubject", "123" )
                 .getAuthenticationResult() );
-        assertEquals( AuthenticationResult.SUCCESS, manager.login( authToken( "readSubject", "321" ) )
+        assertEquals( AuthenticationResult.SUCCESS, neo.login( "readSubject", "321" )
                 .getAuthenticationResult() );
     }
 
@@ -96,18 +96,18 @@ public class AuthProceduresTest extends AuthProcedureTestBase
 
     // Should change own password for non-admin or admin subject
     @Test
-    public void shouldChangeUserPasswordIfSameUser() throws Exception
+    public void shouldChangeUserPasswordIfSameUser() throws Throwable
     {
         testCallEmpty( readSubject, "CALL dbms.changeUserPassword( 'readSubject', '321' )" );
-        assertEquals( AuthenticationResult.FAILURE, manager.login( authToken( "readSubject", "123" ) )
+        assertEquals( AuthenticationResult.FAILURE, neo.login( "readSubject", "123" )
                 .getAuthenticationResult() );
-        assertEquals( AuthenticationResult.SUCCESS, manager.login( authToken( "readSubject", "321" ) )
+        assertEquals( AuthenticationResult.SUCCESS, neo.login( "readSubject", "321" )
                 .getAuthenticationResult() );
 
         testCallEmpty( adminSubject, "CALL dbms.changeUserPassword( 'adminSubject', 'cba' )" );
-        assertEquals( AuthenticationResult.FAILURE, manager.login( authToken( "adminSubject", "abc" ) )
+        assertEquals( AuthenticationResult.FAILURE, neo.login( "adminSubject", "abc" )
                 .getAuthenticationResult() );
-        assertEquals( AuthenticationResult.SUCCESS, manager.login( authToken( "adminSubject", "cba" ) )
+        assertEquals( AuthenticationResult.SUCCESS, neo.login( "adminSubject", "cba" )
                 .getAuthenticationResult() );
     }
 
@@ -476,7 +476,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldListUsers() throws Exception
     {
-        testResult( adminSubject, "CALL dbms.listUsers() YIELD username",
+        executeQuery( adminSubject, "CALL dbms.listUsers() YIELD username",
                 r -> assertKeyIs( r, "username", initialUsers ) );
     }
 
@@ -493,25 +493,25 @@ public class AuthProceduresTest extends AuthProcedureTestBase
                 "neo4j", listOf( ADMIN )
         );
         userManager.addUserToRole( "readWriteSubject", READER );
-        testResult( adminSubject, "CALL dbms.listUsers()",
-                r -> resultContainsMap( r, "username", "roles", expected ) );
+        executeQuery( adminSubject, "CALL dbms.listUsers()",
+                r -> assertKeyIsMap( r, "username", "roles", expected ) );
     }
 
     @Test
     public void shouldShowCurrentUser() throws Exception
     {
         userManager.addUserToRole( "readWriteSubject", READER );
-        testResult( adminSubject, "CALL dbms.showCurrentUser()",
-                r -> resultContainsMap( r, "username", "roles", map( "adminSubject", listOf( ADMIN ) ) ) );
-        testResult( readSubject, "CALL dbms.showCurrentUser()",
-                r -> resultContainsMap( r, "username", "roles", map( "readSubject", listOf( READER ) ) ) );
-        testResult( schemaSubject, "CALL dbms.showCurrentUser()",
-                r -> resultContainsMap( r, "username", "roles", map( "schemaSubject", listOf( ARCHITECT ) ) ) );
-        testResult( writeSubject, "CALL dbms.showCurrentUser()",
-                r -> resultContainsMap( r, "username", "roles",
+        executeQuery( adminSubject, "CALL dbms.showCurrentUser()",
+                r -> assertKeyIsMap( r, "username", "roles", map( "adminSubject", listOf( ADMIN ) ) ) );
+        executeQuery( readSubject, "CALL dbms.showCurrentUser()",
+                r -> assertKeyIsMap( r, "username", "roles", map( "readSubject", listOf( READER ) ) ) );
+        executeQuery( schemaSubject, "CALL dbms.showCurrentUser()",
+                r -> assertKeyIsMap( r, "username", "roles", map( "schemaSubject", listOf( ARCHITECT ) ) ) );
+        executeQuery( writeSubject, "CALL dbms.showCurrentUser()",
+                r -> assertKeyIsMap( r, "username", "roles",
                         map( "readWriteSubject", listOf( READER, PUBLISHER ) ) ) );
-        testResult( noneSubject, "CALL dbms.showCurrentUser()",
-                r -> resultContainsMap( r, "username", "roles", map( "noneSubject", listOf() ) ) );
+        executeQuery( noneSubject, "CALL dbms.showCurrentUser()",
+                r -> assertKeyIsMap( r, "username", "roles", map( "noneSubject", listOf() ) ) );
     }
 
     @Test
@@ -528,8 +528,8 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldListRoles() throws Exception
     {
-        testResult( adminSubject, "CALL dbms.listRoles() YIELD role AS roles RETURN roles",
-                r -> assertKeyIs( r, "roles", initialRoles ) );
+        executeQuery( adminSubject, "CALL dbms.listRoles() YIELD role",
+                r -> assertKeyIs( r, "role", initialRoles ) );
     }
 
     @Test
@@ -542,8 +542,8 @@ public class AuthProceduresTest extends AuthProcedureTestBase
                 PUBLISHER, listOf( "readWriteSubject" ),
                 "empty", listOf()
         );
-        testResult( adminSubject, "CALL dbms.listRoles()",
-                r -> resultContainsMap( r, "role", "users", expected ) );
+        executeQuery( adminSubject, "CALL dbms.listRoles()",
+                r -> assertKeyIsMap( r, "role", "users", expected ) );
     }
 
     @Test
@@ -560,9 +560,9 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldListRolesForUser() throws Exception
     {
-        testResult( adminSubject, "CALL dbms.listRolesForUser('adminSubject') YIELD value as roles RETURN roles",
+        executeQuery( adminSubject, "CALL dbms.listRolesForUser('adminSubject') YIELD value as roles RETURN roles",
                 r -> assertKeyIs( r, "roles", ADMIN ) );
-        testResult( adminSubject, "CALL dbms.listRolesForUser('readSubject') YIELD value as roles RETURN roles",
+        executeQuery( adminSubject, "CALL dbms.listRolesForUser('readSubject') YIELD value as roles RETURN roles",
                 r -> assertKeyIs( r, "roles", READER ) );
     }
 
@@ -608,7 +608,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldListUsersForRole() throws Exception
     {
-        testResult( adminSubject, "CALL dbms.listUsersForRole('admin') YIELD value as users RETURN users",
+        executeQuery( adminSubject, "CALL dbms.listUsersForRole('admin') YIELD value as users RETURN users",
                 r -> assertKeyIs( r, "users", adminSubject.name(), "neo4j" ) );
     }
 
@@ -644,16 +644,16 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     public void shouldSetCorrectUnAuthenticatedPermissions() throws Exception
     {
         pwdSubject.logout();
-        testUnAunthenticated( pwdSubject, "MATCH (n) RETURN n" );
-        testUnAunthenticated( pwdSubject, "CREATE (:Node)" );
-        testUnAunthenticated( pwdSubject, "CREATE INDEX ON :Node(number)" );
-        testUnAunthenticated( pwdSubject, "CALL dbms.changePassword( '321' )" );
-        testUnAunthenticated( pwdSubject, "CALL dbms.createUser('Henrik', 'bar', true)" );
+        testUnAuthenticated( pwdSubject, "MATCH (n) RETURN n" );
+        testUnAuthenticated( pwdSubject, "CREATE (:Node)" );
+        testUnAuthenticated( pwdSubject, "CREATE INDEX ON :Node(number)" );
+        testUnAuthenticated( pwdSubject, "CALL dbms.changePassword( '321' )" );
+        testUnAuthenticated( pwdSubject, "CALL dbms.createUser('Henrik', 'bar', true)" );
     }
     */
 
     @Test
-    public void shouldSetCorrectPasswordChangeRequiredPermissions() throws Exception
+    public void shouldSetCorrectPasswordChangeRequiredPermissions() throws Throwable
     {
         testFailRead( pwdSubject, 3 );
         testFailWrite( pwdSubject );
@@ -662,7 +662,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
 
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', true)" );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + ARCHITECT + "')" );
-        EnterpriseAuthSubject henrik = manager.login( authToken( "Henrik", "bar" ) );
+        EnterpriseAuthSubject henrik = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.PASSWORD_CHANGE_REQUIRED, henrik.getAuthenticationResult() );
         testFailRead( henrik, 3 );
         testFailWrite( henrik );
@@ -671,7 +671,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
 
         testCallEmpty( adminSubject, "CALL dbms.createUser('Olivia', 'bar', true)" );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Olivia', '" + ADMIN + "')" );
-        EnterpriseAuthSubject olivia = manager.login( authToken( "Olivia", "bar" ) );
+        EnterpriseAuthSubject olivia = neo.login( "Olivia", "bar" );
         assertEquals( AuthenticationResult.PASSWORD_CHANGE_REQUIRED, olivia.getAuthenticationResult() );
         testFailRead( olivia, 3 );
         testFailWrite( olivia );
