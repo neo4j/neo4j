@@ -468,12 +468,12 @@ public class AuthScenariosIT extends AuthProcedureTestBase
 
         testFailListUserRoles( subject, "Craig" );
         testResult( adminSubject, "CALL dbms.listRolesForUser('Craig') YIELD value as roles RETURN roles",
-                r -> resultKeyIs( r, "roles", PUBLISHER ) );
+                r -> assertKeyIs( r, "roles", PUBLISHER ) );
 
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
         //TODO: uncomment the next line and make the test pass
         //testResult( subject, "CALL dbms.listRolesForUser('Henrik') YIELD value as roles RETURN roles",
-        //        r -> resultKeyIs( r, "roles", PUBLISHER ) );
+        //        r -> assertKeyIs( r, "roles", PUBLISHER ) );
     }
 
     /*
@@ -497,7 +497,7 @@ public class AuthScenariosIT extends AuthProcedureTestBase
         testFailListRoleUsers( subject, PUBLISHER );
         testResult( adminSubject,
                 "CALL dbms.listUsersForRole('" + PUBLISHER + "') YIELD value as users RETURN users",
-                r -> resultKeyIs( r, "users", "Henrik", "Craig", writeSubject.name() ) );
+                r -> assertKeyIs( r, "users", "Henrik", "Craig", writeSubject.name() ) );
     }
 
     //---------- change password -----------

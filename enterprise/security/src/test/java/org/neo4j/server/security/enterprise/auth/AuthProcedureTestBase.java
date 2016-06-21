@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.apache.shiro.authc.AuthenticationException;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -194,7 +193,7 @@ public class AuthProcedureTestBase
     protected void testSuccessfulListUsers( AuthSubject subject, String[] users )
     {
         testResult( subject, "CALL dbms.listUsers() YIELD username AS users RETURN users",
-                r -> resultKeyIsArray( r, "users", users ) );
+                r -> assertKeyIsArray( r, "users", users ) );
     }
 
     protected void testFailListUsers( AuthSubject subject, int count )
@@ -207,7 +206,7 @@ public class AuthProcedureTestBase
     protected void testSuccessfulListRoles( AuthSubject subject, String[] roles )
     {
         testResult( subject, "CALL dbms.listRoles() YIELD role AS roles RETURN roles",
-                r -> resultKeyIsArray( r, "roles", roles ) );
+                r -> assertKeyIsArray( r, "roles", roles ) );
     }
 
     protected void testFailListRoles( AuthSubject subject )
@@ -236,13 +235,13 @@ public class AuthProcedureTestBase
         return r.stream().map( s -> s.get( key ) ).collect( Collectors.toList() );
     }
 
-    protected void resultKeyIs( Result r, String key, String... items )
+    protected void assertKeyIs( Result r, String key, String... items )
     {
-        resultKeyIsArray( r, key, items );
+        assertKeyIsArray( r, key, items );
     }
 
-    protected void resultKeyIsArray( Result r, String key, String[] items )
-        {
+    protected void assertKeyIsArray( Result r, String key, String[] items )
+    {
         List<Object> results = getObjectsAsList( r, key );
         Assert.assertThat( results, containsInAnyOrder( items ) );
         assertEquals( Arrays.asList( items ).size(), results.size() );

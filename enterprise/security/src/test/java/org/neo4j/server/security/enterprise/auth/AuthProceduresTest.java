@@ -213,8 +213,14 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     @Test
     public void shouldDeleteUser() throws Exception
     {
+        testCallEmpty( adminSubject, "CALL dbms.deleteUser('noneSubject')" );
+        assertNull( "User noneSubject should not exist", manager.getUser( "noneSubject" ) );
+
+        manager.addUserToRole( "readSubject", PUBLISHER );
         testCallEmpty( adminSubject, "CALL dbms.deleteUser('readSubject')" );
         assertNull( "User readSubject should not exist", manager.getUser( "readSubject" ) );
+        assertFalse( manager.getUsernamesForRole( READER ).contains( "readSubject" ) );
+        assertFalse( manager.getUsernamesForRole( PUBLISHER ).contains( "readSubject" ) );
     }
 
     @Test
@@ -484,7 +490,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     public void shouldListUsers() throws Exception
     {
         testResult( adminSubject, "CALL dbms.listUsers() YIELD username",
-                r -> resultKeyIs( r, "username", initialUsers ) );
+                r -> assertKeyIs( r, "username", initialUsers ) );
     }
 
     @Test
@@ -535,7 +541,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     public void shouldListRoles() throws Exception
     {
         testResult( adminSubject, "CALL dbms.listRoles() YIELD role AS roles RETURN roles",
-                r -> resultKeyIs( r, "roles", initialRoles ) );
+                r -> assertKeyIs( r, "roles", initialRoles ) );
     }
 
     @Test
@@ -567,9 +573,9 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     public void shouldListRolesForUser() throws Exception
     {
         testResult( adminSubject, "CALL dbms.listRolesForUser('adminSubject') YIELD value as roles RETURN roles",
-                r -> resultKeyIs( r, "roles", ADMIN ) );
+                r -> assertKeyIs( r, "roles", ADMIN ) );
         testResult( adminSubject, "CALL dbms.listRolesForUser('readSubject') YIELD value as roles RETURN roles",
-                r -> resultKeyIs( r, "roles", READER ) );
+                r -> assertKeyIs( r, "roles", READER ) );
     }
 
     @Test
@@ -594,9 +600,9 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     public void shouldListOwnRolesRoles() throws Exception
     {
         testResult( adminSubject, "CALL dbms.listRolesForUser('adminSubject') YIELD value as roles RETURN roles",
-                r -> resultKeyIs( r, "roles", ADMIN ) );
+                r -> assertKeyIs( r, "roles", ADMIN ) );
         testResult( readSubject, "CALL dbms.listRolesForUser('readSubject') YIELD value as roles RETURN roles",
-                r -> resultKeyIs( r, "roles", READER ) );
+                r -> assertKeyIs( r, "roles", READER ) );
     }
      */
 
@@ -615,7 +621,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     public void shouldListUsersForRole() throws Exception
     {
         testResult( adminSubject, "CALL dbms.listUsersForRole('admin') YIELD value as users RETURN users",
-                r -> resultKeyIs( r, "users", adminSubject.name(), "neo4j" ) );
+                r -> assertKeyIs( r, "users", adminSubject.name(), "neo4j" ) );
     }
 
     @Test
