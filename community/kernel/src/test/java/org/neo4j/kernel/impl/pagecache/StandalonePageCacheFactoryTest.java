@@ -19,28 +19,32 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import com.google.common.jimfs.Jimfs;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.io.fs.DelegateFileSystemAbstraction;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertTrue;
 
 public class StandalonePageCacheFactoryTest
 {
+    @Rule
+    public final TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
+
     @Test( timeout = 10000 )
     public void mustAutomaticallyStartEvictionThread() throws IOException
     {
-        FileSystemAbstraction fs = new DelegateFileSystemAbstraction( Jimfs.newFileSystem() );
-        File file = new File( "/a" ).getCanonicalFile();
-        fs.create( file );
+        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        File file = dir.file( "a" );
+        fs.create( file ).close();
 
         try ( PageCache cache = StandalonePageCacheFactory.createPageCache( fs );
               PagedFile pf = cache.map( file, 4096 );
