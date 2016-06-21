@@ -98,18 +98,21 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
         users.start();
         roleRepository.start();
 
-        if ( realm.numberOfRoles() == 0 )
+        if ( authEnabled )
         {
-            for ( String role : new PredefinedRolesBuilder().buildRoles().keySet() )
+            if ( realm.numberOfRoles() == 0 )
             {
-                realm.newRole( role );
+                for ( String role : new PredefinedRolesBuilder().buildRoles().keySet() )
+                {
+                    realm.newRole( role );
+                }
             }
-        }
-        if ( authEnabled && realm.numberOfUsers() == 0 )
-        {
-            realm.newUser( "neo4j", "neo4j", true );
-            // Make the default user admin for now
-            realm.addUserToRole( "neo4j", PredefinedRolesBuilder.ADMIN );
+            if ( realm.numberOfUsers() == 0 )
+            {
+                realm.newUser( "neo4j", "neo4j", true );
+                // Make the default user admin for now
+                realm.addUserToRole( "neo4j", PredefinedRolesBuilder.ADMIN );
+            }
         }
     }
 
