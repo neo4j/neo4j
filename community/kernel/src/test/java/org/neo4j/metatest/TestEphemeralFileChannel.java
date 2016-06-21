@@ -135,7 +135,7 @@ public class TestEphemeralFileChannel
          *     file
          */
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        File root = new File( "/root" );
+        File root = new File( "/root" ).getCanonicalFile();
         File dir1 = new File( root, "dir1" );
         File dir2 = new File( root, "dir2" );
         File subdir1 = new File( dir1, "sub" );

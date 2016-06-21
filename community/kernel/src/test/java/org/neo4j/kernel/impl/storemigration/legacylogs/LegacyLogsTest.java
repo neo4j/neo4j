@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacylogs;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
@@ -56,8 +57,15 @@ public class LegacyLogsTest
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final LegacyLogEntryReader reader = mock( LegacyLogEntryReader.class );
     private final LegacyLogEntryWriter writer = mock( LegacyLogEntryWriter.class );
-    private final File storeDir = new File( "/store" );
-    private final File migrationDir = new File( "/migration" );
+    private File storeDir;
+    private File migrationDir;
+
+    @Before
+    public void setupFiles() throws IOException
+    {
+        storeDir = new File( "/store" ).getCanonicalFile();
+        migrationDir = new File( "/migration" ).getCanonicalFile();
+    }
 
     @Test
     public void shouldRewriteLogFiles() throws IOException
