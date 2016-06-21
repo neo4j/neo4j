@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import java.util.function.Consumer;
-
 class TransactionCommitment implements Commitment
 {
     private final boolean hasLegacyIndexChanges;
@@ -29,7 +27,6 @@ class TransactionCommitment implements Commitment
     private final LogPosition logPosition;
     private final TransactionIdStore transactionIdStore;
     private boolean markedAsCommitted;
-    private Consumer<Long> callback;
 
     TransactionCommitment( boolean hasLegacyIndexChanges, long transactionId, long transactionChecksum,
             LogPosition logPosition, TransactionIdStore transactionIdStore )
@@ -51,12 +48,7 @@ class TransactionCommitment implements Commitment
     @Override
     public void publishAsClosed()
     {
-        transactionIdStore.transactionClosed( transactionId,
-                logPosition.getLogVersion(), logPosition.getByteOffset() );
-        if ( callback != null )
-        {
-            callback.accept( transactionId );
-        }
+        transactionIdStore.transactionClosed( transactionId, logPosition.getLogVersion(), logPosition.getByteOffset() );
     }
 
     @Override
