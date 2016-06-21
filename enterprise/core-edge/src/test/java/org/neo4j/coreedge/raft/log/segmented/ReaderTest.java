@@ -21,26 +21,47 @@ package org.neo4j.coreedge.raft.log.segmented;
 
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import java.io.File;
 
-public class SizeBasedLogPruningStrategyTest extends PruningStrategyTest
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+public class ReaderTest
 {
+    private final FileSystemAbstraction fsa = mock( FileSystemAbstraction.class );
+    private final StoreChannel channel = mock( StoreChannel.class );
+    private final File file = mock( File.class );
+
     @Test
-    public void indexToKeepTest() throws Exception
+    public void shouldCloseChannelOnClose() throws Exception
     {
         // given
-        int segmentFilesCount = 14;
-        int bytesToKeep = 6;
-        int expectedIndex = segmentFilesCount - bytesToKeep;
-
-        files = createSegmentFiles( segmentFilesCount );
-
-        SizeBasedLogPruningStrategy sizeBasedLogPruningStrategy = new SizeBasedLogPruningStrategy( bytesToKeep );
+        when( fsa.open( file, "r" ) ).thenReturn( channel );
+        Reader reader = new Reader( fsa, file, 0 );
 
         // when
-        long indexToKeep = sizeBasedLogPruningStrategy.getIndexToKeep( segments );
+        reader.close();
 
         // then
-        assertEquals( expectedIndex, indexToKeep );
+        verify( channel ).close();
+    }
+
+    @Test
+    public void shouldUpdateTimeStamp() throws Exception
+    {
+        // given
+        Reader reader = new Reader( fsa, file, 0 );
+
+        // when
+        int expected = 123;
+        reader.setTimeStamp( expected );
+
+        // then
+        assertEquals( expected, reader.getTimeStamp() );
     }
 }

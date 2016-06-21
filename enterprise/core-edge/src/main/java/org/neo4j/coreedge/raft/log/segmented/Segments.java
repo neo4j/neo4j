@@ -22,16 +22,14 @@ package org.neo4j.coreedge.raft.log.segmented;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Map;
 
 import org.neo4j.coreedge.raft.log.segmented.OpenEndRangeMap.ValueRange;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
-import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -44,7 +42,7 @@ import static java.lang.String.format;
 class Segments implements AutoCloseable
 {
     private final OpenEndRangeMap<Long/*minIndex*/,SegmentFile> rangeMap = new OpenEndRangeMap<>();
-    private final List<SegmentFile> segmentFiles;
+    private final List<SegmentFile> allSegments;
     private final Log log;
 
     private FileSystemAbstraction fileSystem;
@@ -52,24 +50,26 @@ class Segments implements AutoCloseable
     private final ChannelMarshal<ReplicatedContent> contentMarshal;
     private final LogProvider logProvider;
     private long currentVersion;
+    private final ReaderPool readerPool;
 
-    Segments( FileSystemAbstraction fileSystem, FileNames fileNames, List<SegmentFile> segmentFiles,
-              ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider, long currentVersion )
+    Segments( FileSystemAbstraction fileSystem, FileNames fileNames, ReaderPool readerPool, List<SegmentFile> allSegments,
+            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider, long currentVersion )
     {
         this.fileSystem = fileSystem;
         this.fileNames = fileNames;
-        this.segmentFiles = new ArrayList<>( segmentFiles );
+        this.allSegments = new ArrayList<>( allSegments );
         this.contentMarshal = contentMarshal;
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
         this.currentVersion = currentVersion;
+        this.readerPool = readerPool;
 
         populateRangeMap();
     }
 
     private void populateRangeMap()
     {
-        for ( SegmentFile segment : segmentFiles )
+        for ( SegmentFile segment : allSegments )
         {
             rangeMap.replaceFrom( segment.header().prevIndex() + 1, segment );
         }
@@ -90,13 +90,12 @@ class Segments implements AutoCloseable
      * Valid skip: prevFileLast = 100, prevIndex = 101
      * Invalid skip: prevFileLast = 100, prevIndex = 80
      */
-
-    SegmentFile truncate( long prevFileLastIndex, long prevIndex, long prevTerm ) throws IOException
+    synchronized SegmentFile truncate( long prevFileLastIndex, long prevIndex, long prevTerm ) throws IOException
     {
         if ( prevFileLastIndex < prevIndex )
         {
             throw new IllegalArgumentException( format( "Cannot truncate at index %d which is after current " +
-                    "append index %d", prevIndex, prevFileLastIndex ) );
+                                                        "append index %d", prevIndex, prevFileLastIndex ) );
         }
         if ( prevFileLastIndex == prevIndex )
         {
@@ -105,20 +104,20 @@ class Segments implements AutoCloseable
         return createNext( prevFileLastIndex, prevIndex, prevTerm );
     }
 
-    SegmentFile rotate( long prevFileLastIndex, long prevIndex, long prevTerm ) throws IOException
+    synchronized SegmentFile rotate( long prevFileLastIndex, long prevIndex, long prevTerm ) throws IOException
     {
-        if( prevFileLastIndex != prevIndex )
+        if ( prevFileLastIndex != prevIndex )
         {
             throw new IllegalArgumentException( format( "Cannot rotate file and have append index go from %d " +
-                    "to %d. Going backwards is a truncation operation, going forwards is a skip operation.",
+                                                        "to %d. Going backwards is a truncation operation, going forwards is a skip operation.",
                     prevFileLastIndex, prevIndex ) );
         }
         return createNext( prevFileLastIndex, prevIndex, prevTerm );
     }
 
-    SegmentFile skip( long prevFileLastIndex, long prevIndex, long prevTerm ) throws IOException
+    synchronized SegmentFile skip( long prevFileLastIndex, long prevIndex, long prevTerm ) throws IOException
     {
-        if( prevFileLastIndex > prevIndex )
+        if ( prevFileLastIndex > prevIndex )
         {
             throw new IllegalArgumentException( format( "Cannot skip from index %d backwards to index %d",
                     prevFileLastIndex, prevIndex ) );
@@ -136,131 +135,91 @@ class Segments implements AutoCloseable
         SegmentHeader header = new SegmentHeader( prevFileLastIndex, currentVersion, prevIndex, prevTerm );
 
         File file = fileNames.getForVersion( currentVersion );
-        SegmentFile segment = SegmentFile.create( fileSystem, file, contentMarshal, logProvider, header );
+        SegmentFile segment = SegmentFile.create( fileSystem, file, readerPool, currentVersion, contentMarshal, logProvider, header );
         // TODO: Force base directory... probably not possible using fsa.
         segment.flush();
 
-        segmentFiles.add( segment );
-
-        Collection<SegmentFile> entirelyTruncatedFiles = rangeMap.replaceFrom( prevIndex + 1, segment );
-
-        entirelyTruncatedFiles.forEach( removedSegment -> {
-            try
-            {
-                removedSegment.markForDisposal( this::truncateHandler );
-            }
-            catch ( DisposedException e )
-            {
-                log.warn( "The segment was already marked for disposal.", e );
-            }
-        } );
+        allSegments.add( segment );
+        rangeMap.replaceFrom( prevIndex + 1, segment );
 
         return segment;
     }
 
-    ValueRange<Long,SegmentFile> getForIndex( long logIndex )
+    synchronized ValueRange<Long,SegmentFile> getForIndex( long logIndex )
     {
         return rangeMap.lookup( logIndex );
     }
 
-    SegmentFile last()
+    synchronized SegmentFile last()
     {
         return rangeMap.last();
     }
 
-    /**
-     * Given a prune index, marks segment files with index less than or equal to this prune index for disposal.
-     * @param pruneIndex The value used to mark segment files for disposal. It can be any legal value (starting from -1
-     * until Long.MAX_VALUE). If it is less than the least prevIndex, this method is effectively a no op and the oldest
-     * segment is returned.
-     * @return The segment file with the least index value not marked for disposal.
-     */
     public synchronized SegmentFile prune( long pruneIndex )
     {
-        Collection<SegmentFile> forDisposal = new ArrayList<>();
-        SegmentFile oldestNotDisposed = collectSegmentsForDisposal( pruneIndex, forDisposal );
-
-        log.debug( "Segments marked for pruning: %s", forDisposal );
-        for ( SegmentFile segment : forDisposal )
-        {
-            try
-            {
-                segment.markForDisposal( this::pruneHandler );
-            }
-            catch ( DisposedException e )
-            {
-                log.warn( "Already marked for disposal", e );
-            }
-        }
-        return oldestNotDisposed;
-    }
-
-    private SegmentFile collectSegmentsForDisposal( long pruneIndex, Collection<SegmentFile> forDisposal )
-    {
-        Iterator<SegmentFile> itr = segmentFiles.iterator();
-        SegmentFile prev = itr.next(); // there is always at least one segment
-        SegmentFile oldestNotDisposed = prev;
+        Iterator<SegmentFile> itr = allSegments.iterator();
+        SegmentFile notDisposed = itr.next(); // we should always leave at least one segment
+        int firstRemaining = 0;
 
         while ( itr.hasNext() )
         {
-            SegmentFile segment = itr.next();
-            if ( segment.header().prevFileLastIndex() <= pruneIndex )
-            {
-                forDisposal.add( prev );
-                oldestNotDisposed = segment;
-            }
-            else
+            SegmentFile current = itr.next();
+            if ( current.header().prevFileLastIndex() > pruneIndex )
             {
                 break;
             }
-            prev = segment;
-        }
 
-        return oldestNotDisposed;
-    }
-
-    private synchronized void pruneHandler()
-    {
-        Iterator<SegmentFile> filesItr = segmentFiles.iterator();
-        SegmentFile segment;
-        while ( filesItr.hasNext() && (segment = filesItr.next()).isDisposed() )
-        {
-            log.debug( "Prune segment %s", segment );
-            segment.delete();
-            Iterator<Map.Entry<Long,SegmentFile>> rangeItr = rangeMap.entrySet().iterator();
-            Map.Entry<Long,SegmentFile> firstRange = Iterators.firstOrNull( rangeItr );
-            if ( firstRange != null && firstRange.getValue() == segment )
+            if ( !notDisposed.tryClose() )
             {
-                rangeItr.remove();
+                break;
             }
-            filesItr.remove();
+
+            log.info( "Pruning %s", notDisposed );
+            if ( !notDisposed.delete() )
+            {
+                log.error( "Failed to delete %s", notDisposed );
+                break;
+            }
+
+            // TODO: Sync the parent directory. Also consider handling fs operations under its own lock.
+
+            firstRemaining++;
+            notDisposed = current;
         }
+
+        rangeMap.remove( notDisposed.header().prevIndex() + 1 );
+        allSegments.subList( 0, firstRemaining ).clear();
+
+        return notDisposed;
     }
 
-    private synchronized void truncateHandler()
+    synchronized void visit( Visitor<SegmentFile,RuntimeException> visitor )
     {
-        Iterator<SegmentFile> filesItr = segmentFiles.iterator();
-        while ( filesItr.hasNext() && filesItr.next().isDisposed() )
+        ListIterator<SegmentFile> itr = allSegments.listIterator();
+
+        boolean terminate = false;
+        while ( itr.hasNext() && !terminate )
         {
-            filesItr.remove();
+            terminate = visitor.visit( itr.next() );
         }
     }
 
-    public ListIterator<SegmentFile> getSegmentFileIteratorAtEnd()
+    synchronized void visitBackwards( Visitor<SegmentFile,RuntimeException> visitor )
     {
-        return segmentFiles.listIterator( segmentFiles.size() );
-    }
+        ListIterator<SegmentFile> itr = allSegments.listIterator( allSegments.size() );
 
-    public ListIterator<SegmentFile> getSegmentFileIteratorAtStart()
-    {
-        return segmentFiles.listIterator();
+        boolean terminate = false;
+        while ( itr.hasPrevious() && !terminate )
+        {
+            terminate = visitor.visit( itr.previous() );
+        }
     }
 
     @Override
-    public void close() throws DisposedException
+    public synchronized void close() throws DisposedException
     {
         RuntimeException error = null;
-        for ( SegmentFile segment : segmentFiles )
+        for ( SegmentFile segment : allSegments )
         {
             try
             {

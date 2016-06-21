@@ -38,6 +38,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -69,10 +70,12 @@ public class RaftLogDurabilityTest
             fileSystem.mkdir( directory );
 
             long rotateAtSizeBytes = 128;
+            int readerPoolSize = 8;
 
             SegmentedRaftLog log = new SegmentedRaftLog( fileSystem, directory, rotateAtSizeBytes, new DummyRaftableContentSerializer(),
-                    NullLogProvider.getInstance(), "1 size" );
+                    NullLogProvider.getInstance(), "1 size", readerPoolSize, new FakeClock() );
             log.start();
+
             return log;
         };
 

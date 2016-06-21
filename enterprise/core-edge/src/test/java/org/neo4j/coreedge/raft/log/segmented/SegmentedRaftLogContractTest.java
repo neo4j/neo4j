@@ -20,12 +20,8 @@
 package org.neo4j.coreedge.raft.log.segmented;
 
 import org.junit.After;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.Collection;
 
 import org.neo4j.coreedge.raft.log.DummyRaftableContentSerializer;
 import org.neo4j.coreedge.raft.log.RaftLog;
@@ -34,33 +30,14 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.time.FakeClock;
 
 import static org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
 
-@RunWith(Parameterized.class)
 public class SegmentedRaftLogContractTest extends RaftLogContractTest
 {
-    private SegmentedRaftLog raftLog;
     private LifeSupport life = new LifeSupport();
     private FileSystemAbstraction fileSystem;
-
-    // parameter
-    private int cacheSize;
-
-    @Parameterized.Parameters(name = "cacheSize:{0}")
-    public static Collection<Object[]> data()
-    {
-        return Arrays.asList(new Object[][]{
-            {0},
-            {5},
-            {1024},
-        });
-    }
-
-    public SegmentedRaftLogContractTest( int cacheSize )
-    {
-        this.cacheSize = cacheSize;
-    }
 
     @After
     public void tearDown() throws Throwable
@@ -76,12 +53,14 @@ public class SegmentedRaftLogContractTest extends RaftLogContractTest
         {
             fileSystem = new EphemeralFileSystemAbstraction();
         }
+
         File directory = new File( SEGMENTED_LOG_DIRECTORY_NAME );
         fileSystem.mkdir( directory );
 
         SegmentedRaftLog newRaftLog = new SegmentedRaftLog( fileSystem, directory, 1024,
                 new DummyRaftableContentSerializer(),
-                NullLogProvider.getInstance(), "1 entries");
+                NullLogProvider.getInstance(), "1 entries", 8, new FakeClock() );
+
         life.add( newRaftLog );
         life.init();
         life.start();

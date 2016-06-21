@@ -21,19 +21,21 @@ package org.neo4j.coreedge.raft.log.segmented;
 
 import java.io.File;
 
+import org.neo4j.coreedge.raft.log.ConcurrentStressIT;
 import org.neo4j.coreedge.raft.log.DummyRaftableContentSerializer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.time.FakeClock;
 
 import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning_strategy;
 
-public class ConcurrentStressIT extends org.neo4j.coreedge.raft.log.ConcurrentStressIT<SegmentedRaftLog>
+public class SegmentedConcurrentStressIT extends ConcurrentStressIT<SegmentedRaftLog>
 {
     @Override
     public SegmentedRaftLog createRaftLog( FileSystemAbstraction fsa, File dir ) throws Throwable
     {
         SegmentedRaftLog raftLog = new SegmentedRaftLog( fsa, dir, 8 * 1024 * 1024, new DummyRaftableContentSerializer(), NullLogProvider.getInstance(),
-                raft_log_pruning_strategy.getDefaultValue());
+                raft_log_pruning_strategy.getDefaultValue(), 8, new FakeClock() );
         raftLog.start();
         return raftLog;
     }

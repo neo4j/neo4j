@@ -24,7 +24,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.time.Clock;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -157,6 +156,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.udc.UsageData;
 
+import static java.time.Clock.systemUTC;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
 
@@ -265,7 +265,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ), databaseHealthSupplier );
 
         final DelayedRenewableTimeoutService raftTimeoutService =
-                new DelayedRenewableTimeoutService( Clock.systemUTC(), logProvider );
+                new DelayedRenewableTimeoutService( systemUTC(), logProvider );
 
         RaftLog underlyingLog = createRaftLog( config, life, fileSystem, clusterStateDirectory, marshal, logProvider );
 
@@ -479,10 +479,9 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         long joinCatchupTimeout = config.get( CoreEdgeClusterSettings.join_catch_up_timeout );
 
-        life.add( CoreServerStartupProcess
-                .createLifeSupport( platformModule.dataSourceManager, replicatedIdGeneratorFactory, raft, coreState,
-                        raftServer, catchupServer, raftTimeoutService, membershipWaiter, joinCatchupTimeout,
-                        logProvider ) );
+        life.add( CoreServerStartupProcess.createLifeSupport(
+                platformModule.dataSourceManager, replicatedIdGeneratorFactory, raft, coreState, raftServer,
+                catchupServer, raftTimeoutService, membershipWaiter, joinCatchupTimeout, logProvider ) );
     }
 
     private RaftLog createRaftLog( Config config, LifeSupport life, FileSystemAbstraction fileSystem,
@@ -493,10 +492,15 @@ public class EnterpriseCoreEditionModule extends EditionModule
         switch ( raftLogImplementation )
         {
             case IN_MEMORY:
+            {
                 return new InMemoryRaftLog();
+            }
+
             case SEGMENTED:
             {
                 long rotateAtSize = config.get( CoreEdgeClusterSettings.raft_log_rotation_size );
+                int readerPoolSize = config.get( CoreEdgeClusterSettings.raft_log_reader_pool_size );
+
                 String pruningStrategyConfig = config.get( CoreEdgeClusterSettings.raft_log_pruning_strategy );
 
                 return life.add( new SegmentedRaftLog(
@@ -505,7 +509,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
                         rotateAtSize,
                         marshal,
                         logProvider,
-                        pruningStrategyConfig ) );
+                        pruningStrategyConfig,
+                        readerPoolSize, systemUTC() ) );
             }
             default:
                 throw new IllegalStateException( "Unknown raft log implementation: " + raftLogImplementation );
@@ -611,12 +616,12 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         RaftMembershipManager raftMembershipManager =
                 new RaftMembershipManager( leaderOnlyReplicator, memberSetBuilder, raftLog, logProvider,
-                        expectedClusterSize, electionTimeout, Clock.systemUTC(),
+                        expectedClusterSize, electionTimeout, systemUTC(),
                         config.get( CoreEdgeClusterSettings.join_catch_up_timeout ), raftMembershipStorage,
                         localDatabase );
 
         RaftLogShippingManager logShipping =
-                new RaftLogShippingManager( raftOutbound, logProvider, raftLog, Clock.systemUTC(),
+                new RaftLogShippingManager( raftOutbound, logProvider, raftLog, systemUTC(),
                         myself, raftMembershipManager, electionTimeout,
                         config.get( CoreEdgeClusterSettings.catchup_batch_size ),
                         config.get( CoreEdgeClusterSettings.log_shipping_max_lag ), inFlightMap );
@@ -627,6 +632,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
                         discoveryService, raftOutbound,
                         logProvider, raftMembershipManager, logShipping, databaseHealthSupplier, inFlightMap, monitors,
                         localDatabase );
+
         int queueSize = config.get( CoreEdgeClusterSettings.raft_in_queue_size );
         int maxBatch = config.get( CoreEdgeClusterSettings.raft_in_queue_max_batch );
         BatchingMessageHandler batchingMessageHandler =

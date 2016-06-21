@@ -34,7 +34,6 @@ import org.neo4j.cursor.IOCursor;
  */
 class EntryCursor implements IOCursor<EntryRecord>
 {
-
     private final Segments segments;
     private IOCursor<EntryRecord> reader;
     private ValueRange<Long,SegmentFile> segmentRange = null;
@@ -74,34 +73,36 @@ class EntryCursor implements IOCursor<EntryRecord>
     private boolean nextSegment() throws IOException
     {
         segmentRange = segments.getForIndex( currentIndex );
-        Optional<Long> limitOptional = segmentRange.limit();
-        Optional<SegmentFile> segmentRangeOptional = segmentRange.value();
+        Optional<SegmentFile> optionalFile = segmentRange.value();
 
-        boolean hasSegment = segmentRangeOptional.isPresent();
-        if ( hasSegment )
-        {
-            this.limit = limitOptional.orElse( Long.MAX_VALUE );
-            try
-            {
-                IOCursor<EntryRecord> newReader = segmentRangeOptional.get().getReader( currentIndex );
-                if ( reader != null )
-                {
-                    reader.close();
-                }
-                reader = newReader;
-            }
-            catch ( DisposedException e )
-            {
-                //The reader was disposed after we checked for it's existence.
-                //todo: log this
-                return false;
-            }
-        }
-        else
+        if ( !optionalFile.isPresent() )
         {
             currentRecord.invalidate();
+            return false;
         }
-        return hasSegment;
+
+        SegmentFile file = optionalFile.get();
+
+        /* Open new reader before closing old, so that pruner cannot overtake us. */
+        IOCursor<EntryRecord> oldReader = reader;
+        try
+        {
+            reader = file.getReader( currentIndex );
+        }
+        catch ( DisposedException e )
+        {
+            currentRecord.invalidate();
+            return false;
+        }
+
+        if ( oldReader != null )
+        {
+            oldReader.close();
+        }
+
+        limit = segmentRange.limit().orElse( Long.MAX_VALUE );
+
+        return true;
     }
 
     @Override

@@ -20,38 +20,25 @@
 package org.neo4j.coreedge.raft.log.segmented;
 
 import org.junit.Test;
-import org.mockito.stubbing.Answer;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ListIterator;
-
-import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-public class EntryBasedLogPruningStrategyTest
+public class EntryBasedLogPruningStrategyTest extends PruningStrategyTest
 {
     @Test
     public void indexToKeepTest() throws Exception
     {
-        //given
-        Segments segments = mock( Segments.class );
-        List<SegmentFile> testSegmentFiles = testSegmentFiles( 10 );
-        when( segments.getSegmentFileIteratorAtEnd() ).thenAnswer(
-                (Answer<ListIterator>) invocationOnMock -> testSegmentFiles.listIterator( testSegmentFiles.size() ) );
+        // given
+        files = createSegmentFiles( 10 );
         EntryBasedLogPruningStrategy strategy = new EntryBasedLogPruningStrategy( 6, mock( LogProvider.class ) );
 
-        //when
+        // when
         long indexToKeep = strategy.getIndexToKeep( segments );
 
-        //then
+        // then
         assertEquals( 2, indexToKeep );
     }
 
@@ -59,10 +46,7 @@ public class EntryBasedLogPruningStrategyTest
     public void pruneStrategyExceedsNumberOfEntriesTest() throws Exception
     {
         //given
-        Segments segments = mock( Segments.class );
-        List<SegmentFile> subList = testSegmentFiles( 10 ).subList( 5, 10 );
-        when( segments.getSegmentFileIteratorAtEnd() )
-                .thenAnswer( (Answer<ListIterator>) invocationOnMock -> subList.listIterator( subList.size() ) );
+        files = createSegmentFiles( 10 ).subList( 5, 10 );
         EntryBasedLogPruningStrategy strategy = new EntryBasedLogPruningStrategy( 7, mock( LogProvider.class ) );
 
         //when
@@ -76,10 +60,7 @@ public class EntryBasedLogPruningStrategyTest
     public void onlyFirstActiveLogFileTest() throws Exception
     {
         //given
-        Segments segments = mock( Segments.class );
-        List<SegmentFile> testSegmentFiles = testSegmentFiles( 1 );
-        when( segments.getSegmentFileIteratorAtEnd() ).thenAnswer(
-                (Answer<ListIterator>) invocationOnMock -> testSegmentFiles.listIterator( testSegmentFiles.size() ) );
+        files = createSegmentFiles( 1 );
         EntryBasedLogPruningStrategy strategy = new EntryBasedLogPruningStrategy( 6, mock( LogProvider.class ) );
 
         //when
@@ -93,55 +74,13 @@ public class EntryBasedLogPruningStrategyTest
     public void onlyOneActiveLogFileTest() throws Exception
     {
         //given
-        Segments segments = mock( Segments.class );
-        List<SegmentFile> subList = testSegmentFiles( 6 ).subList( 5, 6 );
-        when( segments.getSegmentFileIteratorAtEnd() )
-                .thenAnswer( (Answer<ListIterator>) invocationOnMock -> subList.listIterator( subList.size() ) );
+        files = createSegmentFiles( 6 ).subList( 4, 6 );
         EntryBasedLogPruningStrategy strategy = new EntryBasedLogPruningStrategy( 6, mock( LogProvider.class ) );
 
         //when
         long indexToKeep = strategy.getIndexToKeep( segments );
 
         //then
-        assertEquals( 4, indexToKeep );
-    }
-
-    @Test
-    public void noFilesLogsWarningTest() throws Exception
-    {
-        Segments segments = mock( Segments.class );
-        List<SegmentFile> segmentFiles = new ArrayList<>(  );
-        when( segments.getSegmentFileIteratorAtEnd() )
-                .thenAnswer( (Answer<ListIterator>) invocationOnMock -> segmentFiles.listIterator( segmentFiles.size() ) );
-        LogProvider mockLogProvider = mock( LogProvider.class );
-        Log mockLog = mock( Log.class );
-        when( mockLogProvider.getLog( EntryBasedLogPruningStrategy.class ) ).thenReturn( mockLog );
-        EntryBasedLogPruningStrategy strategy = new EntryBasedLogPruningStrategy( 6, mockLogProvider );
-
-        //when
-        long indexToKeep = strategy.getIndexToKeep( segments );
-
-        //then
-        // a safe index is returned
-        assertEquals( -1, indexToKeep );
-        // and a warning is issued
-        verify( mockLog, times( 1 ) ).warn( anyString() );
-    }
-
-    private ArrayList<SegmentFile> testSegmentFiles( int size )
-    {
-        ArrayList<SegmentFile> list = new ArrayList<>( size );
-        for ( int i = 0; i < size; i++ )
-        {
-            SegmentFile file = mock( SegmentFile.class );
-            when( file.header() ).thenReturn( testSegmentHeader( i ) );
-            list.add( file );
-        }
-        return list;
-    }
-
-    private SegmentHeader testSegmentHeader( long value )
-    {
-        return new SegmentHeader( -1, -1, value - 1, -1 );
+        assertEquals( 3, indexToKeep );
     }
 }

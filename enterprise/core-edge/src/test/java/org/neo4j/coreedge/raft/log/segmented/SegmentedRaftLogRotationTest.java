@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.stream.Stream;
 
 import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.ReplicatedString;
@@ -33,6 +32,7 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.Resources;
+import org.neo4j.time.FakeClock;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning_strategy;
@@ -50,7 +50,7 @@ public class SegmentedRaftLogRotationTest
     {
         return new SegmentedRaftLog( resourceManager.fileSystem(), resourceManager.testPath(), rotateAtSize,
                 new DummyRaftableContentSerializer(), NullLogProvider.getInstance(),
-                raft_log_pruning_strategy.getDefaultValue() );
+                raft_log_pruning_strategy.getDefaultValue(), 0, new FakeClock() );
     }
 
     @Test

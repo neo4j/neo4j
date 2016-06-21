@@ -21,6 +21,7 @@ package org.neo4j.coreedge.raft.log.segmented;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Clock;
 
 import org.neo4j.coreedge.raft.log.EntryRecord;
 import org.neo4j.coreedge.raft.log.RaftLog;
@@ -55,6 +56,7 @@ import static java.lang.String.format;
 public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
 {
     public static final String SEGMENTED_LOG_DIRECTORY_NAME = "raft-log";
+
     private final FileSystemAbstraction fileSystem;
     private final File directory;
     private final long rotateAtSize;
@@ -63,33 +65,35 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
 
     private boolean needsRecovery;
     private final LogProvider logProvider;
-    private final SegmentedRaftLogPruner segmentedRaftLogPruner;
+    private final SegmentedRaftLogPruner pruner;
 
     private State state;
+    private final ReaderPool readerPool;
 
     public SegmentedRaftLog( FileSystemAbstraction fileSystem, File directory, long rotateAtSize,
             ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider,
-            String pruningStrategyConfig )
+            String pruningConfig, int readerPoolSize, Clock clock )
     {
         this.fileSystem = fileSystem;
         this.directory = directory;
         this.rotateAtSize = rotateAtSize;
         this.contentMarshal = contentMarshal;
+        this.logProvider = logProvider;
 
         this.fileNames = new FileNames( directory );
-        this.logProvider = logProvider;
-        this.segmentedRaftLogPruner = new SegmentedRaftLogPruner( pruningStrategyConfig, logProvider );
+        this.readerPool = new ReaderPool( readerPoolSize, logProvider, fileNames, fileSystem, clock );
+        this.pruner = new SegmentedRaftLogPruner( pruningConfig, logProvider );
     }
 
     @Override
-    public synchronized void start() throws IOException, DamagedLogStorageException
+    public synchronized void start() throws IOException, DamagedLogStorageException, DisposedException
     {
         if ( !directory.exists() && !directory.mkdirs() )
         {
             throw new IOException( "Could not create: " + directory );
         }
 
-        RecoveryProtocol recoveryProtocol = new RecoveryProtocol( fileSystem, fileNames, contentMarshal, logProvider );
+        RecoveryProtocol recoveryProtocol = new RecoveryProtocol( fileSystem, fileNames, readerPool, contentMarshal, logProvider );
         state = recoveryProtocol.run();
     }
 
@@ -156,7 +160,7 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
         if ( state.appendIndex < fromIndex )
         {
             throw new IllegalArgumentException( "Cannot truncate at index " + fromIndex + " when append index is " +
-                    state.appendIndex );
+                                                state.appendIndex );
         }
 
         long newAppendIndex = fromIndex - 1;
@@ -239,16 +243,14 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
             return -1;
         }
 
-        // Not found in cache but within our valid range, so we must read from the log.
-        RaftLogEntry raftLogEntry = readLogEntry( logIndex );
-        assert (raftLogEntry != null);
-        return raftLogEntry.term();
+        RaftLogEntry entry = readLogEntry( logIndex );
+        return entry == null ? -1 : entry.term();
     }
 
     @Override
     public long prune( long safeIndex ) throws IOException
     {
-        long pruneIndex = segmentedRaftLogPruner.getIndexToPruneFrom( safeIndex, state.segments );
+        long pruneIndex = pruner.getIndexToPruneFrom( safeIndex, state.segments );
         SegmentFile oldestNotDisposed = state.segments.prune( pruneIndex );
         state.prevIndex = oldestNotDisposed.header().prevIndex();
         state.prevTerm = oldestNotDisposed.header().prevTerm();

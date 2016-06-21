@@ -56,7 +56,7 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosabl
 
     public long position() throws IOException
     {
-        return channel.position();
+        return offset();
     }
 
     @Override

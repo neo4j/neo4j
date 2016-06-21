@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.raft.log.segmented;
 
 import java.io.IOException;
-import java.util.function.Consumer;
 
 import org.neo4j.coreedge.raft.log.EntryRecord;
 import org.neo4j.coreedge.raft.log.LogPosition;
@@ -37,36 +36,31 @@ import static org.neo4j.coreedge.raft.log.EntryRecord.read;
  * A cursor for iterating over RAFT log entries starting at an index and until the end of the segment is met.
  * The segment is demarcated by the ReadAheadChannel provided, which should properly signal the end of the channel.
  */
-public class EntryRecordCursor implements IOCursor<EntryRecord>
+class EntryRecordCursor implements IOCursor<EntryRecord>
 {
-    private final ReadAheadChannel<StoreChannel> reader;
+    private ReadAheadChannel<StoreChannel> bufferedReader;
 
     private final LogPosition position;
     private final CursorValue<EntryRecord> currentRecord = new CursorValue<>();
     private ChannelMarshal<ReplicatedContent> contentMarshal;
-    private final Consumer<LogPosition> onClose;
 
-    public EntryRecordCursor(
-            ReadAheadChannel<StoreChannel> reader,
-            ChannelMarshal<ReplicatedContent> contentMarshal,
-            long startIndex,
-            Consumer<LogPosition> onClose ) throws IOException
+    EntryRecordCursor( ReadAheadChannel<StoreChannel> bufferedReader,
+            ChannelMarshal<ReplicatedContent> contentMarshal, long startIndex ) throws IOException
     {
-        this.reader = reader;
+        this.bufferedReader = bufferedReader;
         this.contentMarshal = contentMarshal;
-        this.onClose = onClose;
-        position = new LogPosition( startIndex, reader.position() );
+        position = new LogPosition( startIndex, bufferedReader.position() );
     }
 
     @Override
     public boolean next() throws IOException
     {
-        EntryRecord entryRecord = read( reader, contentMarshal );
+        EntryRecord entryRecord = read( bufferedReader, contentMarshal );
         if ( entryRecord != null )
         {
             currentRecord.set( entryRecord );
+            position.byteOffset = bufferedReader.position();
             position.logIndex++;
-            position.byteOffset = reader.position();
             return true;
         }
         else
@@ -79,12 +73,18 @@ public class EntryRecordCursor implements IOCursor<EntryRecord>
     @Override
     public void close() throws IOException
     {
-        onClose.accept( position );
+        // the cursor does not own any resources, the channel is owned by the pooled Reader
+        bufferedReader = null;
     }
 
     @Override
     public EntryRecord get()
     {
         return currentRecord.get();
+    }
+
+    public LogPosition position()
+    {
+        return position;
     }
 }

@@ -54,25 +54,27 @@ class RecoveryProtocol
     private final LogProvider logProvider;
     private final Log log;
     private long expectedVersion;
+    private ReaderPool readerPool;
 
-    RecoveryProtocol( FileSystemAbstraction fileSystem, FileNames fileNames,
+    RecoveryProtocol( FileSystemAbstraction fileSystem, FileNames fileNames, ReaderPool readerPool,
             ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider )
     {
         this.fileSystem = fileSystem;
         this.fileNames = fileNames;
+        this.readerPool = readerPool;
         this.contentMarshal = contentMarshal;
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
     }
 
-    State run() throws IOException, DamagedLogStorageException
+    State run() throws IOException, DamagedLogStorageException, DisposedException
     {
         State state = new State();
         SortedMap<Long,File> files = fileNames.getAllFiles( fileSystem, log );
 
         if ( files.entrySet().isEmpty() )
         {
-            state.segments = new Segments( fileSystem, fileNames, emptyList(), contentMarshal, logProvider, -1 );
+            state.segments = new Segments( fileSystem, fileNames, readerPool, emptyList(), contentMarshal, logProvider, -1 );
             state.segments.rotate( -1, -1, -1 );
             return state;
         }
@@ -104,7 +106,7 @@ class RecoveryProtocol
                     writeHeader( fileSystem, file, header );
                 }
 
-                SegmentFile segment = new SegmentFile( fileSystem, file, contentMarshal, logProvider, header );
+                SegmentFile segment = new SegmentFile( fileSystem, file, readerPool, fileNameVersion, contentMarshal, logProvider, header );
 
                 checkVersionStrictlyMonotonic( fileNameVersion );
                 checkVersionMatches( segment.header().version(), fileNameVersion );
@@ -128,12 +130,12 @@ class RecoveryProtocol
 
         SegmentFile last = segmentFiles.get( segmentFiles.size() - 1 );
 
-        state.segments = new Segments( fileSystem, fileNames, segmentFiles, contentMarshal, logProvider, files.lastKey() );
+        state.segments = new Segments( fileSystem, fileNames, readerPool, segmentFiles, contentMarshal, logProvider, files.lastKey() );
         state.appendIndex = last.header().prevIndex();
         state.currentTerm = last.header().prevTerm();
 
         long firstIndexInLastSegmentFile = last.header().prevIndex() + 1;
-        try ( IOCursor<EntryRecord> reader =  last.getReader( firstIndexInLastSegmentFile ) )
+        try ( IOCursor<EntryRecord> reader = last.getReader( firstIndexInLastSegmentFile ) )
         {
             while ( reader.next() )
             {
@@ -141,10 +143,6 @@ class RecoveryProtocol
                 state.appendIndex = entry.logIndex();
                 state.currentTerm = entry.logEntry().term();
             }
-        }
-        catch ( DisposedException e )
-        {
-            throw new RuntimeException( "Unexpected exception", e );
         }
 
         return state;

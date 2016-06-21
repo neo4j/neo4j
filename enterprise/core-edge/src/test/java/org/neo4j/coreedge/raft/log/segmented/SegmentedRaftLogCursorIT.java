@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Test;
 
 import java.io.File;
+import java.time.Clock;
 
 import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.log.DummyRaftableContentSerializer;
@@ -56,15 +57,18 @@ public class SegmentedRaftLogCursorIT
         {
             fileSystem = new EphemeralFileSystemAbstraction();
         }
+
         File directory = new File( SEGMENTED_LOG_DIRECTORY_NAME );
         fileSystem.mkdir( directory );
 
         SegmentedRaftLog newRaftLog =
                 new SegmentedRaftLog( fileSystem, directory, rotateAtSize, new DummyRaftableContentSerializer(),
-                        NullLogProvider.getInstance(), pruneStrategy );
+                        NullLogProvider.getInstance(), pruneStrategy, 8, Clock.systemUTC() );
+
         life.add( newRaftLog );
         life.init();
         life.start();
+
         return newRaftLog;
     }
 

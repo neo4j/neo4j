@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.raft.log.segmented;
 
 import java.io.File;
+import java.time.Clock;
 
 import org.neo4j.coreedge.raft.log.DummyRaftableContentSerializer;
 import org.neo4j.coreedge.raft.log.RaftLog;
@@ -41,11 +42,11 @@ public class SegmentedRaftLogVerificationIT extends RaftLogVerificationIT
         fsa.mkdir( directory );
 
         long rotateAtSizeBytes = 128;
-        int entryCacheSize = 4;
+        int readerPoolSize = 8;
 
         SegmentedRaftLog newRaftLog = new SegmentedRaftLog( fsa, directory, rotateAtSizeBytes,
                 new DummyRaftableContentSerializer(), NullLogProvider.getInstance(),
-                raft_log_pruning_strategy.getDefaultValue() );
+                raft_log_pruning_strategy.getDefaultValue(), readerPoolSize, Clock.systemUTC() );
 
         newRaftLog.init();
         newRaftLog.start();

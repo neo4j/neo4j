@@ -27,6 +27,7 @@ import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.time.FakeClock;
 
 import static java.util.Collections.emptyList;
 
@@ -38,8 +39,9 @@ public class EntryCursorTest
     private final FileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
     private final File bam = new File( "bam" );
     private final FileNames fileNames = new FileNames( bam );
+    private ReaderPool readerPool = new ReaderPool( 0, NullLogProvider.getInstance(), fileNames, fsa, new FakeClock() );
     private final Segments segments =
-            new Segments( fsa, fileNames, emptyList(), mock( ChannelMarshal.class ), NullLogProvider.getInstance(), -1 );
+            new Segments( fsa, fileNames, readerPool, emptyList(), mock( ChannelMarshal.class ), NullLogProvider.getInstance(), -1 );
 
     {
         fsa.mkdir( bam );
