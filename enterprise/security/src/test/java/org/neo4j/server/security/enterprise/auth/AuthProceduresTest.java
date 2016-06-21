@@ -206,6 +206,13 @@ public class AuthProceduresTest
     }
 
     @Test
+    public void shouldNotCreateUserWithEmptyPassword() throws Exception
+    {
+        testCallFail( db, adminSubject, "CALL dbms.createUser('craig', '', true)", QueryExecutionException.class,
+                "Password cannot be empty." );
+    }
+
+    @Test
     public void shouldNotCreateExistingUser() throws Exception
     {
 

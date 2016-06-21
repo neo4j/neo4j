@@ -134,6 +134,8 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
     {
         assertAuthEnabled();
 
+        passwordPolicy.validatePassword( initialPassword );
+
         return realm.newUser( username, initialPassword, requirePasswordChange );
     }
 
