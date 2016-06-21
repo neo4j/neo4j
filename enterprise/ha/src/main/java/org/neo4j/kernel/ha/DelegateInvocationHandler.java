@@ -138,8 +138,9 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
             if ( delegate == null )
             {
                 throw new TransientDatabaseFailureException(
-                        "Transaction state is not valid. Perhaps a state change of" +
-                        "the database has happened while this transaction was running?" );
+                        "Instance state is not valid. There is no master currently available. Possible causes " +
+                                "include unavailability of a majority of the cluster members or network failure " +
+                                "that caused this instance to be partitioned away from the cluster" );
             }
 
             return proxyInvoke( delegate, method, args );

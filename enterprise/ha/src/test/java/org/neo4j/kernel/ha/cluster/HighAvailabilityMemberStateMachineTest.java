@@ -212,8 +212,9 @@ public class HighAvailabilityMemberStateMachineTest
 
         // Then
         assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
-        assertThat( probe.instanceStops, is( true ) );
-        verify( guard, times( 2 ) ).require( any( AvailabilityRequirement.class ) );
+        assertThat( probe.instanceStops, is( false ) );
+        assertThat( probe.instanceDetached, is( true ) );
+        verify( guard, times( 1 ) ).require( any( AvailabilityRequirement.class ) );
     }
 
     @Test
@@ -287,8 +288,9 @@ public class HighAvailabilityMemberStateMachineTest
 
         // Then
         assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
-        assertThat( probe.instanceStops, is( true ) );
-        verify( guard, times( 2 ) ).require( any( AvailabilityRequirement.class ) );
+        assertThat( probe.instanceStops, is( false ) );
+        assertThat( probe.instanceDetached, is( true ) );
+        verify( guard, times( 1 ) ).require( any( AvailabilityRequirement.class ) );
     }
 
     @Test
@@ -321,7 +323,8 @@ public class HighAvailabilityMemberStateMachineTest
 
         // Then
         assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
-        assertThat( probe.instanceStops, is( true ) );
+        assertThat( probe.instanceStops, is( false ) );
+        assertThat( probe.instanceDetached, is( true ) );
         verify( guard, times( 1 ) ).require( any( AvailabilityRequirement.class ) );
     }
 
@@ -354,7 +357,8 @@ public class HighAvailabilityMemberStateMachineTest
 
         // Then
         assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
-        assertThat( probe.instanceStops, is( true ) );
+        assertThat( probe.instanceStops, is( false ) );
+        assertThat( probe.instanceDetached, is( true ) );
         verify( guard, times( 1 ) ).require( any( AvailabilityRequirement.class ) );
     }
 
@@ -720,6 +724,7 @@ public class HighAvailabilityMemberStateMachineTest
         boolean masterIsAvailable = false;
         boolean slaveIsAvailable = false;
         boolean instanceStops = false;
+        boolean instanceDetached = false;
         HighAvailabilityMemberChangeEvent lastEvent = null;
 
         @Override
@@ -729,6 +734,7 @@ public class HighAvailabilityMemberStateMachineTest
             masterIsAvailable = false;
             slaveIsAvailable = false;
             instanceStops = false;
+            instanceDetached = false;
             lastEvent = event;
         }
 
@@ -739,6 +745,7 @@ public class HighAvailabilityMemberStateMachineTest
             masterIsAvailable = true;
             slaveIsAvailable = false;
             instanceStops = false;
+            instanceDetached = false;
             lastEvent = event;
         }
 
@@ -749,6 +756,7 @@ public class HighAvailabilityMemberStateMachineTest
             masterIsAvailable = false;
             slaveIsAvailable = true;
             instanceStops = false;
+            instanceDetached = false;
             lastEvent = event;
         }
 
@@ -759,6 +767,18 @@ public class HighAvailabilityMemberStateMachineTest
             masterIsAvailable = false;
             slaveIsAvailable = false;
             instanceStops = true;
+            instanceDetached = false;
+            lastEvent = event;
+        }
+
+        @Override
+        public void instanceDetached( HighAvailabilityMemberChangeEvent event )
+        {
+            masterIsElected = false;
+            masterIsAvailable = false;
+            slaveIsAvailable = false;
+            instanceStops = false;
+            instanceDetached = true;
             lastEvent = event;
         }
     }

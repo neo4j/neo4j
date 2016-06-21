@@ -202,6 +202,12 @@ public class HighAvailabilityModeSwitcher
     }
 
     @Override
+    public void instanceDetached( HighAvailabilityMemberChangeEvent event )
+    {
+        switchToDetached();
+    }
+
+    @Override
     public void addModeSwitcher( ModeSwitcher modeSwitcher )
     {
         modeSwitchListeners = Listeners.addListener( modeSwitcher, modeSwitchListeners );
@@ -460,6 +466,51 @@ public class HighAvailabilityModeSwitcher
                     public void notify( ModeSwitcher listener )
                     {
                         listener.switchToPending();
+                    }
+                } );
+                neoStoreDataSourceSupplier.getDataSource().beforeModeSwitch();
+
+                if ( cancellationHandle.cancellationRequested() )
+                {
+                    msgLog.info( "Switch to pending cancelled before ha communication shutdown." );
+                    return;
+                }
+
+                haCommunicationLife.shutdown();
+                haCommunicationLife = new LifeSupport();
+            }
+        }, new CancellationHandle() );
+
+        try
+        {
+            modeSwitcherFuture.get( 10, TimeUnit.SECONDS );
+        }
+        catch ( Exception ignored )
+        {
+        }
+    }
+
+    private void switchToDetached()
+    {
+        msgLog.info( "I am %s, moving to detached", instanceId );
+
+        startModeSwitching( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                if ( cancellationHandle.cancellationRequested() )
+                {
+                    msgLog.info( "Switch to pending cancelled on start." );
+                    return;
+                }
+
+                Listeners.notifyListeners( modeSwitchListeners, new Listeners.Notification<ModeSwitcher>()
+                {
+                    @Override
+                    public void notify( ModeSwitcher listener )
+                    {
+                        listener.switchToSlave();
                     }
                 } );
                 neoStoreDataSourceSupplier.getDataSource().beforeModeSwitch();
