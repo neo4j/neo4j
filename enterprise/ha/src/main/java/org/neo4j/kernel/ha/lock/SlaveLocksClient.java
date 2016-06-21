@@ -33,6 +33,7 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
+import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 
@@ -58,20 +59,24 @@ class SlaveLocksClient implements Locks.Client
     // Using atomic ints to avoid creating garbage through boxing.
     private final Map<Locks.ResourceType, Map<Long, AtomicInteger>> sharedLocks;
     private final Map<Locks.ResourceType, Map<Long, AtomicInteger>> exclusiveLocks;
-    private boolean initialized = false;
+    private final boolean txTerminationAwareLocks;
+    private boolean initialized;
+    private volatile boolean stopped;
 
     public SlaveLocksClient(
             Master master,
             Locks.Client local,
             Locks localLockManager,
             RequestContextFactory requestContextFactory,
-            AvailabilityGuard availabilityGuard )
+            AvailabilityGuard availabilityGuard,
+            boolean txTerminationAwareLocks )
     {
         this.master = master;
         this.client = local;
         this.localLockManager = localLockManager;
         this.requestContextFactory = requestContextFactory;
         this.availabilityGuard = availabilityGuard;
+        this.txTerminationAwareLocks = txTerminationAwareLocks;
         sharedLocks = new HashMap<>();
         exclusiveLocks = new HashMap<>();
     }
@@ -92,6 +97,8 @@ class SlaveLocksClient implements Locks.Client
     @Override
     public void acquireShared( Locks.ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException
     {
+        assertNotStopped();
+
         Map<Long, AtomicInteger> lockMap = getLockMap( sharedLocks, resourceType );
         AtomicInteger preExistingLock = lockMap.get( resourceId );
         if ( preExistingLock != null )
@@ -117,6 +124,8 @@ class SlaveLocksClient implements Locks.Client
     public void acquireExclusive( Locks.ResourceType resourceType, long resourceId ) throws
             AcquireLockTimeoutException
     {
+        assertNotStopped();
+
         Map<Long, AtomicInteger> lockMap = getLockMap( exclusiveLocks, resourceType );
 
         AtomicInteger preExistingLock = lockMap.get( resourceId );
@@ -153,6 +162,8 @@ class SlaveLocksClient implements Locks.Client
     @Override
     public void releaseShared( Locks.ResourceType resourceType, long resourceId )
     {
+        assertNotStopped();
+
         Map<Long, AtomicInteger> lockMap = getLockMap( sharedLocks, resourceType );
         AtomicInteger counter = lockMap.get( resourceId );
         if ( counter == null )
@@ -170,6 +181,8 @@ class SlaveLocksClient implements Locks.Client
     @Override
     public void releaseExclusive( Locks.ResourceType resourceType, long resourceId )
     {
+        assertNotStopped();
+
         Map<Long, AtomicInteger> lockMap = getLockMap( exclusiveLocks, resourceType );
         AtomicInteger counter = lockMap.get( resourceId );
         if ( counter == null )
@@ -185,50 +198,52 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
-    public void releaseAll()
+    public void stop()
     {
+        if ( txTerminationAwareLocks )
+        {
+            client.stop();
+            endLockSessionOnMaster( false );
+            stopped = true;
+        }
+    }
+
+    @Override
+    public void close()
+    {
+        client.close();
         sharedLocks.clear();
         exclusiveLocks.clear();
-        client.releaseAll();
         if ( initialized )
         {
-            try ( Response<Void> ignored = master.endLockSession( newRequestContextFor( client ), true ) )
+            if ( !stopped )
             {
-                // Lock session is closed on master at this point
-            }
-            catch ( ComException e )
-            {
-                throw new DistributedLockFailureException(
-                        "Failed to end the lock session on the master (which implies releasing all held locks)",
-                        master, e );
+                endLockSessionOnMaster( true );
+                stopped = false;
             }
             initialized = false;
         }
     }
 
     @Override
-    public void stop()
-    {
-        throw new UnsupportedOperationException( "Lock client stop is unsupported on slave side." );
-    }
-
-    @Override
-    public void close()
-    {
-        try
-        {
-            releaseAll();
-        }
-        finally
-        {
-            client.close();
-        }
-    }
-
-    @Override
     public int getLockSessionId()
     {
+        assertNotStopped();
         return initialized ? client.getLockSessionId() : -1;
+    }
+
+    private void endLockSessionOnMaster( boolean success )
+    {
+        try ( Response<Void> ignored = master.endLockSession( newRequestContextFor( client ), success ) )
+        {
+            // Lock session is closed on master at this point
+        }
+        catch ( ComException e )
+        {
+            throw new DistributedLockFailureException(
+                    "Failed to end the lock session on the master (which implies releasing all held locks)",
+                    master, e );
+        }
     }
 
     private boolean getReadLockOnMaster( Locks.ResourceType resourceType, long resourceId )
@@ -334,5 +349,13 @@ class SlaveLocksClient implements Locks.Client
     {
         return new UnsupportedOperationException(
                 "Distributed tryLocks are not supported. They only work with local lock managers." );
+    }
+
+    private void assertNotStopped()
+    {
+        if ( stopped )
+        {
+            throw new LockClientStoppedException( this );
+        }
     }
 }
