@@ -19,26 +19,11 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import java.util.Map;
-import java.util.function.Consumer;
-
-import org.neo4j.graphdb.Result;
-import org.neo4j.kernel.api.security.AuthenticationResult;
-
-public interface NeoInteractionLevel<S>
+public class NeoShallowEmbeddedProceduresTest extends AuthProceduresTestLogic<EnterpriseAuthSubject>
 {
-    EnterpriseUserManager getManager();
-
-    void executeQuery( S subject, String call, Map<String,Object> params,
-            Consumer<Result> resultConsumer );
-
-    S login( String username, String password ) throws Throwable;
-
-    void logout( S subject );
-
-    boolean isAuthenticated( S subject );
-
-    AuthenticationResult authenticationResult( S subject );
-
-    void tearDown() throws Throwable;
+    @Override
+    NeoInteractionLevel<EnterpriseAuthSubject> setUpNeoServer() throws Throwable
+    {
+        return new NeoShallowEmbeddedInteraction();
+    }
 }

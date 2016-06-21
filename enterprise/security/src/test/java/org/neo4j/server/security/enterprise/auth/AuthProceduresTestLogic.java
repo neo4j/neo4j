@@ -41,7 +41,7 @@ import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.P
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READER;
 
 // TODO: homogenize "'' does not exist" type error messages. In short, add quotes in the right places
-public class AuthProceduresTest extends NeoShallowEmbeddedTestBase
+abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
 {
     //---------- Change own password -----------
 
@@ -53,8 +53,8 @@ public class AuthProceduresTest extends NeoShallowEmbeddedTestBase
         testCallEmpty( readSubject, "CALL dbms.changePassword( '321' )" );
         testUnAuthenticated( readSubject );
 
-        AuthSubject subject = neo.login( "readSubject", "321" );
-        assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
+        S subject = neo.login( "readSubject", "321" );
+        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( subject ) );
     }
 
     /*
@@ -76,10 +76,8 @@ public class AuthProceduresTest extends NeoShallowEmbeddedTestBase
     public void shouldChangeUserPassword() throws Throwable
     {
         testCallEmpty( adminSubject, "CALL dbms.changeUserPassword( 'readSubject', '321' )" );
-        assertEquals( AuthenticationResult.FAILURE, neo.login( "readSubject", "123" )
-                .getAuthenticationResult() );
-        assertEquals( AuthenticationResult.SUCCESS, neo.login( "readSubject", "321" )
-                .getAuthenticationResult() );
+        assertEquals( AuthenticationResult.FAILURE, neo.authenticationResult( neo.login( "readSubject", "123" ) ) );
+        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( neo.login( "readSubject", "321" ) ) );
     }
 
     // Should fail vaguely to change password for non-admin subject, regardless of user and password
@@ -99,16 +97,12 @@ public class AuthProceduresTest extends NeoShallowEmbeddedTestBase
     public void shouldChangeUserPasswordIfSameUser() throws Throwable
     {
         testCallEmpty( readSubject, "CALL dbms.changeUserPassword( 'readSubject', '321' )" );
-        assertEquals( AuthenticationResult.FAILURE, neo.login( "readSubject", "123" )
-                .getAuthenticationResult() );
-        assertEquals( AuthenticationResult.SUCCESS, neo.login( "readSubject", "321" )
-                .getAuthenticationResult() );
+        assertEquals( AuthenticationResult.FAILURE, neo.authenticationResult( neo.login( "readSubject", "123" ) ) );
+        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( neo.login( "readSubject", "321" ) ) );
 
         testCallEmpty( adminSubject, "CALL dbms.changeUserPassword( 'adminSubject', 'cba' )" );
-        assertEquals( AuthenticationResult.FAILURE, neo.login( "adminSubject", "abc" )
-                .getAuthenticationResult() );
-        assertEquals( AuthenticationResult.SUCCESS, neo.login( "adminSubject", "cba" )
-                .getAuthenticationResult() );
+        assertEquals( AuthenticationResult.FAILURE, neo.authenticationResult( neo.login( "adminSubject", "abc" ) ) );
+        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( neo.login( "adminSubject", "cba" ) ) );
     }
 
     // Should fail nicely to change own password for non-admin or admin subject if password invalid
@@ -337,17 +331,17 @@ public class AuthProceduresTest extends NeoShallowEmbeddedTestBase
     @Test
     public void shouldAddUserToRole() throws Exception
     {
-        assertFalse( "Should not have role publisher", readSubject.getShiroSubject().hasRole( PUBLISHER ) );
+        assertFalse( "Should not have role publisher", userHasRole( "readSubject", PUBLISHER ) );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('readSubject', '" + PUBLISHER + "')" );
-        assertTrue( "Should have role publisher", readSubject.getShiroSubject().hasRole( PUBLISHER ) );
+        assertTrue( "Should have role publisher", userHasRole( "readSubject", PUBLISHER ) );
     }
 
     @Test
     public void shouldAddRetainUserInRole() throws Exception
     {
-        assertTrue( "Should have role reader", readSubject.getShiroSubject().hasRole( READER ) );
+        assertTrue( "Should have role reader", userHasRole( "readSubject", READER ) );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('readSubject', '" + READER + "')" );
-        assertTrue( "Should have still have role reader", readSubject.getShiroSubject().hasRole( READER ) );
+        assertTrue( "Should have still have role reader", userHasRole( "readSubject", READER ) );
     }
 
     @Test
@@ -391,15 +385,15 @@ public class AuthProceduresTest extends NeoShallowEmbeddedTestBase
     public void shouldRemoveUserFromRole() throws Exception
     {
         testCallEmpty( adminSubject, "CALL dbms.removeUserFromRole('readSubject', '" + READER + "')" );
-        assertFalse( "Should not have role reader", readSubject.getShiroSubject().hasRole( READER ) );
+        assertFalse( "Should not have role reader", userHasRole( "readSubject", READER ) );
     }
 
     @Test
     public void shouldKeepUserOutOfRole() throws Exception
     {
-        assertFalse( "Should not have role publisher", readSubject.getShiroSubject().hasRole( PUBLISHER ) );
+        assertFalse( "Should not have role publisher", userHasRole( "readSubject", PUBLISHER ) );
         testCallEmpty( adminSubject, "CALL dbms.removeUserFromRole('readSubject', '" + PUBLISHER + "')" );
-        assertFalse( "Should not have role publisher", readSubject.getShiroSubject().hasRole( PUBLISHER ) );
+        assertFalse( "Should not have role publisher", userHasRole( "readSubject", PUBLISHER ) );
     }
 
     @Test
@@ -452,23 +446,16 @@ public class AuthProceduresTest extends NeoShallowEmbeddedTestBase
     @Test
     public void shouldAllowAddingAndRemovingUserFromMultipleRoles() throws Exception
     {
-        assertFalse( "Should not have role publisher",
-                EnterpriseAuthSubject.castOrFail( readSubject ).getShiroSubject().hasRole( PUBLISHER ) );
-        assertFalse( "Should not have role architect",
-                EnterpriseAuthSubject.castOrFail( readSubject ).getShiroSubject().hasRole( ARCHITECT ) );
+        assertFalse( "Should not have role publisher", userHasRole( "readSubject", PUBLISHER ) );
+        assertFalse( "Should not have role architect", userHasRole( "readSubject", ARCHITECT ) );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('readSubject', '" + PUBLISHER + "')" );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('readSubject', '" + ARCHITECT + "')" );
-        assertTrue( "Should have role publisher",
-                EnterpriseAuthSubject.castOrFail( readSubject ).getShiroSubject().hasRole( PUBLISHER ) );
-        assertTrue( "Should have role architect",
-                EnterpriseAuthSubject.castOrFail( readSubject ).getShiroSubject().hasRole( ARCHITECT ) );
-
+        assertTrue( "Should have role publisher", userHasRole( "readSubject", PUBLISHER ) );
+        assertTrue( "Should have role architect", userHasRole( "readSubject", ARCHITECT ) );
         testCallEmpty( adminSubject, "CALL dbms.removeUserFromRole('readSubject', '" + PUBLISHER + "')" );
         testCallEmpty( adminSubject, "CALL dbms.removeUserFromRole('readSubject', '" + ARCHITECT + "')" );
-        assertFalse( "Should not have role publisher",
-                EnterpriseAuthSubject.castOrFail( readSubject ).getShiroSubject().hasRole( PUBLISHER ) );
-        assertFalse( "Should not have role architect",
-                EnterpriseAuthSubject.castOrFail( readSubject ).getShiroSubject().hasRole( ARCHITECT ) );
+        assertFalse( "Should not have role publisher", userHasRole( "readSubject", PUBLISHER ) );
+        assertFalse( "Should not have role architect", userHasRole( "readSubject", ARCHITECT ) );
     }
 
     //---------- list users -----------
@@ -487,12 +474,12 @@ public class AuthProceduresTest extends NeoShallowEmbeddedTestBase
                 "adminSubject", listOf( ADMIN ),
                 "readSubject", listOf( READER ),
                 "schemaSubject", listOf( ARCHITECT ),
-                "readWriteSubject", listOf( READER, PUBLISHER ),
+                "writeSubject", listOf( READER, PUBLISHER ),
                 "pwdSubject", listOf( ),
                 "noneSubject", listOf( ),
                 "neo4j", listOf( ADMIN )
         );
-        userManager.addUserToRole( "readWriteSubject", READER );
+        userManager.addUserToRole( "writeSubject", READER );
         executeQuery( adminSubject, "CALL dbms.listUsers()",
                 r -> assertKeyIsMap( r, "username", "roles", expected ) );
     }
@@ -500,7 +487,7 @@ public class AuthProceduresTest extends NeoShallowEmbeddedTestBase
     @Test
     public void shouldShowCurrentUser() throws Exception
     {
-        userManager.addUserToRole( "readWriteSubject", READER );
+        userManager.addUserToRole( "writeSubject", READER );
         executeQuery( adminSubject, "CALL dbms.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "roles", map( "adminSubject", listOf( ADMIN ) ) ) );
         executeQuery( readSubject, "CALL dbms.showCurrentUser()",
@@ -509,7 +496,7 @@ public class AuthProceduresTest extends NeoShallowEmbeddedTestBase
                 r -> assertKeyIsMap( r, "username", "roles", map( "schemaSubject", listOf( ARCHITECT ) ) ) );
         executeQuery( writeSubject, "CALL dbms.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "roles",
-                        map( "readWriteSubject", listOf( READER, PUBLISHER ) ) ) );
+                        map( "writeSubject", listOf( READER, PUBLISHER ) ) ) );
         executeQuery( noneSubject, "CALL dbms.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "roles", map( "noneSubject", listOf() ) ) );
     }
@@ -539,7 +526,7 @@ public class AuthProceduresTest extends NeoShallowEmbeddedTestBase
                 ADMIN, listOf( "adminSubject", "neo4j" ),
                 READER, listOf( "readSubject" ),
                 ARCHITECT, listOf( "schemaSubject" ),
-                PUBLISHER, listOf( "readWriteSubject" ),
+                PUBLISHER, listOf( "writeSubject" ),
                 "empty", listOf()
         );
         executeQuery( adminSubject, "CALL dbms.listRoles()",
@@ -609,7 +596,7 @@ public class AuthProceduresTest extends NeoShallowEmbeddedTestBase
     public void shouldListUsersForRole() throws Exception
     {
         executeQuery( adminSubject, "CALL dbms.listUsersForRole('admin') YIELD value as users RETURN users",
-                r -> assertKeyIs( r, "users", adminSubject.name(), "neo4j" ) );
+                r -> assertKeyIs( r, "users", "adminSubject", "neo4j" ) );
     }
 
     @Test
@@ -662,8 +649,8 @@ public class AuthProceduresTest extends NeoShallowEmbeddedTestBase
 
         testCallEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', true)" );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + ARCHITECT + "')" );
-        EnterpriseAuthSubject henrik = neo.login( "Henrik", "bar" );
-        assertEquals( AuthenticationResult.PASSWORD_CHANGE_REQUIRED, henrik.getAuthenticationResult() );
+        S henrik = neo.login( "Henrik", "bar" );
+        assertEquals( AuthenticationResult.PASSWORD_CHANGE_REQUIRED, neo.authenticationResult( henrik ) );
         testFailRead( henrik, 3 );
         testFailWrite( henrik );
         testFailSchema( henrik );
@@ -671,8 +658,8 @@ public class AuthProceduresTest extends NeoShallowEmbeddedTestBase
 
         testCallEmpty( adminSubject, "CALL dbms.createUser('Olivia', 'bar', true)" );
         testCallEmpty( adminSubject, "CALL dbms.addUserToRole('Olivia', '" + ADMIN + "')" );
-        EnterpriseAuthSubject olivia = neo.login( "Olivia", "bar" );
-        assertEquals( AuthenticationResult.PASSWORD_CHANGE_REQUIRED, olivia.getAuthenticationResult() );
+        S olivia = neo.login( "Olivia", "bar" );
+        assertEquals( AuthenticationResult.PASSWORD_CHANGE_REQUIRED, neo.authenticationResult( olivia ) );
         testFailRead( olivia, 3 );
         testFailWrite( olivia );
         testFailSchema( olivia );

@@ -46,7 +46,7 @@ import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.A
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.PUBLISHER;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READER;
 
-abstract class AuthProcedureTestBase<S>
+abstract class AuthTestBase<S>
 {
     final String EMPTY_ROLE = "empty";
 
@@ -58,7 +58,7 @@ abstract class AuthProcedureTestBase<S>
     S noneSubject;
 
     String[] initialUsers = { "adminSubject", "readSubject", "schemaSubject",
-        "readWriteSubject", "pwdSubject", "noneSubject", "neo4j" };
+        "writeSubject", "pwdSubject", "noneSubject", "neo4j" };
     String[] initialRoles = { ADMIN, ARCHITECT, PUBLISHER, READER, EMPTY_ROLE };
 
     protected EnterpriseUserManager userManager;
@@ -75,18 +75,18 @@ abstract class AuthProcedureTestBase<S>
         userManager.newUser( "pwdSubject", "abc", true );
         userManager.newUser( "adminSubject", "abc", false );
         userManager.newUser( "schemaSubject", "abc", false );
-        userManager.newUser( "readWriteSubject", "abc", false );
+        userManager.newUser( "writeSubject", "abc", false );
         userManager.newUser( "readSubject", "123", false );
         // Currently admin role is created by default
         userManager.addUserToRole( "adminSubject", ADMIN );
         userManager.addUserToRole( "schemaSubject", ARCHITECT );
-        userManager.addUserToRole( "readWriteSubject", PUBLISHER );
+        userManager.addUserToRole( "writeSubject", PUBLISHER );
         userManager.addUserToRole( "readSubject", READER );
         userManager.newRole( EMPTY_ROLE );
         noneSubject = neo.login( "noneSubject", "abc" );
         pwdSubject = neo.login( "pwdSubject", "abc" );
         readSubject = neo.login( "readSubject", "123" );
-        writeSubject = neo.login( "readWriteSubject", "abc" );
+        writeSubject = neo.login( "writeSubject", "abc" );
         schemaSubject = neo.login( "schemaSubject", "abc" );
         adminSubject = neo.login( "adminSubject", "abc" );
         executeQuery( writeSubject, "UNWIND range(0,2) AS number CREATE (:Node {number:number})" );
@@ -183,8 +183,8 @@ abstract class AuthProcedureTestBase<S>
 
     void testSuccessfulListUsers( S subject, String[] users )
     {
-        executeQuery( subject, "CALL dbms.listUsers() YIELD value AS users RETURN users",
-                r -> assertKeyIsArray( r, "users", users ) );
+        executeQuery( subject, "CALL dbms.listUsers() YIELD username",
+                r -> assertKeyIsArray( r, "username", users ) );
     }
 
     void testFailListUsers( S subject, int count )
@@ -196,8 +196,8 @@ abstract class AuthProcedureTestBase<S>
 
     void testSuccessfulListRoles( S subject, String[] roles )
     {
-        executeQuery( subject, "CALL dbms.listRoles() YIELD value AS roles RETURN roles",
-                r -> assertKeyIsArray( r, "roles", roles ) );
+        executeQuery( subject, "CALL dbms.listRoles() YIELD role",
+                r -> assertKeyIsArray( r, "role", roles ) );
     }
 
     void testFailListRoles( S subject )
@@ -320,5 +320,10 @@ abstract class AuthProcedureTestBase<S>
     void executeQuery( S subject, String call, Consumer<Result> resultConsumer )
     {
         neo.executeQuery( subject, call, null, resultConsumer );
+    }
+
+    boolean userHasRole( String user, String role )
+    {
+        return userManager.getRoleNamesForUser( user ).contains( role );
     }
 }
