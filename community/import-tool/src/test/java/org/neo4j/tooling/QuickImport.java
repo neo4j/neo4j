@@ -38,6 +38,9 @@ import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
+
+import static java.lang.System.currentTimeMillis;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.tooling.DataGeneratorInput.bareboneNodeHeader;
@@ -72,6 +75,7 @@ public class QuickImport
         int labelCount = args.getNumber( "labels", 4 ).intValue();
         int relationshipTypeCount = args.getNumber( "relationship-types", 4 ).intValue();
         File dir = new File( args.get( ImportTool.Options.STORE_DIR.key() ) );
+        long randomSeed = args.getNumber( "random-seed", currentTimeMillis() ).longValue();
 
         Extractors extractors = new Extractors( COMMAS.arrayDelimiter() );
         IdType idType = IdType.valueOf( args.get( "id-type", IdType.ACTUAL.name() ) );
@@ -95,7 +99,7 @@ public class QuickImport
             }
         };
 
-        SimpleDataGenerator generator = new SimpleDataGenerator( nodeHeader, relationshipHeader, relationshipCount,
+        SimpleDataGenerator generator = new SimpleDataGenerator( nodeHeader, relationshipHeader, randomSeed,
                 nodeCount, labelCount, relationshipTypeCount, idType );
         Input input = new DataGeneratorInput(
                 nodeCount, relationshipCount,
