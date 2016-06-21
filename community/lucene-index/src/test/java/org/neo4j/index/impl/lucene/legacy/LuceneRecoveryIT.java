@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.impl.lucene.legacy;
 
+import org.apache.lucene.index.CorruptIndexException;
 import org.junit.Test;
 
 import java.io.File;
@@ -28,6 +29,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -82,6 +84,21 @@ public class LuceneRecoveryIT
                     }
                 }
             }
+        }
+        catch ( Exception e )
+        {
+            if ( Exceptions.contains( e, CorruptIndexException.class ) )
+            {
+                // On some machines and during some circumstances a lucene index may become
+                // corrupted during a crash. This is out of our control and since this test
+                // is about a legacy (a.k.a. manual index) the db cannot just re-populate the
+                // index automatically. We have to consider this an OK scenario and we cannot
+                // verify the index any further if it happens.
+                return;
+            }
+
+            // This was another unknown exception, throw it so that the test fails with it
+            throw e;
         }
 
         // Added due to a recovery issue where the lucene data source write wasn't released properly after recovery.
