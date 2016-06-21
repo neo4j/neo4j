@@ -22,16 +22,19 @@ package org.neo4j.coreedge.raft.log.debug;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.coreedge.raft.log.naive.NaiveDurableRaftLog;
+import org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionFactory;
+import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ReplayRaftLog
 {
@@ -46,14 +49,12 @@ public class ReplayRaftLog
 
         File logDirectory = new File( from );
         System.out.println( "logDirectory = " + logDirectory );
-        NaiveDurableRaftLog log = new NaiveDurableRaftLog( new DefaultFileSystemAbstraction(),
-                logDirectory, new CoreReplicatedContentMarshal(), NullLogProvider.getInstance() );
+        Config config = new Config( stringMap() );
+        SegmentedRaftLog log = new SegmentedRaftLog( new DefaultFileSystemAbstraction(), logDirectory,
+                config.get( CoreEdgeClusterSettings.raft_log_rotation_size ), new CoreReplicatedContentMarshal(),
+                NullLogProvider.getInstance(), config.get( CoreEdgeClusterSettings.raft_log_pruning_strategy ) );
 
         long totalCommittedEntries = log.appendIndex(); // Not really, but we need to have a way to pass in the commit index
-
-//        File target = new File( to );
-//        RandomAccessFile newLog = new RandomAccessFile( target, "rw" );
-
         for ( int i = 0; i <= totalCommittedEntries; i++ )
         {
             ReplicatedContent content = readLogEntry( log, i ).content();
@@ -67,6 +68,5 @@ public class ReplayRaftLog
                         } );
             }
         }
-//        newLog.close();
     }
 }

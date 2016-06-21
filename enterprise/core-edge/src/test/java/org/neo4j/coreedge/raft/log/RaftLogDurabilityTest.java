@@ -32,27 +32,20 @@ import java.util.Collection;
 
 import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.ReplicatedString;
-import org.neo4j.coreedge.raft.log.naive.NaiveDurableRaftLog;
-import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLog;
-import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLogFile;
 import org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog;
 import org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.RaftLogImplementation;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.coreedge.raft.ReplicatedInteger.valueOf;
 import static org.neo4j.coreedge.raft.log.RaftLogHelper.hasNoContent;
 import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
 import static org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
-import static org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.RaftLogImplementation.NAIVE;
-import static org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.RaftLogImplementation.PHYSICAL;
 import static org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.RaftLogImplementation.SEGMENTED;
 
 @RunWith(Parameterized.class)
@@ -71,38 +64,11 @@ public class RaftLogDurabilityTest
     @Parameters(name = "log:{0}")
     public static Collection<Object[]> data()
     {
-        RaftLogFactory naive = ( fileSystem ) -> {
-            File directory = new File( SEGMENTED_LOG_DIRECTORY_NAME );
-            fileSystem.mkdir( directory );
-            return new NaiveDurableRaftLog( fileSystem, directory, new DummyRaftableContentSerializer(),
-                    NullLogProvider.getInstance() );
-        };
-
-        RaftLogFactory physical = ( fileSystem ) -> {
-            File directory = new File( SEGMENTED_LOG_DIRECTORY_NAME );
-            fileSystem.mkdir( directory );
-
-            long rotateAtSizeBytes = 128;
-            int entryCacheSize = 4;
-            int metadataCacheSize = 8;
-            int fileHeaderCacheSize = 2;
-
-            PhysicalRaftLog log = new PhysicalRaftLog( fileSystem, directory, rotateAtSizeBytes, "1 files",
-                    entryCacheSize, fileHeaderCacheSize,
-                    new PhysicalRaftLogFile.Monitor.Adapter(), new DummyRaftableContentSerializer(), () -> mock(
-                    DatabaseHealth.class ),
-                    NullLogProvider.getInstance(), new RaftLogMetadataCache( metadataCacheSize ) );
-            log.init();
-            log.start();
-            return log;
-        };
-
         RaftLogFactory segmented = ( fileSystem ) -> {
             File directory = new File( SEGMENTED_LOG_DIRECTORY_NAME );
             fileSystem.mkdir( directory );
 
             long rotateAtSizeBytes = 128;
-            int entryCacheSize = 4;
 
             SegmentedRaftLog log = new SegmentedRaftLog( fileSystem, directory, rotateAtSizeBytes, new DummyRaftableContentSerializer(),
                     NullLogProvider.getInstance(), "1 size" );
@@ -110,11 +76,7 @@ public class RaftLogDurabilityTest
             return log;
         };
 
-        return Arrays.asList( new Object[][]{
-                {NAIVE, naive},
-                {PHYSICAL, physical},
-                {SEGMENTED, segmented},
-        } );
+        return Arrays.asList( new Object[][]{ {SEGMENTED, segmented}  } );
     }
 
     @Test

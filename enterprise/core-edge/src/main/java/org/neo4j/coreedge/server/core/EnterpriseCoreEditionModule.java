@@ -57,10 +57,6 @@ import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.MonitoredRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.RaftLogMetadataCache;
-import org.neo4j.coreedge.raft.log.naive.NaiveDurableRaftLog;
-import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLog;
-import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLogFile;
 import org.neo4j.coreedge.raft.log.pruning.PruningScheduler;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog;
@@ -163,7 +159,6 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.udc.UsageData;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
 
 /**
@@ -207,22 +202,7 @@ public class EnterpriseCoreEditionModule
 
     public enum RaftLogImplementation
     {
-        NAIVE,
-        IN_MEMORY,
-        PHYSICAL,
-        SEGMENTED;
-
-        public static RaftLogImplementation fromString( String value )
-        {
-            try
-            {
-                return RaftLogImplementation.valueOf( value );
-            }
-            catch ( IllegalArgumentException ex )
-            {
-                return NAIVE;
-            }
-        }
+        IN_MEMORY, SEGMENTED
     }
 
     @Override
@@ -300,14 +280,13 @@ public class EnterpriseCoreEditionModule
         final DelayedRenewableTimeoutService raftTimeoutService =
                 new DelayedRenewableTimeoutService( Clock.systemUTC(), logProvider );
 
-        RaftLog underlyingLog = createRaftLog(
-                config, life, fileSystem, clusterStateDirectory, marshal, logProvider, databaseHealthSupplier );
+        RaftLog underlyingLog = createRaftLog( config, life, fileSystem, clusterStateDirectory, marshal, logProvider );
 
         MonitoredRaftLog raftLog = new MonitoredRaftLog( underlyingLog, platformModule.monitors );
 
-        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
-                new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(),
-                        platformModule.pageCache ),
+        CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
+                platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
+        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir, copiedStoreRecovery,
                 new StoreFiles( new DefaultFileSystemAbstraction() ),
                 dependencies.provideDependency( NeoStoreDataSource.class ),
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ), databaseHealthSupplier );
@@ -531,33 +510,15 @@ public class EnterpriseCoreEditionModule
                 joinCatchupTimeout, logProvider ) );
     }
 
-    private RaftLog createRaftLog(
-            Config config, LifeSupport life, FileSystemAbstraction fileSystem, File clusterStateDirectory,
-            CoreReplicatedContentMarshal marshal, LogProvider logProvider,
-            Supplier<DatabaseHealth> databaseHealthSupplier )
+    private RaftLog createRaftLog( Config config, LifeSupport life, FileSystemAbstraction fileSystem,
+            File clusterStateDirectory, CoreReplicatedContentMarshal marshal, LogProvider logProvider )
     {
-        RaftLogImplementation raftLogImplementation = RaftLogImplementation.fromString(
-                config.get( CoreEdgeClusterSettings.raft_log_implementation ) );
+        RaftLogImplementation raftLogImplementation =
+                RaftLogImplementation.valueOf( config.get( CoreEdgeClusterSettings.raft_log_implementation ) );
         switch ( raftLogImplementation )
         {
             case IN_MEMORY:
                 return new InMemoryRaftLog();
-            case PHYSICAL:
-            {
-                long rotateAtSize = config.get( CoreEdgeClusterSettings.raft_log_rotation_size );
-                String pruneConf = config.get( CoreEdgeClusterSettings.raft_log_pruning_strategy );
-                int entryCacheSize = 32;
-                int metaDataCacheSize = 100_000;
-                int headerCacheSize = 10;
-
-                return life.add( new PhysicalRaftLog(
-                        fileSystem,
-                        new File( clusterStateDirectory, PhysicalRaftLog.PHYSICAL_LOG_DIRECTORY_NAME ),
-                        rotateAtSize, pruneConf, entryCacheSize, headerCacheSize,
-                        new PhysicalRaftLogFile.Monitor.Adapter(), marshal, databaseHealthSupplier, logProvider,
-                        new RaftLogMetadataCache( metaDataCacheSize ) ) );
-            }
-
             case SEGMENTED:
             {
                 long rotateAtSize = config.get( CoreEdgeClusterSettings.raft_log_rotation_size );
@@ -565,19 +526,14 @@ public class EnterpriseCoreEditionModule
 
                 return life.add( new SegmentedRaftLog(
                         fileSystem,
-                        new File( clusterStateDirectory, PhysicalRaftLog.PHYSICAL_LOG_DIRECTORY_NAME ),
+                        new File( clusterStateDirectory, RaftLog.PHYSICAL_LOG_DIRECTORY_NAME ),
                         rotateAtSize,
                         marshal,
                         logProvider,
                         pruningStrategyConfig ) );
             }
-
-            case NAIVE:
             default:
-                return life.add( new NaiveDurableRaftLog(
-                        fileSystem,
-                        new File( clusterStateDirectory, NaiveDurableRaftLog.NAIVE_LOG_DIRECTORY_NAME ),
-                        marshal, logProvider ) );
+                throw new IllegalStateException( "Unknown raft log implementation: " + raftLogImplementation );
         }
     }
 
