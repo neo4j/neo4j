@@ -24,6 +24,8 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.Transaction;
@@ -33,13 +35,16 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.mockito.matcher.Neo4jMatchers;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
+
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
@@ -81,7 +86,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
     @Documented( "List indexes for a label." )
     @Test
     @GraphDescription.Graph( nodes = {} )
-    public void get_indexes_for_label() throws JsonParseException
+    public void get_indexes_for_label() throws Exception
     {
         data.get();
 
@@ -89,14 +94,19 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
         createIndex( labelName, propertyKey );
         Map<String,Object> definition = map( "property_keys", singletonList( propertyKey ) );
 
-        String result = gen.get()
-                .noGraph()
-                .expectedStatus( 200 )
-                .payload( createJsonFrom( definition ) )
-                .get( getSchemaIndexLabelUri( labelName ) )
-                .entity();
-
-        List<Map<String,Object>> serializedList = jsonToList( result );
+        List<Map<String,Object>> serializedList = retryOnStillPopulating( new Callable<String>()
+        {
+            @Override
+            public String call()
+            {
+                return gen.get()
+                        .noGraph()
+                        .expectedStatus( 200 )
+                        .payload( createJsonFrom( definition ) )
+                        .get( getSchemaIndexLabelUri( labelName ) )
+                        .entity();
+            }
+        } );
 
         Map<String,Object> index = new HashMap<>();
         index.put( "label", labelName );
@@ -105,11 +115,45 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
         assertThat( serializedList, hasItem( index ) );
     }
 
+    private List<Map<String,Object>> retryOnStillPopulating( Callable<String> callable ) throws Exception
+    {
+        long endTime = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis( 1 );
+        List<Map<String,Object>> serializedList;
+        do
+        {
+            String result = callable.call();
+            serializedList = jsonToList( result );
+            if ( System.currentTimeMillis() > endTime )
+            {
+                fail( "Indexes didn't populate correctly, last result '" + result + "'" );
+            }
+        }
+        while ( stillPopulating( serializedList ) );
+        return serializedList;
+    }
+
+    private boolean stillPopulating( List<Map<String,Object>> serializedList )
+    {
+        // We've created an index. That HTTP call for creating the index will return
+        // immediately and indexing continue in the background. Querying the index endpoint
+        // while index is populating gives back additional information like population progress.
+        // This test below will look at the response of a "get index" result and if still populating
+        // then return true so that caller may retry the call later.
+        for ( Map<String,Object> map : serializedList )
+        {
+            if ( map.containsKey( "population_progress" ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @SuppressWarnings( "unchecked" )
     @Documented( "Get all indexes." )
     @Test
     @GraphDescription.Graph( nodes = {} )
-    public void get_indexes() throws JsonParseException
+    public void get_indexes() throws Exception
     {
         data.get();
 
@@ -118,9 +162,14 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
         createIndex( labelName1, propertyKey1 );
         createIndex( labelName2, propertyKey2 );
 
-        String result = gen.get().noGraph().expectedStatus( 200 ).get( getSchemaIndexUri() ).entity();
-
-        List<Map<String,Object>> serializedList = jsonToList( result );
+        List<Map<String,Object>> serializedList = retryOnStillPopulating( new Callable<String>()
+        {
+            @Override
+            public String call() throws Exception
+            {
+                return gen.get().noGraph().expectedStatus( 200 ).get( getSchemaIndexUri() ).entity();
+            }
+        } );
 
         Map<String,Object> index1 = new HashMap<>();
         index1.put( "label", labelName1 );
