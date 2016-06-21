@@ -53,7 +53,7 @@ public class TypeMappers
     {
         AnyType type();
         Object toNeoValue( Object javaValue ) throws ProcedureException;
-        Optional<Object> defaultValue(Name parameter);
+        Optional<Object> defaultValue(Name parameter) throws ProcedureException;
     }
 
     private final Map<Type,NeoValueConverter> javaToNeo = new HashMap<>();
@@ -139,7 +139,7 @@ public class TypeMappers
 
     private NeoValueConverter toList( NeoValueConverter inner )
     {
-        return new SimpleConverter( NTList( inner.type() ), List.class,s -> {
+        return new SimpleConverter( NTList( inner.type() ), List.class, s -> {
             throw new UnsupportedOperationException("Default values for type List is not supported" );
         } );
     }
@@ -175,7 +175,7 @@ public class TypeMappers
             this.defaultConverter = defaultConverter;
         }
 
-        public Optional<Object> defaultValue(Name parameter)
+        public Optional<Object> defaultValue(Name parameter) throws ProcedureException
         {
             String defaultValue = parameter.defaultValue();
             if ( defaultValue.equals( Name.DEFAULT_VALUE ) )
@@ -184,7 +184,15 @@ public class TypeMappers
             }
             else
             {
-                return Optional.of( defaultConverter.apply( defaultValue ) );
+                try
+                {
+                    return Optional.of( defaultConverter.apply( defaultValue ) );
+                }
+                catch ( Exception e )
+                {
+                    throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                            "Default value `%s` could not be parsed as a %s", parameter.defaultValue(), javaClass.getSimpleName() );
+                }
             }
         }
 

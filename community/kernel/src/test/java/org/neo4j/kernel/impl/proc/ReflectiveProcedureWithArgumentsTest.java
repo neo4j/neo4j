@@ -123,6 +123,19 @@ public class ReflectiveProcedureWithArgumentsTest
         compile( ClassWithProcedureWithMisplacedDefault.class );
     }
 
+    @Test
+    public void shouldFailIfWronglyTypedDefaultValue() throws Throwable
+    {
+        // Expect
+        exception.expect( ProcedureException.class );
+        exception.expectMessage( String.format("Argument `a` at position 0 in `defaultValues` with%n" +
+                "type `long` cannot be converted to a Neo4j type: Default value `forty-two` could not be parsed as a " +
+                "Long" ));
+
+        // When
+        compile( ClassWithProcedureWithBadlyTypedDefault.class );
+    }
+
     public static class MyOutputRecord
     {
         public String name;
@@ -183,6 +196,15 @@ public class ReflectiveProcedureWithArgumentsTest
     {
         @Procedure
         public Stream<MyOutputRecord> defaultValues( @Name( "a" ) String a , @Name( value = "b", defaultValue = "42") long b, @Name( "c" ) Object c)
+        {
+            return Stream.empty();
+        }
+    }
+
+    public static class ClassWithProcedureWithBadlyTypedDefault
+    {
+        @Procedure
+        public Stream<MyOutputRecord> defaultValues( @Name( value = "a", defaultValue = "forty-two") long b)
         {
             return Stream.empty();
         }
