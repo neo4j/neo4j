@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
@@ -54,6 +55,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
@@ -692,9 +694,42 @@ public class AuthProceduresTest
     @Test
     public void shouldReturnUsers() throws Exception
     {
-        testResult( db, adminSubject, "CALL dbms.listUsers() YIELD value AS users RETURN users",
-                r -> resultContainsInAnyOrder( r, "users", "adminSubject", "readSubject", "schemaSubject",
+        testResult( db, adminSubject, "CALL dbms.listUsers() YIELD username",
+                r -> resultContainsInAnyOrder( r, "username", "adminSubject", "readSubject", "schemaSubject",
                         "readWriteSubject", "noneSubject", "neo4j" ) );
+    }
+
+    @Test
+    public void shouldReturnUsersWithRoles() throws Exception
+    {
+        Map<String, Object> expected = map(
+                "adminSubject", listOf( ADMIN ),
+                "readSubject", listOf( READER ),
+                "schemaSubject", listOf( ARCHITECT ),
+                "readWriteSubject", listOf( READER, PUBLISHER ),
+                "noneSubject", listOf( ),
+                "neo4j", listOf( ADMIN )
+        );
+        manager.addUserToRole( "readWriteSubject", READER );
+        testResult( db, adminSubject, "CALL dbms.listUsers()",
+                r -> resultContainsMap( r, "username", "roles", expected ) );
+    }
+
+    @Test
+    public void shouldShowCurrentUser() throws Exception
+    {
+        manager.addUserToRole( "readWriteSubject", READER );
+        testResult( db, adminSubject, "CALL dbms.showCurrentUser()",
+                r -> resultContainsMap( r, "username", "roles", map( "adminSubject", listOf( ADMIN ) ) ) );
+        testResult( db, readSubject, "CALL dbms.showCurrentUser()",
+                r -> resultContainsMap( r, "username", "roles", map( "readSubject", listOf( READER ) ) ) );
+        testResult( db, schemaSubject, "CALL dbms.showCurrentUser()",
+                r -> resultContainsMap( r, "username", "roles", map( "schemaSubject", listOf( ARCHITECT ) ) ) );
+        testResult( db, writeSubject, "CALL dbms.showCurrentUser()",
+                r -> resultContainsMap( r, "username", "roles",
+                        map( "readWriteSubject", listOf( READER, PUBLISHER ) ) ) );
+        testResult( db, noneSubject, "CALL dbms.showCurrentUser()",
+                r -> resultContainsMap( r, "username", "roles", map( "noneSubject", listOf() ) ) );
     }
 
     @Test
@@ -718,18 +753,18 @@ public class AuthProceduresTest
     @Test
     public void userListing() throws Exception
     {
-        testResult( db, adminSubject, "CALL dbms.listUsers() YIELD value AS users RETURN users",
+        testResult( db, adminSubject, "CALL dbms.listUsers() YIELD username AS users RETURN users",
                 r -> resultContainsInAnyOrder( r, "users", "adminSubject", "readSubject", "schemaSubject",
                         "readWriteSubject", "noneSubject", "neo4j" ) );
         testCallEmpty( db, adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
-        testResult( db, adminSubject, "CALL dbms.listUsers() YIELD value AS users RETURN users",
+        testResult( db, adminSubject, "CALL dbms.listUsers() YIELD username AS users RETURN users",
                 r -> resultContainsInAnyOrder( r, "users", "adminSubject", "readSubject", "schemaSubject",
                         "readWriteSubject", "noneSubject", "Henrik", "neo4j" ) );
         AuthSubject subject = manager.login( authToken( "Henrik", "bar" ) );
         assertEquals( AuthenticationResult.SUCCESS, subject.getAuthenticationResult() );
         testFailListUsers( subject, 6 );
         testCallEmpty( db, adminSubject, "CALL dbms.addUserToRole('Henrik', '" + ADMIN + "')" );
-        testResult( db, subject, "CALL dbms.listUsers() YIELD value AS users RETURN users",
+        testResult( db, subject, "CALL dbms.listUsers() YIELD username AS users RETURN users",
                 r -> resultContainsInAnyOrder( r, "users", "adminSubject", "readSubject", "schemaSubject",
                         "readWriteSubject", "noneSubject", "Henrik", "neo4j" ) );
     }
@@ -737,8 +772,22 @@ public class AuthProceduresTest
     @Test
     public void shouldReturnRoles() throws Exception
     {
-        testResult( db, adminSubject, "CALL dbms.listRoles() YIELD value AS roles RETURN roles",
+        testResult( db, adminSubject, "CALL dbms.listRoles() YIELD role AS roles RETURN roles",
                 r -> resultContainsInAnyOrder( r, "roles", ADMIN, ARCHITECT, PUBLISHER, READER, "empty" ) );
+    }
+
+    @Test
+    public void shouldReturnRolesWithUsers() throws Exception
+    {
+        Map<String,Object> expected = map(
+                ADMIN, listOf( "adminSubject", "neo4j" ),
+                READER, listOf( "readSubject" ),
+                ARCHITECT, listOf( "schemaSubject" ),
+                PUBLISHER, listOf( "readWriteSubject" ),
+                "empty", listOf()
+        );
+        testResult( db, adminSubject, "CALL dbms.listRoles()",
+                r -> resultContainsMap( r, "role", "users", expected ) );
     }
 
     @Test
@@ -938,7 +987,7 @@ public class AuthProceduresTest
 
     private void testSuccessfulListUsersAction( AuthSubject subject, int count )
     {
-        testCallCount( db, subject, "CALL dbms.listUsers() YIELD value AS users RETURN users", null, count );
+        testCallCount( db, subject, "CALL dbms.listUsers() YIELD username AS users RETURN users", null, count );
     }
 
     private void testFailListUsers( AuthSubject subject, int count )
@@ -957,7 +1006,7 @@ public class AuthProceduresTest
 
     private void testSuccessfulListRolesAction( AuthSubject subject )
     {
-        testCallCount( db, subject, "CALL dbms.listRoles() YIELD value AS roles RETURN roles", null, 5 );
+        testCallCount( db, subject, "CALL dbms.listRoles() YIELD role AS roles RETURN roles", null, 5 );
     }
 
     private void testFailListRoles( AuthSubject subject )
@@ -1006,6 +1055,11 @@ public class AuthProceduresTest
         }
     }
 
+    private List<String> listOf( String... values )
+    {
+        return Stream.of( values ).collect( Collectors.toList() );
+    }
+
     private List<Object> getObjectsAsList( Result r, String key )
     {
         return r.stream().map( s -> s.get( key ) ).collect( Collectors.toList() );
@@ -1016,6 +1070,20 @@ public class AuthProceduresTest
         List<Object> results = getObjectsAsList( r, key );
         Assert.assertThat( results, containsInAnyOrder( items ) );
         assertEquals( Arrays.asList( items ).size(), results.size() );
+    }
+
+    private void resultContainsMap( Result r, String keyKey, String valueKey, Map<String,Object> expected )
+    {
+        r.stream().forEach( s -> {
+            String key = (String) s.get( keyKey );
+            List<String> value = (List<String>) s.get( valueKey );
+            assertTrue( "Expected to find values for '" + key + "'", expected.containsKey( key ) );
+            List<String> expectedValues = (List<String>) expected.get( key );
+            assertEquals(
+                    "Results for '" + key + "' should have size " + expectedValues.size() + " but was " + value.size(),
+                    value.size(), expectedValues.size() );
+            assertThat( value, containsInAnyOrder( expectedValues.toArray() ) );
+        } );
     }
 
     private static void testCall( GraphDatabaseAPI db, AuthSubject subject, String call,

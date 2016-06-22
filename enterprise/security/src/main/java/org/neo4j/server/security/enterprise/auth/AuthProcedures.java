@@ -20,6 +20,8 @@
 package org.neo4j.server.security.enterprise.auth;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -134,27 +136,41 @@ public class AuthProcedures
     }
 
     @PerformsDBMS
+    @Procedure( "dbms.showCurrentUser" )
+    public Stream<UserResult> showCurrentUser( )
+            throws IllegalCredentialsException, IOException
+    {
+        ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
+        RoleManager roleManager = shiroSubject.getRoleManager();
+        return Stream.of( new UserResult( shiroSubject.name(), roleManager.getRoleNamesForUser( shiroSubject.name() ) ) );
+    }
+
+    @PerformsDBMS
     @Procedure( "dbms.listUsers" )
-    public Stream<StringResult> listUsers() throws IllegalCredentialsException, IOException
+    public Stream<UserResult> listUsers() throws IllegalCredentialsException, IOException
     {
         ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
         if ( !shiroSubject.isAdmin() )
         {
             throw new AuthorizationViolationException( PERMISSION_DENIED );
         }
-        return shiroSubject.getUserManager().getAllUsernames().stream().map( StringResult::new );
+        RoleManager roleManager = shiroSubject.getRoleManager();
+        return shiroSubject.getUserManager().getAllUsernames().stream()
+                .map( u -> new UserResult( u, roleManager.getRoleNamesForUser( u ) ) );
     }
 
     @PerformsDBMS
     @Procedure( "dbms.listRoles" )
-    public Stream<StringResult> listRoles() throws IllegalCredentialsException, IOException
+    public Stream<RoleResult> listRoles() throws IllegalCredentialsException, IOException
     {
         ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
         if ( !shiroSubject.isAdmin() )
         {
             throw new AuthorizationViolationException( PERMISSION_DENIED );
         }
-        return shiroSubject.getRoleManager().getAllRoleNames().stream().map( StringResult::new );
+        RoleManager roleManager = shiroSubject.getRoleManager();
+        return roleManager.getAllRoleNames().stream()
+                .map( r -> new RoleResult( r, roleManager.getUsernamesForRole( r ) ) );
     }
 
     @PerformsDBMS
@@ -188,6 +204,28 @@ public class AuthProcedures
 
         public StringResult(String value) {
             this.value = value;
+        }
+    }
+
+    public class UserResult {
+        public final String username;
+        public final List<String> roles;
+
+        public UserResult(String username, Set<String> roles) {
+            this.username = username;
+            this.roles = new ArrayList<>();
+            this.roles.addAll(roles);
+        }
+    }
+
+    public class RoleResult {
+        public final String role;
+        public final List<String> users;
+
+        public RoleResult(String role, Set<String> users) {
+            this.role = role;
+            this.users = new ArrayList<>();
+            this.users.addAll(users);
         }
     }
 }
