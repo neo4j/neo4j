@@ -19,29 +19,11 @@
  */
 package org.neo4j.kernel.impl.factory;
 
-import java.io.File;
-import java.util.Map;
-
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-
-import static org.neo4j.helpers.collection.Iterables.append;
-import static org.neo4j.helpers.collection.Iterables.asList;
-import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
-
 /**
  * This facade creates instances of the Community edition of Neo4j.
  */
 public class CommunityFacadeFactory extends GraphDatabaseFacadeFactory
 {
-    @Override
-    public GraphDatabaseFacade initFacade( File storeDir, Map<String,String> params, Dependencies dependencies,
-            GraphDatabaseFacade graphDatabaseFacade )
-    {
-        return super.initFacade( storeDir, params, newDependencies( dependencies ).settingsClasses(
-                asList( append( GraphDatabaseSettings.class, dependencies.settingsClasses() ) ) ),
-                graphDatabaseFacade );
-    }
-
     protected EditionModule createEdition( PlatformModule platformModule )
     {
         return new CommunityEditionModule( platformModule );

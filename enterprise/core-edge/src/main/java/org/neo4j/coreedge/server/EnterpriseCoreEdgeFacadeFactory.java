@@ -19,10 +19,6 @@
  */
 package org.neo4j.coreedge.server;
 
-import java.io.File;
-import java.util.Map;
-
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 
@@ -31,13 +27,6 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
  */
 abstract class EnterpriseCoreEdgeFacadeFactory extends GraphDatabaseFacadeFactory
 {
-    @Override
-    public GraphDatabaseFacade initFacade( File storeDir, Map<String, String> params, Dependencies dependencies,
-                                          GraphDatabaseFacade graphDatabaseFacade )
-    {
-        return super.initFacade( storeDir, params, dependencies, graphDatabaseFacade );
-    }
-
     protected void makeHazelcastQuiet( PlatformModule platformModule )
     {
         // Make hazelcast quiet for core and edge servers

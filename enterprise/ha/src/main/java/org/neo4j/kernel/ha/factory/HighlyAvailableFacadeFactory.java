@@ -19,13 +19,9 @@
  */
 package org.neo4j.kernel.ha.factory;
 
-import java.io.File;
-import java.util.Map;
-
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.factory.EditionModule;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.factory.PlatformModule;
@@ -35,13 +31,6 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
  */
 public class HighlyAvailableFacadeFactory extends GraphDatabaseFacadeFactory
 {
-    @Override
-    public GraphDatabaseFacade initFacade( File storeDir, Map<String, String> params, Dependencies dependencies,
-            GraphDatabaseFacade graphDatabaseFacade )
-    {
-        return super.initFacade( storeDir, params, dependencies, graphDatabaseFacade );
-    }
-
     @Override
     protected EditionModule createEdition( PlatformModule platformModule )
     {
