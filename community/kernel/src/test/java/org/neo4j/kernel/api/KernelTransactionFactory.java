@@ -84,7 +84,7 @@ public class KernelTransactionFactory
                 mock( Pool.class ),
                 Clock.SYSTEM_CLOCK,
                 TransactionTracer.NULL,
-                storageEngine ).initialize( 0, new NoOpClient(), KernelTransaction.Type.implicit, accessMode );
+                storageEngine, false ).initialize( 0, new NoOpClient(), KernelTransaction.Type.implicit, accessMode );
         return new Instances( transaction, storageEngine, storeReadLayer, storageStatement );
     }
 

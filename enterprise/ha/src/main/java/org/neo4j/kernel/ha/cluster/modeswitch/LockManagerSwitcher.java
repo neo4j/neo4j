@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha.cluster.modeswitch;
 
 import org.neo4j.function.Factory;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -33,18 +34,20 @@ public class LockManagerSwitcher extends AbstractComponentSwitcher<Locks>
     private final RequestContextFactory requestContextFactory;
     private final AvailabilityGuard availabilityGuard;
     private final Factory<Locks> locksFactory;
+    private final Config config;
 
     private volatile Locks currentLocks;
 
     public LockManagerSwitcher( DelegateInvocationHandler<Locks> delegate, DelegateInvocationHandler<Master> master,
             RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
-            Factory<Locks> locksFactory )
+            Factory<Locks> locksFactory, Config config )
     {
         super( delegate );
         this.master = master;
         this.requestContextFactory = requestContextFactory;
         this.availabilityGuard = availabilityGuard;
         this.locksFactory = locksFactory;
+        this.config = config;
     }
 
     @Override
@@ -58,7 +61,7 @@ public class LockManagerSwitcher extends AbstractComponentSwitcher<Locks>
     protected Locks getSlaveImpl()
     {
         currentLocks = new SlaveLockManager( locksFactory.newInstance(), requestContextFactory, master.cement(),
-                availabilityGuard );
+                availabilityGuard, config );
         return currentLocks;
     }
 

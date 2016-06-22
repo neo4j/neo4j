@@ -97,12 +97,10 @@ public interface Locks
         /** Release a set of exclusive locks */
         void releaseExclusive( ResourceType resourceType, long resourceId );
 
-        /** Release all locks. */
-        void releaseAll();
-
         /**
          * Stop all active lock waiters and release them. All already held locks remains.
          * All new attempts to acquire any locks will cause exceptions.
+         * This client can and should only be {@link #close() closed} afterwards.
          */
         void stop();
 

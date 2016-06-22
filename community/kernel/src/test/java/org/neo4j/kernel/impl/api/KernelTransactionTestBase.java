@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -78,12 +79,30 @@ public class KernelTransactionTestBase
         return newTransaction( 0, accessMode );
     }
 
+    public KernelTransactionImplementation newTransaction( AccessMode accessMode, Locks.Client locks,
+            boolean txTerminationAwareLocks )
+    {
+        return newTransaction( 0, accessMode, locks, txTerminationAwareLocks );
+    }
+
     public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, AccessMode accessMode )
+    {
+        return newTransaction( lastTransactionIdWhenStarted, accessMode, new NoOpClient(), false );
+    }
+
+    public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, AccessMode accessMode,
+            Locks.Client locks, boolean txTerminationAwareLocks )
+    {
+        KernelTransactionImplementation tx = newNotInitializedTransaction( txTerminationAwareLocks );
+        tx.initialize( lastTransactionIdWhenStarted, locks, Type.implicit, accessMode );
+        return tx;
+    }
+
+    public KernelTransactionImplementation newNotInitializedTransaction( boolean txTerminationAwareLocks )
     {
         return new KernelTransactionImplementation( null, schemaWriteGuard, hooks, null, null, headerInformationFactory,
                 commitProcess, transactionMonitor, legacyIndexStateSupplier, txPool, clock, TransactionTracer.NULL,
-                storageEngine ).initialize( lastTransactionIdWhenStarted, new NoOpClient(), Type.implicit,
-                accessMode );
+                storageEngine, txTerminationAwareLocks );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

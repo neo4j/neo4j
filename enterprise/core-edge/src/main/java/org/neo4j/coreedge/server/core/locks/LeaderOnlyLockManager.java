@@ -241,12 +241,6 @@ public class LeaderOnlyLockManager implements Locks
         }
 
         @Override
-        public void releaseAll()
-        {
-            localClient.releaseAll();
-        }
-
-        @Override
         public void stop()
         {
             localClient.stop();
