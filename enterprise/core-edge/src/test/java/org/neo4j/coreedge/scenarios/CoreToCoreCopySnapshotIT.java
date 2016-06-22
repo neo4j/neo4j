@@ -30,6 +30,7 @@ import java.util.concurrent.TimeoutException;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.raft.log.segmented.FileNames;
 import org.neo4j.coreedge.raft.roles.Role;
+import org.neo4j.coreedge.raft.state.CoreState;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -69,7 +70,7 @@ public class CoreToCoreCopySnapshotIT
 
         // when
         CoreGraphDatabase follower = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.FOLLOWER );
-        follower.downloadSnapshot( leader.id() );
+        getCoreState( follower ).downloadSnapshot( leader.id() );
 
         // then
         assertEquals( DbRepresentation.of( leader ), DbRepresentation.of( follower ) );
@@ -89,7 +90,8 @@ public class CoreToCoreCopySnapshotIT
 
         // when
         CoreGraphDatabase follower = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.FOLLOWER );
-        follower.downloadSnapshot( source.id() );
+
+        getCoreState( follower ).downloadSnapshot( source.id() );
 
         // then
         assertEquals( DbRepresentation.of( source ), DbRepresentation.of( follower ) );
@@ -108,7 +110,7 @@ public class CoreToCoreCopySnapshotIT
 
         // when
         CoreGraphDatabase follower = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.FOLLOWER );
-        follower.downloadSnapshot( source.id() );
+        getCoreState( follower ).downloadSnapshot( source.id() );
 
         // then
         assertEquals( DbRepresentation.of( source ), DbRepresentation.of( follower ) );
@@ -132,7 +134,7 @@ public class CoreToCoreCopySnapshotIT
         // when
         for ( CoreGraphDatabase coreDb : cluster.coreServers() )
         {
-            coreDb.compact();
+            getCoreState( coreDb ).compact();
         }
 
         cluster.removeCoreServer( leader ); // to force a change of leader
@@ -250,5 +252,10 @@ public class CoreToCoreCopySnapshotIT
             s.append( String.valueOf( i ) );
         }
         return s.toString();
+    }
+
+    private CoreState getCoreState( CoreGraphDatabase follower )
+    {
+        return follower.getDependencyResolver().resolveDependency( CoreState.class );
     }
 }

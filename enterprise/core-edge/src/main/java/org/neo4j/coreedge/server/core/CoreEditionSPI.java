@@ -19,9 +19,6 @@
  */
 package org.neo4j.coreedge.server.core;
 
-import java.io.IOException;
-
-import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.factory.EditionModule;
@@ -31,8 +28,4 @@ interface CoreEditionSPI extends EditionModule.SPI
     CoreMember id();
 
     Role currentRole();
-
-    void downloadSnapshot( CoreMember source ) throws InterruptedException, StoreCopyFailedException;
-
-    void compact() throws IOException;
 }

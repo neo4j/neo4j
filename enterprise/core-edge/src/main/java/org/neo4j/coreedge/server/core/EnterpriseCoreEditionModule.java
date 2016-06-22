@@ -33,7 +33,6 @@ import org.neo4j.coreedge.catchup.CheckpointerSupplier;
 import org.neo4j.coreedge.catchup.DataSourceSupplier;
 import org.neo4j.coreedge.catchup.StoreIdSupplier;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
 import org.neo4j.coreedge.catchup.storecopy.core.CoreToCoreClient;
 import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
@@ -170,7 +169,6 @@ public class EnterpriseCoreEditionModule extends EditionModule implements CoreEd
     public static final String CLUSTER_STATE_DIRECTORY_NAME = "cluster-state";
 
     private final RaftInstance raft;
-    private final CoreState coreState;
     private final CoreMember myself;
     private final CoreTopologyService discoveryService;
     private final LogProvider logProvider;
@@ -186,19 +184,6 @@ public class EnterpriseCoreEditionModule extends EditionModule implements CoreEd
     {
         return raft.currentRole();
     }
-
-    @Override
-    public void downloadSnapshot( CoreMember source ) throws InterruptedException, StoreCopyFailedException
-    {
-        coreState.downloadSnapshot( source );
-    }
-
-    @Override
-    public void compact() throws IOException
-    {
-        coreState.compact();
-    }
-
     public enum RaftLogImplementation
     {
         IN_MEMORY, SEGMENTED
@@ -322,6 +307,7 @@ public class EnterpriseCoreEditionModule extends EditionModule implements CoreEd
         ProgressTrackerImpl progressTracker = new ProgressTrackerImpl( myGlobalSession );
 
         RaftServer raftServer;
+        CoreState coreState;
         try
         {
             DurableStateStorage<Long> lastFlushedStorage = life.add(
@@ -350,11 +336,11 @@ public class EnterpriseCoreEditionModule extends EditionModule implements CoreEd
 
             InFlightMap<Long,RaftLogEntry> inFlightMap = new InFlightMap<>();
 
-            coreState = new CoreState(
+            coreState = dependencies.satisfyDependency( new CoreState(
                     raftLog, config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
                     config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),
                     databaseHealthSupplier, logProvider, progressTracker, lastFlushedStorage,
-                    sessionTrackerStorage, applier, downloader, inFlightMap, platformModule.monitors );
+                    sessionTrackerStorage, applier, downloader, inFlightMap, platformModule.monitors ) );
 
             raftServer = new RaftServer( marshal, raftListenAddress, localDatabase, logProvider, coreState );
 
