@@ -112,4 +112,20 @@ public @interface Procedure
      * @return the namespace and procedure name
      */
     String value() default "";
+
+    String name() default "";
+
+    Scope scope() default Scope.GRAPH;
+
+    Access access() default Access.READ;
+
+    enum Scope
+    {
+        GRAPH, SCHEMA, DBMS
+    }
+
+    enum Access
+    {
+        READ, WRITE
+    }
 }

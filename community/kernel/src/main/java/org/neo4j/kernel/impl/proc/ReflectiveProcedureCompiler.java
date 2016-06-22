@@ -38,7 +38,6 @@ import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature.FieldSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.impl.proc.OutputMappers.OutputMapper;
-import org.neo4j.procedure.PerformsDBMS;
 import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
 
@@ -109,13 +108,15 @@ public class ReflectiveProcedureCompiler
         List<FieldInjections.FieldSetter> setters = fieldInjections.setters( procDefinition );
 
         ProcedureSignature.Mode mode = ProcedureSignature.Mode.READ_ONLY;
-        if ( method.isAnnotationPresent( PerformsWrites.class ) )
-        {
-            mode = ProcedureSignature.Mode.READ_WRITE;
-        }
-        else if ( method.isAnnotationPresent( PerformsDBMS.class ) )
+        Procedure procedure = method.getAnnotation( Procedure.class );
+        if ( procedure.scope().equals( Procedure.Scope.DBMS ) )
         {
             mode = ProcedureSignature.Mode.DBMS;
+        }
+        else if ( procedure.access().equals( Procedure.Access.WRITE ) ||
+                method.isAnnotationPresent( PerformsWrites.class ) )
+        {
+            mode = ProcedureSignature.Mode.READ_WRITE;
         }
 
         ProcedureSignature signature = new ProcedureSignature( procName, inputSignature, outputMapper.signature(), mode );
@@ -140,10 +141,12 @@ public class ReflectiveProcedureCompiler
 
     private ProcedureName extractName( Class<?> procDefinition, Method m )
     {
-        String definedName = m.getAnnotation( Procedure.class ).value();
-        if( definedName.trim().length() > 0 )
+        String valueName = m.getAnnotation( Procedure.class ).value();
+        String definedName = m.getAnnotation( Procedure.class ).name();
+        String procName = (definedName.trim().isEmpty() ? valueName : definedName);
+        if( procName.trim().length() > 0 )
         {
-            String[] split = definedName.split( "\\." );
+            String[] split = procName.split( "\\." );
             if( split.length == 1)
             {
                 return new ProcedureName( new String[0], split[0] );
