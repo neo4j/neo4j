@@ -182,6 +182,9 @@ public class ParallelBatchImporter implements BatchImporter
                 // the node and calc dense node stages in parallel.
                 executeStages( nodeStage, calculateDenseNodesStage );
             }
+            // At this point we know how many nodes we have, so we tell the cache that instead of having the
+            // cache keeping track of that in a the face of concurrent updates.
+            nodeRelationshipCache.setHighNodeId( neoStore.getNodeStore().getHighId() );
 
             importRelationships( nodeRelationshipCache, storeUpdateMonitor, neoStore, writeMonitor,
                     idMapper, cachedRelationships, inputCache,
