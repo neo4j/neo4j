@@ -297,6 +297,10 @@ public class MasterImpl extends LifecycleAdapter implements Master
     {
         assertCorrectEpoch( context );
         conversationManager.end( context );
+        if ( !success )
+        {
+            conversationManager.stop( context );
+        }
         return spi.packTransactionObligationResponse( context, null );
     }
 

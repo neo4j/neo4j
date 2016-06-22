@@ -25,8 +25,12 @@ import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
-import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
@@ -41,8 +45,12 @@ import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.test.DoubleLatch;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
@@ -56,7 +64,7 @@ import static org.mockito.Mockito.when;
 public class KernelTransactionImplementationTest extends KernelTransactionTestBase
 {
     @Parameterized.Parameter( 0 )
-    public ThrowingConsumer<KernelTransaction,Exception> transactionConsumer;
+    public Consumer<KernelTransaction> transactionInitializer;
 
     @Parameterized.Parameter( 1 )
     public boolean isWriteTx;
@@ -67,12 +75,15 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     @Parameterized.Parameters( name = "{2}" )
     public static Collection<Object[]> parameters()
     {
+        Consumer<KernelTransaction> readTxInitializer = tx -> {
+        };
+        Consumer<KernelTransaction> writeTxInitializer = tx -> {
+            KernelStatement statement = (KernelStatement) tx.acquireStatement();
+            statement.txState().nodeDoCreate( 42 );
+        };
         return Arrays.asList(
-                new Object[]{(ThrowingConsumer<KernelTransaction,Exception>) (tx) -> {}, false, "read"},
-                new Object[]{(ThrowingConsumer<KernelTransaction,Exception>) kernelTransaction -> {
-                    KernelStatement statement = (KernelStatement) kernelTransaction.acquireStatement();
-                    statement.txState().nodeDoCreate( 42 );
-                }, true, "write"}
+                new Object[]{readTxInitializer, false, "read"},
+                new Object[]{writeTxInitializer, true, "write"}
         );
     }
 
@@ -83,7 +94,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         try ( KernelTransaction transaction = newTransaction( accessMode() ) )
         {
             // WHEN
-            transactionConsumer.accept( transaction );
+            transactionInitializer.accept( transaction );
             transaction.success();
         }
 
@@ -104,7 +115,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         try ( KernelTransaction transaction = newTransaction( accessMode() ) )
         {
             // WHEN
-            transactionConsumer.accept( transaction );
+            transactionInitializer.accept( transaction );
         }
 
         // THEN
@@ -119,7 +130,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         try ( KernelTransaction transaction = newTransaction( accessMode() ) )
         {
             // WHEN
-            transactionConsumer.accept( transaction );
+            transactionInitializer.accept( transaction );
             transaction.failure();
         }
 
@@ -136,7 +147,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         try ( KernelTransaction transaction = newTransaction( accessMode() ) )
         {
             // WHEN
-            transactionConsumer.accept( transaction );
+            transactionInitializer.accept( transaction );
             transaction.failure();
             transaction.success();
         }
@@ -156,22 +167,22 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void shouldRollbackOnClosingTerminatedTransaction() throws Exception
     {
         // GIVEN
-        boolean exceptionReceived = false;
-        try ( KernelTransaction transaction = newTransaction( accessMode() ) )
+        KernelTransaction transaction = newTransaction( accessMode() );
+
+        transactionInitializer.accept( transaction );
+        transaction.success();
+        transaction.markForTermination();
+
+        try
         {
             // WHEN
-            transactionConsumer.accept( transaction );
-            transaction.success();
-            transaction.markForTermination();
+            transaction.close();
+            fail( "Exception expected" );
         }
-        catch ( TransactionFailureException e )
+        catch ( Exception e )
         {
-            // Expected.
-            exceptionReceived = true;
+            assertThat( e, instanceOf( TransactionTerminatedException.class ) );
         }
-
-        // THEN
-        assertTrue( exceptionReceived );
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false, isWriteTx );
@@ -185,7 +196,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         try ( KernelTransaction transaction = newTransaction( accessMode() ) )
         {
             // WHEN
-            transactionConsumer.accept( transaction );
+            transactionInitializer.accept( transaction );
             transaction.markForTermination();
             assertTrue( transaction.shouldBeTerminated() );
         }
@@ -200,23 +211,25 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void shouldRollbackOnClosingTerminatedButSuccessfulTransaction() throws Exception
     {
         // GIVEN
-        boolean exceptionReceived = false;
-        try ( KernelTransaction transaction = newTransaction( accessMode() ) )
+        KernelTransaction transaction = newTransaction( accessMode() );
+
+        transactionInitializer.accept( transaction );
+        transaction.markForTermination();
+        transaction.success();
+        assertTrue( transaction.shouldBeTerminated() );
+
+        try
         {
             // WHEN
-            transactionConsumer.accept( transaction );
-            transaction.markForTermination();
-            transaction.success();
-            assertTrue( transaction.shouldBeTerminated() );
+            transaction.close();
+            fail( "Exception expected" );
         }
-        catch ( TransactionFailureException e )
+        catch ( Exception e )
         {
-            // Expected.
-            exceptionReceived = true;
+            assertThat( e, instanceOf( TransactionTerminatedException.class ) );
         }
 
         // THEN
-        assertTrue( exceptionReceived );
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false, isWriteTx );
         verify( transactionMonitor, times( 1 ) ).transactionTerminated( isWriteTx );
         verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
@@ -228,7 +241,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         try ( KernelTransaction transaction = newTransaction( accessMode() ) )
         {
             // WHEN
-            transactionConsumer.accept( transaction );
+            transactionInitializer.accept( transaction );
             transaction.markForTermination();
             transaction.failure();
             assertTrue( transaction.shouldBeTerminated() );
@@ -244,7 +257,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void shouldIgnoreTerminateAfterCommit() throws Exception
     {
         KernelTransaction transaction = newTransaction( accessMode() );
-        transactionConsumer.accept( transaction );
+        transactionInitializer.accept( transaction );
         transaction.success();
         transaction.close();
         transaction.markForTermination();
@@ -258,7 +271,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void shouldIgnoreTerminateAfterRollback() throws Exception
     {
         KernelTransaction transaction = newTransaction( accessMode() );
-        transactionConsumer.accept( transaction );
+        transactionInitializer.accept( transaction );
         transaction.close();
         transaction.markForTermination();
 
@@ -267,11 +280,11 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
-    @Test( expected = TransactionFailureException.class )
+    @Test( expected = TransactionTerminatedException.class )
     public void shouldThrowOnTerminationInCommit() throws Exception
     {
         KernelTransaction transaction = newTransaction( accessMode() );
-        transactionConsumer.accept( transaction );
+        transactionInitializer.accept( transaction );
         transaction.success();
         transaction.markForTermination();
         transaction.close();
@@ -281,7 +294,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void shouldIgnoreTerminationDuringRollback() throws Exception
     {
         KernelTransaction transaction = newTransaction( accessMode() );
-        transactionConsumer.accept( transaction );
+        transactionInitializer.accept( transaction );
         transaction.markForTermination();
         transaction.close();
 
@@ -303,44 +316,31 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         final ChildException childException = new ChildException();
         final DoubleLatch latch = new DoubleLatch( 1 );
         final KernelTransaction transaction = newTransaction( accessMode() );
-        transactionConsumer.accept( transaction );
+        transactionInitializer.accept( transaction );
 
-        Thread thread = new Thread( () -> {
-            try
-            {
-                latch.awaitStart();
-                transaction.markForTermination();
-                latch.finish();
-            }
-            catch ( Exception e )
-            {
-                childException.exception = e;
-            }
+        Future<?> terminationFuture = Executors.newSingleThreadExecutor().submit( () -> {
+            latch.awaitStart();
+            transaction.markForTermination();
+            latch.finish();
         } );
 
         // WHEN
-        thread.start();
         transaction.success();
         latch.startAndAwaitFinish();
 
-        if ( childException.exception != null )
-        {
-            throw childException.exception;
-        }
+        assertNull( terminationFuture.get( 1, TimeUnit.MINUTES ) );
 
-        boolean exceptionReceived = false;
         try
         {
             transaction.close();
+            fail( "Exception expected" );
         }
-        catch ( TransactionFailureException e )
+        catch ( Exception e )
         {
-            // Expected.
-            exceptionReceived = true;
+            assertThat( e, instanceOf( TransactionTerminatedException.class ) );
         }
 
         // THEN
-        assertTrue( exceptionReceived );
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false, isWriteTx );
         verify( transactionMonitor, times( 1 ) ).transactionTerminated( isWriteTx );
         verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
@@ -365,11 +365,12 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         try ( KernelTransactionImplementation transaction = newTransaction( accessMode() ) )
         {
-            transaction.initialize( 5L, mock( Locks.Client.class ), KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+            transaction.initialize( 5L, mock( Locks.Client.class ), KernelTransaction.Type.implicit,
+                    AccessMode.Static.FULL );
             try ( KernelStatement statement = transaction.acquireStatement() )
             {
                 statement.legacyIndexTxState(); // which will pull it from the supplier and the mocking above
-                                                // will have it say that it has changes.
+                // will have it say that it has changes.
             }
             // WHEN committing it at a later point
             clock.forward( 5, MILLISECONDS );
@@ -428,5 +429,130 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         // THEN
         assertEquals( reuseCount + 1, transaction.getReuseCount() );
+    }
+
+    @Test
+    public void markForTerminationNotInitializedTransaction()
+    {
+        KernelTransactionImplementation tx = newNotInitializedTransaction( true );
+
+        tx.markForTermination();
+
+        assertTrue( tx.shouldBeTerminated() );
+    }
+
+    @Test
+    public void markForTerminationInitializedTransaction()
+    {
+        Locks.Client locksClient = mock( Locks.Client.class );
+        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient, true );
+
+        tx.markForTermination();
+
+        assertTrue( tx.shouldBeTerminated() );
+        verify( locksClient ).stop();
+    }
+
+    @Test
+    public void markForTerminationTerminatedTransaction()
+    {
+        Locks.Client locksClient = mock( Locks.Client.class );
+        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient, true );
+        transactionInitializer.accept( tx );
+
+        tx.markForTermination();
+        tx.markForTermination();
+        tx.markForTermination();
+
+        assertTrue( tx.shouldBeTerminated() );
+        verify( locksClient ).stop();
+        verify( transactionMonitor ).transactionTerminated( isWriteTx );
+    }
+
+    @Test
+    public void terminatedTxMarkedNeitherSuccessNorFailureClosesWithoutThrowing() throws TransactionFailureException
+    {
+        Locks.Client locksClient = mock( Locks.Client.class );
+        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient, true );
+        transactionInitializer.accept( tx );
+        tx.markForTermination();
+
+        tx.close();
+
+        verify( locksClient ).stop();
+        verify( transactionMonitor ).transactionTerminated( isWriteTx );
+    }
+
+    @Test
+    public void terminatedTxMarkedForSuccessThrowsOnClose()
+    {
+        Locks.Client locksClient = mock( Locks.Client.class );
+        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient, true );
+        transactionInitializer.accept( tx );
+        tx.success();
+        tx.markForTermination();
+
+        try
+        {
+            tx.close();
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( TransactionTerminatedException.class ) );
+        }
+    }
+
+    @Test
+    public void terminatedTxMarkedForFailureClosesWithoutThrowing() throws TransactionFailureException
+    {
+        Locks.Client locksClient = mock( Locks.Client.class );
+        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient, true );
+        transactionInitializer.accept( tx );
+        tx.failure();
+        tx.markForTermination();
+
+        tx.close();
+
+        verify( locksClient ).stop();
+        verify( transactionMonitor ).transactionTerminated( isWriteTx );
+    }
+
+    @Test
+    public void terminatedTxMarkedForBothSuccessAndFailureThrowsOnClose()
+    {
+        Locks.Client locksClient = mock( Locks.Client.class );
+        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient, true );
+        transactionInitializer.accept( tx );
+        tx.success();
+        tx.failure();
+        tx.markForTermination();
+
+        try
+        {
+            tx.close();
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( TransactionTerminatedException.class ) );
+        }
+    }
+
+    @Test
+    public void txMarkedForBothSuccessAndFailureThrowsOnClose()
+    {
+        Locks.Client locksClient = mock( Locks.Client.class );
+        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient, true );
+        tx.success();
+        tx.failure();
+
+        try
+        {
+            tx.close();
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( TransactionFailureException.class ) );
+        }
     }
 }

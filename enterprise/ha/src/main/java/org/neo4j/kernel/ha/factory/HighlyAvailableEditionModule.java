@@ -595,7 +595,7 @@ public class HighlyAvailableEditionModule
 
         LockManagerSwitcher lockManagerModeSwitcher = new LockManagerSwitcher(
                 lockManagerDelegate, masterDelegateInvocationHandler, requestContextFactory, availabilityGuard,
-                locksFactory );
+                locksFactory, config );
 
         componentSwitcherContainer.add( lockManagerModeSwitcher );
         return lockManager;

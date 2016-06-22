@@ -107,8 +107,8 @@ import static org.neo4j.io.fs.FileUtils.copyRecursively;
 public class ClusterManager
         extends LifecycleAdapter
 {
-    private static final int CLUSTER_MIN_PORT = 10_000;
-    private static final int CLUSTER_MAX_PORT = 20_000;
+    private static final int CLUSTER_MIN_PORT = 30_000;
+    private static final int CLUSTER_MAX_PORT = 40_000;
     private static final int HA_MIN_PORT = CLUSTER_MAX_PORT + 1;
     private static final int HA_MAX_PORT = HA_MIN_PORT + 10_000;
 

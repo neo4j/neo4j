@@ -21,11 +21,13 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.helpers.Clock;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
@@ -37,6 +39,7 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
@@ -122,6 +125,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionTracer tracer;
     private final Pool<KernelTransactionImplementation> pool;
     private final Supplier<LegacyIndexTransactionState> legacyIndexTxStateSupplier;
+    private final boolean txTerminationAwareLocks;
 
     // For committing
     private final TransactionHeaderInformationFactory headerInformationFactory;
@@ -151,18 +155,29 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private Type type;
     private volatile int reuseCount;
 
+    /**
+     * Lock prevents transaction {@link #markForTermination() transction termination} from interfering with {@link
+     * #close() transaction commit} and specifically with {@link #release()}.
+     * Termination can run concurrently with commit and we need to make sure that it terminates the right lock client
+     * and the right transaction (with the right {@link #reuseCount}) because {@link KernelTransactionImplementation}
+     * instances are pooled.
+     */
+    private final Lock terminationReleaseLock = new ReentrantLock();
+
     public KernelTransactionImplementation( StatementOperationParts operations,
                                             SchemaWriteGuard schemaWriteGuard,
                                             TransactionHooks hooks,
                                             ConstraintIndexCreator constraintIndexCreator,
-                                            Procedures procedures, TransactionHeaderInformationFactory headerInformationFactory,
+                                            Procedures procedures,
+                                            TransactionHeaderInformationFactory headerInformationFactory,
                                             TransactionCommitProcess commitProcess,
                                             TransactionMonitor transactionMonitor,
                                             Supplier<LegacyIndexTransactionState> legacyIndexTxStateSupplier,
                                             Pool<KernelTransactionImplementation> pool,
                                             Clock clock,
                                             TransactionTracer tracer,
-                                            StorageEngine storageEngine )
+                                            StorageEngine storageEngine,
+                                            boolean txTerminationAwareLocks )
     {
         this.operations = operations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -179,6 +194,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.tracer = tracer;
         this.storageStatement = storeLayer.newStatement();
         this.currentStatement = new KernelStatement( this, this, operations, storageStatement, procedures );
+        this.txTerminationAwareLocks = txTerminationAwareLocks;
     }
 
     /**
@@ -223,17 +239,42 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return terminated;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * This method is guarded by {@link #terminationReleaseLock} to coordinate concurrent
+     * {@link #close()} and {@link #release()} calls.
+     */
     @Override
     public void markForTermination()
     {
-        if ( !terminated )
+        if ( !canBeTerminated() )
         {
-            failure = true;
-            terminated = true;
-            if ( !closed )
+            return;
+        }
+
+        int initialReuseCount = reuseCount;
+        terminationReleaseLock.lock();
+        try
+        {
+            // this instance could have been reused, make sure we are trying to terminate the right transaction
+            // without this check there exists a possibility to terminate lock client that has just been returned to
+            // the pool or a transaction that was reused and represents a completely different logical transaction
+            boolean stillSameTransaction = initialReuseCount == reuseCount;
+            if ( stillSameTransaction && canBeTerminated() )
             {
+                failure = true;
+                terminated = true;
+                if ( txTerminationAwareLocks && locks != null )
+                {
+                    locks.stop();
+                }
                 transactionMonitor.transactionTerminated( hasTxStateWithChanges() );
             }
+        }
+        finally
+        {
+            terminationReleaseLock.unlock();
         }
     }
 
@@ -371,15 +412,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             if ( failure || !success )
             {
                 rollback();
-                if ( success )
-                {
-                    // Success was called, but also failure which means that the client code using this
-                    // transaction passed through a happy path, but the transaction was still marked as
-                    // failed for one or more reasons. Tell the user that although it looked happy it
-                    // wasn't committed, but was instead rolled back.
-                    throw new TransactionFailureException( Status.Transaction.TransactionMarkedAsFailed,
-                            "Transaction rolled back even if marked as successful" );
-                }
+                failOnNonExplicitRollbackIfNeeded();
             }
             else
             {
@@ -402,6 +435,37 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             {
                 release();
             }
+        }
+    }
+
+    /**
+     * Throws exception if this transaction was marked as successful but failure flag has also been set to true.
+     * <p>
+     * This could happen when:
+     * <ul>
+     * <li>caller explicitly calls both {@link #success()} and {@link #failure()}</li>
+     * <li>caller explicitly calls {@link #success()} but transaction execution fails</li>
+     * <li>caller explicitly calls {@link #success()} but transaction is terminated</li>
+     * </ul>
+     * <p>
+     *
+     * @throws TransactionFailureException when execution failed
+     * @throws TransactionTerminatedException when transaction was terminated
+     */
+    private void failOnNonExplicitRollbackIfNeeded() throws TransactionFailureException
+    {
+        if ( success && terminated )
+        {
+            throw new TransactionTerminatedException();
+        }
+        if ( success )
+        {
+            // Success was called, but also failure which means that the client code using this
+            // transaction passed through a happy path, but the transaction was still marked as
+            // failed for one or more reasons. Tell the user that although it looked happy it
+            // wasn't committed, but was instead rolled back.
+            throw new TransactionFailureException( Status.Transaction.TransactionMarkedAsFailed,
+                    "Transaction rolled back even if marked as successful" );
         }
     }
 
@@ -571,19 +635,40 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     /**
      * Release resources held up by this transaction & return it to the transaction pool.
+     * This method is guarded by {@link #terminationReleaseLock} to coordinate concurrent
+     * {@link #markForTermination()} calls.
      */
     private void release()
     {
-        locks.close();
-        type = null;
-        accessMode = null;
-        transactionEvent = null;
-        legacyIndexTransactionState = null;
-        txState = null;
-        hooksState = null;
-        closeListener = null;
-        reuseCount++;
-        pool.release( this );
+        terminationReleaseLock.lock();
+        try
+        {
+            locks.close();
+            locks = null;
+            terminated = false;
+            type = null;
+            accessMode = null;
+            transactionEvent = null;
+            legacyIndexTransactionState = null;
+            txState = null;
+            hooksState = null;
+            closeListener = null;
+            reuseCount++;
+            pool.release( this );
+        }
+        finally
+        {
+            terminationReleaseLock.unlock();
+        }
+    }
+
+    /**
+     * Transaction can be terminated only when it is not closed and not already terminated.
+     * Otherwise termination does not make sense.
+     */
+    private boolean canBeTerminated()
+    {
+        return !closed && !terminated;
     }
 
     @Override
@@ -610,7 +695,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public String toString()
     {
-        return "KernelTransaction[" + this.locks.getLockSessionId() + "]";
+        String lockSessionId = locks == null ? "locks == null" : String.valueOf( locks.getLockSessionId() );
+        return "KernelTransaction[" + lockSessionId + "]";
     }
 
     public void dispose()

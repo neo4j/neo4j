@@ -87,26 +87,32 @@ public class CloseCompatibility extends LockingCompatibilityTestSuite.Compatibil
 
     }
 
-    @Test( expected = LockClientAlreadyClosedException.class )
+    @Test( expected = LockClientStoppedException.class )
     public void shouldNotBeAbleToAcquireSharedLockFromClosedClient()
     {
         clientA.close();
         clientA.acquireShared( NODE, 1l );
     }
 
-    @Test( expected = LockClientAlreadyClosedException.class )
+    @Test( expected = LockClientStoppedException.class )
     public void shouldNotBeAbleToAcquireExclusiveLockFromClosedClient()
     {
         clientA.close();
         clientA.acquireExclusive( NODE, 1l );
     }
 
-    @Test
-    public void shouldNotBeAbleToAcquireLocksUsingTryFromClosedClient()
+    @Test( expected = LockClientStoppedException.class )
+    public void shouldNotBeAbleToTryAcquireSharedLockFromClosedClient()
     {
         clientA.close();
-        Assert.assertFalse( clientA.trySharedLock( NODE, 1l ) );
-        Assert.assertFalse( clientA.tryExclusiveLock( NODE, 1l ) );
+        clientA.trySharedLock( NODE, 1L );
+    }
+
+    @Test( expected = LockClientStoppedException.class )
+    public void shouldNotBeAbleToTryAcquireExclusiveLockFromClosedClient()
+    {
+        clientA.close();
+        clientA.tryExclusiveLock( NODE, 1L );
     }
 
     @Test
