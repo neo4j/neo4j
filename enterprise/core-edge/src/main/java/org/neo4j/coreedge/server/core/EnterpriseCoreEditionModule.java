@@ -164,20 +164,13 @@ import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THR
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
  * that are specific to the Enterprise Core edition that provides a core cluster.
  */
-public class EnterpriseCoreEditionModule extends EditionModule implements CoreEditionSPI
+public class EnterpriseCoreEditionModule extends EditionModule
 {
     public static final String CLUSTER_STATE_DIRECTORY_NAME = "cluster-state";
 
     private final RaftInstance raft;
-    private final CoreMember myself;
     private final CoreTopologyService discoveryService;
     private final LogProvider logProvider;
-
-    @Override
-    public CoreMember id()
-    {
-        return myself;
-    }
 
     public enum RaftLogImplementation
     {
@@ -198,12 +191,6 @@ public class EnterpriseCoreEditionModule extends EditionModule implements CoreEd
         }
     }
 
-    @Override
-    protected SPI spi()
-    {
-        return this;
-    }
-
     public EnterpriseCoreEditionModule( final PlatformModule platformModule,
             DiscoveryServiceFactory discoveryServiceFactory )
     {
@@ -221,6 +208,7 @@ public class EnterpriseCoreEditionModule extends EditionModule implements CoreEd
         logProvider = logging.getInternalLogProvider();
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
+        CoreMember myself;
         try
         {
             DurableStateStorage<CoreMember> idStorage = life.add( new DurableStateStorage<>(
@@ -279,8 +267,7 @@ public class EnterpriseCoreEditionModule extends EditionModule implements CoreEd
         final DelayedRenewableTimeoutService raftTimeoutService =
                 new DelayedRenewableTimeoutService( Clock.systemUTC(), logProvider );
 
-        RaftLog underlyingLog = createRaftLog( config, life, fileSystem, clusterStateDirectory, marshal, logProvider,
-                databaseHealthSupplier );
+        RaftLog underlyingLog = createRaftLog( config, life, fileSystem, clusterStateDirectory, marshal, logProvider );
 
         MonitoredRaftLog raftLog = new MonitoredRaftLog( underlyingLog, platformModule.monitors );
 
@@ -499,8 +486,7 @@ public class EnterpriseCoreEditionModule extends EditionModule implements CoreEd
     }
 
     private RaftLog createRaftLog( Config config, LifeSupport life, FileSystemAbstraction fileSystem,
-            File clusterStateDirectory, CoreReplicatedContentMarshal marshal, LogProvider logProvider,
-            Supplier<DatabaseHealth> databaseHealthSupplier )
+            File clusterStateDirectory, CoreReplicatedContentMarshal marshal, LogProvider logProvider )
     {
         RaftLogImplementation raftLogImplementation =
                 RaftLogImplementation.valueOf( config.get( CoreEdgeClusterSettings.raft_log_implementation ) );
