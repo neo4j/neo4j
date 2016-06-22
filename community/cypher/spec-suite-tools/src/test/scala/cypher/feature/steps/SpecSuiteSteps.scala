@@ -29,7 +29,7 @@ import cypher.cucumber.db.{GraphArchive, GraphArchiveImporter, GraphArchiveLibra
 import cypher.feature.parser.matchers.ResultWrapper
 import cypher.feature.parser.{MatcherMatchingSupport, constructResultMatcher, parseParameters, statisticsParser}
 import org.neo4j.graphdb.factory.{GraphDatabaseFactory, GraphDatabaseSettings}
-import org.neo4j.graphdb.{GraphDatabaseService, Result}
+import org.neo4j.graphdb.{GraphDatabaseService, Result, Transaction}
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.opencypher.tools.tck.TCKCucumberTemplate
 import org.opencypher.tools.tck.constants.TCKStepDefinitions._
@@ -52,6 +52,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
   var graph: GraphDatabaseService = null
   var result: Try[Result] = null
+  var tx: Transaction = null
   var params: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
   var currentScenarioName: String = ""
 
@@ -107,6 +108,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
   When(EXECUTING_QUERY) { (query: String) =>
     ifEnabled {
+      tx = graph.beginTx()
       result = Try {
         graph.execute(query, params)
       }
@@ -118,9 +120,9 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
       val matcher = constructResultMatcher(expectedTable)
 
       val assertedSuccessful = successful(result)
-      inTx {
-        matcher should accept(assertedSuccessful)
-      }
+      matcher should accept(assertedSuccessful)
+      tx.success()
+      tx.close()
     }
   }
 
@@ -129,16 +131,17 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
       val matcher = constructResultMatcher(expectedTable, unorderedLists = true)
 
       val assertedSuccessful = successful(result)
-      inTx {
-        matcher should accept(assertedSuccessful)
-      }
+      matcher should accept(assertedSuccessful)
+      tx.success()
+      tx.close()
     }
   }
 
 
   Then(EXPECT_ERROR) { (typ: String, phase: String, detail: String) =>
     ifEnabled {
-      SpecSuiteErrorHandler(typ, phase, detail).check(result)
+      SpecSuiteErrorHandler(typ, phase, detail).check(result, tx)
+      tx.close()
     }
   }
 
@@ -147,9 +150,9 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
       val matcher = constructResultMatcher(expectedTable)
 
       val assertedSuccessful = successful(result)
-      inTx {
-        matcher should acceptOrdered(assertedSuccessful)
-      }
+      matcher should acceptOrdered(assertedSuccessful)
+      tx.success()
+      tx.close()
     }
   }
 
@@ -158,6 +161,8 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
       withClue("Expected empty result") {
         successful(result).hasNext shouldBe false
       }
+      tx.success()
+      tx.close()
     }
   }
 
@@ -176,8 +181,11 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   }
 
   When(EXECUTING_CONTROL_QUERY) { (query: String) =>
-    result = Try {
-      graph.execute(query, params)
+    ifEnabled {
+      tx = graph.beginTx()
+      result = Try {
+        graph.execute(query, params)
+      }
     }
   }
 
@@ -190,14 +198,10 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
   private def successful(value: Try[Result]): Result = value match {
     case Success(r) => new ResultWrapper(r)
-    case Failure(e) => fail(s"Expected successful result, but got error: $e")
-  }
-
-  private def inTx(f: => Unit) = {
-    val tx = graph.beginTx()
-    f
-    tx.success()
-    tx.close()
+    case Failure(e) =>
+      tx.failure()
+      tx.close()
+      fail(s"Expected successful result, but got error: $e")
   }
 
   private def initEmpty() =
