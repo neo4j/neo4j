@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cypher.feature.steps
+package cypher;
 
-import cypher.CompatibilitySpecSuiteTest
-
-class CompatibilitySpecSuiteSteps extends SpecSuiteSteps {
-
-  override val specSuiteClass = classOf[CompatibilitySpecSuiteTest]
-
+interface SpecSuiteConstants
+{
+    String DB_CONFIG = "cypher.cucumber.db.DatabaseConfigProvider:/db-config/";
+    String GLUE_PATH = "classpath:cypher/feature/steps";
+    String HTML_REPORT = "html:target/";
+    String JSON_REPORT = "cypher.feature.reporting.CypherResultReporter:target/";
+    String BLACKLIST_PLUGIN = "cypher.cucumber.BlacklistPlugin:/blacklists/";
 }
-
-

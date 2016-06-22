@@ -23,6 +23,7 @@ import java.util
 
 import cucumber.api.DataTable
 import cypher.SpecSuiteResources
+import cypher.cucumber.BlacklistPlugin
 import cypher.cucumber.db.DatabaseConfigProvider._
 import cypher.cucumber.db.{GraphArchive, GraphArchiveImporter, GraphArchiveLibrary, GraphFileRepository}
 import cypher.feature.parser.matchers.ResultWrapper
@@ -43,7 +44,6 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   // Implement in subclasses
 
   def specSuiteClass: Class[_]
-  def unsupportedScenarios: Set[String]
 
   lazy val graphArchiveLibrary = new GraphArchiveLibrary(new GraphFileRepository(Path(SpecSuiteResources.targetDirectory(specSuiteClass, "graphs"))))
   lazy val requiredScenarioName = specSuiteClass.getField( "SCENARIO_NAME_REQUIRED" ).get( null ).toString.trim.toLowerCase
@@ -182,7 +182,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   }
 
   private def ifEnabled(f: => Unit): Unit = {
-    val blacklist = unsupportedScenarios.map(_.toLowerCase)
+    val blacklist = BlacklistPlugin.blacklist().map(_.toLowerCase)
     if (!blacklist(currentScenarioName) && (requiredScenarioName.isEmpty || currentScenarioName.contains(requiredScenarioName))) {
       f
     }

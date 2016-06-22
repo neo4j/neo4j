@@ -19,6 +19,11 @@
  */
 package cypher;
 
+import static cypher.SpecSuiteConstants.BLACKLIST_PLUGIN;
+import static cypher.SpecSuiteConstants.DB_CONFIG;
+import static cypher.SpecSuiteConstants.GLUE_PATH;
+import static cypher.SpecSuiteConstants.HTML_REPORT;
+import static cypher.SpecSuiteConstants.JSON_REPORT;
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
 import org.junit.experimental.runners.Enclosed;
@@ -39,8 +44,9 @@ public class AcceptanceSpecSuiteTest
     @CucumberOptions(
             plugin = {
                     DB_CONFIG + "rule.json",
-                    HTML_REPORT + "rule",
-                    JSON_REPORT + "rule"
+                    HTML_REPORT + SUITE_NAME + "/rule",
+                    JSON_REPORT + SUITE_NAME + "/rule",
+                    BLACKLIST_PLUGIN + "rule.txt"
             },
             glue = { GLUE_PATH },
             features = { FEATURE_PATH + FEATURE_TO_RUN },
@@ -54,8 +60,9 @@ public class AcceptanceSpecSuiteTest
     @CucumberOptions(
             plugin = {
                     DB_CONFIG + "cost.json",
-                    HTML_REPORT + "cost",
-                    JSON_REPORT + "cost"
+                    HTML_REPORT + SUITE_NAME + "/cost",
+                    JSON_REPORT + SUITE_NAME + "/cost",
+                    BLACKLIST_PLUGIN + "cost.txt"
             },
             glue = { GLUE_PATH },
             features = { FEATURE_PATH + FEATURE_TO_RUN },
@@ -69,8 +76,9 @@ public class AcceptanceSpecSuiteTest
     @CucumberOptions(
             plugin = {
                     DB_CONFIG + "cost-compiled.json",
-                    HTML_REPORT + "cost-compiled",
-                    JSON_REPORT + "cost-compiled"
+                    HTML_REPORT + SUITE_NAME + "/cost-compiled",
+                    JSON_REPORT + SUITE_NAME + "/cost-compiled",
+                    BLACKLIST_PLUGIN + "cost-compiled.txt"
             },
             glue = { GLUE_PATH },
             features = { FEATURE_PATH + FEATURE_TO_RUN },
@@ -87,9 +95,5 @@ public class AcceptanceSpecSuiteTest
     @SuppressWarnings( "unused" )
     public static final Class<?> RESOURCE_CLASS = AcceptanceSpecSuiteTest.class;
 
-    private static final String DB_CONFIG = "cypher.cucumber.db.DatabaseConfigProvider:/db-config/";
-    private static final String GLUE_PATH = "classpath:cypher/feature/steps";
     private static final String FEATURE_PATH = "src/test/resources/cypher/features/";
-    private static final String HTML_REPORT = "html:target/" + SUITE_NAME + "/";
-    private static final String JSON_REPORT = "cypher.feature.reporting.CypherResultReporter:target/" + SUITE_NAME + "/";
 }
