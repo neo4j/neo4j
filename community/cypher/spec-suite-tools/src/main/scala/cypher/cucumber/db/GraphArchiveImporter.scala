@@ -60,7 +60,7 @@ abstract class GraphArchiveImporter {
       val executor = new CypherExecutor(db)
       try {
         val iterator = Source
-          .fromFile(script.file.jfile)
+          .fromFile(script.file.jfile, "UTF-8")
           .getLines()
 
         while (iterator.hasNext) {
