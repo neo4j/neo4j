@@ -88,9 +88,9 @@ public class AuthProcedureTestBase
         manager.newUser( "readSubject", "123", false );
         // Currently admin role is created by default
         manager.addUserToRole( "adminSubject", ADMIN );
-        manager.newRole( ARCHITECT, "schemaSubject" );
-        manager.newRole( PUBLISHER, "readWriteSubject" );
-        manager.newRole( READER, "readSubject" );
+        manager.addUserToRole( "schemaSubject", ARCHITECT );
+        manager.addUserToRole( "readWriteSubject", PUBLISHER );
+        manager.addUserToRole( "readSubject", READER );
         manager.newRole( "empty" );
         noneSubject = manager.login( authToken( "noneSubject", "abc" ) );
         pwdSubject = manager.login( authToken( "pwdSubject", "abc" ) );
@@ -192,27 +192,27 @@ public class AuthProcedureTestBase
 
     protected void testSuccessfulListUsers( AuthSubject subject, String[] users )
     {
-        testResult( subject, "CALL dbms.listUsers() YIELD username AS users RETURN users",
-                r -> assertKeyIsArray( r, "users", users ) );
+        testResult( subject, "CALL dbms.listUsers() YIELD username",
+                r -> assertKeyIsArray( r, "username", users ) );
     }
 
     protected void testFailListUsers( AuthSubject subject, int count )
     {
         testCallFail( subject,
-                "CALL dbms.listUsers() YIELD value AS users RETURN users",
+                "CALL dbms.listUsers() YIELD username",
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
     }
 
     protected void testSuccessfulListRoles( AuthSubject subject, String[] roles )
     {
-        testResult( subject, "CALL dbms.listRoles() YIELD role AS roles RETURN roles",
-                r -> assertKeyIsArray( r, "roles", roles ) );
+        testResult( subject, "CALL dbms.listRoles() YIELD role",
+                r -> assertKeyIsArray( r, "role", roles ) );
     }
 
     protected void testFailListRoles( AuthSubject subject )
     {
         testCallFail( subject,
-                "CALL dbms.listRoles() YIELD value AS roles RETURN roles",
+                "CALL dbms.listRoles() YIELD role",
                 QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
     }
 

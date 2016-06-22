@@ -158,18 +158,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     /*
     TODO: uncomment and fix
     @Test
-<<<<<<< 061656f5c3e1c3445f51c0387f2876d6c19e437d
-    public void shouldNotCreateUserWithEmptyPassword() throws Exception
-    {
-        testCallFail( db, adminSubject, "CALL dbms.createUser('craig', '', true)", QueryExecutionException.class,
-                "Password cannot be empty." );
-    }
-
-    @Test
-    public void shouldNotCreateExistingUser() throws Exception
-=======
     public void shouldNotCreateUserIfInvalidUsername() throws Exception
->>>>>>> Vastly increased AuthProcedures unit test coverage.
     {
         testCallFail( adminSubject, "CALL dbms.createUser('', '1234', true)", QueryExecutionException.class,
                 "Username cannot be empty" );
@@ -180,22 +169,20 @@ public class AuthProceduresTest extends AuthProcedureTestBase
     }
     */
 
-    /*
-    TODO: uncomment and fix
     @Test
     public void shouldNotCreateUserIfInvalidPassword() throws Exception
     {
-        testCallFail( adminSubject, "CALL dbms.createUser('craig', '', true)", QueryExecutionException.class,
-                "Password cannot be empty" );
+        testCallFail( adminSubject, "CALL dbms.createUser('craig', '', true)",
+                QueryExecutionException.class, "Password cannot be empty" );
     }
-    */
 
     @Test
     public void shouldNotCreateExistingUser() throws Exception
     {
         testCallFail( adminSubject, "CALL dbms.createUser('readSubject', '1234', true)",
                 QueryExecutionException.class, "The specified user already exists" );
-        testCallFail( adminSubject, "CALL dbms.createUser('readSubject', '', true)",
+
+        testCallFail( adminSubject, "CALL dbms.createUser('readSubject', 'abc', true)",
                 QueryExecutionException.class, "The specified user already exists" );
     }
 
@@ -501,6 +488,7 @@ public class AuthProceduresTest extends AuthProcedureTestBase
                 "readSubject", listOf( READER ),
                 "schemaSubject", listOf( ARCHITECT ),
                 "readWriteSubject", listOf( READER, PUBLISHER ),
+                "pwdSubject", listOf( ),
                 "noneSubject", listOf( ),
                 "neo4j", listOf( ADMIN )
         );
