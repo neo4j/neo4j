@@ -19,13 +19,10 @@
  */
 package org.neo4j.coreedge.server.core;
 
-import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.factory.EditionModule;
 
 interface CoreEditionSPI extends EditionModule.SPI
 {
     CoreMember id();
-
-    Role currentRole();
 }

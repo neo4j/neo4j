@@ -179,11 +179,6 @@ public class EnterpriseCoreEditionModule extends EditionModule implements CoreEd
         return myself;
     }
 
-    @Override
-    public Role currentRole()
-    {
-        return raft.currentRole();
-    }
     public enum RaftLogImplementation
     {
         IN_MEMORY, SEGMENTED
@@ -344,10 +339,10 @@ public class EnterpriseCoreEditionModule extends EditionModule implements CoreEd
 
             raftServer = new RaftServer( marshal, raftListenAddress, localDatabase, logProvider, coreState );
 
-            raft = createRaft( life, loggingOutbound, discoveryService, config, messageLogger, raftLog, coreState,
-                    fileSystem, clusterStateDirectory, myself, logProvider, raftServer, raftTimeoutService,
-                    databaseHealthSupplier, inFlightMap, platformModule.monitors, platformModule.jobScheduler,
-                    localDatabase );
+            raft = dependencies.satisfyDependency( createRaft( life, loggingOutbound, discoveryService, config,
+                    messageLogger, raftLog, coreState, fileSystem, clusterStateDirectory, myself, logProvider,
+                    raftServer, raftTimeoutService, databaseHealthSupplier, inFlightMap, platformModule.monitors,
+                    platformModule.jobScheduler, localDatabase ) );
 
             life.add( new PruningScheduler( coreState, platformModule.jobScheduler,
                     config.get( CoreEdgeClusterSettings.raft_log_pruning_frequency ) ) );
@@ -362,8 +357,6 @@ public class EnterpriseCoreEditionModule extends EditionModule implements CoreEd
                         new RaftOutbound( discoveryService, loggingOutbound, localDatabase ),
                         sessionPool, progressTracker,
                         new ExponentialBackoffStrategy( 10, SECONDS ) );
-
-        dependencies.satisfyDependency( raft );
 
         StateStorage<ReplicatedLockTokenState> lockTokenState;
         try

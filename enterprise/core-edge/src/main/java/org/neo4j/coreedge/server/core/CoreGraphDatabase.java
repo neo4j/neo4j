@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
+import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.EnterpriseCoreFacadeFactory;
@@ -56,6 +57,6 @@ public class CoreGraphDatabase extends GraphDatabaseFacade
 
     public Role getRole()
     {
-        return coreEditionSPI.currentRole();
+        return getDependencyResolver().resolveDependency( RaftInstance.class ).currentRole();
     }
 }
