@@ -30,7 +30,6 @@ import org.neo4j.coreedge.raft.RaftMessages.Heartbeat;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.outcome.ShipCommand;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.raft.state.follower.FollowerState;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
@@ -242,10 +241,4 @@ public class Leader implements RaftMessageHandler
         return outcome;
     }
 
-    @Override
-    public Outcome validate( RaftMessages.RaftMessage message, StoreId storeId, RaftState ctx,
-                                              Log log, LocalDatabase localDatabase )
-    {
-        return new Outcome( LEADER, ctx );
-    }
 }

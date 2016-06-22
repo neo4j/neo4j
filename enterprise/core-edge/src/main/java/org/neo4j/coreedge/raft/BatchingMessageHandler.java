@@ -54,12 +54,6 @@ public class BatchingMessageHandler implements Runnable, MessageHandler<RaftMess
     }
 
     @Override
-    public boolean validate( RaftMessage message, StoreId storeId )
-    {
-        return innerHandler.validate( message, storeId );
-    }
-
-    @Override
     public void handle( RaftMessage message )
     {
         try

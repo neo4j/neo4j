@@ -19,6 +19,8 @@
  */
 package org.neo4j.coreedge.raft;
 
+import java.util.concurrent.TimeUnit;
+
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -33,8 +35,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 
-import java.util.concurrent.TimeUnit;
-
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.net.codecs.RaftMessageDecoder;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
@@ -50,6 +51,8 @@ import org.neo4j.logging.LogProvider;
 public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages.RaftMessage>
 {
     private final ListenSocketAddress listenAddress;
+    private final LocalDatabase localDatabase;
+    private final RaftStateMachine raftStateMachine;
     private final Log log;
     private final ChannelMarshal<ReplicatedContent> marshal;
     private MessageHandler<RaftMessages.RaftMessage> messageHandler;
@@ -58,10 +61,14 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "raft-server" );
 
-    public RaftServer( ChannelMarshal<ReplicatedContent> marshal, ListenSocketAddress listenAddress, LogProvider logProvider )
+    public RaftServer( ChannelMarshal<ReplicatedContent> marshal, ListenSocketAddress listenAddress,
+                       LocalDatabase localDatabase, LogProvider logProvider,
+                       RaftStateMachine raftStateMachine)
     {
         this.marshal = marshal;
         this.listenAddress = listenAddress;
+        this.localDatabase = localDatabase;
+        this.raftStateMachine = raftStateMachine;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -78,7 +85,7 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
         {
             channel.close().sync();
         }
-        catch( InterruptedException e )
+        catch ( InterruptedException e )
         {
             Thread.currentThread().interrupt();
             log.warn( "Interrupted while closing channel." );
@@ -132,9 +139,22 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
         {
             RaftMessages.RaftMessage message = storeIdAwareMessage.message();
             StoreId storeId = storeIdAwareMessage.storeId();
-            if ( messageHandler.validate( message, storeId ) )
+
+            if ( storeId.equals( localDatabase.storeId() ) )
             {
                 messageHandler.handle( message );
+            }
+            else
+            {
+                if ( localDatabase.isEmpty() )
+                {
+                    raftStateMachine.notifyNeedFreshSnapshot( message::from );
+                }
+                else
+                {
+                    log.info( "Discarding message owing to mismatched storeId and non-empty store. Expected: %s, " +
+                            "Encountered: %s", storeId, localDatabase.storeId() );
+                }
             }
         }
     }

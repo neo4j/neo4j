@@ -30,7 +30,6 @@ import java.util.function.Supplier;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.helper.VolatileFuture;
-import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
@@ -51,9 +50,6 @@ import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.core.LeaderOnlySelectionStrategy;
 import org.neo4j.coreedge.server.core.NotMyselfSelectionStrategy;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
-import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
-import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.store.kvstore.Rotation;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -86,7 +82,6 @@ public class RaftInstance implements LeaderLocator,
         Inbound.MessageHandler<RaftMessages.RaftMessage>, CoreMetaData
 {
     private final LeaderNotFoundMonitor leaderNotFoundMonitor;
-    private CoreServerSelectionStrategy otherStrategy;
 
     public enum Timeouts implements RenewableTimeoutService.TimeoutName
     {
@@ -98,7 +93,6 @@ public class RaftInstance implements LeaderLocator,
     private final RaftLog entryLog;
 
     private final RenewableTimeoutService renewableTimeoutService;
-    private final CoreTopologyService discoveryService;
     private final long heartbeatInterval;
     private RenewableTimeoutService.RenewableTimeout electionTimer;
     private RaftMembershipManager membershipManager;
@@ -136,7 +130,6 @@ public class RaftInstance implements LeaderLocator,
         this.heartbeatInterval = heartbeatInterval;
 
         this.renewableTimeoutService = renewableTimeoutService;
-        this.discoveryService = discoveryService;
         this.defaultStrategy = new NotMyselfSelectionStrategy( discoveryService, myself );
 
         this.outbound = outbound;
@@ -266,7 +259,7 @@ public class RaftInstance implements LeaderLocator,
             CoreServerSelectionStrategy strategy = outcome.isProcessable()
                     ? defaultStrategy
                     : new LeaderOnlySelectionStrategy( outcome );
-            raftStateMachine.notifyNeedFreshSnapshot( myself, strategy );
+            raftStateMachine.notifyNeedFreshSnapshot( strategy );
         }
     }
 
@@ -308,27 +301,6 @@ public class RaftInstance implements LeaderLocator,
         }
 
         return false;
-    }
-
-    @Override
-    public boolean validate( RaftMessages.RaftMessage incomingMessage, StoreId storeId )
-    {
-        try
-        {
-            Outcome outcome = currentRole.handler.validate( incomingMessage, storeId, state, log, localDatabase );
-            boolean processable = outcome.isProcessable();
-            if ( !processable )
-            {
-                checkForSnapshotNeed( outcome );
-            }
-
-            return processable;
-        }
-        catch ( MismatchingStoreIdException e )
-        {
-            panicAndStop( incomingMessage, e );
-            throw e;
-        }
     }
 
     private void panicAndStop( RaftMessages.RaftMessage incomingMessage, Throwable e )

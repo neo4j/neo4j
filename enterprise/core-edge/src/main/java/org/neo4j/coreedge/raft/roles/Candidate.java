@@ -26,9 +26,7 @@ import org.neo4j.coreedge.raft.NewLeaderBarrier;
 import org.neo4j.coreedge.raft.RaftMessageHandler;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.outcome.Outcome;
-import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.coreedge.raft.MajorityIncludingSelfQuorum.isQuorum;
@@ -152,10 +150,4 @@ public class Candidate implements RaftMessageHandler
         return outcome;
     }
 
-    @Override
-    public Outcome validate( RaftMessages.RaftMessage message, StoreId storeId,
-                              RaftState ctx, Log log, LocalDatabase localDatabase )
-    {
-        return new Outcome( CANDIDATE, ctx );
-    }
 }
