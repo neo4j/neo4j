@@ -33,26 +33,22 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 
 public class CoreGraphDatabase extends GraphDatabaseFacade
 {
-    private final CoreEditionSPI coreEditionSPI;
+    public CoreGraphDatabase( File storeDir, Map<String, String> params,
+            GraphDatabaseFacadeFactory.Dependencies dependencies )
+    {
+        this( storeDir, params, dependencies, new HazelcastDiscoveryServiceFactory() );
+    }
 
     public CoreGraphDatabase( File storeDir, Map<String, String> params,
                               GraphDatabaseFacadeFactory.Dependencies dependencies,
                               DiscoveryServiceFactory discoveryServiceFactory )
     {
-        GraphDatabaseFacade coreGraphDatabaseFacade =
-                new EnterpriseCoreFacadeFactory( discoveryServiceFactory ).initFacade( storeDir, params, dependencies, this );
-        coreEditionSPI = (CoreEditionSPI) coreGraphDatabaseFacade.editionSPI();
-    }
-
-    public CoreGraphDatabase( File storeDir, Map<String, String> params,
-                              GraphDatabaseFacadeFactory.Dependencies dependencies )
-    {
-        this( storeDir, params, dependencies, new HazelcastDiscoveryServiceFactory() );
+        new EnterpriseCoreFacadeFactory( discoveryServiceFactory ).initFacade( storeDir, params, dependencies, this );
     }
 
     public CoreMember id()
     {
-        return coreEditionSPI.id();
+        return (CoreMember) getDependencyResolver().resolveDependency( RaftInstance.class ).identity();
     }
 
     public Role getRole()
