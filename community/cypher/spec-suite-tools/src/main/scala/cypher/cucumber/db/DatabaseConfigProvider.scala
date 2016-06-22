@@ -23,7 +23,7 @@ import java.io.{File => JFile}
 import java.net.URI
 
 import cypher.cucumber.CucumberAdapter
-import gherkin.formatter.model.Feature
+import gherkin.formatter.model.{Match, Result}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 
@@ -40,8 +40,8 @@ object DatabaseConfigProvider {
 
 class DatabaseConfigProvider(jsonFile: URI) extends CucumberAdapter {
 
-  override def feature(feature: Feature): Unit = {
-    val file = new JFile(getClass.getResource(jsonFile.getPath).getPath)
+  override def before(`match`: Match, result: Result): Unit = {
+  val file = new JFile(getClass.getResource(jsonFile.getPath).getPath)
     assert(file.exists(), file + " should exist")
     val content = File.apply(file).slurp()
 
@@ -51,9 +51,10 @@ class DatabaseConfigProvider(jsonFile: URI) extends CucumberAdapter {
 
       val json = parse(content)
       DatabaseConfigProvider.config = json match {
-        case JObject(entries) => entries.toMap.asInstanceOf[Map[String, JValue]].map {
+        case JObject(entries) => entries.toMap.map {
           case ("planner", JString(planner)) => GraphDatabaseSettings.cypher_planner -> planner.toUpperCase
           case ("runtime", JString(runtime)) => GraphDatabaseSettings.cypher_runtime -> runtime.toUpperCase
+          case ("language", JString(language)) => GraphDatabaseSettings.cypher_parser_version -> language.toLowerCase
           case (key, value) => throw new IllegalStateException(s"unsupported config: $key = $value")
         }
         case _ => throw new IllegalStateException(s"Unable to parse json file containing params at $file")
