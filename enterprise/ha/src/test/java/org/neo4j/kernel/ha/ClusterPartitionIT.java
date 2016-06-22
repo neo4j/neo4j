@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -40,11 +39,10 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.PENDING;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
-import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesMembers;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.memberSeesOtherMemberAsFailed;
 
-public class ClusterPartitionTestIT
+public class ClusterPartitionIT
 {
     @Rule
     public LoggerRule logger = new LoggerRule();
@@ -144,6 +142,7 @@ public class ClusterPartitionTestIT
                 .withProvider( ClusterManager.clusterOfSize( clusterSize ) )
                 .withSharedConfig( stringMap(
                         ClusterSettings.heartbeat_interval.name(), "1",
+                        ClusterSettings.heartbeat_timeout.name(), "3",
                         HaSettings.tx_push_factor.name(), "4" ) ) // so we know the initial data made it everywhere
                 .build();
 
@@ -206,7 +205,6 @@ public class ClusterPartitionTestIT
     }
 
     @Test
-    @Ignore("Currently failing because the clustering layer does not properly detect such failures. WIP.")
     public void losingQuorumAbruptlyShouldMakeAllInstancesPendingAndReadOnly() throws Throwable
     {
         int clusterSize = 5; // we need 5 to differentiate between all other instances gone and just quorum being gone
@@ -215,6 +213,7 @@ public class ClusterPartitionTestIT
                 .withProvider( ClusterManager.clusterOfSize( clusterSize ) )
                 .withSharedConfig( stringMap(
                         ClusterSettings.heartbeat_interval.name(), "1",
+                        ClusterSettings.heartbeat_timeout.name(), "3",
                         HaSettings.tx_push_factor.name(), "4" ) ) // so we know the initial data made it everywhere
                 .build();
 
@@ -263,12 +262,11 @@ public class ClusterPartitionTestIT
             rk1.repair();
 
             cluster.await( masterAvailable( failed2, failed3 ) );
-            cluster.await( masterSeesMembers( 2 ) );
+            cluster.await( masterSeesSlavesAsAvailable( 2 ) );
 
             ensureInstanceIsWritable( master );
             ensureInstanceIsWritable( remainingSlave );
             ensureInstanceIsWritable( failed1 );
-
         }
         finally
         {

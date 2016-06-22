@@ -271,14 +271,14 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                 HighAvailabilityMemberState oldState = state;
                 changeStateToDetached();
                 log.debug( "Got memberIsFailed(" + instanceId + ") and cluster lost quorum to continue, moved to "
-                        + state + " from " + oldState );
+                        + state + " from " + oldState + ", while maintaining read only capability." );
             }
             else if ( instanceId.equals( context.getElectedMasterId() ) && state == HighAvailabilityMemberState.SLAVE )
             {
                 HighAvailabilityMemberState oldState = state;
                 changeStateToDetached();
                 log.debug( "Got memberIsFailed(" + instanceId + ") which was the master and i am a slave, moved to "
-                        + state + " from " + oldState );
+                        + state + " from " + oldState + ", while maintaining read only capability." );
             }
             else
             {
@@ -334,6 +334,9 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                     listener.instanceDetached( event );
                 }
             } );
+
+            context.setAvailableHaMasterId( null );
+            context.setElectedMasterId( null );
         }
 
         private long getAliveCount()

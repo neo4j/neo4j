@@ -614,7 +614,7 @@ public class HighAvailabilityModeSwitcherTest
     }
 
     @Test
-    public void shouldSwitchToSlaveForNullMasterAndBeSilentWhenMovingToDetached() throws Exception
+    public void shouldSwitchToSlaveForNullMasterAndBeSilentWhenMovingToDetached() throws Throwable
     {
         // Given
         ClusterMemberAvailability availability = mock( ClusterMemberAvailability.class );
@@ -630,6 +630,8 @@ public class HighAvailabilityModeSwitcherTest
         toTest.addModeSwitcher( mockSwitcher );
 
         // When
+        toTest.init();
+        toTest.start();
         toTest.instanceDetached( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.MASTER,
                 HighAvailabilityMemberState.PENDING, null, null ) );
 

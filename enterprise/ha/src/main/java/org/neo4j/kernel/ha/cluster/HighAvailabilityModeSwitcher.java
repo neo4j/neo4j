@@ -485,8 +485,9 @@ public class HighAvailabilityModeSwitcher
         {
             modeSwitcherFuture.get( 10, TimeUnit.SECONDS );
         }
-        catch ( Exception ignored )
+        catch ( Exception e )
         {
+            msgLog.warn( "Exception received while waiting for switching to pending", e );
         }
     }
 
@@ -530,8 +531,9 @@ public class HighAvailabilityModeSwitcher
         {
             modeSwitcherFuture.get( 10, TimeUnit.SECONDS );
         }
-        catch ( Exception ignored )
+        catch ( Exception e )
         {
+            msgLog.warn( "Exception received while waiting for switching to detached", e );
         }
     }
 

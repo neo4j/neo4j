@@ -20,10 +20,9 @@
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.Test;
 
@@ -141,6 +140,79 @@ public class HeartbeatContextImplTest
 
         // when
         // one of them comes alive again, only that instance should be marked as alive
+        context.alive( member2 );
+        executor.drain();
+
+        // then
+        assertEquals( 1, failed.size() );
+        assertTrue( failed.contains( member3 ) );
+    }
+
+    @Test
+    public void majorityOfNonSuspectedInstancesShouldBeEnoughToMarkAnInstanceAsFailed() throws Exception
+    {
+        // Given
+        InstanceId me = new InstanceId( 1 );
+        InstanceId member2 = new InstanceId( 2 );
+        InstanceId member3 = new InstanceId( 3 );
+        InstanceId member4 = new InstanceId( 4 );
+        InstanceId member5 = new InstanceId( 5 );
+
+        Timeouts timeouts = mock( Timeouts.class );
+
+        CommonContextState commonState = mock( CommonContextState.class );
+        ClusterConfiguration configuration = mock ( ClusterConfiguration.class );
+        when( commonState.configuration() ).thenReturn( configuration );
+        when( configuration.getMembers() ).thenReturn( members( 5 ) );
+        when( configuration.getMemberIds() ).thenReturn( ids( 5 ) );
+
+        DelayedDirectExecutor executor = new DelayedDirectExecutor( NullLogProvider.getInstance() );
+        HeartbeatContext context =
+                new HeartbeatContextImpl( me, commonState, NullLogProvider.getInstance(), timeouts,
+                        executor );
+
+        final List<InstanceId> failed = new ArrayList<>( 4 );
+        HeartbeatListener listener = new HeartbeatListener()
+        {
+            @Override
+            public void failed( InstanceId server )
+            {
+                failed.add( server );
+            }
+
+            @Override
+            public void alive( InstanceId server )
+            {
+                failed.remove( server );
+            }
+        };
+
+        context.addHeartbeatListener( listener );
+
+        // when
+        // just two suspicions come, no extra failing action should be taken since this is not majority
+        context.suspect( member2 );
+        context.suspect( member3 );
+        executor.drain();
+
+        // then
+        assertEquals( 0, failed.size() );
+
+        // when
+        // the another instance suspects them, therefore have a majority of non suspected, then 2 and 3 must fail
+        Set<InstanceId> suspicionsFrom5 = new HashSet<>();
+        suspicionsFrom5.add( member2 );
+        suspicionsFrom5.add( member3 );
+        context.suspicions( member5, suspicionsFrom5 );
+        executor.drain();
+
+        // then
+        assertEquals( 2, failed.size() );
+        assertTrue( failed.contains( member2 ) );
+        assertTrue( failed.contains( member3 ) );
+
+        // when
+        // an instance sends a heartbeat, it should be set as alive
         context.alive( member2 );
         executor.drain();
 
