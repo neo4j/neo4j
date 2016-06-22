@@ -21,12 +21,16 @@ package org.neo4j.coreedge.server.edge;
 
 import java.io.File;
 import java.util.Map;
+import java.util.function.Function;
 
-import org.neo4j.coreedge.server.EnterpriseEdgeFacadeFactory;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
+import org.neo4j.kernel.impl.factory.PlatformModule;
 
 public class EdgeGraphDatabase extends GraphDatabaseFacade
 {
@@ -38,6 +42,8 @@ public class EdgeGraphDatabase extends GraphDatabaseFacade
     public EdgeGraphDatabase( File storeDir, Map<String, String> params, Dependencies
             dependencies, DiscoveryServiceFactory discoveryServiceFactory )
     {
-        new EnterpriseEdgeFacadeFactory( discoveryServiceFactory ).initFacade( storeDir, params, dependencies, this );
+        Function<PlatformModule,EditionModule> factory =
+                (platformModule) -> new EnterpriseEdgeEditionModule( platformModule, discoveryServiceFactory );
+        new GraphDatabaseFacadeFactory( DatabaseInfo.EDGE, factory ).initFacade( storeDir, params, dependencies, this );
     }
 }

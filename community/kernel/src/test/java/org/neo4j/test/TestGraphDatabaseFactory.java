@@ -35,8 +35,10 @@ import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.CommunityEditionModule;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.AbstractLogService;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -178,13 +180,13 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
             @SuppressWarnings( "deprecation" )
             public GraphDatabaseService newDatabase( Map<String,String> config )
             {
-                return new CommunityFacadeFactory()
+                return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
                 {
                     @Override
                     protected PlatformModule createPlatform( File storeDir, Map<String,String> params,
                             Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
                     {
-                        return new ImpermanentGraphDatabase.ImpermanentPlatformModule( storeDir, params, databaseInfo(),
+                        return new ImpermanentGraphDatabase.ImpermanentPlatformModule( storeDir, params, databaseInfo,
                                 dependencies, graphDatabaseFacade )
                         {
                             @Override

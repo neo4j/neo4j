@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.discovery;
 
+import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
@@ -28,12 +29,24 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
     @Override
     public CoreTopologyService coreDiscoveryService( Config config, CoreMember myself, LogProvider logProvider )
     {
+        makeHazelcastSilent( config );
         return new HazelcastServerLifecycle( config, myself, logProvider );
     }
 
     @Override
     public EdgeTopologyService edgeDiscoveryService( Config config, LogProvider logProvider )
     {
+        makeHazelcastSilent( config );
         return new HazelcastClient( new HazelcastClientConnector( config ), logProvider );
+    }
+
+    private static void makeHazelcastSilent( Config config )
+    {
+        // Make hazelcast quiet for core and edge servers
+        if ( config.get( CoreEdgeClusterSettings.disable_middleware_logging ) )
+        {
+            // This is clunky, but the documented programmatic way doesn't seem to work
+            System.setProperty( "hazelcast.logging.type", "none" );
+        }
     }
 }

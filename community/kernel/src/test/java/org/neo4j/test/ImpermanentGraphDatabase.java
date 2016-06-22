@@ -29,7 +29,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -138,12 +138,12 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     @Override
     protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        new CommunityFacadeFactory()
+        new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
         {
             @Override
             protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
             {
-                return new ImpermanentPlatformModule( storeDir, params, databaseInfo(), dependencies, graphDatabaseFacade );
+                return new ImpermanentPlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade );
             }
         }.initFacade( storeDir, new HashMap<>( params ), dependencies, this );
     }

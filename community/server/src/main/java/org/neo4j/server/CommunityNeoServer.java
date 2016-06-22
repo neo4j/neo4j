@@ -26,12 +26,14 @@ import java.util.List;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.CommunityEditionModule;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase.GraphFactory;
 import org.neo4j.server.modules.AuthorizationModule;
+import org.neo4j.server.modules.ConsoleModule;
 import org.neo4j.server.modules.DBMSModule;
 import org.neo4j.server.modules.ManagementApiModule;
 import org.neo4j.server.modules.Neo4jBrowserModule;
@@ -39,7 +41,6 @@ import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.SecurityRulesModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.modules.ThirdPartyJAXRSModule;
-import org.neo4j.server.modules.ConsoleModule;
 import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.rest.management.JmxService;
 import org.neo4j.server.rest.management.console.ConsoleService;
@@ -50,9 +51,10 @@ import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManag
 
 public class CommunityNeoServer extends AbstractNeoServer
 {
-    public static final GraphFactory COMMUNITY_FACTORY = ( config, dependencies ) -> {
+    protected static final GraphFactory COMMUNITY_FACTORY = ( config, dependencies ) -> {
         File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
-        return new CommunityFacadeFactory().newFacade( storeDir, config.getParams(), dependencies );
+        return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
+                .newFacade( storeDir, config.getParams(), dependencies );
     };
 
     public CommunityNeoServer( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies,

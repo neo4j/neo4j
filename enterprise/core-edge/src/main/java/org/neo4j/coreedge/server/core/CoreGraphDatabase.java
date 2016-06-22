@@ -21,15 +21,19 @@ package org.neo4j.coreedge.server.core;
 
 import java.io.File;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.EnterpriseCoreFacadeFactory;
+import org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.PlatformModule;
 
 public class CoreGraphDatabase extends GraphDatabaseFacade
 {
@@ -43,7 +47,9 @@ public class CoreGraphDatabase extends GraphDatabaseFacade
                               GraphDatabaseFacadeFactory.Dependencies dependencies,
                               DiscoveryServiceFactory discoveryServiceFactory )
     {
-        new EnterpriseCoreFacadeFactory( discoveryServiceFactory ).initFacade( storeDir, params, dependencies, this );
+        Function<PlatformModule,EditionModule> factory =
+                (platformModule) -> new EnterpriseCoreEditionModule( platformModule, discoveryServiceFactory );
+        new GraphDatabaseFacadeFactory( DatabaseInfo.CORE, factory ).initFacade( storeDir, params, dependencies, this );
     }
 
     public CoreMember id()

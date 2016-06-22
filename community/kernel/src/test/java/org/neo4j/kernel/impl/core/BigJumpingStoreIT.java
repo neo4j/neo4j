@@ -28,6 +28,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -39,9 +40,10 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 
@@ -67,29 +69,26 @@ public class BigJumpingStoreIT
     public void doBefore()
     {
         deleteFileOrDirectory( PATH );
-        db = new CommunityFacadeFactory()
-        {
-            @Override
-            protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
-            {
-                return new PlatformModule( storeDir, params, databaseInfo(), dependencies, graphDatabaseFacade )
-                {
-                    protected FileSystemAbstraction createFileSystemAbstraction()
-                    {
-                        return new JumpingFileSystemAbstraction( SIZE_PER_JUMP );
-                    }
-                };
-            }
-
-            @Override
-            protected EditionModule createEdition( PlatformModule platformModule )
-            {
-                return new CommunityEditionModule( platformModule )
+        Function<PlatformModule,EditionModule> factory =
+                ( platformModule ) -> new CommunityEditionModule( platformModule )
                 {
                     @Override
                     protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs )
                     {
                         return new JumpingIdGeneratorFactory( SIZE_PER_JUMP );
+                    }
+                };
+        db = new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, factory )
+        {
+            @Override
+            protected PlatformModule createPlatform( File storeDir, Map<String,String> params,
+                    Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+            {
+                return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade )
+                {
+                    protected FileSystemAbstraction createFileSystemAbstraction()
+                    {
+                        return new JumpingFileSystemAbstraction( SIZE_PER_JUMP );
                     }
                 };
             }

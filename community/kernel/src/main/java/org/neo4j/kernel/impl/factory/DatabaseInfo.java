@@ -22,11 +22,16 @@ package org.neo4j.kernel.impl.factory;
 public class DatabaseInfo
 {
     public static final DatabaseInfo UNKNOWN = new DatabaseInfo( Edition.unknown, OperationalMode.unknown );
+    public static final DatabaseInfo COMMUNITY = new DatabaseInfo( Edition.community, OperationalMode.single );
+    public static final DatabaseInfo ENTERPRISE = new DatabaseInfo( Edition.enterprise, OperationalMode.single );
+    public static final DatabaseInfo HA = new DatabaseInfo( Edition.enterprise, OperationalMode.ha );
+    public static final DatabaseInfo CORE = new DatabaseInfo( Edition.enterprise, OperationalMode.core );
+    public static final DatabaseInfo EDGE = new DatabaseInfo( Edition.enterprise, OperationalMode.edge );
 
     public final Edition edition;
     public final OperationalMode operationalMode;
 
-    public DatabaseInfo( Edition edition, OperationalMode operationalMode )
+    private DatabaseInfo( Edition edition, OperationalMode operationalMode )
     {
         this.edition = edition;
         this.operationalMode = operationalMode;
