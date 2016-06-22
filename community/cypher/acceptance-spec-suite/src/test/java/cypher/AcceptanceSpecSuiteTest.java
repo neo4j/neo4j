@@ -21,10 +21,10 @@ package cypher;
 
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
+import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
-import org.opencypher.tools.tck.TCKCucumberTemplate;
 
-@RunWith( AcceptanceSpecSuiteResources.class )
+@RunWith( Enclosed.class )
 public class AcceptanceSpecSuiteTest
 {
 
@@ -34,9 +34,6 @@ public class AcceptanceSpecSuiteTest
     // Do not forget to clear these strings to empty strings before you commit!!
     public static final String FEATURE_TO_RUN = "";
     public static final String SCENARIO_NAME_REQUIRED = "";
-
-    @SuppressWarnings( "unused" )
-    public static final boolean REPLACE_EXISTING = false;
 
     @RunWith( Cucumber.class )
     @CucumberOptions(
@@ -92,7 +89,7 @@ public class AcceptanceSpecSuiteTest
 
     private static final String DB_CONFIG = "cypher.cucumber.db.DatabaseConfigProvider:/db-config/";
     private static final String GLUE_PATH = "classpath:cypher/feature/steps";
-    private static final String FEATURE_PATH = "target/" + SUITE_NAME + "/features/";
+    private static final String FEATURE_PATH = "src/test/resources/cypher/features/";
     private static final String HTML_REPORT = "html:target/" + SUITE_NAME + "/";
     private static final String JSON_REPORT = "cypher.feature.reporting.CypherResultReporter:target/" + SUITE_NAME + "/";
 }
