@@ -43,7 +43,6 @@ public class EnterpriseAuthenticationIT extends AuthenticationIT
         return settings -> {
             settings.put( GraphDatabaseSettings.auth_enabled, "true" );
             settings.put( GraphDatabaseSettings.auth_manager, "enterprise-auth-manager" );
-            settings.put( SecuritySettings.external_auth_enabled, "false" );
         };
     }
 }

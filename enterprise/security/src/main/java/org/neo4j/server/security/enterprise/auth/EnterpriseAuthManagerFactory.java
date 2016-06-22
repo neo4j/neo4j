@@ -57,19 +57,26 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
     @Override
     public AuthManager newInstance( Config config, LogProvider logProvider )
     {
-        InternalFlatFileRealm internalRealm = createInternalRealm( config, logProvider );
-
         List<Realm> realms = new ArrayList<>( 2 );
 
-        realms.add( internalRealm );
+        // We always create the internal realm as it is our only UserManager implementation
+        InternalFlatFileRealm internalRealm = createInternalRealm( config, logProvider );
 
-        if ( config.get( SecuritySettings.external_auth_enabled ) )
+        if ( config.get( SecuritySettings.internal_authentication_enabled ) ||
+             config.get( SecuritySettings.internal_authorization_enabled ) )
         {
-            if ( config.get( SecuritySettings.ldap_auth_enabled ) )
-            {
-                realms.add( new LdapRealm( config ) );
-            }
+            realms.add( internalRealm );
+        }
 
+        if ( config.get( SecuritySettings.ldap_authentication_enabled ) ||
+             config.get( SecuritySettings.ldap_authorization_enabled ) )
+        {
+            realms.add( new LdapRealm( config ) );
+        }
+
+        if ( config.get( SecuritySettings.plugin_authentication_enabled ) ||
+             config.get( SecuritySettings.plugin_authorization_enabled ) )
+        {
             // TODO: Load pluggable realms
         }
 
@@ -101,6 +108,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
         AuthenticationStrategy authenticationStrategy = new RateLimitedAuthenticationStrategy( systemUTC(), 3 );
 
         return new InternalFlatFileRealm( userRepository, roleRepository, passwordPolicy, authenticationStrategy,
-                true );
+                config.get( SecuritySettings.internal_authentication_enabled ),
+                config.get( SecuritySettings.internal_authorization_enabled ) );
     }
 }

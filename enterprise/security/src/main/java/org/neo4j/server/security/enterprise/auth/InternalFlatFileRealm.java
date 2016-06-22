@@ -92,11 +92,12 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     private final PasswordPolicy passwordPolicy;
     private final AuthenticationStrategy authenticationStrategy;
     private final boolean authenticationEnabled;
+    private final boolean authorizationEnabled;
     private final Map<String,SimpleRole> roles;
 
     public InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
             PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy,
-            boolean authenticationEnabled )
+            boolean authenticationEnabled, boolean authorizationEnabled )
     {
         super();
 
@@ -105,10 +106,17 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         this.passwordPolicy = passwordPolicy;
         this.authenticationStrategy = authenticationStrategy;
         this.authenticationEnabled = authenticationEnabled;
+        this.authorizationEnabled = authenticationEnabled;
         setCredentialsMatcher( new AllowAllCredentialsMatcher() );
         setRolePermissionResolver( rolePermissionResolver );
 
         roles = new PredefinedRolesBuilder().buildRoles();
+    }
+
+    public InternalFlatFileRealm( UserRepository userRepository, RoleRepository roleRepository,
+            PasswordPolicy passwordPolicy, AuthenticationStrategy authenticationStrategy )
+    {
+        this( userRepository, roleRepository, passwordPolicy, authenticationStrategy, true, true );
     }
 
     @Override
@@ -124,7 +132,12 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         userRepository.start();
         roleRepository.start();
 
-        if ( authenticationEnabled )
+        ensureDefaultUsersAndRoles();
+    }
+
+    private void ensureDefaultUsersAndRoles() throws IOException, IllegalCredentialsException
+    {
+        if ( authenticationEnabled || authorizationEnabled )
         {
             if ( numberOfRoles() == 0 )
             {
@@ -177,6 +190,11 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     @Override
     protected AuthorizationInfo doGetAuthorizationInfo( PrincipalCollection principals ) throws AuthenticationException
     {
+        if ( !authorizationEnabled )
+        {
+            return null;
+        }
+
         String username = (String) getAvailablePrincipal( principals );
         if ( username == null )
         {
@@ -203,6 +221,11 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     @Override
     protected AuthenticationInfo doGetAuthenticationInfo( AuthenticationToken token ) throws AuthenticationException
     {
+        if ( !authenticationEnabled )
+        {
+            return null;
+        }
+
         ShiroAuthToken shiroAuthToken = (ShiroAuthToken) token;
 
         String username;

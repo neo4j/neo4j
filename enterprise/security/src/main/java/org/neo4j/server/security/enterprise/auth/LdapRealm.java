@@ -23,7 +23,6 @@ import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.Permission;
-import org.apache.shiro.authz.SimpleAuthorizationInfo;
 import org.apache.shiro.authz.SimpleRole;
 import org.apache.shiro.authz.permission.RolePermissionResolver;
 import org.apache.shiro.realm.ldap.JndiLdapContextFactory;
@@ -44,6 +43,9 @@ import org.neo4j.kernel.configuration.Config;
  */
 public class LdapRealm extends JndiLdapRealm
 {
+    private boolean authenticationEnabled;
+    private boolean authorizationEnabled;
+
     public LdapRealm( Config config )
     {
         super();
@@ -52,11 +54,22 @@ public class LdapRealm extends JndiLdapRealm
     }
 
     @Override
+    protected AuthenticationInfo queryForAuthenticationInfo( AuthenticationToken token,
+            LdapContextFactory ldapContextFactory )
+            throws NamingException
+    {
+        return authenticationEnabled ? super.queryForAuthenticationInfo( token, ldapContextFactory ) : null;
+    }
+
+    @Override
     protected AuthorizationInfo queryForAuthorizationInfo(PrincipalCollection principals,
             LdapContextFactory ldapContextFactory) throws NamingException
     {
-        // TODO: This is just temporary
-        return new SimpleAuthorizationInfo( Collections.singleton( PredefinedRolesBuilder.READER ) );
+        if ( authorizationEnabled )
+        {
+            // TODO: Implement LDAP authorization
+        }
+        return null;
     }
 
     @Override
@@ -96,5 +109,8 @@ public class LdapRealm extends JndiLdapRealm
 
         setContextFactory( contextFactory );
         setUserDnTemplate( config.get( SecuritySettings.ldap_user_dn_template ) );
+
+        authenticationEnabled = config.get( SecuritySettings.ldap_authentication_enabled );
+        authorizationEnabled = config.get( SecuritySettings.ldap_authorization_enabled );
     }
 }

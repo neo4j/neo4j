@@ -45,7 +45,6 @@ import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.R
  */
 public class AuthScenariosIT extends AuthProcedureTestBase
 {
-
     //---------- User creation -----------
 
     /*

@@ -37,35 +37,51 @@ public class SecuritySettings
 {
     @SuppressWarnings( "unused" ) // accessed by reflection
 
-    @Description( "Enable auth via external authentication providers." )
-    public static final Setting<Boolean> external_auth_enabled =
-            setting( "dbms.security.external_auth_enabled", BOOLEAN, "false" );
+    @Description( "Enable authentication via internal authentication provider." )
+    public static final Setting<Boolean> internal_authentication_enabled =
+            setting( "dbms.security.realms.internal.authentication_enabled", BOOLEAN, "true" );
 
-    @Description( "Enable auth via a settings configurable LDAP authentication realm." )
-    public static final Setting<Boolean> ldap_auth_enabled =
-            setting( "dbms.security.ldap.enabled", BOOLEAN, "false" );
+    @Description( "Enable authorization via internal authorization provider." )
+    public static final Setting<Boolean> internal_authorization_enabled =
+            setting( "dbms.security.realms.internal.authorization_enabled", BOOLEAN, "true" );
+
+    @Description( "Enable authentication via settings configurable LDAP authentication realm." )
+    public static final Setting<Boolean> ldap_authentication_enabled =
+            setting( "dbms.security.realms.ldap.authentication_enabled", BOOLEAN, "false" );
+
+    @Description( "Enable authotization via settings configurable LDAP authorization realm." )
+    public static final Setting<Boolean> ldap_authorization_enabled =
+            setting( "dbms.security.realms.ldap.authorization_enabled", BOOLEAN, "false" );
+
+    @Description( "Enable authentication via plugin authentication realms." )
+    public static final Setting<Boolean> plugin_authentication_enabled =
+            setting( "dbms.security.realms.plugin.authentication_enabled", BOOLEAN, "false" );
+
+    @Description( "Enable authotization via plugin authorization realms." )
+    public static final Setting<Boolean> plugin_authorization_enabled =
+            setting( "dbms.security.realms.plugin.authorization_enabled", BOOLEAN, "false" );
 
     @Description( "Hostname and port of LDAP server to use for authentication and authorization." )
     public static final Setting<HostnamePort> ldap_server =
-            setting( "dbms.security.ldap.host", HOSTNAME_PORT, "0.0.0.0:389" );
+            setting( "dbms.security.realms.ldap.host", HOSTNAME_PORT, "0.0.0.0:389" );
 
     @Description( "Authentication mechanism." )
     public static final Setting<String> ldap_auth_mechanism =
-            setting( "dbms.security.ldap.auth_mechanism", STRING, "simple" );
+            setting( "dbms.security.realms.ldap.auth_mechanism", STRING, "simple" );
 
     @Description( "Referral" )
     public static final Setting<String> ldap_referral =
-            setting( "dbms.security.ldap.referral", STRING, "follow" );
+            setting( "dbms.security.realms.ldap.referral", STRING, "follow" );
 
     @Description( "User DN template." )
     public static final Setting<String> ldap_user_dn_template =
-            setting( "dbms.security.ldap.user_dn_template", STRING, "uid={0},ou=users,dc=example,dc=com" );
+            setting( "dbms.security.realms.ldap.user_dn_template", STRING, "uid={0},ou=users,dc=example,dc=com" );
 
     @Description( "System username" )
     public static final Setting<String> ldap_system_username =
-            setting( "dbms.security.ldap.system_username", STRING, NO_DEFAULT );
+            setting( "dbms.security.realms.ldap.system_username", STRING, NO_DEFAULT );
 
     @Description( "System password" )
     public static final Setting<String> ldap_system_password =
-            setting( "dbms.security.ldap.system_password", STRING, NO_DEFAULT );
+            setting( "dbms.security.realms.ldap.system_password", STRING, NO_DEFAULT );
 }

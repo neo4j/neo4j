@@ -120,7 +120,7 @@ public class InternalFlatFileRealmTest
         CodePosition codePosition = getCodePositionAfterCall( "addUserToRole", "getUserByName" );
 
         InternalFlatFileRealm realm = new InternalFlatFileRealm( userRepository, roleRepository, passwordPolicy,
-                authenticationStrategy, true );
+                authenticationStrategy );
 
         // When
         RunResult result = InterleavedRunner.interleave(
@@ -143,7 +143,7 @@ public class InternalFlatFileRealmTest
         CodePosition codePosition = getCodePositionAfterCall( "deleteUser", "getUserByName" );
 
         InternalFlatFileRealm realm = new InternalFlatFileRealm( userRepository, roleRepository, passwordPolicy,
-                authenticationStrategy, true );
+                authenticationStrategy );
 
         // When
         RunResult result = InterleavedRunner.interleave(

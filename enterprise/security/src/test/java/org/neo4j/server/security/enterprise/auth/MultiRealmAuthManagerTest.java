@@ -64,7 +64,7 @@ public class MultiRealmAuthManagerTest
         authStrategy = mock( AuthenticationStrategy.class );
         passwordPolicy = mock( PasswordPolicy.class );
 
-        internalFlatFileRealm = new InternalFlatFileRealm( users, roles, passwordPolicy, authStrategy, true );
+        internalFlatFileRealm = new InternalFlatFileRealm( users, roles, passwordPolicy, authStrategy );
         manager = new MultiRealmAuthManager( internalFlatFileRealm, Collections.singleton( internalFlatFileRealm ));
         manager.init();
         userManager = manager.getUserManager();

@@ -80,7 +80,7 @@ public class AuthProcedureTestBase
     {
         db = (GraphDatabaseAPI) new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase();
         internalRealm = new InternalFlatFileRealm( new InMemoryUserRepository(), new InMemoryRoleRepository(),
-                new BasicPasswordPolicy(), new RateLimitedAuthenticationStrategy( systemUTC(), 3 ), true );
+                new BasicPasswordPolicy(), new RateLimitedAuthenticationStrategy( systemUTC(), 3 ) );
         manager = new MultiRealmAuthManager( internalRealm, Collections.singletonList( internalRealm ) );
         manager.init();
         manager.start();

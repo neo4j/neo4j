@@ -34,6 +34,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -45,6 +46,7 @@ import org.neo4j.function.Factory;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.security.enterprise.auth.SecuritySettings;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -53,6 +55,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.message.Messages.init;
 import static org.neo4j.bolt.v1.messaging.message.Messages.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.Messages.run;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyRecieves;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -87,13 +90,14 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
         return settings -> {
             settings.put( GraphDatabaseSettings.auth_enabled, "true" );
             settings.put( GraphDatabaseSettings.auth_manager, "enterprise-auth-manager" );
-            settings.put( SecuritySettings.external_auth_enabled, "true" );
-            settings.put( SecuritySettings.ldap_auth_enabled, "true" );
-            // TODO: This is the configuration for an ldap test server
+            settings.put( SecuritySettings.internal_authentication_enabled, "true" );
+            settings.put( SecuritySettings.internal_authorization_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authorization_enabled, "false" );
             settings.put( SecuritySettings.ldap_server, "0.0.0.0:10389" );
             settings.put( SecuritySettings.ldap_user_dn_template, "cn={0},ou=users,dc=example,dc=com" );
-            //settings.put( SecuritySettings.ldap_system_username, "uid=admin,ou=system" );
-            //settings.put( SecuritySettings.ldap_system_password, "secret" );
+            settings.put( SecuritySettings.ldap_system_username, "uid=admin,ou=system" );
+            settings.put( SecuritySettings.ldap_system_password, "secret" );
         };
     }
 
@@ -117,14 +121,73 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyRecieves( msgSuccess() ) );
+    }
 
-        // When
+    @Test
+    @ApplyLdifFiles( "ldap_test_data.ldif" )
+    public void shouldBeAbleToLoginWithLdapAndAuthorizeInternally() throws Throwable
+    {
+        //--------------------------
+        // First login as admin and create the internal user 'neo' with role 'reader'
+
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", map( "principal", "neo4j",
+                                "credentials", "neo4j", "scheme", "basic" ) ) ) );
+
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves( msgSuccess( Collections.singletonMap( "credentials_expired", true )) ) );
+
+        client.send( TransportTestUtil.chunk(
+                run( "CALL dbms.changePassword", Collections.singletonMap( "password", "secret" ) ),
+                pullAll() ) );
+
+        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+
+        reconnect();
+
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", map( "principal", "neo4j",
+                                "credentials", "secret", "scheme", "basic" ) ) ) );
+
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+
+        client.send( TransportTestUtil.chunk(
+                run( "CALL dbms.createUser( 'neo', 'invalid', false ) CALL dbms.addUserToRole( 'neo', 'reader' ) RETURN 0" ),
+                pullAll() ) );
+
+        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+
+        //--------------------------
+        // Then login user 'neo' with LDAP and test that internal authorization gives correct permission
+        reconnect();
+
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", map( "principal", "neo",
+                                "credentials", "abc123", "scheme", "basic" ) ) ) );
+
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+
         client.send( TransportTestUtil.chunk(
                 run( "MATCH (n) RETURN n" ),
                 pullAll() ) );
 
-        // Then
-        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+        assertThat( client, eventuallyRecieves( msgSuccess(), msgSuccess() ) );
+
+        client.send( TransportTestUtil.chunk(
+                run( "CREATE ()" ),
+                pullAll() ) );
+
+        assertThat( client, eventuallyRecieves(
+                msgFailure( Status.Security.Forbidden,
+                        String.format( "Write operations are not allowed for `neo` transactions." ) ) ) );
     }
 
     @Before
