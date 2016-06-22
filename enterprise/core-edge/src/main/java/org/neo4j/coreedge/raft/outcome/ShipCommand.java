@@ -19,18 +19,18 @@
  */
 package org.neo4j.coreedge.raft.outcome;
 
+import java.io.IOException;
+import java.util.Arrays;
+
 import org.neo4j.coreedge.raft.LeaderContext;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.shipping.RaftLogShipper;
 
 import static java.lang.String.format;
 
-import java.io.IOException;
-import java.util.Arrays;
-
 public abstract class ShipCommand
 {
-    public abstract <MEMBER> void applyTo( RaftLogShipper<MEMBER> raftLogShipper, LeaderContext leaderContext )
+    public abstract void applyTo( RaftLogShipper raftLogShipper, LeaderContext leaderContext )
             throws IOException;
 
     public static class Mismatch extends ShipCommand
@@ -101,7 +101,7 @@ public abstract class ShipCommand
             this.target = target;
         }
 
-        public <MEMBER> void applyTo( RaftLogShipper<MEMBER> raftLogShipper, LeaderContext leaderContext ) throws
+        public  void applyTo( RaftLogShipper raftLogShipper, LeaderContext leaderContext ) throws
                 IOException
         {
             if ( raftLogShipper.identity().equals( target ) )
@@ -161,7 +161,7 @@ public abstract class ShipCommand
         }
 
         @Override
-        public <MEMBER> void applyTo( RaftLogShipper<MEMBER> raftLogShipper, LeaderContext leaderContext ) throws IOException
+        public  void applyTo( RaftLogShipper raftLogShipper, LeaderContext leaderContext ) throws IOException
         {
             raftLogShipper.onNewEntries( prevLogIndex, prevLogTerm, newLogEntries, leaderContext );
         }
@@ -212,7 +212,7 @@ public abstract class ShipCommand
     public static class CommitUpdate extends ShipCommand
     {
         @Override
-        public <MEMBER> void applyTo( RaftLogShipper<MEMBER> raftLogShipper, LeaderContext leaderContext ) throws IOException
+        public  void applyTo( RaftLogShipper raftLogShipper, LeaderContext leaderContext ) throws IOException
         {
             raftLogShipper.onCommitUpdate( leaderContext );
         }

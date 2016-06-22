@@ -23,14 +23,14 @@ import java.util.EmptyStackException;
 import java.util.Stack;
 
 /** Keeps a pool of local sub-sessions, to be used under a single global session. */
-public class LocalSessionPool<MEMBER>
+public class LocalSessionPool
 {
     private final Stack<LocalSession> sessionStack = new Stack<>();
 
-    private final GlobalSession<MEMBER> globalSession;
+    private final GlobalSession globalSession;
     private long nextLocalSessionId;
 
-    public LocalSessionPool( GlobalSession<MEMBER> globalSession )
+    public LocalSessionPool( GlobalSession globalSession )
     {
         this.globalSession = globalSession;
     }

@@ -17,11 +17,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.discovery;
+package org.neo4j.coreedge.raft.replication;
 
-import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.coreedge.raft.RaftMessages;
+import org.neo4j.coreedge.raft.net.Outbound;
+import org.neo4j.coreedge.server.CoreMember;
 
-public interface ReadOnlyTopologyService extends Lifecycle
+public class SendToMyself
 {
-    ClusterTopology currentTopology();
+    private final CoreMember myself;
+    private final Outbound<CoreMember,RaftMessages.RaftMessage> outbound;
+
+    public SendToMyself( CoreMember myself, Outbound<CoreMember,RaftMessages.RaftMessage> outbound )
+    {
+        this.myself = myself;
+        this.outbound = outbound;
+    }
+
+    public void replicate( ReplicatedContent content )
+    {
+        outbound.send( myself, new RaftMessages.NewEntry.Request( myself, content ) );
+    }
 }

@@ -24,7 +24,7 @@ import java.util.Collection;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.network.Message;
+import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
@@ -33,14 +33,14 @@ import org.neo4j.coreedge.raft.membership.RaftGroup;
 import org.neo4j.coreedge.raft.membership.RaftMembershipManager;
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.net.Outbound;
-import org.neo4j.coreedge.raft.replication.LeaderOnlyReplicator;
+import org.neo4j.coreedge.raft.replication.SendToMyself;
 import org.neo4j.coreedge.raft.replication.shipping.RaftLogShippingManager;
 import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
 import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
-import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
@@ -48,30 +48,30 @@ import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Mockito.mock;
 
-public class RaftInstanceBuilder<MEMBER>
+public class RaftInstanceBuilder
 {
-    private final MEMBER member;
+    private final CoreMember member;
 
     private int expectedClusterSize;
-    private RaftGroup.Builder<MEMBER> memberSetBuilder;
+    private RaftGroup.Builder memberSetBuilder;
 
     private StateStorage<TermState> termState = new InMemoryStateStorage<>( new TermState() );
-    private StateStorage<VoteState<MEMBER>> voteState = new InMemoryStateStorage<>( new VoteState<>() );
+    private StateStorage<VoteState> voteState = new InMemoryStateStorage<>( new VoteState() );
     private RaftLog raftLog = new InMemoryRaftLog();
     private RenewableTimeoutService renewableTimeoutService = new DelayedRenewableTimeoutService( Clock.systemUTC(),
             NullLogProvider.getInstance() );
 
-    private Inbound<RaftMessages.RaftMessage<MEMBER>> inbound = handler -> {};
-    private Outbound<MEMBER, RaftMessages.RaftMessage<MEMBER>> outbound =
-            new Outbound<MEMBER, RaftMessages.RaftMessage<MEMBER>>()
+    private Inbound<RaftMessages.RaftMessage> inbound = handler -> {};
+    private Outbound<CoreMember, RaftMessages.RaftMessage> outbound =
+            new Outbound<CoreMember, RaftMessages.RaftMessage>()
     {
         @Override
-        public void send( MEMBER to, RaftMessages.RaftMessage<MEMBER> message )
+        public void send( CoreMember to, RaftMessages.RaftMessage message )
         {
         }
 
         @Override
-        public void send( MEMBER to, Collection<RaftMessages.RaftMessage<MEMBER>> raftMessages )
+        public void send( CoreMember to, Collection<RaftMessages.RaftMessage> raftMessages )
         {
         }
     };
@@ -86,14 +86,14 @@ public class RaftInstanceBuilder<MEMBER>
     private int catchupBatchSize = 64;
     private int maxAllowedShippingLag = 256;
     private Supplier<DatabaseHealth> databaseHealthSupplier;
-    private StateStorage<RaftMembershipState<MEMBER>> raftMembership =
-            new InMemoryStateStorage<>( new RaftMembershipState<>() );
+    private StateStorage<RaftMembershipState> raftMembership =
+            new InMemoryStateStorage<>( new RaftMembershipState() );
     private Monitors monitors = new Monitors();
     private RaftStateMachine raftStateMachine = new RaftStateMachine(){};
     private final InFlightMap<Long,RaftLogEntry> inFlightMap;
     private LocalDatabase localDatabase = mock( LocalDatabase.class );
 
-    public RaftInstanceBuilder( MEMBER member, int expectedClusterSize, RaftGroup.Builder<MEMBER> memberSetBuilder )
+    public RaftInstanceBuilder( CoreMember member, int expectedClusterSize, RaftGroup.Builder memberSetBuilder )
     {
         this.member = member;
         this.expectedClusterSize = expectedClusterSize;
@@ -101,79 +101,80 @@ public class RaftInstanceBuilder<MEMBER>
         inFlightMap = new InFlightMap<>();
     }
 
-    public RaftInstance<MEMBER> build()
+    public RaftInstance build()
     {
-        LeaderOnlyReplicator<MEMBER> leaderOnlyReplicator = new LeaderOnlyReplicator<>( member, outbound );
-        RaftMembershipManager<MEMBER> membershipManager = new RaftMembershipManager<>( leaderOnlyReplicator,
+        SendToMyself leaderOnlyReplicator = new SendToMyself( member, outbound );
+        RaftMembershipManager membershipManager = new RaftMembershipManager( leaderOnlyReplicator,
                 memberSetBuilder, raftLog, logProvider, expectedClusterSize, electionTimeout, clock, catchupTimeout,
                 raftMembership, localDatabase );
-        RaftLogShippingManager<MEMBER> logShipping =
-                new RaftLogShippingManager<>( outbound, logProvider, raftLog, clock, member, membershipManager,
+        RaftLogShippingManager logShipping =
+                new RaftLogShippingManager( outbound, logProvider, raftLog, clock, member, membershipManager,
                         retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, inFlightMap );
 
-        RaftInstance<MEMBER> raft = new RaftInstance<>( member, termState, voteState, raftLog, raftStateMachine, electionTimeout,
-                heartbeatInterval, renewableTimeoutService, mock( CoreServerSelectionStrategy.class ), outbound,
+        RaftInstance raft = new RaftInstance( member, termState, voteState, raftLog, raftStateMachine, electionTimeout,
+                heartbeatInterval, renewableTimeoutService, mock( CoreTopologyService.class),
+                outbound,
                 logProvider, membershipManager, logShipping, databaseHealthSupplier, inFlightMap, monitors,
                 localDatabase );
         inbound.registerHandler( raft );
         return raft;
     }
 
-    public RaftInstanceBuilder<MEMBER> localDatabase( LocalDatabase localDatabase  )
+    public RaftInstanceBuilder localDatabase( LocalDatabase localDatabase  )
     {
         this.localDatabase = localDatabase;
         return this;
     }
 
-    public RaftInstanceBuilder<MEMBER> electionTimeout( long electionTimeout )
+    public RaftInstanceBuilder electionTimeout( long electionTimeout )
     {
         this.electionTimeout = electionTimeout;
         return this;
     }
 
-    public RaftInstanceBuilder<MEMBER> heartbeatInterval( long heartbeatInterval )
+    public RaftInstanceBuilder heartbeatInterval( long heartbeatInterval )
     {
         this.heartbeatInterval = heartbeatInterval;
         return this;
     }
 
-    public RaftInstanceBuilder<MEMBER> timeoutService( RenewableTimeoutService renewableTimeoutService )
+    public RaftInstanceBuilder timeoutService( RenewableTimeoutService renewableTimeoutService )
     {
         this.renewableTimeoutService = renewableTimeoutService;
         return this;
     }
 
-    public RaftInstanceBuilder<MEMBER> outbound( Outbound<MEMBER,RaftMessages.RaftMessage<MEMBER>> outbound )
+    public RaftInstanceBuilder outbound( Outbound<CoreMember,RaftMessages.RaftMessage> outbound )
     {
         this.outbound = outbound;
         return this;
     }
 
-    public RaftInstanceBuilder<MEMBER> inbound( Inbound<RaftMessages.RaftMessage<MEMBER>> inbound )
+    public RaftInstanceBuilder inbound( Inbound<RaftMessages.RaftMessage> inbound )
     {
         this.inbound = inbound;
         return this;
     }
 
-    public RaftInstanceBuilder<MEMBER> raftLog( RaftLog raftLog )
+    public RaftInstanceBuilder raftLog( RaftLog raftLog )
     {
         this.raftLog = raftLog;
         return this;
     }
 
-    public RaftInstanceBuilder<MEMBER> stateMachine( RaftStateMachine raftStateMachine )
+    public RaftInstanceBuilder stateMachine( RaftStateMachine raftStateMachine )
     {
         this.raftStateMachine = raftStateMachine;
         return this;
     }
 
-    RaftInstanceBuilder<MEMBER> databaseHealth( final DatabaseHealth databaseHealth )
+    RaftInstanceBuilder databaseHealth( final DatabaseHealth databaseHealth )
     {
         this.databaseHealthSupplier = () -> databaseHealth;
         return this;
     }
 
-    RaftInstanceBuilder<MEMBER> monitors( Monitors monitors )
+    RaftInstanceBuilder monitors( Monitors monitors )
     {
         this.monitors = monitors;
         return this;

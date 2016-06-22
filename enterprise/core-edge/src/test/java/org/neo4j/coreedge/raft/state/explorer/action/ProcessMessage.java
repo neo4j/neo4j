@@ -28,8 +28,7 @@ import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.explorer.ClusterState;
 import org.neo4j.coreedge.raft.state.explorer.ComparableRaftState;
-import org.neo4j.coreedge.server.RaftTestMember;
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 
@@ -37,10 +36,10 @@ import static org.mockito.Mockito.mock;
 
 public class ProcessMessage implements Action
 {
-    private final RaftTestMember member;
+    private final CoreMember member;
     private Log log = NullLog.getInstance();
 
-    public ProcessMessage( RaftTestMember member )
+    public ProcessMessage( CoreMember member )
     {
         this.member = member;
     }
@@ -49,21 +48,21 @@ public class ProcessMessage implements Action
     public ClusterState advance( ClusterState previous ) throws IOException
     {
         ClusterState newClusterState = new ClusterState( previous );
-        Queue<RaftMessages.RaftMessage<RaftTestMember>> inboundQueue = new LinkedList<>( previous.queues.get( member ) );
-        RaftMessages.RaftMessage<RaftTestMember> message = inboundQueue.poll();
+        Queue<RaftMessages.RaftMessage> inboundQueue = new LinkedList<>( previous.queues.get( member ) );
+        RaftMessages.RaftMessage message = inboundQueue.poll();
         if ( message == null )
         {
             return previous;
         }
         ComparableRaftState memberState = previous.states.get( member );
         ComparableRaftState newMemberState = new ComparableRaftState( memberState );
-        Outcome<RaftTestMember> outcome = previous.roles.get( member ).handler.handle( message, memberState, log,
+        Outcome outcome = previous.roles.get( member ).handler.handle( message, memberState, log,
                 mock( LocalDatabase.class) );
         newMemberState.update( outcome );
 
-        for ( RaftMessages.Directed<RaftTestMember> outgoingMessage : outcome.getOutgoingMessages() )
+        for ( RaftMessages.Directed outgoingMessage : outcome.getOutgoingMessages() )
         {
-            LinkedList<RaftMessages.RaftMessage<RaftTestMember>> outboundQueue =
+            LinkedList<RaftMessages.RaftMessage> outboundQueue =
                     new LinkedList<>( newClusterState.queues.get( outgoingMessage.to() ) );
             outboundQueue.add( outgoingMessage.message() );
             newClusterState.queues.put( outgoingMessage.to(), outboundQueue );

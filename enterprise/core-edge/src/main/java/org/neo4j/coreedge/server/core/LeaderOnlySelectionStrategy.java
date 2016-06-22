@@ -17,28 +17,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.replication;
+package org.neo4j.coreedge.server.core;
 
-import org.neo4j.coreedge.network.Message;
-import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.net.Outbound;
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.coreedge.discovery.CoreServerSelectionException;
+import org.neo4j.coreedge.raft.outcome.Outcome;
+import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 
-
-public class LeaderOnlyReplicator<MEMBER>
+public class LeaderOnlySelectionStrategy implements CoreServerSelectionStrategy
 {
-    private final MEMBER source;
-    private final Outbound<MEMBER, RaftMessages.RaftMessage<MEMBER>> outbound;
+    private final Outcome outcome;
 
-    public LeaderOnlyReplicator( MEMBER source, Outbound<MEMBER, RaftMessages.RaftMessage<MEMBER>> outbound )
+    public LeaderOnlySelectionStrategy( Outcome outcome )
     {
-        this.source = source;
-        this.outbound = outbound;
+        this.outcome = outcome;
     }
 
-    public void replicate( ReplicatedContent content )
+    @Override
+    public CoreMember coreServer() throws CoreServerSelectionException
     {
-        //noinspection unchecked
-        outbound.send( source, new RaftMessages.NewEntry.Request<>( source, content ) );
+        return (CoreMember) outcome.getLeader();
     }
 }

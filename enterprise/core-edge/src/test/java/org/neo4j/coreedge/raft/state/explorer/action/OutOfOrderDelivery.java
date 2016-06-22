@@ -21,15 +21,15 @@ package org.neo4j.coreedge.raft.state.explorer.action;
 
 import java.util.LinkedList;
 
-import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.state.explorer.ClusterState;
+import org.neo4j.coreedge.server.CoreMember;
 
 public class OutOfOrderDelivery implements Action
 {
-    private final RaftTestMember member;
+    private final CoreMember member;
 
-    public OutOfOrderDelivery( RaftTestMember member )
+    public OutOfOrderDelivery( CoreMember member )
     {
         this.member = member;
     }
@@ -38,12 +38,12 @@ public class OutOfOrderDelivery implements Action
     public ClusterState advance( ClusterState previous )
     {
         ClusterState newClusterState = new ClusterState( previous );
-        LinkedList<RaftMessages.RaftMessage<RaftTestMember>> inboundQueue = new LinkedList<>( previous.queues.get( member ) );
+        LinkedList<RaftMessages.RaftMessage> inboundQueue = new LinkedList<>( previous.queues.get( member ) );
         if ( inboundQueue.size() < 2 )
         {
             return previous;
         }
-        RaftMessages.RaftMessage<RaftTestMember> message = inboundQueue.poll();
+        RaftMessages.RaftMessage message = inboundQueue.poll();
         inboundQueue.add( 1, message );
 
         newClusterState.queues.put( member, inboundQueue );

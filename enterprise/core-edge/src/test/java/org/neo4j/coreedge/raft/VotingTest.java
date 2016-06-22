@@ -23,7 +23,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.util.UUID;
+
 import org.neo4j.coreedge.raft.roles.Voting;
+import org.neo4j.coreedge.server.CoreMember;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -31,8 +34,8 @@ import static org.junit.Assert.assertTrue;
 @RunWith(MockitoJUnitRunner.class)
 public class VotingTest
 {
-    Object candidate = new Object();
-    Object otherMember = new Object();
+    CoreMember candidate = new CoreMember( UUID.randomUUID() );
+    CoreMember otherMember = new CoreMember( UUID.randomUUID() );
 
     long logTerm = 10;
     long currentTerm = 20;

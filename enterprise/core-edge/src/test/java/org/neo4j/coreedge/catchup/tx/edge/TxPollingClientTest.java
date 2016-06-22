@@ -24,7 +24,7 @@ import org.junit.Test;
 
 import org.neo4j.coreedge.catchup.storecopy.CoreClient;
 import org.neo4j.coreedge.raft.ControlledRenewableTimeoutService;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -32,6 +32,7 @@ import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -45,7 +46,7 @@ public class TxPollingClientTest
 {
     private final CoreClient coreClient = mock( CoreClient.class );
     private final CoreServerSelectionStrategy serverSelection = mock( CoreServerSelectionStrategy.class );
-    private final AdvertisedSocketAddress coreServer = mock( AdvertisedSocketAddress.class );
+    private final CoreMember coreServer = mock( CoreMember.class );
     private final TransactionIdStore idStore = mock( TransactionIdStore.class );
 
     private final BatchingTxApplier txApplier = mock( BatchingTxApplier.class );
@@ -75,7 +76,7 @@ public class TxPollingClientTest
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
         // then
-        verify( coreClient ).pollForTransactions( coreServer, lastAppliedTxId );
+        verify( coreClient ).pollForTransactions( any( CoreMember.class ), eq( lastAppliedTxId ) );
     }
 
     @Test
@@ -88,7 +89,7 @@ public class TxPollingClientTest
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
         // then
-        verify( coreClient, never() ).pollForTransactions( any( AdvertisedSocketAddress.class ), anyLong() );
+        verify( coreClient, never() ).pollForTransactions( any( CoreMember.class ), anyLong() );
     }
 
     @Test

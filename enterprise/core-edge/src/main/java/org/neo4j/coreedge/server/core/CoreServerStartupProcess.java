@@ -28,7 +28,6 @@ import org.neo4j.coreedge.raft.RaftServer;
 import org.neo4j.coreedge.raft.membership.MembershipWaiter;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdGeneratorFactory;
 import org.neo4j.coreedge.raft.state.CoreState;
-import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -41,9 +40,9 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class CoreServerStartupProcess
 {
     public static LifeSupport createLifeSupport( DataSourceManager dataSourceManager,
-            ReplicatedIdGeneratorFactory idGeneratorFactory, RaftInstance<CoreMember> raft, CoreState coreState,
-            RaftServer<CoreMember> raftServer, CatchupServer catchupServer,
-            DelayedRenewableTimeoutService raftTimeoutService, MembershipWaiter<CoreMember> membershipWaiter,
+            ReplicatedIdGeneratorFactory idGeneratorFactory, RaftInstance raft, CoreState coreState,
+            RaftServer raftServer, CatchupServer catchupServer,
+            DelayedRenewableTimeoutService raftTimeoutService, MembershipWaiter membershipWaiter,
             long joinCatchupTimeout, LogProvider logProvider )
     {
         LifeSupport services = new LifeSupport();
@@ -53,20 +52,20 @@ public class CoreServerStartupProcess
         services.add( raftServer );
         services.add( catchupServer );
         services.add( raftTimeoutService );
-        services.add( new MembershipWaiterLifecycle<>( membershipWaiter, joinCatchupTimeout, raft, logProvider ) );
+        services.add( new MembershipWaiterLifecycle( membershipWaiter, joinCatchupTimeout, raft, logProvider ) );
 
         return services;
     }
 
-    private static class MembershipWaiterLifecycle<MEMBER> extends LifecycleAdapter
+    private static class MembershipWaiterLifecycle extends LifecycleAdapter
     {
-        private final MembershipWaiter<MEMBER> membershipWaiter;
+        private final MembershipWaiter membershipWaiter;
         private final Long joinCatchupTimeout;
-        private final RaftInstance<MEMBER> raft;
+        private final RaftInstance raft;
         private final Log log;
 
-        private MembershipWaiterLifecycle( MembershipWaiter<MEMBER> membershipWaiter, Long joinCatchupTimeout,
-                RaftInstance<MEMBER> raft, LogProvider logProvider )
+        private MembershipWaiterLifecycle( MembershipWaiter membershipWaiter, Long joinCatchupTimeout,
+                RaftInstance raft, LogProvider logProvider )
         {
             this.membershipWaiter = membershipWaiter;
             this.joinCatchupTimeout = joinCatchupTimeout;

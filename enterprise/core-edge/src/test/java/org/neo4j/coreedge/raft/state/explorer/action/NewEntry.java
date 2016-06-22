@@ -23,16 +23,16 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import org.neo4j.coreedge.server.RaftTestMember;
-import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.raft.RaftMessages;
+import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.raft.state.explorer.ClusterState;
+import org.neo4j.coreedge.server.CoreMember;
 
 public class NewEntry implements Action
 {
-    private final RaftTestMember member;
+    private final CoreMember member;
 
-    public NewEntry( RaftTestMember member )
+    public NewEntry( CoreMember member )
     {
         this.member = member;
     }
@@ -41,8 +41,8 @@ public class NewEntry implements Action
     public ClusterState advance( ClusterState previous ) throws IOException
     {
         ClusterState newClusterState = new ClusterState( previous );
-        Queue<RaftMessages.RaftMessage<RaftTestMember>> newQueue = new LinkedList<>( previous.queues.get( member ) );
-        newQueue.offer( new RaftMessages.NewEntry.Request<RaftTestMember>( member, new ReplicatedString(
+        Queue<RaftMessages.RaftMessage> newQueue = new LinkedList<>( previous.queues.get( member ) );
+        newQueue.offer( new RaftMessages.NewEntry.Request( member, new ReplicatedString(
                 "content" ) ) );
         newClusterState.queues.put( member, newQueue );
         return newClusterState;

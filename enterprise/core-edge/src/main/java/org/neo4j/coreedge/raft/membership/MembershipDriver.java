@@ -21,9 +21,11 @@ package org.neo4j.coreedge.raft.membership;
 
 import java.util.Set;
 
-public interface MembershipDriver<MEMBER>
+import org.neo4j.coreedge.server.CoreMember;
+
+public interface MembershipDriver
 {
-    void doConsensus( Set<MEMBER> newVotingMemberSet );
+    void doConsensus( Set<CoreMember> newVotingMemberSet );
 
     boolean uncommittedMemberChangeInLog();
 

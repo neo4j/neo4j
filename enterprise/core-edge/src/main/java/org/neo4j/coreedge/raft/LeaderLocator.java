@@ -19,13 +19,14 @@
  */
 package org.neo4j.coreedge.raft;
 
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.util.Listener;
 
-public interface LeaderLocator<MEMBER>
+public interface LeaderLocator
 {
-    MEMBER getLeader() throws NoLeaderFoundException;
+    CoreMember getLeader() throws NoLeaderFoundException;
 
-    void registerListener( Listener<MEMBER> listener );
+    void registerListener( Listener listener );
 
-    void unregisterListener( Listener<MEMBER> listener );
+    void unregisterListener( Listener listener );
 }

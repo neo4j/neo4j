@@ -23,34 +23,35 @@ import java.io.IOException;
 
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.raft.state.StateMarshal;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
 import static org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest.INVALID_REPLICATED_LOCK_TOKEN_REQUEST;
 
-public class ReplicatedLockTokenState<MEMBER>
+public class ReplicatedLockTokenState
 {
-    private ReplicatedLockTokenRequest<MEMBER> currentToken = INVALID_REPLICATED_LOCK_TOKEN_REQUEST;
+    private ReplicatedLockTokenRequest currentToken = INVALID_REPLICATED_LOCK_TOKEN_REQUEST;
     private long ordinal = -1L;
 
     ReplicatedLockTokenState()
     {
     }
 
-    ReplicatedLockTokenState( long ordinal, ReplicatedLockTokenRequest<MEMBER> currentToken )
+    ReplicatedLockTokenState( long ordinal, ReplicatedLockTokenRequest currentToken )
     {
         this.ordinal = ordinal;
         this.currentToken = currentToken;
     }
 
-    public void set( ReplicatedLockTokenRequest<MEMBER> currentToken, long ordinal )
+    public void set( ReplicatedLockTokenRequest currentToken, long ordinal )
     {
         this.currentToken = currentToken;
         this.ordinal = ordinal;
     }
 
-    public ReplicatedLockTokenRequest<MEMBER> get()
+    public ReplicatedLockTokenRequest get()
     {
         return currentToken;
     }
@@ -69,23 +70,23 @@ public class ReplicatedLockTokenState<MEMBER>
                 '}';
     }
 
-    ReplicatedLockTokenState<MEMBER> newInstance()
+    ReplicatedLockTokenState newInstance()
     {
-        return new ReplicatedLockTokenState<>( ordinal, currentToken );
+        return new ReplicatedLockTokenState( ordinal, currentToken );
     }
 
-    public static class Marshal<MEMBER> implements
-            StateMarshal<ReplicatedLockTokenState<MEMBER>>
+    public static class Marshal implements
+            StateMarshal<ReplicatedLockTokenState>
     {
-        private final ChannelMarshal<MEMBER> memberMarshal;
+        private final ChannelMarshal<CoreMember> memberMarshal;
 
-        public Marshal( ChannelMarshal<MEMBER> memberMarshal )
+        public Marshal( ChannelMarshal<CoreMember> memberMarshal )
         {
             this.memberMarshal = memberMarshal;
         }
 
         @Override
-        public void marshal( ReplicatedLockTokenState<MEMBER> state,
+        public void marshal( ReplicatedLockTokenState state,
                              WritableChannel channel ) throws IOException
         {
             channel.putLong( state.ordinal );
@@ -94,16 +95,16 @@ public class ReplicatedLockTokenState<MEMBER>
         }
 
         @Override
-        public ReplicatedLockTokenState<MEMBER> unmarshal( ReadableChannel source ) throws IOException
+        public ReplicatedLockTokenState unmarshal( ReadableChannel source ) throws IOException
         {
             try
             {
                 long logIndex = source.getLong();
                 int candidateId = source.getInt();
 
-                final MEMBER member = memberMarshal.unmarshal( source );
+                final CoreMember member = memberMarshal.unmarshal( source );
 
-                return new ReplicatedLockTokenState<>( logIndex, new ReplicatedLockTokenRequest<>( member, candidateId ) );
+                return new ReplicatedLockTokenState( logIndex, new ReplicatedLockTokenRequest( member, candidateId ) );
             }
             catch ( ReadPastEndException ex )
             {
@@ -112,13 +113,13 @@ public class ReplicatedLockTokenState<MEMBER>
         }
 
         @Override
-        public ReplicatedLockTokenState<MEMBER> startState()
+        public ReplicatedLockTokenState startState()
         {
-            return new ReplicatedLockTokenState<>();
+            return new ReplicatedLockTokenState();
         }
 
         @Override
-        public long ordinal( ReplicatedLockTokenState<MEMBER> state )
+        public long ordinal( ReplicatedLockTokenState state )
         {
             return state.ordinal();
         }

@@ -28,10 +28,8 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
-import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.server.RaftTestMember;
 
 public final class Matchers
 {
@@ -39,12 +37,12 @@ public final class Matchers
     {
     }
 
-    public static <MEMBER> Matcher<? super List<RaftMessages.RaftMessage<MEMBER>>> hasMessage( RaftMessages.BaseMessage<MEMBER> message )
+    public static Matcher<? super List<RaftMessages.RaftMessage>> hasMessage( RaftMessages.BaseMessage message )
     {
-        return new TypeSafeMatcher<List<RaftMessages.RaftMessage<MEMBER>>>()
+        return new TypeSafeMatcher<List<RaftMessages.RaftMessage>>()
         {
             @Override
-            protected boolean matchesSafely( List<RaftMessages.RaftMessage<MEMBER>> messages )
+            protected boolean matchesSafely( List<RaftMessages.RaftMessage> messages )
             {
                 return messages.contains( message );
             }
@@ -57,12 +55,13 @@ public final class Matchers
         };
     }
 
-    public static <MEMBER> Matcher<? super List<RaftMessages.RaftMessage<MEMBER>>> hasRaftLogEntries( Collection<RaftLogEntry> expectedEntries )
+    public static Matcher<? super List<RaftMessages.RaftMessage>> hasRaftLogEntries( Collection<RaftLogEntry>
+            expectedEntries )
     {
-        return new TypeSafeMatcher<List<RaftMessages.RaftMessage<MEMBER>>>()
+        return new TypeSafeMatcher<List<RaftMessages.RaftMessage>>()
         {
             @Override
-            protected boolean matchesSafely( List<RaftMessages.RaftMessage<MEMBER>> messages )
+            protected boolean matchesSafely( List<RaftMessages.RaftMessage> messages )
             {
                 List<RaftLogEntry> entries = messages.stream()
                         .filter( message -> message instanceof RaftMessages.AppendEntries.Request )

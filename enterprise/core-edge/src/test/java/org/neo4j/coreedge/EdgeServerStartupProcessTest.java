@@ -19,19 +19,17 @@
  */
 package org.neo4j.coreedge;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
 import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.raft.replication.tx.ConstantTimeRetryStrategy;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.edge.AlwaysChooseFirstServer;
 import org.neo4j.coreedge.server.edge.EdgeServerStartupProcess;
@@ -42,10 +40,10 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class EdgeServerStartupProcessTest
 {
@@ -64,13 +62,13 @@ public class EdgeServerStartupProcessTest
         StoreFetcher storeFetcher = mock( StoreFetcher.class );
         LocalDatabase localDatabase = mock( LocalDatabase.class );
 
-        AdvertisedSocketAddress coreServerAddress = new AdvertisedSocketAddress( "localhost:1999" );
+        CoreMember coreMember = new CoreMember( UUID.randomUUID() );
         EdgeTopologyService hazelcastTopology = mock( EdgeTopologyService.class );
 
         ClusterTopology clusterTopology = mock( ClusterTopology.class );
         when( hazelcastTopology.currentTopology() ).thenReturn( clusterTopology );
 
-        when( clusterTopology.coreMembers() ).thenReturn( coreMembers( coreServerAddress ) );
+        when( clusterTopology.coreMembers() ).thenReturn( asSet( coreMember ) );
         when( localDatabase.isEmpty() ).thenReturn( true );
 
         DataSourceManager dataSourceManager = mock( DataSourceManager.class );
@@ -85,7 +83,7 @@ public class EdgeServerStartupProcessTest
         edgeServerStartupProcess.start();
 
         // then
-        verify( localDatabase ).copyStoreFrom( coreServerAddress, storeFetcher );
+        verify( localDatabase ).copyStoreFrom( coreMember, storeFetcher );
         verify( dataSourceManager ).start();
         verify( txPulling ).start();
     }
@@ -97,10 +95,10 @@ public class EdgeServerStartupProcessTest
         StoreFetcher storeFetcher = mock( StoreFetcher.class );
         LocalDatabase localDatabase = mock( LocalDatabase.class );
 
-        AdvertisedSocketAddress coreServerAddress = new AdvertisedSocketAddress( "localhost:1999" );
+        CoreMember coreMember = new CoreMember( UUID.randomUUID() );
         EdgeTopologyService hazelcastTopology = mock( EdgeTopologyService.class );
         ClusterTopology clusterTopology = mock( ClusterTopology.class );
-        when( clusterTopology.coreMembers() ).thenReturn( coreMembers( coreServerAddress ) );
+        when( clusterTopology.coreMembers() ).thenReturn( asSet( coreMember ) );
 
         when( hazelcastTopology.currentTopology() ).thenReturn( clusterTopology );
         when( localDatabase.isEmpty() ).thenReturn( true );
@@ -118,12 +116,5 @@ public class EdgeServerStartupProcessTest
         // then
         verify( txPulling ).stop();
         verify( dataSourceManager ).stop();
-    }
-
-    private Set<CoreMember> coreMembers( AdvertisedSocketAddress coreServerAddress )
-    {
-        final Set<CoreMember> coreMembers = new HashSet<>();
-        coreMembers.add( new CoreMember( coreServerAddress, null ) );
-        return coreMembers;
     }
 }

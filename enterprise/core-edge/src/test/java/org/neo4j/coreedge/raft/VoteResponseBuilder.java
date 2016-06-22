@@ -19,36 +19,38 @@
  */
 package org.neo4j.coreedge.raft;
 
-public class VoteResponseBuilder<MEMBER>
+import org.neo4j.coreedge.server.CoreMember;
+
+public class VoteResponseBuilder
 {
     boolean voteGranted = false;
     private long term = -1;
-    private MEMBER from = null;
+    private CoreMember from = null;
 
-    public RaftMessages.Vote.Response<MEMBER> build()
+    public RaftMessages.Vote.Response build()
     {
-        return new RaftMessages.Vote.Response<>( from, term, voteGranted );
+        return new RaftMessages.Vote.Response( from, term, voteGranted );
     }
 
-    public VoteResponseBuilder<MEMBER> from( MEMBER from )
+    public VoteResponseBuilder from( CoreMember from )
     {
         this.from = from;
         return this;
     }
 
-    public VoteResponseBuilder<MEMBER> term( long term )
+    public VoteResponseBuilder term( long term )
     {
         this.term = term;
         return this;
     }
 
-    public VoteResponseBuilder<MEMBER> grant()
+    public VoteResponseBuilder grant()
     {
         this.voteGranted = true;
         return this;
     }
 
-    public VoteResponseBuilder<MEMBER> deny()
+    public VoteResponseBuilder deny()
     {
         this.voteGranted = false;
         return this;

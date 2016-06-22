@@ -19,13 +19,13 @@
  */
 package org.neo4j.coreedge.catchup.storecopy.core;
 
-import java.util.concurrent.TimeUnit;
-
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.timeout.IdleStateHandler;
+
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
 import org.neo4j.coreedge.catchup.ClientMessageTypeHandler;
@@ -36,7 +36,6 @@ import org.neo4j.coreedge.catchup.storecopy.FileContentHandler;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderDecoder;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderHandler;
 import org.neo4j.coreedge.catchup.storecopy.edge.GetStoreRequestEncoder;
-import org.neo4j.coreedge.server.IdleChannelReaperHandler;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyFinishedResponseDecoder;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyFinishedResponseHandler;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullRequestEncoder;
@@ -44,6 +43,8 @@ import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseDecoder;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseHandler;
 import org.neo4j.coreedge.catchup.tx.edge.TxStreamFinishedResponseDecoder;
 import org.neo4j.coreedge.catchup.tx.edge.TxStreamFinishedResponseHandler;
+import org.neo4j.coreedge.discovery.CoreTopologyService;
+import org.neo4j.coreedge.server.IdleChannelReaperHandler;
 import org.neo4j.coreedge.server.NonBlockingChannels;
 import org.neo4j.coreedge.server.logging.ExceptionLoggingHandler;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -51,11 +52,10 @@ import org.neo4j.logging.LogProvider;
 
 public class CoreToCoreClient extends CoreClient
 {
-    public CoreToCoreClient( LogProvider logProvider,
-                             ChannelInitializer channelInitializer, Monitors monitors, int maxQueueSize,
-                             NonBlockingChannels nonBlockingChannels )
+    public CoreToCoreClient( LogProvider logProvider, ChannelInitializer channelInitializer, Monitors monitors,
+            int maxQueueSize, NonBlockingChannels nonBlockingChannels, CoreTopologyService discoveryService )
     {
-        super( logProvider, channelInitializer, monitors, maxQueueSize, nonBlockingChannels );
+        super( logProvider, channelInitializer, monitors, maxQueueSize, nonBlockingChannels, discoveryService );
     }
 
     public static class ChannelInitializer extends io.netty.channel.ChannelInitializer<SocketChannel>

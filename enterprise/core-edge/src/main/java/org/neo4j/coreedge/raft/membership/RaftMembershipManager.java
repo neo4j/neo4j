@@ -34,12 +34,13 @@ import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
 import org.neo4j.coreedge.raft.outcome.BatchAppendLogEntries;
 import org.neo4j.coreedge.raft.outcome.LogCommand;
 import org.neo4j.coreedge.raft.outcome.TruncateLogCommand;
-import org.neo4j.coreedge.raft.replication.LeaderOnlyReplicator;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.coreedge.raft.replication.SendToMyself;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -53,28 +54,28 @@ import static org.neo4j.helpers.collection.Iterables.first;
  * - raft membership state machine
  * - raft log events
  */
-public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, MembershipDriver<MEMBER>
+public class RaftMembershipManager implements RaftMembership, MembershipDriver
 {
-    private RaftMembershipStateMachine<MEMBER> membershipStateMachine;
+    private RaftMembershipStateMachine membershipStateMachine;
 
-    private Set<MEMBER> targetMembers = null;
+    private Set<CoreMember> targetMembers = null;
 
     private int uncommittedMemberChanges = 0;
 
-    private final LeaderOnlyReplicator replicator;
-    private final RaftGroup.Builder<MEMBER> memberSetBuilder;
+    private final SendToMyself replicator;
+    private final RaftGroup.Builder memberSetBuilder;
     private final ReadableRaftLog entryLog;
     private final Log log;
     private final int expectedClusterSize;
-    private final StateStorage<RaftMembershipState<MEMBER>> stateStorage;
+    private final StateStorage<RaftMembershipState> stateStorage;
     private final LocalDatabase localDatabase;
-    private final RaftMembershipState<MEMBER> raftMembershipState;
+    private final RaftMembershipState raftMembershipState;
     private long lastApplied = -1;
 
-    public RaftMembershipManager( LeaderOnlyReplicator replicator, RaftGroup.Builder<MEMBER> memberSetBuilder, RaftLog entryLog,
+    public RaftMembershipManager( SendToMyself replicator, RaftGroup.Builder memberSetBuilder, RaftLog entryLog,
                                   LogProvider logProvider, int expectedClusterSize, long electionTimeout,
                                   Clock clock, long catchupTimeout,
-                                  StateStorage<RaftMembershipState<MEMBER>> stateStorage,
+                                  StateStorage<RaftMembershipState> stateStorage,
                                   LocalDatabase localDatabase)
     {
         this.replicator = replicator;
@@ -86,7 +87,7 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
         this.raftMembershipState = stateStorage.getInitialState();
         this.log = logProvider.getLog( getClass() );
 
-        this.membershipStateMachine = new RaftMembershipStateMachine<>( entryLog, clock, electionTimeout, this,
+        this.membershipStateMachine = new RaftMembershipStateMachine( entryLog, clock, electionTimeout, this,
                 logProvider, catchupTimeout, raftMembershipState );
     }
 
@@ -142,7 +143,7 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
 
                 uncommittedMemberChanges++;
 
-                RaftGroup<MEMBER> raftGroup = (RaftGroup) content;
+                RaftGroup<CoreMember> raftGroup = (RaftGroup) content;
                 raftMembershipState.setVotingMembers( raftGroup.getMembers() );
             }
             else
@@ -180,7 +181,7 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
 
     private void onTruncated( long commitIndex ) throws IOException
     {
-        Pair<Long,RaftGroup<MEMBER>> lastMembershipEntry = findLastMembershipEntry();
+        Pair<Long,RaftGroup<CoreMember>> lastMembershipEntry = findLastMembershipEntry();
 
         if ( lastMembershipEntry != null )
         {
@@ -196,9 +197,9 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
         }
     }
 
-    private Pair<Long,RaftGroup<MEMBER>> findLastMembershipEntry() throws IOException
+    private Pair<Long,RaftGroup<CoreMember>> findLastMembershipEntry() throws IOException
     {
-        Pair<Long,RaftGroup<MEMBER>> lastMembershipEntry = null;
+        Pair<Long,RaftGroup<CoreMember>> lastMembershipEntry = null;
         long index = 0;
         try( RaftLogCursor cursor = entryLog.getEntryCursor( index ) )
         {
@@ -207,7 +208,7 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
                 ReplicatedContent content = cursor.get().content();
                 if ( content instanceof RaftGroup )
                 {
-                    lastMembershipEntry = Pair.of( index, (RaftGroup<MEMBER>) content );
+                    lastMembershipEntry = Pair.of( index, (RaftGroup<CoreMember>) content );
                 }
                 index++;
             }
@@ -215,7 +216,7 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
         return lastMembershipEntry;
     }
 
-    public void setTargetMembershipSet( Set<MEMBER> targetMembers )
+    public void setTargetMembershipSet( Set<CoreMember> targetMembers )
     {
         this.targetMembers = new HashSet<>( targetMembers );
 
@@ -225,13 +226,13 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
         checkForStartCondition();
     }
 
-    private Set<MEMBER> missingMembers()
+    private Set<CoreMember> missingMembers()
     {
         if ( targetMembers == null || votingMembers() == null )
         {
             return emptySet();
         }
-        Set<MEMBER> missingMembers = new HashSet<>( targetMembers );
+        Set<CoreMember> missingMembers = new HashSet<>( targetMembers );
         missingMembers.removeAll( votingMembers() );
 
         return missingMembers;
@@ -242,13 +243,13 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
         return votingMembers() != null && votingMembers().size() > expectedClusterSize;
     }
 
-    private Set<MEMBER> superfluousMembers()
+    private Set<CoreMember> superfluousMembers()
     {
         if ( targetMembers == null || votingMembers() == null )
         {
             return emptySet();
         }
-        Set<MEMBER> superfluousMembers = new HashSet<>( votingMembers() );
+        Set<CoreMember> superfluousMembers = new HashSet<>( votingMembers() );
         superfluousMembers.removeAll( targetMembers );
 
         return superfluousMembers;
@@ -267,7 +268,7 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
     }
 
     @Override
-    public void doConsensus( Set<MEMBER> newVotingMemberSet )
+    public void doConsensus( Set<CoreMember> newVotingMemberSet )
     {
         replicator.replicate( memberSetBuilder.build( newVotingMemberSet ) );
     }
@@ -284,7 +285,7 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
         checkForStartCondition();
     }
 
-    public void onFollowerStateChange( FollowerStates<MEMBER> followerStates )
+    public void onFollowerStateChange( FollowerStates<CoreMember> followerStates )
     {
         membershipStateMachine.onFollowerStateChange( followerStates );
     }
@@ -295,13 +296,13 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
     }
 
     @Override
-    public Set<MEMBER> votingMembers()
+    public Set<CoreMember> votingMembers()
     {
         return raftMembershipState.votingMembers();
     }
 
     @Override
-    public Set<MEMBER> replicationMembers()
+    public Set<CoreMember> replicationMembers()
     {
         return raftMembershipState.replicationMembers();
     }

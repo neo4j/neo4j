@@ -19,37 +19,47 @@
  */
 package org.neo4j.coreedge.discovery;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
+import com.hazelcast.config.MemberAttributeConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.Member;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.BoltAddress;
+import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule;
+import org.neo4j.helpers.collection.Pair;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.LogProvider;
 
 import static java.util.Collections.emptySet;
 import static java.util.stream.Collectors.toSet;
 
-import static org.neo4j.coreedge.discovery.HazelcastServerLifecycle.BOLT_SERVER;
-import static org.neo4j.coreedge.discovery.HazelcastServerLifecycle.RAFT_SERVER;
-import static org.neo4j.coreedge.discovery.HazelcastServerLifecycle.TRANSACTION_SERVER;
-
-public class HazelcastClusterTopology
+class HazelcastClusterTopology
 {
     static final String EDGE_SERVERS = "edge-servers";
+    static final String MEMBER_UUID = "member_uuid";
+    static final String TRANSACTION_SERVER = "transaction_server";
+    static final String RAFT_SERVER = "raft_server";
+    static final String BOLT_SERVER = "bolt_server";
 
-    static ClusterTopology fromHazelcastInstance( HazelcastInstance hazelcastInstance )
+    static ClusterTopology fromHazelcastInstance( HazelcastInstance hazelcastInstance, LogProvider logProvider )
     {
-        Set<Member> coreMembers = hazelcastInstance.getCluster().getMembers();
-        return new ClusterTopology( canBeBootstrapped( coreMembers ), toCoreMemberMap( coreMembers ),
+        Set<Member> coreMembers = emptySet();
+        if ( hazelcastInstance != null )
+        {
+            coreMembers = hazelcastInstance.getCluster().getMembers();
+        }
+        return new ClusterTopology( canBeBootstrapped( coreMembers ), toCoreMemberMap( coreMembers, logProvider ),
                 edgeMembers( hazelcastInstance ) );
     }
 
-    private static Set<BoltAddress> edgeMembers( HazelcastInstance hazelcastInstance )
+    private static Set<EdgeAddresses> edgeMembers( HazelcastInstance hazelcastInstance )
     {
         if ( hazelcastInstance == null )
         {
@@ -57,29 +67,63 @@ public class HazelcastClusterTopology
         }
 
         return hazelcastInstance.<String>getSet( EDGE_SERVERS ).stream()
-                .map( hostnamePort -> new BoltAddress( new AdvertisedSocketAddress( hostnamePort ) ) )
+                .map( hostnamePort -> new EdgeAddresses( new AdvertisedSocketAddress( hostnamePort ) ) )
                 .collect( toSet() );
     }
 
     private static boolean canBeBootstrapped( Set<Member> coreMembers )
     {
-        Member firstMember = coreMembers.iterator().next();
-        return firstMember.localMember();
+        Iterator<Member> iterator = coreMembers.iterator();
+        return iterator.hasNext() && iterator.next().localMember();
     }
 
-    private static Map<CoreMember, BoltAddress> toCoreMemberMap( Set<Member> members )
+    static Map<CoreMember, CoreAddresses> toCoreMemberMap( Set<Member> members, LogProvider logProvider )
     {
-        Map<CoreMember, BoltAddress> coreMembers = new HashMap<>();
+        Map<CoreMember, CoreAddresses> coreMembers = new HashMap<>();
 
         for ( Member member : members )
         {
-            coreMembers.put( new CoreMember(
-                    new AdvertisedSocketAddress( member.getStringAttribute( TRANSACTION_SERVER ) ),
-                    new AdvertisedSocketAddress( member.getStringAttribute( RAFT_SERVER ) )),
-                    new BoltAddress( new AdvertisedSocketAddress( member.getStringAttribute( BOLT_SERVER ) ) )
-            );
+            try
+            {
+                Pair<CoreMember, CoreAddresses> pair = extractMemberAttributes( member );
+                coreMembers.put( pair.first(), pair.other() );
+            }
+            catch ( IllegalArgumentException e )
+            {
+                logProvider.getLog( HazelcastClusterTopology.class )
+                        .warn( "Incomplete member attributes supplied from Hazelcast", e );
+            }
         }
 
         return coreMembers;
+    }
+
+    static MemberAttributeConfig buildMemberAttributes( CoreMember myself, Config config )
+    {
+        MemberAttributeConfig memberAttributeConfig = new MemberAttributeConfig();
+        memberAttributeConfig.setStringAttribute( MEMBER_UUID, myself.getUuid().toString() );
+
+        AdvertisedSocketAddress transactionSource = config.get( CoreEdgeClusterSettings
+                .transaction_advertised_address );
+        memberAttributeConfig.setStringAttribute( TRANSACTION_SERVER, transactionSource.toString() );
+
+        AdvertisedSocketAddress raftAddress = config.get( CoreEdgeClusterSettings.raft_advertised_address );
+        memberAttributeConfig.setStringAttribute( RAFT_SERVER, raftAddress.toString() );
+
+        AdvertisedSocketAddress boltAddress = EnterpriseEdgeEditionModule.extractBoltAddress( config );
+        memberAttributeConfig.setStringAttribute( BOLT_SERVER, boltAddress.toString() );
+        return memberAttributeConfig;
+    }
+
+    static Pair<CoreMember, CoreAddresses> extractMemberAttributes( Member member )
+    {
+        CoreMember coreMember =
+                new CoreMember( UUID.fromString( member.getStringAttribute( MEMBER_UUID ) ) );
+
+        return Pair.of( coreMember, new CoreAddresses(
+                        new AdvertisedSocketAddress( member.getStringAttribute( RAFT_SERVER ) ),
+                        new AdvertisedSocketAddress( member.getStringAttribute( TRANSACTION_SERVER ) ),
+                        new AdvertisedSocketAddress( member.getStringAttribute( BOLT_SERVER ) )
+        ) );
     }
 }

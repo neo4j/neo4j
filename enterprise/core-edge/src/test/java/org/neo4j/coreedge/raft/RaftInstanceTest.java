@@ -24,14 +24,13 @@ import org.junit.Test;
 import java.io.IOException;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogCursor;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.raft.net.Inbound;
-import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -50,7 +49,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.coreedge.raft.RaftInstance.Timeouts.ELECTION;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesRequest;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.voteRequest;
@@ -63,13 +61,13 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class RaftInstanceTest
 {
-    private RaftTestMember myself = member( 0 );
+    private CoreMember myself = member( 0 );
 
     /* A few members that we use at will in tests. */
-    private RaftTestMember member1 = member( 1 );
-    private RaftTestMember member2 = member( 2 );
-    private RaftTestMember member3 = member( 3 );
-    private RaftTestMember member4 = member( 4 );
+    private CoreMember member1 = member( 1 );
+    private CoreMember member2 = member( 2 );
+    private CoreMember member3 = member( 3 );
+    private CoreMember member4 = member( 4 );
 
     private ReplicatedInteger data1 = ReplicatedInteger.valueOf( 1 );
 
@@ -80,7 +78,7 @@ public class RaftInstanceTest
     public void shouldAlwaysStartAsFollower() throws Exception
     {
         // when
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        RaftInstance raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .build();
 
         // then
@@ -94,7 +92,7 @@ public class RaftInstanceTest
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
         OutboundMessageCollector messages = new OutboundMessageCollector();
 
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        RaftInstance raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts )
                 .outbound( messages )
                 .build();
@@ -119,7 +117,7 @@ public class RaftInstanceTest
     {
         // Given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        RaftInstance raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) ); // @logIndex=0
@@ -139,7 +137,7 @@ public class RaftInstanceTest
     {
         // Given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        RaftInstance raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2, member3, member4 ) ) );
@@ -162,7 +160,7 @@ public class RaftInstanceTest
     {
         // Given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        RaftInstance raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2, member3, member4 ) ) );
@@ -183,7 +181,7 @@ public class RaftInstanceTest
     {
         // Given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        RaftInstance raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) ); // @logIndex=0
@@ -202,7 +200,7 @@ public class RaftInstanceTest
     {
         // Given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        RaftInstance raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) ); // @logIndex=0
@@ -222,7 +220,7 @@ public class RaftInstanceTest
     {
         // Given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        RaftInstance raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) ); // @logIndex=0
@@ -243,7 +241,7 @@ public class RaftInstanceTest
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
         OutboundMessageCollector messages = new OutboundMessageCollector();
 
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        RaftInstance raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts )
                 .outbound( messages )
                 .build();
@@ -264,7 +262,7 @@ public class RaftInstanceTest
     {
         // Given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        RaftInstance raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) ); // @logIndex=0
@@ -287,7 +285,7 @@ public class RaftInstanceTest
         OutboundMessageCollector messages = new OutboundMessageCollector();
 
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        RaftInstance raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts )
                 .outbound( messages )
                 .raftLog( raftLog )
@@ -310,7 +308,7 @@ public class RaftInstanceTest
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
         OutboundMessageCollector messages = new OutboundMessageCollector();
 
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        RaftInstance raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts )
                 .outbound( messages )
                 .build();
@@ -334,7 +332,7 @@ public class RaftInstanceTest
         // Given
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
 
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        RaftInstance raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts ).build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) ); // @logIndex=0
@@ -362,7 +360,7 @@ public class RaftInstanceTest
         when(localDatabase.storeId()).thenReturn( storeId );
 
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        RaftInstance raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts )
                 .raftLog( raftLog )
                 .localDatabase( localDatabase )
@@ -373,9 +371,7 @@ public class RaftInstanceTest
         // when
         raft.handle(
                 appendEntriesRequest().from( member1 ).leaderTerm( 0 ).prevLogIndex( 0 )
-                        .prevLogTerm( 0 ).logEntry( new RaftLogEntry( 0, data1 ) ).leaderCommit( -1 )
-                        .storeId(storeId).build() );
-
+                        .prevLogTerm( 0 ).logEntry( new RaftLogEntry( 0, data1 ) ).leaderCommit( -1 ).build());
         // then
         assertEquals( 1, raftLog.appendIndex() );
         assertEquals( data1, readLogEntry( raftLog, 1 ).content() );
@@ -386,19 +382,19 @@ public class RaftInstanceTest
     {
         // Given
         DirectNetworking network = new DirectNetworking();
-        final RaftTestMember newMember = member( 99 );
-        DirectNetworking.Inbound newMemberInbound = network.new Inbound( 99 );
+        final CoreMember newMember = member( 99 );
+        DirectNetworking.Inbound newMemberInbound = network.new Inbound( newMember );
         final OutboundMessageCollector messages = new OutboundMessageCollector();
-        newMemberInbound.registerHandler( new Inbound.MessageHandler<RaftMessages.RaftMessage<RaftTestMember>>()
+        newMemberInbound.registerHandler( new Inbound.MessageHandler<RaftMessages.RaftMessage>()
         {
             @Override
-            public boolean validate( RaftMessages.RaftMessage<RaftTestMember> message, StoreId storeId )
+            public boolean validate( RaftMessages.RaftMessage message, StoreId storeId )
             {
                 return true;
             }
 
             @Override
-            public void handle( RaftMessages.RaftMessage<RaftTestMember> message )
+            public void handle( RaftMessages.RaftMessage message )
             {
                 messages.send( newMember, message );
             }
@@ -406,7 +402,7 @@ public class RaftInstanceTest
 
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
 
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        RaftInstance raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts )
                 .outbound( messages )
                 .build();
@@ -436,7 +432,7 @@ public class RaftInstanceTest
 
         ExplodingRaftLog explodingLog = new ExplodingRaftLog();
         explodingLog.startExploding();
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        RaftInstance raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .raftLog( explodingLog )
                 .databaseHealth( databaseHealth )
                 .build();
@@ -461,7 +457,7 @@ public class RaftInstanceTest
 
         ExplodingRaftLog explodingLog = new ExplodingRaftLog();
 
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        RaftInstance raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .raftLog( explodingLog )
                 .databaseHealth( databaseHealth )
                 .build();
@@ -470,7 +466,7 @@ public class RaftInstanceTest
         explodingLog.startExploding();
 
         // when
-        raft.handle( new RaftMessages.AppendEntries.Request<>( member1, 0, -1, -1,
+        raft.handle( new RaftMessages.AppendEntries.Request( member1, 0, -1, -1,
                 new RaftLogEntry[]{new RaftLogEntry( 0, new ReplicatedString( "hello" ) )}, 0 ) );
 
         // then
@@ -487,7 +483,7 @@ public class RaftInstanceTest
         LeaderNotFoundMonitor leaderNotFoundMonitor = new StubLeaderNotFoundMonitor();
         monitors.addMonitorListener( leaderNotFoundMonitor );
 
-        RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
+        RaftInstance raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts )
                 .monitors(monitors)
                 .build();

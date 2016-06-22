@@ -19,33 +19,31 @@
  */
 package org.neo4j.coreedge.server.core;
 
+import org.hamcrest.MatcherAssert;
+import org.junit.Test;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.hamcrest.MatcherAssert;
-import org.junit.Test;
-
 import org.neo4j.coreedge.discovery.ClusterTopology;
-import org.neo4j.coreedge.discovery.ReadOnlyTopologyService;
+import org.neo4j.coreedge.discovery.CoreAddresses;
+import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
-import org.neo4j.coreedge.server.BoltAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.stream.Collectors.toList;
-
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import static org.neo4j.coreedge.server.core.DiscoverMembersProcedureTest.address;
 import static org.neo4j.coreedge.server.core.DiscoverMembersProcedureTest.addresses;
+import static org.neo4j.coreedge.server.core.DiscoverMembersProcedureTest.coreAddresses;
 import static org.neo4j.coreedge.server.core.DiscoverMembersProcedureTest.coreMemberAtRaftPort;
 import static org.neo4j.helpers.collection.Iterators.asList;
 
@@ -55,16 +53,16 @@ public class AcquireEndpointsProcedureTest
     public void shouldRecommendTheCoreLeaderForWriteAndEdgeForRead() throws Exception
     {
         // given
-        final ReadOnlyTopologyService topologyService = mock( ReadOnlyTopologyService.class );
+        final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        Map<CoreMember, BoltAddress> coreMembers = new HashMap<>();
+        Map<CoreMember,CoreAddresses> coreMembers = new HashMap<>();
         CoreMember theLeader = coreMemberAtRaftPort( 9000 );
-        coreMembers.put( theLeader, address( 0 ) );
+        coreMembers.put( theLeader, coreAddresses( 0 ) );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 1 ) );
         when( topologyService.currentTopology() ).thenReturn( clusterTopology );
 
-        LeaderLocator<CoreMember> leaderLocator = mock( LeaderLocator.class );
+        LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
 
         AcquireEndpointsProcedure procedure = new AcquireEndpointsProcedure( topologyService, leaderLocator,
@@ -75,8 +73,8 @@ public class AcquireEndpointsProcedureTest
 
         // then
         MatcherAssert.assertThat( members, containsInAnyOrder(
-                new Object[]{address( 0 ).getAdvertisedAddress().toString(), "write"},
-                new Object[]{address( 1 ).getAdvertisedAddress().toString(), "read"}
+                new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "write"},
+                new Object[]{coreAddresses( 1 ).getRaftServer().toString(), "read"}
         ) );
     }
 
@@ -84,16 +82,16 @@ public class AcquireEndpointsProcedureTest
     public void shouldOnlyRecommendOneReadServerEvenIfMultipleAreAvailable() throws Exception
     {
         // given
-        final ReadOnlyTopologyService topologyService = mock( ReadOnlyTopologyService.class );
+        final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        Map<CoreMember, BoltAddress> coreMembers = new HashMap<>();
+        Map<CoreMember, CoreAddresses> coreMembers = new HashMap<>();
         CoreMember theLeader = coreMemberAtRaftPort( 9000 );
-        coreMembers.put( theLeader, address( 0 ) );
+        coreMembers.put( theLeader, coreAddresses( 0 ) );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 1, 2, 3 ) );
         when( topologyService.currentTopology() ).thenReturn( clusterTopology );
 
-        LeaderLocator<CoreMember> leaderLocator = mock( LeaderLocator.class );
+        LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
 
         AcquireEndpointsProcedure procedure = new AcquireEndpointsProcedure( topologyService, leaderLocator,
@@ -110,16 +108,16 @@ public class AcquireEndpointsProcedureTest
     public void shouldReturnCoreServerAsReadServerIfNoEdgeServersAvailable() throws Exception
     {
         // given
-        final ReadOnlyTopologyService topologyService = mock( ReadOnlyTopologyService.class );
+        final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        Map<CoreMember, BoltAddress> coreMembers = new HashMap<>();
+        Map<CoreMember, CoreAddresses> coreMembers = new HashMap<>();
         CoreMember theLeader = coreMemberAtRaftPort( 9000 );
-        coreMembers.put( theLeader, address( 0 ) );
+        coreMembers.put( theLeader, coreAddresses( 0 ) );
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses() );
 
         when( topologyService.currentTopology() ).thenReturn( clusterTopology );
 
-        LeaderLocator<CoreMember> leaderLocator = mock( LeaderLocator.class );
+        LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
 
         AcquireEndpointsProcedure procedure = new AcquireEndpointsProcedure( topologyService, leaderLocator,
@@ -132,18 +130,18 @@ public class AcquireEndpointsProcedureTest
         List<Object[]> readAddresses = members.stream().filter( row -> row[1].equals( "read" ) ).collect( toList() );
 
         assertEquals( 1, readAddresses.size() );
-        assertArrayEquals( readAddresses.get( 0 ), new Object[]{address( 0 ).getAdvertisedAddress().toString(), "read"} );
+        assertArrayEquals( readAddresses.get( 0 ), new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "read"} );
     }
 
     @Test
     public void shouldThrowExceptionIfThereIsNoLeader() throws Exception
     {
         // given
-        LeaderLocator<CoreMember> leaderLocator = mock( LeaderLocator.class );
+        LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenThrow( NoLeaderFoundException.class );
 
         AcquireEndpointsProcedure procedure = new AcquireEndpointsProcedure(
-                mock( ReadOnlyTopologyService.class ), leaderLocator, NullLogProvider.getInstance() );
+                mock( CoreTopologyService.class ), leaderLocator, NullLogProvider.getInstance() );
 
         // when
         try

@@ -19,12 +19,12 @@
  */
 package org.neo4j.coreedge.raft.net.codecs;
 
-import java.io.IOException;
-import java.util.List;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
+
+import java.io.IOException;
+import java.util.List;
 
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
@@ -32,7 +32,6 @@ import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.storeid.StoreIdMarshal;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.storageengine.api.ReadableChannel;
@@ -65,7 +64,7 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
         RaftMessages.Type messageType = values[messageTypeWire];
 
         CoreMember from = retrieveMember( channel );
-        RaftMessages.RaftMessage<CoreMember> result;
+        RaftMessages.RaftMessage result;
 
         if ( messageType.equals( VOTE_REQUEST ) )
         {
@@ -75,7 +74,7 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
             long lastLogIndex = channel.getLong();
             long lastLogTerm = channel.getLong();
 
-            result = new RaftMessages.Vote.Request<>(
+            result = new RaftMessages.Vote.Request(
                     from, term, candidate, lastLogIndex, lastLogTerm );
         }
         else if ( messageType.equals( VOTE_RESPONSE ) )
@@ -83,7 +82,7 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
             long term = channel.getLong();
             boolean voteGranted = channel.get() == 1;
 
-            result = new RaftMessages.Vote.Response<>( from, term, voteGranted );
+            result = new RaftMessages.Vote.Response( from, term, voteGranted );
         }
         else if ( messageType.equals( APPEND_ENTRIES_REQUEST ) )
         {
@@ -103,7 +102,7 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
                 entries[i] = new RaftLogEntry( entryTerm, content );
             }
 
-            result = new RaftMessages.AppendEntries.Request<>( from, term, prevLogIndex, prevLogTerm, entries,
+            result = new RaftMessages.AppendEntries.Request( from, term, prevLogIndex, prevLogTerm, entries,
                     leaderCommit );
         }
         else if ( messageType.equals( APPEND_ENTRIES_RESPONSE ) )
@@ -113,13 +112,13 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
             long matchIndex = channel.getLong();
             long appendIndex = channel.getLong();
 
-            result = new RaftMessages.AppendEntries.Response<>( from, term, success, matchIndex, appendIndex );
+            result = new RaftMessages.AppendEntries.Response( from, term, success, matchIndex, appendIndex );
         }
         else if ( messageType.equals( NEW_ENTRY_REQUEST ) )
         {
             ReplicatedContent content = marshal.unmarshal( channel );
 
-            result = new RaftMessages.NewEntry.Request<>( from, content );
+            result = new RaftMessages.NewEntry.Request( from, content );
         }
         else if ( messageType.equals( HEARTBEAT ) )
         {
@@ -127,31 +126,26 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
             long commitIndexTerm = channel.getLong();
             long commitIndex = channel.getLong();
 
-            result = new RaftMessages.Heartbeat<>( from, leaderTerm, commitIndex, commitIndexTerm );
+            result = new RaftMessages.Heartbeat( from, leaderTerm, commitIndex, commitIndexTerm );
         }
         else if ( messageType.equals( LOG_COMPACTION_INFO ) )
         {
             long leaderTerm = channel.getLong();
             long prevIndex = channel.getLong();
 
-            result = new RaftMessages.LogCompactionInfo<>( from, leaderTerm, prevIndex );
+            result = new RaftMessages.LogCompactionInfo( from, leaderTerm, prevIndex );
         }
         else
         {
             throw new IllegalArgumentException( "Unknown message type" );
         }
 
-        list.add( new RaftMessages.StoreIdAwareMessage<>( storeId, result ) );
+        list.add( new RaftMessages.StoreIdAwareMessage( storeId, result ) );
     }
 
     private CoreMember retrieveMember( ReadableChannel buffer ) throws IOException
     {
-        AdvertisedSocketAddress.AdvertisedSocketAddressChannelMarshal marshal =
-                new AdvertisedSocketAddress.AdvertisedSocketAddressChannelMarshal();
-
-        AdvertisedSocketAddress coreAddress = marshal.unmarshal( buffer );
-        AdvertisedSocketAddress raftAddress = marshal.unmarshal( buffer );
-
-        return new CoreMember( coreAddress, raftAddress );
+        CoreMember.CoreMemberMarshal coreMemberMarshal = new CoreMember.CoreMemberMarshal();
+        return coreMemberMarshal.unmarshal( buffer );
     }
 }

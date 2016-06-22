@@ -19,88 +19,21 @@
  */
 package org.neo4j.coreedge.server;
 
-import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
-import org.neo4j.coreedge.raft.state.ChannelMarshal;
-import org.neo4j.storageengine.api.ReadPastEndException;
-import org.neo4j.storageengine.api.ReadableChannel;
-import org.neo4j.storageengine.api.WritableChannel;
-
-public class RaftTestMember implements Comparable<RaftTestMember>
+public class RaftTestMember
 {
-    public static RaftTestMember member( long id )
-    {
-        return new RaftTestMember( id );
-    }
+    private static final Map<Integer, CoreMember> testMembers = new HashMap<>();
 
-    private final long id;
-
-    public RaftTestMember( long id )
+    public static CoreMember member( int id )
     {
-        this.id = id;
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
+        CoreMember member = testMembers.get( id );
+        if ( member == null ) {
+            member = new CoreMember( UUID.randomUUID() );
+            testMembers.put( id, member );
         }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-
-        RaftTestMember member = (RaftTestMember) o;
-
-        return id == member.id;
-
-    }
-
-    public long getId()
-    {
-        return id;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return (int) (id ^ (id >>> 32));
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format( "M{id=%d}", id );
-    }
-
-    @Override
-    public int compareTo( RaftTestMember other )
-    {
-        return new Long( this.id ).compareTo( other.getId() );
-    }
-
-    public static class RaftTestMemberMarshal implements ChannelMarshal<RaftTestMember>
-    {
-
-        @Override
-        public void marshal( RaftTestMember target, WritableChannel channel ) throws IOException
-        {
-            channel.putLong( target.id );
-        }
-
-        @Override
-        public RaftTestMember unmarshal( ReadableChannel source ) throws IOException
-        {
-            try
-            {
-                return member( source.getLong() );
-            }
-            catch ( ReadPastEndException notEnoughBytes )
-            {
-                return null;
-            }
-        }
+        return member;
     }
 }

@@ -20,9 +20,9 @@
 package org.neo4j.coreedge.server.edge;
 
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.CoreMember;
 
 public interface CoreServerSelectionStrategy
 {
-    AdvertisedSocketAddress coreServer() throws CoreServerSelectionException;
+    CoreMember coreServer() throws CoreServerSelectionException;
 }

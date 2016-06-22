@@ -25,11 +25,10 @@ import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.pruning.Threshold;
 import org.neo4j.kernel.internal.DatabaseHealth;
 
 public class LocalDatabase
@@ -104,7 +103,7 @@ public class LocalDatabase
         return databaseHealth;
     }
 
-    public void copyStoreFrom( AdvertisedSocketAddress from, StoreFetcher storeFetcher ) throws StoreCopyFailedException
+    public void copyStoreFrom( CoreMember from, StoreFetcher storeFetcher ) throws StoreCopyFailedException
     {
         try
         {

@@ -30,21 +30,22 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.coreedge.network.Message;
+import org.neo4j.coreedge.server.CoreMember;
 
 public class DirectNetworking
 {
-    private final Map<Long, org.neo4j.coreedge.raft.net.Inbound.MessageHandler> handlers = new HashMap<>();
-    private final Map<Long, Queue<Message>> messageQueues = new HashMap<>();
-    private final Set<Long> disconnectedMembers = Collections.newSetFromMap( new ConcurrentHashMap<>() );
+    private final Map<CoreMember, org.neo4j.coreedge.raft.net.Inbound.MessageHandler> handlers = new HashMap<>();
+    private final Map<CoreMember, Queue<Message>> messageQueues = new HashMap<>();
+    private final Set<CoreMember> disconnectedMembers = Collections.newSetFromMap( new ConcurrentHashMap<>() );
 
     public void processMessages()
     {
         while ( messagesToBeProcessed() )
         {
-            for ( Map.Entry<Long, Queue<Message>> entry : messageQueues.entrySet() )
+            for ( Map.Entry<CoreMember, Queue<Message>> entry : messageQueues.entrySet() )
             {
-                Long id = entry.getKey();
+                CoreMember id = entry.getKey();
                 Queue<Message> queue = entry.getValue();
                 if ( !queue.isEmpty() )
                 {
@@ -67,58 +68,57 @@ public class DirectNetworking
         return false;
     }
 
-    public void disconnect( long id )
+    public void disconnect( CoreMember id )
     {
         disconnectedMembers.add( id );
     }
 
-    public void reconnect( long id )
+    public void reconnect( CoreMember id )
     {
         disconnectedMembers.remove( id );
     }
 
     public class Outbound implements
-            org.neo4j.coreedge.raft.net.Outbound<RaftTestMember, RaftMessages.RaftMessage<RaftTestMember>>
+            org.neo4j.coreedge.raft.net.Outbound<CoreMember, RaftMessages.RaftMessage>
     {
-        private final long me;
+        private final CoreMember me;
 
-        public Outbound( long me )
+        public Outbound( CoreMember me )
         {
             this.me = me;
         }
 
         @Override
-        public void send( RaftTestMember to, RaftMessages.RaftMessage<RaftTestMember> message )
+        public synchronized void send( CoreMember to, final RaftMessages.RaftMessage message )
         {
-
             if ( canDeliver( to ) )
             {
-                messageQueues.get( to.getId() ).add( message );
+                messageQueues.get( to ).add( message );
             }
         }
 
         @Override
-        public void send( RaftTestMember to, Collection<RaftMessages.RaftMessage<RaftTestMember>> messages )
+        public void send( CoreMember to, Collection<RaftMessages.RaftMessage> messages )
         {
             if ( canDeliver( to ) )
             {
-                messageQueues.get( to.getId() ).addAll( messages );
+                messageQueues.get( to ).addAll( messages );
             }
         }
 
-        private boolean canDeliver( RaftTestMember to )
+        private boolean canDeliver( CoreMember to )
         {
-            return messageQueues.containsKey( to.getId() ) &&
-                    !disconnectedMembers.contains( to.getId() ) &&
+            return messageQueues.containsKey( to ) &&
+                    !disconnectedMembers.contains( to ) &&
                     !disconnectedMembers.contains( me );
         }
     }
 
     public class Inbound implements org.neo4j.coreedge.raft.net.Inbound
     {
-        private final long id;
+        private final CoreMember id;
 
-        public Inbound( long id )
+        public Inbound( CoreMember id )
         {
             this.id = id;
         }

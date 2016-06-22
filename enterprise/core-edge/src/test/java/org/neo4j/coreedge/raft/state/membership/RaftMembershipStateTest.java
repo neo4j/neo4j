@@ -23,8 +23,6 @@ import org.junit.Test;
 
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.RaftTestMarshal;
-import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 
 import static org.junit.Assert.assertEquals;
@@ -35,8 +33,8 @@ public class RaftMembershipStateTest
     public void shouldSerialiseAndDeserialiseEmptyStateCorrectly() throws Exception
     {
         // given
-        RaftMembershipState<CoreMember> state = new RaftMembershipState<>();
-        RaftMembershipState.Marshal<CoreMember> marshal = new RaftMembershipState.Marshal<>( new CoreMember.CoreMemberMarshal() );
+        RaftMembershipState state = new RaftMembershipState();
+        RaftMembershipState.Marshal marshal = new RaftMembershipState.Marshal( new CoreMember.CoreMemberMarshal() );
 
         // when
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -51,8 +49,8 @@ public class RaftMembershipStateTest
     public void shouldSerialiseAndDeserialiseNonEmptyStateCorrectly() throws Exception
     {
         // given
-        RaftMembershipState<RaftTestMember> state = new RaftMembershipState<>();
-        RaftMembershipState.Marshal<RaftTestMember> serializer = new RaftMembershipState.Marshal<>( new RaftTestMarshal() );
+        RaftMembershipState state = new RaftMembershipState();
+        RaftMembershipState.Marshal serializer = new RaftMembershipState.Marshal( new CoreMember.CoreMemberMarshal() );
 
         RaftTestGroup coreMembers = new RaftTestGroup( 1, 2, 3 ,4 );
 

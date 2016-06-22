@@ -32,7 +32,6 @@ import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequest;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenStateMachine;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionStateMachine;
-import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.core.RecoverTransactionLogState;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
@@ -44,13 +43,13 @@ import static java.lang.Math.max;
 
 public class CoreStateMachines
 {
-    private final ReplicatedTransactionStateMachine<CoreMember> replicatedTxStateMachine;
+    private final ReplicatedTransactionStateMachine replicatedTxStateMachine;
 
     private final ReplicatedTokenStateMachine<Token> labelTokenStateMachine;
     private final ReplicatedTokenStateMachine<RelationshipTypeToken> relationshipTypeTokenStateMachine;
     private final ReplicatedTokenStateMachine<Token> propertyKeyTokenStateMachine;
 
-    private final ReplicatedLockTokenStateMachine<CoreMember> replicatedLockTokenStateMachine;
+    private final ReplicatedLockTokenStateMachine replicatedLockTokenStateMachine;
     private final ReplicatedIdAllocationStateMachine idAllocationStateMachine;
     private final CoreState coreState;
     private final RecoverTransactionLogState txLogState;
@@ -61,11 +60,11 @@ public class CoreStateMachines
     private volatile boolean runningBatch;
 
     public CoreStateMachines(
-            ReplicatedTransactionStateMachine<CoreMember> replicatedTxStateMachine,
+            ReplicatedTransactionStateMachine replicatedTxStateMachine,
             ReplicatedTokenStateMachine<Token> labelTokenStateMachine,
             ReplicatedTokenStateMachine<RelationshipTypeToken> relationshipTypeTokenStateMachine,
             ReplicatedTokenStateMachine<Token> propertyKeyTokenStateMachine,
-            ReplicatedLockTokenStateMachine<CoreMember> replicatedLockTokenStateMachine,
+            ReplicatedLockTokenStateMachine replicatedLockTokenStateMachine,
             ReplicatedIdAllocationStateMachine idAllocationStateMachine,
             CoreState coreState,
             RecoverTransactionLogState txLogState,

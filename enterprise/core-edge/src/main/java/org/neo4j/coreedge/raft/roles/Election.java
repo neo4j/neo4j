@@ -25,15 +25,14 @@ import java.util.Set;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.logging.Log;
 
 public class Election
 {
-    public static <MEMBER> boolean start( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome,
-                                          Log log, StoreId storeId ) throws IOException
+    public static  boolean start( ReadableRaftState ctx, Outcome outcome, Log log ) throws IOException
     {
-        Set<MEMBER> currentMembers = ctx.votingMembers();
+        Set<CoreMember> currentMembers = ctx.votingMembers();
         if ( currentMembers == null || !currentMembers.contains( ctx.myself() ) )
         {
             log.info( "Election attempted but not started, current members are %s, i am %s%n",
@@ -43,12 +42,12 @@ public class Election
 
         outcome.setNextTerm( ctx.term() + 1 );
 
-        RaftMessages.Vote.Request<MEMBER> voteForMe =
-                new RaftMessages.Vote.Request<>( ctx.myself(), outcome.getTerm(), ctx.myself(), ctx.entryLog()
+        RaftMessages.Vote.Request voteForMe =
+                new RaftMessages.Vote.Request( ctx.myself(), outcome.getTerm(), ctx.myself(), ctx.entryLog()
                         .appendIndex(), ctx.entryLog().readEntryTerm( ctx.entryLog().appendIndex() ) );
 
         currentMembers.stream().filter( member -> !member.equals( ctx.myself() ) ).forEach( member ->
-            outcome.addOutgoingMessage( new RaftMessages.Directed<>( member, voteForMe ) )
+            outcome.addOutgoingMessage( new RaftMessages.Directed( member, voteForMe ) )
         );
 
         outcome.setVotedFor( ctx.myself() );

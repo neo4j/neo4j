@@ -34,6 +34,10 @@ public class AdvertisedSocketAddress
 
     public AdvertisedSocketAddress( String address )
     {
+        if (address == null)
+        {
+            throw new IllegalArgumentException( "address cannot be null" );
+        }
         this.address = address;
     }
 

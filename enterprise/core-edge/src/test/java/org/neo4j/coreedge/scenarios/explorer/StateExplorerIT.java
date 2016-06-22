@@ -19,27 +19,26 @@
  */
 package org.neo4j.coreedge.scenarios.explorer;
 
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.Test;
-
 import org.neo4j.coreedge.raft.state.explorer.ClusterSafetyViolations;
 import org.neo4j.coreedge.raft.state.explorer.ClusterState;
-import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.raft.state.explorer.action.Action;
 import org.neo4j.coreedge.raft.state.explorer.action.DropMessage;
 import org.neo4j.coreedge.raft.state.explorer.action.ElectionTimeout;
 import org.neo4j.coreedge.raft.state.explorer.action.HeartbeatTimeout;
 import org.neo4j.coreedge.raft.state.explorer.action.NewEntry;
-import org.neo4j.coreedge.raft.state.explorer.action.ProcessMessage;
 import org.neo4j.coreedge.raft.state.explorer.action.OutOfOrderDelivery;
+import org.neo4j.coreedge.raft.state.explorer.action.ProcessMessage;
+import org.neo4j.coreedge.server.CoreMember;
 
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.coreedge.server.RaftTestMember.member;
 
 public class StateExplorerIT
@@ -48,7 +47,7 @@ public class StateExplorerIT
     public void shouldExploreAllTheStates() throws Exception
     {
         int clusterSize = 3;
-        Set<RaftTestMember> members = new HashSet<>();
+        Set<CoreMember> members = new HashSet<>();
         for ( int i = 0; i < clusterSize; i++ )
         {
             members.add( member( i ) );
@@ -57,7 +56,7 @@ public class StateExplorerIT
         ClusterState initialState = new ClusterState( members );
 
         List<Action> actions = new ArrayList<>();
-        for ( RaftTestMember member : members )
+        for ( CoreMember member : members )
         {
             actions.add( new ProcessMessage( member ) );
             actions.add( new NewEntry( member ) );

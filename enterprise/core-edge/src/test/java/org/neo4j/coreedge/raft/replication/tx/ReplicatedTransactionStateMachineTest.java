@@ -20,12 +20,9 @@
 package org.neo4j.coreedge.raft.replication.tx;
 
 import org.junit.Test;
-import org.mockito.stubbing.Answer;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.coreedge.raft.RaftStateMachine;
-import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -66,7 +63,7 @@ public class ReplicatedTransactionStateMachineTest
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
         ReplicatedTransactionStateMachine stateMachine =
-                new ReplicatedTransactionStateMachine<>( lockState( lockSessionId ), batchSize, logProvider );
+                new ReplicatedTransactionStateMachine( lockState( lockSessionId ), batchSize, logProvider );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         // when
@@ -90,8 +87,8 @@ public class ReplicatedTransactionStateMachineTest
 
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
-        final ReplicatedTransactionStateMachine<RaftTestMember> stateMachine =
-                new ReplicatedTransactionStateMachine<>( lockState( currentLockSessionId ), batchSize, logProvider );
+        final ReplicatedTransactionStateMachine stateMachine =
+                new ReplicatedTransactionStateMachine( lockState( currentLockSessionId ), batchSize, logProvider );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         AtomicBoolean called = new AtomicBoolean();
@@ -131,8 +128,8 @@ public class ReplicatedTransactionStateMachineTest
 
         TransactionCommitProcess localCommitProcess = createFakeTransactionCommitProcess( txId );
 
-        ReplicatedTransactionStateMachine<RaftStateMachine> stateMachine =
-                new ReplicatedTransactionStateMachine<>( lockState( currentLockSessionId ), batchSize, logProvider );
+        ReplicatedTransactionStateMachine stateMachine =
+                new ReplicatedTransactionStateMachine( lockState( currentLockSessionId ), batchSize, logProvider );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         AtomicBoolean called = new AtomicBoolean();
@@ -178,11 +175,11 @@ public class ReplicatedTransactionStateMachineTest
         return physicalTx;
     }
 
-    private <MEMBER> ReplicatedLockTokenStateMachine<MEMBER> lockState( int lockSessionId )
+    private  ReplicatedLockTokenStateMachine lockState( int lockSessionId )
     {
         @SuppressWarnings( "unchecked" )
-        ReplicatedLockTokenStateMachine<MEMBER> lockState = mock( ReplicatedLockTokenStateMachine.class );
-        when( lockState.currentToken() ).thenReturn( new ReplicatedLockTokenRequest<>( null, lockSessionId ) );
+        ReplicatedLockTokenStateMachine lockState = mock( ReplicatedLockTokenStateMachine.class );
+        when( lockState.currentToken() ).thenReturn( new ReplicatedLockTokenRequest( null, lockSessionId ) );
         return lockState;
     }
 }

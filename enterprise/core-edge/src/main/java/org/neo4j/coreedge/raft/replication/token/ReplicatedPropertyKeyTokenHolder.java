@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.raft.replication.token;
 
 import org.neo4j.coreedge.raft.replication.RaftReplicator;
-import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -33,7 +32,7 @@ public class ReplicatedPropertyKeyTokenHolder extends ReplicatedTokenHolder<Toke
 {
     public ReplicatedPropertyKeyTokenHolder(
             TokenRegistry<Token> registry,
-            RaftReplicator<CoreMember> replicator,
+            RaftReplicator replicator,
             IdGeneratorFactory idGeneratorFactory, Dependencies dependencies, Long timeoutMillis )
     {
         super( registry, replicator, idGeneratorFactory, IdType.PROPERTY_KEY_TOKEN, dependencies, TokenType.PROPERTY,

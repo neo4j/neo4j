@@ -35,16 +35,16 @@ import org.neo4j.kernel.impl.store.StoreId;
 
 public class Appending
 {
-    public static <MEMBER> void handleAppendEntriesRequest(
-            ReadableRaftState<MEMBER> state, Outcome<MEMBER> outcome, RaftMessages.AppendEntries.Request<MEMBER> request, StoreId localStoreId )
+    public static  void handleAppendEntriesRequest(
+            ReadableRaftState state, Outcome outcome, RaftMessages.AppendEntries.Request request, StoreId localStoreId )
             throws IOException
     {
         if ( request.leaderTerm() < state.term() )
         {
-            RaftMessages.AppendEntries.Response<MEMBER> appendResponse = new RaftMessages.AppendEntries.Response<>(
+            RaftMessages.AppendEntries.Response appendResponse = new RaftMessages.AppendEntries.Response(
                     state.myself(), state.term(), false, -1, state.entryLog().appendIndex() );
 
-            outcome.addOutgoingMessage( new RaftMessages.Directed<>( request.from(), appendResponse ) );
+            outcome.addOutgoingMessage( new RaftMessages.Directed( request.from(), appendResponse ) );
             return;
         }
 
@@ -56,10 +56,10 @@ public class Appending
         if ( !Follower.logHistoryMatches( state, request.prevLogIndex(), request.prevLogTerm() ) )
         {
             assert request.prevLogIndex() > -1 && request.prevLogTerm() > -1;
-            RaftMessages.AppendEntries.Response<MEMBER> appendResponse = new RaftMessages.AppendEntries.Response<>(
+            RaftMessages.AppendEntries.Response appendResponse = new RaftMessages.AppendEntries.Response(
                     state.myself(), request.leaderTerm(), false, -1, state.entryLog().appendIndex() );
 
-            outcome.addOutgoingMessage( new RaftMessages.Directed<>( request.from(), appendResponse ) );
+            outcome.addOutgoingMessage( new RaftMessages.Directed( request.from(), appendResponse ) );
             return;
         }
 
@@ -107,13 +107,13 @@ public class Appending
         long endMatchIndex = request.prevLogIndex() + request.entries().length; // this is the index of the last incoming entry
         if ( endMatchIndex >= 0 )
         {
-            RaftMessages.AppendEntries.Response<MEMBER> appendResponse = new RaftMessages.AppendEntries.Response<>(
+            RaftMessages.AppendEntries.Response appendResponse = new RaftMessages.AppendEntries.Response(
                     state.myself(), request.leaderTerm(), true, endMatchIndex, endMatchIndex );
-            outcome.addOutgoingMessage( new RaftMessages.Directed<>( request.from(), appendResponse ) );
+            outcome.addOutgoingMessage( new RaftMessages.Directed( request.from(), appendResponse ) );
         }
     }
 
-    public static <MEMBER> void appendNewEntry( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome, ReplicatedContent
+    public static  void appendNewEntry( ReadableRaftState ctx, Outcome outcome, ReplicatedContent
             content ) throws IOException
     {
         long prevLogIndex = ctx.entryLog().appendIndex();
@@ -128,7 +128,7 @@ public class Appending
         outcome.addLogCommand( new AppendLogEntry( prevLogIndex + 1, newLogEntry ) );
     }
 
-    public static <MEMBER> void appendNewEntries( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome,
+    public static  void appendNewEntries( ReadableRaftState ctx, Outcome outcome,
             List<ReplicatedContent> contents ) throws IOException
     {
         long prevLogIndex = ctx.entryLog().appendIndex();

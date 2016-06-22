@@ -24,9 +24,9 @@ import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.coreedge.discovery.ClusterTopology;
-import org.neo4j.coreedge.discovery.ReadOnlyTopologyService;
+import org.neo4j.coreedge.discovery.CoreAddresses;
+import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.BoltAddress;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
@@ -37,37 +37,38 @@ import org.neo4j.logging.LogProvider;
 
 import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toSet;
-
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class DiscoverMembersProcedure extends CallableProcedure.BasicProcedure
 {
     public static final String NAME = "discoverMembers";
-    private final ReadOnlyTopologyService discoveryService;
+    private final CoreTopologyService discoveryService;
     private final Log log;
 
-    public DiscoverMembersProcedure( ReadOnlyTopologyService discoveryService, LogProvider logProvider )
+    public DiscoverMembersProcedure( CoreTopologyService discoveryService, LogProvider logProvider )
     {
         super( procedureSignature( new ProcedureSignature.ProcedureName( new String[]{"dbms", "cluster"}, NAME ) )
-                .out( "address", Neo4jTypes.NTString ).build());
+                .out( "address", Neo4jTypes.NTString ).build() );
 
         this.discoveryService = discoveryService;
         this.log = logProvider.getLog( getClass() );
     }
 
     @Override
-    public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+    public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
-        Set<AdvertisedSocketAddress> addresses = findAddresses().map( BoltAddress::getAdvertisedAddress )
-                .limit( noOfAddressesToReturn( input ) ).collect( toSet() );
+        Set<AdvertisedSocketAddress> addresses =
+                findAddresses().limit( noOfAddressesToReturn( input ) )
+                        .collect( toSet() );
         log.info( "Discovery members: %s", addresses.stream().collect( toSet() ) );
         return wrapUpAddresses( addresses );
     }
 
-    private Stream<BoltAddress> findAddresses()
+    private Stream<AdvertisedSocketAddress> findAddresses()
     {
         ClusterTopology clusterTopology = discoveryService.currentTopology();
-        return clusterTopology.coreMembers().stream().map( clusterTopology::boltAddress );
+        return clusterTopology.coreMembers().stream()
+                .map( clusterTopology::coreAddresses ).map( CoreAddresses::getBoltServer );
     }
 
     private int noOfAddressesToReturn( Object[] input )
@@ -87,7 +88,7 @@ public class DiscoverMembersProcedure extends CallableProcedure.BasicProcedure
         }
     }
 
-    private static RawIterator<Object[], ProcedureException> wrapUpAddresses(
+    private static RawIterator<Object[],ProcedureException> wrapUpAddresses(
             Set<AdvertisedSocketAddress> boltAddresses )
     {
         return Iterators.map( ( l ) -> new Object[]{l.toString()},

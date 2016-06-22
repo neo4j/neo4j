@@ -23,7 +23,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Set;
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -156,7 +156,7 @@ public class CoreServerReplicationIT
         return count;
     }
 
-    private void dataMatchesEventually( CoreGraphDatabase sourceDB, Set<CoreGraphDatabase> targetDBs ) throws
+    private void dataMatchesEventually( CoreGraphDatabase sourceDB, Collection<CoreGraphDatabase> targetDBs ) throws
             TimeoutException, InterruptedException
     {
         DbRepresentation sourceRepresentation = DbRepresentation.of( sourceDB );

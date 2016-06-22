@@ -19,54 +19,55 @@
  */
 package org.neo4j.coreedge.raft;
 
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.store.StoreId;
 
-public class AppendEntriesResponseBuilder<MEMBER>
+public class AppendEntriesResponseBuilder
 {
     boolean success;
     private long term = -1;
-    private MEMBER from;
+    private CoreMember from;
     private long matchIndex = -1;
     private long appendIndex = -1;
 
-    public RaftMessages.AppendEntries.Response<MEMBER> build()
+    public RaftMessages.AppendEntries.Response build()
     {
         // a response of false should always have a match index of -1
-        assert success || matchIndex == -1;
-        return new RaftMessages.AppendEntries.Response<>( from, term, success, matchIndex, appendIndex );
+        assert !(success == false && matchIndex != -1);
+        return new RaftMessages.AppendEntries.Response( from, term, success, matchIndex, appendIndex );
     }
 
-    public AppendEntriesResponseBuilder<MEMBER> from( MEMBER from )
+    public AppendEntriesResponseBuilder from( CoreMember from )
     {
         this.from = from;
         return this;
     }
 
-    public AppendEntriesResponseBuilder<MEMBER> term( long term )
+    public AppendEntriesResponseBuilder term( long term )
     {
         this.term = term;
         return this;
     }
 
-    public AppendEntriesResponseBuilder<MEMBER> matchIndex( long matchIndex )
+    public AppendEntriesResponseBuilder matchIndex( long matchIndex )
     {
         this.matchIndex = matchIndex;
         return this;
     }
 
-    public AppendEntriesResponseBuilder<MEMBER> appendIndex( long appendIndex )
+    public AppendEntriesResponseBuilder appendIndex( long appendIndex )
     {
         this.appendIndex = appendIndex;
         return this;
     }
 
-    public AppendEntriesResponseBuilder<MEMBER> success()
+    public AppendEntriesResponseBuilder success()
     {
         this.success = true;
         return this;
     }
 
-    public AppendEntriesResponseBuilder<MEMBER> failure()
+    public AppendEntriesResponseBuilder failure()
     {
         this.success = false;
         return this;

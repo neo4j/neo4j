@@ -37,20 +37,19 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static java.lang.String.format;
-
 import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionExpired;
 
-public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine<ReplicatedTransaction>
+public class ReplicatedTransactionStateMachine implements StateMachine<ReplicatedTransaction>
 {
-    private final ReplicatedLockTokenStateMachine<MEMBER> lockTokenStateMachine;
+    private final ReplicatedLockTokenStateMachine lockTokenStateMachine;
     private final int maxBatchSize;
     private final Log log;
 
     private TransactionQueue queue;
     private long lastCommittedIndex = -1;
 
-    public ReplicatedTransactionStateMachine( ReplicatedLockTokenStateMachine<MEMBER> lockStateMachine,
+    public ReplicatedTransactionStateMachine( ReplicatedLockTokenStateMachine lockStateMachine,
             int maxBatchSize, LogProvider logProvider )
     {
         this.lockTokenStateMachine = lockStateMachine;

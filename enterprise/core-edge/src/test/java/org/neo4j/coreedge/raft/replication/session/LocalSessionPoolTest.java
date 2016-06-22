@@ -19,11 +19,10 @@
  */
 package org.neo4j.coreedge.raft.replication.session;
 
-import java.util.UUID;
-
 import org.junit.Test;
 
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import java.util.UUID;
+
 import org.neo4j.coreedge.server.CoreMember;
 
 import static org.junit.Assert.assertEquals;
@@ -31,14 +30,13 @@ import static org.junit.Assert.assertNotEquals;
 
 public class LocalSessionPoolTest
 {
-    private CoreMember coreMember = new CoreMember( new AdvertisedSocketAddress( "core:1" ),
-            new AdvertisedSocketAddress( "raft:1" ) );
-    private GlobalSession<CoreMember> globalSession = new GlobalSession<>( UUID.randomUUID(), coreMember );
+    private CoreMember coreMember = new CoreMember( UUID.randomUUID() );
+    private GlobalSession globalSession = new GlobalSession( UUID.randomUUID(), coreMember );
 
     @Test
     public void poolGivesBackSameSessionAfterRelease()
     {
-        LocalSessionPool sessionPool = new LocalSessionPool<>( globalSession );
+        LocalSessionPool sessionPool = new LocalSessionPool( globalSession );
 
         OperationContext contextA = sessionPool.acquireSession();
         sessionPool.releaseSession( contextA );
@@ -52,7 +50,7 @@ public class LocalSessionPoolTest
     @Test
     public void sessionAcquirementIncreasesOperationId()
     {
-        LocalSessionPool sessionPool = new LocalSessionPool<>( globalSession );
+        LocalSessionPool sessionPool = new LocalSessionPool( globalSession );
         OperationContext context;
 
         context = sessionPool.acquireSession();
@@ -69,7 +67,7 @@ public class LocalSessionPoolTest
     @Test
     public void poolHasIndependentSessions()
     {
-        LocalSessionPool sessionPool = new LocalSessionPool<>( globalSession );
+        LocalSessionPool sessionPool = new LocalSessionPool( globalSession );
 
         OperationContext contextA = sessionPool.acquireSession();
         OperationContext contextB = sessionPool.acquireSession();

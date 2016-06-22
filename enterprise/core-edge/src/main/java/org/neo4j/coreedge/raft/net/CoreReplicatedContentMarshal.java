@@ -33,7 +33,6 @@ import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequestSerialize
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionSerializer;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
-import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
 import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
@@ -79,7 +78,7 @@ public class CoreReplicatedContentMarshal implements ChannelMarshal<ReplicatedCo
         else if( content instanceof ReplicatedLockTokenRequest )
         {
             channel.put( LOCK_TOKEN_REQUEST );
-            ReplicatedLockTokenSerializer.marshal( (ReplicatedLockTokenRequest<CoreMember>) content, channel );
+            ReplicatedLockTokenSerializer.marshal( (ReplicatedLockTokenRequest) content, channel );
         }
         else if( content instanceof DistributedOperation )
         {

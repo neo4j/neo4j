@@ -27,6 +27,7 @@ import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
 import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionStateMachine;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
@@ -56,20 +57,20 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 
 // TODO: Fix lock exception usage when lock exception hierarchy has been fixed.
-public class LeaderOnlyLockManager<MEMBER> implements Locks
+public class LeaderOnlyLockManager implements Locks
 {
     public static final String LOCK_NOT_ON_LEADER_ERROR_MESSAGE = "Should only attempt to take locks when leader.";
 
-    private final MEMBER myself;
+    private final CoreMember myself;
 
     private final Replicator replicator;
-    private final LeaderLocator<MEMBER> leaderLocator;
+    private final LeaderLocator leaderLocator;
     private final Locks localLocks;
     private final long leaderLockTokenTimeout;
     private final ReplicatedLockTokenStateMachine lockTokenStateMachine;
 
     public LeaderOnlyLockManager(
-            MEMBER myself, Replicator replicator, LeaderLocator<MEMBER> leaderLocator,
+            CoreMember myself, Replicator replicator, LeaderLocator leaderLocator,
             Locks localLocks, long leaderLockTokenTimeout, ReplicatedLockTokenStateMachine lockTokenStateMachine )
     {
         this.myself = myself;
@@ -101,8 +102,8 @@ public class LeaderOnlyLockManager<MEMBER> implements Locks
            since only the leader should take locks. */
         ensureLeader();
 
-        ReplicatedLockTokenRequest<MEMBER> lockTokenRequest =
-                new ReplicatedLockTokenRequest<>( myself, LockToken.nextCandidateId( currentToken.id() ) );
+        ReplicatedLockTokenRequest lockTokenRequest =
+                new ReplicatedLockTokenRequest( myself, LockToken.nextCandidateId( currentToken.id() ) );
 
         Future<Object> future = null;
         try
@@ -139,7 +140,7 @@ public class LeaderOnlyLockManager<MEMBER> implements Locks
 
     private void ensureLeader()
     {
-        MEMBER leader;
+        CoreMember leader;
 
         try
         {

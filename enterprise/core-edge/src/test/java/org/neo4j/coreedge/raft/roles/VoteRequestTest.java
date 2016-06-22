@@ -19,29 +19,26 @@
  */
 package org.neo4j.coreedge.raft.roles;
 
-import java.io.IOException;
-import java.util.Collection;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.io.IOException;
+import java.util.Collection;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.RaftState;
-import org.neo4j.coreedge.server.RaftTestMember;
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.coreedge.raft.MessageUtils.messageFor;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.voteRequest;
 import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;
@@ -63,20 +60,20 @@ public class VoteRequestTest
     @Parameterized.Parameter
     public Role role;
 
-    private RaftTestMember myself = member( 0 );
-    private RaftTestMember member1 = member( 1 );
-    private RaftTestMember member2 = member( 2 );
+    private CoreMember myself = member( 0 );
+    private CoreMember member1 = member( 1 );
+    private CoreMember member2 = member( 2 );
 
     @Test
     public void shouldVoteForCandidateInLaterTerm() throws Exception
     {
         // given
-        RaftState<RaftTestMember> state = newState();
+        RaftState state = newState();
 
         // when
         final long candidateTerm = state.term() + 1;
 
-        Outcome<RaftTestMember> outcome = role.handler.handle( voteRequest().from( member1 ).term( candidateTerm )
+        Outcome outcome = role.handler.handle( voteRequest().from( member1 ).term( candidateTerm )
                 .lastLogIndex( 0 )
                 .lastLogTerm( -1 ).build(), state, log(), storeId );
 
@@ -88,12 +85,12 @@ public class VoteRequestTest
     public void shouldDenyForCandidateInPreviousTerm() throws Exception
     {
         // given
-        RaftState<RaftTestMember> state = newState();
+        RaftState state = newState();
 
         // when
         final long candidateTerm = state.term() - 1;
 
-        Outcome<RaftTestMember> outcome = role.handler.handle( voteRequest().from( member1 ).term( candidateTerm )
+        Outcome outcome = role.handler.handle( voteRequest().from( member1 ).term( candidateTerm )
                 .lastLogIndex( 0 )
                 .lastLogTerm( -1 ).build(), state, log(), storeId );
 
@@ -106,18 +103,18 @@ public class VoteRequestTest
     public void shouldVoteForOnlyOneCandidatePerTerm() throws Exception
     {
         // given
-        RaftState<RaftTestMember> state = newState();
+        RaftState state = newState();
 
         // when
         final long candidateTerm = state.term() + 1;
 
-        Outcome<RaftTestMember> outcome1 = role.handler.handle( voteRequest().from( member1 ).term( candidateTerm )
+        Outcome outcome1 = role.handler.handle( voteRequest().from( member1 ).term( candidateTerm )
                 .lastLogIndex( 0 )
                 .lastLogTerm( -1 ).build(), state, log(), storeId );
 
         state.update( outcome1 );
 
-        Outcome<RaftTestMember> outcome2 = role.handler.handle( voteRequest().from( member2 ).term( candidateTerm )
+        Outcome outcome2 = role.handler.handle( voteRequest().from( member2 ).term( candidateTerm )
                 .lastLogIndex( 0 )
                 .lastLogTerm( -1 ).build(), state, log(), storeId );
 
@@ -129,12 +126,12 @@ public class VoteRequestTest
     public void shouldStayInCurrentRoleOnRequestFromCurrentTerm() throws Exception
     {
         // given
-        RaftState<RaftTestMember> state = newState();
+        RaftState state = newState();
 
         // when
         final long candidateTerm = state.term();
 
-        Outcome<RaftTestMember> outcome = role.handler.handle( voteRequest().from( member1 ).term( candidateTerm )
+        Outcome outcome = role.handler.handle( voteRequest().from( member1 ).term( candidateTerm )
                 .lastLogIndex( 0 )
                 .lastLogTerm( -1 ).build(), state, log(), storeId );
 
@@ -146,12 +143,12 @@ public class VoteRequestTest
     public void shouldMoveToFollowerIfRequestIsFromLaterTerm() throws Exception
     {
         // given
-        RaftState<RaftTestMember> state = newState();
+        RaftState state = newState();
 
         // when
         final long candidateTerm = state.term() + 1;
 
-        Outcome<RaftTestMember> outcome = role.handler.handle( voteRequest().from( member1 ).term( candidateTerm )
+        Outcome outcome = role.handler.handle( voteRequest().from( member1 ).term( candidateTerm )
                 .lastLogIndex( 0 )
                 .lastLogTerm( -1 ).build(), state, log(), storeId );
 
@@ -163,12 +160,12 @@ public class VoteRequestTest
     public void shouldUpdateTermIfRequestIsFromLaterTerm() throws Exception
     {
         // given
-        RaftState<RaftTestMember> state = newState();
+        RaftState state = newState();
 
         // when
         final long candidateTerm = state.term() + 1;
 
-        Outcome<RaftTestMember> outcome = role.handler.handle( voteRequest().from( member1 ).term( candidateTerm )
+        Outcome outcome = role.handler.handle( voteRequest().from( member1 ).term( candidateTerm )
                 .lastLogIndex( 0 )
                 .lastLogTerm( -1 ).build(), state, log(), storeId );
 
@@ -176,7 +173,7 @@ public class VoteRequestTest
         assertEquals( candidateTerm, outcome.getTerm() );
     }
 
-    public RaftState<RaftTestMember> newState() throws IOException
+    public RaftState newState() throws IOException
     {
         return raftState().myself( myself ).build();
     }

@@ -30,8 +30,6 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.BoltAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
@@ -41,17 +39,17 @@ import static java.util.Collections.unmodifiableSet;
 
 public class SharedDiscoveryService implements DiscoveryServiceFactory
 {
-    private final Map<CoreMember, BoltAddress> coreMembers = new HashMap<>(  );
-    private final Set<BoltAddress> edgeBoltAddresses = new HashSet<>();
+    private final Map<CoreMember, CoreAddresses> coreMembers = new HashMap<>(  );
+    private final Set<EdgeAddresses> edgeAddresses = new HashSet<>();
     private final List<SharedDiscoveryCoreClient> coreClients = new ArrayList<>();
 
     private final Lock lock = new ReentrantLock();
     private final Condition enoughMembers = lock.newCondition();
 
     @Override
-    public CoreTopologyService coreDiscoveryService( Config config, LogProvider logProvider )
+    public CoreTopologyService coreDiscoveryService( Config config, CoreMember myself, LogProvider logProvider )
     {
-        return new SharedDiscoveryCoreClient( config, this, logProvider );
+        return new SharedDiscoveryCoreClient( config, myself, this, logProvider );
     }
 
     @Override
@@ -84,7 +82,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
             return new ClusterTopology(
                     coreClients.size() > 0 && coreClients.get( 0 ) == client,
                     unmodifiableMap( coreMembers ),
-                    unmodifiableSet( edgeBoltAddresses )
+                    unmodifiableSet( edgeAddresses )
             );
         }
         finally
@@ -93,12 +91,12 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         }
     }
 
-    void registerCoreServer( CoreMember coreMember, BoltAddress boltAddress, SharedDiscoveryCoreClient client )
+    void registerCoreServer( CoreMember coreMember, CoreAddresses coreAddresses, SharedDiscoveryCoreClient client )
     {
         lock.lock();
         try
         {
-            coreMembers.put( coreMember, boltAddress );
+            coreMembers.put( coreMember, coreAddresses );
             coreClients.add( client );
             enoughMembers.signalAll();
             coreClients.forEach( SharedDiscoveryCoreClient::onTopologyChange );
@@ -109,7 +107,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         }
     }
 
-    void unRegisterCoreServer( CoreMember coreMember, BoltAddress boltAddress, SharedDiscoveryCoreClient client )
+    void unRegisterCoreServer( CoreMember coreMember, SharedDiscoveryCoreClient client )
     {
         lock.lock();
         try
@@ -124,12 +122,12 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         }
     }
 
-    void registerEdgeServer( AdvertisedSocketAddress address )
+    void registerEdgeServer( EdgeAddresses edgeAddresses )
     {
         lock.lock();
         try
         {
-            edgeBoltAddresses.add( new BoltAddress( address ) );
+            this.edgeAddresses.add( edgeAddresses );
         }
         finally
         {

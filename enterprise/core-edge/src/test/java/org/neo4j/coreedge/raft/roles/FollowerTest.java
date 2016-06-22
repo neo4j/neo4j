@@ -35,6 +35,7 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.RaftState;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
@@ -44,7 +45,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.coreedge.raft.MessageUtils.messageFor;
 import static org.neo4j.coreedge.raft.RaftMessages.AppendEntries;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesRequest;
@@ -57,11 +57,11 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 @RunWith(MockitoJUnitRunner.class)
 public class FollowerTest
 {
-    private RaftTestMember myself = member( 0 );
+    private CoreMember myself = member( 0 );
 
     /* A few members that we use at will in tests. */
-    private RaftTestMember member1 = member( 1 );
-    private RaftTestMember member2 = member( 2 );
+    private CoreMember member1 = member( 1 );
+    private CoreMember member2 = member( 2 );
 
     @Mock
     private Inbound inbound;
@@ -71,13 +71,13 @@ public class FollowerTest
     public void followerShouldTransitToCandidateAndInstigateAnElectionAfterTimeout() throws Exception
     {
         // given
-        RaftState<RaftTestMember> state = raftState()
+        RaftState state = raftState()
                 .myself( myself )
                 .votingMembers( asSet( myself, member1, member2 ) )
                 .build();
 
         // when
-        Outcome<RaftTestMember> outcome = new Follower().handle( new Election<>( myself ), state, log(), storeId );
+        Outcome outcome = new Follower().handle( new Election( myself ), state, log(), storeId );
 
         state.update( outcome );
 
@@ -92,7 +92,7 @@ public class FollowerTest
     public void shouldBecomeCandidateOnReceivingElectionTimeoutMessage() throws Exception
     {
         // given
-        RaftState<RaftTestMember> state = raftState()
+        RaftState state = raftState()
                 .myself( myself )
                 .votingMembers( asSet( myself, member1, member2 ) )
                 .build();
@@ -100,7 +100,7 @@ public class FollowerTest
         Follower follower = new Follower();
 
         // when
-        Outcome outcome = follower.handle( new Election<>( myself ), state, log(), storeId );
+        Outcome outcome = follower.handle( new Election( myself ), state, log(), storeId );
 
         // then
         assertEquals( CANDIDATE, outcome.getRole() );
@@ -112,7 +112,7 @@ public class FollowerTest
         // given
         int term = 1;
         int followerAppendIndex = 9;
-        RaftState<RaftTestMember> state = raftState()
+        RaftState state = raftState()
                 .myself( myself )
                 .term( term )
                 .build();
@@ -120,16 +120,16 @@ public class FollowerTest
         Follower follower = new Follower();
         appendSomeEntriesToLog( state, follower, followerAppendIndex, term );
 
-        AppendEntries.Request<RaftTestMember> heartbeat = appendEntriesRequest().from( member1 )
+        AppendEntries.Request heartbeat = appendEntriesRequest().from( member1 )
                 .leaderTerm( term )
                 .prevLogIndex( followerAppendIndex + 2 ) // leader has appended 2 ahead from this follower
                 .prevLogTerm( term ) // in the same term
                 .build(); // no entries, this is a heartbeat
 
-        Outcome<RaftTestMember> outcome = follower.handle( heartbeat, state, log(), storeId );
+        Outcome outcome = follower.handle( heartbeat, state, log(), storeId );
 
         assertEquals( 1, outcome.getOutgoingMessages().size() );
-        RaftMessage<RaftTestMember> outgoing = outcome.getOutgoingMessages().iterator().next().message();
+        RaftMessage outgoing = outcome.getOutgoingMessages().iterator().next().message();
         assertEquals( RaftMessages.Type.APPEND_ENTRIES_RESPONSE, outgoing.type() );
         RaftMessages.AppendEntries.Response response = (AppendEntries.Response) outgoing;
         assertFalse( response.success() );
@@ -140,14 +140,14 @@ public class FollowerTest
     {
         // given
         int term = 1;
-        RaftState<RaftTestMember> state = raftState()
+        RaftState state = raftState()
                 .myself( myself )
                 .term( term )
                 .build();
 
         Follower follower = new Follower();
 
-        state.update( follower.handle( new AppendEntries.Request<>( member1, 1, -1, -1,
+        state.update( follower.handle( new AppendEntries.Request( member1, 1, -1, -1,
                 new RaftLogEntry[]{
                         new RaftLogEntry( 2, ContentGenerator.content() ),
                 },
@@ -157,8 +157,8 @@ public class FollowerTest
                 new RaftLogEntry( 1, new ReplicatedString( "commit this!" ) ),
         };
 
-        Outcome<RaftTestMember> outcome = follower.handle(
-                new AppendEntries.Request<>( member1, 1, -1, -1, entries, -1 ), state, log(), storeId );
+        Outcome outcome = follower.handle(
+                new AppendEntries.Request( member1, 1, -1, -1, entries, -1 ), state, log(), storeId );
         state.update( outcome );
 
         // then
@@ -171,7 +171,7 @@ public class FollowerTest
     public void followerLearningAboutHigherCommitCausesValuesTobeAppliedToItsLog() throws Exception
     {
         // given
-        RaftState<RaftTestMember> state = raftState()
+        RaftState state = raftState()
                 .myself( myself )
                 .build();
 
@@ -180,7 +180,7 @@ public class FollowerTest
         appendSomeEntriesToLog( state, follower, 3, 0 );
 
         // when receiving AppEntries with high leader commit (3)
-        Outcome<RaftTestMember> outcome = follower.handle( new AppendEntries.Request<>( myself, 0, 2, 0,
+        Outcome outcome = follower.handle( new AppendEntries.Request( myself, 0, 2, 0,
                 new RaftLogEntry[] { new RaftLogEntry( 0, ContentGenerator.content() ) }, 3 ), state, log(),
                 storeId );
 
@@ -195,7 +195,7 @@ public class FollowerTest
     {
         //  If leaderCommit > commitIndex, set commitIndex = min( leaderCommit, index of last new entry )
         // given
-        RaftState<RaftTestMember> state = raftState()
+        RaftState state = raftState()
                                         .myself( myself )
                                         .build();
 
@@ -208,7 +208,7 @@ public class FollowerTest
 
         // the next when-then simply verifies that the test is setup properly, with commit and append index as expected
         // when
-        Outcome<RaftTestMember> raftTestMemberOutcome = new Outcome<>( FOLLOWER, state );
+        Outcome raftTestMemberOutcome = new Outcome( FOLLOWER, state );
         raftTestMemberOutcome.setCommitIndex( localCommitIndex );
         state.update( raftTestMemberOutcome );
 
@@ -218,7 +218,7 @@ public class FollowerTest
 
         // when
         // an append req comes in with leader commit index > localAppendIndex but localCommitIndex < localAppendIndex
-        Outcome<RaftTestMember> outcome = follower.handle( appendEntriesRequest()
+        Outcome outcome = follower.handle( appendEntriesRequest()
                 .leaderTerm( term ).prevLogIndex( 2 )
                 .prevLogTerm( term ).leaderCommit( localCommitIndex + 4 )
                 .build(), state, log(), storeId );
@@ -234,14 +234,14 @@ public class FollowerTest
     public void shouldRenewElectionTimeoutOnReceiptOfHeartbeatInCurrentOrHigherTerm() throws Exception
     {
         // given
-        RaftState<RaftTestMember> state = raftState()
+        RaftState state = raftState()
                 .myself( myself )
                 .term(0)
                 .build();
 
         Follower follower = new Follower();
 
-        Outcome<RaftTestMember> outcome = follower.handle( new RaftMessages.Heartbeat<>( myself, 1, 1, 1 ),
+        Outcome outcome = follower.handle( new RaftMessages.Heartbeat( myself, 1, 1, 1 ),
                 state, log(), storeId );
 
         // then
@@ -252,34 +252,34 @@ public class FollowerTest
     public void shouldNotRenewElectionTimeoutOnReceiptOfHeartbeatInLowerTerm() throws Exception
     {
         // given
-        RaftState<RaftTestMember> state = raftState()
+        RaftState state = raftState()
                 .myself( myself )
                 .term( 2 )
                 .build();
 
         Follower follower = new Follower();
 
-        Outcome<RaftTestMember> outcome = follower.handle( new RaftMessages.Heartbeat<>( myself, 1, 1, 1 ),
+        Outcome outcome = follower.handle( new RaftMessages.Heartbeat( myself, 1, 1, 1 ),
                 state, log(), storeId );
 
         // then
         assertFalse( outcome.electionTimeoutRenewed() );
     }
 
-    private void appendSomeEntriesToLog( RaftState<RaftTestMember> raft, Follower follower, int numberOfEntriesToAppend,
+    private void appendSomeEntriesToLog( RaftState raft, Follower follower, int numberOfEntriesToAppend,
                                          int term ) throws IOException
     {
         for ( int i = 0; i < numberOfEntriesToAppend; i++ )
         {
             if ( i == 0 )
             {
-                raft.update( follower.handle( new AppendEntries.Request<>( myself, term, i - 1, -1,
+                raft.update( follower.handle( new AppendEntries.Request( myself, term, i - 1, -1,
                         new RaftLogEntry[] { new RaftLogEntry( term, ContentGenerator.content() ) }, -1
                 ), raft, log(), storeId ) );
             }
             else
             {
-                raft.update( follower.handle( new AppendEntries.Request<>( myself, term, i - 1, term,
+                raft.update( follower.handle( new AppendEntries.Request( myself, term, i - 1, term,
                         new RaftLogEntry[]{new RaftLogEntry( term, ContentGenerator.content() )}, -1 ), raft,
                         log(), storeId ) );
             }

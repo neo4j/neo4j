@@ -21,12 +21,13 @@ package org.neo4j.coreedge.discovery;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
@@ -82,8 +83,8 @@ public class Cluster
     private final int noOfCoreServers;
     private final int noOfEdgeServers;
 
-    private Set<CoreGraphDatabase> coreServers = new HashSet<>();
-    private Set<EdgeGraphDatabase> edgeServers = new HashSet<>();
+    private Map<Integer, CoreGraphDatabase> coreServers = new ConcurrentHashMap<>();
+    private Map<Integer, EdgeGraphDatabase> edgeServers = new ConcurrentHashMap<>();
 
     public Cluster( File parentDir, int noOfCoreServers, int noOfEdgeServers, DiscoveryServiceFactory fatory,
                     Map<String, String> coreParams, Map<String, IntFunction<String>> instanceCoreParams,
@@ -138,7 +139,6 @@ public class Cluster
         params.put( "dbms.mode", serverType );
         params.put( GraphDatabaseSettings.store_internal_log_level.name(), Level.DEBUG.name() );
         params.put( CoreEdgeClusterSettings.cluster_name.name(), CLUSTER_NAME );
-        params.put( CoreEdgeClusterSettings.server_id.name(), String.valueOf( serverId ) );
         params.put( CoreEdgeClusterSettings.initial_core_cluster_members.name(), initialHosts );
         return params;
     }
@@ -164,13 +164,16 @@ public class Cluster
         for ( int i = 0; i < noOfCoreServers; i++ )
         {
             final int serverId = i;
-            ecs.submit( () -> startCoreServer( serverId, noOfCoreServers, addresses, extraParams,
-                    instanceExtraParams, recordFormat ) );
+            ecs.submit( () -> {
+                CoreGraphDatabase coreServer = startCoreServer( serverId, noOfCoreServers, addresses, extraParams,
+                        instanceExtraParams, recordFormat );
+                return coreServers.put( serverId, coreServer );
+            } );
         }
 
         for ( int i = 0; i < noOfCoreServers; i++ )
         {
-            this.coreServers.add( ecs.take().get() );
+            ecs.take().get();
         }
     }
 
@@ -191,7 +194,7 @@ public class Cluster
 
         for ( int i = 0; i < noOfEdgeServers; i++ )
         {
-            this.edgeServers.add( ecs.take().get() );
+            this.edgeServers.put( i, ecs.take().get() );
         }
     }
 
@@ -289,7 +292,7 @@ public class Cluster
     {
         ExecutorService executor = Executors.newCachedThreadPool();
         List<Callable<Object>> serverShutdownSuppliers = new ArrayList<>();
-        for ( final CoreGraphDatabase coreServer : coreServers )
+        for ( final CoreGraphDatabase coreServer : coreServers.values() )
         {
             serverShutdownSuppliers.add( () -> {
                 coreServer.shutdown();
@@ -310,7 +313,7 @@ public class Cluster
 
     private void shutdownEdgeServers()
     {
-        for ( EdgeGraphDatabase edgeServer : edgeServers )
+        for ( EdgeGraphDatabase edgeServer : edgeServers.values() )
         {
             edgeServer.shutdown();
         }
@@ -319,26 +322,12 @@ public class Cluster
 
     public CoreGraphDatabase getCoreServerById( int serverId )
     {
-        for ( CoreGraphDatabase coreServer : coreServers )
-        {
-            if ( serverIdFor( coreServer ) == serverId )
-            {
-                return coreServer;
-            }
-        }
-        return null;
+        return coreServers.get( serverId );
     }
 
     public EdgeGraphDatabase getEdgeServerById( int serverId )
     {
-        for ( EdgeGraphDatabase edgeServer : edgeServers )
-        {
-            if ( serverIdFor( edgeServer ) == serverId )
-            {
-                return edgeServer;
-            }
-        }
-        return null;
+        return edgeServers.get( serverId );
     }
 
     public void removeCoreServerWithServerId( int serverId )
@@ -358,7 +347,7 @@ public class Cluster
     public void removeCoreServer( CoreGraphDatabase serverToRemove )
     {
         serverToRemove.shutdown();
-        coreServers.remove( serverToRemove );
+        coreServers.values().remove( serverToRemove );
     }
 
     public void addCoreServerWithServerId( int serverId, int intendedClusterSize )
@@ -380,21 +369,23 @@ public class Cluster
     private void addCoreServerWithServerId( int serverId, int intendedClusterSize, Map<String, String> extraParams,
                                             Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
     {
-        Config config = firstOrNull( coreServers ).getDependencyResolver().resolveDependency( Config.class );
+        Config config = firstOrNull( coreServers.values() )
+                .getDependencyResolver().resolveDependency( Config.class );
         List<AdvertisedSocketAddress> advertisedAddress =
                 config.get( CoreEdgeClusterSettings.initial_core_cluster_members );
 
-        coreServers.add( startCoreServer( serverId, intendedClusterSize, advertisedAddress, extraParams,
+        coreServers.put( serverId, startCoreServer( serverId, intendedClusterSize, advertisedAddress, extraParams,
                 instanceExtraParams, recordFormat ) );
     }
 
     public void addEdgeServerWithFileLocation( int serverId, String recordFormat )
     {
-        Config config = coreServers.iterator().next().getDependencyResolver().resolveDependency( Config.class );
+        Config config = firstOrNull( coreServers.values() ).getDependencyResolver().resolveDependency( Config.class );
         List<AdvertisedSocketAddress> advertisedAddresses =
                 config.get( CoreEdgeClusterSettings.initial_core_cluster_members );
 
-        edgeServers.add( startEdgeServer( serverId, advertisedAddresses, stringMap(), emptyMap(), recordFormat ) );
+        edgeServers.put( serverId,
+                startEdgeServer( serverId, advertisedAddresses, stringMap(), emptyMap(), recordFormat ) );
     }
 
     public void addEdgeServerWithId( int serverId )
@@ -402,30 +393,36 @@ public class Cluster
         addEdgeServerWithFileLocation( serverId, StandardV3_0.NAME );
     }
 
-    private int serverIdFor( GraphDatabaseFacade graphDatabaseFacade )
+    public int serverIdFor( GraphDatabaseFacade graphDatabaseFacade )
     {
-        return graphDatabaseFacade.getDependencyResolver().resolveDependency( Config.class )
-                .get( CoreEdgeClusterSettings.server_id );
+        for ( Map.Entry<Integer,CoreGraphDatabase> entry : coreServers.entrySet() )
+        {
+            if (entry.getValue() == graphDatabaseFacade)
+            {
+                return entry.getKey();
+            }
+        }
+        throw new IllegalArgumentException( "No such database found." );
     }
 
-    public Set<CoreGraphDatabase> coreServers()
+    public Collection<CoreGraphDatabase> coreServers()
     {
-        return coreServers;
+        return coreServers.values();
     }
 
-    public Set<EdgeGraphDatabase> edgeServers()
+    public Collection<EdgeGraphDatabase> edgeServers()
     {
-        return edgeServers;
+        return edgeServers.values();
     }
 
     public EdgeGraphDatabase findAnEdgeServer()
     {
-        return edgeServers.iterator().next();
+        return firstOrNull( edgeServers.values() );
     }
 
     public CoreGraphDatabase getDbWithRole( Role role )
     {
-        for ( CoreGraphDatabase coreServer : coreServers )
+        for ( CoreGraphDatabase coreServer : coreServers.values() )
         {
             if ( coreServer.getRole().equals( role ) )
             {
@@ -464,7 +461,7 @@ public class Cluster
 
     public int numberOfCoreServers()
     {
-        CoreGraphDatabase aCoreGraphDb = coreServers.iterator().next();
+        CoreGraphDatabase aCoreGraphDb = coreServers.values().iterator().next();
         CoreTopologyService coreTopologyService = aCoreGraphDb.getDependencyResolver()
                 .resolveDependency( CoreTopologyService.class );
         return coreTopologyService.currentTopology().coreMembers().size();
@@ -472,12 +469,14 @@ public class Cluster
 
     public void addEdgeServerWithFileLocation( File edgeDatabaseStoreFileLocation )
     {
-        Config config = coreServers.iterator().next().getDependencyResolver().resolveDependency( Config.class );
+        Config config =
+                coreServers.values().iterator().next().getDependencyResolver().resolveDependency( Config.class );
         List<AdvertisedSocketAddress> advertisedAddresses =
                 config.get( CoreEdgeClusterSettings.initial_core_cluster_members );
 
-        edgeServers.add( startEdgeServer( 999, edgeDatabaseStoreFileLocation, advertisedAddresses,
-                stringMap(), emptyMap(), StandardV3_0.NAME ) );
+        edgeServers.put( 999,
+                startEdgeServer( 999, edgeDatabaseStoreFileLocation, advertisedAddresses, stringMap(), emptyMap(),
+                        StandardV3_0.NAME ) );
     }
 
     /**
@@ -552,7 +551,7 @@ public class Cluster
 
     public Set<CoreGraphDatabase> healthyCoreMembers()
     {
-        return coreServers.stream()
+        return coreServers.values().stream()
                 .filter( db -> db.getDependencyResolver().resolveDependency( DatabaseHealth.class ).isHealthy() )
                 .collect( Collectors.toSet() );
     }

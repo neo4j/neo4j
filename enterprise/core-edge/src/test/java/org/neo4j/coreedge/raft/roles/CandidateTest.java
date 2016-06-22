@@ -24,6 +24,8 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.io.IOException;
+
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.NewLeaderBarrier;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
@@ -31,8 +33,7 @@ import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.RaftState;
-import org.neo4j.coreedge.server.RaftTestMember;
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -41,7 +42,6 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.coreedge.raft.TestMessageBuilders.voteResponse;
 import static org.neo4j.coreedge.raft.roles.Role.CANDIDATE;
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
@@ -49,13 +49,11 @@ import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
 
-import java.io.IOException;
-
 @RunWith(MockitoJUnitRunner.class)
 public class CandidateTest
 {
-    private RaftTestMember myself = member( 0 );
-    private RaftTestMember member1 = member( 1 );
+    private CoreMember myself = member( 0 );
+    private CoreMember member1 = member( 1 );
 
     @Mock
     private Inbound inbound;
@@ -67,10 +65,10 @@ public class CandidateTest
     public void shouldBeElectedLeaderOnReceivingGrantedVoteResponseWithCurrentTerm() throws Exception
     {
         // given
-        RaftState<RaftTestMember> state = newState();
+        RaftState state = newState();
 
         // when
-        Outcome<RaftTestMember> outcome = CANDIDATE.handler.handle( voteResponse()
+        Outcome outcome = CANDIDATE.handler.handle( voteResponse()
                 .term( state.term() )
                 .from( member1 )
                 .grant()
@@ -86,10 +84,10 @@ public class CandidateTest
     public void shouldStayAsCandidateOnReceivingDeniedVoteResponseWithCurrentTerm() throws Exception
     {
         // given
-        RaftState<RaftTestMember> state = newState();
+        RaftState state = newState();
 
         // when
-        Outcome<RaftTestMember> outcome = CANDIDATE.handler.handle( voteResponse()
+        Outcome outcome = CANDIDATE.handler.handle( voteResponse()
                 .term( state.term() )
                 .from( member1 )
                 .deny()
@@ -103,12 +101,12 @@ public class CandidateTest
     public void shouldUpdateTermOnReceivingVoteResponseWithLaterTerm() throws Exception
     {
         // given
-        RaftState<RaftTestMember> state = newState();
+        RaftState state = newState();
 
         final long voterTerm = state.term() + 1;
 
         // when
-        Outcome<RaftTestMember> outcome = CANDIDATE.handler.handle( voteResponse()
+        Outcome outcome = CANDIDATE.handler.handle( voteResponse()
                 .term( voterTerm )
                 .from( member1 )
                 .grant()
@@ -123,12 +121,12 @@ public class CandidateTest
     public void shouldRejectVoteResponseWithOldTerm() throws Exception
     {
         // given
-        RaftState<RaftTestMember> state = newState();
+        RaftState state = newState();
 
         final long voterTerm = state.term() - 1;
 
         // when
-        Outcome<RaftTestMember> outcome = CANDIDATE.handler.handle( voteResponse()
+        Outcome outcome = CANDIDATE.handler.handle( voteResponse()
                 .term( voterTerm )
                 .from( member1 )
                 .grant()
@@ -138,7 +136,7 @@ public class CandidateTest
         assertEquals( CANDIDATE, outcome.getRole() );
     }
 
-    public RaftState<RaftTestMember> newState() throws IOException
+    public RaftState newState() throws IOException
     {
         return raftState().myself( myself ).build();
     }

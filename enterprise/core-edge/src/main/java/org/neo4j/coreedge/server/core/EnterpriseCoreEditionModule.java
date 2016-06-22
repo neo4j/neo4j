@@ -69,10 +69,10 @@ import org.neo4j.coreedge.raft.net.LoggingOutbound;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.net.RaftChannelInitializer;
 import org.neo4j.coreedge.raft.net.RaftOutbound;
-import org.neo4j.coreedge.raft.replication.LeaderOnlyReplicator;
 import org.neo4j.coreedge.raft.replication.ProgressTrackerImpl;
 import org.neo4j.coreedge.raft.replication.RaftReplicator;
 import org.neo4j.coreedge.raft.replication.Replicator;
+import org.neo4j.coreedge.raft.replication.SendToMyself;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationStateMachine;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdGeneratorFactory;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdRangeAcquirer;
@@ -165,12 +165,11 @@ import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THR
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
  * that are specific to the Enterprise Core edition that provides a core cluster.
  */
-public class EnterpriseCoreEditionModule
-        extends EditionModule implements CoreEditionSPI
+public class EnterpriseCoreEditionModule extends EditionModule implements CoreEditionSPI
 {
     public static final String CLUSTER_STATE_DIRECTORY_NAME = "cluster-state";
 
-    private final RaftInstance<CoreMember> raft;
+    private final RaftInstance raft;
     private final CoreState coreState;
     private final CoreMember myself;
     private final CoreTopologyService discoveryService;
@@ -189,7 +188,7 @@ public class EnterpriseCoreEditionModule
     }
 
     @Override
-    public void downloadSnapshot( AdvertisedSocketAddress source ) throws InterruptedException, StoreCopyFailedException
+    public void downloadSnapshot( CoreMember source ) throws InterruptedException, StoreCopyFailedException
     {
         coreState.downloadSnapshot( myself, source );
     }
@@ -226,7 +225,7 @@ public class EnterpriseCoreEditionModule
     }
 
     public EnterpriseCoreEditionModule( final PlatformModule platformModule,
-                                        DiscoveryServiceFactory discoveryServiceFactory )
+            DiscoveryServiceFactory discoveryServiceFactory )
     {
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
 
@@ -240,31 +239,44 @@ public class EnterpriseCoreEditionModule
         final GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 
         logProvider = logging.getInternalLogProvider();
-
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
-        discoveryService = discoveryServiceFactory.coreDiscoveryService( config, logProvider );
+        try
+        {
+            DurableStateStorage<CoreMember> idStorage = life.add( new DurableStateStorage<>(
+                    fileSystem, clusterStateDirectory, "raft-member-id", new CoreMemberMarshal(), 1,
+                    databaseHealthSupplier, logProvider ) );
+            CoreMember member = idStorage.getInitialState();
+            if ( member == null )
+            {
+                member = new CoreMember( UUID.randomUUID() );
+                idStorage.persistStoreData( member );
+            }
+            myself = member;
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+
+        discoveryService = discoveryServiceFactory.coreDiscoveryService( config, myself, logProvider );
 
         life.add( dependencies.satisfyDependency( discoveryService ) );
 
         final CoreReplicatedContentMarshal marshal = new CoreReplicatedContentMarshal();
         int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
-        final SenderService senderService = new SenderService(
-                new RaftChannelInitializer( marshal ), logProvider, platformModule.monitors, maxQueueSize,
-                new NonBlockingChannels() );
+        final SenderService senderService =
+                new SenderService( new RaftChannelInitializer( marshal ), logProvider, platformModule.monitors,
+                        maxQueueSize, new NonBlockingChannels() );
         life.add( senderService );
 
-        myself = new CoreMember(
-                config.get( CoreEdgeClusterSettings.transaction_advertised_address ),
-                config.get( CoreEdgeClusterSettings.raft_advertised_address )
-        );
+        AdvertisedSocketAddress raftAddress = config.get( CoreEdgeClusterSettings.raft_advertised_address );
 
         final MessageLogger<AdvertisedSocketAddress> messageLogger;
         if ( config.get( CoreEdgeClusterSettings.raft_messages_log_enable ) )
         {
-            messageLogger = life.add(
-                    new BetterMessageLogger<>( myself.getRaftAddress(), raftMessagesLog( storeDir ) )
-            );
+            messageLogger =
+                    life.add( new BetterMessageLogger<>( raftAddress, raftMessagesLog( storeDir ) ) );
         }
         else
         {
@@ -272,15 +284,16 @@ public class EnterpriseCoreEditionModule
         }
 
         LoggingOutbound<AdvertisedSocketAddress,Message> loggingOutbound = new LoggingOutbound<>(
-                senderService, myself.getRaftAddress(), messageLogger );
+                senderService, raftAddress, messageLogger );
 
         ListenSocketAddress raftListenAddress = config.get( CoreEdgeClusterSettings.raft_listen_address );
-        RaftServer<CoreMember> raftServer = new RaftServer<>( marshal, raftListenAddress, logProvider );
+        RaftServer raftServer = new RaftServer( marshal, raftListenAddress, logProvider );
 
         final DelayedRenewableTimeoutService raftTimeoutService =
                 new DelayedRenewableTimeoutService( Clock.systemUTC(), logProvider );
 
-        RaftLog underlyingLog = createRaftLog( config, life, fileSystem, clusterStateDirectory, marshal, logProvider );
+        RaftLog underlyingLog = createRaftLog( config, life, fileSystem, clusterStateDirectory, marshal, logProvider,
+                databaseHealthSupplier );
 
         MonitoredRaftLog raftLog = new MonitoredRaftLog( underlyingLog, platformModule.monitors );
 
@@ -293,36 +306,37 @@ public class EnterpriseCoreEditionModule
 
         NonBlockingChannels nonBlockingChannels = new NonBlockingChannels();
 
-        CoreToCoreClient.ChannelInitializer channelInitializer = new CoreToCoreClient.ChannelInitializer(
-                logProvider, nonBlockingChannels );
-        CoreToCoreClient coreToCoreClient = life.add( new CoreToCoreClient( logProvider,
-                channelInitializer, platformModule.monitors, maxQueueSize, nonBlockingChannels ) );
+        CoreToCoreClient.ChannelInitializer channelInitializer =
+                new CoreToCoreClient.ChannelInitializer( logProvider, nonBlockingChannels );
+        CoreToCoreClient coreToCoreClient = life.add(
+                new CoreToCoreClient( logProvider, channelInitializer, platformModule.monitors, maxQueueSize,
+                        nonBlockingChannels, discoveryService ) );
         channelInitializer.setOwner( coreToCoreClient );
 
         StoreFetcher storeFetcher = new StoreFetcher( logProvider, fileSystem, platformModule.pageCache,
                 new StoreCopyClient( coreToCoreClient ), new TxPullClient( coreToCoreClient ),
                 new TransactionLogCatchUpFactory() );
 
-        GlobalSession<CoreMember> myGlobalSession = new GlobalSession<>( UUID.randomUUID(), myself );
-        LocalSessionPool<CoreMember> sessionPool = new LocalSessionPool<>( myGlobalSession );
+        GlobalSession myGlobalSession = new GlobalSession( UUID.randomUUID(), myself );
+        LocalSessionPool sessionPool = new LocalSessionPool( myGlobalSession );
         ProgressTrackerImpl progressTracker = new ProgressTrackerImpl( myGlobalSession );
 
         try
         {
-            DurableStateStorage<Long> lastFlushedStorage = life.add( new DurableStateStorage<>(
-                    fileSystem, new File( clusterStateDirectory, "last-flushed-state" ), "last-flushed",
-                    new LongIndexMarshal(), config.get( CoreEdgeClusterSettings.last_flushed_state_size ),
-                    databaseHealthSupplier, logProvider ) );
+            DurableStateStorage<Long> lastFlushedStorage = life.add(
+                    new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "last-flushed-state" ),
+                            "last-flushed", new LongIndexMarshal(),
+                            config.get( CoreEdgeClusterSettings.last_flushed_state_size ), databaseHealthSupplier,
+                            logProvider ) );
 
-            StateStorage<GlobalSessionTrackerState<CoreMember>> sessionTrackerStorage;
+            StateStorage<GlobalSessionTrackerState> sessionTrackerStorage;
             try
             {
-                sessionTrackerStorage = life.add( new DurableStateStorage<>(
-                        fileSystem, new File( clusterStateDirectory, "session-tracker-state" ), "session-tracker",
-                        new GlobalSessionTrackerState.Marshal<>( new CoreMemberMarshal() ),
-                        config.get( CoreEdgeClusterSettings.global_session_tracker_state_size ),
-                        databaseHealthSupplier, logProvider
-                ) );
+                sessionTrackerStorage = life.add( new DurableStateStorage<>( fileSystem,
+                        new File( clusterStateDirectory, "session-tracker-state" ), "session-tracker",
+                        new GlobalSessionTrackerState.Marshal( new CoreMemberMarshal() ),
+                        config.get( CoreEdgeClusterSettings.global_session_tracker_state_size ), databaseHealthSupplier,
+                        logProvider ) );
             }
             catch ( IOException e )
             {
@@ -330,10 +344,10 @@ public class EnterpriseCoreEditionModule
             }
 
             CoreStateApplier applier = new CoreStateApplier( logProvider );
-            CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, storeFetcher, coreToCoreClient,
-                    logProvider );
+            CoreStateDownloader downloader =
+                    new CoreStateDownloader( localDatabase, storeFetcher, coreToCoreClient, logProvider );
 
-            InFlightMap<Long, RaftLogEntry> inFlightMap = new InFlightMap<>();
+            InFlightMap<Long,RaftLogEntry> inFlightMap = new InFlightMap<>();
 
             coreState = new CoreState(
                     raftLog, config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
@@ -341,10 +355,10 @@ public class EnterpriseCoreEditionModule
                     databaseHealthSupplier, logProvider, progressTracker, lastFlushedStorage,
                     sessionTrackerStorage, applier, downloader, inFlightMap, platformModule.monitors );
 
-            raft = createRaft( life, loggingOutbound, discoveryService, config, messageLogger, raftLog,
-                    coreState, fileSystem, clusterStateDirectory, myself, logProvider, raftServer,
-                    raftTimeoutService, databaseHealthSupplier, inFlightMap, platformModule.monitors,
-                    platformModule.jobScheduler, localDatabase );
+            raft = createRaft( life, loggingOutbound, discoveryService, config, messageLogger, raftLog, coreState,
+                    fileSystem, clusterStateDirectory, myself, logProvider, raftServer, raftTimeoutService,
+                    databaseHealthSupplier, inFlightMap, platformModule.monitors, platformModule.jobScheduler,
+                    localDatabase );
 
             life.add( new PruningScheduler( coreState, platformModule.jobScheduler,
                     config.get( CoreEdgeClusterSettings.raft_log_pruning_frequency ) ) );
@@ -354,21 +368,22 @@ public class EnterpriseCoreEditionModule
             throw new RuntimeException( e );
         }
 
-        RaftReplicator<CoreMember> replicator = new RaftReplicator<>( raft, myself,
-                new RaftOutbound( loggingOutbound, localDatabase ), sessionPool, progressTracker,
-                new ExponentialBackoffStrategy( 10, SECONDS ) );
+        RaftReplicator replicator =
+                new RaftReplicator( raft, myself,
+                        new RaftOutbound( discoveryService, loggingOutbound, localDatabase ),
+                        sessionPool, progressTracker,
+                        new ExponentialBackoffStrategy( 10, SECONDS ) );
 
         dependencies.satisfyDependency( raft );
 
-        StateStorage<ReplicatedLockTokenState<CoreMember>> lockTokenState;
+        StateStorage<ReplicatedLockTokenState> lockTokenState;
         try
         {
-            lockTokenState = life.add( new DurableStateStorage<>(
-                    fileSystem, new File( clusterStateDirectory, "lock-token-state" ), "lock-token",
-                    new ReplicatedLockTokenState.Marshal<>( new CoreMemberMarshal() ),
-                    config.get( CoreEdgeClusterSettings.replicated_lock_token_state_size ),
-                    databaseHealthSupplier, logProvider
-            ) );
+            lockTokenState = life.add(
+                    new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "lock-token-state" ),
+                            "lock-token", new ReplicatedLockTokenState.Marshal( new CoreMemberMarshal() ),
+                            config.get( CoreEdgeClusterSettings.replicated_lock_token_state_size ),
+                            databaseHealthSupplier, logProvider ) );
         }
         catch ( IOException e )
         {
@@ -378,27 +393,28 @@ public class EnterpriseCoreEditionModule
         final StateStorage<IdAllocationState> idAllocationState;
         try
         {
-            idAllocationState = life.add( new DurableStateStorage<>(
-                    fileSystem, new File( clusterStateDirectory, "id-allocation-state" ), "id-allocation",
-                    new IdAllocationState.Marshal(),
-                    config.get( CoreEdgeClusterSettings.id_alloc_state_size ), databaseHealthSupplier, logProvider
-            ) );
+            idAllocationState = life.add(
+                    new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "id-allocation-state" ),
+                            "id-allocation", new IdAllocationState.Marshal(),
+                            config.get( CoreEdgeClusterSettings.id_alloc_state_size ), databaseHealthSupplier,
+                            logProvider ) );
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
 
-        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine(
-                idAllocationState );
+        ReplicatedIdAllocationStateMachine idAllocationStateMachine =
+                new ReplicatedIdAllocationStateMachine( idAllocationState );
 
         int allocationChunk = 1024; // TODO: AllocationChunk should be configurable and per type.
-        ReplicatedIdRangeAcquirer idRangeAcquirer = new ReplicatedIdRangeAcquirer( replicator,
-                idAllocationStateMachine, allocationChunk, myself, logProvider );
+        ReplicatedIdRangeAcquirer idRangeAcquirer =
+                new ReplicatedIdRangeAcquirer( replicator, idAllocationStateMachine, allocationChunk, myself,
+                        logProvider );
 
         long electionTimeout = config.get( CoreEdgeClusterSettings.leader_election_timeout );
-        MembershipWaiter<CoreMember> membershipWaiter =
-                new MembershipWaiter<>( myself, platformModule.jobScheduler, electionTimeout * 4, logProvider );
+        MembershipWaiter membershipWaiter =
+                new MembershipWaiter( myself, platformModule.jobScheduler, electionTimeout * 4, logProvider );
 
         ReplicatedIdGeneratorFactory replicatedIdGeneratorFactory =
                 createIdGeneratorFactory( fileSystem, idRangeAcquirer, logProvider );
@@ -409,54 +425,49 @@ public class EnterpriseCoreEditionModule
         Long tokenCreationTimeout = config.get( CoreEdgeClusterSettings.token_creation_timeout );
 
         TokenRegistry<RelationshipTypeToken> relationshipTypeTokenRegistry = new TokenRegistry<>( "RelationshipType" );
-        ReplicatedRelationshipTypeTokenHolder relationshipTypeTokenHolder = new ReplicatedRelationshipTypeTokenHolder(
-                relationshipTypeTokenRegistry, replicator, this.idGeneratorFactory, dependencies,
-                tokenCreationTimeout );
+        ReplicatedRelationshipTypeTokenHolder relationshipTypeTokenHolder =
+                new ReplicatedRelationshipTypeTokenHolder( relationshipTypeTokenRegistry, replicator,
+                        this.idGeneratorFactory, dependencies, tokenCreationTimeout );
 
         TokenRegistry<Token> propertyKeyTokenRegistry = new TokenRegistry<>( "PropertyKey" );
-        ReplicatedPropertyKeyTokenHolder propertyKeyTokenHolder = new ReplicatedPropertyKeyTokenHolder(
-                propertyKeyTokenRegistry, replicator, this.idGeneratorFactory, dependencies, tokenCreationTimeout );
+        ReplicatedPropertyKeyTokenHolder propertyKeyTokenHolder =
+                new ReplicatedPropertyKeyTokenHolder( propertyKeyTokenRegistry, replicator, this.idGeneratorFactory,
+                        dependencies, tokenCreationTimeout );
 
         TokenRegistry<Token> labelTokenRegistry = new TokenRegistry<>( "Label" );
-        ReplicatedLabelTokenHolder labelTokenHolder = new ReplicatedLabelTokenHolder(
-                labelTokenRegistry, replicator, this.idGeneratorFactory, dependencies, tokenCreationTimeout );
+        ReplicatedLabelTokenHolder labelTokenHolder =
+                new ReplicatedLabelTokenHolder( labelTokenRegistry, replicator, this.idGeneratorFactory, dependencies,
+                        tokenCreationTimeout );
 
-        ReplicatedLockTokenStateMachine<CoreMember> replicatedLockTokenStateMachine =
-                new ReplicatedLockTokenStateMachine<>( lockTokenState );
+        ReplicatedLockTokenStateMachine replicatedLockTokenStateMachine =
+                new ReplicatedLockTokenStateMachine( lockTokenState );
 
         RecoverTransactionLogState txLogState = new RecoverTransactionLogState( dependencies, logProvider );
 
-        ReplicatedTokenStateMachine<Token>
-                labelTokenStateMachine = new ReplicatedTokenStateMachine<>(
-                labelTokenRegistry, new Token.Factory(),
-                logProvider );
+        ReplicatedTokenStateMachine<Token> labelTokenStateMachine =
+                new ReplicatedTokenStateMachine<>( labelTokenRegistry, new Token.Factory(), logProvider );
 
-        ReplicatedTokenStateMachine<Token>
-                propertyKeyTokenStateMachine = new ReplicatedTokenStateMachine<>(
-                propertyKeyTokenRegistry, new Token.Factory(),
-                logProvider );
+        ReplicatedTokenStateMachine<Token> propertyKeyTokenStateMachine =
+                new ReplicatedTokenStateMachine<>( propertyKeyTokenRegistry, new Token.Factory(), logProvider );
 
-        ReplicatedTokenStateMachine<RelationshipTypeToken>
-                relationshipTypeTokenStateMachine = new ReplicatedTokenStateMachine<>(
-                relationshipTypeTokenRegistry, new RelationshipTypeToken.Factory(),
-                logProvider );
+        ReplicatedTokenStateMachine<RelationshipTypeToken> relationshipTypeTokenStateMachine =
+                new ReplicatedTokenStateMachine<>( relationshipTypeTokenRegistry, new RelationshipTypeToken.Factory(),
+                        logProvider );
 
-        ReplicatedTransactionStateMachine<CoreMember> replicatedTxStateMachine =
-                new ReplicatedTransactionStateMachine<>( replicatedLockTokenStateMachine,
+        ReplicatedTransactionStateMachine replicatedTxStateMachine =
+                new ReplicatedTransactionStateMachine( replicatedLockTokenStateMachine,
                         config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
                         logging.getInternalLogProvider() );
 
         dependencies.satisfyDependencies( replicatedTxStateMachine );
 
-        CoreStateMachines coreStateMachines = new CoreStateMachines(
-                replicatedTxStateMachine, labelTokenStateMachine, relationshipTypeTokenStateMachine,
-                propertyKeyTokenStateMachine, replicatedLockTokenStateMachine, idAllocationStateMachine,
-                coreState, txLogState, raftLog, localDatabase );
+        CoreStateMachines coreStateMachines = new CoreStateMachines( replicatedTxStateMachine, labelTokenStateMachine,
+                relationshipTypeTokenStateMachine, propertyKeyTokenStateMachine, replicatedLockTokenStateMachine,
+                idAllocationStateMachine, coreState, txLogState, raftLog, localDatabase );
 
-        commitProcessFactory = ( appender, applier, ignored ) ->
-        {
-            TransactionRepresentationCommitProcess localCommit = new TransactionRepresentationCommitProcess(
-                    appender, applier );
+        commitProcessFactory = ( appender, applier, ignored ) -> {
+            TransactionRepresentationCommitProcess localCommit =
+                    new TransactionRepresentationCommitProcess( appender, applier );
             coreStateMachines.refresh( localCommit ); // This gets called when a core-to-core download is performed.
             return new ReplicatedTransactionCommitProcess( replicator );
         };
@@ -465,8 +476,8 @@ public class EnterpriseCoreEditionModule
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
 
-        dependencies.satisfyDependency( createKernelData( fileSystem, platformModule.pageCache, storeDir,
-                config, graphDatabaseFacade, life ) );
+        dependencies.satisfyDependency(
+                createKernelData( fileSystem, platformModule.pageCache, storeDir, config, graphDatabaseFacade, life ) );
 
         life.add( dependencies.satisfyDependency( createAuthManager( config, logging ) ) );
 
@@ -478,40 +489,36 @@ public class EnterpriseCoreEditionModule
 
         constraintSemantics = new EnterpriseConstraintSemantics();
 
-        coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard,
-                transactionStartTimeout );
+        coreAPIAvailabilityGuard =
+                new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
 
         registerRecovery( platformModule.databaseInfo, life, dependencies );
 
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
 
         long leaderLockTokenTimeout = config.get( CoreEdgeClusterSettings.leader_lock_token_timeout );
-        Locks lockManager = createLockManager( config, logging, replicator, myself,
-                raft, leaderLockTokenTimeout, replicatedLockTokenStateMachine );
+        Locks lockManager = createLockManager( config, logging, replicator, myself, raft, leaderLockTokenTimeout,
+                replicatedLockTokenStateMachine );
 
         this.lockManager = dependencies.satisfyDependency( lockManager );
 
-        CatchupServer catchupServer = new CatchupServer( logProvider,
-                new StoreIdSupplier( platformModule ),
+        CatchupServer catchupServer = new CatchupServer( logProvider, new StoreIdSupplier( platformModule ),
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ),
-                new DataSourceSupplier( platformModule ),
-                new CheckpointerSupplier( platformModule.dependencies ),
-                coreState,
-                config.get( CoreEdgeClusterSettings.transaction_listen_address ),
-                platformModule.monitors );
+                new DataSourceSupplier( platformModule ), new CheckpointerSupplier( platformModule.dependencies ),
+                coreState, config.get( CoreEdgeClusterSettings.transaction_listen_address ), platformModule.monitors );
 
         long joinCatchupTimeout = config.get( CoreEdgeClusterSettings.join_catch_up_timeout );
 
-        life.add( CoreServerStartupProcess.createLifeSupport(
-                platformModule.dataSourceManager, replicatedIdGeneratorFactory, raft,
-                coreState, raftServer,
-                catchupServer, raftTimeoutService, membershipWaiter,
-                joinCatchupTimeout, logProvider ) );
+        life.add( CoreServerStartupProcess
+                .createLifeSupport( platformModule.dataSourceManager, replicatedIdGeneratorFactory, raft, coreState,
+                        raftServer, catchupServer, raftTimeoutService, membershipWaiter, joinCatchupTimeout,
+                        logProvider ) );
     }
 
     private RaftLog createRaftLog( Config config, LifeSupport life, FileSystemAbstraction fileSystem,
-            File clusterStateDirectory, CoreReplicatedContentMarshal marshal, LogProvider logProvider )
+            File clusterStateDirectory, CoreReplicatedContentMarshal marshal, LogProvider logProvider,
+            Supplier<DatabaseHealth> databaseHealthSupplier )
     {
         RaftLogImplementation raftLogImplementation =
                 RaftLogImplementation.valueOf( config.get( CoreEdgeClusterSettings.raft_log_implementation ) );
@@ -558,7 +565,7 @@ public class EnterpriseCoreEditionModule
 
     }
 
-    private static RaftInstance<CoreMember> createRaft( LifeSupport life,
+    private static RaftInstance createRaft( LifeSupport life,
                                                         Outbound<AdvertisedSocketAddress, Message> outbound,
                                                         CoreTopologyService discoveryService,
                                                         Config config,
@@ -569,7 +576,7 @@ public class EnterpriseCoreEditionModule
                                                         File clusterStateDirectory,
                                                         CoreMember myself,
                                                         LogProvider logProvider,
-                                                        RaftServer<CoreMember> raftServer,
+                                                        RaftServer raftServer,
                                                         DelayedRenewableTimeoutService raftTimeoutService,
                                                         Supplier<DatabaseHealth> databaseHealthSupplier,
                                                         InFlightMap<Long, RaftLogEntry> inFlightMap,
@@ -579,11 +586,11 @@ public class EnterpriseCoreEditionModule
         StateStorage<TermState> termState;
         try
         {
-            StateStorage<TermState> durableTermState = life.add( new DurableStateStorage<>(
-                    fileSystem, new File( clusterStateDirectory, "term-state" ), "term-state",
-                    new TermState.Marshal(),
-                    config.get( CoreEdgeClusterSettings.term_state_size ), databaseHealthSupplier, logProvider
-            ) );
+            StateStorage<TermState> durableTermState = life.add(
+                    new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "term-state" ),
+                            "term-state", new TermState.Marshal(),
+                            config.get( CoreEdgeClusterSettings.term_state_size ), databaseHealthSupplier,
+                            logProvider ) );
             termState = new MonitoredTermStateStorage( durableTermState, monitors );
         }
         catch ( IOException e )
@@ -591,37 +598,36 @@ public class EnterpriseCoreEditionModule
             throw new RuntimeException( e );
         }
 
-        StateStorage<VoteState<CoreMember>> voteState;
+        StateStorage<VoteState> voteState;
         try
         {
-            voteState = life.add( new DurableStateStorage<>( fileSystem,
-                    new File( clusterStateDirectory, "vote-state" ), "vote-state",
-                    new VoteState.Marshal<>( new CoreMemberMarshal() ),
-                    config.get( CoreEdgeClusterSettings.vote_state_size ), databaseHealthSupplier, logProvider
-            ) );
+            voteState = life.add(
+                    new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "vote-state" ),
+                            "vote-state", new VoteState.Marshal( new CoreMemberMarshal() ),
+                            config.get( CoreEdgeClusterSettings.vote_state_size ), databaseHealthSupplier,
+                            logProvider ) );
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
 
-        StateStorage<RaftMembershipState<CoreMember>> raftMembershipStorage;
+        StateStorage<RaftMembershipState> raftMembershipStorage;
         try
         {
-            raftMembershipStorage = life.add( new DurableStateStorage<>( fileSystem,
-                    new File( clusterStateDirectory, "membership-state" ), "membership-state",
-                    new RaftMembershipState.Marshal<>( new CoreMemberMarshal() ),
-                    config.get( CoreEdgeClusterSettings.raft_membership_state_size ),
-                    databaseHealthSupplier, logProvider
-            ) );
+            raftMembershipStorage = life.add(
+                    new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "membership-state" ),
+                            "membership-state", new RaftMembershipState.Marshal( new CoreMemberMarshal() ),
+                            config.get( CoreEdgeClusterSettings.raft_membership_state_size ), databaseHealthSupplier,
+                            logProvider ) );
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
 
-        LoggingInbound<RaftMessages.RaftMessage<CoreMember>>
-                loggingRaftInbound = new LoggingInbound<>( raftServer, messageLogger, myself.getRaftAddress() );
+        LoggingInbound<RaftMessages.RaftMessage> loggingRaftInbound =
+                new LoggingInbound<>( raftServer, messageLogger, config.get( CoreEdgeClusterSettings.raft_advertised_address ) );
 
         long electionTimeout = config.get( CoreEdgeClusterSettings.leader_election_timeout );
         long heartbeatInterval = electionTimeout / 3;
@@ -630,30 +636,33 @@ public class EnterpriseCoreEditionModule
 
         CoreMemberSetBuilder memberSetBuilder = new CoreMemberSetBuilder();
 
-        RaftOutbound raftOutbound = new RaftOutbound( outbound, localDatabase );
-        LeaderOnlyReplicator<CoreMember> leaderOnlyReplicator = new LeaderOnlyReplicator<>( myself, raftOutbound );
+        RaftOutbound raftOutbound = new RaftOutbound( discoveryService, outbound, localDatabase );
 
-        RaftMembershipManager<CoreMember> raftMembershipManager = new RaftMembershipManager<>( leaderOnlyReplicator,
-                memberSetBuilder, raftLog, logProvider, expectedClusterSize, electionTimeout, Clock.systemUTC(),
-                config.get( CoreEdgeClusterSettings.join_catch_up_timeout ), raftMembershipStorage, localDatabase );
+        SendToMyself leaderOnlyReplicator =
+                new SendToMyself( myself, raftOutbound );
 
-        RaftLogShippingManager<CoreMember> logShipping = new RaftLogShippingManager<>( raftOutbound,
-                logProvider, raftLog,
-                Clock.systemUTC(), myself, raftMembershipManager, electionTimeout,
-                config.get( CoreEdgeClusterSettings.catchup_batch_size ),
-                config.get( CoreEdgeClusterSettings.log_shipping_max_lag ),
-                inFlightMap );
+        RaftMembershipManager raftMembershipManager =
+                new RaftMembershipManager( leaderOnlyReplicator, memberSetBuilder, raftLog, logProvider,
+                        expectedClusterSize, electionTimeout, Clock.systemUTC(),
+                        config.get( CoreEdgeClusterSettings.join_catch_up_timeout ), raftMembershipStorage,
+                        localDatabase );
 
-        RaftInstance<CoreMember> raftInstance = new RaftInstance<>(
-                myself, termState, voteState, raftLog, raftStateMachine, electionTimeout, heartbeatInterval,
-                raftTimeoutService, new NotMyselfSelectionStrategy( discoveryService, myself ),
-                raftOutbound, logProvider,
-                raftMembershipManager, logShipping, databaseHealthSupplier, inFlightMap, monitors, localDatabase );
+        RaftLogShippingManager logShipping =
+                new RaftLogShippingManager( raftOutbound, logProvider, raftLog, Clock.systemUTC(),
+                        myself, raftMembershipManager, electionTimeout,
+                        config.get( CoreEdgeClusterSettings.catchup_batch_size ),
+                        config.get( CoreEdgeClusterSettings.log_shipping_max_lag ), inFlightMap );
 
+        RaftInstance raftInstance =
+                new RaftInstance( myself, termState, voteState, raftLog, raftStateMachine, electionTimeout,
+                        heartbeatInterval, raftTimeoutService,
+                        discoveryService, raftOutbound,
+                        logProvider, raftMembershipManager, logShipping, databaseHealthSupplier, inFlightMap, monitors,
+                        localDatabase );
         int queueSize = config.get( CoreEdgeClusterSettings.raft_in_queue_size );
         int maxBatch = config.get( CoreEdgeClusterSettings.raft_in_queue_max_batch );
-        BatchingMessageHandler<CoreMember> batchingMessageHandler =
-                new BatchingMessageHandler<>( raftInstance, logProvider, queueSize, maxBatch );
+        BatchingMessageHandler batchingMessageHandler =
+                new BatchingMessageHandler( raftInstance, logProvider, queueSize, maxBatch );
 
         life.add( new ContinuousJob( jobScheduler, new JobScheduler.Group( "raft-batch-handler", NEW_THREAD ),
                 batchingMessageHandler ) );
@@ -690,32 +699,31 @@ public class EnterpriseCoreEditionModule
 
     private SchemaWriteGuard createSchemaWriteGuard()
     {
-        return () -> {};
+        return () -> {
+        };
     }
 
     private KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
-                                         Config config, GraphDatabaseAPI graphAPI, LifeSupport life )
+            Config config, GraphDatabaseAPI graphAPI, LifeSupport life )
     {
         DefaultKernelData kernelData = new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphAPI );
         return life.add( kernelData );
     }
 
     private ReplicatedIdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fileSystem,
-                                                                   final ReplicatedIdRangeAcquirer idRangeAcquirer,
-                                                                   final LogProvider logProvider )
+            final ReplicatedIdRangeAcquirer idRangeAcquirer, final LogProvider logProvider )
     {
         return new ReplicatedIdGeneratorFactory( fileSystem, idRangeAcquirer, logProvider );
     }
 
     private Locks createLockManager( final Config config, final LogService logging, final Replicator replicator,
-                                     CoreMember myself, LeaderLocator<CoreMember> leaderLocator,
-                                     long leaderLockTokenTimeout,
-                                     ReplicatedLockTokenStateMachine lockTokenStateMachine )
+            CoreMember myself, LeaderLocator leaderLocator, long leaderLockTokenTimeout,
+            ReplicatedLockTokenStateMachine lockTokenStateMachine )
     {
         Locks localLocks = CommunityEditionModule.createLockManager( config, logging );
 
-        return new LeaderOnlyLockManager<>( myself, replicator, leaderLocator, localLocks,
-                leaderLockTokenTimeout, lockTokenStateMachine );
+        return new LeaderOnlyLockManager( myself, replicator, leaderLocator, localLocks, leaderLockTokenTimeout,
+                lockTokenStateMachine );
     }
 
     private TransactionHeaderInformationFactory createHeaderInformationFactory()
@@ -724,7 +732,7 @@ public class EnterpriseCoreEditionModule
     }
 
     private void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,
-                                   final DependencyResolver dependencyResolver )
+            final DependencyResolver dependencyResolver )
     {
         life.addLifecycleListener( ( instance, from, to ) -> {
             if ( instance instanceof DatabaseAvailability && LifecycleStatus.STARTED.equals( to ) )
@@ -739,17 +747,17 @@ public class EnterpriseCoreEditionModule
     {
         super.doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );
 
-        new RemoveOrphanConstraintIndexesOnStartup( dependencyResolver.resolveDependency( NeoStoreDataSource.class )
-                .getKernel(), dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider() )
-                .perform();
+        new RemoveOrphanConstraintIndexesOnStartup(
+                dependencyResolver.resolveDependency( NeoStoreDataSource.class ).getKernel(),
+                dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider() ).perform();
     }
 
     private final class DefaultKernelData extends KernelData implements Lifecycle
     {
         private final GraphDatabaseAPI graphDb;
 
-        DefaultKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
-                           Config config, GraphDatabaseAPI graphDb )
+        DefaultKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config,
+                GraphDatabaseAPI graphDb )
         {
             super( fileSystem, pageCache, storeDir, config );
             this.graphDb = graphDb;

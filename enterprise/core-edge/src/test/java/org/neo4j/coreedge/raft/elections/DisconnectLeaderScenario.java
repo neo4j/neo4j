@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.helpers.collection.FilteringIterable;
 
 /**
@@ -65,11 +65,11 @@ public class DisconnectLeaderScenario
 
     private long oneIteration( long leaderStabilityMaxTimeMillis ) throws InterruptedException, TimeoutException
     {
-        RaftTestMember oldLeader = ElectionUtil.waitForLeaderAgreement( fixture.rafts, leaderStabilityMaxTimeMillis );
+        CoreMember oldLeader = ElectionUtil.waitForLeaderAgreement( fixture.rafts, leaderStabilityMaxTimeMillis );
         long startTime = System.currentTimeMillis();
 
         fixture.net.disconnect( oldLeader );
-        RaftTestMember newLeader = ElectionUtil.waitForLeaderAgreement( new FilteringIterable<>( fixture.rafts, raft -> !raft.identity().equals( oldLeader ) ), leaderStabilityMaxTimeMillis );
+        CoreMember newLeader = ElectionUtil.waitForLeaderAgreement( new FilteringIterable<>( fixture.rafts, raft -> !raft.identity().equals( oldLeader ) ), leaderStabilityMaxTimeMillis );
         assert !newLeader.equals( oldLeader ); // this should be guaranteed by the waitForLeaderAgreement call
 
         return System.currentTimeMillis() - startTime;

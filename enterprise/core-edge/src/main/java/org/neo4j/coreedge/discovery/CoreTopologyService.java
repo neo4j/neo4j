@@ -19,11 +19,15 @@
  */
 package org.neo4j.coreedge.discovery;
 
-public interface CoreTopologyService extends ReadOnlyTopologyService
+import org.neo4j.kernel.lifecycle.Lifecycle;
+
+public interface CoreTopologyService extends Lifecycle
 {
     void addMembershipListener( Listener listener );
 
     void removeMembershipListener( Listener listener );
+
+    ClusterTopology currentTopology();
 
     interface Listener
     {

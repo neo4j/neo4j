@@ -21,9 +21,8 @@ package org.neo4j.coreedge.server.core;
 
 import java.util.Optional;
 
-import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 
@@ -32,21 +31,21 @@ public class NotMyselfSelectionStrategy implements CoreServerSelectionStrategy
     private final CoreTopologyService discoveryService;
     private final CoreMember myself;
 
-    NotMyselfSelectionStrategy( CoreTopologyService discoveryService, CoreMember myself )
+    public NotMyselfSelectionStrategy( CoreTopologyService discoveryService, CoreMember myself )
     {
         this.discoveryService = discoveryService;
         this.myself = myself;
     }
 
     @Override
-    public AdvertisedSocketAddress coreServer() throws CoreServerSelectionException
+    public CoreMember coreServer() throws CoreServerSelectionException
     {
         Optional<CoreMember> member = discoveryService.currentTopology().coreMembers().stream()
                 .filter( coreMember -> !coreMember.equals( myself ) ).findFirst();
 
-        if( member.isPresent() )
+        if ( member.isPresent() )
         {
-            return member.get().getCoreAddress();
+            return member.get();
         }
         else
         {

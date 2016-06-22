@@ -33,27 +33,25 @@ import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.RaftTestNetwork;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
-import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.NullLogProvider;
 
 public class Fixture
 {
-    private final Set<RaftTestMember> members = new HashSet<>();
-    final Set<RaftInstance<RaftTestMember>> rafts = new HashSet<>();
-    final RaftTestNetwork<RaftTestMember> net;
+    private final Set members = new HashSet<>();
+    final Set<RaftInstance> rafts = new HashSet<>();
+    final RaftTestNetwork net;
     private final List<DelayedRenewableTimeoutService> timeoutServices = new ArrayList<>();
 
-    Fixture( Set<Long> memberIds, RaftTestNetwork<RaftTestMember> net, long electionTimeout, long heartbeatInterval,
+    Fixture( Set<CoreMember> memberIds, RaftTestNetwork net, long electionTimeout, long heartbeatInterval,
              RaftStateMachine stateMachine ) throws Throwable
     {
         this.net = net;
 
-        for ( Long id : memberIds )
+        for ( CoreMember member : memberIds )
         {
-            RaftTestMember member = RaftTestMember.member( id );
-
             RaftTestNetwork.Inbound inbound = net.new Inbound( member );
             RaftTestNetwork.Outbound outbound = net.new Outbound( member );
 
@@ -61,8 +59,8 @@ public class Fixture
 
             DelayedRenewableTimeoutService timeoutService = createTimeoutService();
 
-            RaftInstance<RaftTestMember> raftInstance =
-                    new RaftInstanceBuilder<>( member, memberIds.size(), RaftTestMemberSetBuilder.INSTANCE )
+            RaftInstance raftInstance =
+                    new RaftInstanceBuilder( member, memberIds.size(), RaftTestMemberSetBuilder.INSTANCE )
                             .electionTimeout( electionTimeout )
                             .heartbeatInterval( heartbeatInterval )
                             .inbound( inbound )
@@ -109,7 +107,7 @@ public class Fixture
                 e.printStackTrace();
             }
         }
-        for ( RaftInstance<RaftTestMember> raft : rafts )
+        for ( RaftInstance raft : rafts )
         {
             raft.logShippingManager().destroy();
         }

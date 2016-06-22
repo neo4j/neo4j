@@ -208,9 +208,6 @@ public class CoreEdgeClusterSettings
     @Description( "Interval of pulling updates from cores." )
     public static final Setting<Long> pull_interval = setting( "core_edge.pull_interval", DURATION, "1s" );
 
-    @Description( "Id for a cluster instance. Must be unique within the cluster." )
-    public static final Setting<Integer> server_id = setting( "core_edge.server_id", INTEGER, MANDATORY );
-
     @Description( "The name of the core cluster." )
     @Internal
     public static final Setting<String> cluster_name = setting( "core_edge.cluster_name", STRING, "core-cluster",

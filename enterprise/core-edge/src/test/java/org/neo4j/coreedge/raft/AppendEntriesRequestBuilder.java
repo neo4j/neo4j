@@ -23,63 +23,57 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.store.StoreId;
 
-public class AppendEntriesRequestBuilder<MEMBER>
+public class AppendEntriesRequestBuilder
 {
     private List<RaftLogEntry> logEntries = new LinkedList<>();
     private long leaderCommit = -1;
     private long prevLogTerm = -1;
     private long prevLogIndex = -1;
     private long leaderTerm = -1;
-    private MEMBER from;
-    private StoreId storeId;
+    private CoreMember from;
 
-    public RaftMessages.AppendEntries.Request<MEMBER> build()
+    public RaftMessages.AppendEntries.Request build()
     {
-        return new RaftMessages.AppendEntries.Request<>( from, leaderTerm, prevLogIndex, prevLogTerm,
+        return new RaftMessages.AppendEntries.Request( from, leaderTerm, prevLogIndex, prevLogTerm,
                 logEntries.toArray( new RaftLogEntry[logEntries.size()] ), leaderCommit );
     }
 
-    public AppendEntriesRequestBuilder<MEMBER> from( MEMBER from )
+    public AppendEntriesRequestBuilder from( CoreMember from )
     {
         this.from = from;
         return this;
     }
 
-    public AppendEntriesRequestBuilder<MEMBER> leaderTerm( long leaderTerm )
+    public AppendEntriesRequestBuilder leaderTerm( long leaderTerm )
     {
         this.leaderTerm = leaderTerm;
         return this;
     }
 
-    public AppendEntriesRequestBuilder<MEMBER> prevLogIndex( long prevLogIndex )
+    public AppendEntriesRequestBuilder prevLogIndex( long prevLogIndex )
     {
         this.prevLogIndex = prevLogIndex;
         return this;
     }
 
-    public AppendEntriesRequestBuilder<MEMBER> prevLogTerm( long prevLogTerm )
+    public AppendEntriesRequestBuilder prevLogTerm( long prevLogTerm )
     {
         this.prevLogTerm = prevLogTerm;
         return this;
     }
 
-    public AppendEntriesRequestBuilder<MEMBER> logEntry( RaftLogEntry logEntry )
+    public AppendEntriesRequestBuilder logEntry( RaftLogEntry logEntry )
     {
         logEntries.add( logEntry );
         return this;
     }
 
-    public AppendEntriesRequestBuilder<MEMBER> leaderCommit( long leaderCommit )
+    public AppendEntriesRequestBuilder leaderCommit( long leaderCommit )
     {
         this.leaderCommit = leaderCommit;
-        return this;
-    }
-
-    public AppendEntriesRequestBuilder<MEMBER> storeId( StoreId storeId )
-    {
-        this.storeId = storeId;
         return this;
     }
 }

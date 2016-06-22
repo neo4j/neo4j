@@ -33,16 +33,16 @@ import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class BatchingMessageHandler<MEMBER> implements Runnable, MessageHandler<RaftMessage<MEMBER>>
+public class BatchingMessageHandler implements Runnable, MessageHandler<RaftMessage>
 {
     private final Log log;
-    private final MessageHandler<RaftMessage<MEMBER>> innerHandler;
+    private final MessageHandler<RaftMessage> innerHandler;
 
-    private final BlockingQueue<RaftMessage<MEMBER>> messageQueue;
+    private final BlockingQueue<RaftMessage> messageQueue;
     private final int maxBatch;
-    private final List<RaftMessage<MEMBER>> batch;
+    private final List<RaftMessage> batch;
 
-    public BatchingMessageHandler( MessageHandler<RaftMessage<MEMBER>> innerHandler, LogProvider logProvider,
+    public BatchingMessageHandler( MessageHandler<RaftMessage> innerHandler, LogProvider logProvider,
                                    int queueSize, int maxBatch )
     {
         this.innerHandler = innerHandler;
@@ -54,13 +54,13 @@ public class BatchingMessageHandler<MEMBER> implements Runnable, MessageHandler<
     }
 
     @Override
-    public boolean validate( RaftMessage<MEMBER> message, StoreId storeId )
+    public boolean validate( RaftMessage message, StoreId storeId )
     {
         return innerHandler.validate( message, storeId );
     }
 
     @Override
-    public void handle( RaftMessage<MEMBER> message )
+    public void handle( RaftMessage message )
     {
         try
         {
@@ -75,7 +75,7 @@ public class BatchingMessageHandler<MEMBER> implements Runnable, MessageHandler<
     @Override
     public void run()
     {
-        RaftMessage<MEMBER> message = null;
+        RaftMessage message = null;
         try
         {
             message = messageQueue.poll( 1, SECONDS );
@@ -102,11 +102,11 @@ public class BatchingMessageHandler<MEMBER> implements Runnable, MessageHandler<
         }
     }
 
-    private void collateAndHandleBatch( List<RaftMessage<MEMBER>> batch )
+    private void collateAndHandleBatch( List<RaftMessage> batch )
     {
-        RaftMessages.NewEntry.Batch<MEMBER> batchRequest = null;
+        RaftMessages.NewEntry.Batch batchRequest = null;
 
-        for ( RaftMessage<MEMBER> message : batch )
+        for ( RaftMessage message : batch )
         {
             if ( message instanceof RaftMessages.NewEntry.Request )
             {
@@ -114,7 +114,7 @@ public class BatchingMessageHandler<MEMBER> implements Runnable, MessageHandler<
 
                 if ( batchRequest == null )
                 {
-                    batchRequest = new RaftMessages.NewEntry.Batch<>( batch.size() );
+                    batchRequest = new RaftMessages.NewEntry.Batch( batch.size() );
                 }
                 batchRequest.add( newEntryRequest.content() );
             }

@@ -21,22 +21,24 @@ package org.neo4j.coreedge.raft.membership;
 
 import java.util.Set;
 
+import org.neo4j.coreedge.server.CoreMember;
+
 /**
  * Exposes a view of the members of a Raft cluster. Essentially it gives access to two sets - the set of voting
  * members and the set of replication members.
  * This class also allows for listeners to be notified of membership changes.
  */
-public interface RaftMembership<MEMBER>
+public interface RaftMembership
 {
     /**
      * @return members whose votes count towards consensus. The returned set should be considered immutable.
      */
-    Set<MEMBER> votingMembers();
+    Set<CoreMember> votingMembers();
 
     /**
      * @return members to which replication should be attempted. The returned set should be considered immutable.
      */
-    Set<MEMBER> replicationMembers();
+    Set<CoreMember> replicationMembers();
 
     long logIndex();
 

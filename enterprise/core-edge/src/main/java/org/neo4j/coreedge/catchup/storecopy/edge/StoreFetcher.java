@@ -26,7 +26,7 @@ import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.catchup.tx.edge.TransactionLogCatchUpFactory;
 import org.neo4j.coreedge.catchup.tx.edge.TransactionLogCatchUpWriter;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.logging.Log;
@@ -56,7 +56,7 @@ public class StoreFetcher
         log = logProvider.getLog( getClass() );
     }
 
-    public void copyStore( AdvertisedSocketAddress from, File storeDir ) throws StoreCopyFailedException
+    public void copyStore( CoreMember from, File storeDir ) throws StoreCopyFailedException
     {
         try
         {

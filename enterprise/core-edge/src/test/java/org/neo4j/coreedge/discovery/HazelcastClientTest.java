@@ -19,13 +19,6 @@
  */
 package org.neo4j.coreedge.discovery;
 
-import java.net.UnknownHostException;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.Spliterator;
-
 import com.hazelcast.core.Cluster;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
@@ -34,14 +27,20 @@ import com.hazelcast.core.ItemListener;
 import com.hazelcast.core.Member;
 import org.junit.Test;
 
+import java.net.UnknownHostException;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.Spliterator;
+import java.util.UUID;
+
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.lang.String.format;
-
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -49,9 +48,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static org.neo4j.coreedge.discovery.HazelcastServerLifecycle.RAFT_SERVER;
-import static org.neo4j.coreedge.discovery.HazelcastServerLifecycle.TRANSACTION_SERVER;
+import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.BOLT_SERVER;
+import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.MEMBER_UUID;
+import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.RAFT_SERVER;
+import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.TRANSACTION_SERVER;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class HazelcastClientTest
@@ -230,8 +230,10 @@ public class HazelcastClientTest
     private Member makeMember( int id ) throws UnknownHostException
     {
         Member member = mock( Member.class );
+        when( member.getStringAttribute( MEMBER_UUID ) ).thenReturn( UUID.randomUUID().toString() );
         when( member.getStringAttribute( TRANSACTION_SERVER ) ).thenReturn( format( "host%d:%d", id, (7000 + id) ) );
         when( member.getStringAttribute( RAFT_SERVER ) ).thenReturn( format( "host%d:%d", id, (6000 + id) ) );
+        when( member.getStringAttribute( BOLT_SERVER ) ).thenReturn( format( "host%d:%d", id, (5000 + id) ) );
         return member;
     }
 

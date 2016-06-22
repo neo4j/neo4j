@@ -42,7 +42,6 @@ import org.neo4j.coreedge.raft.state.follower.FollowerState;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
-import org.neo4j.coreedge.server.RaftTestMember;
 
 import static java.util.Collections.emptySet;
 import static org.junit.Assert.assertEquals;
@@ -50,6 +49,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.neo4j.coreedge.raft.ReplicatedInteger.valueOf;
 import static org.neo4j.coreedge.raft.roles.Role.CANDIDATE;
+import static org.neo4j.coreedge.server.RaftTestMember.member;
 
 public class RaftStateTest
 {
@@ -61,9 +61,9 @@ public class RaftStateTest
 
         //given
         InFlightMap<Long,RaftLogEntry> cache = new InFlightMap<>();
-        RaftState<RaftTestMember> raftState = new RaftState<>( new RaftTestMember( 0 ),
+        RaftState raftState = new RaftState( member( 0 ),
                 new InMemoryStateStorage<>( new TermState() ), new FakeMembership(), new InMemoryRaftLog(),
-                new InMemoryStateStorage<>( new VoteState<>() ), cache );
+                new InMemoryStateStorage<>( new VoteState() ), cache );
 
         List<LogCommand> logCommands = new LinkedList<LogCommand>()
         {{
@@ -75,8 +75,8 @@ public class RaftStateTest
             add( new AppendLogEntry( 3, new RaftLogEntry( 0L, valueOf( 5 ) ) ) );
         }};
 
-        Outcome<RaftTestMember> raftTestMemberOutcome =
-                new Outcome<>( CANDIDATE, 0, null, -1, null, new HashSet<>(), -1, initialFollowerStates(), true,
+        Outcome raftTestMemberOutcome =
+                new Outcome( CANDIDATE, 0, null, -1, null, new HashSet<>(), -1, initialFollowerStates(), true,
                         logCommands, emptyOutgoingMessages(), Collections.emptySet(), -1 );
 
         //when
@@ -94,31 +94,31 @@ public class RaftStateTest
     public void shouldRemoveFollowerStateAfterBecomingLeader() throws Exception
     {
         // given
-        RaftState<RaftTestMember> raftState = new RaftState<>( new RaftTestMember( 0 ),
+        RaftState raftState = new RaftState( member( 0 ),
                 new InMemoryStateStorage<>( new TermState() ),
                 new FakeMembership(), new InMemoryRaftLog(),
-                new InMemoryStateStorage<>( new VoteState<>( ) ),
+                new InMemoryStateStorage<>( new VoteState( ) ),
                 new InFlightMap<>());
 
-        raftState.update( new Outcome<>( CANDIDATE, 1, null, -1, null, new HashSet<>(), -1, initialFollowerStates(), true, emptyLogCommands(),
+        raftState.update( new Outcome( CANDIDATE, 1, null, -1, null, new HashSet<>(), -1, initialFollowerStates(), true, emptyLogCommands(),
                 emptyOutgoingMessages(), Collections.emptySet(), -1) );
 
         // when
-        raftState.update( new Outcome<>( CANDIDATE, 1, null, -1, null, new HashSet<>(), -1, new FollowerStates<>(), true, emptyLogCommands(),
+        raftState.update( new Outcome( CANDIDATE, 1, null, -1, null, new HashSet<>(), -1, new FollowerStates<>(), true, emptyLogCommands(),
                 emptyOutgoingMessages(), Collections.emptySet(), -1) );
 
         // then
         assertEquals( 0, raftState.followerStates().size() );
     }
 
-    private Collection<RaftMessages.Directed<RaftTestMember>> emptyOutgoingMessages()
+    private Collection<RaftMessages.Directed> emptyOutgoingMessages()
     {
         return new ArrayList<>();
     }
 
-    private FollowerStates<RaftTestMember> initialFollowerStates()
+    private FollowerStates initialFollowerStates()
     {
-        return new FollowerStates<>( new FollowerStates<>(), new RaftTestMember( 1 ), new FollowerState() );
+        return new FollowerStates<>( new FollowerStates<>(), member( 1 ), new FollowerState() );
     }
 
     private Collection<LogCommand> emptyLogCommands()
@@ -126,16 +126,16 @@ public class RaftStateTest
         return Collections.emptyList();
     }
 
-    private class FakeMembership implements RaftMembership<RaftTestMember>
+    private class FakeMembership implements RaftMembership
     {
         @Override
-        public Set<RaftTestMember> votingMembers()
+        public Set votingMembers()
         {
             return emptySet();
         }
 
         @Override
-        public Set<RaftTestMember> replicationMembers()
+        public Set replicationMembers()
         {
             return emptySet();
         }

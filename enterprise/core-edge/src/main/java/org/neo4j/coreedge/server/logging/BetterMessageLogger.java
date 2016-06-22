@@ -19,12 +19,12 @@
  */
 package org.neo4j.coreedge.server.logging;
 
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
 import java.io.PrintWriter;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.lang.String.format;
 import static java.lang.String.valueOf;

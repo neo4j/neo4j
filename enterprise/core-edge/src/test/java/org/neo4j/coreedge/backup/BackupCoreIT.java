@@ -27,8 +27,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
@@ -38,6 +38,7 @@ import org.neo4j.coreedge.convert.ConversionVerifier;
 import org.neo4j.coreedge.convert.ConvertClassicStoreCommand;
 import org.neo4j.coreedge.convert.GenerateClusterSeedCommand;
 import org.neo4j.coreedge.discovery.Cluster;
+import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.Node;
@@ -156,7 +157,7 @@ public class BackupCoreIT
         cluster.start();
 
         // then
-        Set<CoreGraphDatabase> coreGraphDatabases = cluster.coreServers();
+        Collection<CoreGraphDatabase> coreGraphDatabases = cluster.coreServers();
         Stream<DbRepresentation> dbRepresentations = coreGraphDatabases.stream().map( DbRepresentation::of );
         dbRepresentations.forEach( afterReSeed -> assertEquals( beforeBackup, afterReSeed ) );
 
@@ -186,7 +187,9 @@ public class BackupCoreIT
     }
 
     static String backupAddress(CoreGraphDatabase db) {
-        InetSocketAddress inetSocketAddress = db.id().getCoreAddress().socketAddress();
+        InetSocketAddress inetSocketAddress = db.getDependencyResolver()
+                .resolveDependency( Config.class ).get( CoreEdgeClusterSettings.transaction_advertised_address )
+                .socketAddress();
         return inetSocketAddress.getHostName() + ":" + (inetSocketAddress.getPort() + 2000);
     }
 

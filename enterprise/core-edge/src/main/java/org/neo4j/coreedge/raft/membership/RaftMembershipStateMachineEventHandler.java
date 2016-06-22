@@ -23,59 +23,60 @@ import java.util.Set;
 
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
+import org.neo4j.coreedge.server.CoreMember;
 
-interface RaftMembershipStateMachineEventHandler<MEMBER>
+interface RaftMembershipStateMachineEventHandler
 {
-    RaftMembershipStateMachineEventHandler<MEMBER> onRole( Role role );
+    RaftMembershipStateMachineEventHandler onRole( Role role );
 
-    RaftMembershipStateMachineEventHandler<MEMBER> onRaftGroupCommitted();
+    RaftMembershipStateMachineEventHandler onRaftGroupCommitted();
 
-    RaftMembershipStateMachineEventHandler<MEMBER> onFollowerStateChange( FollowerStates<MEMBER> followerStates );
+    RaftMembershipStateMachineEventHandler onFollowerStateChange( FollowerStates followerStates );
 
-    RaftMembershipStateMachineEventHandler<MEMBER> onMissingMember( MEMBER member );
+    RaftMembershipStateMachineEventHandler onMissingMember( CoreMember member );
 
-    RaftMembershipStateMachineEventHandler<MEMBER> onSuperfluousMember( MEMBER member );
+    RaftMembershipStateMachineEventHandler onSuperfluousMember( CoreMember member );
 
-    RaftMembershipStateMachineEventHandler<MEMBER> onTargetChanged( Set<MEMBER> targetMembers );
+    RaftMembershipStateMachineEventHandler onTargetChanged( Set targetMembers );
 
     void onExit();
 
     void onEntry();
 
-    abstract class Adapter<MEMBER> implements RaftMembershipStateMachineEventHandler<MEMBER>
+    abstract class Adapter implements RaftMembershipStateMachineEventHandler
     {
         @Override
-        public RaftMembershipStateMachineEventHandler<MEMBER> onRole( Role role )
+        public RaftMembershipStateMachineEventHandler onRole( Role role )
         {
             return this;
         }
 
         @Override
-        public RaftMembershipStateMachineEventHandler<MEMBER> onRaftGroupCommitted()
+        public RaftMembershipStateMachineEventHandler onRaftGroupCommitted()
         {
             return this;
         }
 
         @Override
-        public RaftMembershipStateMachineEventHandler<MEMBER> onMissingMember( MEMBER member )
+        public RaftMembershipStateMachineEventHandler onMissingMember( CoreMember member )
         {
             return this;
         }
 
         @Override
-        public RaftMembershipStateMachineEventHandler<MEMBER> onSuperfluousMember( MEMBER member )
+        public RaftMembershipStateMachineEventHandler onSuperfluousMember( CoreMember member )
         {
             return this;
         }
 
         @Override
-        public RaftMembershipStateMachineEventHandler<MEMBER> onFollowerStateChange( FollowerStates<MEMBER> followerStates )
+        public RaftMembershipStateMachineEventHandler onFollowerStateChange( FollowerStates followerStates )
         {
             return this;
         }
 
         @Override
-        public RaftMembershipStateMachineEventHandler<MEMBER> onTargetChanged( Set<MEMBER> targetMembers )
+        public RaftMembershipStateMachineEventHandler onTargetChanged( Set targetMembers )
         {
             return this;
         }

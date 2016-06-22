@@ -22,8 +22,6 @@ package org.neo4j.coreedge.catchup.storecopy;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.coreedge.catchup.RequestMessageType;
@@ -38,9 +36,12 @@ import org.neo4j.coreedge.catchup.tx.edge.TxPullRequest;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponse;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseListener;
 import org.neo4j.coreedge.catchup.tx.edge.TxStreamCompleteListener;
+import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.network.Message;
+import org.neo4j.coreedge.raft.net.CoreOutbound;
+import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.state.CoreSnapshot;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.NonBlockingChannels;
 import org.neo4j.coreedge.server.SenderService;
 import org.neo4j.helpers.Listeners;
@@ -55,30 +56,31 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
                                                                      TxStreamCompleteListener, TxPullResponseListener, CoreSnapshotListener
 {
     private final PullRequestMonitor pullRequestMonitor;
+    private final SenderService senderService;
     private StoreFileStreams storeFileStreams = null;
     private final Listeners<StoreFileStreamingCompleteListener> storeFileStreamingCompleteListeners = new Listeners<>();
     private final Listeners<TxStreamCompleteListener> txStreamCompleteListeners = new Listeners<>();
     private final Listeners<TxPullResponseListener> txPullResponseListeners = new Listeners<>();
     private CompletableFuture<CoreSnapshot> coreSnapshotFuture;
 
-    private SenderService senderService;
+    private Outbound<CoreMember, Message> outbound;
 
-    public CoreClient( LogProvider logProvider,
-                       ChannelInitializer<SocketChannel> channelInitializer, Monitors monitors, int maxQueueSize,
-                       NonBlockingChannels nonBlockingChannels )
+    public CoreClient( LogProvider logProvider, ChannelInitializer<SocketChannel> channelInitializer, Monitors monitors,
+            int maxQueueSize, NonBlockingChannels nonBlockingChannels, CoreTopologyService discoveryService )
     {
-        this.senderService = new SenderService( channelInitializer, logProvider,
-                monitors, maxQueueSize, nonBlockingChannels );
+        senderService =
+                new SenderService( channelInitializer, logProvider, monitors, maxQueueSize, nonBlockingChannels );
+        this.outbound = new CoreOutbound( discoveryService, senderService );
         this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
     }
 
-    public void requestStore( AdvertisedSocketAddress serverAddress )
+    public void requestStore( CoreMember serverAddress )
     {
         GetStoreRequest getStoreRequest = new GetStoreRequest();
         send( serverAddress, RequestMessageType.STORE, getStoreRequest );
     }
 
-    public CompletableFuture<CoreSnapshot> requestCoreSnapshot( AdvertisedSocketAddress serverAddress )
+    public CompletableFuture<CoreSnapshot> requestCoreSnapshot( CoreMember serverAddress )
     {
         coreSnapshotFuture = new CompletableFuture<>();
         CoreSnapshotRequest coreSnapshotRequest = new CoreSnapshotRequest();
@@ -86,16 +88,16 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
         return coreSnapshotFuture;
     }
 
-    public void pollForTransactions( AdvertisedSocketAddress serverAddress, long lastTransactionId )
+    public void pollForTransactions( CoreMember serverAddress, long lastTransactionId )
     {
         TxPullRequest txPullRequest = new TxPullRequest( lastTransactionId );
         send( serverAddress, RequestMessageType.TX_PULL_REQUEST, txPullRequest );
         pullRequestMonitor.txPullRequest( lastTransactionId );
     }
 
-    private void send( AdvertisedSocketAddress to, RequestMessageType messageType, Message contentMessage )
+    private void send( CoreMember to, RequestMessageType messageType, Message contentMessage )
     {
-        senderService.send( to, asList( messageType, contentMessage ) );
+        outbound.send( to,  asList( messageType, contentMessage ) );
     }
 
     @Override

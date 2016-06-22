@@ -24,7 +24,7 @@ import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.raft.replication.tx.RetryStrategy;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -80,8 +80,7 @@ public class EdgeServerStartupProcess implements Lifecycle
         {
             try
             {
-
-                AdvertisedSocketAddress transactionServer = connectionStrategy.coreServer();
+                CoreMember transactionServer = connectionStrategy.coreServer();
                 log.info( "Server starting, connecting to core server at %s", transactionServer.toString() );
 
                 discoveryService.registerEdgeServer( extractBoltAddress( config ) );

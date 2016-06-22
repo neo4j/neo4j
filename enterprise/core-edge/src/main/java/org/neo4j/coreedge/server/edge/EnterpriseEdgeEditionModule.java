@@ -33,8 +33,8 @@ import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyClient;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
 import org.neo4j.coreedge.catchup.tx.edge.BatchingTxApplier;
 import org.neo4j.coreedge.catchup.tx.edge.TransactionLogCatchUpFactory;
-import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
 import org.neo4j.coreedge.catchup.tx.edge.TxPollingClient;
+import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.raft.ContinuousJob;
@@ -163,7 +163,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         EdgeToCoreClient.ChannelInitializer channelInitializer = new EdgeToCoreClient.ChannelInitializer( logProvider, nonBlockingChannels );
         int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
         EdgeToCoreClient edgeToCoreClient = life.add( new EdgeToCoreClient( logProvider,
-                channelInitializer, platformModule.monitors, maxQueueSize, nonBlockingChannels ) );
+                channelInitializer, platformModule.monitors, maxQueueSize, nonBlockingChannels, discoveryService ) );
         channelInitializer.setOwner( edgeToCoreClient );
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );

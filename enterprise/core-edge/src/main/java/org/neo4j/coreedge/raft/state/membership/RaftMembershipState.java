@@ -26,22 +26,23 @@ import java.util.Set;
 import org.neo4j.coreedge.raft.membership.RaftMembership;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.raft.state.StateMarshal;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
-public class RaftMembershipState<MEMBER> implements RaftMembership<MEMBER>
+public class RaftMembershipState implements RaftMembership
 {
-    private Set<MEMBER> additionalReplicationMembers = new HashSet<>();
+    private Set<CoreMember> additionalReplicationMembers = new HashSet<>();
 
-    private volatile Set<MEMBER> votingMembers = new HashSet<>();
-    private volatile Set<MEMBER> replicationMembers = new HashSet<>(); // votingMembers + additionalReplicationMembers
+    private volatile Set<CoreMember> votingMembers = new HashSet<>();
+    private volatile Set<CoreMember> replicationMembers = new HashSet<>(); // votingMembers + additionalReplicationMembers
 
     private final Set<Listener> listeners;
 
     private long logIndex = -1; // First log index is 0, so -1 is used here as "unknown" value
 
-    private RaftMembershipState( Set<MEMBER> members, long logIndex )
+    private RaftMembershipState( Set<CoreMember> members, long logIndex )
     {
         this.votingMembers = members;
         this.logIndex = logIndex;
@@ -54,7 +55,7 @@ public class RaftMembershipState<MEMBER> implements RaftMembership<MEMBER>
         this.listeners = new HashSet<>();
     }
 
-    public synchronized void setVotingMembers( Set<MEMBER> newVotingMembers )
+    public synchronized void setVotingMembers( Set<CoreMember> newVotingMembers )
     {
         this.votingMembers = new HashSet<>( newVotingMembers );
 
@@ -62,7 +63,7 @@ public class RaftMembershipState<MEMBER> implements RaftMembership<MEMBER>
         notifyListeners();
     }
 
-    public synchronized void addAdditionalReplicationMember( MEMBER member )
+    public synchronized void addAdditionalReplicationMember( CoreMember member )
     {
         additionalReplicationMembers.add( member );
 
@@ -70,7 +71,7 @@ public class RaftMembershipState<MEMBER> implements RaftMembership<MEMBER>
         notifyListeners();
     }
 
-    public synchronized void removeAdditionalReplicationMember( MEMBER member )
+    public synchronized void removeAdditionalReplicationMember( CoreMember member )
     {
         additionalReplicationMembers.remove( member );
 
@@ -85,20 +86,20 @@ public class RaftMembershipState<MEMBER> implements RaftMembership<MEMBER>
 
     private void updateReplicationMembers()
     {
-        HashSet<MEMBER> newReplicationMembers = new HashSet<>( votingMembers );
+        HashSet newReplicationMembers = new HashSet<>( votingMembers );
 
         newReplicationMembers.addAll( additionalReplicationMembers );
         this.replicationMembers = newReplicationMembers;
     }
 
     @Override
-    public Set<MEMBER> votingMembers()
+    public Set votingMembers()
     {
         return new HashSet<>( votingMembers );
     }
 
     @Override
-    public Set<MEMBER> replicationMembers()
+    public Set replicationMembers()
     {
         return new HashSet<>( replicationMembers );
     }
@@ -126,39 +127,39 @@ public class RaftMembershipState<MEMBER> implements RaftMembership<MEMBER>
         listeners.forEach( Listener::onMembershipChanged );
     }
 
-    public static class Marshal<MEMBER> implements StateMarshal<RaftMembershipState<MEMBER>>
+    public static class Marshal implements StateMarshal<RaftMembershipState>
     {
-        private final ChannelMarshal<MEMBER> memberMarshal;
+        private final ChannelMarshal<CoreMember> memberMarshal;
 
-        public Marshal( ChannelMarshal<MEMBER> marshal )
+        public Marshal( ChannelMarshal<CoreMember> marshal )
         {
             this.memberMarshal = marshal;
         }
 
         @Override
-        public void marshal( RaftMembershipState<MEMBER> state, WritableChannel channel ) throws IOException
+        public void marshal( RaftMembershipState state, WritableChannel channel ) throws IOException
         {
             channel.putLong( state.logIndex );
             channel.putInt( state.votingMembers.size() );
-            for ( MEMBER votingMember : state.votingMembers )
+            for ( CoreMember votingMember : state.votingMembers )
             {
                 memberMarshal.marshal( votingMember, channel );
             }
         }
 
         @Override
-        public RaftMembershipState<MEMBER> unmarshal( ReadableChannel source ) throws IOException
+        public RaftMembershipState unmarshal( ReadableChannel source ) throws IOException
         {
             try
             {
                 long logIndex = source.getLong();
                 int memberCount = source.getInt();
-                Set<MEMBER> members = new HashSet<>();
+                Set<CoreMember> members = new HashSet<>();
                 for ( int i = 0; i < memberCount; i++ )
                 {
                     members.add( memberMarshal.unmarshal( source ) );
                 }
-                return new RaftMembershipState<>( members, logIndex );
+                return new RaftMembershipState( members, logIndex );
             }
             catch ( ReadPastEndException noMoreBytes )
             {
@@ -167,13 +168,13 @@ public class RaftMembershipState<MEMBER> implements RaftMembership<MEMBER>
         }
 
         @Override
-        public RaftMembershipState<MEMBER> startState()
+        public RaftMembershipState startState()
         {
-            return new RaftMembershipState<>();
+            return new RaftMembershipState();
         }
 
         @Override
-        public long ordinal( RaftMembershipState<MEMBER> state )
+        public long ordinal( RaftMembershipState state )
         {
             return state.logIndex();
         }
