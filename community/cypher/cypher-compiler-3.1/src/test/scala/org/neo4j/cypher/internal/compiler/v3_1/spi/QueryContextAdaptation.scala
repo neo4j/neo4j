@@ -126,6 +126,8 @@ trait QueryContextAdaptation {
 
   override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]): scala.Iterator[Array[AnyRef]] = ???
 
+  override def callSchemaWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = ???
+
   override def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = ???
 
   override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = ???

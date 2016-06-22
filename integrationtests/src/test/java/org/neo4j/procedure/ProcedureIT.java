@@ -55,6 +55,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 import org.neo4j.kernel.impl.proc.JarBuilder;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.logging.AssertableLogProvider;
@@ -72,6 +75,8 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
+import static org.neo4j.procedure.Procedure.Access.WRITE;
+import static org.neo4j.procedure.Procedure.Scope.SCHEMA;
 
 public class ProcedureIT
 {
@@ -371,6 +376,93 @@ public class ProcedureIT
         {
             assertEquals( 1, db.getAllNodes().stream().count() );
             tx.success();
+        }
+    }
+
+    @Test
+    public void shouldDenyReadOnlyProcedureToPerformSchema() throws Throwable
+    {
+        // Expect
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage( "Schema operations are not allowed" );
+
+        // Give
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            db.execute( "CALL org.neo4j.procedure.readOnlyTryingToWriteSchema" ).next();
+        }
+    }
+
+    @Test
+    public void shouldDenyReadWriteProcedureToPerformSchema() throws Throwable
+    {
+        // Expect
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage( "Schema operations are not allowed" );
+
+        // Give
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            db.execute( "CALL org.neo4j.procedure.readWriteTryingToWriteSchema" ).next();
+        }
+    }
+
+    @Test
+    public void shouldAllowSchemaProcedureToPerformSchema() throws Throwable
+    {
+        // Give
+        try ( Transaction tx = db.beginTx() )
+        {
+            // When
+            db.execute( "CALL org.neo4j.procedure.schemaProcedure" );
+            tx.success();
+        }
+
+        // Then
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertTrue( db.schema().getConstraints().iterator().hasNext() );
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldAllowSchemaCallReadOnly() throws Throwable
+    {
+        // Given
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            nodeId = db.createNode().getId();
+            tx.success();
+        }
+
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute( "CALL org.neo4j.procedure.schemaCallReadProcedure({id})", map( "id", nodeId ) );
+
+            // Then
+            Node node = (Node) res.next().get( "node" );
+            assertThat( node.getId(), equalTo( nodeId ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldDenySchemaProcedureToPerformWrite() throws Throwable
+    {
+        // Expect
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage( "Cannot perform data updates in a transaction that has performed schema updates" );
+
+        // Give
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            db.execute( "CALL org.neo4j.procedure.schemaTryingToWrite" ).next();
         }
     }
 
@@ -923,16 +1015,14 @@ public class ProcedureIT
             return Stream.empty();
         }
 
-        @Procedure
-        @PerformsWrites
+        @Procedure( access = WRITE )
         public Stream<Output> writingProcedure()
         {
             db.createNode();
             return Stream.empty();
         }
 
-        @Procedure
-        @PerformsWrites
+        @Procedure( access = WRITE )
         public Stream<NodeOutput> createNode( @Name( "value" ) String value )
         {
             Node node = db.createNode();
@@ -950,8 +1040,7 @@ public class ProcedureIT
                     .map( ( row ) -> new Output( 0 ) );
         }
 
-        @Procedure
-        @PerformsWrites
+        @Procedure( access = WRITE )
         public Stream<Output> writeProcedureCallingWriteProcedure()
         {
             return db.execute( "CALL org.neo4j.procedure.writingProcedure" )
@@ -959,8 +1048,7 @@ public class ProcedureIT
                     .map( ( row ) -> new Output( 0 ) );
         }
 
-        @Procedure
-        @PerformsWrites
+        @Procedure( access = WRITE )
         public void sideEffect( @Name( "value" ) String value )
         {
             db.createNode( Label.label( value ) );
@@ -972,15 +1060,13 @@ public class ProcedureIT
             db.shutdown();
         }
 
-        @Procedure
-        @PerformsWrites
+        @Procedure( access = WRITE )
         public void delegatingSideEffect( @Name( "value" ) String value )
         {
             db.execute( "CALL org.neo4j.procedure.sideEffect", map( "value", value ) );
         }
 
-        @Procedure
-        @PerformsWrites
+        @Procedure( access = WRITE )
         public void unsupportedProcedure()
         {
             jobs.submit( () -> {
@@ -1005,8 +1091,7 @@ public class ProcedureIT
                 .map( record -> new PathOutputRecord( (Path) record.getOrDefault( "p", null ) ) );
         }
 
-        @Procedure
-        @PerformsWrites
+        @Procedure( access = WRITE )
         public Stream<NodeListRecord> nodeList()
         {
             List<Node> nodesList = new ArrayList<>();
@@ -1014,6 +1099,41 @@ public class ProcedureIT
             nodesList.add( db.createNode() );
 
             return Stream.of( new NodeListRecord( nodesList ) );
+        }
+
+        @Procedure
+        public void readOnlyTryingToWriteSchema()
+        {
+            db.execute( "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" );
+        }
+
+        @Procedure
+        public void readWriteTryingToWriteSchema()
+        {
+            db.execute( "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" );
+        }
+
+        @Procedure( scope = SCHEMA )
+        public void schemaProcedure()
+        {
+            db.execute( "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" );
+        }
+
+        @Procedure( scope = SCHEMA )
+        public Stream<NodeOutput> schemaCallReadProcedure( @Name( "id" ) long id )
+        {
+            return db.execute( "CALL org.neo4j.procedure.node(" + id + ")" ).stream().map( record -> {
+                NodeOutput n = new NodeOutput();
+                n.setNode( (Node) record.get( "node" ) );
+                return n;
+            } );
+        }
+
+        @Procedure( scope = SCHEMA )
+        public void schemaTryingToWrite()
+        {
+            db.execute( "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" );
+            db.createNode();
         }
     }
 

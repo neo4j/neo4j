@@ -135,6 +135,9 @@ class ExceptionTranslatingQueryContextFor3_1(val inner: QueryContext) extends Qu
   override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] =
     translateIterator(inner.callReadWriteProcedure(name, args))
 
+  override def callSchemaWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] =
+    translateIterator(inner.callSchemaWriteProcedure(name, args))
+
   override def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] =
     translateIterator(inner.callDbmsProcedure(name, args))
 

@@ -113,6 +113,10 @@ public class ReflectiveProcedureCompiler
         {
             mode = ProcedureSignature.Mode.DBMS;
         }
+        else if ( procedure.scope().equals( Procedure.Scope.SCHEMA ) )
+        {
+            mode = ProcedureSignature.Mode.SCHEMA_WRITE;
+        }
         else if ( procedure.access().equals( Procedure.Access.WRITE ) ||
                 method.isAnnotationPresent( PerformsWrites.class ) )
         {
