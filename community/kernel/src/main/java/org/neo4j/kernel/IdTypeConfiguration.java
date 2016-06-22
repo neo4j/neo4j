@@ -20,41 +20,26 @@
 package org.neo4j.kernel;
 
 /**
- * @deprecated This will be moved to internal packages in the next major release.
+ * Configuration for any specific id type
+ * @see IdType
+ * @see IdTypeConfigurationProvider
  */
-@Deprecated
-public enum IdType
+public class IdTypeConfiguration
 {
-    NODE( 35 ),
-    RELATIONSHIP( 35 ),
-    PROPERTY( 36 ),
-    STRING_BLOCK( 36 ),
-    ARRAY_BLOCK( 36 ),
-    PROPERTY_KEY_TOKEN,
-    PROPERTY_KEY_TOKEN_NAME,
-    RELATIONSHIP_TYPE_TOKEN( 16 ),
-    RELATIONSHIP_TYPE_TOKEN_NAME,
-    LABEL_TOKEN,
-    LABEL_TOKEN_NAME,
-    NEOSTORE_BLOCK,
-    SCHEMA( 35 ),
-    NODE_LABELS( 35 ),
-    RELATIONSHIP_GROUP( 35 );
+    private boolean allowAggressiveReuse;
 
-    private final long max;
-
-    IdType()
+    public IdTypeConfiguration( boolean allowAggressiveReuse )
     {
-        this( 32 );
+        this.allowAggressiveReuse = allowAggressiveReuse;
     }
 
-    IdType( int bits )
+    public boolean allowAggressiveReuse()
     {
-        this.max = (1L << bits) - 1;
+        return allowAggressiveReuse;
     }
 
-    public long getMaxValue()
+    public int getGrabSize()
     {
-        return this.max;
+        return allowAggressiveReuse ? 50000 : 1024;
     }
 }

@@ -30,19 +30,27 @@ import org.neo4j.kernel.impl.store.id.IdGenerator;
 @Deprecated
 public interface IdGeneratorFactory
 {
+    IdGenerator open( File filename, IdType idType, long highId );
+
     IdGenerator open( File filename, int grabSize, IdType idType, long highId );
 
     void create( File filename, long highId, boolean throwIfFileExists );
 
     IdGenerator get( IdType idType );
 
-    public class Delegate implements IdGeneratorFactory
+    class Delegate implements IdGeneratorFactory
     {
         private final IdGeneratorFactory delegate;
 
         public Delegate( IdGeneratorFactory delegate )
         {
             this.delegate = delegate;
+        }
+
+        @Override
+        public IdGenerator open( File filename, IdType idType, long highId )
+        {
+            return delegate.open( filename, idType, highId );
         }
 
         @Override

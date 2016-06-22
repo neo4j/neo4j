@@ -143,28 +143,25 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
     {
         RecordType type;
         DynamicStore dereference;
-        if ( IdType.STRING_BLOCK.equals( idType ) )
+        switch ( idType )
         {
+        case STRING_BLOCK:
             type = RecordType.STRING_PROPERTY;
             dereference = DynamicStore.STRING;
-        }
-        else if ( IdType.RELATIONSHIP_TYPE_TOKEN_NAME.equals( idType ) )
-        {
+            break;
+        case RELATIONSHIP_TYPE_TOKEN_NAME:
             type = RecordType.RELATIONSHIP_TYPE_NAME;
             dereference = DynamicStore.RELATIONSHIP_TYPE;
-        }
-        else if ( IdType.PROPERTY_KEY_TOKEN_NAME.equals( idType ) )
-        {
+            break;
+        case PROPERTY_KEY_TOKEN_NAME:
             type = RecordType.PROPERTY_KEY_NAME;
             dereference = DynamicStore.PROPERTY_KEY;
-        }
-        else if ( IdType.LABEL_TOKEN_NAME.equals( idType ) )
-        {
+            break;
+        case LABEL_TOKEN_NAME:
             type = RecordType.LABEL_NAME;
             dereference = DynamicStore.LABEL;
-        }
-        else
-        {
+            break;
+        default:
             throw new IllegalArgumentException( format( "The id type [%s] is not valid for String records.", idType ) );
         }
         checkDynamic( type, store, string, new DynamicRecordCheck( store, dereference ) );

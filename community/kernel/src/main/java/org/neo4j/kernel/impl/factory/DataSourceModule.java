@@ -202,7 +202,7 @@ public class DataSourceModule
                 editionModule.headerInformationFactory, startupStatistics, nodeManager, guard, indexStore,
                 editionModule.commitProcessFactory, pageCache, editionModule.constraintSemantics,
                 platformModule.monitors, platformModule.tracers, editionModule.idGeneratorFactory,
-                editionModule.eligibleForIdReuse ) );
+                editionModule.eligibleForIdReuse, editionModule.idTypeConfigurationProvider ) );
         dataSourceManager.register( neoStoreDataSource );
 
         life.add( new MonitorGc( config, logging.getInternalLog( MonitorGc.class ) ) );

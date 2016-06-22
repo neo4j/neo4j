@@ -35,9 +35,12 @@ import org.neo4j.function.Consumer;
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.CommunityIdTypeConfigurationProvider;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.IdTypeConfiguration;
+import org.neo4j.kernel.IdTypeConfigurationProvider;
 import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.cursor.LabelItem;
@@ -615,6 +618,9 @@ public class LabelsAcceptanceTest
     {
         final EphemeralIdGenerator.Factory idFactory = new EphemeralIdGenerator.Factory()
         {
+            private IdTypeConfigurationProvider
+                    idTypeConfigurationProvider = new CommunityIdTypeConfigurationProvider();
+
             @Override
             public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
             {
@@ -623,7 +629,8 @@ public class LabelsAcceptanceTest
                     IdGenerator generator = generators.get( idType );
                     if ( generator == null )
                     {
-                        generator = new EphemeralIdGenerator( idType )
+                        IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
+                        generator = new EphemeralIdGenerator( idType, idTypeConfiguration )
                         {
                             @Override
                             public long nextId()
@@ -665,10 +672,13 @@ public class LabelsAcceptanceTest
                                         return new CommunityEditionModule( platformModule )
                                         {
                                             @Override
-                                            protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs )
+                                            protected IdGeneratorFactory createIdGeneratorFactory(
+                                                    FileSystemAbstraction fs,
+                                                    IdTypeConfigurationProvider idTypeConfigurationProvider )
                                             {
                                                 return idFactory;
                                             }
+
                                         };
                                     }
 

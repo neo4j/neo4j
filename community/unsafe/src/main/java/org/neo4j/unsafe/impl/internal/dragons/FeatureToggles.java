@@ -54,18 +54,6 @@ public class FeatureToggles
     }
 
     /**
-     * Get the value of a {@code boolean} system property with provided name
-     *
-     * @param name full system property name
-     * @param defaultValue the default value of the flag if the system property is not assigned.
-     * @return the parsed value of the system property, or the default value.
-     */
-    public static boolean flag( String name, boolean defaultValue )
-    {
-        return booleanProperty( name, defaultValue );
-    }
-
-    /**
      * Get the value of a {@code boolean} system property.
      *
      * The absolute name of the system property is computed based on the package of the provided class and local name.

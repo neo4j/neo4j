@@ -5,24 +5,23 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb;
+package org.neo4j.kernel.impl.enterprise.store.id;
 
 
 import org.hamcrest.Matchers;
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -37,11 +36,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.EnterpriseDatabaseRule;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
@@ -51,7 +57,7 @@ public class RelationshipIdReuseStressIT
 {
 
     @Rule
-    public EmbeddedDatabaseRule embeddedDatabase = new EmbeddedDatabaseRule();
+    public EmbeddedDatabaseRule embeddedDatabase = new EnterpriseDatabaseRule();
 
     private ExecutorService executorService = Executors.newCachedThreadPool();
 
@@ -68,8 +74,6 @@ public class RelationshipIdReuseStressIT
     @Test
     public void relationshipIdReused() throws Exception
     {
-        Assume.assumeTrue( IdType.RELATIONSHIP.allowAggressiveReuse() );
-
         Label cityLabel = DynamicLabel.label( "city" );
         final Label bandLabel = DynamicLabel.label( "band" );
         createBands( bandLabel );
@@ -79,7 +83,6 @@ public class RelationshipIdReuseStressIT
         RelationshipsCreator relationshipsCreator = new RelationshipsCreator( stopFlag, bandLabel, cityLabel );
 
         List<Future> futures = new ArrayList<>();
-        futures.add( startIdMaintenance( stopFlag ) );
         futures.add( startRelationshipRemoval( bandLabel, cityLabel, stopFlag ) );
         futures.add( startRelationshipsCreator( relationshipsCreator ) );
         futures.add( startRelationshipTypesCalculator( bandLabel, stopFlag ) );
@@ -169,14 +172,6 @@ public class RelationshipIdReuseStressIT
         return TestRelationshipTypes.values()[ThreadLocalRandom.current().nextInt( TestRelationshipTypes.values().length )];
     }
 
-    private Future<?> startIdMaintenance( AtomicBoolean stopFlag )
-    {
-        final NeoStoreDataSource.BufferedIdMaintenanceController idMaintenanceController =
-                embeddedDatabase.getDependencyResolver().resolveDependency( NeoStoreDataSource
-                        .BufferedIdMaintenanceController.class );
-        return executorService.submit( new idMaintainer( idMaintenanceController, stopFlag ) );
-    }
-
     private Node getRandomCityNode( EmbeddedDatabaseRule embeddedDatabase, Label cityLabel )
     {
         return embeddedDatabase.
@@ -200,29 +195,6 @@ public class RelationshipIdReuseStressIT
         LIKE,
         HATE,
         NEUTRAL
-    }
-
-    private static class idMaintainer implements Runnable
-    {
-        private final NeoStoreDataSource.BufferedIdMaintenanceController idMaintenanceController;
-        private AtomicBoolean stopFlag;
-
-        idMaintainer( NeoStoreDataSource.BufferedIdMaintenanceController idMaintenanceController,
-                AtomicBoolean stopFlag )
-        {
-            this.idMaintenanceController = idMaintenanceController;
-            this.stopFlag = stopFlag;
-        }
-
-        @Override
-        public void run()
-        {
-            while ( !stopFlag.get() )
-            {
-                idMaintenanceController.maintenance();
-                LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 25 ) );
-            }
-        }
     }
 
     private class RelationshipsCreator implements Runnable

@@ -155,9 +155,11 @@ public class NeoStoreDataSourceTest
         when( storeFactory.openAllNeoStores( true ) ).thenThrow( openStoresError );
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
-
+        CommunityIdTypeConfigurationProvider idTypeConfigurationProvider =
+                new CommunityIdTypeConfigurationProvider();
         NeoStoreDataSource dataSource = ds.getDataSource( dir.graphDbDir(), fs.get(), config, storeFactory,
-                new DefaultIdGeneratorFactory( fs.get() ), mock( KernelHealth.class ), logProvider );
+                new DefaultIdGeneratorFactory( fs.get(), idTypeConfigurationProvider ),
+                idTypeConfigurationProvider, mock( KernelHealth.class ), logProvider );
 
         try
         {
@@ -186,8 +188,11 @@ public class NeoStoreDataSourceTest
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
 
+        CommunityIdTypeConfigurationProvider idTypeConfigurationProvider =
+                new CommunityIdTypeConfigurationProvider();
         NeoStoreDataSource dataSource = ds.getDataSource( dir.graphDbDir(), fs.get(), config, storeFactory,
-                new DefaultIdGeneratorFactory( fs.get() ), mock( KernelHealth.class ), logProvider );
+                new DefaultIdGeneratorFactory( fs.get(), idTypeConfigurationProvider ), idTypeConfigurationProvider,
+                mock( KernelHealth.class ), logProvider );
 
         Throwable dataSourceStartError = null;
         try

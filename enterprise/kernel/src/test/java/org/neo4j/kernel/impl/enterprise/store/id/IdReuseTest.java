@@ -5,27 +5,36 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb;
+package org.neo4j.kernel.impl.enterprise.store.id;
 
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
 
+import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.EnterpriseDatabaseRule;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
@@ -33,12 +42,11 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeTrue;
 
 public class IdReuseTest
 {
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( IdReuseTest.class );
+    public EmbeddedDatabaseRule dbRule = new EnterpriseDatabaseRule();
 
     @Test
     public void shouldReuseNodeIdsFromRolledBackTransaction() throws Exception
@@ -108,8 +116,6 @@ public class IdReuseTest
     @Test
     public void sequentialOperationRelationshipIdReuse()
     {
-        assumeTrue( IdType.RELATIONSHIP.allowAggressiveReuse() );
-
         Label marker = DynamicLabel.label( "marker" );
 
         long relationship1 = createRelationship( marker );
@@ -119,11 +125,7 @@ public class IdReuseTest
         assertEquals( "Ids should be sequential", relationship1 + 1, relationship2 );
         assertEquals( "Ids should be sequential", relationship2 + 1, relationship3 );
 
-        final NeoStoreDataSource.BufferedIdMaintenanceController idMaintenanceController = getIdMaintenanceController();
-
         deleteRelationshipByLabelAndRelationshipType( marker );
-
-        idMaintenanceController.maintenance();
 
         assertEquals( "Relationships have reused id", relationship1, createRelationship( marker ) );
         assertEquals( "Relationships have reused id", relationship2, createRelationship( marker ) );
@@ -133,11 +135,8 @@ public class IdReuseTest
     @Test
     public void relationshipIdReusableOnlyAfterTransactionFinish()
     {
-        assumeTrue( IdType.RELATIONSHIP.allowAggressiveReuse() );
-
         Label testLabel = DynamicLabel.label( "testLabel" );
         long relationshipId = createRelationship( testLabel );
-        final NeoStoreDataSource.BufferedIdMaintenanceController idMaintenanceController = getIdMaintenanceController();
 
         try ( Transaction transaction = dbRule.beginTx();
               ResourceIterator<Node> nodes = dbRule.findNodes( testLabel ) )
@@ -151,7 +150,6 @@ public class IdReuseTest
                     relationship.delete();
                 }
             }
-            idMaintenanceController.maintenance();
 
             Node node1 = dbRule.createNode( testLabel );
             Node node2 = dbRule.createNode( testLabel );

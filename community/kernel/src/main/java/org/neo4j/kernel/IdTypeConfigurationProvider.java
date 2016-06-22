@@ -20,41 +20,16 @@
 package org.neo4j.kernel;
 
 /**
- * @deprecated This will be moved to internal packages in the next major release.
+ * Edition based configuration provider for possible id types.
+ * @see IdType
+ * @see IdTypeConfiguration
  */
-@Deprecated
-public enum IdType
+public interface IdTypeConfigurationProvider
 {
-    NODE( 35 ),
-    RELATIONSHIP( 35 ),
-    PROPERTY( 36 ),
-    STRING_BLOCK( 36 ),
-    ARRAY_BLOCK( 36 ),
-    PROPERTY_KEY_TOKEN,
-    PROPERTY_KEY_TOKEN_NAME,
-    RELATIONSHIP_TYPE_TOKEN( 16 ),
-    RELATIONSHIP_TYPE_TOKEN_NAME,
-    LABEL_TOKEN,
-    LABEL_TOKEN_NAME,
-    NEOSTORE_BLOCK,
-    SCHEMA( 35 ),
-    NODE_LABELS( 35 ),
-    RELATIONSHIP_GROUP( 35 );
-
-    private final long max;
-
-    IdType()
-    {
-        this( 32 );
-    }
-
-    IdType( int bits )
-    {
-        this.max = (1L << bits) - 1;
-    }
-
-    public long getMaxValue()
-    {
-        return this.max;
-    }
+    /**
+     * Provides configuration object for requested id type.
+     * @param idType id type
+     * @return edition based id type configuration
+     */
+    IdTypeConfiguration getIdTypeConfiguration( IdType idType );
 }

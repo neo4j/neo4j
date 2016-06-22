@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import java.io.File;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -33,14 +33,20 @@ import org.neo4j.test.impl.EphemeralIdGenerator;
 
 public class JumpingIdGeneratorFactory implements IdGeneratorFactory
 {
-    private final Map<IdType,IdGenerator> generators = new HashMap<>();
-    private final IdGenerator forTheRest = new EphemeralIdGenerator( null );
+    private final Map<IdType,IdGenerator> generators = new EnumMap<>( IdType.class );
+    private final IdGenerator forTheRest = new EphemeralIdGenerator( null, null );
 
     private final int sizePerJump;
 
     public JumpingIdGeneratorFactory( int sizePerJump )
     {
         this.sizePerJump = sizePerJump;
+    }
+
+    @Override
+    public IdGenerator open( File filename, IdType idType, long highId )
+    {
+        return get( idType );
     }
 
     @Override

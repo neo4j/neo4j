@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.factory;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdTypeConfigurationProvider;
 import org.neo4j.kernel.KernelDiagnostics;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
@@ -42,6 +43,7 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 public abstract class EditionModule
 {
     public IdGeneratorFactory idGeneratorFactory;
+    public IdTypeConfigurationProvider idTypeConfigurationProvider;
 
     public LabelTokenHolder labelTokenHolder;
 
@@ -60,7 +62,6 @@ public abstract class EditionModule
     public SchemaWriteGuard schemaWriteGuard;
 
     public UpgradeConfiguration upgradeConfiguration;
-
     public ConstraintSemantics constraintSemantics;
 
     public IdReuseEligibility eligibleForIdReuse;

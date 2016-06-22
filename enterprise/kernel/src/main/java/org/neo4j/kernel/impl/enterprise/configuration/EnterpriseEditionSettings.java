@@ -33,7 +33,7 @@ import org.neo4j.kernel.configuration.Settings;
 public class EnterpriseEditionSettings
 {
     @Description( "Specified names of id types that should be reused." )
-    static Setting<List<String>> idTypesToReuse =
-            Settings.setting( "dbms.ids.reuse.types.override", Settings.STRING_LIST, IdType.Name.RELATIONSHIP.name() );
+    public static Setting<List<String>> idTypesToReuse =
+            Settings.setting( "dbms.ids.reuse.types.override", Settings.STRING_LIST, IdType.RELATIONSHIP.name() );
 
 }

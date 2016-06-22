@@ -541,7 +541,7 @@ public class IdGeneratorTest
     @Test
     public void makeSureIdCapacityCannotBeExceeded() throws Exception
     {
-        for ( IdType type : IdType.getAllIdTypes() )
+        for ( IdType type : IdType.values() )
         {
             makeSureIdCapacityCannotBeExceeded( type );
         }

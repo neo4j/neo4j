@@ -26,8 +26,10 @@ import java.io.File;
 
 import org.neo4j.function.Supplier;
 import org.neo4j.helpers.FakeClock;
+import org.neo4j.kernel.CommunityIdTypeConfigurationProvider;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.test.EphemeralFileSystemRule;
 
@@ -48,7 +50,9 @@ public class BufferingIdGeneratorFactoryTest
     {
         // GIVEN
         MockedIdGeneratorFactory actual = new MockedIdGeneratorFactory();
-        BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual );
+        CommunityIdTypeConfigurationProvider idTypeConfigurationProvider =
+                new CommunityIdTypeConfigurationProvider();
+        BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual, idTypeConfigurationProvider );
         ControllableSnapshotSupplier boundaries = new ControllableSnapshotSupplier();
         IdGenerator idGenerator = bufferingIdGeneratorFactory.open(
                 new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, 0 );
@@ -77,7 +81,8 @@ public class BufferingIdGeneratorFactoryTest
         MockedIdGeneratorFactory actual = new MockedIdGeneratorFactory();
         final FakeClock clock = new FakeClock();
         final long safeZone = MINUTES.toMillis( 1 );
-        BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual );
+        BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual,
+                new CommunityIdTypeConfigurationProvider() );
         ControllableSnapshotSupplier boundaries = new ControllableSnapshotSupplier();
         IdGenerator idGenerator = bufferingIdGeneratorFactory.open(
                 new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, 0 );
@@ -130,12 +135,18 @@ public class BufferingIdGeneratorFactoryTest
 
     private static class MockedIdGeneratorFactory implements IdGeneratorFactory
     {
-        private final IdGenerator[] generators = new IdGenerator[IdType.Name.values().length];
+        private final IdGenerator[] generators = new IdGenerator[IdType.values().length];
+
+        @Override
+        public IdGenerator open( File filename, IdType idType, long highId )
+        {
+            return open( filename, 0, idType, highId );
+        }
 
         @Override
         public IdGenerator open( File filename, int grabSize, IdType idType, long highId )
         {
-            return generators[idType.getName().ordinal()] = mock( IdGenerator.class );
+            return generators[idType.ordinal()] = mock( IdGenerator.class );
         }
 
         @Override
@@ -146,7 +157,7 @@ public class BufferingIdGeneratorFactoryTest
         @Override
         public IdGenerator get( IdType idType )
         {
-            return generators[idType.getName().ordinal()];
+            return generators[idType.ordinal()];
         }
     }
 }

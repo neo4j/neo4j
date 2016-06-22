@@ -58,7 +58,7 @@ public enum HaRequestType210 implements RequestType<Master>
         public Response<IdAllocation> call( Master master, RequestContext context, ChannelBuffer input,
                 ChannelBuffer target )
         {
-            IdType idType = IdType.forName( IdType.Name.values()[input.readByte()] );
+            IdType idType = IdType.values()[input.readByte()];
             return master.allocateIds( context, idType );
         }
     }, new ObjectSerializer<IdAllocation>()

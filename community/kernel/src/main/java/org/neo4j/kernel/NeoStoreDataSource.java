@@ -385,6 +385,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     private final IdGeneratorFactory idGeneratorFactory;
     private BufferingIdGeneratorFactory bufferingIdGeneratorFactory;
     private final IdReuseEligibility idReuseEligibility;
+    private final IdTypeConfigurationProvider idTypeConfigurationProvider;
 
     private Dependencies dependencies;
     private LifeSupport life;
@@ -435,7 +436,8 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             Monitors monitors,
             Tracers tracers,
             IdGeneratorFactory idGeneratorFactory,
-            IdReuseEligibility idReuseEligibility )
+            IdReuseEligibility idReuseEligibility,
+            IdTypeConfigurationProvider idTypeConfigurationProvider )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -465,6 +467,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         this.tracers = tracers;
         this.idGeneratorFactory = idGeneratorFactory;
         this.idReuseEligibility = idReuseEligibility;
+        this.idTypeConfigurationProvider = idTypeConfigurationProvider;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = logProvider.getLog( getClass() );
@@ -544,7 +547,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                 // This buffering id generator factory will have properly buffering id generators injected into
                 // the stores. The buffering depends on knowledge about active transactions,
                 // so we'll initialize it below when all those components have been instantiated.
-                bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( idGeneratorFactory );
+                bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( idGeneratorFactory, idTypeConfigurationProvider );
                 storeFactory.setIdGeneratorFactory( bufferingIdGeneratorFactory );
             }
 

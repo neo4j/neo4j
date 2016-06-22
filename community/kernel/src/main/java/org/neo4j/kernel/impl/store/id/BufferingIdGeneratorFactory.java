@@ -20,29 +20,32 @@
 package org.neo4j.kernel.impl.store.id;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.neo4j.function.Predicate;
 import org.neo4j.function.Supplier;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.IdTypeConfiguration;
+import org.neo4j.kernel.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 
 /**
- * Wraps {@link IdGenerator} for those that have {@link IdType#allowAggressiveReuse() aggressive id reuse}
+ * Wraps {@link IdGenerator} for those that have {@link IdTypeConfiguration#allowAggressiveReuse() aggressive id reuse}
  * so that ids can be {@link IdGenerator#freeId(long) freed} at safe points in time, after all transactions
  * which were active at the time of freeing, have been closed.
  */
 public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
 {
-    private final Map<IdType, BufferingIdGenerator> overriddenIdGenerators = new HashMap<>();
+    private final BufferingIdGenerator[/*IdType#ordinal as key*/] overriddenIdGenerators =
+            new BufferingIdGenerator[IdType.values().length];
     private Supplier<KernelTransactionsSnapshot> boundaries;
     private Predicate<KernelTransactionsSnapshot> safeThreshold;
+    private IdTypeConfigurationProvider idTypeConfigurationProvider;
 
-    public BufferingIdGeneratorFactory( IdGeneratorFactory delegate )
+    public BufferingIdGeneratorFactory( IdGeneratorFactory delegate, IdTypeConfigurationProvider idTypeConfigurationProvider )
     {
         super( delegate );
+        this.idTypeConfigurationProvider = idTypeConfigurationProvider;
     }
 
     public void initialize( Supplier<KernelTransactionsSnapshot> boundaries, final IdReuseEligibility eligibleForReuse )
@@ -56,7 +59,7 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
                 return snapshot.allClosed() && eligibleForReuse.isEligible( snapshot );
             }
         };
-        for ( BufferingIdGenerator generator : overriddenIdGenerators.values() )
+        for ( BufferingIdGenerator generator : overriddenIdGenerators )
         {
             if ( generator != null )
             {
@@ -69,7 +72,8 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
     public IdGenerator open( File filename, int grabSize, IdType idType, long highId )
     {
         IdGenerator generator = super.open( filename, grabSize, idType, highId );
-        if ( idType.allowAggressiveReuse() )
+        IdTypeConfiguration typeConfiguration = getIdTypeConfiguration(idType);
+        if ( typeConfiguration.allowAggressiveReuse() )
         {
             BufferingIdGenerator bufferingGenerator = new BufferingIdGenerator( generator );
 
@@ -93,22 +97,27 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
             {
                 bufferingGenerator.initialize( boundaries, safeThreshold );
             }
-            overriddenIdGenerators.put( idType, bufferingGenerator );
+            overriddenIdGenerators[idType.ordinal()] = bufferingGenerator;
             generator = bufferingGenerator;
         }
         return generator;
     }
 
+    private IdTypeConfiguration getIdTypeConfiguration( IdType idType )
+    {
+        return idTypeConfigurationProvider.getIdTypeConfiguration( idType );
+    }
+
     @Override
     public IdGenerator get( IdType idType )
     {
-        IdGenerator generator = overriddenIdGenerators.get( idType );
+        IdGenerator generator = overriddenIdGenerators[idType.ordinal()];
         return generator != null ? generator : super.get( idType );
     }
 
     public void maintenance()
     {
-        for ( BufferingIdGenerator generator : overriddenIdGenerators.values() )
+        for ( BufferingIdGenerator generator : overriddenIdGenerators )
         {
             if ( generator != null )
             {
@@ -119,7 +128,7 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
 
     public void clear()
     {
-        for ( BufferingIdGenerator generator : overriddenIdGenerators.values() )
+        for ( BufferingIdGenerator generator : overriddenIdGenerators )
         {
             if ( generator != null )
             {
