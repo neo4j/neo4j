@@ -69,12 +69,12 @@ public class ServiceDefinitionRepresentation extends MappingRepresentation
             {
                 for ( Map.Entry<String, String> entry : uris.entrySet() )
                 {
-                    resourceSerializer.putUri( entry.getKey(), entry.getValue() );
+                    resourceSerializer.putRelativeUri( entry.getKey(), entry.getValue() );
                 }
 
                 for ( Map.Entry<String, String> entry : templates.entrySet() )
                 {
-                    resourceSerializer.putUriTemplate( entry.getKey(), entry.getValue() );
+                    resourceSerializer.putRelativeUriTemplate( entry.getKey(), entry.getValue() );
                 }
             }
         } );

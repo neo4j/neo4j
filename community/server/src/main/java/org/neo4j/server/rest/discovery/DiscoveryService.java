@@ -28,6 +28,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.repr.DiscoveryRepresentation;
@@ -55,8 +56,9 @@ public class DiscoveryService
     {
         String managementUri = configuration.get( ServerSettings.management_api_path ).getPath() + "/";
         String dataUri = configuration.get( ServerSettings.rest_api_path ).getPath() + "/";
+        String boltUri = "bolt://" + configuration.get( GraphDatabaseSettings.bolt_advertised_address );
 
-        return outputFormat.ok( new DiscoveryRepresentation( managementUri, dataUri ) );
+        return outputFormat.ok( new DiscoveryRepresentation( managementUri, dataUri, boltUri ) );
     }
 
     @GET

@@ -34,7 +34,7 @@ public class AccessDeniedDiscoveryRepresentation extends MappingRepresentation
     @Override
     protected void serialize( MappingSerializer serializer )
     {
-        serializer.putUri( AUTH_URI_KEY, authURI );
+        serializer.putRelativeUri( AUTH_URI_KEY, authURI );
     }
 
 }

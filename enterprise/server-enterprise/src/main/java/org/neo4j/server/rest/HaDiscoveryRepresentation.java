@@ -43,7 +43,7 @@ public class HaDiscoveryRepresentation extends MappingRepresentation
     @Override
     protected void serialize( MappingSerializer serializer )
     {
-        serializer.putUri( MASTER_KEY, basePath + isMasterUri );
-        serializer.putUri( SLAVE_KEY, basePath + isSlaveUri );
+        serializer.putRelativeUri( MASTER_KEY, basePath + isMasterUri );
+        serializer.putRelativeUri( SLAVE_KEY, basePath + isSlaveUri );
     }
 }

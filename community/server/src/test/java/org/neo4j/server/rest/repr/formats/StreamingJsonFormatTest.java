@@ -126,7 +126,7 @@ public class StreamingJsonFormatTest
             @Override
             protected void serialize( MappingSerializer serializer )
             {
-                serializer.putUri( "URL", "subpath" );
+                serializer.putRelativeUri( "URL", "subpath" );
             }
         } );
 

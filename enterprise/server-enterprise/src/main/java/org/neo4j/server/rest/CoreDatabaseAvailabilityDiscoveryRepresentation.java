@@ -40,6 +40,6 @@ public class CoreDatabaseAvailabilityDiscoveryRepresentation extends MappingRepr
     @Override
     protected void serialize( MappingSerializer serializer )
     {
-        serializer.putUri( WRITABLE_KEY, basePath + isWritableUri );
+        serializer.putRelativeUri( WRITABLE_KEY, basePath + isWritableUri );
     }
 }
