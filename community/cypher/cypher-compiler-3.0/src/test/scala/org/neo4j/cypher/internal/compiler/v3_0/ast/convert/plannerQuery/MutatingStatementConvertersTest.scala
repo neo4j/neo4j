@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{SimplePatternLength, PatternRelationship, IdName}
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
@@ -134,7 +134,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
       Seq(ForeachPattern(IdName("i"),
           Collection(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos),
           RegularPlannerQuery(QueryGraph(Set.empty, Set.empty, Set(IdName("i")),
-                                         Selections(Set.empty), Seq.empty, Set.empty, Set.empty,
+                                         Selections(Set.empty), Vector.empty, Set.empty, Set.empty,
                                          Seq(CreateNodePattern(IdName("a"), Seq.empty, None))),
                               RegularQueryProjection(Map("i" -> Variable("i")(pos))), None)))
     )

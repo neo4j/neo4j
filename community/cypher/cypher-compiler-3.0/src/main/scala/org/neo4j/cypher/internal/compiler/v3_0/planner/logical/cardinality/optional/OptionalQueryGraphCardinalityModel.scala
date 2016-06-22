@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.cardinality.optional
 
+import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.{QueryGraphCardinalityModel, QueryGraphSolverInput}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticTable
 
 case class OptionalQueryGraphCardinalityModel(inner: QueryGraphCardinalityModel) extends QueryGraphCardinalityModel {
@@ -33,11 +33,9 @@ case class OptionalQueryGraphCardinalityModel(inner: QueryGraphCardinalityModel)
   }
 
   private def findQueryGraphCombinations(queryGraph: QueryGraph): Seq[QueryGraph] = {
-    (0 to queryGraph.optionalMatches.length)
-      .map(queryGraph.optionalMatches.combinations)
-      .flatten
+    (0 to queryGraph.optionalMatches.length).flatMap(queryGraph.optionalMatches.combinations)
       .map(_.map(_.withoutArguments()))
-      .map(_.foldLeft(QueryGraph.empty)(_.withOptionalMatches(Seq.empty) ++ _.withOptionalMatches(Seq.empty)))
-      .map(queryGraph.withOptionalMatches(Seq.empty) ++ _)
+      .map(_.foldLeft(QueryGraph.empty)(_.withOptionalMatches(Vector.empty) ++ _.withOptionalMatches(Vector.empty)))
+      .map(queryGraph.withOptionalMatches(Vector.empty) ++ _)
   }
 }

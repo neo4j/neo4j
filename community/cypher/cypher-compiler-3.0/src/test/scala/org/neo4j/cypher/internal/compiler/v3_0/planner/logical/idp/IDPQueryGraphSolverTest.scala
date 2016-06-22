@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp
 
 import org.mockito.Mockito.{times, verify, verifyNoMoreInteractions}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Cardinality, LogicalPlanningContext}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Cardinality, LogicalPlanningContext}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{LogicalPlanningTestSupport2, QueryGraph, Selections}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection.OUTGOING
@@ -586,7 +586,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val numberOfPatternRelationships = 10
 
     new given {
-      val patternRels = for (i <- 1 to numberOfPatternRelationships - 1) yield {
+      val patternRels = for (i <- 1 until numberOfPatternRelationships) yield {
         PatternRelationship("r" + i, ("n" + i, "n" + (i + 1)), SemanticDirection.INCOMING, Seq.empty, SimplePatternLength)
       }
 
@@ -696,7 +696,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       queryGraphSolver = createQueryGraphSolver(monitor, DefaultIDPSolverConfig)
       qg = QueryGraph(// MATCH a OPTIONAL MATCH (a)-[r]-(b)
         patternNodes = Set("a"),
-        optionalMatches = Seq(QueryGraph(
+        optionalMatches = Vector(QueryGraph(
           patternNodes = Set("a", "b"),
           argumentIds = Set("a"),
           patternRelationships = Set(PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
@@ -768,7 +768,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = EmptySolverConfig())
       qg = QueryGraph(// MATCH a, b OPTIONAL MATCH a-[r]->b
         patternNodes = Set("a", "b"),
-        optionalMatches = Seq(QueryGraph(
+        optionalMatches = Vector(QueryGraph(
           patternNodes = Set("a", "b"),
           argumentIds = Set("a", "b"),
           patternRelationships = Set(PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
@@ -801,7 +801,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       qg = QueryGraph(// OPTIONAL MATCH a-->b RETURN b a
         patternNodes = Set.empty,
         argumentIds = Set.empty,
-        optionalMatches = Seq(QueryGraph(
+        optionalMatches = Vector(QueryGraph(
           patternNodes = Set("a", "b"),
           argumentIds = Set.empty,
           patternRelationships = Set(PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)))
