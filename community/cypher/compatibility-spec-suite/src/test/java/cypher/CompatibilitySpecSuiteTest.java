@@ -108,6 +108,22 @@ public class CompatibilitySpecSuiteTest
     {
     }
 
+    @RunWith( Cucumber.class )
+    @CucumberOptions(
+            plugin = {
+                    DB_CONFIG + "compatibility-30.json",
+                    HTML_REPORT + SUITE_NAME + "/compatibility-30",
+                    JSON_REPORT + SUITE_NAME + "/compatibility-30",
+                    BLACKLIST_PLUGIN + "compatibility-30.txt"
+            },
+            glue = { GLUE_PATH },
+            features = { FEATURE_PATH + FEATURE_TO_RUN },
+            strict = true
+    )
+    public static class Compatibility30
+    {
+    }
+
     // constants for TCK configuration
 
     public static final String SUITE_NAME = "compatibility-spec-suite";
