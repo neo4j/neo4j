@@ -52,6 +52,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.Level;
@@ -65,7 +66,7 @@ import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionExpired;
 
-public class Cluster implements AutoCloseable
+public class Cluster
 {
     private static final String CLUSTER_NAME = "core-neo4j";
     private static final int DEFAULT_TIMEOUT_MS = 15_000;
@@ -116,61 +117,12 @@ public class Cluster implements AutoCloseable
         }
     }
 
-    public static Cluster start( File parentDir, int noOfCoreServers, int noOfEdgeServers,
-                                 DiscoveryServiceFactory discoveryServiceFactory, Map<String, String> coreParams,
-                                 Map<String, IntFunction<String>> instanceCoreParams, String recordFormat )
-            throws ExecutionException, InterruptedException
-    {
-        Cluster cluster = new Cluster( parentDir, noOfCoreServers, noOfEdgeServers, discoveryServiceFactory,
-                coreParams, instanceCoreParams, stringMap(), emptyMap(), recordFormat );
-        cluster.start();
-        return cluster;
-    }
-
-    public static Cluster start( File parentDir, int noOfCoreServers, int noOfEdgeServers,
-                                 DiscoveryServiceFactory discoveryServiceFactory, String recordFormat )
-            throws ExecutionException, InterruptedException
-    {
-        return start( parentDir, noOfCoreServers, noOfEdgeServers, discoveryServiceFactory, stringMap(), emptyMap(),
-                recordFormat );
-    }
-
-    public static Cluster start( File parentDir, int noOfCoreServers, int noOfEdgeServers,
-                                 DiscoveryServiceFactory discoveryServiceFactory )
-            throws ExecutionException, InterruptedException
-    {
-        return start( parentDir, noOfCoreServers, noOfEdgeServers, discoveryServiceFactory, stringMap(), emptyMap(),
-                StandardV3_0.NAME );
-    }
-
-    public static Cluster start( File parentDir, int noOfCoreServers, int noOfEdgeServers )
-            throws ExecutionException, InterruptedException
-    {
-        return start( parentDir, noOfCoreServers, noOfEdgeServers, new HazelcastDiscoveryServiceFactory(), stringMap(),
-                emptyMap(), StandardV3_0.NAME );
-    }
-
-    public static Cluster start( File parentDir, int noOfCoreServers, int noOfEdgeServers,
-                                 Map<String, String> coreParams ) throws ExecutionException, InterruptedException
-    {
-        return start( parentDir, noOfCoreServers, noOfEdgeServers, new HazelcastDiscoveryServiceFactory(), coreParams,
-                emptyMap(), StandardV3_0.NAME );
-    }
-
-    public static Cluster start( File parentDir, int noOfCoreServers, int noOfEdgeServers,
-                                 Map<String, String> coreParams, DiscoveryServiceFactory discoveryServiceFactory )
-            throws ExecutionException, InterruptedException
-    {
-        return start( parentDir, noOfCoreServers, noOfEdgeServers, discoveryServiceFactory, coreParams, emptyMap(),
-                StandardV3_0.NAME );
-    }
-
     public File coreServerStoreDirectory( int serverId )
     {
         return coreServerStoreDirectory( parentDir, serverId );
     }
 
-    private static File coreServerStoreDirectory( File parentDir, int serverId )
+    public static File coreServerStoreDirectory( File parentDir, int serverId )
     {
         return new File( parentDir, "server-core-" + serverId );
     }
@@ -596,12 +548,6 @@ public class Cluster implements AutoCloseable
                 e.getCause() instanceof org.neo4j.kernel.api.exceptions.TransactionFailureException &&
                 ((org.neo4j.kernel.api.exceptions.TransactionFailureException) e.getCause()).status() ==
                         LockSessionExpired;
-    }
-
-    @Override
-    public void close() throws Exception
-    {
-        shutdown();
     }
 
     public Set<CoreGraphDatabase> healthyCoreMembers()

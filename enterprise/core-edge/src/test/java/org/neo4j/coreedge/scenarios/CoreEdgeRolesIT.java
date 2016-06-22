@@ -19,45 +19,31 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.concurrent.ExecutionException;
-
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.SharedDiscoveryService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.coreedge.ClusterRule;
 
 public class CoreEdgeRolesIT
 {
     @Rule
-    public final
-    TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+            .withNumberOfCoreServers( 3 )
+            .withNumberOfEdgeServers( 1 );
 
     @Rule
     public ExpectedException exceptionMatcher = ExpectedException.none();
-
-    private Cluster cluster;
-
-    @After
-    public void shutdown() throws ExecutionException, InterruptedException
-    {
-        if ( cluster != null )
-        {
-            cluster.shutdown();
-        }
-    }
 
     @Test
     public void edgeServersShouldRefuseWrites() throws Exception
     {
         // given
-        cluster = Cluster.start( dir.directory(), 3, 1, new SharedDiscoveryService() );
+        Cluster cluster = clusterRule.startCluster();
         GraphDatabaseService db = cluster.findAnEdgeServer();
         Transaction tx = db.beginTx();
         db.createNode();

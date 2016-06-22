@@ -19,13 +19,10 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import java.io.File;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-
-import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.List;
 
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.server.core.AcquireEndpointsProcedure;
@@ -37,14 +34,13 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.coreedge.ClusterRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 import static org.neo4j.kernel.api.security.AccessMode.Static.READ;
@@ -52,28 +48,14 @@ import static org.neo4j.kernel.api.security.AccessMode.Static.READ;
 public class ClusterDiscoveryIT
 {
     @Rule
-    public final TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
-
-    private Cluster cluster;
-
-    @After
-    public void shutdown() throws ExecutionException, InterruptedException
-    {
-        if ( cluster != null )
-        {
-            cluster.shutdown();
-            cluster = null;
-        }
-    }
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+            .withNumberOfCoreServers( 3 );
 
     @Test
     public void shouldDiscoverCoreClusterMembers() throws Exception
     {
-        // given
-        File dbDir = dir.directory();
-
         // when
-        cluster = Cluster.start( dbDir, 3, 0 );
+        Cluster cluster = clusterRule.withNumberOfEdgeServers( 0 ).startCluster();
 
         // then
 
@@ -91,11 +73,8 @@ public class ClusterDiscoveryIT
     @Test
     public void shouldFindReadAndWriteServers() throws Exception
     {
-        // given
-        File dbDir = dir.directory();
-
         // when
-        cluster = Cluster.start( dbDir, 3, 1 );
+        Cluster cluster = clusterRule.withNumberOfEdgeServers( 1 ).startCluster();
 
         // then
 
@@ -107,15 +86,13 @@ public class ClusterDiscoveryIT
             assertEquals(1, currentMembers.stream().filter( x -> x[1].equals( "write" ) ).count());
             assertEquals(1, currentMembers.stream().filter( x -> x[1].equals( "read" ) ).count());
         }
-
     }
 
     @Test
     public void shouldNotBeAbleToDiscoverFromEdgeMembers() throws Exception
     {
         // given
-        File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 2 );
+        Cluster cluster = clusterRule.withNumberOfEdgeServers( 2 ).startCluster();
 
         try
         {
@@ -155,5 +132,4 @@ public class ClusterDiscoveryIT
                 procedureName( "dbms", "cluster", AcquireEndpointsProcedure.NAME ),
                 new Object[0] ) );
     }
-
 }

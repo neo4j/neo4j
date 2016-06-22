@@ -117,11 +117,16 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
         return testDirectory;
     }
 
+    public File clusterDirectory()
+    {
+        return clusterDirectory;
+    }
+
     @Override
     public ClusterRule withNumberOfCoreServers( int noCoreServers )
     {
         this.noCoreServers = noCoreServers;
-        return  this;
+        return this;
     }
 
     @Override

@@ -43,6 +43,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.DbRepresentation;
+import org.neo4j.test.coreedge.ClusterRule;
 import org.neo4j.test.rule.TargetDirectory;
 
 import static java.util.Collections.emptyMap;
@@ -59,28 +60,18 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class CoreToCoreCopySnapshotIT
 {
+    private static final int TIMEOUT_MS = 5000;
+
     @Rule
-    public final TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
-
-    private Cluster cluster;
-    private int TIMEOUT_MS = 5000;
-
-    @After
-    public void shutdown() throws ExecutionException, InterruptedException
-    {
-        if ( cluster != null )
-        {
-            cluster.shutdown();
-            cluster = null;
-        }
-    }
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+            .withNumberOfCoreServers( 3 )
+            .withNumberOfEdgeServers( 0 );
 
     @Test
     public void shouldBeAbleToDownloadFreshEmptySnapshot() throws Exception
     {
         // given
-        File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0, new SharedDiscoveryService() );
+        Cluster cluster = clusterRule.startCluster();
 
         CoreGraphDatabase leader = cluster.awaitLeader( TIMEOUT_MS );
 
@@ -96,8 +87,7 @@ public class CoreToCoreCopySnapshotIT
     public void shouldBeAbleToDownloadSmallFreshSnapshot() throws Exception
     {
         // given
-        File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0, new SharedDiscoveryService() );
+        Cluster cluster = clusterRule.startCluster();
 
         CoreGraphDatabase source = cluster.coreTx( ( db, tx ) -> {
             Node node = db.createNode();
@@ -117,8 +107,7 @@ public class CoreToCoreCopySnapshotIT
     public void shouldBeAbleToDownloadLargerFreshSnapshot() throws Exception
     {
         // given
-        File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0, new SharedDiscoveryService() );
+        Cluster cluster = clusterRule.startCluster();
 
         CoreGraphDatabase source = cluster.coreTx( ( db, tx ) -> {
             createData( db, 1000 );
@@ -137,12 +126,11 @@ public class CoreToCoreCopySnapshotIT
     public void shouldBeAbleToDownloadToNewInstanceAfterPruning() throws Exception
     {
         // given
-        File dbDir = dir.directory();
         Map<String,String> params = stringMap( CoreEdgeClusterSettings.state_machine_flush_window_size.name(), "1",
                 CoreEdgeClusterSettings.raft_log_pruning_strategy.name(), "3 entries",
                 CoreEdgeClusterSettings.raft_log_rotation_size.name(), "1K" );
 
-        cluster = Cluster.start( dbDir, 3, 0, params, new SharedDiscoveryService() );
+        Cluster cluster = clusterRule.withSharedCoreParams( params ).startCluster();
 
         CoreGraphDatabase leader = cluster.coreTx( ( db, tx ) -> {
             createData( db, 10000 );
@@ -170,50 +158,44 @@ public class CoreToCoreCopySnapshotIT
     public void shouldBeAbleToDownloadToRejoinedInstanceAfterPruning() throws Exception
     {
         // given
-        File dbDir = dir.directory();
-
         Map<String,String> coreParams = stringMap();
         coreParams.put( raft_log_pruning_strategy.name(), "keep_none" );
         coreParams.put( raft_log_pruning_frequency.name(), "100ms" );
         int numberOfTransactions = 100;
 
         //Start the cluster and accumulate some log files.
-        try ( Cluster cluster = Cluster
-                .start( dbDir, 3, 0, new SharedDiscoveryService(), coreParams, emptyMap(),
-                        StandardV3_0.NAME ) )
+        Cluster cluster = clusterRule.withSharedCoreParams( coreParams ).startCluster();
+
+        CoreGraphDatabase leader = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.LEADER );
+        int followersLastLog = getMostRecentLogIdOn( leader );
+        while ( followersLastLog < 2 )
         {
-
-            CoreGraphDatabase leader = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.LEADER );
-            int followersLastLog = getMostRecentLogIdOn( leader );
-            while ( followersLastLog < 2 )
-            {
-                doSomeTransactions( cluster, numberOfTransactions );
-                followersLastLog = getMostRecentLogIdOn( leader );
-            }
-
-            CoreGraphDatabase follower = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.FOLLOWER );
-            follower.shutdown();
-            Config config = follower.getDependencyResolver().resolveDependency( Config.class );
-
-            /**
-             * After a follower is shutdown, wait until we accumulate some logs such that the oldest log is older than
-             * the most recent log when the follower was removed. We can then be sure that the follower won't be able
-             * to catch up to the leader without a snapshot.
-             */
-
-            //when
-            int leadersOldestLog = getOldestLogIdOn( leader );
-            while ( leadersOldestLog < followersLastLog + 10 )
-            {
-                doSomeTransactions( cluster, numberOfTransactions );
-                leadersOldestLog = getOldestLogIdOn( leader );
-            }
-
-            //then
-            assertThat( leadersOldestLog, greaterThan( followersLastLog ) );
-            //The cluster member should join. Otherwise this line will hang forever.
-            cluster.addCoreServerWithServerId( config.get( CoreEdgeClusterSettings.server_id ), 3 );
+            doSomeTransactions( cluster, numberOfTransactions );
+            followersLastLog = getMostRecentLogIdOn( leader );
         }
+
+        CoreGraphDatabase follower = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.FOLLOWER );
+        follower.shutdown();
+        Config config = follower.getDependencyResolver().resolveDependency( Config.class );
+
+        /**
+         * After a follower is shutdown, wait until we accumulate some logs such that the oldest log is older than
+         * the most recent log when the follower was removed. We can then be sure that the follower won't be able
+         * to catch up to the leader without a snapshot.
+         */
+
+        //when
+        int leadersOldestLog = getOldestLogIdOn( leader );
+        while ( leadersOldestLog < followersLastLog + 10 )
+        {
+            doSomeTransactions( cluster, numberOfTransactions );
+            leadersOldestLog = getOldestLogIdOn( leader );
+        }
+
+        //then
+        assertThat( leadersOldestLog, greaterThan( followersLastLog ) );
+        //The cluster member should join. Otherwise this line will hang forever.
+        cluster.addCoreServerWithServerId( config.get( CoreEdgeClusterSettings.server_id ), 3 );
     }
 
     static void createData( GraphDatabaseService db, int size )
@@ -231,12 +213,12 @@ public class CoreToCoreCopySnapshotIT
         }
     }
 
-    private Integer getOldestLogIdOn( CoreGraphDatabase clusterMember ) throws TimeoutException
+    private int getOldestLogIdOn( CoreGraphDatabase clusterMember ) throws TimeoutException
     {
         return getLogFileNames( clusterMember ).firstKey().intValue();
     }
 
-    private Integer getMostRecentLogIdOn( CoreGraphDatabase clusterMember ) throws TimeoutException
+    private int getMostRecentLogIdOn( CoreGraphDatabase clusterMember ) throws TimeoutException
     {
         return getLogFileNames( clusterMember ).lastKey().intValue();
     }

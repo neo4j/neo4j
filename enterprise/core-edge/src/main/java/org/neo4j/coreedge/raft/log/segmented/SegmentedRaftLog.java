@@ -91,7 +91,6 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
 
         RecoveryProtocol recoveryProtocol = new RecoveryProtocol( fileSystem, fileNames, contentMarshal, logProvider );
         state = recoveryProtocol.run();
-
     }
 
     @Override

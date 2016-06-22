@@ -19,6 +19,10 @@
  */
 package org.neo4j.coreedge.backup;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -28,16 +32,11 @@ import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.coreedge.TestStoreId;
 import org.neo4j.coreedge.convert.ConversionVerifier;
 import org.neo4j.coreedge.convert.ConvertClassicStoreCommand;
 import org.neo4j.coreedge.convert.GenerateClusterSeedCommand;
-import org.neo4j.coreedge.convert.SourceMetadata;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
@@ -52,12 +51,11 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.restore.RestoreDatabaseCommand;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.coreedge.ClusterRule;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static java.util.stream.Collectors.toList;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-
 import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.coreedge.TestStoreId.assertAllStoresHaveTheSameStoreId;
 import static org.neo4j.graphdb.Label.label;
@@ -65,8 +63,8 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class BackupCoreIT
 {
-//    @Rule
-//    public SuppressOutput suppressOutput = suppress( SuppressOutput.System.out, SuppressOutput.System.err );
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Rule
     public ClusterRule clusterRule = new ClusterRule( BackupCoreIT.class )
