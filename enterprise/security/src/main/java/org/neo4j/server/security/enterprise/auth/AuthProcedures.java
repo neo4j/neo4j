@@ -70,7 +70,8 @@ public class AuthProcedures
     }
 
     @Procedure( name = "dbms.addUserToRole", scope = DBMS )
-    public void addUserToRole( @Name( "username" ) String username, @Name( "roleName" ) String roleName ) throws IOException
+    public void addUserToRole( @Name( "username" ) String username, @Name( "roleName" ) String roleName )
+            throws IOException
     {
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
         adminSubject.getUserManager().addUserToRole( username, roleName );
@@ -122,8 +123,7 @@ public class AuthProcedures
     }
 
     @Procedure( name = "dbms.showCurrentUser", scope = DBMS )
-    public Stream<UserResult> showCurrentUser( )
-            throws IllegalCredentialsException, IOException
+    public Stream<UserResult> showCurrentUser() throws IllegalCredentialsException, IOException
     {
         EnterpriseAuthSubject enterpriseSubject = EnterpriseAuthSubject.castOrFail( authSubject );
         EnterpriseUserManager userManager = enterpriseSubject.getUserManager();
@@ -179,33 +179,39 @@ public class AuthProcedures
         return enterpriseAuthSubject;
     }
 
-    public class StringResult {
+    public class StringResult
+    {
         public final String value;
 
-        public StringResult(String value) {
+        public StringResult( String value )
+        {
             this.value = value;
         }
     }
 
-    public class UserResult {
+    public class UserResult
+    {
         public final String username;
         public final List<String> roles;
 
-        public UserResult(String username, Set<String> roles) {
+        public UserResult( String username, Set<String> roles )
+        {
             this.username = username;
             this.roles = new ArrayList<>();
-            this.roles.addAll(roles);
+            this.roles.addAll( roles );
         }
     }
 
-    public class RoleResult {
+    public class RoleResult
+    {
         public final String role;
         public final List<String> users;
 
-        public RoleResult(String role, Set<String> users) {
+        public RoleResult( String role, Set<String> users )
+        {
             this.role = role;
             this.users = new ArrayList<>();
-            this.users.addAll(users);
+            this.users.addAll( users );
         }
     }
 }
