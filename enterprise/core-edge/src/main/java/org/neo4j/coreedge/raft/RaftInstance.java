@@ -370,7 +370,14 @@ public class RaftInstance implements LeaderLocator,
     {
         for ( RaftMessages.Directed outgoingMessage : outcome.getOutgoingMessages() )
         {
-            outbound.send( outgoingMessage.to(), outgoingMessage.message() );
+            try
+            {
+                outbound.send( outgoingMessage.to(), outgoingMessage.message() );
+            }
+            catch ( Exception e )
+            {
+                log.warn( format( "Failed to send message %s.", outgoingMessage ), e );
+            }
         }
     }
 
