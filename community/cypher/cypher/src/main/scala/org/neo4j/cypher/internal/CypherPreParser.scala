@@ -54,6 +54,8 @@ case object CypherPreParser extends Parser with Base {
 
   def RuntimeOption = rule("runtime option")(
     option("runtime", "interpreted") ~ push(InterpretedRuntimeOption)
+        //Only here for the parser to be backwards compatible
+      | option("runtime", "compiled") ~ push(InterpretedRuntimeOption)
   )
 
   def StrategyOption = rule("strategy option")(
