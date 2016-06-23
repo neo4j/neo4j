@@ -75,6 +75,21 @@ public class SessionIT
     }
 
     @Test
+    public void shouldHandleNewLine() throws Throwable
+    {
+        // Given
+        Session session = env.newSession( "<test>" );
+        session.init( "TestClient/1.0", emptyMap(), null, null );
+
+        // When
+        session.run( System.lineSeparator(), EMPTY_PARAMS, null, responses );
+        session.pullAll( "",  responses );
+
+        // Then
+        assertThat( responses.next(), failedWith( Status.Statement.SyntaxError ) );
+    }
+
+    @Test
     public void shouldExecuteStatement() throws Throwable
     {
         // Given
