@@ -119,7 +119,7 @@ public class MembershipWaiter
             lastLeaderCommit = raftState.leaderCommit();
             if ( lastLeaderCommit != -1 )
             {
-                log.info( "%s Catchup: %d => %d (%d behind)%n",
+                log.info( "%s Catchup: %d => %d (%d behind)",
                         myself,
                         localCommit, lastLeaderCommit,
                         lastLeaderCommit - localCommit );

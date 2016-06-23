@@ -54,7 +54,7 @@ public class Candidate implements RaftMessageHandler
                 }
 
                 outcome.setNextRole( FOLLOWER );
-                log.info( "Moving to FOLLOWER state after receiving heartbeat from %s at term %d (i am at %d)%n",
+                log.info( "Moving to FOLLOWER state after receiving heartbeat from %s at term %d (i am at %d)",
                         req.from(), req.leaderTerm(), ctx.term() );
                 Heart.beat( ctx, outcome, (RaftMessages.Heartbeat) message );
                 break;
@@ -75,7 +75,7 @@ public class Candidate implements RaftMessageHandler
                 }
 
                 outcome.setNextRole( FOLLOWER );
-                log.info( "Moving to FOLLOWER state after receiving append entries request from %s at term %d (i am at %d)%n",
+                log.info( "Moving to FOLLOWER state after receiving append entries request from %s at term %d (i am at %d)n",
                         req.from(), req.leaderTerm(), ctx.term() );
                 Appending.handleAppendEntriesRequest( ctx, outcome, req, localDatabase.storeId() );
                 break;
@@ -89,7 +89,7 @@ public class Candidate implements RaftMessageHandler
                 {
                     outcome.setNextTerm( res.term() );
                     outcome.setNextRole( FOLLOWER );
-                    log.info( "Moving to FOLLOWER state after receiving vote response from %s at term %d (i am at %d)%n",
+                    log.info( "Moving to FOLLOWER state after receiving vote response from %s at term %d (i am at %d)",
                             res.from(), res.term(), ctx.term() );
                     break;
                 }
@@ -112,7 +112,7 @@ public class Candidate implements RaftMessageHandler
                     outcome.setLastLogIndexBeforeWeBecameLeader( ctx.entryLog().appendIndex() );
                     outcome.electedLeader();
                     outcome.setNextRole( LEADER );
-                    log.info( "Moving to LEADER state at term %d (i am %s), voted for by %s%n",
+                    log.info( "Moving to LEADER state at term %d (i am %s), voted for by %s",
                             ctx.term(), ctx.myself(), outcome.getVotesForMe() );
                 }
                 break;
@@ -125,7 +125,7 @@ public class Candidate implements RaftMessageHandler
                 {
                     outcome.getVotesForMe().clear();
                     outcome.setNextRole( FOLLOWER );
-                    log.info( "Moving to FOLLOWER state after receiving vote request from %s at term %d (i am at %d)%n",
+                    log.info( "Moving to FOLLOWER state after receiving vote request from %s at term %d (i am at %d)",
                             req.from(), req.term(), ctx.term() );
                     Voting.handleVoteRequest( ctx, outcome, req, localDatabase.storeId() );
                     break;

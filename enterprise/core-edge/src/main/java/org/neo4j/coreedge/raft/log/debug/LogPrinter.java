@@ -44,7 +44,7 @@ public class LogPrinter
             while ( cursor.next() )
             {
                 RaftLogEntry raftLogEntry = cursor.get();
-                out.printf("%8d %5d %s%n", index, raftLogEntry.term(), raftLogEntry.content());
+                out.printf("%8d %5d %s", index, raftLogEntry.term(), raftLogEntry.content());
                 index++;
             }
         }

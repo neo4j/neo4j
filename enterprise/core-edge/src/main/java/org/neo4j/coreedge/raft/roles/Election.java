@@ -35,7 +35,7 @@ public class Election
         Set<CoreMember> currentMembers = ctx.votingMembers();
         if ( currentMembers == null || !currentMembers.contains( ctx.myself() ) )
         {
-            log.info( "Election attempted but not started, current members are %s, i am %s%n",
+            log.info( "Election attempted but not started, current members are %s, i am %s",
                     currentMembers, ctx.myself()  );
             return false;
         }
@@ -51,7 +51,7 @@ public class Election
         );
 
         outcome.setVotedFor( ctx.myself() );
-        log.info( "Election started with vote request: %s and members: %s%n", voteForMe, currentMembers );
+        log.info( "Election started with vote request: %s and members: %s", voteForMe, currentMembers );
         return true;
     }
 }
