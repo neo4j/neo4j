@@ -238,7 +238,7 @@ public class BackupServiceStressTestingBuilder
                 }
 
                 executor.shutdown();
-                assertTrue( executor.awaitTermination( 30, TimeUnit.SECONDS ) );
+                assertTrue( executor.awaitTermination( 5, TimeUnit.MINUTES ) );
 
                 life.shutdown();
 
