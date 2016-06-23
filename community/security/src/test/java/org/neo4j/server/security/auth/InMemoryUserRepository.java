@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.security.auth;
 
+import java.io.IOException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -28,88 +29,11 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 /** A user repository implementation that just stores users in memory */
-public class InMemoryUserRepository extends LifecycleAdapter implements UserRepository
+public class InMemoryUserRepository extends AbstractUserRepository
 {
-    private final ConcurrentHashMap<String, User> users = new ConcurrentHashMap<>();
-
     @Override
-    public User getUserByName( String username )
+    public void saveUsers() throws IOException
     {
-        return users.get( username );
-    }
-
-    @Override
-    public void create( User user ) throws IllegalCredentialsException
-    {
-        synchronized (this)
-        {
-            // Check for existing user or token
-            for ( User other : users.values() )
-            {
-                if ( other.name().equals( user.name() ) )
-                {
-                    throw new IllegalCredentialsException( "The specified user already exists" );
-                }
-            }
-
-            users.put( user.name(), user );
-        }
-    }
-
-    @Override
-    public void update( User existingUser, User updatedUser ) throws ConcurrentModificationException
-    {
-        // Assert input is ok
-        if ( !existingUser.name().equals( updatedUser.name() ) )
-        {
-            throw new IllegalArgumentException( "updatedUser has a different name" );
-        }
-
-        synchronized (this)
-        {
-            boolean foundUser = false;
-            for ( User other : users.values() )
-            {
-                if ( other.equals( existingUser ) )
-                {
-                    foundUser = true;
-                }
-            }
-
-            if ( !foundUser )
-            {
-                throw new ConcurrentModificationException();
-            }
-
-            users.put( updatedUser.name(), updatedUser );
-        }
-    }
-
-    @Override
-    public boolean delete( User user )
-    {
-        synchronized (this)
-        {
-            return users.remove( user.name() ) != null;
-        }
-    }
-
-    @Override
-    public int numberOfUsers()
-    {
-        return users.size();
-    }
-
-    @Override
-    public boolean isValidUsername( String username )
-    {
-        // This repo can store any name
-        return true;
-    }
-
-    @Override
-    public Set<String> getAllUsernames()
-    {
-        return users.values().stream().map( User::name ).collect( Collectors.toSet() );
+        // Nothing to do
     }
 }

@@ -293,14 +293,13 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         assertNotNull( "User craig should exist", userManager.getUser( "craig" ) );
     }
 
-    // This test is not valid for InMemoryUserRepository, as this allows all usernames. Find a way to flag it
-    @Ignore
     @Test
     public void shouldNotCreateUserIfInvalidUsername() throws Exception
     {
-        assertFail( adminSubject, "CALL dbms.createUser('', '1234', true)", "Username cannot be empty" );
-        assertFail( adminSubject, "CALL dbms.createUser('&%ss!', '1234', true)", "Username cannot be empty" );
-        assertFail( adminSubject, "CALL dbms.createUser('&%ss!', '', true)", "Username cannot be empty" );
+        assertFail( adminSubject, "CALL dbms.createUser('', '1234', true)", "User name contains illegal characters" );
+        assertFail( adminSubject, "CALL dbms.createUser('&%ss!', '1234', true)",
+                "User name contains illegal characters" );
+        assertFail( adminSubject, "CALL dbms.createUser('&%ss!', '', true)", "User name contains illegal characters" );
     }
 
     @Test
@@ -466,8 +465,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     {
         testFailAddUserToRole( adminSubject, "Olivia", PUBLISHER, "User Olivia does not exist" );
         testFailAddUserToRole( adminSubject, "Olivia", "thisRoleDoesNotExist", "User Olivia does not exist" );
-        testFailAddUserToRole( adminSubject, "Olivia", "",
-                HAS_ILLEGAL_ARGS_CHECK ? "Role name contains illegal characters" : "User Olivia does not exist" );
+        testFailAddUserToRole( adminSubject, "Olivia", "", "Role name contains illegal characters" );
     }
 
     @Test
@@ -475,8 +473,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     {
         testFailAddUserToRole( adminSubject, "readSubject", "thisRoleDoesNotExist",
                 "Role thisRoleDoesNotExist does not exist" );
-        testFailAddUserToRole( adminSubject, "readSubject", "",
-                HAS_ILLEGAL_ARGS_CHECK ? "Role name contains illegal characters" : "Role  does not exist" );
+        testFailAddUserToRole( adminSubject, "readSubject", "", "Role name contains illegal characters" );
     }
 
     @Test
@@ -513,18 +510,15 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     {
         testFailRemoveUserFromRole( adminSubject, "Olivia", PUBLISHER, "User Olivia does not exist" );
         testFailRemoveUserFromRole( adminSubject, "Olivia", "thisRoleDoesNotExist", "User Olivia does not exist" );
-        testFailRemoveUserFromRole( adminSubject, "Olivia", "",
-                HAS_ILLEGAL_ARGS_CHECK ? "Role name contains illegal characters" : "User Olivia does not exist" );
-        testFailRemoveUserFromRole( adminSubject, "", "",
-                HAS_ILLEGAL_ARGS_CHECK ? "User name contains illegal characters" : "User  does not exist" );
+        testFailRemoveUserFromRole( adminSubject, "Olivia", "", "Role name contains illegal characters" );
+        testFailRemoveUserFromRole( adminSubject, "", "", "User name contains illegal characters" );
     }
 
     @Test
     public void shouldFailToRemoveUserFromNonExistentRole() throws Exception
     {
         testFailRemoveUserFromRole( adminSubject, "readSubject", "thisRoleDoesNotExist", "Role thisRoleDoesNotExist does not exist" );
-        testFailRemoveUserFromRole( adminSubject, "readSubject", "",
-                HAS_ILLEGAL_ARGS_CHECK ? "Role name contains illegal characters" : "Role  does not exist" );
+        testFailRemoveUserFromRole( adminSubject, "readSubject", "", "Role name contains illegal characters" );
     }
 
     @Test

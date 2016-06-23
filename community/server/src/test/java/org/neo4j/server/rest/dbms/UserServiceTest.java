@@ -25,6 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.Principal;
@@ -79,13 +80,13 @@ public class UserServiceTest
     public ExpectedException exception = ExpectedException.none();
 
     @Before
-    public void setUp() throws IllegalCredentialsException
+    public void setUp() throws IllegalCredentialsException, IOException
     {
         userRepository.create( NEO4J_USER );
     }
 
     @After
-    public void tearDown() throws IllegalCredentialsException
+    public void tearDown() throws IllegalCredentialsException, IOException
     {
         userRepository.delete( NEO4J_USER );
     }

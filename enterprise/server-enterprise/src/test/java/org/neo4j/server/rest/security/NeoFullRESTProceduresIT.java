@@ -37,7 +37,6 @@ public class NeoFullRESTProceduresIT extends AuthProceduresTestLogic<RESTSubject
         super();
         CHANGE_PWD_ERR_MSG = "User is required to change their password.";
         PWD_CHANGE_CHECK_FIRST = true;
-        HAS_ILLEGAL_ARGS_CHECK = true;
         IS_EMBEDDED = false;
     }
 

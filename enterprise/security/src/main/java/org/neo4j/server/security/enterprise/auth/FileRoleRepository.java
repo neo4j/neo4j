@@ -45,8 +45,6 @@ public class FileRoleRepository extends AbstractRoleRepository
 
     private final RoleSerialization serialization = new RoleSerialization();
 
-    private final Pattern roleNamePattern = Pattern.compile( "^[a-zA-Z0-9_]+$" );
-
     public FileRoleRepository( Path file, LogProvider logProvider )
     {
         this.roleFile = file.toAbsolutePath();
@@ -60,12 +58,6 @@ public class FileRoleRepository extends AbstractRoleRepository
         {
             loadRolesFromFile();
         }
-    }
-
-    @Override
-    public boolean isValidRoleName( String roleName )
-    {
-        return roleNamePattern.matcher( roleName ).matches();
     }
 
     @Override

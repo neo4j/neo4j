@@ -22,18 +22,10 @@ package org.neo4j.server.security.auth;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -42,33 +34,20 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
  * Stores user auth data. In memory, but backed by persistent storage so changes to this repository will survive
  * JVM restarts and crashes.
  */
-public class FileUserRepository extends LifecycleAdapter implements UserRepository
+public class FileUserRepository extends AbstractUserRepository
 {
     private final Path authFile;
 
     // TODO: We could improve concurrency by using a ReadWriteLock
 
-    /** Quick lookup of users by name */
-    private final Map<String, User> usersByName = new ConcurrentHashMap<>();
     private final Log log;
 
-    /** Master list of users */
-    private volatile List<User> users = new ArrayList<>();
-
     private final UserSerialization serialization = new UserSerialization();
-
-    private final Pattern usernamePattern = Pattern.compile( "^[a-zA-Z0-9_]+$" );
 
     public FileUserRepository( Path file, LogProvider logProvider )
     {
         this.authFile = file.toAbsolutePath();
         this.log = logProvider.getLog( getClass() );
-    }
-
-    @Override
-    public User getUserByName( String username )
-    {
-        return usersByName.get( username );
     }
 
     @Override
@@ -81,118 +60,9 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
     }
 
     @Override
-    public void create( User user ) throws IllegalArgumentException, IOException
+    public void saveUsers() throws IOException
     {
-        if ( !isValidUsername( user.name() ) )
-        {
-            throw new IllegalArgumentException( "'" + user.name() + "' is not a valid user name." );
-        }
-
-        synchronized (this)
-        {
-            // Check for existing user
-            for ( User other : users )
-            {
-                if ( other.name().equals( user.name() ) )
-                {
-                    throw new IllegalArgumentException( "The specified user already exists" );
-                }
-            }
-
-            users.add( user );
-
-            saveUsersToFile();
-
-            usersByName.put( user.name(), user );
-        }
-    }
-
-    @Override
-    public void update( User existingUser, User updatedUser ) throws ConcurrentModificationException, IOException
-    {
-        // Assert input is ok
-        if ( !existingUser.name().equals( updatedUser.name() ) )
-        {
-            throw new IllegalArgumentException( "updatedUser has a different name" );
-        }
-
-        synchronized (this)
-        {
-            // Copy-on-write for the users list
-            List<User> newUsers = new ArrayList<>();
-            boolean foundUser = false;
-            for ( User other : users )
-            {
-                if ( other.equals( existingUser ) )
-                {
-                    foundUser = true;
-                    newUsers.add( updatedUser );
-                } else
-                {
-                    newUsers.add( other );
-                }
-            }
-
-            if ( !foundUser )
-            {
-                throw new ConcurrentModificationException();
-            }
-
-            users = newUsers;
-
-            saveUsersToFile();
-
-            usersByName.put( updatedUser.name(), updatedUser );
-        }
-    }
-
-    @Override
-    public boolean delete( User user ) throws IOException
-    {
-        boolean foundUser = false;
-        synchronized (this)
-        {
-            // Copy-on-write for the users list
-            List<User> newUsers = new ArrayList<>();
-            for ( User other : users )
-            {
-                if ( other.name().equals( user.name() ) )
-                {
-                    foundUser = true;
-                } else
-                {
-                    newUsers.add( other );
-                }
-            }
-
-            if ( foundUser )
-            {
-                users = newUsers;
-
-                saveUsersToFile();
-
-                usersByName.remove( user.name() );
-            }
-        }
-        return foundUser;
-    }
-
-    @Override
-    public int numberOfUsers()
-    {
-        return users.size();
-    }
-
-    @Override
-    public boolean isValidUsername( String username )
-    {
-        return usernamePattern.matcher( username ).matches();
-    }
-
-    @Override
-    public Set<String> getAllUsernames()
-    {
-        return users.stream().map( User::name ).collect( Collectors.toSet() );
+        saveUsersToFile();
     }
 
     private void saveUsersToFile() throws IOException

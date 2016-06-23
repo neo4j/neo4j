@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -43,6 +44,8 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
 
     /** Master list of roles */
     protected volatile List<RoleRecord> roles = new ArrayList<>();
+
+    private final Pattern roleNamePattern = Pattern.compile( "^[a-zA-Z0-9_]+$" );
 
     @Override
     public RoleRecord getRoleByName( String roleName )
@@ -175,6 +178,12 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     public int numberOfRoles()
     {
         return roles.size();
+    }
+
+    @Override
+    public boolean isValidRoleName( String roleName )
+    {
+        return roleNamePattern.matcher( roleName ).matches();
     }
 
     @Override
