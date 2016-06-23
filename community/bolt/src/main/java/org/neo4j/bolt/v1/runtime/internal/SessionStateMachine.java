@@ -22,6 +22,7 @@ package org.neo4j.bolt.v1.runtime.internal;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.AuthenticationException;
@@ -37,6 +38,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.bolt.SessionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthToken;
@@ -46,6 +48,7 @@ import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext;
 import org.neo4j.kernel.impl.query.QuerySession;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.udc.UsageData;
 
@@ -73,11 +76,12 @@ public class SessionStateMachine implements Session, SessionState
         UNINITIALIZED
                 {
                     @Override
-                    public State init( SessionStateMachine ctx, String clientName, Map<String,Object> authToken )
+                    public State init( SessionStateMachine ctx, String clientName, Map<String,Object> authToken, long baseDBVersion )
                     {
                         try
                         {
                             AuthenticationResult authResult = ctx.spi.authenticate( authToken );
+                            ctx.versionTracking = ctx.spi.versionTracking( baseDBVersion );
                             ctx.authSubject = authResult.getAuthSubject();
                             ctx.credentialsExpired = authResult.credentialsExpired();
                             ctx.result( authResult.credentialsExpired() );
@@ -123,9 +127,7 @@ public class SessionStateMachine implements Session, SessionState
                     @Override
                     public State beginTransaction( SessionStateMachine ctx )
                     {
-                        assert ctx.currentTransaction == null;
-                        ctx.currentTransaction = ctx.spi.beginTransaction( explicit, ctx.authSubject );
-                        return IN_TRANSACTION;
+                        return doBeginTransaction( ctx, explicit );
                     }
 
                     @Override
@@ -154,12 +156,25 @@ public class SessionStateMachine implements Session, SessionState
                     @Override
                     public State beginImplicitTransaction( SessionStateMachine ctx )
                     {
+                        return doBeginTransaction( ctx, implicit );
+                    }
+
+                    private State doBeginTransaction( SessionStateMachine ctx, KernelTransaction.Type type )
+                    {
                         assert ctx.currentTransaction == null;
-                        // NOTE: If we move away from doing implicit transactions this
-                        // way, we need a different way to kill statements running in implicit
-                        // transactions, because we do that by calling #terminate() on this tx.
-                        ctx.currentTransaction = ctx.spi.beginTransaction( implicit, ctx.authSubject );
-                        return IN_TRANSACTION;
+                        try
+                        {
+                            // NOTE: If we move away from doing implicit transactions this
+                            // way, we need a different way to kill statements running in implicit
+                            // transactions, because we do that by calling #terminate() on this tx.
+                            ctx.currentTransaction =
+                                    ctx.spi.beginTransaction( type, ctx.authSubject, ctx.versionTracking );
+                            return IN_TRANSACTION;
+                        }
+                        catch ( TransactionFailureException e )
+                        {
+                            return error( ctx, e );
+                        }
                     }
 
                     @Override
@@ -439,7 +454,7 @@ public class SessionStateMachine implements Session, SessionState
 
         // Operations that a session can perform. Individual states override these if they want to support them.
 
-        public State init( SessionStateMachine ctx, String clientName, Map<String,Object> authToken )
+        public State init( SessionStateMachine ctx, String clientName, Map<String,Object> authToken, long baseDBVersion )
         {
             return onNoImplementation( ctx, "initializing the session" );
         }
@@ -674,6 +689,8 @@ public class SessionStateMachine implements Session, SessionState
     /** These are the "external" actions the state machine can take */
     private final SPI spi;
 
+    private SPI.VersionTracking versionTracking;
+
     /**
      * This SPI encapsulates the "external" actions the state machine can take.
      * It exists for three reasons:
@@ -693,7 +710,8 @@ public class SessionStateMachine implements Session, SessionState
         String connectionDescriptor();
         void reportError( Neo4jError err );
         void reportError( String message, Throwable cause );
-        KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode mode );
+        KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode mode, VersionTracking versionTracking )
+                throws TransactionFailureException;
         void bindTransactionToCurrentThread( KernelTransaction tx );
         void unbindTransactionFromCurrentThread();
         RecordStream run( SessionStateMachine ctx, String statement, Map<String, Object> params )
@@ -703,14 +721,21 @@ public class SessionStateMachine implements Session, SessionState
         Statement currentStatement();
         void sessionActivated( Session session );
         void sessionHalted( Session session );
+        VersionTracking versionTracking( long startingVersion );
+
+        interface VersionTracking
+        {
+            void assertUpToDate() throws TransactionFailureException;
+        }
     }
 
     public SessionStateMachine( String connectionDescriptor, UsageData usageData, GraphDatabaseAPI db,
             ThreadToStatementContextBridge txBridge, StatementRunner engine, LogService logging,
-            Authentication authentication, SessionTracker sessionTracker )
+
+            Authentication authentication, Supplier<TransactionIdStore> transactionIdStore, SessionTracker sessionTracker )
     {
         this( new StandardStateMachineSPI( connectionDescriptor, usageData, db, engine, logging, authentication,
-                txBridge, sessionTracker ) );
+                txBridge, transactionIdStore, sessionTracker ) );
     }
 
     public SessionStateMachine( SPI spi )
@@ -742,12 +767,13 @@ public class SessionStateMachine implements Session, SessionState
     }
 
     @Override
-    public <A> void init( String clientName, Map<String,Object> authToken, A attachment, Callback<Boolean,A> callback )
+    public <A> void init( String clientName, Map<String,Object> authToken, long baseDBVersion,
+            A attachment, Callback<Boolean,A> callback )
     {
         before( attachment, callback );
         try
         {
-            state = state.init( this, clientName, authToken );
+            state = state.init( this, clientName, authToken, baseDBVersion );
         }
         finally { after(); }
     }

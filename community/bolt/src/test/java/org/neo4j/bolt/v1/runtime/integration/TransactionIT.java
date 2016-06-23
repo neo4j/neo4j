@@ -19,21 +19,31 @@
  */
 package org.neo4j.bolt.v1.runtime.integration;
 
-import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Collections;
-import java.util.Map;
-
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.StatementMetadata;
+import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
+import org.neo4j.concurrent.BinaryLatch;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+
+import static java.util.Collections.emptyMap;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.streamContaining;
+import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.success;
+import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
+import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.equalsStream;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class TransactionIT
 {
-    private static final Map<String, Object> EMPTY_PARAMS = Collections.emptyMap();
-
     @Rule
     public SessionRule env = new SessionRule();
 
@@ -41,66 +51,113 @@ public class TransactionIT
     public void shouldHandleBeginCommit() throws Throwable
     {
         // Given
-        RecordingCallback<StatementMetadata, ?> responses = new RecordingCallback<>();
+        RecordingCallback<StatementMetadata,?> responses = new RecordingCallback<>();
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient",  Collections.<String, Object>emptyMap(), null, null );
+        session.init( "TestClient", emptyMap(), BASE_TX_ID, null, null );
 
         // When
-        session.run( "BEGIN", EMPTY_PARAMS, null, responses );
-        session.discardAll( null, Session.Callbacks.<Void,Object>noop() );
+        session.run( "BEGIN", emptyMap(), null, responses );
+        session.discardAll( null, Session.Callbacks.noop() );
 
-        session.run( "CREATE (n:InTx)", EMPTY_PARAMS, null, responses );
-        session.discardAll( null, Session.Callbacks.<Void,Object>noop() );
+        session.run( "CREATE (n:InTx)", emptyMap(), null, responses );
+        session.discardAll( null, Session.Callbacks.noop() );
 
-        session.run( "COMMIT", EMPTY_PARAMS, null, responses );
-        session.discardAll( null, Session.Callbacks.<Void,Object>noop() );
+        session.run( "COMMIT", emptyMap(), null, responses );
+        session.discardAll( null, Session.Callbacks.noop() );
 
         // Then
-        MatcherAssert.assertThat( responses.next(), SessionMatchers.success() );
-        MatcherAssert.assertThat( responses.next(), SessionMatchers.success() );
-        MatcherAssert.assertThat( responses.next(), SessionMatchers.success() );
+        assertThat( responses.next(), success() );
+        assertThat( responses.next(), success() );
+        assertThat( responses.next(), success() );
     }
 
     @Test
     public void shouldHandleBeginRollback() throws Throwable
     {
         // Given
-        RecordingCallback<StatementMetadata, ?> responses = new RecordingCallback<>();
+        RecordingCallback<StatementMetadata,?> responses = new RecordingCallback<>();
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient",  Collections.<String, Object>emptyMap(), null, null );
+        session.init( "TestClient", emptyMap(), BASE_TX_ID, null, null );
 
         // When
-        session.run( "BEGIN", EMPTY_PARAMS, null, responses );
-        session.discardAll( null, Session.Callbacks.<Void,Object>noop() );
+        session.run( "BEGIN", emptyMap(), null, responses );
+        session.discardAll( null, Session.Callbacks.noop() );
 
-        session.run( "CREATE (n:InTx)", EMPTY_PARAMS, null, responses );
-        session.discardAll( null, Session.Callbacks.<Void,Object>noop() );
+        session.run( "CREATE (n:InTx)", emptyMap(), null, responses );
+        session.discardAll( null, Session.Callbacks.noop() );
 
-        session.run( "ROLLBACK", EMPTY_PARAMS, null, responses );
-        session.discardAll( null, Session.Callbacks.<Void,Object>noop() );
+        session.run( "ROLLBACK", emptyMap(), null, responses );
+        session.discardAll( null, Session.Callbacks.noop() );
 
         // Then
-        MatcherAssert.assertThat( responses.next(), SessionMatchers.success() );
-        MatcherAssert.assertThat( responses.next(), SessionMatchers.success() );
-        MatcherAssert.assertThat( responses.next(), SessionMatchers.success() );
+        assertThat( responses.next(), success() );
+        assertThat( responses.next(), success() );
+        assertThat( responses.next(), success() );
     }
 
     @Test
     public void shouldFailNicelyWhenOutOfOrderRollback() throws Throwable
     {
         // Given
-        RecordingCallback<StatementMetadata, ?> runResponse = new RecordingCallback<>();
-        RecordingCallback<RecordStream, Object> pullResponse = new RecordingCallback<>();
+        RecordingCallback<StatementMetadata,?> runResponse = new RecordingCallback<>();
+        RecordingCallback<RecordStream,Object> pullResponse = new RecordingCallback<>();
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient",  Collections.<String, Object>emptyMap(), null, null );
+        session.init( "TestClient", emptyMap(), BASE_TX_ID, null, null );
 
         // When
-        session.run( "ROLLBACK", EMPTY_PARAMS, null, runResponse );
+        session.run( "ROLLBACK", emptyMap(), null, runResponse );
         session.pullAll( null, pullResponse );
 
         // Then
-        MatcherAssert.assertThat( runResponse.next(),
-                SessionMatchers.failedWith( "rollback cannot be done when there is no open transaction in the session."));
-        MatcherAssert.assertThat( pullResponse.next(), SessionMatchers.ignored());
+        assertThat( runResponse.next(), SessionMatchers
+                .failedWith( "rollback cannot be done when there is no open transaction in the session." ) );
+        assertThat( pullResponse.next(), SessionMatchers.ignored() );
+    }
+
+    @Test
+    public void shouldReadYourOwnWrites() throws Exception
+    {
+        try ( Transaction tx = env.graph().beginTx() )
+        {
+            Node node = env.graph().createNode( Label.label( "A" ) );
+            node.setProperty( "prop", "one" );
+            tx.success();
+        }
+
+        BinaryLatch latch = new BinaryLatch();
+
+        long dbVersion = env.lastClosedTxId();
+        Thread thread = new Thread()
+        {
+            @Override
+            public void run()
+            {
+                try ( Session session = env.newSession( "<write>" ) )
+                {
+                    session.init( "TestClient", emptyMap(), BASE_TX_ID, null, null );
+                    latch.await();
+                    session.run( "MATCH (n:A) SET n.prop = 'two'", emptyMap(), null, Session.Callbacks.noop() );
+                    session.pullAll( null, Session.Callbacks.noop() );
+                }
+            }
+        };
+        thread.start();
+
+        long dbVersionAfterWrite = dbVersion + 1;
+        try ( Session session = env.newSession( "<read>" ) )
+        {
+            session.init( "TestClient", emptyMap(), dbVersionAfterWrite, null, null );
+            latch.release();
+            session.run( "MATCH (n:A) RETURN n.prop", emptyMap(), null, Session.Callbacks.noop() );
+            RecordingCallback<RecordStream,Object> pullResponse = new RecordingCallback<>();
+            session.pullAll( null, pullResponse );
+
+            Record[] records = ((RecordingCallback.Result) pullResponse.next()).records();
+
+            assertEquals( 1, records.length );
+            assertThat( records[0], eqRecord( equalTo( "two" ) ) );
+        }
+
+        thread.join();
     }
 }

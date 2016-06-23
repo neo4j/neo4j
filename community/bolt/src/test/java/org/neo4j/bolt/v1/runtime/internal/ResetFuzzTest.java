@@ -60,6 +60,7 @@ import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.recorded;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.success;
 import static org.neo4j.bolt.v1.runtime.internal.SessionStateMachine.State.IDLE;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class ResetFuzzTest
 {
@@ -95,7 +96,7 @@ public class ResetFuzzTest
         // given
         life.start();
         Session session = sessions.newSession( "<test>" );
-        session.init( "Test/0.0.0", map(), null, Session.Callback.NO_OP );
+        session.init( "Test/0.0.0", map(), BASE_TX_ID, null, Session.Callback.NO_OP );
 
         TransportBridge bridge = new TransportBridge(
                 NullLog.getInstance(), session, new MessageHandler.Adapter<>(), ( () -> {} ) );
@@ -177,7 +178,7 @@ public class ResetFuzzTest
         }
 
         @Override
-        public KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode mode )
+        public KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode mode, VersionTracking versionTracking )
         {
             liveTransactions.incrementAndGet();
             return new CloseTrackingKernelTransaction();
@@ -229,7 +230,12 @@ public class ResetFuzzTest
         @Override
         public void sessionHalted( Session session )
         {
+        }
 
+        @Override
+        public VersionTracking versionTracking( long startingVersion )
+        {
+            return () -> {};
         }
     }
 

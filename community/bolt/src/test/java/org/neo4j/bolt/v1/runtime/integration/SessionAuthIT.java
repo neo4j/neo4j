@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.failed;
@@ -33,6 +34,7 @@ import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.recorded;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.success;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.successButRequiresPasswordChange;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class SessionAuthIT
 {
@@ -51,7 +53,7 @@ public class SessionAuthIT
         session.init( "TestClient/1.0.0", map(
                 "scheme", "basic",
                 "principal", "neo4j",
-                "credentials", "neo4j" ), null, recorder );
+                "credentials", "neo4j" ), BASE_TX_ID, null, recorder );
         session.run( "CREATE ()", map(), null, recorder );
 
         // then
@@ -73,7 +75,7 @@ public class SessionAuthIT
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "j4oen"
-        ), null, recorder );
+        ), BASE_TX_ID, null, recorder );
         session.ackFailure( null, recorder );
         session.run( "RETURN 1337", map(), null, recorder );
 
@@ -97,7 +99,7 @@ public class SessionAuthIT
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "j4oen"
-        ), null, recorder );
+        ), BASE_TX_ID, null, recorder );
         session.reset( null, recorder );
         session.run( "RETURN 1337", map(), null, recorder );
 
@@ -172,14 +174,14 @@ public class SessionAuthIT
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "j4oen"
-        ), null, recorder );
+        ), BASE_TX_ID, null, recorder );
         session.ackFailure( null, recorder );
         // when
         session.init( "TestClient/1.0.0", map(
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "neo4j"
-        ), null, recorder );
+        ), BASE_TX_ID, null, recorder );
 
         // then
         assertThat( recorder, recorded( failed(), success(), success() ));
@@ -198,14 +200,14 @@ public class SessionAuthIT
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "j4oen"
-        ), null, recorder );
+        ), BASE_TX_ID, null, recorder );
         session.reset( null, recorder );
         // when
         session.init( "TestClient/1.0.0", map(
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "neo4j"
-        ), null, recorder );
+        ), BASE_TX_ID, null, recorder );
 
         // then
         assertThat( recorder, recorded( failed(), success(), success() ));
@@ -225,7 +227,7 @@ public class SessionAuthIT
                 "principal", "neo4j",
                 "credentials", "neo4j",
                 "new_credentials", "secret"
-                ), null, recorder );
+                ), BASE_TX_ID, null, recorder );
         session.run( "CREATE ()", map(), null, recorder );
 
         // then

@@ -45,8 +45,6 @@ public class BasicAuthentication implements Authentication
     private static final String SCHEME = "basic";
     private final Log log;
 
-    private AuthSubject authSubject;
-
     public BasicAuthentication( AuthManager authManager, LogProvider logProvider )
     {
         this.authManager = authManager;
@@ -111,7 +109,6 @@ public class BasicAuthentication implements Authentication
             {
             case SUCCESS:
             case PASSWORD_CHANGE_REQUIRED:
-                String username = AuthToken.safeCast( PRINCIPAL, authToken );
                 String newPassword = AuthToken.safeCast( NEW_CREDENTIALS, authToken );
                 authSubject.setPassword( newPassword );
                 break;

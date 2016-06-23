@@ -27,6 +27,7 @@ import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.internal.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.logging.Log;
 
 /** Bridges the gap between incoming deserialized messages, the user environment and back. */
@@ -58,8 +59,9 @@ public class TransportBridge extends MessageHandler.Adapter<RuntimeException>
     @Override
     public void handleInitMessage( String clientName, Map<String,Object> authToken ) throws RuntimeException
     {
-        session.init( clientName, authToken, null, initCallback );
-
+        // TODO: make the client transmit the version for now it is hardcoded to BASE_TX_ID to ensure current behaviour
+        long baseDBVersion = TransactionIdStore.BASE_TX_ID;
+        session.init( clientName, authToken, baseDBVersion, null, initCallback );
     }
 
     @Override

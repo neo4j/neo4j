@@ -31,6 +31,8 @@ import java.time.Clock;
 import java.util.List;
 import java.util.function.BiFunction;
 
+import org.neo4j.bolt.security.auth.Authentication;
+import org.neo4j.bolt.security.auth.BasicAuthentication;
 import org.neo4j.bolt.security.ssl.Certificates;
 import org.neo4j.bolt.security.ssl.KeyStoreFactory;
 import org.neo4j.bolt.security.ssl.KeyStoreInformation;
@@ -57,15 +59,17 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.SessionTracker;
+import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -96,15 +100,15 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         @Internal
         @Description( "Path to the X.509 public certificate to be used by Neo4j for TLS connections" )
-        public static Setting<File> tls_certificate_file = derivedSetting(
-                "unsupported.dbms.security.tls_certificate_file", certificates_directory,
-                ( certificates ) -> new File( certificates, "neo4j.cert" ), PATH );
+        public static Setting<File> tls_certificate_file =
+                derivedSetting( "unsupported.dbms.security.tls_certificate_file", certificates_directory,
+                        ( certificates ) -> new File( certificates, "neo4j.cert" ), PATH );
 
         @Internal
         @Description( "Path to the X.509 private key to be used by Neo4j for TLS connections" )
-        public static final Setting<File> tls_key_file = derivedSetting(
-                "unsupported.dbms.security.tls_key_file", certificates_directory,
-                (certificates ) -> new File( certificates, "neo4j.key" ), PATH );
+        public static final Setting<File> tls_key_file =
+                derivedSetting( "unsupported.dbms.security.tls_key_file", certificates_directory,
+                        ( certificates ) -> new File( certificates, "neo4j.key" ), PATH );
     }
 
     public interface Dependencies
@@ -124,6 +128,10 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         ThreadToStatementContextBridge txBridge();
 
         SessionTracker sessionTracker();
+
+        NeoStoreDataSource dataSource();
+
+        AuthManager authManager();
     }
 
     public BoltKernelExtension()
@@ -136,22 +144,26 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
     {
         final Config config = dependencies.config();
         final GraphDatabaseService gdb = dependencies.db();
-        final GraphDatabaseFacade api = (GraphDatabaseFacade) gdb;
-        final LogService logging = dependencies.logService();
-        final Log log = logging.getInternalLog( Sessions.class );
+        final GraphDatabaseAPI api = (GraphDatabaseAPI) gdb;
+        final LogService logService = dependencies.logService();
+        final Log log = logService.getInternalLog( Sessions.class );
 
         final LifeSupport life = new LifeSupport();
 
         final JobScheduler scheduler = dependencies.scheduler();
 
-        Netty4LogBridge.setLogProvider( logging.getInternalLogProvider() );
+        Netty4LogBridge.setLogProvider( logService.getInternalLogProvider() );
 
+        Authentication authentication = authentication( dependencies.config(), dependencies.authManager(), logService );
+
+        StandardSessions standardSessions =
+                new StandardSessions( api, dependencies.usageData(), logService, dependencies.txBridge(),
+                        authentication, dependencies.dataSource(), dependencies.sessionTracker() );
         Sessions sessions =
                 new MonitoredSessions( dependencies.monitors(),
                         new ThreadedSessions(
-                                life.add( new StandardSessions( api, dependencies.usageData(), logging,
-                                        dependencies.txBridge(), dependencies.sessionTracker() ) ),
-                                scheduler, logging ), Clock.systemUTC() );
+                                life.add( standardSessions ),
+                                scheduler, logService ), Clock.systemUTC() );
 
         List<ProtocolInitializer> connectors = config
                 .view( enumerate( GraphDatabaseSettings.Connector.class ) )
@@ -164,25 +176,24 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                     boolean requireEncryption = false;
                     switch ( config.get( connConfig.encryption_level ) )
                     {
-                        // self signed cert should be generated when encryption is REQUIRED or OPTIONAL on the server
-                        // while no cert is generated if encryption is DISABLED
-                        case REQUIRED:
-                            requireEncryption = true;
-                            // no break here
-                        case OPTIONAL:
-                            sslCtx = createSslContext( config, log, address );
-                            break;
-                        default:
-                            // case DISABLED:
-                            sslCtx = null;
-                            break;
+                    // self signed cert should be generated when encryption is REQUIRED or OPTIONAL on the server
+                    // while no cert is generated if encryption is DISABLED
+                    case REQUIRED:
+                        requireEncryption = true;
+                        // no break here
+                    case OPTIONAL:
+                        sslCtx = createSslContext( config, log, address );
+                        break;
+                    default:
+                        // case DISABLED:
+                        sslCtx = null;
+                        break;
                     }
 
-                    return new SocketTransport( address, sslCtx, logging.getInternalLogProvider(),
-                            newVersions( logging, requireEncryption ?
-                                    new EncryptionRequiredSessions( sessions ) : sessions ) );
-                } )
-                .collect( toList() );
+                    return new SocketTransport( address, sslCtx, logService.getInternalLogProvider(),
+                            newVersions( logService,
+                                    requireEncryption ? new EncryptionRequiredSessions( sessions ) : sessions ) );
+                } ).collect( toList() );
 
         if ( connectors.size() > 0 && !config.get( GraphDatabaseSettings.disconnected ) )
         {
@@ -190,7 +201,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
             log.info( "Bolt Server extension loaded." );
             for ( ProtocolInitializer connector : connectors )
             {
-                logging.getUserLog( Sessions.class ).info( "Bolt enabled on %s.", connector.address() );
+                logService.getUserLog( Sessions.class ).info( "Bolt enabled on %s.", connector.address() );
             }
         }
 
@@ -202,14 +213,12 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         try
         {
             KeyStoreInformation keyStore = createKeyStore( config, log, address );
-            return SslContextBuilder
-                    .forServer( keyStore.getCertificatePath(), keyStore.getPrivateKeyPath() )
-                    .build();
+            return SslContextBuilder.forServer( keyStore.getCertificatePath(), keyStore.getPrivateKeyPath() ).build();
         }
-        catch(IOException | OperatorCreationException | GeneralSecurityException e )
+        catch ( IOException | OperatorCreationException | GeneralSecurityException e )
         {
-            throw new RuntimeException( "Failed to initilize SSL encryption support, which is required to start this " +
-                                        "connector. Error was: " + e.getMessage(), e );
+            throw new RuntimeException( "Failed to initialize SSL encryption support, which is required to start " +
+                    "this connector. Error was: " + e.getMessage(), e );
         }
     }
 
@@ -217,15 +226,12 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
             Sessions sessions )
     {
         PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> availableVersions = longObjectMap();
-        availableVersions.put(
-                BoltProtocolV1.VERSION,
-                ( channel, isEncrypted ) -> {
-                    String descriptor = format( "\tclient%s\tserver%s", channel.remoteAddress(), channel.localAddress() );
-                    ChunkedOutput output = new ChunkedOutput( channel, 8192 );
-                    return new BoltProtocolV1( logging, sessions.newSession( descriptor, isEncrypted ),
-                            new PackStreamMessageFormatV1.Writer( new Neo4jPack.Packer( output ), output ) );
-                }
-        );
+        availableVersions.put( BoltProtocolV1.VERSION, ( channel, isEncrypted ) -> {
+            String descriptor = format( "\tclient%s\tserver%s", channel.remoteAddress(), channel.localAddress() );
+            ChunkedOutput output = new ChunkedOutput( channel, 8192 );
+            return new BoltProtocolV1( logging, sessions.newSession( descriptor, isEncrypted ),
+                    new PackStreamMessageFormatV1.Writer( new Neo4jPack.Packer( output ), output ) );
+        } );
         return availableVersions;
     }
 
@@ -246,8 +252,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         {
             throw new IllegalStateException(
                     format( "TLS private key found, but missing certificate at '%s'. Cannot start server without " +
-                            "certificate.",
-                            certificatePath ) );
+                            "certificate.", certificatePath ) );
         }
         if ( !privateKeyPath.exists() )
         {
@@ -257,5 +262,18 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         }
 
         return new KeyStoreFactory().createKeyStore( privateKeyPath, certificatePath );
+    }
+
+    private Authentication authentication( Config config, AuthManager authManager, LogService logService )
+    {
+
+        if ( config.get( GraphDatabaseSettings.auth_enabled ) )
+        {
+            return new BasicAuthentication( authManager, logService.getInternalLogProvider() );
+        }
+        else
+        {
+            return Authentication.NONE;
+        }
     }
 }

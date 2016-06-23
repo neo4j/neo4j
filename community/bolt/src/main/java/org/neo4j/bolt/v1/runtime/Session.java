@@ -54,7 +54,9 @@ public interface Session extends AutoCloseable, HaltableUserSession
         {
         };
 
-        static <V,A> Callback<V,A> noOp() {
+        static <V,A> Callback<V,A> noOp()
+        {
+            //noinspection unchecked
             return NO_OP;
         }
 
@@ -129,7 +131,7 @@ public interface Session extends AutoCloseable, HaltableUserSession
     /**
      * Initialize the session.
      */
-    <A> void init( String clientName, Map<String,Object> authToken, A attachment, Callback<Boolean,A> callback );
+    <A> void init( String clientName, Map<String,Object> authToken, long baseDBVersion, A attachment, Callback<Boolean,A> callback );
 
     /**
      * Run a statement, yielding a result stream which can be retrieved through pulling it in a subsequent call.
