@@ -22,7 +22,7 @@ package org.neo4j.server.security.enterprise.auth;
 public class NeoShallowEmbeddedScenariosTest extends AuthScenariosLogic<EnterpriseAuthSubject>
 {
     @Override
-    NeoInteractionLevel<EnterpriseAuthSubject> setUpNeoServer() throws Throwable
+    protected NeoInteractionLevel<EnterpriseAuthSubject> setUpNeoServer() throws Throwable
     {
         return new NeoShallowEmbeddedInteraction();
     }

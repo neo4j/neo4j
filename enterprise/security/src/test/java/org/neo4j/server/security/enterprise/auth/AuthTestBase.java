@@ -30,9 +30,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.neo4j.graphdb.QueryExecutionException;
-import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.graphdb.ResourceIterator;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -40,7 +38,6 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.PUBLISHER;
@@ -48,6 +45,20 @@ import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.R
 
 abstract class AuthTestBase<S>
 {
+    protected boolean PWD_CHANGE_CHECK_FIRST = false;
+    protected String CHANGE_PWD_ERR_MSG = AuthProcedures.PERMISSION_DENIED;
+    protected String READ_OPS_NOT_ALLOWED = "Read operations are not allowed";
+    protected String WRITE_OPS_NOT_ALLOWED = "Write operations are not allowed";
+    protected String SCHEMA_OPS_NOT_ALLOWED = "Schema operations are not allowed";
+    protected boolean HAS_ILLEGAL_ARGS_CHECK = false;
+    protected boolean IS_EMBEDDED = true;
+
+    protected String pwdReqErrMsg( String errMsg )
+    {
+        return PWD_CHANGE_CHECK_FIRST ?
+               CHANGE_PWD_ERR_MSG : errMsg;
+    }
+
     final String EMPTY_ROLE = "empty";
 
     S adminSubject;
@@ -92,7 +103,7 @@ abstract class AuthTestBase<S>
         executeQuery( writeSubject, "UNWIND range(0,2) AS number CREATE (:Node {number:number})" );
     }
 
-    abstract NeoInteractionLevel<S> setUpNeoServer() throws Throwable;
+    protected abstract NeoInteractionLevel<S> setUpNeoServer() throws Throwable;
 
     @After
     public void tearDown() throws Throwable
@@ -117,68 +128,54 @@ abstract class AuthTestBase<S>
         testCallCount( subject, "MATCH (n) RETURN n", null, count );
     }
 
-    void testFailRead( S subject, int count )
+    void testFailRead( S subject, int count ) { testFailRead( subject, count, READ_OPS_NOT_ALLOWED ); }
+    void testFailRead( S subject, int count, String errMsg )
     {
-        // TODO: this should be permission denied instead
-        testCallFail( subject,
-                "MATCH (n) RETURN n",
-                AuthorizationViolationException.class, "Read operations are not allowed" );
+        assertCallFail( subject, "MATCH (n) RETURN n", errMsg );
     }
 
     void testSuccessfulWrite( S subject )
     {
-        testCallEmpty( subject, "CREATE (:Node)" );
+        assertCallEmpty( subject, "CREATE (:Node)" );
     }
 
-    void testFailWrite( S subject )
+    void testFailWrite( S subject ) { testFailWrite( subject, WRITE_OPS_NOT_ALLOWED ); }
+    void testFailWrite( S subject, String errMsg )
     {
-        // TODO: this should be permission denied instead
-        testCallFail( subject,
-                "CREATE (:Node)",
-                AuthorizationViolationException.class, "Write operations are not allowed" );
+        assertCallFail( subject, "CREATE (:Node)", errMsg );
     }
 
     void testSuccessfulSchema( S subject )
     {
-        testCallEmpty( subject, "CREATE INDEX ON :Node(number)" );
+        assertCallEmpty( subject, "CREATE INDEX ON :Node(number)" );
     }
 
-    void testFailSchema( S subject )
+    void testFailSchema( S subject ) { testFailSchema( subject, SCHEMA_OPS_NOT_ALLOWED ); }
+    void testFailSchema( S subject, String errMsg )
     {
-        // TODO: this should be permission denied instead
-        testCallFail( subject,
-                "CREATE INDEX ON :Node(number)",
-                AuthorizationViolationException.class, "Schema operations are not allowed" );
+        assertCallFail( subject, "CREATE INDEX ON :Node(number)", errMsg );
     }
 
-    void testFailCreateUser( S subject )
+    void testFailCreateUser( S subject, String errMsg )
     {
-        testCallFail( subject, "CALL dbms.createUser('Craig', 'foo', false)", QueryExecutionException.class,
-                AuthProcedures.PERMISSION_DENIED );
-        testCallFail( subject, "CALL dbms.createUser('Craig', '', false)", QueryExecutionException.class,
-                AuthProcedures.PERMISSION_DENIED );
-        testCallFail( subject, "CALL dbms.createUser('', 'foo', false)", QueryExecutionException.class,
-                AuthProcedures.PERMISSION_DENIED );
+        assertCallFail( subject, "CALL dbms.createUser('Craig', 'foo', false)", errMsg );
+        assertCallFail( subject, "CALL dbms.createUser('Craig', '', false)", errMsg );
+        assertCallFail( subject, "CALL dbms.createUser('', 'foo', false)", errMsg );
     }
 
-    void testFailAddUserToRole( S subject )
+    void testFailAddUserToRole( S subject, String username, String role, String errMsg )
     {
-        testCallFail( subject, "CALL dbms.addUserToRole('Craig', '" + PUBLISHER + "')",
-                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
+        assertCallFail( subject, "CALL dbms.addUserToRole('" + username + "', '" + role + "')", errMsg );
     }
 
-    void testFailRemoveUserFromRole( S subject )
+    void testFailRemoveUserFromRole( S subject, String username, String role, String errMsg )
     {
-        testCallFail( subject, "CALL dbms.removeUserFromRole('Craig', '" + PUBLISHER + "')",
-                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
+        assertCallFail( subject, "CALL dbms.removeUserFromRole('" + username + "', '" + role + "')", errMsg );
     }
 
-    void testFailDeleteUser( S subject )
+    void testFailDeleteUser( S subject, String username, String errMsg )
     {
-        testCallFail( subject, "CALL dbms.deleteUser('Craig')", QueryExecutionException.class,
-                AuthProcedures.PERMISSION_DENIED );
-        testCallFail( subject, "CALL dbms.deleteUser('')", QueryExecutionException.class,
-                AuthProcedures.PERMISSION_DENIED );
+        assertCallFail( subject, "CALL dbms.deleteUser('" + username + "')", errMsg );
     }
 
     void testSuccessfulListUsers( S subject, String[] users )
@@ -187,11 +184,9 @@ abstract class AuthTestBase<S>
                 r -> assertKeyIsArray( r, "username", users ) );
     }
 
-    void testFailListUsers( S subject, int count )
+    void testFailListUsers( S subject, int count, String errMsg )
     {
-        testCallFail( subject,
-                "CALL dbms.listUsers() YIELD username",
-                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
+        assertCallFail( subject, "CALL dbms.listUsers() YIELD username", errMsg );
     }
 
     void testSuccessfulListRoles( S subject, String[] roles )
@@ -200,45 +195,95 @@ abstract class AuthTestBase<S>
                 r -> assertKeyIsArray( r, "role", roles ) );
     }
 
-    void testFailListRoles( S subject )
+    void testFailListRoles( S subject, String errMsg )
     {
-        testCallFail( subject,
-                "CALL dbms.listRoles() YIELD role",
-                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
+        assertCallFail( subject, "CALL dbms.listRoles() YIELD role", errMsg );
     }
 
-    void testFailListUserRoles( S subject, String username )
+    void testFailListUserRoles( S subject, String username, String errMsg )
     {
-        testCallFail( subject,
+        assertCallFail( subject,
                 "CALL dbms.listRolesForUser('" + username + "') YIELD value AS roles RETURN count(roles)",
-                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
+                errMsg );
     }
 
-    void testFailListRoleUsers( S subject, String roleName )
+    void testFailListRoleUsers( S subject, String roleName, String errMsg )
     {
-        testCallFail( subject,
+        assertCallFail( subject,
                 "CALL dbms.listUsersForRole('" + roleName + "') YIELD value AS users RETURN count(users)",
-                QueryExecutionException.class, AuthProcedures.PERMISSION_DENIED );
+                errMsg );
     }
 
-    List<Object> getObjectsAsList( Result r, String key )
+    void assertCallFail( S subject, String call, String partOfErrorMsg )
+    {
+        String err = assertCallEmpty( subject, call );
+        assertThat( err, containsString( partOfErrorMsg ) );
+    }
+
+    String assertCallEmpty( S subject, String call )
+    {
+        return neo.executeQuery( subject, call, null,
+                ( res ) -> assertFalse( "Expected no results", res.hasNext()
+            ) );
+    }
+
+    void testUnAuthenticated( S subject )
+    {
+        assertFalse( neo.isAuthenticated( subject ) );
+    }
+
+    void testCallCount( S subject, String call, Map<String,Object> params,
+            final int count )
+    {
+        String err =
+            neo.executeQuery( subject, call, params,
+                ( res ) -> {
+                    int left = count;
+                    while ( left > 0 )
+                    {
+                        assertTrue( "Expected " + count + " results, but got only " + (count - left), res.hasNext() );
+                        res.next();
+                        left--;
+                    }
+                    assertFalse( "Expected " + count + " results, but there are more ", res.hasNext() );
+                }
+            );
+        assertNoError(err);
+    }
+
+    void executeQuery( S subject, String call )
+    {
+        neo.executeQuery( subject, call, null, r -> {} );
+    }
+
+    void executeQuery( S subject, String call, Consumer<ResourceIterator<Map<String, Object>>> resultConsumer )
+    {
+        neo.executeQuery( subject, call, null, resultConsumer );
+    }
+
+    boolean userHasRole( String user, String role )
+    {
+        return userManager.getRoleNamesForUser( user ).contains( role );
+    }
+
+    List<Object> getObjectsAsList( ResourceIterator<Map<String, Object>> r, String key )
     {
         return r.stream().map( s -> s.get( key ) ).collect( Collectors.toList() );
     }
 
-    void assertKeyIs( Result r, String key, String... items )
+    void assertKeyIs( ResourceIterator<Map<String, Object>> r, String key, String... items )
     {
         assertKeyIsArray( r, key, items );
     }
 
-    void assertKeyIsArray( Result r, String key, String[] items )
+    void assertKeyIsArray( ResourceIterator<Map<String, Object>> r, String key, String[] items )
     {
         List<Object> results = getObjectsAsList( r, key );
         Assert.assertThat( results, containsInAnyOrder( items ) );
         assertEquals( Arrays.asList( items ).size(), results.size() );
     }
 
-    protected void assertKeyIsMap( Result r, String keyKey, String valueKey, Map<String,Object> expected )
+    protected void assertKeyIsMap( ResourceIterator<Map<String, Object>> r, String keyKey, String valueKey, Map<String,Object> expected )
     {
         r.stream().forEach( s -> {
             String key = (String) s.get( keyKey );
@@ -252,78 +297,8 @@ abstract class AuthTestBase<S>
         } );
     }
 
-
-    void testCallFail( S subject, String call,
-            Class expectedExceptionClass, String partOfErrorMsg )
+    void assertNoError( String errMsg )
     {
-        try
-        {
-            testCallEmpty( subject, call, null );
-            fail( "Expected exception to be thrown" );
-        }
-        catch ( Exception e )
-        {
-            assertEquals( expectedExceptionClass, e.getClass() );
-            assertThat( e.getMessage(), containsString( partOfErrorMsg ) );
-        }
-    }
-
-    void testUnAuthenticated( S subject )
-    {
-        assertFalse( neo.isAuthenticated( subject ) );
-    }
-
-    protected void testUnAuthenticated( S subject, String call )
-    {
-        //TODO: OMG improve thrown exception
-        try
-        {
-            testCallEmpty( subject, call, null );
-            fail( "Allowed un-authenticated query!" );
-        }
-        catch ( Exception e )
-        {
-            assertEquals( NullPointerException.class, e.getClass() );
-        }
-    }
-
-    void testCallEmpty( S subject, String call )
-    {
-        testCallEmpty( subject, call, null );
-    }
-
-    void testCallEmpty( S subject, String call, Map<String,Object> params )
-    {
-        neo.executeQuery( subject, call, params, ( res ) -> assertFalse( "Expected no results", res.hasNext() ) );
-    }
-
-    void testCallCount( S subject, String call, Map<String,Object> params,
-            final int count )
-    {
-        neo.executeQuery( subject, call, params, ( res ) -> {
-            int left = count;
-            while ( left > 0 )
-            {
-                assertTrue( "Expected " + count + " results, but got only " + (count - left), res.hasNext() );
-                res.next();
-                left--;
-            }
-            assertFalse( "Expected " + count + " results, but there are more ", res.hasNext() );
-        } );
-    }
-
-    void executeQuery( S subject, String call )
-    {
-        neo.executeQuery( subject, call, null, r -> {} );
-    }
-
-    void executeQuery( S subject, String call, Consumer<Result> resultConsumer )
-    {
-        neo.executeQuery( subject, call, null, resultConsumer );
-    }
-
-    boolean userHasRole( String user, String role )
-    {
-        return userManager.getRoleNamesForUser( user ).contains( role );
+        assertTrue( "Should not give error", errMsg.equals( "" ) );
     }
 }

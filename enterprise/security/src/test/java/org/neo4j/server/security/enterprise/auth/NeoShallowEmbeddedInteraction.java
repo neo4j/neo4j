@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 
-import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AuthenticationResult;
@@ -63,14 +63,19 @@ class NeoShallowEmbeddedInteraction implements NeoInteractionLevel<EnterpriseAut
     }
 
     @Override
-    public void executeQuery( EnterpriseAuthSubject subject, String call, Map<String,Object> params,
-            Consumer<Result> resultConsumer )
+    public String executeQuery( EnterpriseAuthSubject subject, String call, Map<String,Object> params,
+            Consumer<ResourceIterator<Map<String, Object>>> resultConsumer )
     {
         try ( Transaction tx = db.beginTransaction( KernelTransaction.Type.explicit, subject ) )
         {
             Map<String,Object> p = (params == null) ? Collections.emptyMap() : params;
             resultConsumer.accept( db.execute( call, p ) );
             tx.success();
+            return "";
+        }
+        catch ( Exception e )
+        {
+            return e.getMessage();
         }
     }
 

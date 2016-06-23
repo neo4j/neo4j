@@ -17,13 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.enterprise.auth;
+package org.neo4j.server.rest.security;
 
-public class NeoShallowEmbeddedProceduresTest extends AuthProceduresTestLogic<EnterpriseAuthSubject>
+import org.neo4j.test.server.HTTP;
+
+public class RESTSubject
 {
-    @Override
-    protected NeoInteractionLevel<EnterpriseAuthSubject> setUpNeoServer() throws Throwable
+    HTTP.Response response;
+    String principalCredentials;
+
+    public RESTSubject( HTTP.Response response, String principalCredentials )
     {
-        return new NeoShallowEmbeddedInteraction();
+        this.response = response;
+        this.principalCredentials = principalCredentials;
     }
 }

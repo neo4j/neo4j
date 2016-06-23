@@ -22,15 +22,18 @@ package org.neo4j.server.security.enterprise.auth;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 
 public interface NeoInteractionLevel<S>
 {
     EnterpriseUserManager getManager();
 
-    void executeQuery( S subject, String call, Map<String,Object> params,
-            Consumer<Result> resultConsumer );
+    /*
+     * The returned String is empty if the query executed as expected, and contains an error msg otherwise
+     */
+    String executeQuery( S subject, String call, Map<String,Object> params,
+            Consumer<ResourceIterator<Map<String, Object>>> resultConsumer );
 
     S login( String username, String password ) throws Throwable;
 

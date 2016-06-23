@@ -17,13 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.enterprise.auth;
+package org.neo4j.server.rest.security;
 
-public class NeoShallowEmbeddedProceduresTest extends AuthProceduresTestLogic<EnterpriseAuthSubject>
+import org.neo4j.server.security.enterprise.auth.AuthScenariosLogic;
+import org.neo4j.server.security.enterprise.auth.NeoInteractionLevel;
+
+public class NeoFullRESTScenariosIT extends AuthScenariosLogic<RESTSubject>
 {
-    @Override
-    protected NeoInteractionLevel<EnterpriseAuthSubject> setUpNeoServer() throws Throwable
+    public NeoFullRESTScenariosIT()
     {
-        return new NeoShallowEmbeddedInteraction();
+        super();
+        CHANGE_PWD_ERR_MSG = "User is required to change their password.";
+        PWD_CHANGE_CHECK_FIRST = true;
+        HAS_ILLEGAL_ARGS_CHECK = true;
+        IS_EMBEDDED = false;
+    }
+
+    @Override
+    protected NeoInteractionLevel<RESTSubject> setUpNeoServer() throws Throwable
+    {
+        return new NeoFullRESTInteraction();
     }
 }
