@@ -27,7 +27,6 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
 // Class that calculates if two values are equivalent or not.
-// Does not handle NULL values - that must be handled outside!
 class Equivalent(protected val eagerizedValue: Any, val originalValue: Any) extends scala.Equals {
   override def equals(in: Any): Boolean = {
     val eagerOther = in match {
@@ -67,10 +66,10 @@ class Equivalent(protected val eagerizedValue: Any, val originalValue: Any) exte
     result
   }
 
-  private val EMPTY_LIST = 42
+  private val EMPTY_LIST_HASH = 42
 
   private def hashCode(o: Any): Int = o match {
-    case null => 0
+    case null => Int.MinValue
     case n: Number => n.longValue().hashCode()
     case n: Tuple1[Any] => hashCode(n._1)
     case (n1, n2) => 31 * hashCode(n1) + hashCode(n2)
@@ -80,7 +79,7 @@ class Equivalent(protected val eagerizedValue: Any, val originalValue: Any) exte
       if (length > 0)
         length * (31 * hashCode(n.head) + hashCode(n(length / 2)) * 31 + hashCode(n.last))
       else
-        EMPTY_LIST
+        EMPTY_LIST_HASH
     case x => x.hashCode()
   }
 }
@@ -112,6 +111,11 @@ object Equivalent {
     case x => throw new IllegalStateException(s"unknown value: ($x) of type ${x.getClass})")
   }
 
+  /*
+   * There are good performance reasons for using return and repeating the same code
+   * three times in this function. Please do not change it without making sure the changes
+   * do not cause a performance regression.
+   */
   private def wrapEager[T](x: GenTraversableOnce[T]): Any = {
     val it = x.toIterator
     if (it.isEmpty) return None
