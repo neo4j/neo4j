@@ -29,9 +29,9 @@ import org.neo4j.kernel.api.bolt.SessionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.udc.UsageData;
@@ -42,7 +42,7 @@ import org.neo4j.udc.UsageData;
  */
 public class StandardSessions extends LifecycleAdapter implements Sessions
 {
-    private final GraphDatabaseFacade gds;
+    private final GraphDatabaseAPI gds;
     private final LifeSupport life = new LifeSupport();
     private final UsageData usageData;
     private final LogService logging;
@@ -52,7 +52,7 @@ public class StandardSessions extends LifecycleAdapter implements Sessions
     private CypherStatementRunner statementRunner;
     private ThreadToStatementContextBridge txBridge;
 
-    public StandardSessions( GraphDatabaseFacade gds, UsageData usageData, LogService logging,
+    public StandardSessions( GraphDatabaseAPI gds, UsageData usageData, LogService logging,
             ThreadToStatementContextBridge txBridge, SessionTracker sessionTracker )
     {
         this.gds = gds;

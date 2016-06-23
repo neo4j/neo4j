@@ -43,10 +43,10 @@ import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext;
 import org.neo4j.kernel.impl.query.QuerySession;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.udc.UsageData;
 
 import static java.lang.String.format;
@@ -704,12 +704,15 @@ public class SessionStateMachine implements Session, SessionState
         void sessionActivated( Session session );
         void sessionHalted( Session session );
     }
-    public SessionStateMachine( String connectionDescriptor, UsageData usageData, GraphDatabaseFacade db, ThreadToStatementContextBridge txBridge,
-            StatementRunner engine, LogService logging, Authentication authentication, SessionTracker sessionTracker )
+
+    public SessionStateMachine( String connectionDescriptor, UsageData usageData, GraphDatabaseAPI db,
+            ThreadToStatementContextBridge txBridge, StatementRunner engine, LogService logging,
+            Authentication authentication, SessionTracker sessionTracker )
     {
         this( new StandardStateMachineSPI( connectionDescriptor, usageData, db, engine, logging, authentication,
-                txBridge, sessionTracker ));
+                txBridge, sessionTracker ) );
     }
+
     public SessionStateMachine( SPI spi )
     {
         this.spi = spi;

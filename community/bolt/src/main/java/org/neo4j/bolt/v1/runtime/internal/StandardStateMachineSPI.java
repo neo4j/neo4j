@@ -28,14 +28,14 @@ import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.concurrent.DecayingFlags;
-import org.neo4j.kernel.api.bolt.SessionTracker;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.bolt.SessionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
@@ -44,7 +44,7 @@ class StandardStateMachineSPI implements SessionStateMachine.SPI
 {
     private final String connectionDescriptor;
     private final UsageData usageData;
-    private final GraphDatabaseFacade db;
+    private final GraphDatabaseAPI db;
     private final StatementRunner statementRunner;
     private final ErrorReporter errorReporter;
     private final Log log;
@@ -53,7 +53,7 @@ class StandardStateMachineSPI implements SessionStateMachine.SPI
     private final DecayingFlags featureUsage;
     private final SessionTracker sessionTracker;
 
-    StandardStateMachineSPI( String connectionDescriptor, UsageData usageData, GraphDatabaseFacade db, StatementRunner statementRunner,
+    StandardStateMachineSPI( String connectionDescriptor, UsageData usageData, GraphDatabaseAPI db, StatementRunner statementRunner,
             LogService logging, Authentication authentication, ThreadToStatementContextBridge txBridge,
             SessionTracker sessionTracker )
     {
