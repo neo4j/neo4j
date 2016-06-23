@@ -29,6 +29,14 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStati
 
   val stats = QueryStatistics()
 
+  test("should fail nicely when given a null property map") {
+    createNode()
+
+    val q = "MATCH (s), (t) CREATE UNIQUE (s)-[:LINK {param}]->(t)"
+
+    a [InvalidArgumentException] should be thrownBy execute(q, "param" -> null)
+  }
+
   test("create unique accepts undirected relationship") {
     createNode("id" -> 1)
     createNode("id" -> 2)
