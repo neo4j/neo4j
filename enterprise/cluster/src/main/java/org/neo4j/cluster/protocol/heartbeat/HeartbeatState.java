@@ -153,7 +153,6 @@ public enum HeartbeatState
 
                         case timed_out:
                         {
-
                             InstanceId server = message.getPayload();
                             context.getLog( HeartbeatState.class )
                                     .debug( "Received timed out for server " + server );

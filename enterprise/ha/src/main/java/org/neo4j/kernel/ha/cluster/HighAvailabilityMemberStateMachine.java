@@ -34,6 +34,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.String.format;
 import static org.neo4j.cluster.util.Quorums.isQuorum;
 import static org.neo4j.kernel.AvailabilityGuard.AvailabilityRequirement;
 import static org.neo4j.kernel.AvailabilityGuard.availabilityRequirement;
@@ -43,7 +44,7 @@ import static org.neo4j.kernel.AvailabilityGuard.availabilityRequirement;
  * the internal transitions between {@link HighAvailabilityMemberState}. Internal services
  * that wants to know what is going on should register {@link HighAvailabilityMemberListener} implementations
  * which will receive callbacks on state changes.
- *
+ * <p>
  * HA in Neo4j is built on top of the clustering functionality. So, this state machine essentially reacts to cluster
  * events,
  * and implements the rules for how HA roles should change, for example, the cluster coordinator should become the HA
@@ -151,8 +152,10 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                 InstanceId previousElected = context.getElectedMasterId();
 
                 context.setAvailableHaMasterId( null );
-                state = state.masterIsElected( context, coordinatorId );
-
+                if ( !acceptNewState( state.masterIsElected( context, coordinatorId ) ) )
+                {
+                    return;
+                }
 
                 context.setElectedMasterId( coordinatorId );
                 final HighAvailabilityMemberChangeEvent event =
@@ -193,7 +196,10 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                 {
                     HighAvailabilityMemberState oldState = state;
                     context.setAvailableHaMasterId( roleUri );
-                    state = state.masterIsAvailable( context, instanceId, roleUri );
+                    if ( !acceptNewState( state.masterIsAvailable( context, instanceId, roleUri ) ) )
+                    {
+                        return;
+                    }
                     log.debug( "Got masterIsAvailable(" + instanceId + "), moved to " + state + " from " +
                             oldState );
                     final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState,
@@ -217,7 +223,10 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                 else if ( role.equals( HighAvailabilityModeSwitcher.SLAVE ) )
                 {
                     HighAvailabilityMemberState oldState = state;
-                    state = state.slaveIsAvailable( context, instanceId, roleUri );
+                    if ( !acceptNewState( state.slaveIsAvailable( context, instanceId, roleUri ) ) )
+                    {
+                        return;
+                    }
                     log.debug( "Got slaveIsAvailable(" + instanceId + "), " +
                             "moved to " + state + " from " + oldState );
                     final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState,
@@ -249,8 +258,8 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         public void memberIsUnavailable( String role, InstanceId unavailableId )
         {
             if ( context.getMyId().equals( unavailableId ) &&
-                 HighAvailabilityModeSwitcher.SLAVE.equals( role ) &&
-                 state == HighAvailabilityMemberState.SLAVE )
+                    HighAvailabilityModeSwitcher.SLAVE.equals( role ) &&
+                    state == HighAvailabilityMemberState.SLAVE )
             {
                 HighAvailabilityMemberState oldState = state;
                 changeStateToPending();
@@ -290,7 +299,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         public void memberIsAlive( InstanceId instanceId )
         {
             // If we now have quorum and the previous state was pending, then ask for an election
-            if ( isQuorum(getAliveCount(), getTotalCount()) && state.equals( HighAvailabilityMemberState.PENDING ) )
+            if ( isQuorum( getAliveCount(), getTotalCount() ) && state.equals( HighAvailabilityMemberState.PENDING ) )
             {
                 election.performRoleElections();
             }
@@ -347,6 +356,34 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         private long getTotalCount()
         {
             return Iterables.count( members.getMembers() );
+        }
+
+        /**
+         * Checks if the new state is ILLEGAL. If so, it sets the state to PENDING and issues a request for
+         * elections. Otherwise it sets the current state to newState.
+         * @return false iff the newState is illegal. true otherwise.
+         */
+        private boolean acceptNewState( HighAvailabilityMemberState newState )
+        {
+            if ( newState == HighAvailabilityMemberState.ILLEGAL )
+            {
+                log.warn( format( "Message received resulted in illegal state transition. I was in state %s, " +
+                        "context was %s. The error message is %s. This instance will now transition to PENDING state " +
+                        "and " +
+                        "ask for new elections. While this may fix the error, it may indicate that there is some " +
+                        "connectivity issue or some instability of cluster members.", state, context, newState
+                        .errorMessage() ) );
+                context.setElectedMasterId( null );
+                context.setAvailableHaMasterId( null );
+                changeStateToPending();
+                election.performRoleElections();
+                return false;
+            }
+            else
+            {
+                state = newState;
+            }
+            return true;
         }
     }
 }

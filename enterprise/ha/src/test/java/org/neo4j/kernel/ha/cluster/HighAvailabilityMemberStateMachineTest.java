@@ -384,6 +384,7 @@ public class HighAvailabilityMemberStateMachineTest
         assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
     }
 
+
     @Test
     public void whenHAModeSwitcherSwitchesToSlaveTheOtherModeSwitcherDoNotGetTheOldMasterClient() throws Throwable
     {
@@ -618,7 +619,7 @@ public class HighAvailabilityMemberStateMachineTest
         return members;
     }
 
-    private ClusterMemberListenerContainer mockAddClusterMemberListener( ClusterMemberEvents events )
+    static ClusterMemberListenerContainer mockAddClusterMemberListener( ClusterMemberEvents events )
     {
         final ClusterMemberListenerContainer listenerContainer = new ClusterMemberListenerContainer();
         doAnswer( new Answer()
@@ -652,7 +653,7 @@ public class HighAvailabilityMemberStateMachineTest
                 clusterMembers ).withGuard( guard ).build();
     }
 
-    private class StateMachineBuilder
+    static class StateMachineBuilder
     {
         HighAvailabilityMemberContext context = mock( HighAvailabilityMemberContext.class );
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
@@ -697,7 +698,7 @@ public class HighAvailabilityMemberStateMachineTest
         }
     }
 
-    private static class ClusterMemberListenerContainer
+    static class ClusterMemberListenerContainer
     {
         private ClusterMemberListener clusterMemberListener;
 
@@ -718,7 +719,7 @@ public class HighAvailabilityMemberStateMachineTest
         }
     }
 
-    private static final class HAStateChangeListener implements HighAvailabilityMemberListener
+    static final class HAStateChangeListener implements HighAvailabilityMemberListener
     {
         boolean masterIsElected = false;
         boolean masterIsAvailable = false;
