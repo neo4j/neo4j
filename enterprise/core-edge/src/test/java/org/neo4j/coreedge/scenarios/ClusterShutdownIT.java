@@ -52,7 +52,7 @@ public class ClusterShutdownIT
     @Parameterized.Parameter()
     public Collection<Integer> shutdownOrder;
 
-    @Parameterized.Parameters( name = "shutdown order: {0}" )
+    @Parameterized.Parameters( name = "shutdown order {0}" )
     public static Collection<Collection<Integer>> shutdownOrders()
     {
         return asList( asList( 0, 1, 2 ), asList( 1, 2, 0 ), asList( 2, 0, 1 ) );

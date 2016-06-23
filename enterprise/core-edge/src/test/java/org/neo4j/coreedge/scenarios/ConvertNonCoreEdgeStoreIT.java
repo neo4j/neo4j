@@ -68,7 +68,7 @@ public class ConvertNonCoreEdgeStoreIT
     @Parameterized.Parameter()
     public String recordFormat;
 
-    @Parameterized.Parameters(name = "Record format: {0}")
+    @Parameterized.Parameters(name = "Record format {0}")
     public static Collection<Object> data()
     {
         return Arrays.asList( new Object[]{
