@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_0.{CRS, CartesianPoint, GeographicPoint}
-import org.neo4j.cypher.{ExecutionEngineFunSuite, InvalidArgumentException, NewPlannerTestSupport, SyntaxException}
+import org.neo4j.cypher._
 
 class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -75,14 +75,21 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("int_numbers" -> List(2, 2))))
   }
 
-  test("toInt should fail on type Any") {
+  test("toInt should accept type Any") {
     // When
     val query = "WITH [2, 2.9, '1.7'] AS numbers RETURN [n in numbers | toInt(n)] AS int_numbers"
-    val error = intercept[SyntaxException](executeWithAllPlannersAndCompatibilityMode(query))
 
-    // Then
-    error.getMessage should (include("Type mismatch: expected Float, Integer, Number or String but was Any")
-      or include("Type mismatch: expected Float, Integer or String but was Any") )
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("int_numbers" -> List(2, 2, 1))))
+  }
+
+  test("toInt should fail statically on type boolean") {
+    val query = "RETURN toInt(true)"
+
+    a [SyntaxException] should be thrownBy {
+      executeWithAllPlanners(query)
+    }
   }
 
   test("toInt should work on string collection") {
@@ -124,14 +131,20 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("foo" -> null, "empty" -> null)))
   }
 
-  test("toFloat should fail on type Any") {
+  test("toFloat should work on type Any") {
     // When
     val query = "WITH [3.4, 3, '5'] AS numbers RETURN [n in numbers | toFloat(n)] AS float_numbers"
-    val error = intercept[SyntaxException](executeWithAllPlannersAndCompatibilityMode(query))
 
-    // Then
-    error.getMessage should (include("Type mismatch: expected Float, Integer, Number or String but was Any")
-      or include("Type mismatch: expected Float, Integer or String but was Any") )
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("float_numbers" -> List(3.4, 3.0, 5.0))))
+  }
+
+  test("toFloat should fail statically on type Boolean") {
+    // When
+    val query = "RETURN toFloat(false)"
+
+    a [SyntaxException] should be thrownBy executeWithAllPlanners(query)
   }
 
   test("toFloat should work on string collection") {
@@ -711,20 +724,86 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("type(r)" -> "T"), Map("type(r)" -> null)))
   }
 
-  test("type should fail nicely when not given a relationship")  {
-    // GIVEN
+  test("type() should accept type Any") {
     relate(createNode(), createNode(), "T")
-    val query: String = "MATCH (a)-[r]->() WITH [r, 1] as coll RETURN [x in coll | type(x) ]"
 
-    //Expect
-    a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER runtime=interpreted $query", Map.empty[String,Any], graph.session()))
-    a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER planner=cost $query", Map.empty[String,Any], graph.session()))
-    a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER planner=rule $query", Map.empty[String,Any], graph.session()))
+    val query = """
+      |MATCH (a)-[r]->()
+      |WITH [a, r, 1] AS list
+      |RETURN type(list[1]) AS t
+    """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("t" -> "T")))
+  }
+
+  test("type() should fail statically when given type Node") {
+    relate(createNode(), createNode(), "T")
+
+    val query = """
+      |MATCH (a)-[r]->()
+      |RETURN type(a) AS t
+    """.stripMargin
+
+    a [SyntaxException] should be thrownBy executeWithAllPlanners(query)
+  }
+
+  test("type() should fail at runtime when given type Any but bad value")  {
+    relate(createNode(), createNode(), "T")
+
+    val query = """
+                  |MATCH (a)-[r]->()
+                  |WITH [a, r, 1] AS list
+                  |RETURN type(list[0]) AS t
+                """.stripMargin
+
+    a [ParameterWrongTypeException] should be thrownBy executeWithAllPlanners(query)
   }
 
   test("should handle a collection of values that individually are OK") {
     //"match (n) return toString(n) "
     val result = executeWithAllPlanners("RETURN [x in [1, 2.3, true, 'apa' ] | toString(x) ] as col")
     result.toList should equal(List(Map("col"-> Seq("1", "2.3", "true", "apa"))))
+  }
+
+  test("labels() should accept type Any") {
+    createLabeledNode("Foo")
+    createLabeledNode("Foo", "Bar")
+
+    val query = """
+      |MATCH (a)
+      |WITH [a, 1] AS list
+      |RETURN labels(list[0]) AS l
+    """.stripMargin
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("l" -> List("Foo")), Map("l" -> List("Foo", "Bar"))))
+  }
+
+  test("labels() should fail statically on type Path") {
+    createLabeledNode("Foo")
+    createLabeledNode("Foo", "Bar")
+
+    val query = """
+      |MATCH p = (a)
+      |RETURN labels(p) AS l
+    """.stripMargin
+
+    a [SyntaxException] should be thrownBy executeWithAllPlanners(query)
+  }
+
+  test("labels() should fail at runtime on type Any with bad values") {
+    createLabeledNode("Foo")
+    createLabeledNode("Foo", "Bar")
+
+    val query = """
+                  |MATCH (a)
+                  |WITH [a, 1] AS list
+                  |RETURN labels(list[1]) AS l
+                """.stripMargin
+
+    a [ParameterWrongTypeException] should be thrownBy executeWithAllPlanners(query)
   }
 }

@@ -23,7 +23,7 @@ import org.mockito.Matchers.any
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{Operations, QueryContext}
-import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, EntityNotFoundException}
+import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, EntityNotFoundException, ParameterWrongTypeException}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Relationship, RelationshipType}
 
@@ -52,6 +52,6 @@ class RelationshipTypeFunctionTest extends CypherFunSuite with FakeEntityTestSup
   test("should throw if encountering anything other than a relationship") {
     doReturn(false).when(operations).isDeletedInThisTx(any())
 
-    a [CypherTypeException] should be thrownBy RelationshipTypeFunction(Variable("r")).compute((), null)
+    a [ParameterWrongTypeException] should be thrownBy RelationshipTypeFunction(Variable("r")).compute((), null)
   }
 }

@@ -49,7 +49,7 @@ case object ToString extends Function {
 
       case x =>
         val message = s"Type mismatch: expected Boolean, Float, Integer or String but was ${x.mkString(", ")}"
-        SemanticCheckResult.error(s, SemanticError(message, invocation.position))
+        SemanticCheckResult.error(s, SemanticError(message, invocation.args.head.position))
     }
   }
 }

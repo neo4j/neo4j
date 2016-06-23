@@ -73,10 +73,38 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("cant use TYPE on nodes") {
+  test("cant use type() on nodes") {
     executeAndEnsureError(
-      "match (r) where id(r) = 0 return type(r)",
-      "Type mismatch: expected Relationship but was Node (line 1, column 39 (offset: 38))"
+      "MATCH (r) RETURN type(r)",
+      "Type mismatch: expected Relationship but was Node (line 1, column 23 (offset: 22))"
+    )
+  }
+
+  test("cant use labels() on relationships") {
+    executeAndEnsureError(
+      "MATCH ()-[r]-() RETURN labels(r)",
+      "Type mismatch: expected Node but was Relationship (line 1, column 31 (offset: 30))"
+    )
+  }
+
+  test("cant use toInt() on booleans") {
+    executeAndEnsureError(
+      "RETURN toInt(true)",
+      "Type mismatch: expected Number or String but was Boolean (line 1, column 14 (offset: 13))"
+    )
+  }
+
+  test("cant use toFloat() on booleans") {
+    executeAndEnsureError(
+      "RETURN toFloat(false)",
+      "Type mismatch: expected Number or String but was Boolean (line 1, column 16 (offset: 15))"
+    )
+  }
+
+  test("cant use toString() on nodes") {
+    executeAndEnsureError(
+      "MATCH (n) RETURN toString(n)",
+      "Type mismatch: expected Boolean, Float, Integer or String but was Node (line 1, column 27 (offset: 26))"
     )
   }
 
