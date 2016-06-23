@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 
+import org.neo4j.coreedge.helper.StatUtil;
 import org.neo4j.coreedge.raft.log.segmented.OpenEndRangeMap.ValueRange;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
@@ -51,9 +52,10 @@ class Segments implements AutoCloseable
     private final LogProvider logProvider;
     private long currentVersion;
     private final ReaderPool readerPool;
+    private StatUtil.StatContext scanStats;
 
     Segments( FileSystemAbstraction fileSystem, FileNames fileNames, ReaderPool readerPool, List<SegmentFile> allSegments,
-            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider, long currentVersion )
+            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider, long currentVersion, StatUtil.StatContext scanStats )
     {
         this.fileSystem = fileSystem;
         this.fileNames = fileNames;
@@ -63,8 +65,15 @@ class Segments implements AutoCloseable
         this.log = logProvider.getLog( getClass() );
         this.currentVersion = currentVersion;
         this.readerPool = readerPool;
+        this.scanStats = scanStats;
 
         populateRangeMap();
+    }
+
+    public Segments( FileSystemAbstraction fsa, FileNames fileNames, ReaderPool readerPool, List<SegmentFile> segmentFiles,
+            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider, long currentVersion )
+    {
+        this( fsa, fileNames, readerPool, segmentFiles, contentMarshal, logProvider, currentVersion, null );
     }
 
     private void populateRangeMap()
@@ -135,7 +144,7 @@ class Segments implements AutoCloseable
         SegmentHeader header = new SegmentHeader( prevFileLastIndex, currentVersion, prevIndex, prevTerm );
 
         File file = fileNames.getForVersion( currentVersion );
-        SegmentFile segment = SegmentFile.create( fileSystem, file, readerPool, currentVersion, contentMarshal, logProvider, header );
+        SegmentFile segment = SegmentFile.create( fileSystem, file, readerPool, currentVersion, contentMarshal, logProvider, header, scanStats );
         // TODO: Force base directory... probably not possible using fsa.
         segment.flush();
 

@@ -22,6 +22,7 @@ package org.neo4j.coreedge.raft.log.segmented;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.coreedge.helper.StatUtil.StatContext;
 import org.neo4j.coreedge.raft.log.EntryRecord;
 import org.neo4j.coreedge.raft.log.LogPosition;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
@@ -59,9 +60,16 @@ class SegmentFile implements AutoCloseable
     private final long version;
 
     private PhysicalFlushableChannel bufferedWriter;
+    private final StatContext scanStats;
 
     SegmentFile( FileSystemAbstraction fileSystem, File file, ReaderPool readerPool, long version,
             ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider, SegmentHeader header )
+    {
+        this( fileSystem, file, readerPool, version, contentMarshal, logProvider, header, null );
+    }
+
+    SegmentFile( FileSystemAbstraction fileSystem, File file, ReaderPool readerPool, long version,
+            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider, SegmentHeader header, StatContext scanStats )
     {
         this.fileSystem = fileSystem;
         this.file = file;
@@ -69,6 +77,7 @@ class SegmentFile implements AutoCloseable
         this.contentMarshal = contentMarshal;
         this.header = header;
         this.version = version;
+        this.scanStats = scanStats;
 
         this.positionCache = new PositionCache();
         this.refCount = new ReferenceCounter();
@@ -77,7 +86,13 @@ class SegmentFile implements AutoCloseable
     }
 
     static SegmentFile create( FileSystemAbstraction fileSystem, File file, ReaderPool readerPool, long version,
-            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider, SegmentHeader header )
+            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider, SegmentHeader header ) throws IOException
+    {
+        return create( fileSystem, file, readerPool, version, contentMarshal, logProvider, header, null );
+    }
+
+    static SegmentFile create( FileSystemAbstraction fileSystem, File file, ReaderPool readerPool, long version,
+            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider, SegmentHeader header, StatContext scanStats )
             throws IOException
     {
         if ( fileSystem.fileExists( file ) )
@@ -85,7 +100,7 @@ class SegmentFile implements AutoCloseable
             throw new IllegalStateException( "File was not expected to exist" );
         }
 
-        SegmentFile segment = new SegmentFile( fileSystem, file, readerPool, version, contentMarshal, logProvider, header );
+        SegmentFile segment = new SegmentFile( fileSystem, file, readerPool, version, contentMarshal, logProvider, header, scanStats );
         headerMarshal.marshal( header, segment.getOrCreateWriter() );
         segment.flush();
 
@@ -114,6 +129,10 @@ class SegmentFile implements AutoCloseable
         {
             ReadAheadChannel<StoreChannel> bufferedReader = new ReadAheadChannel<>( reader.channel() );
             long currentIndex = position.logIndex;
+            if ( scanStats != null )
+            {
+                scanStats.collect( offsetIndex - currentIndex );
+            }
 
             try
             {

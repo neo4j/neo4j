@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 
+import org.neo4j.coreedge.helper.StatUtil.StatContext;
 import org.neo4j.coreedge.raft.log.EntryRecord;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
@@ -53,11 +54,12 @@ class RecoveryProtocol
     private final ChannelMarshal<ReplicatedContent> contentMarshal;
     private final LogProvider logProvider;
     private final Log log;
+    private final StatContext scanStats;
     private long expectedVersion;
     private ReaderPool readerPool;
 
     RecoveryProtocol( FileSystemAbstraction fileSystem, FileNames fileNames, ReaderPool readerPool,
-            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider )
+            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider, StatContext scanStats )
     {
         this.fileSystem = fileSystem;
         this.fileNames = fileNames;
@@ -65,6 +67,12 @@ class RecoveryProtocol
         this.contentMarshal = contentMarshal;
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
+        this.scanStats = scanStats;
+    }
+
+    RecoveryProtocol( FileSystemAbstraction fileSystem, FileNames fileNames, ReaderPool readerPool, ChannelMarshal<ReplicatedContent> marshal, LogProvider logProvider )
+    {
+        this( fileSystem, fileNames, readerPool, marshal, logProvider, null );
     }
 
     State run() throws IOException, DamagedLogStorageException, DisposedException
@@ -74,7 +82,7 @@ class RecoveryProtocol
 
         if ( files.entrySet().isEmpty() )
         {
-            state.segments = new Segments( fileSystem, fileNames, readerPool, emptyList(), contentMarshal, logProvider, -1 );
+            state.segments = new Segments( fileSystem, fileNames, readerPool, emptyList(), contentMarshal, logProvider, -1, scanStats );
             state.segments.rotate( -1, -1, -1 );
             return state;
         }
@@ -106,7 +114,7 @@ class RecoveryProtocol
                     writeHeader( fileSystem, file, header );
                 }
 
-                SegmentFile segment = new SegmentFile( fileSystem, file, readerPool, fileNameVersion, contentMarshal, logProvider, header );
+                SegmentFile segment = new SegmentFile( fileSystem, file, readerPool, fileNameVersion, contentMarshal, logProvider, header, scanStats );
 
                 checkVersionStrictlyMonotonic( fileNameVersion );
                 checkVersionMatches( segment.header().version(), fileNameVersion );
@@ -130,7 +138,7 @@ class RecoveryProtocol
 
         SegmentFile last = segmentFiles.get( segmentFiles.size() - 1 );
 
-        state.segments = new Segments( fileSystem, fileNames, readerPool, segmentFiles, contentMarshal, logProvider, files.lastKey() );
+        state.segments = new Segments( fileSystem, fileNames, readerPool, segmentFiles, contentMarshal, logProvider, files.lastKey(), scanStats );
         state.appendIndex = last.header().prevIndex();
         state.currentTerm = last.header().prevTerm();
 
