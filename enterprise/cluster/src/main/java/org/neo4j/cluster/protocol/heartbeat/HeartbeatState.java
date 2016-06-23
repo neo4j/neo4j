@@ -28,6 +28,7 @@ import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerMessage;
 import org.neo4j.cluster.statemachine.State;
 
+import static java.lang.String.format;
 import static org.neo4j.cluster.com.message.Message.internal;
 import static org.neo4j.cluster.com.message.Message.timeout;
 import static org.neo4j.cluster.com.message.Message.to;
@@ -227,11 +228,12 @@ public enum HeartbeatState
                         case suspicions:
                         {
                             HeartbeatMessage.SuspicionsState suspicions = message.getPayload();
-                            context.getLog( HeartbeatState.class )
-                                    .debug( "Received suspicions as " + suspicions );
 
                             InstanceId fromId = new InstanceId(
                                     Integer.parseInt( message.getHeader( Message.INSTANCE_ID ) ) );
+
+                            context.getLog( HeartbeatState.class )
+                                    .debug( format( "Received suspicions as %s from %s", suspicions, fromId ) );
 
                             /*
                              * Remove ourselves from the suspicions received - we just received a message,
