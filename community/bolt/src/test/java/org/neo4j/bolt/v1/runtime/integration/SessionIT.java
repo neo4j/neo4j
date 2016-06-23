@@ -56,7 +56,7 @@ public class SessionIT
     private static final Map<String,Object> EMPTY_PARAMS = emptyMap();
 
     @Rule
-    public TestSessions env = new TestSessions();
+    public SessionRule env = new SessionRule();
     private final RecordingCallback responses = new RecordingCallback<>();
     private final RecordingCallback<RecordStream, ?> pulling = new RecordingCallback<>();
     private final RecordingCallback<Void, ?> discarding = new RecordingCallback<>();

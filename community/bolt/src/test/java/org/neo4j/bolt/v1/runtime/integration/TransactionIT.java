@@ -35,7 +35,7 @@ public class TransactionIT
     private static final Map<String, Object> EMPTY_PARAMS = Collections.emptyMap();
 
     @Rule
-    public TestSessions env = new TestSessions();
+    public SessionRule env = new SessionRule();
 
     @Test
     public void shouldHandleBeginCommit() throws Throwable

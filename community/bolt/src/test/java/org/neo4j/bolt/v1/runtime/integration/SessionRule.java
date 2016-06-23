@@ -48,7 +48,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.udc.UsageData;
 
-class TestSessions implements TestRule, Sessions
+class SessionRule implements TestRule, Sessions
 {
     private GraphDatabaseAPI gdb;
     private Sessions actual;
@@ -109,7 +109,7 @@ class TestSessions implements TestRule, Sessions
         return session;
     }
 
-    TestSessions withAuthEnabled( boolean authEnabled )
+    SessionRule withAuthEnabled( boolean authEnabled )
     {
         this.authEnabled = authEnabled;
         return this;
@@ -124,6 +124,11 @@ class TestSessions implements TestRule, Sessions
             out.println( contents);
         }
         return tmpFile.toURI().toURL();
+    }
+
+    public GraphDatabaseAPI graph()
+    {
+        return gdb;
     }
 
     long lastClosedTxId()

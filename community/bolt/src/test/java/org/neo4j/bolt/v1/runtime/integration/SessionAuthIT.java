@@ -37,7 +37,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 public class SessionAuthIT
 {
     @Rule
-    public TestSessions env = new TestSessions().withAuthEnabled( true );
+    public SessionRule env = new SessionRule().withAuthEnabled( true );
 
     @Test
     public void shouldGiveCredentialsExpiredStatusOnExpiredCredentials() throws Throwable
