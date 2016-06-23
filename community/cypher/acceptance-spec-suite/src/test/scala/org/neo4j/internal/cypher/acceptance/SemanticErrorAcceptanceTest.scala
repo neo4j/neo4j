@@ -26,6 +26,96 @@ import org.neo4j.graphdb.QueryExecutionException
 
 class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
+  test("return node that's not there") {
+    executeAndEnsureError(
+      "match (n) where id(n) = 0 return bar",
+      "Variable `bar` not defined (line 1, column 34 (offset: 33))"
+    )
+  }
+
+  test("don't allow a string after IN") {
+    executeAndEnsureError(
+      "MATCH (n) where id(n) IN '' return 1",
+      "Type mismatch: expected List<T> but was String (line 1, column 26 (offset: 25))"
+    )
+  }
+
+  test("don't allow a integer after IN") {
+    executeAndEnsureError(
+      "MATCH (n) WHERE id(n) IN 1 RETURN 1",
+      "Type mismatch: expected List<T> but was Integer (line 1, column 26 (offset: 25))"
+    )
+  }
+
+  test("don't allow a float after IN") {
+    executeAndEnsureError(
+      "MATCH (n) WHERE id(n) IN 1.0 RETURN 1",
+      "Type mismatch: expected List<T> but was Float (line 1, column 26 (offset: 25))"
+    )
+  }
+
+  test("don't allow a boolean after IN") {
+    executeAndEnsureError(
+      "MATCH (n) WHERE id(n) IN true RETURN 1",
+      "Type mismatch: expected List<T> but was Boolean (line 1, column 26 (offset: 25))"
+    )
+  }
+
+  test("define node and treat it as a relationship") {
+    executeAndEnsureError(
+      "match (r) where id(r) = 0 match (a)-[r]-(b) return r",
+      "Type mismatch: r already defined with conflicting type Node (expected Relationship) (line 1, column 38 (offset: 37))"
+    )
+  }
+
+  test("redefine symbol in match") {
+    executeAndEnsureError(
+      "match (a)-[r]-(r) return r", "Type mismatch: r already defined with conflicting type Relationship (expected Node) (line 1, column 16 (offset: 15))"
+    )
+  }
+
+  test("cant use type() on nodes") {
+    executeAndEnsureError(
+      "MATCH (r) RETURN type(r)",
+      "Type mismatch: expected Relationship but was Node (line 1, column 23 (offset: 22))"
+    )
+  }
+
+  test("cant use labels() on relationships") {
+    executeAndEnsureError(
+      "MATCH ()-[r]-() RETURN labels(r)",
+      "Type mismatch: expected Node but was Relationship (line 1, column 31 (offset: 30))"
+    )
+  }
+
+  test("cant use toInt() on booleans") {
+    executeAndEnsureError(
+      "RETURN toInt(true)",
+      "Type mismatch: expected Number or String but was Boolean (line 1, column 14 (offset: 13))"
+    )
+  }
+
+  test("cant use toFloat() on booleans") {
+    executeAndEnsureError(
+      "RETURN toFloat(false)",
+      "Type mismatch: expected Number or String but was Boolean (line 1, column 16 (offset: 15))"
+    )
+  }
+
+  test("cant use toString() on nodes") {
+    executeAndEnsureError(
+      "MATCH (n) RETURN toString(n)",
+      "Type mismatch: expected Boolean, Float, Integer or String but was Node (line 1, column 27 (offset: 26))"
+    )
+  }
+
+  test("cant use LENGTH on nodes") {
+    executeAndEnsureError(
+      "match (n) where id(n) = 0 return length(n)",
+      "Type mismatch: expected Path, String or List<T> but was Node (line 1, column 41 (offset: 40))"
+    )
+  }
+
   // TCK'd -- kept because of possible exclusion of this feature
   test("cant re-use relationship variable") {
     executeAndEnsureError(

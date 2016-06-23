@@ -21,34 +21,34 @@ package org.neo4j.cypher.internal.compiler.v3_1.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{Effects, ReadsAllRelationships}
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.CastSupport
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_1.{CypherTypeException, EntityNotFoundException}
+import org.neo4j.cypher.internal.frontend.v3_1.{EntityNotFoundException, ParameterWrongTypeException}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.graphdb.Relationship
 
 case class RelationshipTypeFunction(relationship: Expression) extends NullInNullOutExpression(relationship) {
 
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): String = {
-    val relationship = CastSupport.castOrFail[Relationship](value)
-    if (state.query.relationshipOps.isDeletedInThisTx(relationship)) {
-      throw new EntityNotFoundException(s"Relationship with id ${relationship.getId} has been deleted in this transaction")
-    } else {
-      relationship.getType.name()
-    }
+  override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): String = value match {
+    case r: Relationship =>
+      if (state.query.relationshipOps.isDeletedInThisTx(r)) {
+        throw new EntityNotFoundException(s"Relationship with id ${r.getId} has been deleted in this transaction")
+      } else {
+        r.getType.name()
+      }
+    case x => throw new ParameterWrongTypeException("Expected a Relationship, got: " + x)
   }
 
-  def rewrite(f: (Expression) => Expression) = f(RelationshipTypeFunction(relationship.rewrite(f)))
+  override def rewrite(f: (Expression) => Expression) = f(RelationshipTypeFunction(relationship.rewrite(f)))
 
-  def arguments = Seq(relationship)
+  override def arguments = Seq(relationship)
 
-  def calculateType(symbols: SymbolTable) = {
+  override def calculateType(symbols: SymbolTable) = {
     relationship.evaluateType(CTRelationship, symbols)
     CTString
   }
 
-  def symbolTableDependencies = relationship.symbolTableDependencies
+  override def symbolTableDependencies = relationship.symbolTableDependencies
 
   override def localEffects(symbols: SymbolTable) = Effects(ReadsAllRelationships)
 }
