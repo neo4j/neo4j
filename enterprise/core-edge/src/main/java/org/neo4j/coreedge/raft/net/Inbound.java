@@ -19,7 +19,9 @@
  */
 package org.neo4j.coreedge.raft.net;
 
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.network.Message;
+import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.kernel.impl.store.StoreId;
 
 public interface Inbound<M extends Message>
@@ -28,8 +30,6 @@ public interface Inbound<M extends Message>
 
     interface MessageHandler<M extends Message>
     {
-        boolean validate( M message, StoreId storeId );
-
         void handle( M message );
     }
 }

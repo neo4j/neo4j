@@ -190,7 +190,7 @@ public class EnterpriseCoreEditionModule extends EditionModule implements CoreEd
     @Override
     public void downloadSnapshot( CoreMember source ) throws InterruptedException, StoreCopyFailedException
     {
-        coreState.downloadSnapshot( myself, source );
+        coreState.downloadSnapshot( source );
     }
 
     @Override
@@ -287,7 +287,14 @@ public class EnterpriseCoreEditionModule extends EditionModule implements CoreEd
                 senderService, raftAddress, messageLogger );
 
         ListenSocketAddress raftListenAddress = config.get( CoreEdgeClusterSettings.raft_listen_address );
-        RaftServer raftServer = new RaftServer( marshal, raftListenAddress, logProvider );
+
+        CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
+                platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
+
+        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir, copiedStoreRecovery,
+                new StoreFiles( new DefaultFileSystemAbstraction() ),
+                dependencies.provideDependency( NeoStoreDataSource.class ),
+                platformModule.dependencies.provideDependency( TransactionIdStore.class ), databaseHealthSupplier );
 
         final DelayedRenewableTimeoutService raftTimeoutService =
                 new DelayedRenewableTimeoutService( Clock.systemUTC(), logProvider );
@@ -296,13 +303,6 @@ public class EnterpriseCoreEditionModule extends EditionModule implements CoreEd
                 databaseHealthSupplier );
 
         MonitoredRaftLog raftLog = new MonitoredRaftLog( underlyingLog, platformModule.monitors );
-
-        CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
-                platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
-        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir, copiedStoreRecovery,
-                new StoreFiles( new DefaultFileSystemAbstraction() ),
-                dependencies.provideDependency( NeoStoreDataSource.class ),
-                platformModule.dependencies.provideDependency( TransactionIdStore.class ), databaseHealthSupplier );
 
         NonBlockingChannels nonBlockingChannels = new NonBlockingChannels();
 
@@ -321,6 +321,7 @@ public class EnterpriseCoreEditionModule extends EditionModule implements CoreEd
         LocalSessionPool sessionPool = new LocalSessionPool( myGlobalSession );
         ProgressTrackerImpl progressTracker = new ProgressTrackerImpl( myGlobalSession );
 
+        RaftServer raftServer;
         try
         {
             DurableStateStorage<Long> lastFlushedStorage = life.add(
@@ -354,6 +355,8 @@ public class EnterpriseCoreEditionModule extends EditionModule implements CoreEd
                     config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),
                     databaseHealthSupplier, logProvider, progressTracker, lastFlushedStorage,
                     sessionTrackerStorage, applier, downloader, inFlightMap, platformModule.monitors );
+
+            raftServer = new RaftServer( marshal, raftListenAddress, localDatabase, logProvider, coreState );
 
             raft = createRaft( life, loggingOutbound, discoveryService, config, messageLogger, raftLog, coreState,
                     fileSystem, clusterStateDirectory, myself, logProvider, raftServer, raftTimeoutService,

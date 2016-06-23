@@ -27,10 +27,7 @@ import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.RaftMessages.AppendEntries;
 import org.neo4j.coreedge.raft.RaftMessages.Heartbeat;
 import org.neo4j.coreedge.raft.outcome.Outcome;
-import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
-import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.logging.Log;
 
 import static java.lang.Long.min;
@@ -126,33 +123,4 @@ public class Follower implements RaftMessageHandler
         return outcome;
     }
 
-    @Override
-    public Outcome validate( RaftMessages.RaftMessage message,StoreId storeId, RaftState ctx,
-            Log log, LocalDatabase localDatabase )
-    {
-        localDatabase.assertHealthy( IllegalStateException.class );
-        Outcome outcome = new Outcome( FOLLOWER, ctx );
-
-        StoreId localStoreId = localDatabase.storeId();
-        if ( outcome.getLeader() != null &&
-                message.type() != RaftMessages.Type.HEARTBEAT_TIMEOUT &&
-                !localStoreId.theRealEquals( storeId ) )
-        {
-            if ( localDatabase.isEmpty() )
-            {
-                outcome.markNeedForFreshSnapshot();
-                outcome.markUnprocessable();
-            }
-            else if ( message.type() != RaftMessages.Type.VOTE_REQUEST )
-            {
-                throw new MismatchingStoreIdException( storeId, localStoreId );
-            }
-            else
-            {
-                outcome.markUnprocessable();
-            }
-        }
-
-        return outcome;
-    }
 }

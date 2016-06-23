@@ -388,12 +388,6 @@ public class RaftInstanceTest
         newMemberInbound.registerHandler( new Inbound.MessageHandler<RaftMessages.RaftMessage>()
         {
             @Override
-            public boolean validate( RaftMessages.RaftMessage message, StoreId storeId )
-            {
-                return true;
-            }
-
-            @Override
             public void handle( RaftMessages.RaftMessage message )
             {
                 messages.send( newMember, message );

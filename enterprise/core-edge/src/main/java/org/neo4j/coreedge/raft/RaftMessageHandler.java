@@ -32,7 +32,4 @@ public interface RaftMessageHandler
 {
     Outcome handle( RaftMessages.RaftMessage message, ReadableRaftState context, Log log, LocalDatabase localDatabase )
             throws IOException;
-
-    Outcome validate( RaftMessages.RaftMessage message, StoreId storeId,
-                                       RaftState context, Log log, LocalDatabase localDatabase );
 }

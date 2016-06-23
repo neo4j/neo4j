@@ -19,7 +19,6 @@
  */
 package org.neo4j.coreedge.raft;
 
-import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 
 /**
@@ -38,8 +37,7 @@ public interface RaftStateMachine
      * <p/>
      * Called when the consensus system no longer has the log entries required to
      * further update the state machine, because they have been deleted through pruning.
-     * @param myself the requester
      * @param strategy the strategy on how to pick a core to download from
      */
-    default void notifyNeedFreshSnapshot( CoreMember myself, CoreServerSelectionStrategy strategy ) {}
+    default void notifyNeedFreshSnapshot( CoreServerSelectionStrategy strategy ) {}
 }
