@@ -22,6 +22,7 @@ package org.neo4j.coreedge.raft.net;
 import java.util.Collection;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
+import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.CoreAddresses;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.network.Message;
@@ -32,11 +33,12 @@ import org.neo4j.coreedge.server.CoreMember;
 
 import static java.util.stream.Collectors.toList;
 
-public class RaftOutbound implements Outbound<CoreMember, RaftMessage>
+public class RaftOutbound implements Outbound<CoreMember, RaftMessage>,CoreTopologyService.Listener
 {
     private final CoreTopologyService discoveryService;
     private final Outbound<AdvertisedSocketAddress,Message> outbound;
     private final LocalDatabase localDatabase;
+    private ClusterTopology clusterTopology;
 
     public RaftOutbound( CoreTopologyService discoveryService, Outbound<AdvertisedSocketAddress,Message> outbound,
             LocalDatabase localDatabase )
@@ -44,12 +46,14 @@ public class RaftOutbound implements Outbound<CoreMember, RaftMessage>
         this.discoveryService = discoveryService;
         this.outbound = outbound;
         this.localDatabase = localDatabase;
+        discoveryService.addMembershipListener( this );
+        clusterTopology = discoveryService.currentTopology();
     }
 
     @Override
     public void send( CoreMember to, RaftMessage message )
     {
-        CoreAddresses coreAddresses = discoveryService.currentTopology().coreAddresses( to );
+        CoreAddresses coreAddresses = clusterTopology.coreAddresses( to );
         if ( coreAddresses != null )
         {
             outbound.send( coreAddresses.getRaftServer(), decorateWithStoreId( message ) );
@@ -61,7 +65,7 @@ public class RaftOutbound implements Outbound<CoreMember, RaftMessage>
     @Override
     public void send( CoreMember to, Collection<RaftMessage> messages )
     {
-        CoreAddresses coreAddresses = discoveryService.currentTopology().coreAddresses( to );
+        CoreAddresses coreAddresses = clusterTopology.coreAddresses( to );
         if ( coreAddresses != null )
         {
             outbound.send( coreAddresses.getRaftServer(),
@@ -74,5 +78,11 @@ public class RaftOutbound implements Outbound<CoreMember, RaftMessage>
     private StoreIdAwareMessage decorateWithStoreId( RaftMessage m )
     {
         return new StoreIdAwareMessage( localDatabase.storeId(), m );
+    }
+
+    @Override
+    public void onTopologyChange()
+    {
+        clusterTopology = discoveryService.currentTopology();
     }
 }

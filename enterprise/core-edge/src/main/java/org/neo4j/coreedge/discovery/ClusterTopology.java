@@ -63,7 +63,7 @@ public class ClusterTopology
     @Override
     public String toString()
     {
-        return "TestOnlyClusterTopology{" +
+        return "ClusterTopology{" +
                 "coreMembers.size()=" + coreMembers.size() +
                 ", bootstrappable=" + canBeBootstrapped() +
                 ", edgeMembers.size()=" + edgeAddresses.size() +
