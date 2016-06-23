@@ -268,4 +268,23 @@ public class FileRoleRepositoryTest
             throw e;
         }
     }
+
+    @Test
+    public void shouldNotAddEmptyUserToRole() throws Throwable
+    {
+        // Given
+        Files.createDirectories( roleFile.getParent() );
+        Files.write( roleFile, UTF8.encode( "admin:neo4j\n" + "reader:\n" ) );
+
+        // When
+        FileRoleRepository roles = new FileRoleRepository( roleFile, NullLogProvider.getInstance() );
+        roles.start();
+
+        RoleRecord role = roles.getRoleByName( "admin" );
+        assertTrue( "neo4j should be assigned to 'admin'", role.users().contains( "neo4j" ) );
+        assertTrue( "only one admin should exist", role.users().size() == 1 );
+
+        role = roles.getRoleByName( "reader" );
+        assertTrue( "no users should be assigned to 'reader'", role.users().isEmpty() );
+    }
 }

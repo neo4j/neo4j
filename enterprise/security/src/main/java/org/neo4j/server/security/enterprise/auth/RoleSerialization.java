@@ -101,7 +101,10 @@ public class RoleSerialization
 
         for ( String user : splits )
         {
-            users.add( user );
+            if ( !user.trim().isEmpty() )
+            {
+                users.add( user );
+            }
         }
 
         return users;
