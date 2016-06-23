@@ -416,7 +416,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     val nodeCommand = asCommand(nodePreds)
     val relCommand = asCommand(relPreds)
 
-    new VarlenghtPredicate {
+    new VarLengthPredicate {
 
       override def filterNode(row: ExecutionContext, state: QueryState)(node: Node) = nodeCommand(row, state, node)
 
