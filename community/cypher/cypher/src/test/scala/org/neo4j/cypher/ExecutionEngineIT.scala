@@ -230,6 +230,19 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     txBridge(service).hasTransaction shouldBe false
   }
 
+  test("should not leak transaction when failing in pre-parsing") {
+    //given
+    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    val service = new GraphDatabaseCypherService(db)
+    val engine = new ExecutionEngine(service)
+
+    // when
+    intercept[SyntaxException](engine.execute("", Map.empty[String, Object], service.session()))
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+  }
+
   test("should not leak transaction when closing the result for a procedure query") {
     //given
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
