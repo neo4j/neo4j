@@ -21,31 +21,27 @@ package org.neo4j.coreedge.raft.net;
 
 import java.util.Collection;
 
-import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.CoreAddresses;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 
-public class CoreOutbound implements Outbound<CoreMember, Message>,CoreTopologyService.Listener
+public class CoreOutbound implements Outbound<CoreMember, Message>
 {
     private final CoreTopologyService discoveryService;
     private final Outbound<AdvertisedSocketAddress, Message> outbound;
-    private ClusterTopology clusterTopology;
 
     public CoreOutbound( CoreTopologyService discoveryService, Outbound<AdvertisedSocketAddress, Message> outbound )
     {
         this.discoveryService = discoveryService;
         this.outbound = outbound;
-        this.discoveryService.addMembershipListener( this );
-        clusterTopology = discoveryService.currentTopology();
     }
 
     @Override
     public void send( CoreMember to, Message message )
     {
-        CoreAddresses coreAddresses = clusterTopology.coreAddresses( to );
+        CoreAddresses coreAddresses = discoveryService.currentTopology().coreAddresses( to );
         if ( coreAddresses != null )
         {
             outbound.send( coreAddresses.getCoreServer(), message );
@@ -57,18 +53,12 @@ public class CoreOutbound implements Outbound<CoreMember, Message>,CoreTopologyS
     @Override
     public void send( CoreMember to, Collection<Message> messages )
     {
-        CoreAddresses coreAddresses = clusterTopology.coreAddresses( to );
+        CoreAddresses coreAddresses = discoveryService.currentTopology().coreAddresses( to );
         if ( coreAddresses != null )
         {
             outbound.send( coreAddresses.getCoreServer(), messages );
         }
         // Drop messages for servers that are missing from the cluster topology;
         // discovery service thinks that they are offline, so it's not worth trying to send them anything.
-    }
-
-    @Override
-    public void onTopologyChange()
-    {
-        clusterTopology = discoveryService.currentTopology();
     }
 }
