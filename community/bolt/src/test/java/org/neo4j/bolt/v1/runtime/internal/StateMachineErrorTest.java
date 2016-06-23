@@ -228,7 +228,7 @@ public class StateMachineErrorTest
         machine.run( "RETURN 1", null, null, messages );
 
         // Then
-        assertThat( messages.next(), failedWith( Status.Security.Forbidden ) );
+        assertThat( messages.next(), failedWith( Status.Request.Invalid ) );
         assertThat( machine.state(), equalTo( SessionStateMachine.State.STOPPED ) );
     }
 }

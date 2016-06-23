@@ -105,7 +105,7 @@ public class SessionStateMachine implements Session, SessionState
                     @Override
                     protected State onNoImplementation( SessionStateMachine ctx, String command )
                     {
-                        ctx.error( new Neo4jError( Status.Security.Forbidden, "No operations allowed until you send an " +
+                        ctx.error( new Neo4jError( Status.Request.Invalid, "No operations allowed until you send an " +
                                 "INIT message successfully." ) );
                         return halt( ctx );
                     }

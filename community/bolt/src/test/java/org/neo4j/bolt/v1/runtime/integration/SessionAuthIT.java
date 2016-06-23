@@ -81,7 +81,7 @@ public class SessionAuthIT
         assertThat( recorder, recorded(
                 failedWith(Status.Security.Unauthorized),
                 success(),
-                failedWith(Status.Security.Forbidden) ));
+                failedWith(Status.Request.Invalid) ));
     }
 
     @Test
@@ -105,11 +105,11 @@ public class SessionAuthIT
         assertThat( recorder, recorded(
                 failedWith(Status.Security.Unauthorized),
                 success(),
-                failedWith(Status.Security.Forbidden) ));
+                failedWith(Status.Request.Invalid) ));
     }
 
     @Test
-    public void shouldIgnoreAfterSecurityForbidden() throws Throwable
+    public void shouldIgnoreAfterRequestInvalid() throws Throwable
     {
         // given it is important for client applications to programmatically
         // identify expired credentials as the cause of not being authenticated
@@ -122,7 +122,7 @@ public class SessionAuthIT
 
         // then
         assertThat( recorder, recorded(
-                failedWith(Status.Security.Forbidden),
+                failedWith(Status.Request.Invalid),
                 ignored() ));
     }
 
@@ -140,7 +140,7 @@ public class SessionAuthIT
         session.run( "RETURN 1337", map(), null, recorder );
 
         // then
-        assertThat( recorder, recorded( failedWith(Status.Security.Forbidden), ignored() ));
+        assertThat( recorder, recorded( failedWith(Status.Request.Invalid), ignored() ));
     }
 
     @Test
@@ -156,7 +156,7 @@ public class SessionAuthIT
         session.run( "RETURN 1337", map(), null, recorder );
 
         // then
-        assertThat( recorder, recorded( failedWith( Status.Security.Forbidden ), ignored() ));
+        assertThat( recorder, recorded( failedWith( Status.Request.Invalid ), ignored() ));
     }
 
     @Test
