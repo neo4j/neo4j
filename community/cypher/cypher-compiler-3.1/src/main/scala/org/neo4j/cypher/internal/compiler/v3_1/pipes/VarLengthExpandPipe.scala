@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_1.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{Effects, ReadsAllNodes, ReadsAllRelationships}
-import org.neo4j.cypher.internal.compiler.v3_1.pipes.VarLengthExpandPipe.HASH_SET_CUTOFF
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.{InternalException, SemanticDirection}
@@ -29,21 +28,20 @@ import org.neo4j.graphdb.{Node, Relationship}
 
 import scala.collection.mutable
 
-trait VarLengthPredicate {
-  def filterNode(row: ExecutionContext, state: QueryState)(node: Node): Boolean
-
-  def filterRelationship(row: ExecutionContext, state: QueryState)(rel: Relationship): Boolean
+trait VarlenghtPredicate {
+  def filterNode(row: ExecutionContext, state:QueryState)(node: Node): Boolean
+  def filterRelationship(row: ExecutionContext, state:QueryState)(rel: Relationship): Boolean
 }
 
-object VarLengthPredicate {
+object VarlenghtPredicate {
 
-  val NONE = new VarLengthPredicate {
-    override def filterNode(row: ExecutionContext, state: QueryState)(node: Node): Boolean = true
+  val NONE = new VarlenghtPredicate {
 
-    override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: Relationship): Boolean = true
+    override def filterNode(row: ExecutionContext, state:QueryState)(node: Node): Boolean = true
+
+    override def filterRelationship(row: ExecutionContext, state:QueryState)(rel: Relationship): Boolean = true
   }
 }
-
 case class VarLengthExpandPipe(source: Pipe,
                                fromName: String,
                                relName: String,
@@ -54,60 +52,29 @@ case class VarLengthExpandPipe(source: Pipe,
                                min: Int,
                                max: Option[Int],
                                nodeInScope: Boolean,
-                               filteringStep: VarLengthPredicate = VarLengthPredicate.NONE)
+                               filteringStep: VarlenghtPredicate = VarlenghtPredicate.NONE)
                               (val estimatedCardinality: Option[Double] = None)
                               (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
-  trait ContainsRelationship {
-    def contains(r: Relationship): Boolean
-  }
-
-  class SetBacked(set: mutable.Set[Relationship]) extends ContainsRelationship {
-    override def contains(r: Relationship): Boolean = set.contains(r)
-  }
-
-  class VectorBacked(set: Vector[Relationship]) extends ContainsRelationship {
-    override def contains(r: Relationship): Boolean = set.contains(r)
-  }
-
-  private val needsFlipping = if (dir == SemanticDirection.BOTH)
-    projectedDir == SemanticDirection.INCOMING
-  else
-    dir != projectedDir
-
   private def varLengthExpand(node: Node, state: QueryState, maxDepth: Option[Int],
                               row: ExecutionContext): Iterator[(Node, Seq[Relationship])] = {
-    val maxDepthValue = maxDepth.getOrElse(Int.MaxValue)
+    val stack = new mutable.Stack[(Node, Seq[Relationship])]
+    stack.push((node, Seq.empty))
 
-    val nodeFilter: (Node) => Boolean = filteringStep.filterNode(row, state)
+    new Iterator[(Node, Seq[Relationship])] {
+      def next(): (Node, Seq[Relationship]) = {
+        val (node, rels) = stack.pop()
+        if (rels.length < maxDepth.getOrElse(Int.MaxValue) && filteringStep.filterNode(row,state)(node)) {
+          val relationships: Iterator[Relationship] = state.query.getRelationshipsForIds(node, dir, types.types(state.query))
 
-    val stack = new mutable.ArrayBuffer[(Node, Vector[Relationship])](1024 * 1024)
-    stack.append((node, Vector[Relationship]()))
-    val relSet = mutable.HashSet[Relationship]()
-
-    new Iterator[(Node, Vector[Relationship])] {
-      override def next(): (Node, Vector[Relationship]) = {
-        val (node, rels: Vector[Relationship]) = stack.remove(stack.length - 1)
-        if (rels.length < maxDepthValue && nodeFilter(node)) {
-          val relationships: Iterator[Relationship] = state.query
-            .getRelationshipsForIds(node, dir, types.types(state.query))
-            .filter(filteringStep.filterRelationship(row, state))
-
-          val set: ContainsRelationship = if (rels.length > HASH_SET_CUTOFF) {
-            relSet.clear()
-            rels.foreach(relSet.add)
-            new SetBacked(relSet)
-          }
-          else
-            new VectorBacked(rels)
-
-          relationships.foreach { rel =>
+          relationships.filter(filteringStep.filterRelationship(row, state)).foreach { rel =>
             val otherNode = rel.getOtherNode(node)
-            if (!set.contains(rel) && nodeFilter(otherNode)) {
-              stack.append(otherNode -> (rels :+ rel))
+            if (!rels.contains(rel) && filteringStep.filterNode(row,state)(otherNode)) {
+              stack.push((otherNode, rels :+ rel))
             }
           }
         }
+        val needsFlipping = if (dir == SemanticDirection.BOTH) projectedDir == SemanticDirection.INCOMING else dir != projectedDir
         val projectedRels = if (needsFlipping) {
           rels.reverse
         } else {
@@ -116,7 +83,7 @@ case class VarLengthExpandPipe(source: Pipe,
         (node, projectedRels)
       }
 
-      override def hasNext: Boolean = stack.nonEmpty
+      def hasNext: Boolean = stack.nonEmpty
     }
   }
 
@@ -162,8 +129,4 @@ case class VarLengthExpandPipe(source: Pipe,
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
-}
-
-object VarLengthExpandPipe {
-  val HASH_SET_CUTOFF = 8
 }
