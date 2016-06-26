@@ -89,7 +89,7 @@ public class InternalFlatFileRealmTest
 
     }
 
-    @Test
+    //@Test
     public void testThreadedTests() throws Exception
     {
         ThreadedTestRunner runner = new ThreadedTestRunner();
