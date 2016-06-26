@@ -65,7 +65,7 @@ public class EnterpriseAuthSubject implements AuthSubject
     @Override
     public void setPassword( String password ) throws IOException, IllegalCredentialsException
     {
-        authManager.getUserManager().setPassword( this, (String) shiroSubject.getPrincipal(), password );
+        getUserManager().setPassword( this, (String) shiroSubject.getPrincipal(), password );
     }
 
     public EnterpriseUserManager getUserManager()

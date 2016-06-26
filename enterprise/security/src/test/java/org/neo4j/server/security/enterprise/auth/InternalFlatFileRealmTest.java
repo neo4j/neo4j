@@ -28,7 +28,6 @@ import com.google.testing.threadtester.RunResult;
 import com.google.testing.threadtester.SecondaryRunnableImpl;
 import com.google.testing.threadtester.ThreadedTest;
 import com.google.testing.threadtester.ThreadedTestRunner;
-import org.junit.Test;
 
 import java.util.Arrays;
 
@@ -69,16 +68,6 @@ public class InternalFlatFileRealmTest
         passwordPolicy = new BasicPasswordPolicy();
         authenticationStrategy = new AuthenticationStrategy()
         {
-            @Override
-            public boolean isAuthenticationPermitted( String username )
-            {
-                return true;
-            }
-
-            @Override
-            public void updateWithAuthenticationResult( AuthenticationResult result, String username )
-            {
-            }
 
             @Override
             public AuthenticationResult authenticate( User user, String password )

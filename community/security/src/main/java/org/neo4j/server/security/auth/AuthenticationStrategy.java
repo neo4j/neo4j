@@ -26,10 +26,6 @@ import org.neo4j.kernel.api.security.AuthenticationResult;
  */
 public interface AuthenticationStrategy
 {
-    boolean isAuthenticationPermitted( String username );
-
-    void updateWithAuthenticationResult( AuthenticationResult result, String username );
-
     /**
      * Verify a user by password
      */
