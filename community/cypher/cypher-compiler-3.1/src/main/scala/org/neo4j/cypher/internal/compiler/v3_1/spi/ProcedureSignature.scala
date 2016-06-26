@@ -41,7 +41,8 @@ case class QualifiedProcedureName(namespace: Seq[String], name: String) {
   override def toString = s"""${namespace.mkString(".")}.$name"""
 }
 
-case class FieldSignature(name: String, typ: CypherType, default: Option[AnyRef] = None)
+case class CypherValue(value: AnyRef, cypherType: CypherType)
+case class FieldSignature(name: String, typ: CypherType, default: Option[CypherValue] = None)
 
 sealed trait ProcedureAccessMode
 

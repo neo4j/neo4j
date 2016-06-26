@@ -77,7 +77,7 @@ public class MethodSignatureCompiler
             try
             {
                 NeoValueConverter valueConverter = typeMappers.converterFor( type );
-                Optional<Object> defaultValue = valueConverter.defaultValue( parameter );
+                Optional<Neo4jValue> defaultValue = valueConverter.defaultValue( parameter );
                 //it is not allowed to have holes in default values
                 if (seenDefault && !defaultValue.isPresent())
                 {

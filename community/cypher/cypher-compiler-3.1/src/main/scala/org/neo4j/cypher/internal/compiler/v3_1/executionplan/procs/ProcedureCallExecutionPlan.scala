@@ -50,7 +50,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
   extends ExecutionPlan {
 
   private val argExprCommands: Seq[expressions.Expression] =  argExprs.map(toCommandExpression) ++
-    signature.inputSignature.drop(argExprs.size).flatMap(_.default).map(Literal(_))
+    signature.inputSignature.drop(argExprs.size).flatMap(_.default).map(o => Literal(o.value))
 
   override def run(ctx: QueryContext, planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult = {
     val input = evaluateArguments(ctx, params)

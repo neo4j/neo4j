@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
 import org.neo4j.kernel.api.proc.{Neo4jTypes, ProcedureSignature => KernelProcedureSignature}
+import org.neo4j.kernel.impl.proc.Neo4jValue
 
 import scala.collection.JavaConverters._
 
@@ -132,7 +133,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
   override def procedureSignature(name: QualifiedProcedureName) = {
     val kn = new KernelProcedureSignature.ProcedureName(name.namespace.asJava, name.name)
     val ks = tc.statement.readOperations().procedureGet(kn)
-    val input = ks.inputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()))).toIndexedSeq
+    val input = ks.inputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue))).toIndexedSeq
     val output = if (ks.isVoid) None else Some(ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()))).toIndexedSeq)
     val mode = asCypherProcMode(ks.mode())
 
@@ -149,6 +150,8 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
     case _ => throw new CypherExecutionException(
       "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null )
   }
+
+  private def asCypherValue(neo4jValue: Neo4jValue) = CypherValue(neo4jValue.value, asCypherType(neo4jValue.neo4jType()))
 
   private def asCypherType(neoType: AnyType): CypherType = neoType match {
     case Neo4jTypes.NTString => symbols.CTString

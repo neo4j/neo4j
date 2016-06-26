@@ -33,6 +33,9 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType;
 import org.neo4j.procedure.Name;
 
+import static java.lang.Boolean.parseBoolean;
+import static java.lang.Double.parseDouble;
+import static java.lang.Long.parseLong;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTAny;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTBoolean;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTFloat;
@@ -41,6 +44,9 @@ import static org.neo4j.kernel.api.proc.Neo4jTypes.NTList;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTMap;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNumber;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
+import static org.neo4j.kernel.impl.proc.Neo4jValue.ntBoolean;
+import static org.neo4j.kernel.impl.proc.Neo4jValue.ntFloat;
+import static org.neo4j.kernel.impl.proc.Neo4jValue.ntInteger;
 
 public class TypeMappers
 {
@@ -53,7 +59,7 @@ public class TypeMappers
     {
         AnyType type();
         Object toNeoValue( Object javaValue ) throws ProcedureException;
-        Optional<Object> defaultValue(Name parameter) throws ProcedureException;
+        Optional<Neo4jValue> defaultValue(Name parameter) throws ProcedureException;
     }
 
     private final Map<Type,NeoValueConverter> javaToNeo = new HashMap<>();
@@ -129,11 +135,20 @@ public class TypeMappers
     }
 
     private final NeoValueConverter TO_ANY = new SimpleConverter( NTAny, Object.class );
-    private final NeoValueConverter TO_STRING = new SimpleConverter( NTString, String.class, s -> s);
-    private final NeoValueConverter TO_INTEGER = new SimpleConverter( NTInteger, Long.class, Long::parseLong );
-    private final NeoValueConverter TO_FLOAT = new SimpleConverter( NTFloat, Double.class, Double::parseDouble);
-    private final NeoValueConverter TO_NUMBER = new SimpleConverter( NTNumber, Number.class, Boolean::parseBoolean);
-    private final NeoValueConverter TO_BOOLEAN = new SimpleConverter( NTBoolean, Boolean.class, Boolean::parseBoolean);
+    private final NeoValueConverter TO_STRING = new SimpleConverter( NTString, String.class, Neo4jValue::ntString );
+    private final NeoValueConverter TO_INTEGER = new SimpleConverter( NTInteger, Long.class, s -> ntInteger( parseLong(s) ) );
+    private final NeoValueConverter TO_FLOAT = new SimpleConverter( NTFloat, Double.class, s -> ntFloat( parseDouble(s) ));
+    private final NeoValueConverter TO_NUMBER = new SimpleConverter( NTNumber, Number.class, s -> {
+        try
+        {
+            return ntInteger( parseLong(s) );
+        }
+        catch ( NumberFormatException e )
+        {
+            return ntFloat( parseDouble( s ) );
+        }
+    });
+    private final NeoValueConverter TO_BOOLEAN = new SimpleConverter( NTBoolean, Boolean.class, s -> ntBoolean( parseBoolean(s) ));
     private final NeoValueConverter TO_MAP = new SimpleConverter( NTMap, Map.class);
     private final NeoValueConverter TO_LIST = toList( TO_ANY );
 
@@ -159,23 +174,24 @@ public class TypeMappers
     {
         private final AnyType type;
         private final Class<?> javaClass;
-        private final Function<String,Object> defaultConverter;
+        private final Function<String,Neo4jValue> defaultConverter;
 
         public SimpleConverter( AnyType type, Class<?> javaClass)
         {
             this( type, javaClass, s -> {
-                throw new UnsupportedOperationException( String.format("Default values for type %s is not supported", javaClass.getSimpleName() ));
+                throw new UnsupportedOperationException(
+                        String.format("Default values for type %s is not supported", javaClass.getSimpleName() ));
             } );
         }
 
-        public SimpleConverter( AnyType type, Class<?> javaClass, Function<String,Object> defaultConverter )
+        public SimpleConverter( AnyType type, Class<?> javaClass, Function<String,Neo4jValue> defaultConverter )
         {
             this.type = type;
             this.javaClass = javaClass;
             this.defaultConverter = defaultConverter;
         }
 
-        public Optional<Object> defaultValue(Name parameter) throws ProcedureException
+        public Optional<Neo4jValue> defaultValue(Name parameter) throws ProcedureException
         {
             String defaultValue = parameter.defaultValue();
             if ( defaultValue.equals( Name.DEFAULT_VALUE ) )
