@@ -41,10 +41,6 @@
             <copy file="${project.build.sourceDirectory}/../resources/common/neo4j-script"
                   toFile="${project.build.outputDirectory}/@{name}/server/scripts/neo4j-shell"/>
 
-            <replace file="${project.build.outputDirectory}/@{name}/server/conf/neo4j-wrapper.conf"
-                     token="unsupported.dbms.udc.source=tarball"
-                     value="unsupported.dbms.udc.source=debian"/>
-
             <!-- Set the directories to match the FHS. -->
             <replace file="${project.build.outputDirectory}/@{name}/server/conf/neo4j.conf"
                      token="#dbms.directories.data=data"

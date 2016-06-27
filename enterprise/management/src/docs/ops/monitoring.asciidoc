@@ -12,10 +12,10 @@ Neo4j Enterprise also has the ability to automatically report _metrics_ to commo
 [[jmx-remote]]
 == Adjusting remote JMX access to the Neo4j Server ==
 
-Per default, the Neo4j Enterprise Server edition does not allow remote JMX connections, since the relevant options in the 'conf/neo4j-wrapper.conf' configuration file are commented out.
+Per default, the Neo4j Enterprise Server edition does not allow remote JMX connections, since the relevant options in the 'conf/neo4j.conf' configuration file are commented out.
 To enable this feature, you have to remove the +#+ characters from the various +com.sun.management.jmxremote+ options there.
 
-When commented in, the default values are set up to allow remote JMX connections with certain roles, refer to the 'conf/jmx.password', 'conf/jmx.access' and 'conf/neo4j-wrapper.conf' files for details.
+When commented in, the default values are set up to allow remote JMX connections with certain roles, refer to the 'conf/jmx.password', 'conf/jmx.access' and 'conf/neo4j.conf' files for details.
 
 Make sure that 'conf/jmx.password' has the correct file permissions.
 The owner of the file has to be the user that will run the service, and the permissions should be read only for that user.
@@ -26,7 +26,7 @@ If you are running the service under the Local System Account, the user that own
 
 With this setup, you should be able to connect to JMX monitoring of the Neo4j server using +<IP-OF-SERVER>:3637+, with the username +monitor+ and the password +Neo4j+.
 
-Note that it is possible that you have to update the permissions and/or ownership of the 'conf/jmx.password' and 'conf/jmx.access' files -- refer to the relevant section in 'conf/neo4j-wrapper.conf' for details.
+Note that it is possible that you have to update the permissions and/or ownership of the 'conf/jmx.password' and 'conf/jmx.access' files -- refer to the relevant section in 'conf/neo4j.conf' for details.
 
 [WARNING]
 For maximum security, please adjust at least the password settings in 'conf/jmx.password' for a production installation.

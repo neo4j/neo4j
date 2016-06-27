@@ -51,5 +51,3 @@ For information regarding Windows, see http://neo4j.com/docs/operations-manual/c
 *conf/neo4j.conf*::
   Configuration.
 
-*conf/neo4j-wrapper.conf*::
-  Configuration for service wrapper.
