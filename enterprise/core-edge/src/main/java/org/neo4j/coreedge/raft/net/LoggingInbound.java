@@ -20,10 +20,8 @@
 package org.neo4j.coreedge.raft.net;
 
 import org.neo4j.coreedge.network.Message;
-
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.logging.MessageLogger;
-import org.neo4j.kernel.impl.store.StoreId;
 
 public class LoggingInbound<M extends Message> implements Inbound<M>
 {

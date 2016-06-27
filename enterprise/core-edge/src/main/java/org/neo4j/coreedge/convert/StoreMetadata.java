@@ -21,7 +21,7 @@ package org.neo4j.coreedge.convert;
 
 import java.util.Objects;
 
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.coreedge.server.StoreId;
 
 public class StoreMetadata
 {
@@ -52,19 +52,13 @@ public class StoreMetadata
             return false;
         }
         StoreMetadata that = (StoreMetadata) o;
-        return lastTxId == that.lastTxId && storeIdEquals( storeId, that.storeId );
+        return lastTxId == that.lastTxId && Objects.equals( storeId, that.storeId );
     }
 
     @Override
     public int hashCode()
     {
-        int result = 31 + (this.storeId == null ? 0 : storeId.theRealHashCode());
-        return 31 * result + Objects.hash( lastTxId );
-    }
-
-    private boolean storeIdEquals( StoreId one, StoreId two)
-    {
-        return (one == two || (one != null && one.theRealEquals( two )));
+        return Objects.hash( storeId, lastTxId );
     }
 
     public StoreId storeId()

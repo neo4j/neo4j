@@ -26,6 +26,7 @@ import java.util.Collections;
 import org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding;
 import org.neo4j.coreedge.raft.state.DurableStateStorageImporter;
 import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
+import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -38,7 +39,6 @@ import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdType;
@@ -51,12 +51,25 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.*;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.TIME;
-import static org.neo4j.kernel.impl.store.StoreFactory.*;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TIME;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TRANSACTION_ID;
+import static org.neo4j.kernel.impl.store.StoreFactory.LABEL_TOKEN_NAMES_STORE_NAME;
+import static org.neo4j.kernel.impl.store.StoreFactory.LABEL_TOKEN_STORE_NAME;
+import static org.neo4j.kernel.impl.store.StoreFactory.NODE_LABELS_STORE_NAME;
+import static org.neo4j.kernel.impl.store.StoreFactory.NODE_STORE_NAME;
+import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_ARRAYS_STORE_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_KEY_TOKEN_NAMES_STORE_NAME;
+import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME;
+import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_STORE_NAME;
+import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_STRINGS_STORE_NAME;
+import static org.neo4j.kernel.impl.store.StoreFactory.RELATIONSHIP_GROUP_STORE_NAME;
+import static org.neo4j.kernel.impl.store.StoreFactory.RELATIONSHIP_STORE_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.RELATIONSHIP_TYPE_TOKEN_STORE_NAME;
+import static org.neo4j.kernel.impl.store.StoreFactory.SCHEMA_STORE_NAME;
 import static org.neo4j.kernel.impl.store.id.IdType.ARRAY_BLOCK;
 import static org.neo4j.kernel.impl.store.id.IdType.LABEL_TOKEN;
 import static org.neo4j.kernel.impl.store.id.IdType.LABEL_TOKEN_NAME;
@@ -134,8 +147,7 @@ public class ConvertClassicStoreCommand
         long randomNumber = MetaDataStore.getRecord( pageCache, metadataStore, RANDOM_NUMBER );
         long upgradeTime = MetaDataStore.getRecord( pageCache, metadataStore, UPGRADE_TIME );
         long upgradeId = MetaDataStore.getRecord( pageCache, metadataStore, UPGRADE_TRANSACTION_ID );
-        long storeVersion = MetaDataStore.getRecord( pageCache, metadataStore, STORE_VERSION );
-        return new StoreId( creationTime, randomNumber, storeVersion, upgradeTime, upgradeId );
+        return new StoreId( creationTime, randomNumber, upgradeTime, upgradeId );
     }
 
     private void appendNullTransactionLogEntryToSetRaftIndexToMinusOne( File dbDir, String recordFormat ) throws

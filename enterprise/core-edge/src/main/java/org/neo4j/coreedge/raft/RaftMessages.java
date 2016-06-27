@@ -29,7 +29,7 @@ import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.coreedge.server.StoreId;
 
 import static java.lang.String.format;
 
@@ -668,15 +668,13 @@ public interface RaftMessages
                 return false;
             }
             StoreIdAwareMessage that = (StoreIdAwareMessage) o;
-            return Objects.equals( message, that.message ) &&
-                    (storeId == that.storeId || (storeId != null && storeId.theRealEquals( that.storeId )));
+            return Objects.equals( storeId, that.storeId ) && Objects.equals( message, that.message );
         }
 
         @Override
         public int hashCode()
         {
-            int result = 31 + (storeId == null ? 0 : storeId.theRealHashCode());
-            return 31 * result + Objects.hash( message );
+            return Objects.hash( storeId, message );
         }
 
         @Override

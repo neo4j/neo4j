@@ -22,16 +22,15 @@ package org.neo4j.coreedge.convert;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.StoreId;
 
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.TIME;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TIME;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TRANSACTION_ID;
@@ -63,8 +62,7 @@ public class GenerateClusterSeedCommand
         long creationTime = getRecord( pageCache, metadataStore, TIME );
         long randomNumber = getRecord( pageCache, metadataStore, RANDOM_NUMBER );
         long upgradeId = getRecord( pageCache, metadataStore, UPGRADE_TRANSACTION_ID );
-        long storeVersion = getRecord( pageCache, metadataStore, STORE_VERSION );
-        return new StoreId( creationTime, randomNumber, storeVersion, upgradeTime, upgradeId );
+        return new StoreId( creationTime, randomNumber, upgradeTime, upgradeId );
     }
 
 }

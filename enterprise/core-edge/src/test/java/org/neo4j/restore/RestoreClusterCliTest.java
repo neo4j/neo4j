@@ -19,6 +19,9 @@
  */
 package org.neo4j.restore;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -26,11 +29,9 @@ import java.io.PrintStream;
 import java.util.LinkedList;
 import java.util.Optional;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.coreedge.convert.ClusterSeed;
 import org.neo4j.coreedge.convert.StoreMetadata;
+import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -45,7 +46,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.logging.NullLog;
 import org.neo4j.server.configuration.ConfigLoader;
@@ -54,7 +54,6 @@ import org.neo4j.test.rule.TargetDirectory;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.coreedge.convert.GenerateClusterSeedCommand.storeId;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TIME;
@@ -81,9 +80,9 @@ public class RestoreClusterCliTest
         String seed = extractSeed( out );
         ClusterSeed clusterSeed = ClusterSeed.create( seed );
 
-        assertTrue( storeMetadata.storeId().theRealEquals( clusterSeed.before() ) );
+        assertTrue( storeMetadata.storeId().equals( clusterSeed.before() ) );
         assertEquals( storeMetadata.lastTxId(), clusterSeed.lastTxId() );
-        assertFalse( storeMetadata.storeId().theRealEquals( clusterSeed.after() ) );
+        assertFalse( storeMetadata.storeId().equals( clusterSeed.after() ) );
 
         // when restore to another place
         File rootNewDatabaseDir = testDirectory.cleanDirectory( "new-db-2" );
@@ -93,7 +92,7 @@ public class RestoreClusterCliTest
 
         // then
         StoreMetadata newMetadata = metadataFor( extractDatabaseDir( rootNewDatabaseDir ) );
-        assertTrue( clusterSeed.after().theRealEquals( newMetadata.storeId() ) );
+        assertTrue( clusterSeed.after().equals( newMetadata.storeId() ) );
     }
 
     private File extractDatabaseDir( File rootNewDatabaseDir )

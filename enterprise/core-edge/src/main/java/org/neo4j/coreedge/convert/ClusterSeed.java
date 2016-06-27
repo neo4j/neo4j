@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.Base64;
 import java.util.Objects;
 
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.coreedge.server.StoreId;
 
 public class ClusterSeed
 {
@@ -54,11 +54,10 @@ public class ClusterSeed
     {
         long creationTime = buffer.getLong();
         long randomId = buffer.getLong();
-        long storeVersion = buffer.getLong();
         long upgradeTime = buffer.getLong();
         long upgradeId = buffer.getLong();
 
-        return new StoreId( creationTime, randomId, storeVersion, upgradeTime, upgradeId );
+        return new StoreId( creationTime, randomId, upgradeTime, upgradeId );
     }
 
     public StoreId after()
@@ -74,13 +73,11 @@ public class ClusterSeed
 
         buffer.putLong( before.getCreationTime() );
         buffer.putLong( before.getRandomId() );
-        buffer.putLong( before.getStoreVersion() );
         buffer.putLong( before.getUpgradeTime() );
         buffer.putLong( before.getUpgradeId() );
 
         buffer.putLong( after.getCreationTime() );
         buffer.putLong( after.getRandomId() );
-        buffer.putLong( after.getStoreVersion() );
         buffer.putLong( after.getUpgradeTime() );
         buffer.putLong( after.getUpgradeId() );
 
@@ -106,26 +103,14 @@ public class ClusterSeed
         }
         ClusterSeed that = (ClusterSeed) o;
         return lastTxId == that.lastTxId &&
-                storeIdEquals( before, that.before ) &&
-                storeIdEquals( after, that.after );
+                Objects.equals( before, that.before ) &&
+                Objects.equals( after, that.after );
     }
 
     @Override
     public int hashCode()
     {
-        int result = 31 + storeIdHashcode( before );
-        result = 31 * result + storeIdHashcode( after );
-        return 31 * result + Objects.hash( lastTxId );
-    }
-
-    private int storeIdHashcode( StoreId storeId )
-    {
-        return this.before == null ? 0 : storeId.theRealHashCode();
-    }
-
-    private boolean storeIdEquals( StoreId one, StoreId two)
-    {
-        return (one == two || (one != null && one.theRealEquals( two )));
+        return Objects.hash( before, after, lastTxId );
     }
 
     public StoreId before()

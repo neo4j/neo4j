@@ -26,6 +26,7 @@ import org.neo4j.coreedge.catchup.CatchupClientProtocol;
 import org.neo4j.coreedge.catchup.tx.core.TxPullResponseEncoder;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponse;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseDecoder;
+import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -38,7 +39,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
-import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
 import static org.neo4j.coreedge.catchup.CatchupClientProtocol.NextMessage;
 
 public class TxPullResponseEncodeDecodeTest
@@ -54,7 +54,7 @@ public class TxPullResponseEncodeDecodeTest
                 new TxPullResponseDecoder( protocol ) );
 
         // given
-        TxPullResponse sent = new TxPullResponse( newStoreIdForCurrentVersion(), newCommittedTransactionRepresentation() );
+        TxPullResponse sent = new TxPullResponse( new StoreId( 1, 2, 3, 4 ), newCommittedTransactionRepresentation() );
 
         // when
         channel.writeOutbound( sent );
