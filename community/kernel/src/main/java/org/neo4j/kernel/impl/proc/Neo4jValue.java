@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.proc;
 
+import java.util.Map;
+
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 
 public class Neo4jValue
@@ -60,5 +62,43 @@ public class Neo4jValue
     public static  Neo4jValue ntBoolean(boolean value)
     {
         return new Neo4jValue( value, Neo4jTypes.NTBoolean );
+    }
+
+    public static  Neo4jValue ntMap(Map<String, Object> value)
+    {
+        return new Neo4jValue( value, Neo4jTypes.NTMap );
+    }
+
+    @Override
+    public String toString()
+    {
+        return "Neo4jValue{" +
+               "value=" + value +
+               ", type=" + type +
+               '}';
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        { return true; }
+        if ( o == null || getClass() != o.getClass() )
+        { return false; }
+
+        Neo4jValue that = (Neo4jValue) o;
+
+        if ( value != null ? !value.equals( that.value ) : that.value != null )
+        { return false; }
+        return type.equals( that.type );
+
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = value != null ? value.hashCode() : 0;
+        result = 31 * result + type.hashCode();
+        return result;
     }
 }

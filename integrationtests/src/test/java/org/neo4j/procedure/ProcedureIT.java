@@ -275,6 +275,38 @@ public class ProcedureIT
     }
 
     @Test
+    public void shouldCallProcedureWithMapArgumentDefaultingToNull() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute(
+                    "CALL org.neo4j.procedure.mapWithNullDefault()" );
+
+            // Then
+            assertThat( res.next(), equalTo( map( "map", null ) ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallProcedureWithMapArgumentDefaultingToMap() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute(
+                    "CALL org.neo4j.procedure.mapWithOtherDefault" );
+
+            // Then
+            assertThat( res.next(), equalTo( map( "map", map("default", true) ) ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
     public void shouldCallProcedureWithNodeReturn() throws Throwable
     {
         // Given
@@ -991,6 +1023,16 @@ public class ProcedureIT
         }
     }
 
+    public static class MapOutput
+    {
+        public Map<String, Object> map;
+
+        public MapOutput(Map<String, Object> map)
+        {
+            this.map = map;
+        }
+    }
+
     public static class DoubleOutput
     {
         public double result = 0.0d;
@@ -1128,6 +1170,18 @@ public class ProcedureIT
         public Stream<Output> mapArgument( @Name( "map" ) Map<String,Object> map )
         {
             return Stream.of( new Output( map.size() ) );
+        }
+
+        @Procedure
+        public Stream<MapOutput> mapWithNullDefault( @Name( value = "map", defaultValue = "null") Map<String,Object> map )
+        {
+            return Stream.of( new MapOutput( map ) );
+        }
+
+        @Procedure
+        public Stream<MapOutput> mapWithOtherDefault( @Name( value = "map", defaultValue = "{default: true}") Map<String,Object> map )
+        {
+            return Stream.of( new MapOutput( map ) );
         }
 
         @Procedure

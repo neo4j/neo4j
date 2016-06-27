@@ -149,7 +149,7 @@ public class TypeMappers
         }
     });
     private final NeoValueConverter TO_BOOLEAN = new SimpleConverter( NTBoolean, Boolean.class, s -> ntBoolean( parseBoolean(s) ));
-    private final NeoValueConverter TO_MAP = new SimpleConverter( NTMap, Map.class);
+    private final NeoValueConverter TO_MAP = new SimpleConverter( NTMap, Map.class, new MapConverter());
     private final NeoValueConverter TO_LIST = toList( TO_ANY );
 
     private NeoValueConverter toList( NeoValueConverter inner )
