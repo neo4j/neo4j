@@ -28,14 +28,14 @@ public class DiscoveryRepresentation extends MappingRepresentation
     private static final String DISCOVERY_REPRESENTATION_TYPE = "discovery";
     private final String managementUri;
     private final String dataUri;
-    private final String boltUri;
+    private final String boltAddress;
 
-    public DiscoveryRepresentation( String managementUri, String dataUri, String boltUri )
+    public DiscoveryRepresentation( String managementUri, String dataUri, String boltAddress )
     {
         super( DISCOVERY_REPRESENTATION_TYPE );
         this.managementUri = managementUri;
         this.dataUri = dataUri;
-        this.boltUri = boltUri;
+        this.boltAddress = boltAddress;
     }
 
     @Override
@@ -43,7 +43,7 @@ public class DiscoveryRepresentation extends MappingRepresentation
     {
         serializer.putRelativeUri( MANAGEMENT_URI_KEY, managementUri );
         serializer.putRelativeUri( DATA_URI_KEY, dataUri );
-        serializer.putAbsoluteUri( BOLT_URI_KEY, boltUri );
+        serializer.putAbsoluteUri( BOLT_URI_KEY, "bolt://" + boltAddress );
     }
 
 }

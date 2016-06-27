@@ -56,9 +56,9 @@ public class DiscoveryService
     {
         String managementUri = configuration.get( ServerSettings.management_api_path ).getPath() + "/";
         String dataUri = configuration.get( ServerSettings.rest_api_path ).getPath() + "/";
-        String boltUri = "bolt://" + configuration.get( GraphDatabaseSettings.bolt_advertised_address );
+        String boltAddress = configuration.get( GraphDatabaseSettings.bolt_advertised_address ).toString();
 
-        return outputFormat.ok( new DiscoveryRepresentation( managementUri, dataUri, boltUri ) );
+        return outputFormat.ok( new DiscoveryRepresentation( managementUri, dataUri, boltAddress ) );
     }
 
     @GET

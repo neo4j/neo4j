@@ -34,8 +34,9 @@ public class DiscoveryRepresentationTest
     {
         String managementUri = "/management";
         String dataUri = "/data";
-        String boltUri = "bolt://localhost:7687";
-        DiscoveryRepresentation dr = new DiscoveryRepresentation( managementUri, dataUri, boltUri );
+        String boltAddress = "localhost:7687";
+        String boltUri = "bolt://" + boltAddress;
+        DiscoveryRepresentation dr = new DiscoveryRepresentation( managementUri, dataUri, boltAddress );
 
         Map<String, Object> mapOfUris = RepresentationTestAccess.serialize( dr );
 
