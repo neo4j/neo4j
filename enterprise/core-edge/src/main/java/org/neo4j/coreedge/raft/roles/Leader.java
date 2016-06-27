@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.logging.Log;
 
 import static java.lang.Math.max;
-
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 
@@ -83,7 +82,7 @@ public class Leader implements RaftMessageHandler
                 outcome.steppingDown();
                 outcome.setNextRole( FOLLOWER );
                 log.info( "Moving to FOLLOWER state after receiving heartbeat at term %d (my term is " +
-                        "%d) from %s%n", req.leaderTerm(), ctx.term(), req.from() );
+                        "%d) from %s", req.leaderTerm(), ctx.term(), req.from() );
                 Heart.beat( ctx, outcome, (Heartbeat) message );
                 break;
             }
@@ -117,7 +116,7 @@ public class Leader implements RaftMessageHandler
                     outcome.steppingDown();
                     outcome.setNextRole( FOLLOWER );
                     log.info( "Moving to FOLLOWER state after receiving append request at term %d (my term is " +
-                            "%d) from %s%n", req.leaderTerm(), ctx.term(), req.from() );
+                            "%d) from %s", req.leaderTerm(), ctx.term(), req.from() );
                     Appending.handleAppendEntriesRequest( ctx, outcome, req, localDatabase.storeId() );
                     break;
                 }
@@ -139,7 +138,7 @@ public class Leader implements RaftMessageHandler
                     outcome.steppingDown();
                     outcome.setNextRole( FOLLOWER );
                     log.info( "Moving to FOLLOWER state after receiving append response at term %d (my term is " +
-                            "%d) from %s%n", response.term(), ctx.term(), response.from() );
+                            "%d) from %s", response.term(), ctx.term(), response.from() );
                     outcome.replaceFollowerStates( new FollowerStates<>() );
                     break;
                 }
@@ -209,7 +208,7 @@ public class Leader implements RaftMessageHandler
                 {
                     outcome.steppingDown();
                     log.info( "Moving to FOLLOWER state after receiving vote request at term %d (my term is " +
-                            "%d) from %s%n", req.term(), ctx.term(), req.from() );
+                            "%d) from %s", req.term(), ctx.term(), req.from() );
 
                     outcome.setNextRole( FOLLOWER );
                     Voting.handleVoteRequest( ctx, outcome, req, localDatabase.storeId() );

@@ -90,7 +90,7 @@ public class StateExplorerIT
                 }
             }
             statesToBeExplored = newStates;
-            System.out.printf( "\nexplored %d states, planning to explore %d states%n",
+            System.out.printf( "\nexplored %d states, planning to explore %d states",
                     exploredStates.size(), statesToBeExplored.size() );
         }
 

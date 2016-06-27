@@ -151,7 +151,7 @@ public class RaftInstance implements LeaderLocator,
     {
         electionTimer = renewableTimeoutService.create(
                 Timeouts.ELECTION, electionTimeout, randomTimeoutRange(), timeout -> {
-                    log.info( "Election timeout triggered, base timeout value is %d%n", electionTimeout );
+                    log.info( "Election timeout triggered, base timeout value is %d", electionTimeout );
                     handle( new RaftMessages.Timeout.Election( myself ) );
                     timeout.renew();
                 } );

@@ -114,7 +114,7 @@ public class Follower implements RaftMessageHandler
                 if ( Election.start( ctx, outcome, log ) )
                 {
                     outcome.setNextRole( CANDIDATE );
-                    log.info( "Moving to CANDIDATE state after successfully starting election %n" );
+                    log.info( "Moving to CANDIDATE state after successfully starting election" );
                 }
                 break;
             }
