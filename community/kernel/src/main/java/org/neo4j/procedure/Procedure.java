@@ -32,8 +32,11 @@ import java.lang.annotation.Target;
  * {@link java.util.stream.Stream} of {@code Records}. The work performed usually
  * involves one or more resources, such as a {@link org.neo4j.graphdb.GraphDatabaseService}.
  * <p>
- * By default, procedures are read-only. If you want to perform writes to the
- * database, you need to add the {@link PerformsWrites} annotation to your method as well.
+ * A procedure is associated with one of the following modes
+ *      READ    allows only reading the graph (default mode)
+ *      WRITE   allows reading and writing the graph
+ *      SCHEMA  allows reading the graphs and performing schema operations
+ *      DBMS    allows managing the database (i.e. change password)
  *
  * <h2>Input declaration</h2>
  * A procedure can accept input arguments, which is defined in the arguments to the
@@ -54,7 +57,7 @@ import java.lang.annotation.Target;
  * </ul>
  *
  * <h2>Output declaration</h2>
- * A procedure must always return a {@link java.util.stream.Stream} of {@code Records}.
+ * A procedure must always return a {@link java.util.stream.Stream} of {@code Records}, or nothing.
  * The record is defined per procedure, as a class with only public, non-final fields.
  * The types, order and names of the fields in this class define the format of the returned records.
  * <p>
@@ -113,8 +116,18 @@ public @interface Procedure
      */
     String value() default "";
 
+    /**
+     * Synonym for {@link #value()}
+     */
     String name() default "";
 
+    /**
+     * A procedure is associated with one of the following modes
+     *      READ    allows only reading the graph (default mode)
+     *      WRITE   allows reading and writing the graph
+     *      SCHEMA  allows reading the graphs and performing schema operations
+     *      DBMS    allows managing the database (i.e. change password)
+     */
     Mode mode() default Mode.READ;
 
     enum Mode
