@@ -58,13 +58,12 @@ Function global:New-MockNeo4jInstall($IncludeFiles = $true, $ServerType = 'Commu
     $neoConf = ''
     if ($DatabaseMode -ne '') {
       $neoConf += "dbms.mode=$DatabaseMode`n`r"
-    }    
-    $neoConf | Out-File -FilePath "$RootDir\conf\neo4j.conf"
+    }
+    if ([string]$WindowsService -ne '') {
+      $neoConf += "dbms.windows_service_name=$WindowsService`n`r"
+    }
 
-    # Create fake neo4j-wrapper.conf
-    $neoConf = ''
-    if ([string]$WindowsService -ne '') { $neoConf += "dbms.windows_service_name=$WindowsService`n`r" }
-    $neoConf | Out-File -FilePath "$RootDir\conf\neo4j-wrapper.conf"
+    $neoConf | Out-File -FilePath "$RootDir\conf\neo4j.conf"
   }
   
   $serverObject = (New-Object -TypeName PSCustomObject -Property @{

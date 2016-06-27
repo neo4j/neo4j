@@ -15,7 +15,7 @@ When running your own code and Neo4j in the same JVM, there are a few things you
 * Don't use internal Neo4j APIs.
   They may change in future releases, and they might not always work as intended in the context of your code.
 * If possible, avoid using Java object serialization or reflection in your code or in any runtime dependency that you use.
-  Otherwise, if you cannot avoid using Java object serialization and reflection, then ensure that the `-XX:+TrustFinalNonStaticFields` JVM flag is disabled in `neo4j-wrapper.conf`.
+  Otherwise, if you cannot avoid using Java object serialization and reflection, then ensure that the `-XX:+TrustFinalNonStaticFields` JVM flag is disabled in `neo4j.conf`.
 ====
 
 :leveloffset: 2

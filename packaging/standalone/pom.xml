@@ -40,7 +40,6 @@
     <!-- Document substitution properties are in document.properties file -->
 
     <!-- other filter properties -->
-    <wrapper.conf>conf/neo4j-wrapper.conf</wrapper.conf>
     <neo4j.version>${project.version}</neo4j.version>
 
     <!-- conf/neo4j.conf filter properties -->
