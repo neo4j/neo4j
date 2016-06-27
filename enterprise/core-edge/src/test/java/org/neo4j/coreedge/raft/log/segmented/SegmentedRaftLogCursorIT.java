@@ -87,8 +87,11 @@ public class SegmentedRaftLogCursorIT
         long lastIndex = segmentedRaftLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 3 ) ) );
 
         //when
-        RaftLogCursor entryCursor = segmentedRaftLog.getEntryCursor( lastIndex + 1 );
-        boolean next = entryCursor.next();
+        boolean next;
+        try ( RaftLogCursor entryCursor = segmentedRaftLog.getEntryCursor( lastIndex + 1 ) )
+        {
+            next = entryCursor.next();
+        }
 
         //then
         assertFalse( next );
@@ -104,8 +107,11 @@ public class SegmentedRaftLogCursorIT
         long lastIndex = segmentedRaftLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 3 ) ) );
 
         //when
-        RaftLogCursor entryCursor = segmentedRaftLog.getEntryCursor( lastIndex );
-        boolean next = entryCursor.next();
+        boolean next;
+        try ( RaftLogCursor entryCursor = segmentedRaftLog.getEntryCursor( lastIndex ) )
+        {
+            next = entryCursor.next();
+        }
 
         //then
         assertTrue( next );

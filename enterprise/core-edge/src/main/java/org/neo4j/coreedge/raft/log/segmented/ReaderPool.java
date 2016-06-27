@@ -38,7 +38,7 @@ class ReaderPool
 {
     private final ArrayList<Reader> pool;
     private final int maxSize;
-    private Log log;
+    private final Log log;
     private final FileNames fileNames;
     private final FileSystemAbstraction fsa;
     private final Clock clock;
@@ -55,7 +55,11 @@ class ReaderPool
 
     Reader acquire( long version, long byteOffset ) throws IOException
     {
-        Reader reader = getFromPool( version ).orElse( createFor( version ) );
+        Reader reader = getFromPool( version );
+        if ( reader == null )
+        {
+            reader = createFor( version );
+        }
         reader.channel().position( byteOffset );
         return reader;
     }
@@ -67,7 +71,7 @@ class ReaderPool
         optionalOverflow.ifPresent( this::dispose );
     }
 
-    private synchronized Optional<Reader> getFromPool( long version )
+    private synchronized Reader getFromPool( long version )
     {
         Iterator<Reader> itr = pool.iterator();
         while ( itr.hasNext() )
@@ -76,10 +80,10 @@ class ReaderPool
             if ( reader.version() == version )
             {
                 itr.remove();
-                return of( reader );
+                return reader;
             }
         }
-        return empty();
+        return null;
     }
 
     private synchronized Optional<Reader> putInPool( Reader reader )
@@ -118,6 +122,14 @@ class ReaderPool
         catch ( IOException e )
         {
             log.error( "Failed to close reader", e );
+        }
+    }
+
+    synchronized void disposeAll() throws IOException
+    {
+        for ( Reader reader : pool )
+        {
+            reader.close();
         }
     }
 }

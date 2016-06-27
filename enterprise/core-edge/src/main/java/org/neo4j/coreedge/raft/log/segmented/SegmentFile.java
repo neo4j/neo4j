@@ -37,6 +37,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.ReadPastEndException;
 
+import static java.lang.String.format;
 import static org.neo4j.coreedge.raft.log.EntryRecord.read;
 
 /**
@@ -273,7 +274,7 @@ class SegmentFile implements AutoCloseable
 
         if ( !refCount.tryDispose() )
         {
-            log.warn( "Segment still referenced. Value: %d", refCount.get() );
+            throw new IllegalStateException( format( "Segment still referenced. Value: %d", refCount.get() ) );
         }
     }
 

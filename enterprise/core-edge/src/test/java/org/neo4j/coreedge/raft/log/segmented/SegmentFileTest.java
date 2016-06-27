@@ -74,6 +74,8 @@ public class SegmentFileTest
 
             IOCursor<EntryRecord> reader = segment.getReader( 0 );
             assertFalse( reader.next() );
+
+            reader.close();
         }
     }
 
@@ -92,6 +94,8 @@ public class SegmentFileTest
             // then
             assertTrue( reader.next() );
             assertEquals( entry1, reader.get().logEntry() );
+
+            reader.close();
         }
     }
 
@@ -113,6 +117,8 @@ public class SegmentFileTest
             // then
             assertTrue( reader.next() );
             assertEquals( entry3, reader.get().logEntry() );
+
+            reader.close();
         }
     }
 
