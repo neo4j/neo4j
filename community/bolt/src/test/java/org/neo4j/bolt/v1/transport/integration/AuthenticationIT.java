@@ -76,7 +76,7 @@ public class AuthenticationIT
     @Parameterized.Parameter( 1 )
     public HostnamePort address;
 
-    private Connection client;
+    protected Connection client;
 
     @Parameterized.Parameters
     public static Collection<Object[]> transports()

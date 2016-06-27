@@ -19,16 +19,20 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import java.time.Clock;
-import java.util.Map;
+import org.apache.shiro.authc.AuthenticationException;
+import org.apache.shiro.authc.AuthenticationInfo;
+import org.apache.shiro.authc.AuthenticationToken;
+import org.apache.shiro.authc.pam.AbstractAuthenticationStrategy;
+import org.apache.shiro.realm.Realm;
 
-import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-import org.neo4j.server.security.auth.PasswordPolicy;
-import org.neo4j.server.security.auth.UserRepository;
+import java.util.Collection;
 
-public interface EnterpriseAuthManager extends AuthManager
+public class ShiroAuthenticationStrategy extends AbstractAuthenticationStrategy
 {
-    EnterpriseUserManager getUserManager();
+    @Override
+    public AuthenticationInfo beforeAllAttempts( Collection<? extends Realm> realms, AuthenticationToken token )
+            throws AuthenticationException
+    {
+        return new ShiroAuthenticationInfo();
+    }
 }

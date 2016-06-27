@@ -19,15 +19,7 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.neo4j.kernel.api.security.AuthenticationResult;
-
-/**
- * Strategy for determining if the credentials presented by a user are valid
- */
-public interface AuthenticationStrategy
+public interface UserManagerSupplier
 {
-    /**
-     * Verify a user by password
-     */
-    AuthenticationResult authenticate( User user, String password );
+    UserManager getUserManager();
 }

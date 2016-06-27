@@ -23,7 +23,6 @@ import java.time.Clock;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 
 import org.neo4j.kernel.api.security.AuthenticationResult;
 
@@ -68,33 +67,11 @@ public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
     }
 
     @Override
-    public boolean isAuthenticationPermitted( String username )
-    {
-        AuthenticationMetadata authMetadata = authMetadataFor( username );
-
-        return authMetadata.authenticationPermitted();
-    }
-
-    @Override
-    public void updateWithAuthenticationResult( AuthenticationResult result, String username )
-    {
-        AuthenticationMetadata authMetadata = authMetadataFor( username );
-        if ( result == AuthenticationResult.FAILURE )
-        {
-            authMetadata.authFailed();
-        }
-        else
-        {
-            authMetadata.authSuccess();
-        }
-    }
-
-    @Override
     public AuthenticationResult authenticate( User user, String password)
     {
         AuthenticationMetadata authMetadata = authMetadataFor( user.name() );
 
-        if ( !isAuthenticationPermitted( user.name() ) )
+        if ( !authMetadata.authenticationPermitted() )
         {
             return AuthenticationResult.TOO_MANY_ATTEMPTS;
         }

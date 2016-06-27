@@ -29,6 +29,7 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.NeoServer;
+import org.neo4j.server.security.enterprise.auth.SecuritySettings;
 
 import static java.util.Arrays.asList;
 
@@ -50,7 +51,7 @@ public class EnterpriseBootstrapper extends CommunityBootstrapper
         {
             return Iterables.concat(
                     super.settingsClasses( settings ),
-                    asList( HaSettings.class, ClusterSettings.class ) );
+                    asList( HaSettings.class, ClusterSettings.class, SecuritySettings.class ) );
         }
         else
         {

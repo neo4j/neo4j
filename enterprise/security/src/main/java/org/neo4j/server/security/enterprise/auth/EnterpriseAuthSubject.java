@@ -19,78 +19,68 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.apache.shiro.subject.Subject;
-
 import java.io.IOException;
 
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
-import org.neo4j.server.security.auth.UserManager;
 
-public class ShiroAuthSubject implements AuthSubject
+public class EnterpriseAuthSubject implements AuthSubject
 {
     static final String SCHEMA_READ_WRITE = "schema:read,write";
     static final String READ_WRITE = "data:read,write";
     static final String READ = "data:read";
 
-    private final ShiroAuthManager authManager;
-    private final Subject subject;
-    private final AuthenticationResult authenticationResult;
+    private final EnterpriseAuthManager authManager;
+    private final ShiroSubject shiroSubject;
 
-    public static ShiroAuthSubject castOrFail( AuthSubject authSubject )
+    public static EnterpriseAuthSubject castOrFail( AuthSubject authSubject )
     {
-        if ( !(authSubject instanceof ShiroAuthSubject) )
+        if ( !(authSubject instanceof EnterpriseAuthSubject) )
         {
             throw new IllegalArgumentException( "Incorrect AuthSubject type " + authSubject.getClass().getTypeName() );
         }
-        return (ShiroAuthSubject) authSubject;
+        return (EnterpriseAuthSubject) authSubject;
     }
 
-    public ShiroAuthSubject( ShiroAuthManager authManager, Subject subject, AuthenticationResult authenticationResult )
+    public EnterpriseAuthSubject( EnterpriseAuthManager authManager, ShiroSubject shiroSubject )
     {
         this.authManager = authManager;
-        this.subject = subject;
-        this.authenticationResult = authenticationResult;
+        this.shiroSubject = shiroSubject;
     }
 
     @Override
     public void logout()
     {
-        subject.logout();
+        shiroSubject.logout();
     }
 
     @Override
     public AuthenticationResult getAuthenticationResult()
     {
-        return authenticationResult;
+        return shiroSubject.getAuthenticationResult();
     }
 
     @Override
     public void setPassword( String password ) throws IOException, IllegalCredentialsException
     {
-        authManager.setPassword( this, (String) subject.getPrincipal(), password );
+        getUserManager().setPassword( this, (String) shiroSubject.getPrincipal(), password );
     }
 
-    public RoleManager getRoleManager()
+    public EnterpriseUserManager getUserManager()
     {
-        return authManager;
-    }
-
-    public ShiroAuthManager getUserManager()
-    {
-        return authManager;
+        return authManager.getUserManager();
     }
 
     public boolean isAdmin()
     {
-        return subject.isPermitted( "*" );
+        return shiroSubject.isPermitted( "*" );
     }
 
     public boolean doesUsernameMatch( String username )
     {
-        Object principal = subject.getPrincipal();
+        Object principal = shiroSubject.getPrincipal();
         return principal != null && username.equals( principal );
     }
 
@@ -115,27 +105,27 @@ public class ShiroAuthSubject implements AuthSubject
     @Override
     public String name()
     {
-        return subject.getPrincipal().toString();
+        return shiroSubject.getPrincipal().toString();
     }
 
-    Subject getSubject()
+    ShiroSubject getShiroSubject()
     {
-        return subject;
+        return shiroSubject;
     }
 
     private AccessMode.Static getAccessMode()
     {
-        if ( subject.isAuthenticated() )
+        if ( shiroSubject.isAuthenticated() )
         {
-            if ( subject.isPermitted( SCHEMA_READ_WRITE ) )
+            if ( shiroSubject.isPermitted( SCHEMA_READ_WRITE ) )
             {
                 return AccessMode.Static.FULL;
             }
-            else if ( subject.isPermitted( READ_WRITE ) )
+            else if ( shiroSubject.isPermitted( READ_WRITE ) )
             {
                 return AccessMode.Static.WRITE;
             }
-            else if ( subject.isPermitted( READ ) )
+            else if ( shiroSubject.isPermitted( READ ) )
             {
                 return AccessMode.Static.READ;
             }

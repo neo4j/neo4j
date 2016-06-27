@@ -42,6 +42,7 @@ import org.neo4j.server.security.auth.Credential;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.User;
+import org.neo4j.server.security.auth.UserManager;
 import org.neo4j.test.server.EntityOutputFormat;
 
 import static org.hamcrest.Matchers.containsString;
@@ -97,7 +98,9 @@ public class UserServiceTest
         when( req.getUserPrincipal() ).thenReturn( NEO4J_PRINCIPLE );
 
         BasicAuthManager authManager = mock( BasicAuthManager.class );
-        when( authManager.getUser( "neo4j" ) ).thenReturn( NEO4J_USER );
+        UserManager userManager = mock( UserManager.class );
+        when( authManager.getUserManager() ).thenReturn( userManager );
+        when( userManager.getUser( "neo4j" ) ).thenReturn( NEO4J_USER );
 
         OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
         UserService userService = new UserService( authManager, new JsonFormat(), outputFormat );
@@ -121,8 +124,12 @@ public class UserServiceTest
         HttpServletRequest req = mock( HttpServletRequest.class );
         when( req.getUserPrincipal() ).thenReturn( NEO4J_PRINCIPLE );
 
+        BasicAuthManager authManager = mock( BasicAuthManager.class );
+        UserManager userManager = mock( UserManager.class );
+        when( authManager.getUserManager() ).thenReturn( userManager );
+
         OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
-        UserService userService = new UserService( mock( BasicAuthManager.class ), new JsonFormat(), outputFormat );
+        UserService userService = new UserService( authManager, new JsonFormat(), outputFormat );
 
         // When
         Response response = userService.getUser( "neo4j", req );
@@ -156,7 +163,9 @@ public class UserServiceTest
         when( req.getUserPrincipal() ).thenReturn( NEO4J_PRINCIPLE );
 
         BasicAuthManager authManager = mock( BasicAuthManager.class );
-        when( authManager.getUser( "neo4j" ) ).thenReturn( null );
+        UserManager userManager = mock( UserManager.class );
+        when( authManager.getUserManager() ).thenReturn( userManager );
+        when( userManager.getUser( "neo4j" ) ).thenReturn( null );
 
         OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
         UserService userService = new UserService( authManager, new JsonFormat(), outputFormat );
@@ -176,7 +185,9 @@ public class UserServiceTest
         when( req.getUserPrincipal() ).thenReturn( NEO4J_PRINCIPLE );
 
         BasicAuthManager authManager = mock( BasicAuthManager.class );
-        when( authManager.getUser( "neo4j" ) ).thenReturn( NEO4J_USER );
+        UserManager userManager = mock( UserManager.class );
+        when( authManager.getUserManager() ).thenReturn( userManager );
+        when( userManager.getUser( "neo4j" ) ).thenReturn( NEO4J_USER );
 
         OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
         UserService userService = new UserService( authManager, new JsonFormat(), outputFormat );
@@ -186,7 +197,7 @@ public class UserServiceTest
 
         // Then
         assertThat( response.getStatus(), equalTo( 200 ) );
-        verify( authManager ).setUserPassword( "neo4j", "test" );
+        verify( userManager ).setUserPassword( "neo4j", "test" );
     }
 
     @Test
@@ -214,6 +225,8 @@ public class UserServiceTest
         when( req.getUserPrincipal() ).thenReturn( NEO4J_PRINCIPLE );
 
         BasicAuthManager authManager = mock( BasicAuthManager.class );
+        UserManager userManager = mock( UserManager.class );
+        when( authManager.getUserManager() ).thenReturn( userManager );
 
         OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
         UserService userService = new UserService( authManager, new JsonFormat(), outputFormat );
@@ -223,7 +236,7 @@ public class UserServiceTest
 
         // Then
         assertThat( response.getStatus(), equalTo( 404 ) );
-        verifyZeroInteractions( authManager );
+        verifyZeroInteractions( userManager );
     }
 
     @Test

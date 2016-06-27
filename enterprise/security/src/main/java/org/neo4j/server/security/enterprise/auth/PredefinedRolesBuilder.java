@@ -32,8 +32,9 @@ public class PredefinedRolesBuilder implements RolesBuilder
     public static final String PUBLISHER = "publisher";
     public static final String READER = "reader";
 
-    @Override
-    public Map<String,SimpleRole> buildRoles()
+    public static final Map<String,SimpleRole> roles = staticBuildRoles();
+
+    public static Map<String,SimpleRole> staticBuildRoles()
     {
         Map<String, SimpleRole> roles = new LinkedHashMap<>( 4 );
 
@@ -56,4 +57,11 @@ public class PredefinedRolesBuilder implements RolesBuilder
 
         return roles;
     }
+
+    @Override
+    public Map<String,SimpleRole> buildRoles()
+    {
+        return staticBuildRoles();
+    }
+
 }

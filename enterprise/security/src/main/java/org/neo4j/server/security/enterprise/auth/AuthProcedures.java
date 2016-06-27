@@ -46,12 +46,8 @@ public class AuthProcedures
             @Name( "requirePasswordChange" ) boolean requirePasswordChange )
             throws IllegalCredentialsException, IOException
     {
-        ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
-        if ( !shiroSubject.isAdmin() )
-        {
-            throw new AuthorizationViolationException( PERMISSION_DENIED );
-        }
-        shiroSubject.getUserManager().newUser( username, password, requirePasswordChange );
+        EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+        adminSubject.getUserManager().newUser( username, password, requirePasswordChange );
     }
 
     @PerformsDBMS
@@ -59,18 +55,18 @@ public class AuthProcedures
     public void changeUserPassword( @Name( "username" ) String username, @Name( "newPassword" ) String newPassword )
             throws IllegalCredentialsException, IOException
     {
-        ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
-        if ( shiroSubject.doesUsernameMatch( username ) )
+        EnterpriseAuthSubject enterpriseSubject = EnterpriseAuthSubject.castOrFail( authSubject );
+        if ( enterpriseSubject.doesUsernameMatch( username ) )
         {
-            shiroSubject.getUserManager().setPassword( shiroSubject, username, newPassword );
+            enterpriseSubject.getUserManager().setPassword( enterpriseSubject, username, newPassword );
         }
-        else if ( !shiroSubject.isAdmin() )
+        else if ( !enterpriseSubject.isAdmin() )
         {
             throw new AuthorizationViolationException( PERMISSION_DENIED );
         }
         else
         {
-            shiroSubject.getUserManager().setUserPassword( username, newPassword );
+            enterpriseSubject.getUserManager().setUserPassword( username, newPassword );
         }
     }
 
@@ -78,12 +74,8 @@ public class AuthProcedures
     @Procedure( "dbms.addUserToRole" )
     public void addUserToRole( @Name( "username" ) String username, @Name( "roleName" ) String roleName ) throws IOException
     {
-        ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
-        if ( !shiroSubject.isAdmin() )
-        {
-            throw new AuthorizationViolationException( PERMISSION_DENIED );
-        }
-        shiroSubject.getRoleManager().addUserToRole( username, roleName );
+        EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+        adminSubject.getUserManager().addUserToRole( username, roleName );
     }
 
     @PerformsDBMS
@@ -91,48 +83,32 @@ public class AuthProcedures
     public void removeUserFromRole( @Name( "username" ) String username, @Name( "roleName" ) String roleName )
             throws IllegalCredentialsException, IOException
     {
-        ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
-        if ( !shiroSubject.isAdmin() )
-        {
-            throw new AuthorizationViolationException( PERMISSION_DENIED );
-        }
-        shiroSubject.getRoleManager().removeUserFromRole( username, roleName );
+        EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+        adminSubject.getUserManager().removeUserFromRole( username, roleName );
     }
 
     @PerformsDBMS
     @Procedure( "dbms.deleteUser" )
     public void deleteUser( @Name( "username" ) String username ) throws IllegalCredentialsException, IOException
     {
-        ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
-        if ( !shiroSubject.isAdmin() )
-        {
-            throw new AuthorizationViolationException( PERMISSION_DENIED );
-        }
-        shiroSubject.getUserManager().deleteUser( username );
+        EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+        adminSubject.getUserManager().deleteUser( username );
     }
 
     @PerformsDBMS
     @Procedure( "dbms.suspendUser" )
     public void suspendUser( @Name( "username" ) String username ) throws IOException
     {
-        ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
-        if ( !shiroSubject.isAdmin() )
-        {
-            throw new AuthorizationViolationException( PERMISSION_DENIED );
-        }
-        shiroSubject.getUserManager().suspendUser( username );
+        EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+        adminSubject.getUserManager().suspendUser( username );
     }
 
     @PerformsDBMS
     @Procedure( "dbms.activateUser" )
     public void activateUser( @Name( "username" ) String username ) throws IOException
     {
-        ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
-        if ( !shiroSubject.isAdmin() )
-        {
-            throw new AuthorizationViolationException( PERMISSION_DENIED );
-        }
-        shiroSubject.getUserManager().activateUser( username );
+        EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+        adminSubject.getUserManager().activateUser( username );
     }
 
     @PerformsDBMS
@@ -140,37 +116,30 @@ public class AuthProcedures
     public Stream<UserResult> showCurrentUser( )
             throws IllegalCredentialsException, IOException
     {
-        ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
-        RoleManager roleManager = shiroSubject.getRoleManager();
-        return Stream.of( new UserResult( shiroSubject.name(), roleManager.getRoleNamesForUser( shiroSubject.name() ) ) );
+        EnterpriseAuthSubject enterpriseSubject = EnterpriseAuthSubject.castOrFail( authSubject );
+        EnterpriseUserManager userManager = enterpriseSubject.getUserManager();
+        return Stream.of( new UserResult( enterpriseSubject.name(),
+                userManager.getRoleNamesForUser( enterpriseSubject.name() ) ) );
     }
 
     @PerformsDBMS
     @Procedure( "dbms.listUsers" )
     public Stream<UserResult> listUsers() throws IllegalCredentialsException, IOException
     {
-        ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
-        if ( !shiroSubject.isAdmin() )
-        {
-            throw new AuthorizationViolationException( PERMISSION_DENIED );
-        }
-        RoleManager roleManager = shiroSubject.getRoleManager();
-        return shiroSubject.getUserManager().getAllUsernames().stream()
-                .map( u -> new UserResult( u, roleManager.getRoleNamesForUser( u ) ) );
+        EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+        EnterpriseUserManager userManager = adminSubject.getUserManager();
+        return userManager.getAllUsernames().stream()
+                .map( u -> new UserResult( u, userManager.getRoleNamesForUser( u ) ) );
     }
 
     @PerformsDBMS
     @Procedure( "dbms.listRoles" )
     public Stream<RoleResult> listRoles() throws IllegalCredentialsException, IOException
     {
-        ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
-        if ( !shiroSubject.isAdmin() )
-        {
-            throw new AuthorizationViolationException( PERMISSION_DENIED );
-        }
-        RoleManager roleManager = shiroSubject.getRoleManager();
-        return roleManager.getAllRoleNames().stream()
-                .map( r -> new RoleResult( r, roleManager.getUsernamesForRole( r ) ) );
+        EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+        EnterpriseUserManager userManager = adminSubject.getUserManager();
+        return userManager.getAllRoleNames().stream()
+                .map( r -> new RoleResult( r, userManager.getUsernamesForRole( r ) ) );
     }
 
     @PerformsDBMS
@@ -178,12 +147,8 @@ public class AuthProcedures
         public Stream<StringResult> listRolesForUser( @Name( "username" ) String username )
         throws IllegalCredentialsException, IOException
         {
-            ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
-            if ( !shiroSubject.isAdmin() )
-            {
-                throw new AuthorizationViolationException( PERMISSION_DENIED );
-            }
-            return shiroSubject.getRoleManager().getRoleNamesForUser( username ).stream().map( StringResult::new );
+            EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+            return adminSubject.getUserManager().getRoleNamesForUser( username ).stream().map( StringResult::new );
     }
 
     @PerformsDBMS
@@ -191,12 +156,18 @@ public class AuthProcedures
         public Stream<StringResult> listUsersForRole( @Name( "roleName" ) String roleName )
         throws IllegalCredentialsException, IOException
         {
-            ShiroAuthSubject shiroSubject = ShiroAuthSubject.castOrFail( authSubject );
-            if ( !shiroSubject.isAdmin() )
-            {
-                throw new AuthorizationViolationException( PERMISSION_DENIED );
-            }
-            return shiroSubject.getRoleManager().getUsernamesForRole( roleName ).stream().map( StringResult::new );
+            EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+            return adminSubject.getUserManager().getUsernamesForRole( roleName ).stream().map( StringResult::new );
+    }
+
+    private EnterpriseAuthSubject ensureAdminAuthSubject()
+    {
+        EnterpriseAuthSubject enterpriseAuthSubject = EnterpriseAuthSubject.castOrFail( authSubject );
+        if ( !enterpriseAuthSubject.isAdmin() )
+        {
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
+        }
+        return enterpriseAuthSubject;
     }
 
     public class StringResult {

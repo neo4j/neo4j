@@ -22,6 +22,7 @@ package org.neo4j.server.rest.dbms;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.Map;
+import java.util.function.Supplier;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -41,6 +42,7 @@ import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.auth.UserManager;
+import org.neo4j.server.security.auth.UserManagerSupplier;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.neo4j.server.rest.web.CustomStatusType.UNPROCESSABLE;
@@ -56,11 +58,11 @@ public class UserService
 
     public UserService( @Context AuthManager authManager, @Context InputFormat input, @Context OutputFormat output )
     {
-        if ( !(authManager instanceof UserManager) )
+        if ( !(authManager instanceof UserManagerSupplier) )
         {
             throw new IllegalArgumentException( "The provided auth manager is not capable of user management" );
         }
-        this.userManager = (UserManager) authManager;
+        this.userManager = ((UserManagerSupplier) authManager).getUserManager();
         this.input = input;
         this.output = output;
     }

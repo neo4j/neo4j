@@ -19,34 +19,10 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import java.io.IOException;
-import java.util.Set;
-
-public interface RoleManager
+public interface RealmLifecycle
 {
-    /**
-     * Add a user to a role. The role has to exist.
-     *
-     * @param username
-     * @param roleName
-     * @throws IllegalArgumentException if the role does not exist
-     * @throws IOException
-     */
-    void addUserToRole( String username, String roleName ) throws IOException;
-
-    /**
-     * Remove a user from a role.
-     *
-     * @param username
-     * @param roleName
-     * @throws IllegalArgumentException if the username or the role does not exist
-     * @throws IOException
-     */
-    void removeUserFromRole( String username, String roleName ) throws IOException;
-
-    Set<String> getAllRoleNames();
-
-    Set<String> getRoleNamesForUser( String username );
-
-    Set<String> getUsernamesForRole( String roleName );
+    void initialize() throws Throwable;
+    void start() throws Throwable;
+    void stop() throws Throwable;
+    void shutdown() throws Throwable;
 }
