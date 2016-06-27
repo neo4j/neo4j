@@ -75,10 +75,8 @@ public class StateExplorerIT
         for ( int i = 0; i < explorationDepth; i++ )
         {
             Set<ClusterState> newStates = new HashSet<>();
-            int counter = 0;
             for ( ClusterState clusterState : statesToBeExplored )
             {
-                if (counter++ % 1000 == 0) System.out.print( "." );
                 exploredStates.add( clusterState );
                 for ( Action action : actions )
                 {
@@ -90,8 +88,6 @@ public class StateExplorerIT
                 }
             }
             statesToBeExplored = newStates;
-            System.out.printf( "\nexplored %d states, planning to explore %d states",
-                    exploredStates.size(), statesToBeExplored.size() );
         }
 
         for ( ClusterState exploredState : exploredStates )
@@ -100,7 +96,5 @@ public class StateExplorerIT
                     exploredState );
             assertThat( invariantsViolated, empty() );
         }
-
-        System.out.println( "exploredStates = " + exploredStates.size() );
     }
 }
