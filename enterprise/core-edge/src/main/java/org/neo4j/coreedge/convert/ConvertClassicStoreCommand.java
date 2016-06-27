@@ -82,22 +82,23 @@ public class ConvertClassicStoreCommand
         this.conversionVerifier = conversionVerifier;
     }
 
-    public void convert( File databaseDir, String recordFormat, String conversionId ) throws Throwable
+    public void convert( File databaseDir, String recordFormat, String conversionId ) throws IOException, TransactionFailureException
+
     {
-        SourceMetadata metadata = SourceMetadata.create( conversionId );
+        ClusterSeed metadata = ClusterSeed.create( conversionId );
         verify( databaseDir, metadata );
         changeStoreId( databaseDir, metadata );
         appendNullTransactionLogEntryToSetRaftIndexToMinusOne( databaseDir, recordFormat );
         addIdAllocationState( databaseDir );
     }
 
-    private void verify( File databaseDir, SourceMetadata metadata ) throws IOException
+    private void verify( File databaseDir, ClusterSeed metadata ) throws IOException
     {
-        TargetMetadata targetMetadata = targetMetadata( databaseDir );
-        conversionVerifier.conversionGuard( metadata, targetMetadata );
+        StoreMetadata storeMetadata = targetMetadata( databaseDir );
+        conversionVerifier.conversionGuard( metadata, storeMetadata );
     }
 
-    private TargetMetadata targetMetadata( File databaseDir ) throws IOException
+    private StoreMetadata targetMetadata( File databaseDir ) throws IOException
     {
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         File metadataStore = new File( databaseDir, MetaDataStore.DEFAULT_NAME );
@@ -105,11 +106,11 @@ public class ConvertClassicStoreCommand
         {
             StoreId before = readStoreId( metadataStore, pageCache );
             long lastTxId = MetaDataStore.getRecord( pageCache, metadataStore, LAST_TRANSACTION_ID );
-            return new TargetMetadata( before, lastTxId );
+            return new StoreMetadata( before, lastTxId );
         }
     }
 
-    private SourceMetadata changeStoreId( File storeDir, SourceMetadata conversionId ) throws IOException
+    private ClusterSeed changeStoreId( File storeDir, ClusterSeed conversionId ) throws IOException
     {
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         File metadataStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
@@ -123,7 +124,7 @@ public class ConvertClassicStoreCommand
             MetaDataStore.setRecord( pageCache, metadataStore, UPGRADE_TIME, upgradeTime );
 
             StoreId after = readStoreId( metadataStore, pageCache );
-            return new SourceMetadata( before, after, lastTxId );
+            return new ClusterSeed( before, after, lastTxId );
         }
     }
 
@@ -157,7 +158,7 @@ public class ConvertClassicStoreCommand
         db.shutdown();
     }
 
-    private void addIdAllocationState( File dbDir ) throws Throwable
+    private void addIdAllocationState( File dbDir ) throws IOException
     {
         File clusterStateDirectory = new File( dbDir, "cluster-state" );
 

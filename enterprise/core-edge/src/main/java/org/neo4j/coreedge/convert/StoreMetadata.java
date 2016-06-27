@@ -23,21 +23,21 @@ import java.util.Objects;
 
 import org.neo4j.kernel.impl.store.StoreId;
 
-public class TargetMetadata
+public class StoreMetadata
 {
-    private final StoreId before;
+    private final StoreId storeId;
     private final long lastTxId;
 
-    public TargetMetadata( StoreId before, long lastTxId )
+    public StoreMetadata( StoreId storeId, long lastTxId )
     {
-        this.before = before;
+        this.storeId = storeId;
         this.lastTxId = lastTxId;
     }
 
     @Override
     public String toString()
     {
-        return String.format( "TargetMetadata{before=%s, lastTxId=%d}", before, lastTxId );
+        return String.format( "TargetMetadata{before=%s, lastTxId=%d}", storeId, lastTxId );
     }
 
     @Override
@@ -51,14 +51,14 @@ public class TargetMetadata
         {
             return false;
         }
-        TargetMetadata that = (TargetMetadata) o;
-        return lastTxId == that.lastTxId && storeIdEquals( before, that.before );
+        StoreMetadata that = (StoreMetadata) o;
+        return lastTxId == that.lastTxId && storeIdEquals( storeId, that.storeId );
     }
 
     @Override
     public int hashCode()
     {
-        int result = 31 + (this.before == null ? 0 : before.theRealHashCode());
+        int result = 31 + (this.storeId == null ? 0 : storeId.theRealHashCode());
         return 31 * result + Objects.hash( lastTxId );
     }
 
@@ -67,9 +67,9 @@ public class TargetMetadata
         return (one == two || (one != null && one.theRealEquals( two )));
     }
 
-    public StoreId before()
+    public StoreId storeId()
     {
-        return before;
+        return storeId;
     }
 
     public long lastTxId()

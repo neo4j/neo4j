@@ -39,12 +39,12 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 
 public class GenerateClusterSeedCommand
 {
-    public SourceMetadata generate( File databaseDir ) throws Throwable
+    public ClusterSeed generate( File databaseDir ) throws IOException
     {
         return metadata( databaseDir );
     }
 
-    private SourceMetadata metadata( File storeDir ) throws IOException
+    private ClusterSeed metadata( File storeDir ) throws IOException
     {
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         File metadataStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
@@ -54,11 +54,11 @@ public class GenerateClusterSeedCommand
             StoreId after = storeId( metadataStore, pageCache, System.currentTimeMillis() );
             long lastTxId = getRecord( pageCache, metadataStore, LAST_TRANSACTION_ID );
 
-            return new SourceMetadata( before, after, lastTxId );
+            return new ClusterSeed( before, after, lastTxId );
         }
     }
 
-    private StoreId storeId( File metadataStore, PageCache pageCache, long upgradeTime ) throws IOException
+    public static StoreId storeId( File metadataStore, PageCache pageCache, long upgradeTime ) throws IOException
     {
         long creationTime = getRecord( pageCache, metadataStore, TIME );
         long randomNumber = getRecord( pageCache, metadataStore, RANDOM_NUMBER );

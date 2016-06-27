@@ -80,7 +80,7 @@ public class DurableStateStorage<STATE> extends LifecycleAdapter implements Stat
     }
 
     @Override
-    public synchronized void shutdown() throws Throwable
+    public synchronized void shutdown() throws IOException
     {
         currentStoreChannel.close();
         currentStoreChannel = null;

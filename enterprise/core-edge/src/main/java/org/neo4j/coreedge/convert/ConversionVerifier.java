@@ -23,11 +23,11 @@ import org.neo4j.kernel.impl.store.StoreId;
 
 public class ConversionVerifier
 {
-    public void conversionGuard( SourceMetadata source,
-                                 TargetMetadata target )
+    public void conversionGuard( ClusterSeed source,
+                                 StoreMetadata target )
     {
         StoreId sourceBefore = source.before();
-        StoreId targetBefore = target.before();
+        StoreId targetBefore = target.storeId();
 
         long sourceLastTxId = source.lastTxId();
         long targetLastTxId = target.lastTxId();

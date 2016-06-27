@@ -38,11 +38,11 @@ public class ConversionVerifierTest
         StoreId after = new StoreId( 6, 7, 8, 9, 10 );
         long transactionId = 44L;
 
-        SourceMetadata metadata = new SourceMetadata( before, after, transactionId );
-        TargetMetadata targetMetadata = new TargetMetadata( before, transactionId );
+        ClusterSeed metadata = new ClusterSeed( before, after, transactionId );
+        StoreMetadata storeMetadata = new StoreMetadata( before, transactionId );
 
         // when
-        verifier.conversionGuard( metadata, targetMetadata );
+        verifier.conversionGuard( metadata, storeMetadata );
 
         // then happily convert
     }
@@ -57,13 +57,13 @@ public class ConversionVerifierTest
         StoreId after = new StoreId( 6, 7, 8, 9, 10 );
         long transactionId = 44L;
 
-        SourceMetadata metadata = new SourceMetadata( before, after, transactionId );
-        TargetMetadata targetMetadata = new TargetMetadata( new StoreId( 9, 9, 9, 9, 9 ), transactionId );
+        ClusterSeed metadata = new ClusterSeed( before, after, transactionId );
+        StoreMetadata storeMetadata = new StoreMetadata( new StoreId( 9, 9, 9, 9, 9 ), transactionId );
 
         // when
         try
         {
-            verifier.conversionGuard( metadata, targetMetadata );
+            verifier.conversionGuard( metadata, storeMetadata );
             fail("Should not have been able to convert");
         }
         catch ( Exception e )
@@ -86,13 +86,13 @@ public class ConversionVerifierTest
         StoreId after = new StoreId( 6, 7, 8, 9, 10 );
         long transactionId = 44L;
 
-        SourceMetadata metadata = new SourceMetadata( before, after, transactionId );
-        TargetMetadata targetMetadata = new TargetMetadata( before, 999L );
+        ClusterSeed metadata = new ClusterSeed( before, after, transactionId );
+        StoreMetadata storeMetadata = new StoreMetadata( before, 999L );
 
         // when
         try
         {
-            verifier.conversionGuard( metadata, targetMetadata );
+            verifier.conversionGuard( metadata, storeMetadata );
             fail( "Should not have been able to convert" );
         }
         catch ( Exception e )

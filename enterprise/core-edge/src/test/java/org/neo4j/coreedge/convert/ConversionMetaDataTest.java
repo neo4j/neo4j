@@ -35,12 +35,12 @@ public class ConversionMetaDataTest
         StoreId after = new StoreId( 6, 7, 8, 9, 10 );
         long transactionId = 44L;
 
-        SourceMetadata initialMetadata = new SourceMetadata( before, after, transactionId );
+        ClusterSeed initialMetadata = new ClusterSeed( before, after, transactionId );
 
         // when
         String conversionId = initialMetadata.getConversionId();
 
-        SourceMetadata expectedMetadata = SourceMetadata.create( conversionId );
+        ClusterSeed expectedMetadata = ClusterSeed.create( conversionId );
 
         // then
         assertEquals( expectedMetadata, initialMetadata );
