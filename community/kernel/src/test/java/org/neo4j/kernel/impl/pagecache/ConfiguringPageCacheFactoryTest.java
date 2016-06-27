@@ -19,25 +19,26 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.BufferingLog;
 import org.neo4j.logging.NullLog;
 import org.neo4j.test.EphemeralFileSystemRule;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_swapper;
@@ -45,6 +46,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ConfiguringPageCacheFactoryTest
 {
+    private static final String TEST_IMPL_NAME = "pageswapperForTesting";
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
 
@@ -80,19 +82,33 @@ public class ConfiguringPageCacheFactoryTest
     }
 
     @Test
-    public void mustUseConfiguredPageSwapper() throws Exception
+    public void mustUseAndLogConfiguredPageSwapper() throws Exception
     {
         // Given
         Config config = new Config( stringMap(
                 pagecache_memory.name(), "8m",
-                pagecache_swapper.name(), "test" ) );
+                pagecache_swapper.name(), TEST_IMPL_NAME ) );
+        BufferingLog log = new BufferingLog();
 
         // When
-        new ConfiguringPageCacheFactory( fsRule.get(), config, PageCacheTracer.NULL, NullLog.getInstance() );
+        new ConfiguringPageCacheFactory( fsRule.get(), config, PageCacheTracer.NULL, log );
 
         // Then
         assertThat( PageSwapperFactoryForTesting.countCreatedPageSwapperFactories(), is( 1 ) );
         assertThat( PageSwapperFactoryForTesting.countConfiguredPageSwapperFactories(), is( 1 ) );
+        assertThat( log.toString(), containsString( TEST_IMPL_NAME ) );
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void mustThrowIfConfiguredPageSwapperCannotBeFound() throws Exception
+    {
+        // Given
+        Config config = new Config( stringMap(
+                pagecache_memory.name(), "8m",
+                pagecache_swapper.name(), "non-existing" ) );
+
+        // When
+        new ConfiguringPageCacheFactory( fsRule.get(), config, PageCacheTracer.NULL, NullLog.getInstance() );
     }
 
     @Test
@@ -102,7 +118,7 @@ public class ConfiguringPageCacheFactoryTest
         int cachePageSizeHint = 16 * 1024;
         PageSwapperFactoryForTesting.cachePageSizeHint.set( cachePageSizeHint );
         Config config = new Config( stringMap(
-                GraphDatabaseSettings.pagecache_swapper.name(), "test" ) );
+                GraphDatabaseSettings.pagecache_swapper.name(), TEST_IMPL_NAME ) );
 
         // When
         ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
@@ -124,7 +140,7 @@ public class ConfiguringPageCacheFactoryTest
         PageSwapperFactoryForTesting.cachePageSizeHintIsStrict.set( true );
         Config config = new Config( stringMap(
                 GraphDatabaseSettings.mapped_memory_page_size.name(), "4096",
-                GraphDatabaseSettings.pagecache_swapper.name(), "test" ) );
+                GraphDatabaseSettings.pagecache_swapper.name(), TEST_IMPL_NAME ) );
 
         // When
         ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
@@ -164,7 +180,7 @@ public class ConfiguringPageCacheFactoryTest
         @Override
         public String implementationName()
         {
-            return "test";
+            return TEST_IMPL_NAME;
         }
 
         @Override

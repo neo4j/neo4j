@@ -46,13 +46,13 @@ public class ConfiguringPageCacheFactory
     public ConfiguringPageCacheFactory(
             FileSystemAbstraction fs, Config config, PageCacheTracer tracer, Log log )
     {
-        this.swapperFactory = createAndConfigureSwapperFactory( fs, config );
+        this.swapperFactory = createAndConfigureSwapperFactory( fs, config, log );
         this.config = config;
         this.tracer = tracer;
         this.log = log;
     }
 
-    private PageSwapperFactory createAndConfigureSwapperFactory( FileSystemAbstraction fs, Config config )
+    private PageSwapperFactory createAndConfigureSwapperFactory( FileSystemAbstraction fs, Config config, Log log )
     {
         String desiredImplementation = config.get( pagecache_swapper );
 
@@ -68,9 +68,11 @@ public class ConfiguringPageCacheFactory
                         ConfigurablePageSwapperFactory configurableFactory = (ConfigurablePageSwapperFactory) factory;
                         configurableFactory.configure( config );
                     }
+                    log.info( "Configured " + pagecache_swapper.name() + ": " + desiredImplementation );
                     return factory;
                 }
             }
+            throw new IllegalArgumentException( "Cannot find PageSwapperFactory: " + desiredImplementation );
         }
 
         SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
