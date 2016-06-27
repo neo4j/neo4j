@@ -40,7 +40,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
-final class MuninnPagedFile implements PagedFile
+final class MuninnPagedFile implements PagedFile, Flushable
 {
     private static final int translationTableChunkSizePower = Integer.getInteger(
             "org.neo4j.io.pagecache.impl.muninn.MuninnPagedFile.translationTableChunkSizePower", 12 );
@@ -242,7 +242,6 @@ final class MuninnPagedFile implements PagedFile
             throws IOException
     {
         // TODO it'd be awesome if, on Linux, we'd call sync_file_range(2) instead of fsync
-        Flushable flushable = swapper::force;
         MuninnPage[] pages = new MuninnPage[translationTableChunkSize];
         long filePageId = -1; // Start at -1 because we increment at the *start* of the chunk-loop iteration.
         long limiterStamp = IOLimiter.INITIAL_STAMP;
@@ -266,6 +265,12 @@ final class MuninnPagedFile implements PagedFile
                     if ( element instanceof MuninnPage )
                     {
                         MuninnPage page = (MuninnPage) element;
+                        long stamp = page.tryOptimisticReadLock();
+                        if ( (!page.isDirty()) && page.validateReadLock( stamp ) )
+                        {
+                            break;
+                        }
+
                         if ( !(forClosing? page.tryExclusiveLock() : page.tryFlushLock()) )
                         {
                             continue;
@@ -293,14 +298,14 @@ final class MuninnPagedFile implements PagedFile
                 if ( pagesGrabbed > 0 )
                 {
                     vectoredFlush( pages, pagesGrabbed, flushOpportunity, forClosing );
-                    limiterStamp = limiter.maybeLimitIO( limiterStamp, pagesGrabbed, flushable );
+                    limiterStamp = limiter.maybeLimitIO( limiterStamp, pagesGrabbed, this );
                     pagesGrabbed = 0;
                 }
             }
             if ( pagesGrabbed > 0 )
             {
                 vectoredFlush( pages, pagesGrabbed, flushOpportunity, forClosing );
-                limiterStamp = limiter.maybeLimitIO( limiterStamp, pagesGrabbed, flushable );
+                limiterStamp = limiter.maybeLimitIO( limiterStamp, pagesGrabbed, this );
             }
         }
 
@@ -369,6 +374,12 @@ final class MuninnPagedFile implements PagedFile
     private void syncDevice() throws IOException
     {
         pageCache.syncDevice();
+    }
+
+    @Override
+    public void flush() throws IOException
+    {
+        swapper.force();
     }
 
     @Override
