@@ -307,6 +307,38 @@ public class ProcedureIT
     }
 
     @Test
+    public void shouldCallProcedureWithListWithDefault() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute(
+                    "CALL org.neo4j.procedure.listWithDefault" );
+
+            // Then
+            assertThat( res.next(), equalTo( map( "list", Arrays.asList( 42L, 1337L ) ) ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallProcedureWithGenericListWithDefault() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute(
+                    "CALL org.neo4j.procedure.genericListWithDefault" );
+
+            // Then
+            assertThat( res.next(), equalTo( map( "list", Arrays.asList( 42L, 1337L ) ) ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
     public void shouldCallProcedureWithNodeReturn() throws Throwable
     {
         // Given
@@ -1033,6 +1065,16 @@ public class ProcedureIT
         }
     }
 
+    public static class ListOutput
+    {
+        public List<Long> list;
+
+        public ListOutput(List<Long> list)
+        {
+            this.list = list;
+        }
+    }
+
     public static class DoubleOutput
     {
         public double result = 0.0d;
@@ -1182,6 +1224,18 @@ public class ProcedureIT
         public Stream<MapOutput> mapWithOtherDefault( @Name( value = "map", defaultValue = "{default: true}") Map<String,Object> map )
         {
             return Stream.of( new MapOutput( map ) );
+        }
+
+        @Procedure
+        public Stream<ListOutput> listWithDefault( @Name( value = "list", defaultValue = "[42, 1337]") List<Long> list )
+        {
+            return Stream.of( new ListOutput(list ) );
+        }
+
+        @Procedure
+        public Stream<ListOutput> genericListWithDefault( @Name( value = "list", defaultValue = "[[42, 1337]]") List<List<Long>> list )
+        {
+            return Stream.of( new ListOutput(list.get(0) ) );
         }
 
         @Procedure

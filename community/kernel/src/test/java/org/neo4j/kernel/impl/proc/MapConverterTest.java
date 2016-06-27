@@ -25,6 +25,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Map;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -165,7 +166,7 @@ public class MapConverterTest
         Neo4jValue converted = converter.apply( mapString );
 
         // Then
-        assertThat( converted, equalTo( ntMap( map( "key", null) ) ) );
+        assertThat( converted, equalTo( ntMap( map( "key", null ) ) ) );
     }
 
     @Test
@@ -238,7 +239,6 @@ public class MapConverterTest
         assertThat( map1.get( "k1" ), equalTo( 1337L ) );
         assertThat( map2.get( "k1" ), equalTo( 1337L ) );
         assertThat( map3.get( "k1" ), equalTo( 1337L ) );
-
     }
 
     @Test
@@ -253,5 +253,21 @@ public class MapConverterTest
 
         // When
         converter.apply( mapString );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void shouldHandleMapsWithLists()
+    {
+        // Given
+        String mapString = "{k1: [1337, 42]}";
+
+        // When
+        Neo4jValue converted = converter.apply( mapString );
+
+        // Then
+        Map<String,Object> map1 = (Map<String,Object>) converted.value();
+        assertThat( map1.get( "k1" ), equalTo( asList( 1337L, 42L ) ) );
+
     }
 }

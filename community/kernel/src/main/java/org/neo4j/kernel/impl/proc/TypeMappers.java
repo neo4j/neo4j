@@ -111,7 +111,8 @@ public class TypeMappers
 
             if( rawType == List.class )
             {
-                return toList( converterFor( pt.getActualTypeArguments()[0] ) );
+                Type type = pt.getActualTypeArguments()[0];
+                return toList( converterFor( type ), type );
             }
             else if( rawType == Map.class )
             {
@@ -150,13 +151,11 @@ public class TypeMappers
     });
     private final NeoValueConverter TO_BOOLEAN = new SimpleConverter( NTBoolean, Boolean.class, s -> ntBoolean( parseBoolean(s) ));
     private final NeoValueConverter TO_MAP = new SimpleConverter( NTMap, Map.class, new MapConverter());
-    private final NeoValueConverter TO_LIST = toList( TO_ANY );
+    private final NeoValueConverter TO_LIST = toList( TO_ANY, Object.class );
 
-    private NeoValueConverter toList( NeoValueConverter inner )
+    private NeoValueConverter toList( NeoValueConverter inner, Type type )
     {
-        return new SimpleConverter( NTList( inner.type() ), List.class, s -> {
-            throw new UnsupportedOperationException("Default values for type List is not supported" );
-        } );
+        return new SimpleConverter( NTList( inner.type() ), List.class, new ListConverter(type, inner.type() ));
     }
 
     private ProcedureException javaToNeoMappingError( Type cls )

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.proc;
 
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.kernel.api.proc.Neo4jTypes;
@@ -67,6 +68,11 @@ public class Neo4jValue
     public static  Neo4jValue ntMap(Map<String, Object> value)
     {
         return new Neo4jValue( value, Neo4jTypes.NTMap );
+    }
+
+    public static Neo4jValue ntList(List<?> value, Neo4jTypes.AnyType inner)
+    {
+        return new Neo4jValue( value, Neo4jTypes.NTList( inner ) );
     }
 
     @Override

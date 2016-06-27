@@ -19,29 +19,37 @@
  */
 package org.neo4j.kernel.impl.proc;
 
+import java.lang.reflect.Type;
 import java.util.function.Function;
 
-import static org.neo4j.kernel.impl.proc.Neo4jValue.ntMap;
-import static org.neo4j.kernel.impl.proc.ParseUtil.parseMap;
+import org.neo4j.kernel.api.proc.Neo4jTypes;
 
-/**
- * A naive implementation of a Cypher-map/json parser. If you find yourself using this
- * for parsing huge json-document in a place where performance matters - you probably need
- * to rethink your decision.
- */
-public class MapConverter implements Function<String,Neo4jValue>
+import static org.neo4j.kernel.impl.proc.Neo4jValue.ntList;
+import static org.neo4j.kernel.impl.proc.ParseUtil.parseList;
+
+
+public class ListConverter implements Function<String,Neo4jValue>
 {
+    private final Type type;
+    private final Neo4jTypes.AnyType neoType;
+
+    public ListConverter( Type type, Neo4jTypes.AnyType neoType )
+    {
+        this.type = type;
+        this.neoType = neoType;
+    }
+
     @Override
     public Neo4jValue apply( String s )
     {
         String value = s.trim();
         if ( value.equalsIgnoreCase( "null" ) )
         {
-            return ntMap( null );
+            return ntList( null, neoType );
         }
         else
         {
-            return ntMap( parseMap( value ) );
+            return ntList( parseList( value, type ), neoType );
         }
     }
 }
