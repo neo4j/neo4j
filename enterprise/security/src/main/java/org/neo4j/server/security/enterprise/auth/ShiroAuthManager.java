@@ -153,7 +153,7 @@ public class ShiroAuthManager extends BasicAuthManager implements RoleManager
     }
 
     @Override
-    public AuthSubject login( Map<String,Object> authToken ) throws InvalidAuthTokenException
+    public ShiroAuthSubject login( Map<String,Object> authToken ) throws InvalidAuthTokenException
     {
         assertAuthEnabled();
 
