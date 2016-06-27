@@ -17,26 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb;
+package org.neo4j.kernel;
 
 /**
- * An acquired lock on an entity for a transaction, acquired from
- * {@link Transaction#acquireWriteLock(PropertyContainer)} or
- * {@link Transaction#acquireReadLock(PropertyContainer)} this lock
- * can be released manually using {@link #release()}. If not released
- * manually it will be automatically released when the transaction owning
- * it finishes.
- *
- * @author Mattias Persson
+ * Deciding whether or not ids are eligible for being released from buffering since being deleted.
  */
-public interface Lock
+public interface IdReuseEligibility
 {
-    /**
-     * Releases this lock before the transaction finishes. It is an optional
-     * operation and if not called, this lock will be released when the owning
-     * transaction finishes.
-     *
-     * @throws IllegalStateException if this lock has already been released.
-     */
-    void release();
+    IdReuseEligibility ALWAYS = new IdReuseEligibility()
+    {
+        @Override
+        public boolean isEligible()
+        {
+            return true;
+        }
+    };
+
+    boolean isEligible();
 }
