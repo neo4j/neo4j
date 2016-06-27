@@ -97,8 +97,6 @@ import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THR
  */
 public class EnterpriseEdgeEditionModule extends EditionModule
 {
-    private EdgeTopologyService discoveryService;
-
     public EnterpriseEdgeEditionModule( final PlatformModule platformModule,
                                         DiscoveryServiceFactory discoveryServiceFactory )
     {
@@ -156,7 +154,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
         LogProvider logProvider = platformModule.logging.getInternalLogProvider();
 
-        discoveryService = discoveryServiceFactory.edgeDiscoveryService( config, logProvider);
+        EdgeTopologyService discoveryService = discoveryServiceFactory.edgeDiscoveryService( config, logProvider );
         life.add(dependencies.satisfyDependency( discoveryService ));
 
         NonBlockingChannels nonBlockingChannels = new NonBlockingChannels();

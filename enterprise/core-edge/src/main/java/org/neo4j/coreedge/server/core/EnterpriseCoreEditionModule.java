@@ -33,7 +33,6 @@ import org.neo4j.coreedge.catchup.CheckpointerSupplier;
 import org.neo4j.coreedge.catchup.DataSourceSupplier;
 import org.neo4j.coreedge.catchup.StoreIdSupplier;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
 import org.neo4j.coreedge.catchup.storecopy.core.CoreToCoreClient;
 import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
@@ -165,39 +164,13 @@ import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THR
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
  * that are specific to the Enterprise Core edition that provides a core cluster.
  */
-public class EnterpriseCoreEditionModule extends EditionModule implements CoreEditionSPI
+public class EnterpriseCoreEditionModule extends EditionModule
 {
     public static final String CLUSTER_STATE_DIRECTORY_NAME = "cluster-state";
 
     private final RaftInstance raft;
-    private final CoreState coreState;
-    private final CoreMember myself;
     private final CoreTopologyService discoveryService;
     private final LogProvider logProvider;
-
-    @Override
-    public CoreMember id()
-    {
-        return myself;
-    }
-
-    @Override
-    public Role currentRole()
-    {
-        return raft.currentRole();
-    }
-
-    @Override
-    public void downloadSnapshot( CoreMember source ) throws InterruptedException, StoreCopyFailedException
-    {
-        coreState.downloadSnapshot( source );
-    }
-
-    @Override
-    public void compact() throws IOException
-    {
-        coreState.compact();
-    }
 
     public enum RaftLogImplementation
     {
@@ -218,12 +191,6 @@ public class EnterpriseCoreEditionModule extends EditionModule implements CoreEd
         }
     }
 
-    @Override
-    protected SPI spi()
-    {
-        return this;
-    }
-
     public EnterpriseCoreEditionModule( final PlatformModule platformModule,
             DiscoveryServiceFactory discoveryServiceFactory )
     {
@@ -241,6 +208,7 @@ public class EnterpriseCoreEditionModule extends EditionModule implements CoreEd
         logProvider = logging.getInternalLogProvider();
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
+        CoreMember myself;
         try
         {
             DurableStateStorage<CoreMember> idStorage = life.add( new DurableStateStorage<>(
@@ -299,8 +267,7 @@ public class EnterpriseCoreEditionModule extends EditionModule implements CoreEd
         final DelayedRenewableTimeoutService raftTimeoutService =
                 new DelayedRenewableTimeoutService( Clock.systemUTC(), logProvider );
 
-        RaftLog underlyingLog = createRaftLog( config, life, fileSystem, clusterStateDirectory, marshal, logProvider,
-                databaseHealthSupplier );
+        RaftLog underlyingLog = createRaftLog( config, life, fileSystem, clusterStateDirectory, marshal, logProvider );
 
         MonitoredRaftLog raftLog = new MonitoredRaftLog( underlyingLog, platformModule.monitors );
 
@@ -322,6 +289,7 @@ public class EnterpriseCoreEditionModule extends EditionModule implements CoreEd
         ProgressTrackerImpl progressTracker = new ProgressTrackerImpl( myGlobalSession );
 
         RaftServer raftServer;
+        CoreState coreState;
         try
         {
             DurableStateStorage<Long> lastFlushedStorage = life.add(
@@ -350,18 +318,18 @@ public class EnterpriseCoreEditionModule extends EditionModule implements CoreEd
 
             InFlightMap<Long,RaftLogEntry> inFlightMap = new InFlightMap<>();
 
-            coreState = new CoreState(
+            coreState = dependencies.satisfyDependency( new CoreState(
                     raftLog, config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
                     config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),
                     databaseHealthSupplier, logProvider, progressTracker, lastFlushedStorage,
-                    sessionTrackerStorage, applier, downloader, inFlightMap, platformModule.monitors );
+                    sessionTrackerStorage, applier, downloader, inFlightMap, platformModule.monitors ) );
 
             raftServer = new RaftServer( marshal, raftListenAddress, localDatabase, logProvider, coreState );
 
-            raft = createRaft( life, loggingOutbound, discoveryService, config, messageLogger, raftLog, coreState,
-                    fileSystem, clusterStateDirectory, myself, logProvider, raftServer, raftTimeoutService,
-                    databaseHealthSupplier, inFlightMap, platformModule.monitors, platformModule.jobScheduler,
-                    localDatabase );
+            raft = dependencies.satisfyDependency( createRaft( life, loggingOutbound, discoveryService, config,
+                    messageLogger, raftLog, coreState, fileSystem, clusterStateDirectory, myself, logProvider,
+                    raftServer, raftTimeoutService, databaseHealthSupplier, inFlightMap, platformModule.monitors,
+                    platformModule.jobScheduler, localDatabase ) );
 
             life.add( new PruningScheduler( coreState, platformModule.jobScheduler,
                     config.get( CoreEdgeClusterSettings.raft_log_pruning_frequency ) ) );
@@ -376,8 +344,6 @@ public class EnterpriseCoreEditionModule extends EditionModule implements CoreEd
                         new RaftOutbound( discoveryService, loggingOutbound, localDatabase ),
                         sessionPool, progressTracker,
                         new ExponentialBackoffStrategy( 10, SECONDS ) );
-
-        dependencies.satisfyDependency( raft );
 
         StateStorage<ReplicatedLockTokenState> lockTokenState;
         try
@@ -520,8 +486,7 @@ public class EnterpriseCoreEditionModule extends EditionModule implements CoreEd
     }
 
     private RaftLog createRaftLog( Config config, LifeSupport life, FileSystemAbstraction fileSystem,
-            File clusterStateDirectory, CoreReplicatedContentMarshal marshal, LogProvider logProvider,
-            Supplier<DatabaseHealth> databaseHealthSupplier )
+            File clusterStateDirectory, CoreReplicatedContentMarshal marshal, LogProvider logProvider )
     {
         RaftLogImplementation raftLogImplementation =
                 RaftLogImplementation.valueOf( config.get( CoreEdgeClusterSettings.raft_log_implementation ) );

@@ -43,7 +43,8 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.CommunityEditionModule;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
@@ -233,12 +234,12 @@ public class IdGeneratorRebuildFailureEmulationTest
         @Override
         protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
         {
-            new CommunityFacadeFactory()
+            new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
             {
                 @Override
                 protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade facade )
                 {
-                    return new ImpermanentPlatformModule( storeDir, params, databaseInfo(), dependencies, facade )
+                    return new ImpermanentPlatformModule( storeDir, params, databaseInfo, dependencies, facade )
                     {
                         @Override
                         protected FileSystemAbstraction createFileSystemAbstraction()

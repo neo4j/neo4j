@@ -204,7 +204,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     {
         try
         {
-            downloadSnapshot(strategy.coreServer());
+            downloadSnapshot( strategy.coreServer() );
         }
         catch ( InterruptedException | StoreCopyFailedException | CoreServerSelectionException e )
         {
@@ -224,7 +224,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
 
     /**
      * Attempts to download a fresh snapshot from another core instance.
-     *  @param source The source address to attempt a download of a snapshot from.
+     * @param source The source address to attempt a download of a snapshot from.
      */
     public synchronized void downloadSnapshot( CoreMember source )
             throws InterruptedException, StoreCopyFailedException

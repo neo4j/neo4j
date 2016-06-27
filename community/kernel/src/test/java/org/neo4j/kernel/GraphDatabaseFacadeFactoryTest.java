@@ -113,7 +113,8 @@ public class GraphDatabaseFacadeFactoryTest
 
     private GraphDatabaseFacadeFactory newFaultyGraphDatabaseFacadeFactory( final RuntimeException startupError )
     {
-        return new GraphDatabaseFacadeFactory()
+        return new GraphDatabaseFacadeFactory( DatabaseInfo.UNKNOWN,
+                (p) -> Mockito.mock( EditionModule.class, Mockito.RETURNS_DEEP_STUBS ))
         {
             @Override
             protected PlatformModule createPlatform( File storeDir, Map<String,String> params,
@@ -121,16 +122,9 @@ public class GraphDatabaseFacadeFactoryTest
             {
                 final LifeSupport lifeMock = mock( LifeSupport.class );
                 doThrow( startupError ).when( lifeMock ).start();
-                doAnswer( new Answer()
-                {
-                    @Override
-                    public Object answer( InvocationOnMock invocationOnMock ) throws Throwable
-                    {
-                        return invocationOnMock.getArguments()[0];
-                    }
-                } ).when( lifeMock ).add( any( Lifecycle.class ) );
+                doAnswer( invocation -> invocation.getArguments()[0] ).when( lifeMock ).add( any( Lifecycle.class ) );
 
-                return new PlatformModule( storeDir, params, databaseInfo(), dependencies, graphDatabaseFacade )
+                return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade )
                 {
                     @Override
                     public LifeSupport createLife()
@@ -139,24 +133,11 @@ public class GraphDatabaseFacadeFactoryTest
                     }
                 };
             }
-
-            @Override
-            protected EditionModule createEdition( PlatformModule platformModule )
-            {
-                return Mockito.mock( EditionModule.class, Mockito.RETURNS_DEEP_STUBS );
-            }
-
             @Override
             protected DataSourceModule createDataSource(
                     Dependencies dependencies, PlatformModule platformModule, EditionModule editionModule )
             {
                 return null;
-            }
-
-            @Override
-            protected DatabaseInfo databaseInfo()
-            {
-                return DatabaseInfo.UNKNOWN;
             }
         };
     }

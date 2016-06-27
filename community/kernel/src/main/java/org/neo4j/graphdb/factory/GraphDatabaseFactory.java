@@ -24,7 +24,8 @@ import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.security.URLAccessRule;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.CommunityEditionModule;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -96,7 +97,8 @@ public class GraphDatabaseFactory
 
     protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config, GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        return new CommunityFacadeFactory().newFacade( storeDir, config, dependencies );
+        return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
+                .newFacade( storeDir, config, dependencies );
     }
 
     public GraphDatabaseFactory addURLAccessRule( String protocol, URLAccessRule rule )

@@ -20,54 +20,45 @@
 package org.neo4j.coreedge.server.core;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Map;
+import java.util.function.Function;
 
-import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
+import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.EnterpriseCoreFacadeFactory;
+import org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.PlatformModule;
 
 public class CoreGraphDatabase extends GraphDatabaseFacade
 {
-    private final CoreEditionSPI coreEditionSPI;
+    public CoreGraphDatabase( File storeDir, Map<String, String> params,
+            GraphDatabaseFacadeFactory.Dependencies dependencies )
+    {
+        this( storeDir, params, dependencies, new HazelcastDiscoveryServiceFactory() );
+    }
 
     public CoreGraphDatabase( File storeDir, Map<String, String> params,
                               GraphDatabaseFacadeFactory.Dependencies dependencies,
                               DiscoveryServiceFactory discoveryServiceFactory )
     {
-        GraphDatabaseFacade coreGraphDatabaseFacade =
-                new EnterpriseCoreFacadeFactory( discoveryServiceFactory ).initFacade( storeDir, params, dependencies, this );
-        coreEditionSPI = (CoreEditionSPI) coreGraphDatabaseFacade.editionSPI();
-    }
-
-    public CoreGraphDatabase( File storeDir, Map<String, String> params,
-                              GraphDatabaseFacadeFactory.Dependencies dependencies )
-    {
-        this( storeDir, params, dependencies, new HazelcastDiscoveryServiceFactory() );
+        Function<PlatformModule,EditionModule> factory =
+                (platformModule) -> new EnterpriseCoreEditionModule( platformModule, discoveryServiceFactory );
+        new GraphDatabaseFacadeFactory( DatabaseInfo.CORE, factory ).initFacade( storeDir, params, dependencies, this );
     }
 
     public CoreMember id()
     {
-        return coreEditionSPI.id();
+        return (CoreMember) getDependencyResolver().resolveDependency( RaftInstance.class ).identity();
     }
 
     public Role getRole()
     {
-        return coreEditionSPI.currentRole();
-    }
-
-    public void downloadSnapshot( CoreMember source ) throws InterruptedException, StoreCopyFailedException
-    {
-        coreEditionSPI.downloadSnapshot( source );
-    }
-
-    public void compact() throws IOException
-    {
-        coreEditionSPI.compact();
+        return getDependencyResolver().resolveDependency( RaftInstance.class ).currentRole();
     }
 }

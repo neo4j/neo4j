@@ -186,7 +186,7 @@ public class CommunityEditionModule extends EditionModule
             }
             else if ( key.equals( "" ) )
             {
-                logging.getInternalLog( CommunityFacadeFactory.class )
+                logging.getInternalLog( CommunityEditionModule.class )
                         .info( "No locking implementation specified, defaulting to '" + candidateId + "'" );
                 return candidate.newInstance( ResourceTypes.values() );
             }
@@ -198,7 +198,7 @@ public class CommunityEditionModule extends EditionModule
         }
         else if ( key.equals( "" ) )
         {
-            logging.getInternalLog( CommunityFacadeFactory.class )
+            logging.getInternalLog( CommunityEditionModule.class )
                     .info( "No locking implementation specified, defaulting to 'community'" );
             return new CommunityLockManger();
         }

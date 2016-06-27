@@ -26,7 +26,8 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
-import org.neo4j.kernel.ha.factory.HighlyAvailableFacadeFactory;
+import org.neo4j.kernel.ha.factory.HighlyAvailableEditionModule;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 
@@ -36,14 +37,11 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
  */
 public class HighlyAvailableGraphDatabase extends GraphDatabaseFacade
 {
-    public HighlyAvailableGraphDatabase( File storeDir, Map<String,String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
+    public HighlyAvailableGraphDatabase( File storeDir, Map<String,String> params,
+            GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        newHighlyAvailableFacadeFactory().initFacade( storeDir, params, dependencies, this );
-    }
-
-    protected HighlyAvailableFacadeFactory newHighlyAvailableFacadeFactory()
-    {
-        return new HighlyAvailableFacadeFactory();
+        new GraphDatabaseFacadeFactory( DatabaseInfo.HA, HighlyAvailableEditionModule::new )
+                .initFacade( storeDir, params, dependencies, this );
     }
 
     public HighAvailabilityMemberState getInstanceState()

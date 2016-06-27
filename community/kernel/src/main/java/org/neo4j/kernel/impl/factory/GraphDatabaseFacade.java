@@ -112,7 +112,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     private NodeProxy.NodeActions nodeActions;
     private RelationshipProxy.RelationshipActions relActions;
     private SPI spi;
-    private EditionModule.SPI editionSPI;
 
     /**
      * This is what you need to implemenent to get your very own {@link GraphDatabaseFacade}. This SPI exists as a thin
@@ -185,20 +184,14 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     {
     }
 
-    public void init( SPI spi )
-    {
-        init( spi, null );
-    }
-
     /**
      * Create a new Core API facade, backed by the given SPI.
      */
-    public void init( SPI spi, EditionModule.SPI editionSPI )
+    public void init( SPI spi )
     {
         IndexProviderImpl idxProvider = new IndexProviderImpl( this, spi::currentStatement );
 
         this.spi = spi;
-        this.editionSPI = editionSPI;
 
         this.relActions = new StandardRelationshipActions( spi::currentStatement, spi::currentTransaction,
                 this::assertTransactionOpen, ( id ) -> new NodeProxy( nodeActions, id ), this );
@@ -607,11 +600,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     public StoreId storeId()
     {
         return spi.storeId();
-    }
-
-    public EditionModule.SPI editionSPI()
-    {
-        return editionSPI;
     }
 
     @Override

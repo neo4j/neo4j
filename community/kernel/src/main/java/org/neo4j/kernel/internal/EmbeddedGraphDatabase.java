@@ -23,9 +23,16 @@ import java.io.File;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.impl.factory.CommunityEditionModule;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+
+import static org.neo4j.helpers.collection.Iterables.append;
+import static org.neo4j.helpers.collection.Iterables.asList;
+import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
 
 /**
  * An implementation of {@link GraphDatabaseService} that is used to embed Neo4j
@@ -68,6 +75,9 @@ public class EmbeddedGraphDatabase extends GraphDatabaseFacade
     protected void create( File storeDir, Map<String, String> params,
                                       GraphDatabaseFacadeFactory.Dependencies dependencies)
     {
-        new CommunityFacadeFactory().initFacade( storeDir, params, dependencies, this );
+        GraphDatabaseDependencies newDependencies = newDependencies( dependencies )
+                .settingsClasses( asList( append( GraphDatabaseSettings.class, dependencies.settingsClasses() ) ) );
+        new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
+                .initFacade( storeDir, params, newDependencies, this );
     }
 }

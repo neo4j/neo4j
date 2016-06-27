@@ -41,8 +41,10 @@ import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.CommunityEditionModule;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -93,12 +95,12 @@ public class NonUniqueIndexTests
     {
         GraphDatabaseFactoryState graphDatabaseFactoryState = new GraphDatabaseFactoryState();
         graphDatabaseFactoryState.setUserLogProvider( NullLogService.getInstance().getUserLogProvider() );
-        return new CommunityFacadeFactory()
+        return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
         {
             @Override
             protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
             {
-                return new PlatformModule( storeDir, params, databaseInfo(), dependencies, graphDatabaseFacade )
+                return new PlatformModule( storeDir, params, databaseInfo, dependencies, graphDatabaseFacade )
                 {
                     @Override
                     protected Neo4jJobScheduler createJobScheduler()

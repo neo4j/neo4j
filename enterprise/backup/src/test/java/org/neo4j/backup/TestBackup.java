@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -51,7 +52,7 @@ import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
@@ -628,13 +629,8 @@ public class TestBackup
             protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config,
                     GraphDatabaseFacadeFactory.Dependencies dependencies )
             {
-                return new CommunityFacadeFactory()
-                {
-
-                    @Override
-                    protected EditionModule createEdition( PlatformModule platformModule )
-                    {
-                        return new CommunityEditionModule( platformModule )
+                Function<PlatformModule,EditionModule> factory =
+                        ( platformModule ) -> new CommunityEditionModule( platformModule )
                         {
 
                             @Override
@@ -650,8 +646,8 @@ public class TestBackup
                                 };
                             }
                         };
-                    }
-                }.newFacade( storeDir, config, dependencies );
+                return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, factory )
+                        .newFacade( storeDir, config, dependencies );
             }
         };
         return dbFactory.newEmbeddedDatabaseBuilder( storeDir )

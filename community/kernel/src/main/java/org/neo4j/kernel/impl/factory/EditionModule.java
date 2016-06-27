@@ -57,10 +57,6 @@ public abstract class EditionModule
         // do nothing
     }
 
-    public interface SPI
-    {
-    }
-
     public IdGeneratorFactory idGeneratorFactory;
 
     public LabelTokenHolder labelTokenHolder;
@@ -101,11 +97,6 @@ public abstract class EditionModule
         sysInfo.set( UsageDataKeys.edition, databaseInfo.edition );
         sysInfo.set( UsageDataKeys.operationalMode, databaseInfo.operationalMode );
         config.augment( singletonMap( Configuration.editionName.name(), databaseInfo.edition.toString() ) );
-    }
-
-    protected EditionModule.SPI spi()
-    {
-        return null;
     }
 
     public static AuthManager createAuthManager( Config config, LogService logging )

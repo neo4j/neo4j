@@ -32,6 +32,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import org.neo4j.coreedge.discovery.Cluster;
+import org.neo4j.coreedge.raft.state.CoreState;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.graphdb.Node;
@@ -160,7 +161,7 @@ public class ClusterIdentityIT
 
         for ( CoreGraphDatabase db : cluster.coreServers() )
         {
-            db.compact();
+            getCoreState( db ).compact();
         }
 
         // WHEN
@@ -194,7 +195,7 @@ public class ClusterIdentityIT
 
         for ( CoreGraphDatabase db : cluster.coreServers() )
         {
-            db.compact();
+            getCoreState( db ).compact();
         }
 
         // WHEN
@@ -221,7 +222,7 @@ public class ClusterIdentityIT
 
         for ( CoreGraphDatabase db : cluster.coreServers() )
         {
-            db.compact();
+            getCoreState( db ).compact();
         }
 
         // WHEN
@@ -263,4 +264,8 @@ public class ClusterIdentityIT
         }
     }
 
+    private CoreState getCoreState( CoreGraphDatabase db )
+    {
+        return db.getDependencyResolver().resolveDependency( CoreState.class );
+    }
 }

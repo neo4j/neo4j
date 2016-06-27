@@ -34,7 +34,6 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -64,25 +63,25 @@ public class CommunityServerBuilder
     protected final LogProvider logProvider;
     private HostnamePort address = new HostnamePort( "localhost", 7474 );
     private String maxThreads = null;
-    protected String dataDir = null;
+    private String dataDir = null;
     private String managementUri = "/db/manage/";
     private String restUri = "/db/data/";
-    protected PreFlightTasks preflightTasks;
+    private PreFlightTasks preflightTasks;
     private final HashMap<String, String> thirdPartyPackages = new HashMap<>();
     private final Properties arbitraryProperties = new Properties();
 
-    public static LifecycleManagingDatabase.GraphFactory  IN_MEMORY_DB = ( config, dependencies ) -> {
+    private static LifecycleManagingDatabase.GraphFactory  IN_MEMORY_DB = ( config, dependencies ) -> {
         File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
         Map<String, String> params = config.getParams();
-        params.put( CommunityFacadeFactory.Configuration.ephemeral.name(), "true" );
+        params.put( GraphDatabaseFacadeFactory.Configuration.ephemeral.name(), "true" );
         return new ImpermanentGraphDatabase( storeDir, params, GraphDatabaseDependencies.newDependencies(dependencies) );
     };
 
-    protected Clock clock = null;
+    private Clock clock = null;
     private String[] autoIndexedNodeKeys = null;
     private final String[] autoIndexedRelationshipKeys = null;
     private String[] securityRuleClassNames;
-    public boolean persistent;
+    private boolean persistent;
     private boolean httpsEnabled = false;
 
     public static CommunityServerBuilder server( LogProvider logProvider )
