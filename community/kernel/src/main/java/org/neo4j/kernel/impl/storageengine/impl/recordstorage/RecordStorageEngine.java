@@ -33,6 +33,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.IdReuseEligibility;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
@@ -164,6 +165,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             File storeDir,
             Config config,
             IdGeneratorFactory idGeneratorFactory,
+            IdReuseEligibility eligibleForReuse,
             PageCache pageCache,
             FileSystemAbstraction fs,
             LogProvider logProvider,
@@ -202,7 +204,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             // the stores. The buffering depends on knowledge about active transactions,
             // so we'll initialize it below when all those components have been instantiated.
             bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory(
-                    idGeneratorFactory, transactionsSnapshotSupplier );
+                    idGeneratorFactory, transactionsSnapshotSupplier, eligibleForReuse );
 
             idGeneratorFactory = bufferingIdGeneratorFactory;
         }
@@ -433,6 +435,24 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         List<SchemaRule> schemaRules = Iterators.asList( neoStores.getSchemaStore().loadAllSchemaRules() );
         schemaCache.load( schemaRules );
+    }
+
+    @Override
+    public void clearBufferedIds()
+    {
+        if ( bufferingIdGeneratorFactory != null )
+        {
+            bufferingIdGeneratorFactory.clear();
+        }
+    }
+
+    @Override
+    public void maintenance()
+    {
+        if ( bufferingIdGeneratorFactory != null )
+        {
+            bufferingIdGeneratorFactory.maintenance();
+        }
     }
 
     @Override

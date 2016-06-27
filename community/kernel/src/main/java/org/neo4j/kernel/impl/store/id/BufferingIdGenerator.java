@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.id;
 
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
@@ -32,9 +33,11 @@ class BufferingIdGenerator extends IdGenerator.Delegate
         super( delegate );
     }
 
-    void initialize( Supplier<KernelTransactionsSnapshot> boundaries )
+    void initialize( Supplier<KernelTransactionsSnapshot> boundaries,
+            Predicate<KernelTransactionsSnapshot> safeThreshold )
     {
-        buffer = new DelayedBuffer<>( boundaries, KernelTransactionsSnapshot::allClosed, 10_000, freedIds -> {
+        buffer = new DelayedBuffer<>( boundaries, safeThreshold, 10_000, freedIds ->
+        {
             for ( long id : freedIds )
             {
                 actualFreeId( id );
@@ -56,5 +59,10 @@ class BufferingIdGenerator extends IdGenerator.Delegate
     void maintenance()
     {
         buffer.maintenance();
+    }
+
+    void clear()
+    {
+        buffer.clear();
     }
 }

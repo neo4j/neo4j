@@ -24,6 +24,7 @@ import java.io.File;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.kernel.IdReuseEligibility;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
@@ -79,6 +80,8 @@ public abstract class EditionModule
     public CoreAPIAvailabilityGuard coreAPIAvailabilityGuard;
 
     public IOLimiter ioLimiter;
+
+    public IdReuseEligibility eligibleForIdReuse;
 
     protected void doAfterRecoveryAndStartup( DatabaseInfo databaseInfo, DependencyResolver dependencyResolver )
     {

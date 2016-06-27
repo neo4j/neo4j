@@ -270,6 +270,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final SchemaWriteGuard schemaWriteGuard;
     private final TransactionEventHandlers transactionEventHandlers;
     private final IdGeneratorFactory idGeneratorFactory;
+    private final IdReuseEligibility eligibleForReuse;
     private final JobScheduler scheduler;
     private final Config config;
     private final LockService lockService;
@@ -310,6 +311,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             File storeDir,
             Config config,
             IdGeneratorFactory idGeneratorFactory,
+            IdReuseEligibility eligibleForReuse,
             LogService logService,
             JobScheduler scheduler,
             TokenNameLookup tokenNameLookup,
@@ -340,6 +342,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.storeDir = storeDir;
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
+        this.eligibleForReuse = eligibleForReuse;
         this.tokenNameLookup = tokenNameLookup;
         this.dependencyResolver = dependencyResolver;
         this.scheduler = scheduler;
@@ -570,11 +573,12 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         // TODO API
         Supplier<KernelTransactionsSnapshot> transactionSnapshotSupplier =
                 () -> kernelModule.kernelTransactions().get();
-        RecordStorageEngine storageEngine = new RecordStorageEngine( storeDir, config, idGeneratorFactory, pageCache,
-                fs, logProvider, propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, schemaStateChangeCallback,
-                constraintSemantics, scheduler, tokenNameLookup, lockService, schemaIndexProvider,
-                indexingServiceMonitor, databaseHealth, labelScanStore, legacyIndexProviderLookup, indexConfigStore,
-                legacyIndexTransactionOrdering, transactionSnapshotSupplier );
+        RecordStorageEngine storageEngine = new RecordStorageEngine( storeDir, config, idGeneratorFactory,
+                eligibleForReuse, pageCache, fs, logProvider, propertyKeyTokenHolder, labelTokens,
+                relationshipTypeTokens, schemaStateChangeCallback, constraintSemantics, scheduler, tokenNameLookup,
+                lockService, schemaIndexProvider, indexingServiceMonitor, databaseHealth, labelScanStore,
+                legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering,
+                transactionSnapshotSupplier );
 
         // We pretend that the storage engine abstract hides all details within it. Whereas that's mostly
         // true it's not entirely true for the time being. As long as we need this call below, which
@@ -1026,6 +1030,14 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
      */
     public void beforeModeSwitch()
     {
+        clearTransactions();
+    }
+
+    private void clearTransactions()
+    {
+        // We don't want to have buffered ids carry over to the new role
+        storageEngine.clearBufferedIds();
+
         // Get rid of all pooled transactions, as they will otherwise reference
         // components that have been swapped out during the mode switch.
         kernelModule.kernelTransactions().disposeAll();
@@ -1038,9 +1050,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     public void afterModeSwitch()
     {
         storageEngine.loadSchemaCache();
-        // Get rid of all pooled transactions, as they will otherwise reference
-        // components that have been swapped out during the mode switch.
-        kernelModule.kernelTransactions().disposeAll();
+        clearTransactions();
     }
 
     @SuppressWarnings( "deprecation" )

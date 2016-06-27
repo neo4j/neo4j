@@ -20,8 +20,10 @@
 package org.neo4j.kernel.impl.store.id;
 
 import java.io.File;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.neo4j.kernel.IdReuseEligibility;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 
 /**
@@ -34,21 +36,24 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
     private final BufferingIdGenerator[/*IdType#ordinal as key*/] overriddenIdGenerators =
             new BufferingIdGenerator[IdType.values().length];
     private Supplier<KernelTransactionsSnapshot> boundaries;
+    private Predicate<KernelTransactionsSnapshot> safeThreshold;
 
-    public BufferingIdGeneratorFactory( IdGeneratorFactory delegate, Supplier<KernelTransactionsSnapshot> boundaries  )
+    public BufferingIdGeneratorFactory( IdGeneratorFactory delegate, Supplier<KernelTransactionsSnapshot> boundaries,
+            IdReuseEligibility eligibleForReuse )
     {
         super( delegate );
-        initialize( boundaries );
+        initialize( boundaries, eligibleForReuse );
     }
 
-    void initialize( Supplier<KernelTransactionsSnapshot> boundaries )
+    private void initialize( Supplier<KernelTransactionsSnapshot> boundaries, IdReuseEligibility eligibleForReuse )
     {
         this.boundaries = boundaries;
+        this.safeThreshold = snapshot -> snapshot.allClosed() && eligibleForReuse.isEligible();
         for ( BufferingIdGenerator generator : overriddenIdGenerators )
         {
             if ( generator != null )
             {
-                generator.initialize( boundaries );
+                generator.initialize( boundaries, safeThreshold );
             }
         }
     }
@@ -79,7 +84,7 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
             //   = that is why this if-statement is here
             if ( boundaries != null )
             {
-                bufferingGenerator.initialize( boundaries );
+                bufferingGenerator.initialize( boundaries, safeThreshold );
             }
             overriddenIdGenerators[idType.ordinal()] = bufferingGenerator;
             generator = bufferingGenerator;
@@ -101,6 +106,17 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
             if ( generator != null )
             {
                 generator.maintenance();
+            }
+        }
+    }
+
+    public void clear()
+    {
+        for ( BufferingIdGenerator generator : overriddenIdGenerators )
+        {
+            if ( generator != null )
+            {
+                generator.clear();
             }
         }
     }

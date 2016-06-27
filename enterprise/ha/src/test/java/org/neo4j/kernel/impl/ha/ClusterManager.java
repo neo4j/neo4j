@@ -60,6 +60,7 @@ import org.neo4j.cluster.com.NetworkSender;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
+import org.neo4j.consistency.store.StoreAssertions;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.config.Setting;
@@ -155,6 +156,7 @@ public class ClusterManager
     private final Listener<GraphDatabaseService> initialDatasetCreator;
     private final List<Predicate<ManagedCluster>> availabilityChecks;
     private ManagedCluster managedCluster;
+    private final boolean consistencyCheck;
     LifeSupport life;
 
     private ClusterManager( Builder builder )
@@ -167,6 +169,7 @@ public class ClusterManager
         this.storeDirInitializer = builder.initializer;
         this.initialDatasetCreator = builder.initialDatasetCreator;
         this.availabilityChecks = builder.availabilityChecks;
+        this.consistencyCheck = builder.consistencyCheck;
     }
 
     private Map<String,IntFunction<String>> withDefaults( Map<String,IntFunction<String>> commonConfig )
@@ -717,6 +720,11 @@ public class ClusterManager
          * @param checks availability checks that must pass before considering the cluster online.
          */
         SELF withAvailabilityChecks( Predicate<ManagedCluster>... checks );
+
+        /**
+         * Runs consistency checks on the databases after cluster has been shut down.
+         */
+        SELF withConsistencyCheckAfterwards();
     }
 
     public static class Builder implements ClusterBuilder<Builder>
@@ -728,6 +736,7 @@ public class ClusterManager
         private StoreDirInitializer initializer;
         private Listener<GraphDatabaseService> initialDatasetCreator;
         private List<Predicate<ManagedCluster>> availabilityChecks = Collections.emptyList();
+        private boolean consistencyCheck;
 
         public Builder( File root )
         {
@@ -817,6 +826,13 @@ public class ClusterManager
         public final Builder withAvailabilityChecks( Predicate<ManagedCluster>... checks )
         {
             this.availabilityChecks = Arrays.asList( checks );
+            return this;
+        }
+
+        @Override
+        public Builder withConsistencyCheckAfterwards()
+        {
+            this.consistencyCheck = true;
             return this;
         }
 
@@ -991,8 +1007,19 @@ public class ClusterManager
         {
             for ( HighlyAvailableGraphDatabaseProxy member : members.values() )
             {
-                member.get( DEFAULT_TIMEOUT_SECONDS ).shutdown();
+                HighlyAvailableGraphDatabase memberDb = member.get( DEFAULT_TIMEOUT_SECONDS );
+                File storeDir = memberDb.getStoreDirectory();
+                memberDb.shutdown();
+                if ( consistencyCheck )
+                {
+                    consistencyCheck( storeDir );
+                }
             }
+        }
+
+        private void consistencyCheck( File storeDir ) throws Throwable
+        {
+            StoreAssertions.assertConsistentStore( storeDir );
         }
 
         /**

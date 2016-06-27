@@ -504,6 +504,34 @@ public class HighlyAvailableEditionModule
 
         coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
 
+        // Only buffer ids for reuse when we're the master. This is mostly an optimization since
+        // when in slave role the ids are thrown away anyway.
+        eligibleForIdReuse = () ->
+        {
+            switch ( members.getCurrentMemberRole() )
+            {
+            case HighAvailabilityModeSwitcher.SLAVE:
+                // If we're slave right now then just release them because the id generators in slave mode
+                // will throw them away anyway, no need to keep them in memory. The architecture around
+                // how buffering is done isn't a 100% fit for HA since the wrapping if IdGeneratorFactory
+                // where the buffering takes place is done in a place which is oblivious to HA and roles
+                // which means that buffering will always take place. For now we'll have to live with
+                // always buffering and only just release them as soon as possible when slave.
+                return true;
+            case HighAvailabilityModeSwitcher.MASTER:
+                // If we're master then we have to keep these ids around during the configured safe zone time
+                // so that slaves have a chance to read consistently as well (slaves will know and compensate
+                // for falling outside of safe zone). Let's keep this separate from SLAVE since they
+                // have different reasons for doing what they do.
+                return true;
+            default:
+                // If we're anything other than slave, i.e. also pending then retain the ids since we're
+                // not quite sure what state we're in at the moment and we clear the id buffers anyway
+                // during state switch.
+                return false;
+            }
+        };
+
         registerRecovery( platformModule.databaseInfo, dependencies, logging );
 
         UsageData usageData = dependencies.resolveDependency( UsageData.class );

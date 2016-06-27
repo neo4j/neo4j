@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.IdReuseEligibility;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -99,8 +100,9 @@ public class RecordStorageEngineRule extends ExternalResource
         Config config = Config.defaults();
         Supplier<KernelTransactionsSnapshot> txSnapshotSupplier =
                 () -> new KernelTransactionsSnapshot( Collections.emptySet() );
-        return life.add( new RecordStorageEngine( storeDirectory, config, idGeneratorFactory, pageCache, fs,
-                NullLogProvider.getInstance(), mock( PropertyKeyTokenHolder.class ), mock( LabelTokenHolder.class ),
+        return life.add( new RecordStorageEngine( storeDirectory, config, idGeneratorFactory,
+                IdReuseEligibility.ALWAYS, pageCache, fs, NullLogProvider.getInstance(),
+                mock( PropertyKeyTokenHolder.class ), mock( LabelTokenHolder.class ),
                 mock( RelationshipTypeTokenHolder.class ), () -> {}, new StandardConstraintSemantics(),
                 scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(),
                 schemaIndexProvider, IndexingService.NO_MONITOR, databaseHealth,
