@@ -20,13 +20,18 @@
 package org.neo4j.kernel.impl.api;
 
 import org.junit.Before;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
+import java.util.Collection;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
@@ -37,12 +42,21 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.api.lock.ResourceLocker;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyCollectionOf;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
@@ -65,13 +79,17 @@ public class KernelTransactionTestBase
     protected final Pool<KernelTransactionImplementation> txPool = mock( Pool.class );
 
     @Before
-    public void before()
+    public void before() throws Exception
     {
         when( headerInformation.getAdditionalHeader() ).thenReturn( new byte[0] );
         when( headerInformationFactory.create() ).thenReturn( headerInformation );
         when( readLayer.newStatement() ).thenReturn( mock( StoreStatement.class ) );
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
+        doAnswer( invocation -> ((Collection<StorageCommand>) invocation.getArguments()[0]).add( null ) )
+                .when( storageEngine ).createCommands( anyCollectionOf( StorageCommand.class ),
+                any( ReadableTransactionState.class ), any( StorageStatement.class ),
+                any( ResourceLocker.class ), anyLong() );
     }
 
     public KernelTransactionImplementation newTransaction( AccessMode accessMode )
@@ -107,7 +125,7 @@ public class KernelTransactionTestBase
 
     public class CapturingCommitProcess implements TransactionCommitProcess
     {
-        private long txId = 1;
+        private long txId = TransactionIdStore.BASE_TX_ID;
         public TransactionRepresentation transaction;
 
         @Override
@@ -117,7 +135,7 @@ public class KernelTransactionTestBase
             assert transaction == null : "Designed to only allow one transaction";
             assert batch.next() == null : "Designed to only allow one transaction";
             transaction = batch.transactionRepresentation();
-            return txId++;
+            return ++txId;
         }
     }
 }

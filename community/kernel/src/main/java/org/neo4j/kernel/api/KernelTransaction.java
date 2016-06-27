@@ -82,7 +82,11 @@ public interface KernelTransaction extends AutoCloseable
 
     interface CloseListener
     {
-        void notify( boolean success );
+        /**
+         * @param txId On success, the actual id of the current transaction if writes have been performed, 0 otherwise.
+         * On rollback, always -1.
+         */
+        void notify( long txId );
     }
 
     long ROLLBACK = -1;

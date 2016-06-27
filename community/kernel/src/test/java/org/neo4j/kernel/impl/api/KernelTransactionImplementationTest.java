@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -46,6 +47,8 @@ import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.test.DoubleLatch;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -62,6 +65,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 @RunWith( Parameterized.class )
 public class KernelTransactionImplementationTest extends KernelTransactionTestBase
@@ -310,16 +314,10 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
-    class ChildException
-    {
-        public Exception exception = null;
-    }
-
     @Test
     public void shouldAllowTerminatingFromADifferentThread() throws Exception
     {
         // GIVEN
-        final ChildException childException = new ChildException();
         final DoubleLatch latch = new DoubleLatch( 1 );
         final KernelTransaction transaction = newTransaction( accessMode() );
         transactionInitializer.accept( transaction );
@@ -589,5 +587,41 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         tx.markForTermination( Status.Transaction.Terminated );
         tx.close();
         assertNull( tx.getReasonIfTerminated() );
+    }
+
+    public void shouldCallCloseListenerOnCloseWhenCommitting() throws Exception
+    {
+        // given
+        AtomicLong closeTxId = new AtomicLong( Long.MIN_VALUE );
+        KernelTransactionImplementation tx = newTransaction( accessMode() );
+        tx.registerCloseListener( closeTxId::set );
+
+        // when
+        if ( isWriteTx )
+        {
+            tx.upgradeToDataWrites();
+            tx.txState().nodeDoCreate( 42L );
+        }
+        tx.success();
+        tx.close();
+
+        // then
+        assertThat( closeTxId.get(), isWriteTx ? greaterThan( BASE_TX_ID ) : equalTo( 0L ) );
+    }
+
+    @Test
+    public void shouldCallCloseListenerOnCloseWhenRollingBack() throws Exception
+    {
+        // given
+        AtomicLong closeTxId = new AtomicLong( Long.MIN_VALUE );
+        KernelTransactionImplementation tx = newTransaction( accessMode() );
+        tx.registerCloseListener( closeTxId::set );
+
+        // when
+        tx.failure();
+        tx.close();
+
+        // then
+        assertEquals( -1L, closeTxId.get() );
     }
 }
