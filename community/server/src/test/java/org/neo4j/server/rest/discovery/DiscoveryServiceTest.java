@@ -68,7 +68,7 @@ public class DiscoveryServiceTest
         return mockConfig;
     }
 
-    private DiscoveryService mockDiscoveryService() throws URISyntaxException
+    private DiscoveryService testDiscoveryService() throws URISyntaxException
     {
         Config mockConfig = mockConfig();
         return new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI(
@@ -78,7 +78,7 @@ public class DiscoveryServiceTest
     @Test
     public void shouldReturnValidJSON() throws Exception
     {
-        Response response = mockDiscoveryService().getDiscoveryDocument();
+        Response response = testDiscoveryService().getDiscoveryDocument();
         String json = new String( (byte[]) response.getEntity() );
 
         assertNotNull( json );
@@ -90,7 +90,7 @@ public class DiscoveryServiceTest
     @Test
     public void shouldReturnBoltURI() throws Exception
     {
-        Response response = mockDiscoveryService().getDiscoveryDocument();
+        Response response = testDiscoveryService().getDiscoveryDocument();
         String json = new String( (byte[]) response.getEntity() );
         assertThat( json, containsString( "\"bolt\" : \"bolt://" + boltAddress + "\"" ) );
     }
@@ -98,7 +98,7 @@ public class DiscoveryServiceTest
     @Test
     public void shouldReturnDataURI() throws Exception
     {
-        Response response = mockDiscoveryService().getDiscoveryDocument();
+        Response response = testDiscoveryService().getDiscoveryDocument();
         String json = new String( (byte[]) response.getEntity() );
         assertThat( json, containsString( "\"data\" : \"" + baseUri + dataUri + "/\"" ) );
     }
@@ -106,7 +106,7 @@ public class DiscoveryServiceTest
     @Test
     public void shouldReturnManagementURI() throws Exception
     {
-        Response response = mockDiscoveryService().getDiscoveryDocument();
+        Response response = testDiscoveryService().getDiscoveryDocument();
         String json = new String( (byte[]) response.getEntity() );
         assertThat( json, containsString( "\"management\" : \"" + baseUri + managementUri + "/\"" ) );
     }
