@@ -34,7 +34,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.BasicAuthManager;
 import org.neo4j.server.security.auth.BasicAuthSubject;
 
-import static java.util.Collections.singletonList;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -99,14 +99,12 @@ public class BasicAuthenticationTest
         when( manager.login( anyMap() ) ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
 
-        // Expect
-        // TODO: For now the server just returns OK when a password change is required, but this should be changed to an appropriate message
-        //exception.expect( AuthenticationException.class );
-        //exception.expect( hasStatus( Status.Security.CredentialsExpired ) );
-        //exception.expectMessage( "The credentials have expired and need to be updated." );
-
         // When
-        authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "secret" ) );
+        org.neo4j.bolt.security.auth.AuthenticationResult result =
+                authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "secret" ) );
+
+        // Then
+        assertTrue( result.credentialsExpired() );
     }
 
     @Test
@@ -177,7 +175,6 @@ public class BasicAuthenticationTest
         exception.expect( hasStatus( Status.Security.Unauthorized ) );
         exception.expectMessage( "The client is unauthorized due to authentication failure." );
 
-        // When
         // When
         authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "secret",
                 "new_credentials", "secret2" ) );

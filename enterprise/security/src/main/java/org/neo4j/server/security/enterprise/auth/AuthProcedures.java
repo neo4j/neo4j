@@ -58,7 +58,7 @@ public class AuthProcedures
         EnterpriseAuthSubject enterpriseSubject = EnterpriseAuthSubject.castOrFail( authSubject );
         if ( enterpriseSubject.doesUsernameMatch( username ) )
         {
-            enterpriseSubject.getUserManager().setPassword( enterpriseSubject, username, newPassword );
+            enterpriseSubject.setPassword( newPassword );
         }
         else if ( !enterpriseSubject.isAdmin() )
         {

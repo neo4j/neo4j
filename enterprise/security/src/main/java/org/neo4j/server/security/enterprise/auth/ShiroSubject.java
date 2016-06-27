@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.security.AuthenticationResult;
 
 public class ShiroSubject extends DelegatingSubject
 {
-    private final AuthenticationResult authenticationResult;
+    private AuthenticationResult authenticationResult;
 
     public ShiroSubject( SecurityManager securityManager, AuthenticationResult authenticationResult )
     {
@@ -46,5 +46,10 @@ public class ShiroSubject extends DelegatingSubject
     public AuthenticationResult getAuthenticationResult()
     {
         return authenticationResult;
+    }
+
+    void setAuthenticationResult( AuthenticationResult authenticationResult )
+    {
+        this.authenticationResult = authenticationResult;
     }
 }

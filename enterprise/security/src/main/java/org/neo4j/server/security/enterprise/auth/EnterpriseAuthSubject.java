@@ -66,6 +66,12 @@ public class EnterpriseAuthSubject implements AuthSubject
     public void setPassword( String password ) throws IOException, IllegalCredentialsException
     {
         getUserManager().setPassword( this, (String) shiroSubject.getPrincipal(), password );
+
+        // Make user authenticated if successful
+        if ( getAuthenticationResult() == AuthenticationResult.PASSWORD_CHANGE_REQUIRED )
+        {
+            shiroSubject.setAuthenticationResult( AuthenticationResult.SUCCESS );
+        }
     }
 
     public EnterpriseUserManager getUserManager()

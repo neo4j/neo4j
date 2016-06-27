@@ -43,5 +43,7 @@ public interface NeoInteractionLevel<S>
 
     AuthenticationResult authenticationResult( S subject );
 
+    void updateAuthToken( S subject, String username, String password );
+
     void tearDown() throws Throwable;
 }

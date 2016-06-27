@@ -139,6 +139,12 @@ public class NeoFullRESTInteraction extends CommunityServerTestBase implements N
     }
 
     @Override
+    public void updateAuthToken( RESTSubject subject, String username, String password )
+    {
+        subject.principalCredentials = challengeResponse( username, password );
+    }
+
+    @Override
     public void tearDown()
     {
         if ( server != null )

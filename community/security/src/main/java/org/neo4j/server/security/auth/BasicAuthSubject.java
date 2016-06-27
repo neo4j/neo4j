@@ -31,7 +31,7 @@ public class BasicAuthSubject implements AuthSubject
     private final BasicAuthManager authManager;
     private User user;
     private AuthenticationResult authenticationResult;
-    private final AccessMode.Static accessMode;
+    private AccessMode.Static accessMode;
 
     public static BasicAuthSubject castOrFail( AuthSubject authSubject )
     {
@@ -82,6 +82,13 @@ public class BasicAuthSubject implements AuthSubject
     public void setPassword( String password ) throws IOException, IllegalCredentialsException
     {
         authManager.setPassword( this, user.name(), password );
+
+        // Make user authenticated if successful
+        if ( authenticationResult == AuthenticationResult.PASSWORD_CHANGE_REQUIRED )
+        {
+            authenticationResult = AuthenticationResult.SUCCESS;
+            accessMode = AccessMode.Static.FULL;
+        }
     }
 
     public boolean doesUsernameMatch( String username )

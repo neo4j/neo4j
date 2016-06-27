@@ -53,31 +53,24 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     public void shouldChangeOwnPassword() throws Throwable
     {
         assertCallSuccess( readSubject, "CALL dbms.changePassword( '321' )" );
-        testUnAuthenticated( readSubject );
-
-        readSubject = neo.login( "readSubject", "321" );
-        assertEquals( SUCCESS, neo.authenticationResult( readSubject ) );
+        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( readSubject ) );
+        neo.updateAuthToken( readSubject, "readSubject", "321" ); // Because RESTSubject caches an auth token that is sent with every request
+        testSuccessfulRead( readSubject, 3 );
     }
 
-    // Fails for shallow embedded interaction because authentication check is broken
-    @Ignore
     @Test
     public void shouldChangeOwnPasswordEvenIfHasNoAuthorization() throws Throwable
     {
         testAuthenticated( noneSubject );
         assertCallSuccess( noneSubject, "CALL dbms.changePassword( '321' )" );
-        testUnAuthenticated( noneSubject );
-
-        noneSubject = neo.login( "noneSubject", "321" );
         assertEquals( SUCCESS, neo.authenticationResult( noneSubject ) );
     }
 
-    @Ignore
     @Test
     public void shouldNotChangeOwnPasswordIfNewPasswordInvalid() throws Exception
     {
         assertCallFail( readSubject, "CALL dbms.changePassword( '' )", "Password cannot be empty" );
-        assertCallFail( readSubject, "CALL dbms.changePassword( '321' )", "Old password and new password cannot be the same" );
+        assertCallFail( readSubject, "CALL dbms.changePassword( '123' )", "Old password and new password cannot be the same" );
     }
 
     //---------- change user password -----------
@@ -109,12 +102,14 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     public void shouldChangeUserPasswordIfSameUser() throws Throwable
     {
         assertCallSuccess( readSubject, "CALL dbms.changeUserPassword( 'readSubject', '321' )" );
-        testUnAuthenticated( readSubject );
-        assertEquals( SUCCESS, neo.authenticationResult( neo.login( "readSubject", "321" ) ) );
+        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( readSubject ) );
+        neo.updateAuthToken( readSubject, "readSubject", "321" ); // Because RESTSubject caches an auth token that is sent with every request
+        testSuccessfulRead( readSubject, 3 );
 
         assertCallSuccess( adminSubject, "CALL dbms.changeUserPassword( 'adminSubject', 'cba' )" );
-        testUnAuthenticated( adminSubject );
-        assertEquals( SUCCESS, neo.authenticationResult( neo.login( "adminSubject", "cba" ) ) );
+        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( adminSubject ) );
+        neo.updateAuthToken( adminSubject, "adminSubject", "cba" ); // Because RESTSubject caches an auth token that is sent with every request
+        testSuccessfulRead( adminSubject, 3 );
     }
 
     // Should fail nicely to change own password for non-admin or admin subject if password invalid
