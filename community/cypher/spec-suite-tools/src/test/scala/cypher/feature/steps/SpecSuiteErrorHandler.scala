@@ -19,7 +19,7 @@
  */
 package cypher.feature.steps
 
-import org.neo4j.graphdb.{QueryExecutionException, Result}
+import org.neo4j.graphdb.{ConstraintViolationException, QueryExecutionException, Result, Transaction}
 import org.opencypher.tools.tck.constants.TCKErrorDetails._
 import org.opencypher.tools.tck.constants.{TCKErrorPhases, TCKErrorTypes}
 import org.scalatest.{Assertions, Matchers}
@@ -28,9 +28,9 @@ import scala.util.{Failure, Success, Try}
 
 case class SpecSuiteErrorHandler(typ: String, phase: String, detail: String) extends Matchers with Assertions {
 
-  def check(result: Try[Result]) = {
+  def check(result: Try[Result], tx: Transaction) = {
     phase match {
-      case TCKErrorPhases.COMPILE_TIME => checkError(result, typ, phase, detail, compileTimeError)
+      case TCKErrorPhases.COMPILE_TIME => checkError(result, compileTimeError)
       case TCKErrorPhases.RUNTIME => result match {
         case Success(triedResult) =>
           // might need to exhaust result to provoke error
@@ -38,10 +38,12 @@ case class SpecSuiteErrorHandler(typ: String, phase: String, detail: String) ext
             while (triedResult.hasNext) {
               triedResult.next()
             }
+            tx.success()
+            tx.close()
             triedResult
           }
-          checkError(consumedResult, typ, phase, detail, runtimeError)
-        case x => checkError(x, typ, phase, detail, runtimeError)
+          checkError(consumedResult, runtimeError)
+        case x => checkError(x, runtimeError)
       }
       case _ => fail(s"Unknown phase $phase specified. Supported values are '${TCKErrorPhases.COMPILE_TIME}' and '${TCKErrorPhases.RUNTIME}'.")
     }
@@ -49,7 +51,7 @@ case class SpecSuiteErrorHandler(typ: String, phase: String, detail: String) ext
 
   private val DOTALL = "(?s)"
 
-  private def checkError(result: Try[Result], typ: String, phase: String, detail: String, msgHandler: String => Boolean) = {
+  private def checkError(result: Try[Result], msgHandler: String => Boolean) = {
     val statusType = if (typ == TCKErrorTypes.CONSTRAINT_VALIDATION_FAILED) "Schema" else "Statement"
     result match {
       case Failure(e: QueryExecutionException) =>
@@ -57,10 +59,18 @@ case class SpecSuiteErrorHandler(typ: String, phase: String, detail: String) ext
 
         if (!msgHandler(e.getMessage)) fail(s"Unknown $phase error: $e", e)
 
+      case Failure(e: ConstraintViolationException) =>
+        // Due to the explicit tx management (which is necessary due to how results are streamed back from the 2.3 iterators),
+        // some exceptions aren't coming from within Cypher, but from the kernel at the tx commit phase.
+        // We could work around this by caching all results, but that has implications for error handling in general.
+
+        if (!msgHandler(e.getMessage)) fail(s"Unknown $phase error: $e", e)
+
       case Failure(e) =>
         fail(s"Unknown $phase error: $e", e)
 
-      case _: Success[_] =>
+      case Success(r) =>
+        r.close()
         fail(s"No $phase error was raised")
     }
   }

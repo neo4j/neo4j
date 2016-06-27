@@ -25,8 +25,6 @@ class AcceptanceSpecSuiteSteps extends SpecSuiteSteps {
 
   override val specSuiteClass = classOf[AcceptanceSpecSuiteTest]
 
-  override val unsupportedScenarios = Set[String](
-  )
 }
 
 

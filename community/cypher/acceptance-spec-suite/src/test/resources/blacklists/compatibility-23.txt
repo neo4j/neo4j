@@ -1,0 +1,1 @@
+Find a combination of a shortest path and a pattern expression

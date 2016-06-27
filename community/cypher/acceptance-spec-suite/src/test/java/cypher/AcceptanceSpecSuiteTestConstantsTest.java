@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.isEmptyString;
-import static org.junit.Assert.assertFalse;
 
 public class AcceptanceSpecSuiteTestConstantsTest
 {
@@ -35,10 +34,5 @@ public class AcceptanceSpecSuiteTestConstantsTest
     @Test
     public void runsAllScenarios() {
         assertThat( AcceptanceSpecSuiteTest.SCENARIO_NAME_REQUIRED, isEmptyString());
-    }
-
-    @Test
-    public void doesNotReplaceExistingByDefault() {
-        assertFalse( AcceptanceSpecSuiteTest.REPLACE_EXISTING );
     }
 }
