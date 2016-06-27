@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.scenarios;
 
 import java.io.File;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,7 +30,6 @@ import org.junit.Test;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.SharedDiscoveryService;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -41,8 +39,8 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.test.coreedge.ClusterRule;
-import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertTrue;
 
@@ -103,6 +101,10 @@ public class RestartIT
                     Node node = coreDB.createNode( label( "boo" ) );
                     node.setProperty( "foobar", "baz_bat" );
                     tx.success();
+                }
+                catch ( AcquireLockTimeoutException e )
+                {
+                    // expected sometimes
                 }
             }
         } );
