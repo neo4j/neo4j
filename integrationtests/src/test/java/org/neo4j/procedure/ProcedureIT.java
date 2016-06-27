@@ -75,8 +75,8 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
-import static org.neo4j.procedure.Procedure.Access.WRITE;
-import static org.neo4j.procedure.Procedure.Scope.SCHEMA;
+import static org.neo4j.procedure.Procedure.Mode.WRITE;
+import static org.neo4j.procedure.Procedure.Mode.SCHEMA;
 
 public class ProcedureIT
 {
@@ -1015,14 +1015,14 @@ public class ProcedureIT
             return Stream.empty();
         }
 
-        @Procedure( access = WRITE )
+        @Procedure( mode = WRITE )
         public Stream<Output> writingProcedure()
         {
             db.createNode();
             return Stream.empty();
         }
 
-        @Procedure( access = WRITE )
+        @Procedure( mode = WRITE )
         public Stream<NodeOutput> createNode( @Name( "value" ) String value )
         {
             Node node = db.createNode();
@@ -1040,7 +1040,7 @@ public class ProcedureIT
                     .map( ( row ) -> new Output( 0 ) );
         }
 
-        @Procedure( access = WRITE )
+        @Procedure( mode = WRITE )
         public Stream<Output> writeProcedureCallingWriteProcedure()
         {
             return db.execute( "CALL org.neo4j.procedure.writingProcedure" )
@@ -1048,7 +1048,7 @@ public class ProcedureIT
                     .map( ( row ) -> new Output( 0 ) );
         }
 
-        @Procedure( access = WRITE )
+        @Procedure( mode = WRITE )
         public void sideEffect( @Name( "value" ) String value )
         {
             db.createNode( Label.label( value ) );
@@ -1060,13 +1060,13 @@ public class ProcedureIT
             db.shutdown();
         }
 
-        @Procedure( access = WRITE )
+        @Procedure( mode = WRITE )
         public void delegatingSideEffect( @Name( "value" ) String value )
         {
             db.execute( "CALL org.neo4j.procedure.sideEffect", map( "value", value ) );
         }
 
-        @Procedure( access = WRITE )
+        @Procedure( mode = WRITE )
         public void unsupportedProcedure()
         {
             jobs.submit( () -> {
@@ -1091,7 +1091,7 @@ public class ProcedureIT
                 .map( record -> new PathOutputRecord( (Path) record.getOrDefault( "p", null ) ) );
         }
 
-        @Procedure( access = WRITE )
+        @Procedure( mode = WRITE )
         public Stream<NodeListRecord> nodeList()
         {
             List<Node> nodesList = new ArrayList<>();
@@ -1113,13 +1113,13 @@ public class ProcedureIT
             db.execute( "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" );
         }
 
-        @Procedure( scope = SCHEMA )
+        @Procedure( mode = SCHEMA )
         public void schemaProcedure()
         {
             db.execute( "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" );
         }
 
-        @Procedure( scope = SCHEMA )
+        @Procedure( mode = SCHEMA )
         public Stream<NodeOutput> schemaCallReadProcedure( @Name( "id" ) long id )
         {
             return db.execute( "CALL org.neo4j.procedure.node(" + id + ")" ).stream().map( record -> {
@@ -1129,7 +1129,7 @@ public class ProcedureIT
             } );
         }
 
-        @Procedure( scope = SCHEMA )
+        @Procedure( mode = SCHEMA )
         public void schemaTryingToWrite()
         {
             db.execute( "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" );

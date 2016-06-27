@@ -32,7 +32,7 @@ import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
-import static org.neo4j.procedure.Procedure.Scope.DBMS;
+import static org.neo4j.procedure.Procedure.Mode.DBMS;
 
 public class AuthProcedures
 {
@@ -41,7 +41,7 @@ public class AuthProcedures
     @Context
     public AuthSubject authSubject;
 
-    @Procedure( name = "dbms.createUser", scope = DBMS )
+    @Procedure( name = "dbms.createUser", mode = DBMS )
     public void createUser( @Name( "username" ) String username, @Name( "password" ) String password,
             @Name( "requirePasswordChange" ) boolean requirePasswordChange )
             throws IllegalCredentialsException, IOException
@@ -50,7 +50,7 @@ public class AuthProcedures
         adminSubject.getUserManager().newUser( username, password, requirePasswordChange );
     }
 
-    @Procedure( name = "dbms.changeUserPassword", scope = DBMS )
+    @Procedure( name = "dbms.changeUserPassword", mode = DBMS )
     public void changeUserPassword( @Name( "username" ) String username, @Name( "newPassword" ) String newPassword )
             throws IllegalCredentialsException, IOException
     {
@@ -69,7 +69,7 @@ public class AuthProcedures
         }
     }
 
-    @Procedure( name = "dbms.addUserToRole", scope = DBMS )
+    @Procedure( name = "dbms.addUserToRole", mode = DBMS )
     public void addUserToRole( @Name( "username" ) String username, @Name( "roleName" ) String roleName )
             throws IOException
     {
@@ -77,7 +77,7 @@ public class AuthProcedures
         adminSubject.getUserManager().addUserToRole( username, roleName );
     }
 
-    @Procedure( name = "dbms.removeUserFromRole", scope = DBMS )
+    @Procedure( name = "dbms.removeUserFromRole", mode = DBMS )
     public void removeUserFromRole( @Name( "username" ) String username, @Name( "roleName" ) String roleName )
             throws IllegalCredentialsException, IOException
     {
@@ -89,7 +89,7 @@ public class AuthProcedures
         adminSubject.getUserManager().removeUserFromRole( username, roleName );
     }
 
-    @Procedure( name = "dbms.deleteUser", scope = DBMS )
+    @Procedure( name = "dbms.deleteUser", mode = DBMS )
     public void deleteUser( @Name( "username" ) String username ) throws IllegalCredentialsException, IOException
     {
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
@@ -100,7 +100,7 @@ public class AuthProcedures
         adminSubject.getUserManager().deleteUser( username );
     }
 
-    @Procedure( name = "dbms.suspendUser", scope = DBMS )
+    @Procedure( name = "dbms.suspendUser", mode = DBMS )
     public void suspendUser( @Name( "username" ) String username ) throws IOException
     {
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
@@ -111,7 +111,7 @@ public class AuthProcedures
         adminSubject.getUserManager().suspendUser( username );
     }
 
-    @Procedure( name = "dbms.activateUser", scope = DBMS )
+    @Procedure( name = "dbms.activateUser", mode = DBMS )
     public void activateUser( @Name( "username" ) String username ) throws IOException
     {
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
@@ -122,7 +122,7 @@ public class AuthProcedures
         adminSubject.getUserManager().activateUser( username );
     }
 
-    @Procedure( name = "dbms.showCurrentUser", scope = DBMS )
+    @Procedure( name = "dbms.showCurrentUser", mode = DBMS )
     public Stream<UserResult> showCurrentUser() throws IllegalCredentialsException, IOException
     {
         EnterpriseAuthSubject enterpriseSubject = EnterpriseAuthSubject.castOrFail( authSubject );
@@ -131,7 +131,7 @@ public class AuthProcedures
                 userManager.getRoleNamesForUser( enterpriseSubject.name() ) ) );
     }
 
-    @Procedure( name = "dbms.listUsers", scope = DBMS )
+    @Procedure( name = "dbms.listUsers", mode = DBMS )
     public Stream<UserResult> listUsers() throws IllegalCredentialsException, IOException
     {
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
@@ -140,7 +140,7 @@ public class AuthProcedures
                 .map( u -> new UserResult( u, userManager.getRoleNamesForUser( u ) ) );
     }
 
-    @Procedure( name = "dbms.listRoles", scope = DBMS )
+    @Procedure( name = "dbms.listRoles", mode = DBMS )
     public Stream<RoleResult> listRoles() throws IllegalCredentialsException, IOException
     {
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
@@ -149,7 +149,7 @@ public class AuthProcedures
                 .map( r -> new RoleResult( r, userManager.getUsernamesForRole( r ) ) );
     }
 
-    @Procedure( name = "dbms.listRolesForUser", scope = DBMS )
+    @Procedure( name = "dbms.listRolesForUser", mode = DBMS )
     public Stream<StringResult> listRolesForUser( @Name( "username" ) String username )
             throws IllegalCredentialsException, IOException
     {
@@ -161,7 +161,7 @@ public class AuthProcedures
         throw new AuthorizationViolationException( PERMISSION_DENIED );
     }
 
-    @Procedure( name = "dbms.listUsersForRole", scope = DBMS )
+    @Procedure( name = "dbms.listUsersForRole", mode = DBMS )
     public Stream<StringResult> listUsersForRole( @Name( "roleName" ) String roleName )
             throws IllegalCredentialsException, IOException
     {

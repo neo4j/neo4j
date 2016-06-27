@@ -115,17 +115,10 @@ public @interface Procedure
 
     String name() default "";
 
-    Scope scope() default Scope.GRAPH;
+    Mode mode() default Mode.READ;
 
-    Access access() default Access.READ;
-
-    enum Scope
+    enum Mode
     {
-        GRAPH, SCHEMA, DBMS
-    }
-
-    enum Access
-    {
-        READ, WRITE
+        READ, WRITE, SCHEMA, DBMS
     }
 }

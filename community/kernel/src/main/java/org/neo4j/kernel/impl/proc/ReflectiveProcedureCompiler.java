@@ -109,15 +109,15 @@ public class ReflectiveProcedureCompiler
 
         ProcedureSignature.Mode mode = ProcedureSignature.Mode.READ_ONLY;
         Procedure procedure = method.getAnnotation( Procedure.class );
-        if ( procedure.scope().equals( Procedure.Scope.DBMS ) )
+        if ( procedure.mode().equals( Procedure.Mode.DBMS ) )
         {
             mode = ProcedureSignature.Mode.DBMS;
         }
-        else if ( procedure.scope().equals( Procedure.Scope.SCHEMA ) )
+        else if ( procedure.mode().equals( Procedure.Mode.SCHEMA ) )
         {
             mode = ProcedureSignature.Mode.SCHEMA_WRITE;
         }
-        else if ( procedure.access().equals( Procedure.Access.WRITE ) ||
+        else if ( procedure.mode().equals( Procedure.Mode.WRITE ) ||
                 method.isAnnotationPresent( PerformsWrites.class ) )
         {
             mode = ProcedureSignature.Mode.READ_WRITE;
