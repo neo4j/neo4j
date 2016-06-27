@@ -84,6 +84,10 @@ public class AuthProcedures
             throws IllegalCredentialsException, IOException
     {
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+        if ( adminSubject.doesUsernameMatch( username ) && roleName.equals( PredefinedRolesBuilder.ADMIN ) )
+        {
+            throw new IllegalArgumentException( "Removing yourself from the admin role is not allowed!" );
+        }
         adminSubject.getUserManager().removeUserFromRole( username, roleName );
     }
 
@@ -92,6 +96,10 @@ public class AuthProcedures
     public void deleteUser( @Name( "username" ) String username ) throws IllegalCredentialsException, IOException
     {
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+        if ( adminSubject.doesUsernameMatch( username ) )
+        {
+            throw new IllegalArgumentException( "Deleting yourself is not allowed!" );
+        }
         adminSubject.getUserManager().deleteUser( username );
     }
 
@@ -100,6 +108,10 @@ public class AuthProcedures
     public void suspendUser( @Name( "username" ) String username ) throws IOException
     {
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+        if ( adminSubject.doesUsernameMatch( username ) )
+        {
+            throw new IllegalArgumentException( "Suspending yourself is not allowed!" );
+        }
         adminSubject.getUserManager().suspendUser( username );
     }
 
@@ -108,6 +120,10 @@ public class AuthProcedures
     public void activateUser( @Name( "username" ) String username ) throws IOException
     {
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+        if ( adminSubject.doesUsernameMatch( username ) )
+        {
+            throw new IllegalArgumentException( "Activating yourself is not allowed!" );
+        }
         adminSubject.getUserManager().activateUser( username );
     }
 
@@ -144,20 +160,24 @@ public class AuthProcedures
 
     @PerformsDBMS
     @Procedure( "dbms.listRolesForUser" )
-        public Stream<StringResult> listRolesForUser( @Name( "username" ) String username )
-        throws IllegalCredentialsException, IOException
+    public Stream<StringResult> listRolesForUser( @Name( "username" ) String username )
+            throws IllegalCredentialsException, IOException
+    {
+        EnterpriseAuthSubject subject = EnterpriseAuthSubject.castOrFail( authSubject );
+        if ( subject.isAdmin() || subject.doesUsernameMatch( username ) )
         {
-            EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
-            return adminSubject.getUserManager().getRoleNamesForUser( username ).stream().map( StringResult::new );
+            return subject.getUserManager().getRoleNamesForUser( username ).stream().map( StringResult::new );
+        }
+        throw new AuthorizationViolationException( PERMISSION_DENIED );
     }
 
     @PerformsDBMS
     @Procedure( "dbms.listUsersForRole" )
-        public Stream<StringResult> listUsersForRole( @Name( "roleName" ) String roleName )
-        throws IllegalCredentialsException, IOException
-        {
-            EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
-            return adminSubject.getUserManager().getUsernamesForRole( roleName ).stream().map( StringResult::new );
+    public Stream<StringResult> listUsersForRole( @Name( "roleName" ) String roleName )
+            throws IllegalCredentialsException, IOException
+    {
+        EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+        return adminSubject.getUserManager().getUsernamesForRole( roleName ).stream().map( StringResult::new );
     }
 
     private EnterpriseAuthSubject ensureAdminAuthSubject()
