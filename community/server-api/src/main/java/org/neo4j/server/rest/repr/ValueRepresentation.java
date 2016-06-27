@@ -112,7 +112,7 @@ public class ValueRepresentation extends Representation
             @Override
             void putTo( MappingSerializer serializer, String key )
             {
-                serializer.putUri( key, path );
+                serializer.putRelativeUri( key, path );
             }
         };
     }
@@ -136,7 +136,7 @@ public class ValueRepresentation extends Representation
             @Override
             void putTo( MappingSerializer serializer, String key )
             {
-                serializer.putUriTemplate( key, path );
+                serializer.putRelativeUriTemplate( key, path );
             }
         };
     }

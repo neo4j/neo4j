@@ -67,7 +67,7 @@ public class ConfigureBaseUriDocIT extends AbstractRestFunctionalTestBase
             String responseEntityBody = new String( data );
 
             assertTrue( responseEntityBody.contains( "http://foobar.com" ) );
-            assertFalse( responseEntityBody.contains( "localhost" ) );
+            assertFalse( responseEntityBody.contains( "http://localhost" ) );
         }
         finally
         {
@@ -99,7 +99,7 @@ public class ConfigureBaseUriDocIT extends AbstractRestFunctionalTestBase
             String responseEntityBody = new String( data );
 
             assertTrue( responseEntityBody.contains( "https://foobar.com" ) );
-            assertFalse( responseEntityBody.contains( "localhost" ) );
+            assertFalse( responseEntityBody.contains( "https://localhost" ) );
         }
         finally
         {
@@ -131,7 +131,7 @@ public class ConfigureBaseUriDocIT extends AbstractRestFunctionalTestBase
             String responseEntityBody = new String( data );
 
             assertTrue( responseEntityBody.contains( "http://foobar.com:9999" ) );
-            assertFalse( responseEntityBody.contains( "localhost" ) );
+            assertFalse( responseEntityBody.contains( "http://localhost" ) );
         }
         finally
         {
@@ -162,7 +162,7 @@ public class ConfigureBaseUriDocIT extends AbstractRestFunctionalTestBase
             String responseEntityBody = new String( data );
 
             assertTrue( responseEntityBody.contains( "http://foobar.com" ) );
-            assertFalse( responseEntityBody.contains( "localhost" ) );
+            assertFalse( responseEntityBody.contains( "http://localhost" ) );
         }
         finally
         {
@@ -194,7 +194,7 @@ public class ConfigureBaseUriDocIT extends AbstractRestFunctionalTestBase
             String responseEntityBody = new String( data );
 
             assertTrue( responseEntityBody.contains( "https://foobar.com:9999" ) );
-            assertFalse( responseEntityBody.contains( "localhost" ) );
+            assertFalse( responseEntityBody.contains( "https://localhost" ) );
         }
         finally
         {
@@ -224,7 +224,7 @@ public class ConfigureBaseUriDocIT extends AbstractRestFunctionalTestBase
 
             assertFalse( responseEntityBody.contains( "https://foobar.com" ) );
             assertFalse( responseEntityBody.contains( ":0" ) );
-            assertTrue( responseEntityBody.contains( "localhost" ) );
+            assertTrue( responseEntityBody.contains( "http://localhost" ) );
         }
         finally
         {

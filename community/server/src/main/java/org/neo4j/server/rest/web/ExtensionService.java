@@ -294,7 +294,7 @@ public class ExtensionService
             {
                 for ( String extension : extensions.extensionNames() )
                 {
-                    serializer.putUri( extension, "ext/" + extension );
+                    serializer.putRelativeUri( extension, "ext/" + extension );
                 }
             }
         };
