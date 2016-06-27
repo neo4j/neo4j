@@ -40,8 +40,13 @@ public class HighlyAvailableGraphDatabase extends GraphDatabaseFacade
     public HighlyAvailableGraphDatabase( File storeDir, Map<String,String> params,
             GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        new GraphDatabaseFacadeFactory( DatabaseInfo.HA, HighlyAvailableEditionModule::new )
-                .initFacade( storeDir, params, dependencies, this );
+        newHighlyAvailableFacadeFactory().initFacade( storeDir, params, dependencies, this );
+    }
+
+    // used for testing in a different project, please do not remove
+    protected GraphDatabaseFacadeFactory newHighlyAvailableFacadeFactory()
+    {
+        return new GraphDatabaseFacadeFactory( DatabaseInfo.HA, HighlyAvailableEditionModule::new );
     }
 
     public HighAvailabilityMemberState getInstanceState()
