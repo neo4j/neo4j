@@ -59,6 +59,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.coreedge.TestStoreId.assertAllStoresHaveTheSameStoreId;
+import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -143,14 +144,14 @@ public class BackupCoreIT
 
         // when
         File initialStoreDir = cluster.coreServerStoreDirectory( 0 );
-        restoreDatabase( initialStoreDir, backupPath );
+        restoreDatabase( backupPath, initialStoreDir );
         String conversionMetadata = new GenerateClusterSeedCommand().generate( initialStoreDir).getConversionId();
 
         ConvertClassicStoreCommand convertClassicStoreCommand = new ConvertClassicStoreCommand( new ConversionVerifier() );
         for ( int i = 0; i < numberOfCoreServers; i++ )
         {
             File coreStoreDir = cluster.coreServerStoreDirectory( i );
-            restoreDatabase( coreStoreDir, backupPath );
+            restoreDatabase( backupPath, coreStoreDir );
             convertClassicStoreCommand.convert( coreStoreDir, StandardV3_0.NAME , conversionMetadata );
         }
 
@@ -169,12 +170,11 @@ public class BackupCoreIT
         assertNotEquals( storeId, afterRestoreStoreId );
     }
 
-    private void restoreDatabase( File coreStoreDir, File backupPath ) throws IOException
+    private void restoreDatabase( File backupPath, File coreStoreDir ) throws IOException
     {
-        Config config = Config.empty().with(
-                stringMap( DatabaseManagementSystemSettings.database_path.name(), coreStoreDir.getAbsolutePath() ) );
-        new RestoreDatabaseCommand( new DefaultFileSystemAbstraction(),
-                backupPath, config, "graph.db", true ).execute();
+        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        Config config = Config.empty().with( stringMap( database_path.name(), coreStoreDir.getAbsolutePath() ) );
+        new RestoreDatabaseCommand( fs, backupPath, config, "graph.db", true ).execute();
     }
 
     static CoreGraphDatabase createSomeData( Cluster cluster ) throws TimeoutException, InterruptedException
