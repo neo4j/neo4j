@@ -176,6 +176,7 @@ public class DataSourceModule
                 storeDir,
                 config,
                 editionModule.idGeneratorFactory,
+                editionModule.eligibleForIdReuse,
                 logging,
                 platformModule.jobScheduler,
                 tokenNameLookup,
@@ -202,6 +203,7 @@ public class DataSourceModule
                 platformModule.tracers,
                 procedures,
                 editionModule.ioLimiter ) );
+
         dataSourceManager.register( neoStoreDataSource );
 
         life.add( new MonitorGc( config, logging.getInternalLog( MonitorGc.class ) ) );

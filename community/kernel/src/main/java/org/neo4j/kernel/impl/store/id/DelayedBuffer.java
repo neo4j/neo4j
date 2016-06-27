@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.id;
 
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.function.Consumer;
@@ -48,6 +49,12 @@ public class DelayedBuffer<T>
             this.threshold = threshold;
             this.values = values;
         }
+
+        @Override
+        public String toString()
+        {
+            return Arrays.toString( values );
+        }
     }
 
     private final Supplier<T> thresholdSupplier;
@@ -62,6 +69,7 @@ public class DelayedBuffer<T>
     public DelayedBuffer( Supplier<T> thresholdSupplier, Predicate<T> safeThreshold, int chunkSize,
             Consumer<long[]> chunkConsumer )
     {
+        assert chunkSize > 0;
         this.thresholdSupplier = thresholdSupplier;
         this.safeThreshold = safeThreshold;
         this.chunkSize = chunkSize;
@@ -144,5 +152,11 @@ public class DelayedBuffer<T>
         {
             chunkConsumer.accept( chunks.poll().values );
         }
+    }
+
+    public synchronized void clear()
+    {
+        chunks.clear();
+        chunkCursor = 0;
     }
 }

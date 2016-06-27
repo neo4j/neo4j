@@ -28,6 +28,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
+import org.neo4j.kernel.IdReuseEligibility;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
@@ -109,9 +110,16 @@ public class CommunityEditionModule extends EditionModule
 
         ioLimiter = IOLimiter.unlimited();
 
+        eligibleForIdReuse = createEligibleForIdReuseFilter();
+
         registerRecovery( platformModule.databaseInfo, life, dependencies );
 
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
+    }
+
+    protected IdReuseEligibility createEligibleForIdReuseFilter()
+    {
+        return IdReuseEligibility.ALWAYS;
     }
 
     protected ConstraintSemantics createSchemaRuleVerifier()

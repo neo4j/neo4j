@@ -21,12 +21,14 @@ package org.neo4j.kernel.impl.store.id;
 
 import org.junit.Test;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.neo4j.function.Predicates;
 import org.neo4j.helpers.Clock;
 import org.neo4j.test.Race;
 
@@ -36,6 +38,9 @@ import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.function.Suppliers.singleton;
 import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
 
 public class DelayedBufferTest
@@ -178,6 +183,56 @@ public class DelayedBufferTest
         txClosed.set( 7 ); // since 1-7 have now all closed
         buffer.maintenance();
         consumer.assertHaveOnlySeen( 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 );
+    }
+
+    @Test
+    public void shouldClearCurrentChunk() throws Exception
+    {
+        // GIVEN
+        Consumer<long[]> consumer = mock( Consumer.class );
+        DelayedBuffer<Long> buffer = new DelayedBuffer<>( singleton( 0L ), Predicates.<Long>alwaysTrue(),
+                10, consumer );
+        buffer.offer( 0 );
+        buffer.offer( 1 );
+        buffer.offer( 2 );
+
+        // WHEN
+        buffer.clear();
+        buffer.maintenance();
+
+        // THEN
+        verifyNoMoreInteractions( consumer );
+    }
+
+    @Test
+    public void shouldClearPreviousChunks() throws Exception
+    {
+        // GIVEN
+        Consumer<long[]> consumer = mock( Consumer.class );
+        final AtomicBoolean safeThreshold = new AtomicBoolean( false );
+        DelayedBuffer<Long> buffer = new DelayedBuffer<>( singleton( 0L ), new Predicate<Long>()
+        {
+            @Override
+            public boolean test( Long t )
+            {
+                return safeThreshold.get();
+            }
+        }, 10, consumer );
+        // three chunks
+        buffer.offer( 0 );
+        buffer.maintenance();
+        buffer.offer( 1 );
+        buffer.maintenance();
+        buffer.offer( 2 );
+        buffer.maintenance();
+
+        // WHEN
+        safeThreshold.set( true );
+        buffer.clear();
+        buffer.maintenance();
+
+        // THEN
+        verifyNoMoreInteractions( consumer );
     }
 
     private static class MaintenanceThread extends Thread

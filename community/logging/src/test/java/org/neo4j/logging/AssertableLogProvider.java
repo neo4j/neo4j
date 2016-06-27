@@ -19,6 +19,10 @@
  */
 package org.neo4j.logging;
 
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.StringDescription;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,15 +31,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import javax.annotation.Nonnull;
-
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.StringDescription;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-
 import static org.apache.commons.lang3.StringEscapeUtils.escapeJava;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.Matchers.any;
@@ -129,6 +129,11 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
             }
             builder.append( "}" );
             return builder.toString();
+        }
+
+        public String toLogLikeString()
+        {
+            return format( "%s: %s", level, message);
         }
     }
 
@@ -636,6 +641,11 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
         logCalls.clear();
     }
 
+    public String serialize()
+    {
+        return serialize( logCalls.iterator(), LogCall::toLogLikeString );
+    }
+
     private String describe( Iterator<LogMatcher> matchers )
     {
         StringBuilder sb = new StringBuilder();
@@ -649,10 +659,15 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
 
     private String serialize( Iterator<LogCall> events )
     {
+        return serialize( events, LogCall::toString );
+    }
+
+    private String serialize( Iterator<LogCall> events, Function<LogCall,String> serializer )
+    {
         StringBuilder sb = new StringBuilder();
         while ( events.hasNext() )
         {
-            sb.append( events.next().toString() );
+            sb.append( serializer.apply( events.next() ) );
             sb.append( "\n" );
         }
         return sb.toString();

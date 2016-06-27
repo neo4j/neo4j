@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.io.File;
 import java.util.function.Supplier;
 
+import org.neo4j.kernel.IdReuseEligibility;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -44,7 +45,8 @@ public class BufferingIdGeneratorFactoryTest
         // GIVEN
         MockedIdGeneratorFactory actual = new MockedIdGeneratorFactory();
         ControllableSnapshotSupplier boundaries = new ControllableSnapshotSupplier();
-        BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual, boundaries );
+        BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory(
+                actual, boundaries, IdReuseEligibility.ALWAYS );
         IdGenerator idGenerator = bufferingIdGeneratorFactory.open(
                 new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, 0, Integer.MAX_VALUE );
 

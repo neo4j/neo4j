@@ -123,4 +123,10 @@ public interface StorageEngine
 
     @Deprecated
     void loadSchemaCache();
+
+    @Deprecated
+    void clearBufferedIds();
+
+    @Deprecated
+    void maintenance();
 }
