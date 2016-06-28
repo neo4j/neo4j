@@ -55,8 +55,20 @@ class MinFunctionTest extends CypherFunSuite with AggregateTest {
     result should equal(1)
   }
 
-  test("noNumberValuesThrowAnException") {
+  test("mixed numbers and strings throws") {
     intercept[IncomparableValuesException](aggregateOn(1, "wut"))
+  }
+
+  test("aggregating strings work") {
+    val result = aggregateOn("abc", "a", "b", "B", "abc1")
+
+    result should equal("B")
+  }
+
+  test("nulls are simply skipped") {
+    val result = aggregateOn("abc", "a", "b", null, "abc1")
+
+    result should equal("a")
   }
 
   def createAggregator(inner: Expression) = new MinFunction(inner)
