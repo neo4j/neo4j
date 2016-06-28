@@ -59,7 +59,7 @@ case class deMorganRewriter()(implicit monitor: AstRewritingMonitor) extends Rew
 object distributeLawsRewriter {
   // converting from DNF to CNF is exponentially expensive, so we only do it for a small amount of clauses
   // see https://en.wikipedia.org/wiki/Conjunctive_normal_form#Conversion_into_CNF
-  val DNF_CONVERSION_LIMIT = 16
+  val DNF_CONVERSION_LIMIT = 8
 }
 
 case class distributeLawsRewriter()(implicit monitor: AstRewritingMonitor) extends Rewriter {
