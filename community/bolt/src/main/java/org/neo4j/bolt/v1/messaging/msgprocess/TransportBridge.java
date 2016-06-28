@@ -59,8 +59,8 @@ public class TransportBridge extends MessageHandler.Adapter<RuntimeException>
     @Override
     public void handleInitMessage( String clientName, Map<String,Object> authToken ) throws RuntimeException
     {
-        // TODO: make the client transmit the version for now it is hardcoded to BASE_TX_ID to ensure current behaviour
-        long baseDBVersion = TransactionIdStore.BASE_TX_ID;
+        // TODO: make the client transmit the version for now it is hardcoded to -1 to ensure current behaviour
+        long baseDBVersion = -1;
         session.init( clientName, authToken, baseDBVersion, null, initCallback );
     }
 

@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.v1.runtime.integration;
 
-import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -36,11 +35,8 @@ import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.streamContaining;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.success;
 import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
-import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.equalsStream;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class TransactionIT
 {
@@ -53,7 +49,7 @@ public class TransactionIT
         // Given
         RecordingCallback<StatementMetadata,?> responses = new RecordingCallback<>();
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient", emptyMap(), BASE_TX_ID, null, null );
+        session.init( "TestClient", emptyMap(), -1, null, null );
 
         // When
         session.run( "BEGIN", emptyMap(), null, responses );
@@ -77,7 +73,7 @@ public class TransactionIT
         // Given
         RecordingCallback<StatementMetadata,?> responses = new RecordingCallback<>();
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient", emptyMap(), BASE_TX_ID, null, null );
+        session.init( "TestClient", emptyMap(), -1, null, null );
 
         // When
         session.run( "BEGIN", emptyMap(), null, responses );
@@ -102,7 +98,7 @@ public class TransactionIT
         RecordingCallback<StatementMetadata,?> runResponse = new RecordingCallback<>();
         RecordingCallback<RecordStream,Object> pullResponse = new RecordingCallback<>();
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient", emptyMap(), BASE_TX_ID, null, null );
+        session.init( "TestClient", emptyMap(), -1, null, null );
 
         // When
         session.run( "ROLLBACK", emptyMap(), null, runResponse );
@@ -134,7 +130,7 @@ public class TransactionIT
             {
                 try ( Session session = env.newSession( "<write>" ) )
                 {
-                    session.init( "TestClient", emptyMap(), BASE_TX_ID, null, null );
+                    session.init( "TestClient", emptyMap(), -1, null, null );
                     latch.await();
                     session.run( "MATCH (n:A) SET n.prop = 'two'", emptyMap(), null, Session.Callbacks.noop() );
                     session.pullAll( null, Session.Callbacks.noop() );

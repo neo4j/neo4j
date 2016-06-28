@@ -33,7 +33,6 @@ import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.ignored;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.recorded;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.success;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class SessionStateMachineResetTest
 {
@@ -45,7 +44,7 @@ public class SessionStateMachineResetTest
         SessionStateMachine.SPI spi = mock( SessionStateMachine.SPI.class );
         when( spi.authenticate( any() ) ).thenReturn( mock( BasicAuthenticationResult.class ) );
         SessionStateMachine ssm = new SessionStateMachine( spi );
-        ssm.init( "bob/1.0", map(), BASE_TX_ID, null, noOp() );
+        ssm.init( "bob/1.0", map(), -1, null, noOp() );
 
         // When
         ssm.interrupt();
@@ -69,7 +68,7 @@ public class SessionStateMachineResetTest
         SessionStateMachine.SPI spi = mock( SessionStateMachine.SPI.class );
         when( spi.authenticate( any() ) ).thenReturn( mock( BasicAuthenticationResult.class ) );
         SessionStateMachine ssm = new SessionStateMachine( spi );
-        ssm.init( "bob/1.0", map(), BASE_TX_ID, null, noOp() );
+        ssm.init( "bob/1.0", map(), -1, null, noOp() );
 
         // When
         ssm.interrupt();

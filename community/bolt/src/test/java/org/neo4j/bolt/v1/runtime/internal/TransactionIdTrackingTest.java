@@ -36,7 +36,7 @@ public class TransactionIdTrackingTest
     private final TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
 
     @Test( timeout = 500 )
-    public void shouldAlwaysReturnIfTheRequestVersionIsBaseTxId() throws Exception
+    public void shouldAlwaysReturnIfTheRequestVersionIsBaseTxIdOrLess() throws Exception
     {
         // given
         when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( -1L );
@@ -89,7 +89,6 @@ public class TransactionIdTrackingTest
     @Test( timeout = 2000 )
     public void shouldBeKeepCheckingForNewVersionUntilTheTimeoutIsReached() throws Exception
     {
-
         // given
         long version = 5L;
         when( transactionIdStore.getLastClosedTransactionId() )
@@ -101,5 +100,80 @@ public class TransactionIdTrackingTest
         transactionIdTracking.assertUpToDate();
 
         // then all good!
+    }
+
+    @Test( timeout = 500 )
+    public void shouldBeAbleToUpdateTheVersion() throws Exception
+    {
+        // given
+        when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( 42L );
+        long newVersion = 45L;
+        TransactionIdTracking transactionIdTracking =
+                new TransactionIdTracking( () -> transactionIdStore, newVersion, 10, MILLISECONDS );
+        try
+        {
+            transactionIdTracking.assertUpToDate();
+            fail( "should have thrown" );
+        }
+        catch ( TransactionFailureException e )
+        {
+            // expected
+        }
+
+        when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( newVersion );
+
+        // when
+        transactionIdTracking.updateVersion( 46L );
+
+        try
+        {
+            transactionIdTracking.assertUpToDate();
+            fail( "should have thrown" );
+        }
+        catch ( TransactionFailureException e )
+        {
+            // then all good!
+        }
+    }
+
+    @Test( timeout = 500 )
+    public void shouldNotUpdateVersionIfTheInitialVersionIsLessThanZero() throws Exception
+    {
+        // given
+        when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( 42L );
+        TransactionIdTracking transactionIdTracking =
+                new TransactionIdTracking( () -> transactionIdStore, -1, 5, SECONDS );
+        transactionIdTracking.assertUpToDate();
+
+        // when
+        transactionIdTracking.updateVersion( 46L );
+
+        transactionIdTracking.assertUpToDate();
+
+        // then all good!
+    }
+
+    @Test( timeout = 500 )
+    public void shouldUpdateVersionUsingTheTransactionIdStoreWhenTheGivenVersionIsBaseTxIdOrLess() throws Exception
+    {
+        // given
+        when( transactionIdStore.getLastClosedTransactionId() ).thenReturn(
+                42L, 44L, 43L /* this doesn't make any sense in real life but it helps asserting in this scenario */ );
+        TransactionIdTracking transactionIdTracking =
+                new TransactionIdTracking( () -> transactionIdStore, 42L, 10, MILLISECONDS );
+        transactionIdTracking.assertUpToDate();
+
+        // when
+        transactionIdTracking.updateVersion( BASE_TX_ID );
+
+        try
+        {
+            transactionIdTracking.assertUpToDate();
+            fail( "should have thrown" );
+        }
+        catch ( TransactionFailureException e )
+        {
+           // then all good!
+        }
     }
 }

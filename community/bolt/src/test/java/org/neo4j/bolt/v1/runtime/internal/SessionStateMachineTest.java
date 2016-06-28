@@ -23,7 +23,6 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
@@ -43,7 +42,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.v1.runtime.Session.Callback.noOp;
 import static org.neo4j.bolt.v1.runtime.internal.SessionStateMachine.State.ERROR;
 import static org.neo4j.bolt.v1.runtime.internal.SessionStateMachine.State.IDLE;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class SessionStateMachineTest
 {
@@ -66,7 +64,7 @@ public class SessionStateMachineTest
         when( spi.run( any( SessionStateMachine.class ), anyString(), anyMapOf( String.class, Object.class) ) )
                 .thenThrow( new RollbackInducingKernelException() );
 
-        machine.init( "FunClient/1.2", emptyMap(), BASE_TX_ID, null, noOp()  );
+        machine.init( "FunClient/1.2", emptyMap(), -1, null, noOp()  );
         machine.beginImplicitTransaction();
 
         // When
@@ -88,7 +86,7 @@ public class SessionStateMachineTest
     public void shouldStopRunningTxOnHalt() throws Throwable
     {
         // When
-        machine.init( "FunClient/1.2",  emptyMap(), BASE_TX_ID, null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, null, Session.Callback.NO_OP );
         machine.beginTransaction();
         machine.close();
 
@@ -103,7 +101,7 @@ public class SessionStateMachineTest
     public void shouldPublishClientName() throws Throwable
     {
         // When
-        machine.init( "FunClient/1.2",  emptyMap(), BASE_TX_ID, null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, null, Session.Callback.NO_OP );
 
         // Then
         verify( spi ).udcRegisterClient( "FunClient/1.2" );
@@ -113,7 +111,7 @@ public class SessionStateMachineTest
     public void shouldResetToIdleOnIdle() throws Throwable
     {
         // Given
-        machine.init( "FunClient/1.2",  emptyMap(), BASE_TX_ID, null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, null, Session.Callback.NO_OP );
 
         // When
         TestCallback<Void> callback = new TestCallback<>();
@@ -128,7 +126,7 @@ public class SessionStateMachineTest
     public void shouldResetToIdleOnInTransaction() throws Throwable
     {
         // Given
-        machine.init( "FunClient/1.2",  emptyMap(), BASE_TX_ID, null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, null, Session.Callback.NO_OP );
         machine.beginTransaction();
 
         // When
@@ -146,7 +144,7 @@ public class SessionStateMachineTest
         // Given
         when( spi.run( any( SessionStateMachine.class ), anyString(), anyMapOf( String.class, Object.class) ) )
                 .thenReturn( mock( RecordStream.class ) );
-        machine.init( "FunClient/1.2",  emptyMap(), BASE_TX_ID, null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, null, Session.Callback.NO_OP );
         machine.beginTransaction();
         machine.run( "RETURN 1", emptyMap(), null, Session.Callback.NO_OP );
 
@@ -165,7 +163,7 @@ public class SessionStateMachineTest
         // Given
         when( spi.run( any( SessionStateMachine.class ), anyString(), anyMapOf( String.class, Object.class) ) )
                 .thenReturn( mock( RecordStream.class ) );
-        machine.init( "FunClient/1.2",  emptyMap(), BASE_TX_ID, null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, null, Session.Callback.NO_OP );
         machine.run( "RETURN 1", emptyMap(), null, Session.Callback.NO_OP );
 
         // When
@@ -184,7 +182,7 @@ public class SessionStateMachineTest
         TestCallback<Boolean> callback = new TestCallback<>();
 
         // When
-        machine.init( "FunClient/1.2",  emptyMap(), BASE_TX_ID, null, callback );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, null, callback );
 
         // Then
         assertThat( callback.startedCount, equalTo( 1 ) );
@@ -196,7 +194,7 @@ public class SessionStateMachineTest
         // Given
         when( spi.run( any( SessionStateMachine.class ), anyString(), anyMapOf( String.class, Object.class) ) )
                 .thenThrow( new RollbackInducingKernelException() );
-        machine.init( "FunClient/1.2",  emptyMap(), BASE_TX_ID, null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, null, Session.Callback.NO_OP );
         machine.run( "RETURN 1", emptyMap(), null, Session.Callback.NO_OP );
 
         // When
@@ -214,7 +212,7 @@ public class SessionStateMachineTest
         // Given
         when( spi.run( any( SessionStateMachine.class ), anyString(), anyMapOf( String.class, Object.class) ) )
                 .thenThrow( new RollbackInducingKernelException() );
-        machine.init( "FunClient/1.2",  emptyMap(), BASE_TX_ID, null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, null, Session.Callback.NO_OP );
 
         // When
         machine.run( "ROLLBACK", emptyMap(), null, Session.Callback.NO_OP );
@@ -229,7 +227,7 @@ public class SessionStateMachineTest
         // Given
         when( spi.run( any( SessionStateMachine.class ), anyString(), anyMapOf( String.class, Object.class) ) )
                 .thenThrow( new RollbackInducingKernelException() );
-        machine.init( "FunClient/1.2",  emptyMap(), BASE_TX_ID, null, noOp() );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, null, noOp() );
 
         // When
         machine.run( "Statement that fails", emptyMap(), null, noOp() );
@@ -245,7 +243,7 @@ public class SessionStateMachineTest
         // Given all statements will fail
         when( spi.run( any( SessionStateMachine.class ), anyString(), anyMapOf( String.class, Object.class) ) )
                 .thenThrow( new RollbackInducingKernelException() );
-        machine.init( "FunClient/1.2",  emptyMap(), BASE_TX_ID, null, noOp() );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, null, noOp() );
 
         // When
         machine.beginTransaction();

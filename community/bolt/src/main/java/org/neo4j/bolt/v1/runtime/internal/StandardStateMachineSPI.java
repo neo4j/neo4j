@@ -100,7 +100,9 @@ class StandardStateMachineSPI implements SessionStateMachine.SPI
     {
         versionTracking.assertUpToDate();
         db.beginTransaction( type, mode );
-        return txBridge.getKernelTransactionBoundToThisThread( false );
+        KernelTransaction kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( false );
+        kernelTransaction.registerCloseListener( versionTracking::updateVersion );
+        return kernelTransaction;
     }
 
     @Override

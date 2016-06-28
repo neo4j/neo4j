@@ -726,6 +726,8 @@ public class SessionStateMachine implements Session, SessionState
         interface VersionTracking
         {
             void assertUpToDate() throws TransactionFailureException;
+
+            void updateVersion( long version );
         }
     }
 

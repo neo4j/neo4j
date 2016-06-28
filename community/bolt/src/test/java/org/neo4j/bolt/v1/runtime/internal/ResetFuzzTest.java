@@ -60,7 +60,6 @@ import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.recorded;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.success;
 import static org.neo4j.bolt.v1.runtime.internal.SessionStateMachine.State.IDLE;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class ResetFuzzTest
 {
@@ -96,7 +95,7 @@ public class ResetFuzzTest
         // given
         life.start();
         Session session = sessions.newSession( "<test>" );
-        session.init( "Test/0.0.0", map(), BASE_TX_ID, null, Session.Callback.NO_OP );
+        session.init( "Test/0.0.0", map(), -1, null, Session.Callback.NO_OP );
 
         TransportBridge bridge = new TransportBridge(
                 NullLog.getInstance(), session, new MessageHandler.Adapter<>(), ( () -> {} ) );
@@ -235,7 +234,18 @@ public class ResetFuzzTest
         @Override
         public VersionTracking versionTracking( long startingVersion )
         {
-            return () -> {};
+            return new VersionTracking()
+            {
+                @Override
+                public void assertUpToDate() throws TransactionFailureException
+                {
+                }
+
+                @Override
+                public void updateVersion( long version )
+                {
+                }
+            };
         }
     }
 

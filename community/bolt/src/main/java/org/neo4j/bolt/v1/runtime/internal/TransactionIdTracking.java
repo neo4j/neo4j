@@ -26,12 +26,15 @@ import org.neo4j.function.Predicates;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+
 class TransactionIdTracking implements SessionStateMachine.SPI.VersionTracking
 {
     private final Supplier<TransactionIdStore> transactionIdStore;
-    private final long txId;
     private final int timeout;
     private final TimeUnit timeoutUnit;
+
+    private long txId;
 
     TransactionIdTracking( Supplier<TransactionIdStore> transactionIdStore, long version, int timeout, TimeUnit unit )
     {
@@ -44,7 +47,7 @@ class TransactionIdTracking implements SessionStateMachine.SPI.VersionTracking
     @Override
     public void assertUpToDate() throws TransactionFailureException
     {
-        if ( txId <= TransactionIdStore.BASE_TX_ID )
+        if ( txId <= BASE_TX_ID )
         {
             return;
         }
@@ -61,4 +64,14 @@ class TransactionIdTracking implements SessionStateMachine.SPI.VersionTracking
         }
     }
 
+    @Override
+    public void updateVersion( long version )
+    {
+        if ( txId < 0 )
+        {
+            return;
+        }
+
+        this.txId = version <= BASE_TX_ID ? transactionIdStore.get().getLastClosedTransactionId() : version;
+    }
 }
