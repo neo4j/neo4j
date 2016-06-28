@@ -23,10 +23,10 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.logging.Log;
 import org.neo4j.bolt.v1.messaging.MessageHandler;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.internal.Neo4jError;
+import org.neo4j.logging.Log;
 
 public class MessageProcessingCallback<T> extends Session.Callback.Adapter<T,Void>
 {
@@ -34,7 +34,7 @@ public class MessageProcessingCallback<T> extends Session.Callback.Adapter<T,Voi
     public static void publishError( MessageHandler<IOException> out, Neo4jError error )
             throws IOException
     {
-        if ( error.status().code().classification().refersToLog() )
+        if ( !error.status().code().classification().shouldRespondToClient() )
         {
             // If not intended for client, we only return an error reference. This must
             // be cross-referenced with the log files for full error detail.

@@ -60,6 +60,6 @@ public class Neo4jErrorTest
         Neo4jError error = Neo4jError.from( new LoadExternalResourceException( "foo", null ) );
 
         // Then
-        assertThat( error.status().code().classification().refersToLog(), is( false ) );
+        assertThat( error.status().code().classification().shouldLog(), is( false ) );
     }
 }
