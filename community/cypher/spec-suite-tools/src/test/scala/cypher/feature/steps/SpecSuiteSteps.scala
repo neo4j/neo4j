@@ -213,8 +213,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   }
 
   private def ifEnabled(f: => Unit): Unit = {
-    val blacklist = BlacklistPlugin.blacklist().map(_.toLowerCase)
-    if (!blacklist(currentScenarioName) && (requiredScenarioName.isEmpty || currentScenarioName.contains(requiredScenarioName))) {
+    if (!BlacklistPlugin.blacklisted(currentScenarioName) && (requiredScenarioName.isEmpty || currentScenarioName.contains(requiredScenarioName))) {
       f
     }
   }

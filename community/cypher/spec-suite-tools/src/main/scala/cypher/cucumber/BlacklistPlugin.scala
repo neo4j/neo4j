@@ -30,7 +30,29 @@ import scala.io.Source
 object BlacklistPlugin {
   private var _blacklist: Set[String] = null
 
-  def blacklist(): Set[String] = {
+  def blacklisted(name: String) = blacklist().contains(normalizedScenarioName(name))
+
+  def normalizedScenarioName(name: String) = {
+    val builder = new StringBuilder
+
+    var inBlanks = false
+    name.trim.foreach { (ch) =>
+      if (ch == ' ') {
+        if (!inBlanks) {
+          builder += ' '
+          inBlanks = true
+        }
+      } else {
+        builder += ch.toLower
+        inBlanks = false
+      }
+    }
+
+    val result = builder.toString()
+    result
+  }
+
+  private def blacklist(): Set[String] = {
     assert(_blacklist != null)
     _blacklist
   }
@@ -43,7 +65,7 @@ class BlacklistPlugin(blacklistFile: URI) extends CucumberAdapter {
     if (url == null) throw new FileNotFoundException(s"blacklist file not found at: $blacklistFile")
     val itr = Source.fromFile(url.getPath, StandardCharsets.UTF_8.name()).getLines()
     BlacklistPlugin._blacklist = itr.foldLeft(Set.empty[String]) {
-      case (set, scenarioName) => set + scenarioName
+      case (set, scenarioName) => set + BlacklistPlugin.normalizedScenarioName(scenarioName)
     }
   }
 }
