@@ -21,23 +21,32 @@ package cypher.feature.steps
 
 import java.util
 
-import cucumber.api.DataTable
+import cucumber.api.{PendingException, DataTable}
 import cypher.SpecSuiteResources
 import cypher.cucumber.BlacklistPlugin
 import cypher.cucumber.db.DatabaseConfigProvider._
 import cypher.cucumber.db.{GraphArchive, GraphArchiveImporter, GraphArchiveLibrary, GraphFileRepository}
 import cypher.feature.parser.matchers.ResultWrapper
-import cypher.feature.parser.{MatcherMatchingSupport, constructResultMatcher, parseParameters, statisticsParser}
+import cypher.feature.parser._
+import org.neo4j.collection.RawIterator
+import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
 import org.neo4j.graphdb.factory.{GraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.graphdb.{GraphDatabaseService, Result, Transaction}
+import org.neo4j.kernel.api.KernelAPI
+import org.neo4j.kernel.api.exceptions.ProcedureException
+import org.neo4j.kernel.api.proc.CallableProcedure.{Context, BasicProcedure}
+import org.neo4j.kernel.api.proc.Neo4jTypes
+import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.opencypher.tools.tck.TCKCucumberTemplate
 import org.opencypher.tools.tck.constants.TCKStepDefinitions._
 import org.scalatest.{FunSuiteLike, Matchers}
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.reflect.io.Path
 import scala.util.{Failure, Success, Try}
+import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
 trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate with MatcherMatchingSupport {
 
@@ -50,7 +59,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
   // Stateful
 
-  var graph: GraphDatabaseService = null
+  var graph: GraphDatabaseAPI = null
   var result: Try[Result] = null
   var tx: Transaction = null
   var params: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
@@ -104,6 +113,60 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     ifEnabled {
       params = parseParameters(values)
     }
+  }
+
+  private val INSTALLED_PROCEDURE = """^there exists a procedure (.+):$"""
+  And(INSTALLED_PROCEDURE){ (signatureText: String, values: DataTable) =>
+    ifEnabled {
+      val parsedSignature = ProcedureSignature.parse(signatureText)
+      val signatureFields = parsedSignature.fields
+      val (tableColumns, tableValues) = parseValueTable(values)
+      if (tableColumns != signatureFields)
+        throw new IllegalArgumentException(
+          s"Data table columns must be the same as all signature fields (inputs + outputs) in order (Actual: $tableColumns Expected: $signatureFields)"
+        )
+      val kernelSignature = asKernelSignature(parsedSignature)
+      val kernelProcedure = new BasicProcedure(kernelSignature) {
+        override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
+          val scalaIterator = tableValues
+            .filter { row => input.indices.forall { index => row(index) == input(index) } }
+            .map { row => row.drop(input.length).clone() }
+            .toIterator
+
+          val rawIterator = RawIterator.wrap[Array[AnyRef], ProcedureException](scalaIterator.asJava)
+          rawIterator
+        }
+      }
+      kernelAPI.registerProcedure(kernelProcedure)
+    }
+  }
+
+  private def kernelAPI = graph.getDependencyResolver.resolveDependency(classOf[KernelAPI])
+
+  private def asKernelSignature(parsedSignature: ProcedureSignature): org.neo4j.kernel.api.proc.ProcedureSignature = {
+    val builder = org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature(parsedSignature.namespace.toArray, parsedSignature.name)
+    builder.mode(org.neo4j.kernel.api.proc.ProcedureSignature.Mode.READ_ONLY)
+    parsedSignature.inputs.foreach { case (name, tpe) => builder.in(name, asKernelType(tpe)) }
+    parsedSignature.outputs match {
+      case Some(fields) =>
+        fields.foreach { case (name, tpe) => builder.out(name, asKernelType(tpe)) }
+      case None =>
+        builder.out(org.neo4j.kernel.api.proc.ProcedureSignature.VOID)
+    }
+    builder.build()
+  }
+
+  private def asKernelType(tpe: CypherType):  Neo4jTypes.AnyType= tpe match {
+    case CTMap => Neo4jTypes.NTMap
+    case CTNode => Neo4jTypes.NTNode
+    case CTRelationship => Neo4jTypes.NTRelationship
+    case CTPath => Neo4jTypes.NTPath
+    case ListType(innerTpe) => Neo4jTypes.NTList(asKernelType(innerTpe))
+    case CTString => Neo4jTypes.NTString
+    case CTBoolean => Neo4jTypes.NTBoolean
+    case CTNumber => Neo4jTypes.NTNumber
+    case CTInteger => Neo4jTypes.NTInteger
+    case CTFloat => Neo4jTypes.NTFloat
   }
 
   When(EXECUTING_QUERY) { (query: String) =>
@@ -208,7 +271,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     if (graph == null || !graph.isAvailable(1L)) {
       val builder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
       builder.setConfig(currentDatabaseConfig("8M").asJava)
-      graph = builder.newGraphDatabase()
+      graph = builder.newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
     }
 
   private def lendForReadOnlyUse(recipeName: String) = {
@@ -220,7 +283,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     val path = graphArchiveLibrary.lendForReadOnlyUse(archiveUse)(graphImporter)
     val builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(path.jfile)
     builder.setConfig(archiveUse.dbConfig.asJava)
-    graph = builder.newGraphDatabase()
+    graph = builder.newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
   }
 
   private def MB(v: Int) = v * 1024 * 1024

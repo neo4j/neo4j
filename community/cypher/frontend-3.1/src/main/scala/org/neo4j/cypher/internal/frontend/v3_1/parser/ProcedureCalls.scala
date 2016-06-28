@@ -30,7 +30,7 @@ trait ProcedureCalls {
     group(keyword("CALL") ~~ ProcedureNamespace ~ ProcedureName ~ ProcedureArguments ~~ ProcedureResults) ~~>> (ast.UnresolvedCall(_, _, _, _))
   }
 
-  private def ProcedureNamespace: Rule1[ast.ProcedureNamespace] = rule("namespace of a procedure") {
+  protected def ProcedureNamespace: Rule1[ast.ProcedureNamespace] = rule("namespace of a procedure") {
     zeroOrMore(SymbolicNameString ~ ".") ~~>> (ast.ProcedureNamespace(_))
   }
 

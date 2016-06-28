@@ -1,1 +1,3 @@
 Find a combination of a shortest path and a pattern expression
+Getting all labels
+Direct call to procedure without arguments

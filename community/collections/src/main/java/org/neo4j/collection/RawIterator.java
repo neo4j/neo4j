@@ -85,4 +85,25 @@ public interface RawIterator<T,EXCEPTION extends Exception>
             }
         };
     }
+
+    /**
+     * Create a raw iterator from a regular iterator, assuming no exceptions are being thrown
+     */
+    static <T, EX extends Exception> RawIterator<T, EX> wrap( final Iterator<T> iterator )
+    {
+        return new RawIterator<T,EX>()
+        {
+            @Override
+            public boolean hasNext() throws EX
+            {
+                return iterator.hasNext();
+            }
+
+            @Override
+            public T next() throws EX
+            {
+                return iterator.next();
+            }
+        };
+    }
 }
