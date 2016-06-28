@@ -245,12 +245,10 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         long chunkLength =  newLatestAppliedTime - transactionQueue.first().getCommitEntry().getTimeWritten();
 
         // We stop new transactions from starting to avoid problem 1
-        boolean feezeActiveTx = false;
         if ( chunkLength > idReuseSafeZoneTime )
         {
             // Problem 2
-            kernelTransactions.freezeActiveTx();
-            feezeActiveTx = true;
+            kernelTransactions.blockNewTransactions();
         }
         try
         {
@@ -325,11 +323,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         }
         finally
         {
-            if ( feezeActiveTx )
-            {
-                feezeActiveTx = false;
-                kernelTransactions.unfreezeActiveTx();
-            }
+            kernelTransactions.unblockNewTransactions();
         }
     }
 

@@ -245,6 +245,14 @@ public class KernelTransactionsTest
         race.go();
     }
 
+    @Test
+    public void failsToCreateNewInstanceWhenCurrentThreadBlockedNewTxs() throws Exception
+    {
+        KernelTransactions kernelTransactions = null;
+        kernelTransactions.blockNewTransactions();
+        kernelTransactions.newInstance().close();
+    }
+
     private static KernelTransactions newKernelTransactions()
     {
         return newKernelTransactions( mock( TransactionCommitProcess.class ), newMockContextFactory() );

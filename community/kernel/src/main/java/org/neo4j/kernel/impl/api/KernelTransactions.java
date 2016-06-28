@@ -23,8 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.MarshlandPool;
@@ -103,7 +102,7 @@ public class KernelTransactions extends LifecycleAdapter
     private final LifeSupport dataSourceLife;
     private final ProcedureCache procedureCache;
     private final Tracers tracers;
-    private final Lock activeTransactionsLock = new ReentrantLock();
+    private final ReentrantReadWriteLock newTransactionsLock = new ReentrantReadWriteLock();
 
     // End Tx Dependencies
 
@@ -120,7 +119,6 @@ public class KernelTransactions extends LifecycleAdapter
      */
     private final Set<KernelTransactionImplementation> allTransactions = newSetFromMap(
             new ConcurrentHashMap<KernelTransactionImplementation,Boolean>() );
-    private boolean freezeActiveTransactions;
 
     public KernelTransactions( NeoStoreTransactionContextFactory neoStoreTransactionContextFactory,
                                NeoStores neoStores, Locks locks, IntegrityValidator integrityValidator,
@@ -195,7 +193,8 @@ public class KernelTransactions extends LifecycleAdapter
     @Override
     public KernelTransaction newInstance()
     {
-        activeTransactionsLock.lock();
+        assert !newTransactionsLock.isWriteLockedByCurrentThread();
+        newTransactionsLock.readLock().lock();
         try
         {
             assertDatabaseIsRunning();
@@ -205,7 +204,7 @@ public class KernelTransactions extends LifecycleAdapter
         }
         finally
         {
-            activeTransactionsLock.unlock();
+            newTransactionsLock.readLock().unlock();
         }
     }
 
@@ -286,15 +285,27 @@ public class KernelTransactions extends LifecycleAdapter
         return new KernelTransactionsSnapshot( allTransactions, Clock.SYSTEM_CLOCK.currentTimeMillis() );
     }
 
-    public Lock freezeActiveTx()
+    /**
+     * Do not allow new transactions to start until {@link #unblockNewTransactions()} is called. Current thread have
+     * responsibility of doing so.
+     * <p>
+     * Blocking call.
+     */
+    public void blockNewTransactions()
     {
-        activeTransactionsLock.lock();
-        return activeTransactionsLock;
+        newTransactionsLock.writeLock().lock();
     }
 
-    public Lock unfreezeActiveTx()
+    /**
+     * Allow new transactions to be started again if current thread is the one who called {@link #blockNewTransactions()}.
+     * If current thread is not the one that called {@link #blockNewTransactions()} or it has not been called at all
+     * then NO_OP.
+     */
+    public void unblockNewTransactions()
     {
-        activeTransactionsLock.unlock();
-        return activeTransactionsLock;
+        if ( newTransactionsLock.isWriteLockedByCurrentThread() )
+        {
+            newTransactionsLock.writeLock().unlock();
+        }
     }
 }

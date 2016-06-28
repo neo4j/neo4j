@@ -202,7 +202,7 @@ public class TransactionCommittingResponseUnpackerTest
                 deps.transactionRepresentationStoreApplier();
         InOrder inOrder = inOrder( kernelTransactions, applier );
         inOrder.verify( applier, times( 1 ) ).closeBatch();
-        inOrder.verify( kernelTransactions, times( 1 ) ).unfreezeActiveTx();
+        inOrder.verify( kernelTransactions, times( 1 ) ).unblockNewTransactions();
     }
 
     /*
