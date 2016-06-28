@@ -25,20 +25,20 @@ import java.util.Objects;
 
 import org.neo4j.kernel.impl.store.StoreId;
 
-public class SourceMetadata
+public class ClusterSeed
 {
     private final StoreId before;
     private final StoreId after;
     private final long lastTxId;
 
-    public SourceMetadata( StoreId before, StoreId after, long lastTxId )
+    public ClusterSeed( StoreId before, StoreId after, long lastTxId )
     {
         this.before = before;
         this.after = after;
         this.lastTxId = lastTxId;
     }
 
-    public static SourceMetadata create( String rawConversionId )
+    public static ClusterSeed create( String rawConversionId )
     {
         byte[] bytes = Base64.getDecoder().decode( rawConversionId );
         ByteBuffer buffer = ByteBuffer.wrap( bytes );
@@ -47,7 +47,7 @@ public class SourceMetadata
         StoreId before = readStoreId( buffer );
         StoreId after = readStoreId( buffer );
 
-        return new SourceMetadata( before, after, txId );
+        return new ClusterSeed( before, after, txId );
     }
 
     private static StoreId readStoreId( ByteBuffer buffer )
@@ -104,7 +104,7 @@ public class SourceMetadata
         {
             return false;
         }
-        SourceMetadata that = (SourceMetadata) o;
+        ClusterSeed that = (ClusterSeed) o;
         return lastTxId == that.lastTxId &&
                 storeIdEquals( before, that.before ) &&
                 storeIdEquals( after, that.after );
