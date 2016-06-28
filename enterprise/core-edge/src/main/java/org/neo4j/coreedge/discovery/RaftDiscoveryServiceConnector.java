@@ -56,12 +56,6 @@ public class RaftDiscoveryServiceConnector extends LifecycleAdapter implements C
     }
 
     @Override
-    public void stop()
-    {
-        discoveryService.removeMembershipListener( this );
-    }
-
-    @Override
     public void onTopologyChange()
     {
         raftInstance.setTargetMembershipSet( discoveryService.currentTopology().coreMembers() );

@@ -23,31 +23,38 @@ import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.neo4j.logging.Log;
 
-public class MembershipListenerAdapter implements MembershipListener
+class MembershipListenerAdapter implements MembershipListener
 {
-    private final CoreTopologyService.Listener listener;
+    private final List<CoreTopologyService.Listener> listeners = new ArrayList<>();
     private final Log log;
 
-    MembershipListenerAdapter( CoreTopologyService.Listener listener, Log log )
+    MembershipListenerAdapter( Log log )
     {
-        this.listener = listener;
         this.log = log;
+    }
+
+    void addMembershipListener( CoreTopologyService.Listener listener )
+    {
+        listeners.add( listener );
     }
 
     @Override
     public void memberAdded( MembershipEvent membershipEvent )
     {
         log.info( "Member added %s", membershipEvent );
-        listener.onTopologyChange();
+        listeners.forEach( CoreTopologyService.Listener::onTopologyChange );
     }
 
     @Override
     public void memberRemoved( MembershipEvent membershipEvent )
     {
         log.info( "Member removed %s", membershipEvent );
-        listener.onTopologyChange();
+        listeners.forEach( CoreTopologyService.Listener::onTopologyChange );
     }
 
     @Override

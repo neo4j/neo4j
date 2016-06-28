@@ -23,8 +23,6 @@ public interface CoreTopologyService extends TopologyService
 {
     void addMembershipListener( Listener listener );
 
-    void removeMembershipListener( Listener listener );
-
     interface Listener
     {
         void onTopologyChange();
