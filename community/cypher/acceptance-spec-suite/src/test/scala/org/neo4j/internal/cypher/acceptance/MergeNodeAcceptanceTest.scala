@@ -120,33 +120,6 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     assertStats(result, nodesCreated = 0)
   }
 
-  // TCK'd
-  test("merge node with prop and label and unique index") {
-    // Given
-    graph.createConstraint("Label", "prop")
-    createLabeledNode(Map("prop" -> 42), "Label")
-
-    // When
-    val result = updateWithBothPlannersAndCompatibilityMode("merge (a:Label {prop: 42}) return a.prop")
-    // Then
-    result.toList should equal(List(Map("a.prop" -> 42)))
-    assertStats(result, nodesCreated = 0)
-  }
-
-  // TCK'd
-  test("merge node with prop and label and unique index when no match") {
-    // Given
-    graph.createConstraint("Label", "prop")
-    createLabeledNode(Map("prop" -> 42), "Label")
-
-    // When
-    val result = updateWithBothPlannersAndCompatibilityMode("merge (a:Label {prop: 11}) return a.prop")
-
-    // Then
-    result.toList should equal(List(Map("a.prop" -> 11)))
-    assertStats(result, nodesCreated = 1, propertiesWritten = 1, labelsAdded = 1)
-  }
-
   // TODO: Reflect something like this in the TCK
   test("multiple merges after each other") {
     1 to 100 foreach { prop =>
@@ -209,255 +182,6 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
   }
 
   // TCK'd
-  test("merge using unique constraint should update existing node") {
-    // given
-    graph.createConstraint("Person", "id")
-    val node = createLabeledNode("Person")
-    graph.inTx {
-      node.setProperty("id", 23)
-      node.setProperty("country", "Sweden")
-    }
-
-    // when
-    val result =
-      executeScalarWithAllPlannersAndCompatibilityMode[Node]("merge (a:Person {id: 23, country: 'Sweden'}) on match set a.name='Emil' return a")
-
-    // then
-    countNodes() should equal(1)
-    graph.inTx {
-      result.getId should equal(node.getId)
-      result.getProperty("country") should equal("Sweden")
-      result.getProperty("name") should equal("Emil")
-    }
-  }
-
-  // TCK'd
-  test("merge using unique constraint should create missing node") {
-    // given
-    graph.createConstraint("Person", "id")
-
-    // when
-    val result =
-      executeScalarWithAllPlannersAndCompatibilityMode[Node]("merge (a:Person {id: 23, country: 'Sweden'}) on create set a.name='Emil' return a")
-
-    // then
-    countNodes() should equal(1)
-    graph.inTx {
-      result.getProperty("id") should equal(23)
-      result.getProperty("country") should equal("Sweden")
-      result.getProperty("name") should equal("Emil")
-    }
-  }
-
-  // TCK'd
-  test("should match on merge using multiple unique indexes if only found single node for both indexes") {
-    // given
-    graph.createConstraint("Person", "id")
-    graph.createConstraint("Person", "mail")
-
-    createLabeledNode(Map("id" -> 23, "mail" -> "emil@neo.com"), "Person")
-
-    // when
-    val result =
-      executeScalarWithAllPlannersAndCompatibilityMode[Node]("merge (a:Person {id: 23, mail: 'emil@neo.com'}) on match set a.country='Sweden' return a")
-
-    // then
-    countNodes() should equal(1)
-    graph.inTx {
-      result.getProperty("id") should equal(23)
-      result.getProperty("mail") should equal("emil@neo.com")
-      result.getProperty("country") should equal("Sweden")
-    }
-  }
-
-  // TCK'd
-  test("should match on merge using multiple unique indexes and labels if only found single node for both indexes") {
-    // given
-    graph.createConstraint("Person", "id")
-    graph.createConstraint("User", "mail")
-
-    createLabeledNode(Map("id" -> 23, "mail" -> "emil@neo.com"), "Person", "User")
-
-    // when
-    val result =
-      executeScalarWithAllPlannersAndCompatibilityMode[Node]("merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on match set a.country='Sweden' return a")
-
-    // then
-    countNodes() should equal(1)
-    graph.inTx {
-      result.getProperty("id") should equal(23)
-      result.getProperty("mail") should equal("emil@neo.com")
-      result.getProperty("country") should equal("Sweden")
-    }
-  }
-
-  // TCK'd
-  test("should match on merge using multiple unique indexes using same key if only found single node for both indexes") {
-    // given
-    graph.createConstraint("Person", "id")
-    graph.createConstraint("User", "id")
-
-    createLabeledNode(Map("id" -> 23), "Person", "User")
-
-    // when
-    val result =
-      executeScalarWithAllPlannersAndCompatibilityMode[Node]("merge (a:Person:User {id: 23}) on match set a.country='Sweden' return a")
-
-    // then
-    countNodes() should equal(1)
-    graph.inTx {
-      result.getProperty("id") should equal(23)
-      result.getProperty("country") should equal("Sweden")
-    }
-  }
-
-  // TCK'd
-  test("should fail on merge using multiple unique indexes using same key if found different nodes") {
-    // given
-    graph.createConstraint("Person", "id")
-    graph.createConstraint("User", "id")
-
-    createLabeledNode(Map("id" -> 23), "Person")
-    createLabeledNode(Map("id" -> 23), "User")
-
-    // when + then
-    a [MergeConstraintConflictException] should be thrownBy {
-      updateWithBothPlannersAndCompatibilityMode("merge (a:Person:User {id: 23}) return a.id")
-    }
-    countNodes() should equal(2)
-  }
-
-  // TCK'd
-  test("should create on merge using multiple unique indexes if found no nodes") {
-    // given
-    graph.createConstraint("Person", "id")
-    graph.createConstraint("Person", "mail")
-
-    // when
-    val result =
-      executeScalarWithAllPlannersAndCompatibilityMode[Node]("merge (a:Person {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a")
-
-    // then
-    countNodes() should equal(1)
-    labels(result) should equal(Set("Person"))
-    graph.inTx {
-      result.getProperty("id") should equal(23)
-      result.getProperty("country") should equal("Sweden")
-      result.getProperty("mail") should equal("emil@neo.com")
-    }
-  }
-
-  // TCK'd
-  test("should create on merge using multiple unique indexes and labels if found no nodes") {
-    // given
-    graph.createConstraint("Person", "id")
-    graph.createConstraint("User", "mail")
-
-    // when
-    val result =
-      executeScalarWithAllPlannersAndCompatibilityMode[Node]("merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a")
-
-    // then
-    countNodes() should equal(1)
-    labels(result) should equal(Set("Person", "User"))
-    graph.inTx {
-      result.getProperty("id") should equal(23)
-      result.getProperty("country") should equal("Sweden")
-      result.getProperty("mail") should equal("emil@neo.com")
-    }
-  }
-
-  // TCK'd
-  test("should fail on merge using multiple unique indexes if found different nodes") {
-    // given
-    graph.createConstraint("Person", "id")
-    graph.createConstraint("Person", "mail")
-
-    createLabeledNode(Map("id" -> 23), "Person")
-    createLabeledNode(Map("mail" -> "emil@neo.com"), "Person")
-
-    val error = intercept[MergeConstraintConflictException](updateWithBothPlannersAndCompatibilityMode("merge (a:Person {id: 23, mail: 'emil@neo.com'}) return a"))
-
-    error.getMessage should include("Merge did not find a matching node and can not create a new node due to conflicts with existing unique nodes. The conflicting constraints are on: :Person.id and :Person.mail")
-
-    countNodes() should equal(2)
-  }
-
-//   TCK'd
-  test("should fail on merge using multiple unique indexes if it found a node matching single property only") {
-    // given
-    graph.createConstraint("Person", "id")
-    graph.createConstraint("Person", "mail")
-
-    createLabeledNode(Map("id" -> 23), "Person")
-
-    // when + then
-    val error = intercept[MergeConstraintConflictException](updateWithBothPlannersAndCompatibilityMode("merge (a:Person {id: 23, mail: 'emil@neo.com'}) return a"))
-
-    error.getMessage should include("Merge did not find a matching node and can not create a new node due to conflicts with both existing and missing unique nodes. The conflicting constraints are on: :Person.id and :Person.mail")
-
-    countNodes() should equal(1)
-  }
-
-  // TCK'd
-  test("should fail on merge using multiple unique indexes if it found a node matching single property only flipped order") {
-    // given
-    graph.createConstraint("Person", "id")
-    graph.createConstraint("Person", "mail")
-
-    createLabeledNode(Map("mail" -> "emil@neo.com"), "Person")
-
-    // Rule planner in 2.3 has a bug that makes it throw an incorrect exception for this case, so no compatibilityMode here
-    // when + then
-    val error = intercept[MergeConstraintConflictException](updateWithBothPlanners("merge (a:Person {id: 23, mail: 'emil@neo.com'}) return a"))
-
-    error.getMessage should include("Merge did not find a matching node and can not create a new node due to conflicts with both existing and missing unique nodes. The conflicting constraints are on: :Person.id and :Person.mail")
-
-    countNodes() should equal(1)
-  }
-
-  // TCK'd
-  test("should fail on merge using multiple unique indexes and labels if found different nodes") {
-    // given
-    graph.createConstraint("Person", "id")
-    graph.createConstraint("User", "mail")
-
-    createLabeledNode(Map("id" -> 23), "Person")
-    createLabeledNode(Map("mail" -> "emil@neo.com"), "User")
-
-    // when
-    val error = intercept[MergeConstraintConflictException](updateWithBothPlannersAndCompatibilityMode("merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) return a"))
-
-    error.getMessage should include("Merge did not find a matching node and can not create a new node due to conflicts with existing unique nodes. The conflicting constraints are on: :Person.id and :User.mail")
-
-    // then
-    countNodes() should equal(2)
-  }
-
-  // Not TCK material
-  test("should handle running merge inside a foreach loop") {
-    // given an empty database
-
-    // when
-    val result = updateWithBothPlannersAndCompatibilityMode("foreach(x in [1,2,3] | merge ({property: x}))")
-
-    // then
-    assertStats(result, nodesCreated = 3, propertiesWritten = 3)
-  }
-
-  // TCK'd
-  test("unrelated nodes with same property should not clash") {
-    // given
-    graph.createConstraint("Person", "id")
-    graph.execute("MERGE (a:Item {id:1}) MERGE (b:Person {id:1})")
-
-    // when
-    updateWithBothPlannersAndCompatibilityMode("MERGE (a:Item {id:2}) MERGE (b:Person {id:1})")
-
-    // then does not throw
-  }
-
-  // TCK'd
   test("works fine with index") {
     // given
     updateWithBothPlannersAndCompatibilityMode("create index on :Person(name)")
@@ -467,19 +191,6 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
     // then does not throw
     assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesWritten = 1)
-  }
-
-  // TCK'd
-  test("works with index and constraint") {
-    // given
-    updateWithBothPlannersAndCompatibilityMode("create index on :Person(name)")
-    graph.createConstraint("Person", "id")
-
-    // when
-    val result = updateWithBothPlannersAndCompatibilityMode("MERGE (person:Person {name:'Lasse', id:42}) RETURN person.name")
-
-    // then does not throw
-    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesWritten = 2)
   }
 
   // TCK'd
@@ -505,33 +216,6 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
     // then does not throw
     assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesWritten = 2)
-  }
-
-  // TCK'd
-  test("works with property repeated in literal map in set") {
-    // given
-    graph.createConstraint("Person","ssn")
-
-    // when
-    val result = updateWithBothPlannersAndCompatibilityMode("MERGE (person:Person {ssn:42}) ON CREATE SET person = {ssn:42,name:'Robert Paulsen'} RETURN person.ssn")
-
-    // then - does not throw
-    result.toList should equal(List(Map("person.ssn" -> 42)))
-    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesWritten = 3)
-  }
-
-  // TCK'd
-  test("works with property in map that gets set") {
-    // given
-    graph.createConstraint("Person","ssn")
-
-    // when
-    val result = updateWithBothPlannersAndCompatibilityMode("MERGE (person:Person {ssn:{p}.ssn}) ON CREATE SET person = {p} RETURN person.ssn",
-      "p" -> Map("ssn" -> 42, "name"->"Robert Paulsen"))
-
-    // then - does not throw
-    result.toList should equal(List(Map("person.ssn" -> 42)))
-    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesWritten = 3)
   }
 
   // TCK'd
@@ -676,15 +360,6 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
                                     Map("x" -> 2, "y" -> 2)))
   }
 
-  // Not TCK material
-  test("merge inside foreach should see variables introduced by update actions outside foreach") {
-    // when
-    val result = updateWithBothPlannersAndCompatibilityMode("CREATE (a {name: 'Start'}) FOREACH(x in [1,2,3] | MERGE (a)-[:X]->({id: x})) RETURN a.name")
-
-    // then
-    assertStats(result, nodesCreated = 4, relationshipsCreated = 3, propertiesWritten = 4)
-  }
-
   // TCK'd
   test("merge must properly handle multiple labels") {
     createLabeledNode(Map("prop" -> 42), "L", "A")
@@ -704,17 +379,6 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
     assertStats(result, nodesCreated = 1, propertiesWritten = 1, labelsAdded = 2)
     result.toList should equal(List(Map("labels" -> List("L", "B"))))
-  }
-
-  // TCK'd
-  test("merge with uniqueness constraints must properly handle multiple labels") {
-    graph.createConstraint("L", "prop")
-    val node = createLabeledNode(Map("prop" -> 42), "L", "A")
-
-    val result = intercept[CypherExecutionException](updateWithBothPlannersAndCompatibilityMode("merge (test:L:B {prop : 42}) return labels(test) as labels"))
-
-    result.getCause shouldBe a [UniquePropertyConstraintViolationKernelException]
-    result.getMessage should equal(s"""Node ${node.getId} already exists with label L and property "prop"=[42]""")
   }
 
   // TCK'd
