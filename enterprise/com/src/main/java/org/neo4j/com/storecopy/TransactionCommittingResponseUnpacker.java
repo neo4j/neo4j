@@ -201,12 +201,12 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         {
             if ( response.hasTransactionsToBeApplied() )
             {
-                applyQueuedTransactions();
+                applyQueuedTransactionsIfNeeded();
             }
         }
     }
 
-    private void applyQueuedTransactions() throws IOException
+    private void applyQueuedTransactionsIfNeeded() throws IOException
     {
         if ( transactionQueue.isEmpty() )
         {
@@ -240,90 +240,110 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
          *              New tx starts here. Does not get terminated because not among active transactions, but will read
          *              outdated data and can be affected by reuse contamination.
          */
-        // Check timestamp on last transaction in queue
-        long newLatestAppliedTime = transactionQueue.last().getCommitEntry().getTimeWritten();
-        long chunkLength =  newLatestAppliedTime - transactionQueue.first().getCommitEntry().getTimeWritten();
 
         // We stop new transactions from starting to avoid problem 1
-        if ( chunkLength > idReuseSafeZoneTime )
+        if ( batchSizeExceedsSafeZone() )
         {
             // Problem 2
             kernelTransactions.blockNewTransactions();
         }
         try
         {
-            for ( KernelTransaction tx : kernelTransactions.activeTransactions() )
-            {
-                long commitTimestamp = ((KernelTransactionImplementation) tx).lastTransactionTimestampWhenStarted();
-                if ( commitTimestamp != TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP &&
-                     commitTimestamp < newLatestAppliedTime - idReuseSafeZoneTime )
-                {
-                    tx.markForTermination( Status.Transaction.Outdated );
-                }
-            }
-
-            // Synchronize to guard for concurrent shutdown
-            synchronized ( logFile )
-            {
-                // Check rotation explicitly, since the version of append that we're calling isn't doing that.
-                logRotation.rotateLogIfNeeded( LogAppendEvent.NULL );
-
-                // Check kernel health after log rotation
-                if ( !kernelHealth.isHealthy() )
-                {
-                    Throwable causeOfPanic = kernelHealth.getCauseOfPanic();
-                    log.error( msg + " Original kernel panic cause was:\n" + causeOfPanic.getMessage() );
-                    throw new IOException( msg, causeOfPanic );
-                }
-
-                try
-                {
-                    // Apply whatever is in the queue
-                    if ( transactionQueue.accept( batchCommitter ) > 0 ) // COMMIT
-                    {
-                        // TODO if this instance is set to "slave_only" then we can actually skip the force call here.
-                        // Reason being that even if there would be a reordering in some layer where a store file would be
-
-                        // changed before that change would have ended up in the log, it would be fine sine as a slave
-                        // you would pull that transaction again anyhow before making changes to (after reading) any
-                        // record.
-                        appender.force();
-                        try
-                        {
-                            // Apply all transactions to the store. Only apply, i.e. mark as committed, not closed.
-                            // We mark as closed below.
-                            transactionQueue.accept( batchApplier ); // APPLY
-                            // Ensure that all changes are flushed to the store, we're doing some batching of transactions
-                            // here so some shortcuts are taken in places. Although now comes the snapshotTime where we must
-                            // ensure that all pending changes are applied and flushed properly.
-                            storeApplier.closeBatch();
-                        }
-                        finally
-                        {
-                            // Mark the applied transactions as closed. We must do this as a separate step after
-                            // applying them, with a closeBatch() call in between, otherwise there might be
-                            // threads waiting for transaction obligations to be fulfilled and since they are looking
-                            // at last closed transaction id they might get notified to continue before all data
-                            // has actually been flushed properly.
-                            transactionQueue.accept( batchCloser ); // MARK TXs AS CLOSED
-                        }
-                    }
-                }
-                catch ( Throwable cause )
-                {
-
-                    kernelHealth.panic( cause );
-                    throw cause;
-                }
-                finally
-                {
-                    transactionQueue.clear();
-                }
-            }
+            markUnsafeTransactionsForTermination();
+            applyQueuedTransactions();
         }
         finally
         {
             kernelTransactions.unblockNewTransactions();
+        }
+    }
+
+    private boolean batchSizeExceedsSafeZone()
+    {
+        long lastAppliedTimestamp = transactionQueue.last().getCommitEntry().getTimeWritten();
+        long firstAppliedTimestamp = transactionQueue.first().getCommitEntry().getTimeWritten();
+        long chunkLength = lastAppliedTimestamp - firstAppliedTimestamp;
+
+        return chunkLength > idReuseSafeZoneTime;
+    }
+
+    private void markUnsafeTransactionsForTermination()
+    {
+        long lastAppliedTimestamp = transactionQueue.last().getCommitEntry().getTimeWritten();
+        long earliestSafeTimestamp = lastAppliedTimestamp - idReuseSafeZoneTime;
+
+        for ( KernelTransaction tx : kernelTransactions.activeTransactions() )
+        {
+            KernelTransactionImplementation kti = (KernelTransactionImplementation) tx;
+            long commitTimestamp = kti.lastTransactionTimestampWhenStarted();
+
+            if ( commitTimestamp != TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP &&
+                 commitTimestamp < earliestSafeTimestamp )
+            {
+                tx.markForTermination( Status.Transaction.Outdated );
+            }
+        }
+    }
+
+    private void applyQueuedTransactions() throws IOException
+    {
+        // Synchronize to guard for concurrent shutdown
+        synchronized ( logFile )
+        {
+            // Check rotation explicitly, since the version of append that we're calling isn't doing that.
+            logRotation.rotateLogIfNeeded( LogAppendEvent.NULL );
+
+            // Check kernel health after log rotation
+            if ( !kernelHealth.isHealthy() )
+            {
+                Throwable causeOfPanic = kernelHealth.getCauseOfPanic();
+                log.error( msg + " Original kernel panic cause was:\n" + causeOfPanic.getMessage() );
+                throw new IOException( msg, causeOfPanic );
+            }
+
+            try
+            {
+                // Apply whatever is in the queue
+                if ( transactionQueue.accept( batchCommitter ) > 0 ) // COMMIT
+                {
+                    // TODO if this instance is set to "slave_only" then we can actually skip the force call here.
+                    // Reason being that even if there would be a reordering in some layer where a store file would
+                    // be changed before that change would have ended up in the log, it would be fine sine as a
+                    // slave you would pull that transaction again anyhow before making changes to (after reading)
+                    // any record.
+                    appender.force();
+                    try
+                    {
+                        // Apply all transactions to the store. Only apply, i.e. mark as committed, not closed.
+                        // We mark as closed below.
+                        transactionQueue.accept( batchApplier ); // APPLY
+                        // Ensure that all changes are flushed to the store, we're doing some batching of
+                        // transactions here so some shortcuts are taken in places. Although now comes the
+                        // snapshotTime where we must ensure that all pending changes are applied and flushed
+                        // properly.
+                        storeApplier.closeBatch();
+                    }
+                    finally
+                    {
+                        // Mark the applied transactions as closed. We must do this as a separate step after
+                        // applying them, with a closeBatch() call in between, otherwise there might be
+                        // threads waiting for transaction obligations to be fulfilled and since they are looking
+                        // at last closed transaction id they might get notified to continue before all data
+                        // has actually been flushed properly.
+                        transactionQueue.accept( batchCloser ); // MARK TXs AS CLOSED
+                    }
+                }
+            }
+            catch ( Throwable cause )
+            {
+
+                kernelHealth.panic( cause );
+                throw cause;
+            }
+            finally
+            {
+                transactionQueue.clear();
+            }
         }
     }
 
@@ -493,7 +513,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
 
             if ( transactionQueue.queue( transaction, txHandler ) )
             {
-                applyQueuedTransactions();
+                applyQueuedTransactionsIfNeeded();
             }
             return false;
         }
