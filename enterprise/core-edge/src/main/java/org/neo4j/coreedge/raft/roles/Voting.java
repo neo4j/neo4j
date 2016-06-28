@@ -25,13 +25,11 @@ import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.kernel.impl.store.StoreId;
 
 public class Voting
 {
-    public static  void handleVoteRequest( ReadableRaftState state, Outcome outcome,
-                                                   RaftMessages.Vote.Request voteRequest,
-                                                   StoreId storeId ) throws IOException
+    static  void handleVoteRequest( ReadableRaftState state, Outcome outcome,
+            RaftMessages.Vote.Request voteRequest ) throws IOException
     {
         if ( voteRequest.term() > state.term() )
         {

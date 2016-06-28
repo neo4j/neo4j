@@ -31,13 +31,11 @@ import org.neo4j.coreedge.raft.outcome.ShipCommand;
 import org.neo4j.coreedge.raft.outcome.TruncateLogCommand;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
-import org.neo4j.kernel.impl.store.StoreId;
 
 public class Appending
 {
-    public static  void handleAppendEntriesRequest(
-            ReadableRaftState state, Outcome outcome, RaftMessages.AppendEntries.Request request, StoreId localStoreId )
-            throws IOException
+    static  void handleAppendEntriesRequest( ReadableRaftState state, Outcome outcome,
+            RaftMessages.AppendEntries.Request request ) throws IOException
     {
         if ( request.leaderTerm() < state.term() )
         {
@@ -113,8 +111,7 @@ public class Appending
         }
     }
 
-    public static  void appendNewEntry( ReadableRaftState ctx, Outcome outcome, ReplicatedContent
-            content ) throws IOException
+    static  void appendNewEntry( ReadableRaftState ctx, Outcome outcome, ReplicatedContent content ) throws IOException
     {
         long prevLogIndex = ctx.entryLog().appendIndex();
         long prevLogTerm = prevLogIndex == -1 ? -1 :
@@ -128,7 +125,7 @@ public class Appending
         outcome.addLogCommand( new AppendLogEntry( prevLogIndex + 1, newLogEntry ) );
     }
 
-    public static  void appendNewEntries( ReadableRaftState ctx, Outcome outcome,
+    static  void appendNewEntries( ReadableRaftState ctx, Outcome outcome,
             List<ReplicatedContent> contents ) throws IOException
     {
         long prevLogIndex = ctx.entryLog().appendIndex();

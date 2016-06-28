@@ -86,20 +86,20 @@ public class RaftMembershipState implements RaftMembership
 
     private void updateReplicationMembers()
     {
-        HashSet newReplicationMembers = new HashSet<>( votingMembers );
+        HashSet<CoreMember> newReplicationMembers = new HashSet<>( votingMembers );
 
         newReplicationMembers.addAll( additionalReplicationMembers );
         this.replicationMembers = newReplicationMembers;
     }
 
     @Override
-    public Set votingMembers()
+    public Set<CoreMember> votingMembers()
     {
         return new HashSet<>( votingMembers );
     }
 
     @Override
-    public Set replicationMembers()
+    public Set<CoreMember> replicationMembers()
     {
         return new HashSet<>( replicationMembers );
     }

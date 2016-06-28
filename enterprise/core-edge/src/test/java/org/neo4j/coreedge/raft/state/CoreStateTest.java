@@ -38,6 +38,7 @@ import org.neo4j.coreedge.raft.replication.session.GlobalSessionTrackerState;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.raft.replication.tx.CoreReplicatedContent;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
+import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -79,7 +80,7 @@ public class CoreStateTest
     private final Monitors monitors = new Monitors();
     private final CoreState coreState = new CoreState( raftLog, batchSize, flushEvery, () -> dbHealth,
             NullLogProvider.getInstance(), new ProgressTrackerImpl( globalSession ), lastFlushedStorage,
-            sessionStorage, applier, mock( CoreStateDownloader.class ), inFlightMap, monitors );
+            sessionStorage, mock( CoreServerSelectionStrategy.class), applier, mock( CoreStateDownloader.class ), inFlightMap, monitors );
 
     private ReplicatedTransaction nullTx = new ReplicatedTransaction( null );
 

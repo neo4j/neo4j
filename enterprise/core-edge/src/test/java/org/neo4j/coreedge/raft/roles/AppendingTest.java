@@ -32,7 +32,6 @@ import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.outcome.TruncateLogCommand;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.kernel.impl.store.StoreId;
 
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -47,7 +46,6 @@ import static org.neo4j.coreedge.server.RaftTestMember.member;
 public class AppendingTest
 {
     private CoreMember aMember = member( 0 );
-    private StoreId storeId = new StoreId( 1, 2, 3, 4, 5 );
 
     @Test
     public void shouldPerformTruncation() throws Exception
@@ -73,7 +71,7 @@ public class AppendingTest
                         localTermForAllEntries,
                         new RaftLogEntry[]{
                                 new RaftLogEntry( localTermForAllEntries + 1, ReplicatedInteger.valueOf( 2 ) )},
-                        appendIndex + 3 ), storeId );
+                        appendIndex + 3 ) );
 
         // then
         // we must produce a TruncateLogCommand at the earliest mismatching index
@@ -104,7 +102,7 @@ public class AppendingTest
                             localTermForAllEntries,
                             new RaftLogEntry[]{
                                     new RaftLogEntry( localTermForAllEntries + 1, ReplicatedInteger.valueOf( 2 ) )},
-                            commitIndex + 3 ), storeId );
+                            commitIndex + 3 ) );
             fail( "Appending should not allow truncation at or before the commit index" );
         }
         catch ( IllegalStateException expected )
@@ -137,7 +135,7 @@ public class AppendingTest
                             localTermForAllEntries,
                             new RaftLogEntry[]{
                                     new RaftLogEntry( localTermForAllEntries + 1, ReplicatedInteger.valueOf( 2 ) )},
-                            commitIndex + 3 ), storeId );
+                            commitIndex + 3 ) );
             fail( "Appending should not allow truncation at or before the commit index" );
         }
         catch ( IllegalStateException expected )
@@ -175,7 +173,7 @@ public class AppendingTest
                         prevTerm,
                         new RaftLogEntry[]{
                                 new RaftLogEntry( prevTerm, ReplicatedInteger.valueOf( 2 ) )},
-                        commitIndex + 3 ), storeId );
+                        commitIndex + 3 ) );
 
         // then
         // there should be no truncate commands. Actually, the whole thing should be a no op

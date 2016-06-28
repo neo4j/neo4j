@@ -25,7 +25,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.logging.NullLogProvider;
 
@@ -35,10 +34,8 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class BatchingMessageHandlerTest
 {
-    private static final long DEFAULT_TIMEOUT_MS = 15_000;
     private static final int MAX_BATCH = 16;
     private static final int QUEUE_SIZE = 64;
-    private LocalDatabase localDatabase = mock( LocalDatabase.class );
 
     @Test
     public void shouldInvokeInnerHandlerWhenRun() throws Exception

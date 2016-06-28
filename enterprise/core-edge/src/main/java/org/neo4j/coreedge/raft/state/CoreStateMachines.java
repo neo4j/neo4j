@@ -68,7 +68,8 @@ public class CoreStateMachines
             ReplicatedIdAllocationStateMachine idAllocationStateMachine,
             CoreState coreState,
             RecoverTransactionLogState txLogState,
-            MonitoredRaftLog raftLog, LocalDatabase localDatabase )
+            MonitoredRaftLog raftLog,
+            LocalDatabase localDatabase )
     {
         this.replicatedTxStateMachine = replicatedTxStateMachine;
         this.labelTokenStateMachine = labelTokenStateMachine;

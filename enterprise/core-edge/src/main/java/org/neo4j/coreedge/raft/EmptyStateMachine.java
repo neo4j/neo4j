@@ -21,24 +21,20 @@ package org.neo4j.coreedge.raft;
 
 import org.neo4j.coreedge.server.CoreMember;
 
-/**
- * The RAFT external entity that is interested in log entries and
- * typically applies them to a state machine.
- */
-public interface RaftStateMachine
+class EmptyStateMachine implements RaftStateMachine
 {
-    /**
-     * Called when the highest committed index increases.
-     */
-    void notifyCommitted( long commitIndex );
+    @Override
+    public void notifyCommitted( long commitIndex )
+    {
+    }
 
-    /**
-     * Download and install a snapshot of state from another member of the cluster.
-     * <p/>
-     * Called when the consensus system no longer has the log entries required to
-     * further update the state machine, because they have been deleted through pruning.
-     */
-    void notifyNeedFreshSnapshot();
+    @Override
+    public void notifyNeedFreshSnapshot()
+    {
+    }
 
-    void downloadSnapshot( CoreMember from );
+    @Override
+    public void downloadSnapshot( CoreMember from )
+    {
+    }
 }

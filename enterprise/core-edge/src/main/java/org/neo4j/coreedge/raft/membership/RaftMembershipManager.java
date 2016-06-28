@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogCursor;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
@@ -68,22 +67,19 @@ public class RaftMembershipManager implements RaftMembership, MembershipDriver
     private final Log log;
     private final int expectedClusterSize;
     private final StateStorage<RaftMembershipState> stateStorage;
-    private final LocalDatabase localDatabase;
     private final RaftMembershipState raftMembershipState;
     private long lastApplied = -1;
 
     public RaftMembershipManager( SendToMyself replicator, RaftGroup.Builder memberSetBuilder, RaftLog entryLog,
-                                  LogProvider logProvider, int expectedClusterSize, long electionTimeout,
-                                  Clock clock, long catchupTimeout,
-                                  StateStorage<RaftMembershipState> stateStorage,
-                                  LocalDatabase localDatabase)
+            LogProvider logProvider, int expectedClusterSize, long electionTimeout,
+            Clock clock, long catchupTimeout,
+            StateStorage<RaftMembershipState> stateStorage )
     {
         this.replicator = replicator;
         this.memberSetBuilder = memberSetBuilder;
         this.entryLog = entryLog;
         this.expectedClusterSize = expectedClusterSize;
         this.stateStorage = stateStorage;
-        this.localDatabase = localDatabase;
         this.raftMembershipState = stateStorage.getInitialState();
         this.log = logProvider.getLog( getClass() );
 
@@ -97,7 +93,7 @@ public class RaftMembershipManager implements RaftMembership, MembershipDriver
         {
             if ( logCommand instanceof TruncateLogCommand )
             {
-                onTruncated(commitIndex);
+                onTruncated( commitIndex );
             }
             if ( logCommand instanceof AppendLogEntry )
             {
@@ -201,9 +197,9 @@ public class RaftMembershipManager implements RaftMembership, MembershipDriver
     {
         Pair<Long,RaftGroup<CoreMember>> lastMembershipEntry = null;
         long index = 0;
-        try( RaftLogCursor cursor = entryLog.getEntryCursor( index ) )
+        try ( RaftLogCursor cursor = entryLog.getEntryCursor( index ) )
         {
-            while( cursor.next() )
+            while ( cursor.next() )
             {
                 ReplicatedContent content = cursor.get().content();
                 if ( content instanceof RaftGroup )

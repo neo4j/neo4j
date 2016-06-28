@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.LeaderContext;
 import org.neo4j.coreedge.raft.OutboundMessageCollector;
 import org.neo4j.coreedge.raft.RaftMessages;
@@ -43,7 +42,6 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.DoubleLatch;
@@ -80,7 +78,6 @@ public class RaftLogShipperTest
     private RaftLogEntry entry1 = new RaftLogEntry( 0, ReplicatedString.valueOf( "kedha" ) );
     private RaftLogEntry entry2 = new RaftLogEntry( 0, ReplicatedInteger.valueOf( 2000 ) );
     private RaftLogEntry entry3 = new RaftLogEntry( 0, ReplicatedString.valueOf( "chupchick" ) );
-    private StoreId storeId = new StoreId( 1, 2, 3, 4, 5 );
 
     @Before
     public void setup()
@@ -111,13 +108,8 @@ public class RaftLogShipperTest
 
     private void startLogShipper()
     {
-        LocalDatabase localDatabase = mock( LocalDatabase.class );
-        when( localDatabase.storeId() ).thenReturn( storeId );
-
-        logShipper =
-                new RaftLogShipper( outbound, logProvider, raftLog, clock, leader, follower, leaderTerm, leaderCommit,
-                        retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, new InFlightMap<>()
-                );
+        logShipper = new RaftLogShipper( outbound, logProvider, raftLog, clock, leader, follower, leaderTerm, leaderCommit,
+                        retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, new InFlightMap<>() );
         logShipper.start();
     }
 

@@ -26,19 +26,16 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
-import org.neo4j.kernel.impl.store.StoreId;
 
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesRequest;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesResponse;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
@@ -51,12 +48,8 @@ public class AppendEntriesMessageFlowTest
 
     private ReplicatedInteger data = ReplicatedInteger.valueOf( 1 );
 
-    private final StoreId storeId = new StoreId( 1, 2, 3, 4, 5 );
-
     @Mock
     private Outbound<CoreMember, RaftMessages.RaftMessage> outbound;
-    @Mock
-    private LocalDatabase localDatabase;
 
     ReplicatedInteger data( int value )
     {
@@ -69,10 +62,8 @@ public class AppendEntriesMessageFlowTest
     public void setup()
     {
         // given
-        when( localDatabase.storeId() ).thenReturn( storeId );
         raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .outbound( outbound )
-                .localDatabase( localDatabase )
                 .build();
     }
 

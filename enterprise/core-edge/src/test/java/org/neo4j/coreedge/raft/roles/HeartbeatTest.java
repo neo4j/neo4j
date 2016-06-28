@@ -27,7 +27,6 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
@@ -39,7 +38,6 @@ import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.heartbeat;
 import static org.neo4j.coreedge.raft.roles.AppendEntriesRequestTest.ContentGenerator.content;
 import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;
@@ -48,8 +46,6 @@ import static org.neo4j.coreedge.server.RaftTestMember.member;
 @RunWith(Parameterized.class)
 public class HeartbeatTest
 {
-    private final LocalDatabase storeId = mock( LocalDatabase.class);
-
     @Parameterized.Parameters(name = "{0} with leader {1} terms ahead.")
     public static Collection<Object[]> data()
     {
@@ -86,7 +82,7 @@ public class HeartbeatTest
                 .leaderTerm( leaderTerm )
                 .build();
 
-        Outcome outcome = role.handler.handle( heartbeat, state, log(), storeId );
+        Outcome outcome = role.handler.handle( heartbeat, state, log() );
 
         assertThat( outcome.getLogCommands(), empty());
     }
@@ -110,7 +106,7 @@ public class HeartbeatTest
                 .leaderTerm( leaderTerm )
                 .build();
 
-        Outcome outcome = role.handler.handle( heartbeat, state, log(), storeId );
+        Outcome outcome = role.handler.handle( heartbeat, state, log() );
 
         assertThat( outcome.getCommitIndex(), Matchers.equalTo(0L) );
     }
@@ -134,7 +130,7 @@ public class HeartbeatTest
                 .leaderTerm( leaderTerm )
                 .build();
 
-        Outcome outcome = role.handler.handle( heartbeat, state, log(), storeId );
+        Outcome outcome = role.handler.handle( heartbeat, state, log() );
 
         assertThat( outcome.getLogCommands(), empty() );
 

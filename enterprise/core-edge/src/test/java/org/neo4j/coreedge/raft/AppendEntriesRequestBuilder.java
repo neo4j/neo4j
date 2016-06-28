@@ -24,7 +24,6 @@ import java.util.List;
 
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.kernel.impl.store.StoreId;
 
 public class AppendEntriesRequestBuilder
 {

@@ -26,7 +26,7 @@ public interface LeaderLocator
 {
     CoreMember getLeader() throws NoLeaderFoundException;
 
-    void registerListener( Listener listener );
+    void registerListener( Listener<CoreMember> listener );
 
-    void unregisterListener( Listener listener );
+    void unregisterListener( Listener<CoreMember> listener );
 }

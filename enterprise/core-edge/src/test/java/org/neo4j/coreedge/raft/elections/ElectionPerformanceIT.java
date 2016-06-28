@@ -70,7 +70,12 @@ public class ElectionPerformanceIT
         }
 
         @Override
-        public void notifyNeedFreshSnapshot( CoreServerSelectionStrategy strategy )
+        public void notifyNeedFreshSnapshot()
+        {
+        }
+
+        @Override
+        public void downloadSnapshot( CoreMember from )
         {
         }
 
