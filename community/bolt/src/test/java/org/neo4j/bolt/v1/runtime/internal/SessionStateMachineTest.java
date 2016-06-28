@@ -256,6 +256,23 @@ public class SessionStateMachineTest
         assertThat( machine.state(), equalTo( SessionStateMachine.State.IN_TRANSACTION ) );
     }
 
+
+    @Test
+    public void shouldRemainStoppedAfterInterrupted() throws Throwable
+    {
+        // Given
+        TestCallback callback = new TestCallback();
+
+        // When
+        machine.close();
+        machine.interrupt();
+        machine.reset( null, callback ); // could be any method call who invokes before
+
+        // Then
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.STOPPED ) );
+        assertThat( callback.completedCount, equalTo( 1 ) );
+    }
+
     @Before
     public void setup() throws AuthenticationException
     {

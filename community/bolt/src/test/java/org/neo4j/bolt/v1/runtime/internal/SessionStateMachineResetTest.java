@@ -21,10 +21,14 @@ package org.neo4j.bolt.v1.runtime.internal;
 
 import org.junit.Test;
 
+import org.neo4j.bolt.security.auth.BasicAuthenticationResult;
 import org.neo4j.bolt.v1.runtime.integration.RecordingCallback;
+import org.neo4j.kernel.api.security.AccessMode;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.v1.runtime.Session.Callback.noOp;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.ignored;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.recorded;
@@ -38,7 +42,9 @@ public class SessionStateMachineResetTest
     {
         // Given
         RecordingCallback recorder = new RecordingCallback();
-        SessionStateMachine ssm = new SessionStateMachine( mock( SessionStateMachine.SPI.class ) );
+        SessionStateMachine.SPI spi = mock( SessionStateMachine.SPI.class );
+        when( spi.authenticate( any() ) ).thenReturn( new BasicAuthenticationResult( AccessMode.Static.FULL, false) );
+        SessionStateMachine ssm = new SessionStateMachine( spi );
         ssm.init( "bob/1.0", map(), null, noOp() );
 
         // When
@@ -60,7 +66,9 @@ public class SessionStateMachineResetTest
     {
         // Given
         RecordingCallback recorder = new RecordingCallback();
-        SessionStateMachine ssm = new SessionStateMachine( mock( SessionStateMachine.SPI.class ) );
+        SessionStateMachine.SPI spi = mock( SessionStateMachine.SPI.class );
+        when( spi.authenticate( any() ) ).thenReturn( new BasicAuthenticationResult( AccessMode.Static.FULL, false) );
+        SessionStateMachine ssm = new SessionStateMachine( spi );
         ssm.init( "bob/1.0", map(), null, noOp() );
 
         // When

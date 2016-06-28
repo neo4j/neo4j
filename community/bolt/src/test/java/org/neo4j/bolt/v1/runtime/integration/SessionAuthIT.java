@@ -26,7 +26,9 @@ import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.failed;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.failedWith;
+import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.ignored;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.recorded;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.success;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.successButRequiresPasswordChange;
@@ -56,6 +58,157 @@ public class SessionAuthIT
         assertThat( recorder, recorded(
                 successButRequiresPasswordChange(),
                 failedWith( Status.Security.CredentialsExpired ) ) );
+    }
+
+    @Test
+    public void shouldDisallowRunOnAuthenticationFailureAndAck() throws Throwable
+    {
+        // given it is important for client applications to programmatically
+        // identify expired credentials as the cause of not being authenticated
+        Session session = env.newSession( "test" );
+        RecordingCallback recorder = new RecordingCallback();
+
+        // when
+        session.init( "TestClient/1.0.0", map(
+                "scheme", "basic",
+                "principal", "neo4j",
+                "credentials", "j4oen"
+        ), null, recorder );
+        session.ackFailure( null, recorder );
+        session.run( "RETURN 1337", map(), null, recorder );
+
+        // then
+        assertThat( recorder, recorded(
+                failedWith(Status.Security.Unauthorized),
+                success(),
+                failedWith(Status.Request.Invalid) ));
+    }
+
+    @Test
+    public void shouldDisallowRunAfterAuthFailureAndReset() throws Throwable
+    {
+        // given it is important for client applications to programmatically
+        // identify expired credentials as the cause of not being authenticated
+        Session session = env.newSession( "test" );
+        RecordingCallback recorder = new RecordingCallback();
+
+        // when
+        session.init( "TestClient/1.0.0", map(
+                "scheme", "basic",
+                "principal", "neo4j",
+                "credentials", "j4oen"
+        ), null, recorder );
+        session.reset( null, recorder );
+        session.run( "RETURN 1337", map(), null, recorder );
+
+        // then
+        assertThat( recorder, recorded(
+                failedWith(Status.Security.Unauthorized),
+                success(),
+                failedWith(Status.Request.Invalid) ));
+    }
+
+    @Test
+    public void shouldIgnoreAfterRequestInvalid() throws Throwable
+    {
+        // given it is important for client applications to programmatically
+        // identify expired credentials as the cause of not being authenticated
+        Session session = env.newSession( "test" );
+        RecordingCallback recorder = new RecordingCallback();
+
+        // when
+        session.ackFailure( null, recorder );
+        session.run( "RETURN 1337", map(), null, recorder );
+
+        // then
+        assertThat( recorder, recorded(
+                failedWith(Status.Request.Invalid),
+                ignored() ));
+    }
+
+    @Test
+    public void shouldDisallowRunBeforeSuccessInit() throws Throwable
+    {
+
+        // given it is important for client applications to programmatically
+        // identify expired credentials as the cause of not being authenticated
+        Session session = env.newSession( "test" );
+        RecordingCallback recorder = new RecordingCallback();
+
+        // when
+        session.run( "RETURN 1337", map(), null, recorder );
+        session.run( "RETURN 1337", map(), null, recorder );
+
+        // then
+        assertThat( recorder, recorded( failedWith(Status.Request.Invalid), ignored() ));
+    }
+
+    @Test
+    public void shouldDisallowResetBeforeSuccessInit() throws Throwable
+    {
+        // given it is important for client applications to programmatically
+        // identify expired credentials as the cause of not being authenticated
+        Session session = env.newSession( "test" );
+        RecordingCallback recorder = new RecordingCallback();
+
+        // when
+        session.reset( null, recorder );
+        session.run( "RETURN 1337", map(), null, recorder );
+
+        // then
+        assertThat( recorder, recorded( failedWith( Status.Request.Invalid ), ignored() ));
+    }
+
+    @Test
+    public void shouldBeAbleToReinitializeOnAuthenticationFailureAndAck() throws Throwable
+    {
+        // given it is important for client applications to programmatically
+        // identify expired credentials as the cause of not being authenticated
+        Session session = env.newSession( "test" );
+        RecordingCallback recorder = new RecordingCallback();
+
+        // when
+        session.init( "TestClient/1.0.0", map(
+                "scheme", "basic",
+                "principal", "neo4j",
+                "credentials", "j4oen"
+        ), null, recorder );
+        session.ackFailure( null, recorder );
+        // when
+        session.init( "TestClient/1.0.0", map(
+                "scheme", "basic",
+                "principal", "neo4j",
+                "credentials", "neo4j"
+        ), null, recorder );
+
+        // then
+        assertThat( recorder, recorded( failed(), success(), success() ));
+    }
+
+    @Test
+    public void shouldBeAbleToReinitializeOnAuthenticationFailureAndReset() throws Throwable
+    {
+        // given it is important for client applications to programmatically
+        // identify expired credentials as the cause of not being authenticated
+        Session session = env.newSession( "test" );
+        RecordingCallback recorder = new RecordingCallback();
+
+        // when
+        session.init( "TestClient/1.0.0", map(
+                "scheme", "basic",
+                "principal", "neo4j",
+                "credentials", "j4oen"
+        ), null, recorder );
+        session.reset( null, recorder );
+        // when
+        session.init( "TestClient/1.0.0", map(
+                "scheme", "basic",
+                "principal", "neo4j",
+                "credentials", "neo4j"
+        ), null, recorder );
+
+        // then
+        assertThat( recorder, recorded( failed(), success(), success() ));
     }
 
     @Test
