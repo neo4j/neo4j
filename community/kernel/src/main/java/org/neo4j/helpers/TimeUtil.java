@@ -47,8 +47,7 @@ public final class TimeUtil
 
             int amount = Integer.parseInt( timeWithOrWithoutUnit.substring( 0, unitIndex ) );
             String unit = timeWithOrWithoutUnit.substring( unitIndex ).toLowerCase();
-            TimeUnit timeUnit = null;
-            int multiplyFactor = 1;
+            TimeUnit timeUnit;
             if ( unit.equals( "ms" ) )
             {
                 timeUnit = TimeUnit.MILLISECONDS;
@@ -59,21 +58,17 @@ public final class TimeUtil
             }
             else if ( unit.equals( "m" ) )
             {
-                // SECONDS is only for having to rely on 1.6
-                timeUnit = TimeUnit.SECONDS;
-                multiplyFactor = 60;
+                timeUnit = TimeUnit.MINUTES;
             }
             else if ( unit.equals( "h" ) )
             {
-                // SECONDS is only for having to rely on 1.6
-                timeUnit = TimeUnit.SECONDS;
-                multiplyFactor = 60*60;
+                timeUnit = TimeUnit.HOURS;
             }
             else
             {
                 throw new RuntimeException( "Unrecognized unit " + unit );
             }
-            return timeUnit.toMillis( amount * multiplyFactor );
+            return timeUnit.toMillis( amount );
         }
     };
 
