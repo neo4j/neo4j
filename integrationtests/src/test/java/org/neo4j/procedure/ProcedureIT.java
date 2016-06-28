@@ -1451,7 +1451,7 @@ public class ProcedureIT
             return Stream.of(new NodeOutput(node));
         }
 
-        @Procedure
+        @Procedure( mode = WRITE )
         public Stream<NodeListRecord> nodeList()
         {
             List<Node> nodesList = new ArrayList<>();

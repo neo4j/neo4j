@@ -148,6 +148,10 @@ public final class ParseUtil
         throw new IllegalArgumentException( "" );
     }
 
+    /**
+     * Parses value into object. Make sure you call trim on the string
+     * before calling this method. The type is used for type checking lists.
+     */
     private static Object parseValue( String s, Type type )
     {
         int pos = 0;
@@ -161,14 +165,14 @@ public final class ParseUtil
                 ++pos;
                 break;
             case '\'':
-                closing = s.indexOf( '\'', pos + 1 );
+                closing = s.lastIndexOf( '\'' );
                 if ( closing < 0 )
                 {
                     throw new IllegalArgumentException( "Did not find a matching end quote, '" );
                 }
                 return s.substring( pos + 1, closing );
             case '\"':
-                closing = s.indexOf( '\"', pos + 1 );
+                closing = s.lastIndexOf( '\"' );
                 if ( closing < 0 )
                 {
                     throw new IllegalArgumentException( "Did not find a matching end quote, \"" );

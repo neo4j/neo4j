@@ -92,6 +92,58 @@ public class MapConverterTest
     }
 
     @Test
+    public void shouldHandleEscapedSingleQuotedInValue1()
+    {
+        // Given
+        String mapString = "{key: 'va\'lue'}";
+
+        // When
+        Neo4jValue converted = converter.apply( mapString );
+
+        // Then
+        assertThat( converted, equalTo( ntMap( map( "key", "va\'lue" ) ) ) );
+    }
+
+    @Test
+    public void shouldHandleEscapedSingleQuotedInValue2()
+    {
+        // Given
+        String mapString = "{key: \"va\'lue\"}";
+
+        // When
+        Neo4jValue converted = converter.apply( mapString );
+
+        // Then
+        assertThat( converted, equalTo( ntMap( map( "key", "va\'lue" ) ) ) );
+    }
+
+    @Test
+    public void shouldHandleEscapedDoubleQuotedInValue1()
+    {
+        // Given
+        String mapString = "{key: \"va\"lue\"}";
+
+        // When
+        Neo4jValue converted = converter.apply( mapString );
+
+        // Then
+        assertThat( converted, equalTo( ntMap( map( "key", "va\"lue" ) ) ) );
+    }
+
+    @Test
+    public void shouldHandleEscapedDoubleQuotedInValue2()
+    {
+        // Given
+        String mapString = "{key: 'va\"lue'}";
+
+        // When
+        Neo4jValue converted = converter.apply( mapString );
+
+        // Then
+        assertThat( converted, equalTo( ntMap( map( "key", "va\"lue" ) ) ) );
+    }
+
+    @Test
     public void shouldHandleDoubleQuotedValue()
     {
         // Given
@@ -128,6 +180,32 @@ public class MapConverterTest
 
         // Then
         assertThat( converted, equalTo( ntMap( map( "key", "value" ) ) ) );
+    }
+
+    @Test
+    public void shouldHandleKeyWithEscapedSingleQuote()
+    {
+        // Given
+        String mapString = "{\"k\'ey\": \"value\"}";
+
+        // When
+        Neo4jValue converted = converter.apply( mapString );
+
+        // Then
+        assertThat( converted, equalTo( ntMap( map( "k\'ey", "value" ) ) ) );
+    }
+
+    @Test
+    public void shouldHandleKeyWithEscapedDoubleQuote()
+    {
+        // Given
+        String mapString = "{\"k\"ey\": \"value\"}";
+
+        // When
+        Neo4jValue converted = converter.apply( mapString );
+
+        // Then
+        assertThat( converted, equalTo( ntMap( map( "k\"ey", "value" ) ) ) );
     }
 
     @Test
