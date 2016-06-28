@@ -21,12 +21,6 @@ package org.neo4j.coreedge.discovery;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
-import com.hazelcast.core.MembershipListener;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -44,41 +38,11 @@ class HazelcastClient extends LifecycleAdapter implements EdgeTopologyService
     private final LogProvider logProvider;
     private HazelcastInstance hazelcastInstance;
 
-    private List<MembershipListener> membershipListeners = new ArrayList<>();
-    private Map<MembershipListener, String> membershipRegistrationId = new ConcurrentHashMap<>();
-
     HazelcastClient( HazelcastConnector connector, LogProvider logProvider )
     {
         this.connector = connector;
         this.logProvider = logProvider;
         log = logProvider.getLog( getClass() );
-    }
-
-    @Override
-    public void addMembershipListener( Listener listener )
-    {
-        MembershipListenerAdapter hazelcastListener = new MembershipListenerAdapter( listener, log );
-        membershipListeners.add( hazelcastListener );
-
-        if ( hazelcastInstance != null )
-        {
-            String registrationId = hazelcastInstance.getCluster().addMembershipListener( hazelcastListener );
-            membershipRegistrationId.put( hazelcastListener, registrationId );
-        }
-        listener.onTopologyChange();
-    }
-
-    @Override
-    public void removeMembershipListener( Listener listener )
-    {
-        MembershipListenerAdapter hazelcastListener = new MembershipListenerAdapter( listener, log );
-        membershipListeners.remove( hazelcastListener );
-        String registrationId = membershipRegistrationId.remove( hazelcastListener );
-
-        if ( hazelcastInstance != null && registrationId != null )
-        {
-            hazelcastInstance.getCluster().removeMembershipListener( registrationId );
-        }
     }
 
     @Override

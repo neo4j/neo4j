@@ -22,17 +22,17 @@ package org.neo4j.coreedge.raft.net;
 import java.util.Collection;
 
 import org.neo4j.coreedge.discovery.CoreAddresses;
-import org.neo4j.coreedge.discovery.CoreTopologyService;
+import org.neo4j.coreedge.discovery.TopologyService;
 import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 
 public class CoreOutbound implements Outbound<CoreMember, Message>
 {
-    private final CoreTopologyService discoveryService;
+    private final TopologyService discoveryService;
     private final Outbound<AdvertisedSocketAddress, Message> outbound;
 
-    public CoreOutbound( CoreTopologyService discoveryService, Outbound<AdvertisedSocketAddress, Message> outbound )
+    public CoreOutbound( TopologyService discoveryService, Outbound<AdvertisedSocketAddress, Message> outbound )
     {
         this.discoveryService = discoveryService;
         this.outbound = outbound;

@@ -67,7 +67,7 @@ class HazelcastServerLifecycle extends LifecycleAdapter implements CoreTopologyS
         MembershipListenerAdapter hazelcastListener = new MembershipListenerAdapter( listener, log );
         membershipListeners.add( hazelcastListener );
 
-        if ( hazelcastInstance != null )
+        if ( hazelcastInstance != null ) // hazelcast has already started
         {
             String registrationId = hazelcastInstance.getCluster().addMembershipListener( hazelcastListener );
             membershipRegistrationId.put( hazelcastListener, registrationId );
@@ -94,7 +94,8 @@ class HazelcastServerLifecycle extends LifecycleAdapter implements CoreTopologyS
         hazelcastInstance = createHazelcastInstance();
         log.info( "Cluster discovery service started" );
 
-        for ( MembershipListener membershipListener : membershipListeners )
+        for ( MembershipListener membershipListener : membershipListeners ) // listeners that were added before
+        // hazelcast started
         {
             String registrationId = hazelcastInstance.getCluster().addMembershipListener( membershipListener );
             membershipRegistrationId.put( membershipListener, registrationId );

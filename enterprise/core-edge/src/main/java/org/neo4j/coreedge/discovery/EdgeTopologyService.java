@@ -21,7 +21,7 @@ package org.neo4j.coreedge.discovery;
 
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 
-public interface EdgeTopologyService extends CoreTopologyService
+public interface EdgeTopologyService extends TopologyService
 {
     void registerEdgeServer( AdvertisedSocketAddress address );
 }
