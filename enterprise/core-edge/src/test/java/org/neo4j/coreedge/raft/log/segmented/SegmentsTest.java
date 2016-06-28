@@ -19,10 +19,10 @@
  */
 package org.neo4j.coreedge.raft.log.segmented;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -33,6 +33,7 @@ import org.neo4j.cursor.IOCursor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.time.FakeClock;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -47,6 +48,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 public class SegmentsTest
 {
@@ -57,15 +59,24 @@ public class SegmentsTest
     private final ChannelMarshal<ReplicatedContent> contentMarshal = mock( ChannelMarshal.class );
     private final LogProvider logProvider = NullLogProvider.getInstance();
     private final SegmentHeader header = mock( SegmentHeader.class );
-    private final List<SegmentFile> segmentFiles = asList(
-            new SegmentFile( fsa, fileNames.getForVersion( 0 ), contentMarshal, logProvider, header ),
-            new SegmentFile( fsa, fileNames.getForVersion( 1 ), contentMarshal, logProvider, header ) );
+    private final ReaderPool readerPool = new ReaderPool( 0, NullLogProvider.getInstance(), fileNames, fsa, new FakeClock() );
+
+    private final SegmentFile fileA = spy( new SegmentFile( fsa, fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, header ) );
+    private final SegmentFile fileB = spy( new SegmentFile( fsa, fileNames.getForVersion( 1 ), readerPool, 1, contentMarshal, logProvider, header ) );
+
+    private final List<SegmentFile> segmentFiles = asList( fileA, fileB );
+
+    @Before
+    public void before()
+    {
+        when( fsa.deleteFile( any() ) ).thenReturn( true );
+    }
 
     @Test
     public void shouldCreateNext() throws Exception
     {
         // Given
-        try( Segments segments = new Segments( fsa, fileNames, segmentFiles, contentMarshal, logProvider, -1 ) )
+        try( Segments segments = new Segments( fsa, fileNames, readerPool, segmentFiles, contentMarshal, logProvider, -1 ) )
         {
             // When
             segments.rotate( 10, 10, 12 );
@@ -84,7 +95,7 @@ public class SegmentsTest
     {
         verifyZeroInteractions( fsa );
         // Given
-        try( Segments segments = new Segments( fsa, fileNames, segmentFiles, contentMarshal, logProvider, -1 ) )
+        try( Segments segments = new Segments( fsa, fileNames, readerPool, segmentFiles, contentMarshal, logProvider, -1 ) )
         {
             SegmentFile toPrune = segments.rotate( -1, -1, -1 ); // this is version 0 and will be deleted on prune later
             segments.last().closeWriter(); // need to close writer otherwise dispose will not be called
@@ -103,7 +114,7 @@ public class SegmentsTest
     public void shouldNeverDeleteOnTruncate() throws Exception
     {
         // Given
-        try( Segments segments = new Segments( fsa, fileNames, segmentFiles, contentMarshal, logProvider, -1 ) )
+        try( Segments segments = new Segments( fsa, fileNames, readerPool, segmentFiles, contentMarshal, logProvider, -1 ) )
         {
             segments.rotate( -1, -1, -1 );
             segments.last().closeWriter(); // need to close writer otherwise dispose will not be called
@@ -122,7 +133,7 @@ public class SegmentsTest
     public void shouldDeleteTruncatedFilesOnPrune() throws Exception
     {
         // Given
-        try( Segments segments = new Segments( fsa, fileNames, segmentFiles, contentMarshal, logProvider, -1 ) )
+        try( Segments segments = new Segments( fsa, fileNames, readerPool, segmentFiles, contentMarshal, logProvider, -1 ) )
         {
             SegmentFile toBePruned = segments.rotate( -1, -1, -1 );
             segments.last().closeWriter(); // need to close writer otherwise dispose will not be called
@@ -139,8 +150,6 @@ public class SegmentsTest
             // the truncate file is part of the deletes that happen while prunning
             verify( fsa, times( segmentFiles.size() ) ).deleteFile(
                     fileNames.getForVersion( toBePruned.header().version() ) );
-            verify( fsa, times( segmentFiles.size() ) ).deleteFile(
-                    fileNames.getForVersion( toBeTruncated.header().version() ) );
         }
     }
 
@@ -148,27 +157,26 @@ public class SegmentsTest
     public void shouldCloseTheSegments() throws Exception
     {
         // Given
-        Segments segments = new Segments( fsa, fileNames, segmentFiles, contentMarshal, logProvider, -1 );
+        Segments segments = new Segments( fsa, fileNames, readerPool, segmentFiles, contentMarshal, logProvider, -1 );
 
         // When
         segments.close();
 
         // Then
-        segments.getSegmentFileIteratorAtEnd().forEachRemaining( segment -> assertTrue( segment.isDisposed() ) );
+        for ( SegmentFile file : segmentFiles )
+        {
+            verify( file ).close();
+        }
     }
 
     @Test
     public void shouldNotSwallowExceptionOnClose() throws Exception
     {
         // Given
-        List<SegmentFile> segmentFiles = new ArrayList<>( this.segmentFiles.size() );
-        for ( SegmentFile segmentFile: this.segmentFiles )
-        {
-            SegmentFile spy = spy( segmentFile );
-            doThrow( new RuntimeException() ).when( spy ).close();
-            segmentFiles.add( spy );
-        }
-        Segments segments = new Segments( fsa, fileNames, segmentFiles, contentMarshal, logProvider, -1 );
+        doThrow( new RuntimeException() ).when( fileA ).close();
+        doThrow( new RuntimeException() ).when( fileB ).close();
+
+        Segments segments = new Segments( fsa, fileNames, readerPool, segmentFiles, contentMarshal, logProvider, -1 );
 
         // When
         try
@@ -190,7 +198,7 @@ public class SegmentsTest
     {
         //Given a prune index of n, if the smallest value for a segment file is n+c, the pruning should not remove
         // any files and not result in a failure.
-        Segments segments = new Segments( fsa, fileNames, segmentFiles, contentMarshal, logProvider, -1 );
+        Segments segments = new Segments( fsa, fileNames, readerPool, segmentFiles, contentMarshal, logProvider, -1 );
 
         segments.rotate( -1, -1, -1 );
         segments.last().closeWriter(); // need to close writer otherwise dispose will not be called
@@ -220,12 +228,7 @@ public class SegmentsTest
          */
 
         // Given
-        FileSystemAbstraction fsa = mock( FileSystemAbstraction.class, RETURNS_MOCKS );
-        File baseDirectory = new File( "." );
-        FileNames fileNames = new FileNames( baseDirectory );
-        ChannelMarshal<ReplicatedContent> contentMarshal = mock( ChannelMarshal.class );
-
-        Segments segments = new Segments( fsa, fileNames, Collections.emptyList(), contentMarshal, logProvider, -1 );
+        Segments segments = new Segments( fsa, fileNames, readerPool, Collections.emptyList(), contentMarshal, logProvider, -1 );
 
         /*
         create 0
@@ -277,7 +280,5 @@ public class SegmentsTest
         assertFalse( shouldBePruned.value().isPresent() );
         assertFalse( shouldNotBePruned.value().isPresent() );
         assertFalse( shouldAlsoNotBePruned.value().isPresent() );
-
     }
-
 }

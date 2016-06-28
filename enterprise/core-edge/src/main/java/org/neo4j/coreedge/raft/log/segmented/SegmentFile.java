@@ -22,6 +22,7 @@ package org.neo4j.coreedge.raft.log.segmented;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.coreedge.helper.StatUtil.StatContext;
 import org.neo4j.coreedge.raft.log.EntryRecord;
 import org.neo4j.coreedge.raft.log.LogPosition;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
@@ -35,63 +36,75 @@ import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.ReadPastEndException;
-import org.neo4j.storageengine.api.WritableChannel;
 
 import static java.lang.String.format;
 import static org.neo4j.coreedge.raft.log.EntryRecord.read;
 
 /**
  * Keeps track of a segment of the RAFT log, i.e. a consecutive set of entries.
- * A segment can have several concurrent readers but just a single writer.
- *
- * The single writer should perform all write and control operations,
- * since these are not thread-safe.
- *
  * Concurrent reading is thread-safe.
  */
 class SegmentFile implements AutoCloseable
 {
-    static final String CLOSED_ERROR_MESSAGE = "segment file '%s' is closed";
     private static final SegmentHeader.Marshal headerMarshal = new SegmentHeader.Marshal();
 
     private final Log log;
     private final FileSystemAbstraction fileSystem;
     private final File file;
-    private final StoreChannelPool readerPool;
+    private final ReaderPool readerPool;
     private final ChannelMarshal<ReplicatedContent> contentMarshal;
 
+    private final PositionCache positionCache;
+    private final ReferenceCounter refCount;
+
     private final SegmentHeader header;
+    private final long version;
 
     private PhysicalFlushableChannel bufferedWriter;
-    private boolean markedForDisposal;
-    private Runnable onDisposal;
-    private volatile boolean isDisposed;
-    private volatile boolean closed;
+    private final StatContext scanStats;
 
-    SegmentFile( FileSystemAbstraction fileSystem, File file, ChannelMarshal<ReplicatedContent> contentMarshal,
-            LogProvider logProvider, SegmentHeader header )
+    SegmentFile( FileSystemAbstraction fileSystem, File file, ReaderPool readerPool, long version,
+            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider, SegmentHeader header )
+    {
+        this( fileSystem, file, readerPool, version, contentMarshal, logProvider, header, null );
+    }
+
+    SegmentFile( FileSystemAbstraction fileSystem, File file, ReaderPool readerPool, long version,
+            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider, SegmentHeader header, StatContext scanStats )
     {
         this.fileSystem = fileSystem;
         this.file = file;
+        this.readerPool = readerPool;
         this.contentMarshal = contentMarshal;
         this.header = header;
+        this.version = version;
+        this.scanStats = scanStats;
 
-        log = logProvider.getLog( getClass() );
-        readerPool = new StoreChannelPool( fileSystem, file, "r", logProvider );
+        this.positionCache = new PositionCache();
+        this.refCount = new ReferenceCounter();
+
+        this.log = logProvider.getLog( getClass() );
     }
 
-    static SegmentFile create( FileSystemAbstraction fileSystem, File file,
-            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider, SegmentHeader header )
+    static SegmentFile create( FileSystemAbstraction fileSystem, File file, ReaderPool readerPool, long version,
+            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider, SegmentHeader header ) throws IOException
+    {
+        return create( fileSystem, file, readerPool, version, contentMarshal, logProvider, header, null );
+    }
+
+    static SegmentFile create( FileSystemAbstraction fileSystem, File file, ReaderPool readerPool, long version,
+            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider, SegmentHeader header, StatContext scanStats )
             throws IOException
     {
-        SegmentFile segment = new SegmentFile( fileSystem, file, contentMarshal, logProvider, header );
-
         if ( fileSystem.fileExists( file ) )
         {
             throw new IllegalStateException( "File was not expected to exist" );
         }
 
+        SegmentFile segment = new SegmentFile( fileSystem, file, readerPool, version, contentMarshal, logProvider, header, scanStats );
         headerMarshal.marshal( header, segment.getOrCreateWriter() );
+        segment.flush();
+
         return segment;
     }
 
@@ -101,66 +114,79 @@ class SegmentFile implements AutoCloseable
     IOCursor<EntryRecord> getReader( long logIndex ) throws IOException, DisposedException
     {
         assert logIndex > header.prevIndex();
+
+        if ( !refCount.increase() )
+        {
+            throw new DisposedException();
+        }
+
+        /* This is the relative index within the file, starting from zero. */
         long offsetIndex = logIndex - (header.prevIndex() + 1);
 
-        LogPosition position = findCachedStartingPosition( offsetIndex );
+        LogPosition position = positionCache.lookup( offsetIndex );
+        Reader reader = readerPool.acquire( version, position.byteOffset );
 
-        ReadAheadChannel<StoreChannel> reader =
-                new ReadAheadChannel<StoreChannel>( readerPool.acquire( position.byteOffset ) )
-                {
-                    @Override
-                    public void close()
-                    {
-                        // TODO: Consider including position of channel.
-                        readerPool.release( channel );
-                    }
-                };
-
-        long currentIndex = position.logIndex;
-        assert currentIndex == 0; // until we properly implement caching
         try
         {
-            while ( currentIndex < offsetIndex )
+            ReadAheadChannel<StoreChannel> bufferedReader = new ReadAheadChannel<>( reader.channel() );
+            long currentIndex = position.logIndex;
+            if ( scanStats != null )
             {
-                read( reader, contentMarshal );
-                currentIndex++;
+                scanStats.collect( offsetIndex - currentIndex );
             }
-        }
-        catch ( ReadPastEndException e )
-        {
-            reader.close();
-            return IOCursor.getEmpty();
-        }
 
-        return new EntryRecordCursor( reader, contentMarshal, currentIndex, logPosition -> {
             try
             {
-                // TODO: Cache the end position.
-                // TODO: explain why we need the end position in the cache
-                reader.close();
+                /* The cache lookup might have given us an earlier position, scan forward to the exact position. */
+                while ( currentIndex < offsetIndex )
+                {
+                    read( bufferedReader, contentMarshal );
+                    currentIndex++;
+                }
             }
-            catch ( IOException e )
+            catch ( ReadPastEndException e )
             {
-                log.error( "Failed to close reader: " + file );
+                bufferedReader.close();
+                return IOCursor.getEmpty();
             }
-        } );
-    }
 
-    private LogPosition findCachedStartingPosition( long offsetIndex )
-    {
-        // TODO: Implement cache lookups.
-        return new LogPosition( 0, SegmentHeader.SIZE );
-    }
+            return new EntryRecordCursor( bufferedReader, contentMarshal, currentIndex )
+            {
+                boolean closed = false; /* This is just a defensive measure, for catching user errors from messing up the refCount. */
 
-    private PhysicalFlushableChannel getOrCreateWriter() throws IOException
-    {
-        if ( closed )
-        {
-            throw new RuntimeException( format( CLOSED_ERROR_MESSAGE, file ) );
+                @Override
+                public void close()
+                {
+                    if ( closed )
+                    {
+                        throw new IllegalStateException( "Already closed" );
+                    }
+
+                    /* The reader owns the channel and it is returned to the pool with it open. */
+                    closed = true;
+                    positionCache.put( this.position() );
+                    readerPool.release( reader );
+                    refCount.decrease();
+                }
+            };
         }
+        catch ( IOException e )
+        {
+            reader.close();
+            refCount.decrease();
+            throw e;
+        }
+    }
 
+    private synchronized PhysicalFlushableChannel getOrCreateWriter() throws IOException
+    {
         if ( bufferedWriter == null )
         {
+            if ( !refCount.increase() )
+            {
+                throw new IOException( "Writer has been closed" );
+            }
+
             StoreChannel channel = fileSystem.open( file, "rw" );
             channel.position( channel.size() );
             bufferedWriter = new PhysicalFlushableChannel( channel );
@@ -168,24 +194,15 @@ class SegmentFile implements AutoCloseable
         return bufferedWriter;
     }
 
-    /**
-     * There is just a single writer and it is closed when the segment is disposed of.
-     */
-    WritableChannel writer() throws IOException, DisposedException
-    {
-        if ( markedForDisposal )
-        {
-            throw new DisposedException();
-        }
-        return getOrCreateWriter();
-    }
-
-    long position() throws IOException
+    synchronized long position() throws IOException
     {
         return getOrCreateWriter().position();
     }
 
-    void closeWriter()
+    /**
+     * Idempotently closes the writer.
+     */
+    synchronized void closeWriter()
     {
         if ( bufferedWriter != null )
         {
@@ -193,63 +210,30 @@ class SegmentFile implements AutoCloseable
             {
                 flush();
                 bufferedWriter.close();
-                bufferedWriter = null;
-                checkFullDisposal();
             }
             catch ( IOException e )
             {
-                log.error( "Failed to close writer: " + bufferedWriter, e );
+                log.error( "Failed to close writer for: " + file, e );
             }
+
+            bufferedWriter = null;
+            refCount.decrease();
         }
     }
 
-    public void write( long logIndex, RaftLogEntry entry ) throws IOException
+    public synchronized void write( long logIndex, RaftLogEntry entry ) throws IOException
     {
         EntryRecord.write( getOrCreateWriter(), contentMarshal, logIndex, entry.term(), entry.content() );
     }
 
-    void flush() throws IOException
+    synchronized void flush() throws IOException
     {
         bufferedWriter.prepareForFlush().flush();
     }
 
-    /**
-     * Marks this segment for eventual disposal. The segment will not be disposed of until
-     * all readers and writers to the segment file are closed.
-     *
-     * @param onDisposal Called when the segment is fully disposed with no readers and a closed writer.
-     * @throws DisposedException Thrown if this segment already is marked for disposal.
-     */
-    void markForDisposal( Runnable onDisposal ) throws DisposedException
+    public boolean delete()
     {
-        if ( markedForDisposal )
-        {
-            throw new DisposedException();
-        }
-
-        this.onDisposal = onDisposal;
-        this.markedForDisposal = true;
-
-        readerPool.markForDisposal( this::checkFullDisposal );
-    }
-
-    private synchronized void checkFullDisposal()
-    {
-        if ( markedForDisposal && bufferedWriter == null && readerPool.isDisposed() )
-        {
-            isDisposed = true;
-            onDisposal.run();
-        }
-    }
-
-    boolean isDisposed()
-    {
-        return isDisposed;
-    }
-
-    public void delete()
-    {
-        fileSystem.deleteFile( file );
+        return fileSystem.deleteFile( file );
     }
 
     public SegmentHeader header()
@@ -262,30 +246,44 @@ class SegmentFile implements AutoCloseable
         return fileSystem.getFileSize( file );
     }
 
-    public String getFilename()
+    String getFilename()
     {
         return file.getName();
     }
 
-    @Override
-    public void close() throws DisposedException
+    /**
+     * Called by the pruner when it wants to prune this segment. If there are no open
+     * readers or writers then the segment will be closed.
+     *
+     * @return True if the segment can be pruned at this time, false otherwise.
+     */
+    boolean tryClose()
     {
-        if ( closed )
+        if ( refCount.tryDispose() )
         {
-            throw new RuntimeException( format( CLOSED_ERROR_MESSAGE, file ) );
+            close();
+            return true;
         }
+        return false;
+    }
 
-        closed = true;
+    @Override
+    public void close()
+    {
         closeWriter();
-        readerPool.close();
+
+        if ( !refCount.tryDispose() )
+        {
+            throw new IllegalStateException( format( "Segment still referenced. Value: %d", refCount.get() ) );
+        }
     }
 
     @Override
     public String toString()
     {
         return "SegmentFile{" +
-                "file=" + file.getName() +
-                ", header=" + header +
-                '}';
+               "file=" + file.getName() +
+               ", header=" + header +
+               '}';
     }
 }

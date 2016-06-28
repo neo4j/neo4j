@@ -17,36 +17,50 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.log;
+package org.neo4j.coreedge.raft.log.segmented;
 
-import java.util.Objects;
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
 
-public class LogPosition
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
+
+public class Reader implements Closeable
 {
-    public long logIndex;
-    public long byteOffset;
+    private final long version;
+    private final StoreChannel storeChannel;
+    private long timeStamp;
 
-    public LogPosition( long logIndex, long byteOffset )
+    Reader( FileSystemAbstraction fsa, File file, long version ) throws IOException
     {
-        this.logIndex = logIndex;
-        this.byteOffset = byteOffset;
+        this.storeChannel = fsa.open( file, "r" );
+        this.version = version;
+    }
+
+    public long version()
+    {
+        return version;
+    }
+
+    public StoreChannel channel()
+    {
+        return storeChannel;
     }
 
     @Override
-    public boolean equals( Object o )
+    public void close() throws IOException
     {
-        if ( this == o )
-        { return true; }
-        if ( o == null || getClass() != o.getClass() )
-        { return false; }
-        LogPosition position = (LogPosition) o;
-        return logIndex == position.logIndex &&
-               byteOffset == position.byteOffset;
+        storeChannel.close();
     }
 
-    @Override
-    public int hashCode()
+    void setTimeStamp( long timeStamp )
     {
-        return Objects.hash( logIndex, byteOffset );
+        this.timeStamp = timeStamp;
+    }
+
+    long getTimeStamp()
+    {
+        return timeStamp;
     }
 }

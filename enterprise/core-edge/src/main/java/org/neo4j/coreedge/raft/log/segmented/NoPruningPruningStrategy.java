@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.raft.log.segmented;
 
-public class NoPruningPruningStrategy implements CoreLogPruningStrategy
+class NoPruningPruningStrategy implements CoreLogPruningStrategy
 {
     @Override
     public long getIndexToKeep( Segments segments )

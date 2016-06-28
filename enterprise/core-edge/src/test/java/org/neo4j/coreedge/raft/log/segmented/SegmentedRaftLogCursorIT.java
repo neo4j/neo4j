@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Test;
 
 import java.io.File;
+import java.time.Clock;
 
 import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.log.DummyRaftableContentSerializer;
@@ -56,15 +57,18 @@ public class SegmentedRaftLogCursorIT
         {
             fileSystem = new EphemeralFileSystemAbstraction();
         }
+
         File directory = new File( SEGMENTED_LOG_DIRECTORY_NAME );
         fileSystem.mkdir( directory );
 
         SegmentedRaftLog newRaftLog =
                 new SegmentedRaftLog( fileSystem, directory, rotateAtSize, new DummyRaftableContentSerializer(),
-                        NullLogProvider.getInstance(), pruneStrategy );
+                        NullLogProvider.getInstance(), pruneStrategy, 8, Clock.systemUTC() );
+
         life.add( newRaftLog );
         life.init();
         life.start();
+
         return newRaftLog;
     }
 
@@ -83,8 +87,11 @@ public class SegmentedRaftLogCursorIT
         long lastIndex = segmentedRaftLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 3 ) ) );
 
         //when
-        RaftLogCursor entryCursor = segmentedRaftLog.getEntryCursor( lastIndex + 1 );
-        boolean next = entryCursor.next();
+        boolean next;
+        try ( RaftLogCursor entryCursor = segmentedRaftLog.getEntryCursor( lastIndex + 1 ) )
+        {
+            next = entryCursor.next();
+        }
 
         //then
         assertFalse( next );
@@ -100,8 +107,11 @@ public class SegmentedRaftLogCursorIT
         long lastIndex = segmentedRaftLog.append( new RaftLogEntry( 3, ReplicatedInteger.valueOf( 3 ) ) );
 
         //when
-        RaftLogCursor entryCursor = segmentedRaftLog.getEntryCursor( lastIndex );
-        boolean next = entryCursor.next();
+        boolean next;
+        try ( RaftLogCursor entryCursor = segmentedRaftLog.getEntryCursor( lastIndex ) )
+        {
+            next = entryCursor.next();
+        }
 
         //then
         assertTrue( next );

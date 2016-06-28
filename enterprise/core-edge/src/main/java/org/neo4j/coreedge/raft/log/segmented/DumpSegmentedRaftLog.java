@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ListIterator;
 
 import org.neo4j.coreedge.raft.log.EntryRecord;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
@@ -36,6 +35,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
+import static java.time.Clock.systemUTC;
 
 class DumpSegmentedRaftLog
 {
@@ -53,34 +53,45 @@ class DumpSegmentedRaftLog
             throws IOException, DamagedLogStorageException, DisposedException
     {
         LogProvider logProvider = NullLogProvider.getInstance();
-        int logsFound = 0;
+        final int[] logsFound = {0};
+        FileNames fileNames = new FileNames( new File( filenameOrDirectory ) );
+        ReaderPool readerPool = new ReaderPool( 0, logProvider, fileNames, fileSystem, systemUTC() );
         RecoveryProtocol recoveryProtocol =
-                new RecoveryProtocol( fileSystem, new FileNames( new File( filenameOrDirectory ) ), marshal,
-                        logProvider );
+                new RecoveryProtocol( fileSystem, fileNames, readerPool, marshal, logProvider );
         Segments segments = recoveryProtocol.run().segments;
 
-        ListIterator<SegmentFile> segmentFileIterator = segments.getSegmentFileIteratorAtStart();
+        segments.visit( (segment) -> {
+                logsFound[0]++;
+                out.println( "=== " + segment.getFilename() + " ===" );
 
-        SegmentFile currentSegmentFile;
-        while (segmentFileIterator.hasNext())
-        {
-            currentSegmentFile = segmentFileIterator.next();
-            logsFound++;
-            out.println( "=== " + currentSegmentFile.getFilename() + " ===" );
+                SegmentHeader header = segment.header();
 
-            SegmentHeader header = currentSegmentFile.header();
+                out.println( header.toString() );
 
-            out.println( header.toString() );
-
-            try ( IOCursor<EntryRecord> cursor = currentSegmentFile.getReader( header.prevIndex() + 1 ) )
-            {
-                while ( cursor.next() )
+                try ( IOCursor<EntryRecord> cursor = segment.getReader( header.prevIndex() + 1 ) )
                 {
-                    out.println( cursor.get().toString() );
+                    while ( cursor.next() )
+                    {
+                        out.println( cursor.get().toString() );
+                    }
                 }
-            }
-        }
-        return logsFound;
+                catch ( DisposedException e )
+                {
+                    e.printStackTrace();
+                    System.exit( -1 );
+                    return true;
+                }
+                catch ( IOException e )
+                {
+                    e.printStackTrace();
+                    System.exit( -1 );
+                    return true;
+                }
+
+                return false;
+        } );
+
+        return logsFound[0];
     }
 
     public static void main( String[] args ) throws IOException, DisposedException, DamagedLogStorageException

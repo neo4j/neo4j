@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.raft.log.segmented;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -30,15 +31,12 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.time.FakeClock;
 
-import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.neo4j.coreedge.raft.ReplicatedString.valueOf;
 import static org.neo4j.coreedge.raft.log.segmented.SegmentFile.create;
 
@@ -46,7 +44,8 @@ public class SegmentFileTest
 {
     @Rule
     public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private final File raftLogFile = new File( "raft-log.0" );
+    private final File baseDir = new File( "raft-log" );
+    private final FileNames fileNames = new FileNames( baseDir );
     private final DummyRaftableContentSerializer contentMarshal = new DummyRaftableContentSerializer();
     private final NullLogProvider logProvider = NullLogProvider.getInstance();
     private final SegmentHeader segmentHeader = new SegmentHeader( -1, 0, -1, -1 );
@@ -56,24 +55,34 @@ public class SegmentFileTest
     private final RaftLogEntry entry2 = new RaftLogEntry( 31, valueOf( "contentB" ) );
     private final RaftLogEntry entry3 = new RaftLogEntry( 32, valueOf( "contentC" ) );
     private final RaftLogEntry entry4 = new RaftLogEntry( 33, valueOf( "contentD" ) );
+    private final int version = 0;
+
+    private ReaderPool readerPool = new ReaderPool( 0, logProvider, fileNames, fsRule.get(), new FakeClock() );
+
+    @Before
+    public void before()
+    {
+        fsRule.get().mkdirs( baseDir );
+    }
 
     @Test
     public void shouldReportCorrectInitialValues() throws Exception
     {
-        try ( SegmentFile segment = create( fsRule.get(), raftLogFile, contentMarshal, logProvider, segmentHeader ) )
+        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, version, contentMarshal, logProvider, segmentHeader ) )
         {
             assertEquals( 0, segment.header().version() );
-            assertFalse( segment.isDisposed() );
 
             IOCursor<EntryRecord> reader = segment.getReader( 0 );
             assertFalse( reader.next() );
+
+            reader.close();
         }
     }
 
     @Test
     public void shouldBeAbleToWriteAndRead() throws Exception
     {
-        try ( SegmentFile segment = create( fsRule.get(), raftLogFile, contentMarshal, logProvider, segmentHeader ) )
+        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, segmentHeader ) )
         {
             // given
             segment.write( 0, entry1 );
@@ -85,13 +94,15 @@ public class SegmentFileTest
             // then
             assertTrue( reader.next() );
             assertEquals( entry1, reader.get().logEntry() );
+
+            reader.close();
         }
     }
 
     @Test
     public void shouldBeAbleToReadFromOffset() throws Exception
     {
-        try ( SegmentFile segment = create( fsRule.get(), raftLogFile, contentMarshal, logProvider, segmentHeader ) )
+        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, segmentHeader ) )
         {
             // given
             segment.write( 0, entry1 );
@@ -106,13 +117,15 @@ public class SegmentFileTest
             // then
             assertTrue( reader.next() );
             assertEquals( entry3, reader.get().logEntry() );
+
+            reader.close();
         }
     }
 
     @Test
     public void shouldBeAbleToRepeatedlyReadWrittenValues() throws Exception
     {
-        try ( SegmentFile segment = create( fsRule.get(), raftLogFile, contentMarshal, logProvider, segmentHeader ) )
+        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, segmentHeader ) )
         {
             // given
             segment.write( 0, entry1 );
@@ -140,132 +153,78 @@ public class SegmentFileTest
     }
 
     @Test
-    public void shouldCallDisposeHandler() throws Exception
+    public void shouldBeAbleToCloseOnlyAfterWriterIsClosed() throws Exception
     {
-        try ( SegmentFile segment = create( fsRule.get(), raftLogFile, contentMarshal, logProvider, segmentHeader ) )
+        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, segmentHeader ) )
         {
             // given
-            Runnable onDisposeHandler = mock( Runnable.class );
-
-            // when
-            segment.closeWriter();
-            segment.markForDisposal( onDisposeHandler );
-
-            // then
-            verify( onDisposeHandler ).run();
-        }
-    }
-
-    @Test
-    public void shouldCallDisposeHandlerAfterWriterIsClosed() throws Exception
-    {
-        try ( SegmentFile segment = create( fsRule.get(), raftLogFile, contentMarshal, logProvider, segmentHeader ) )
-        {
-            // given
-            Runnable onDisposeHandler = mock( Runnable.class );
-            segment.write( 0, entry1 );
-            segment.flush();
-
-            // when
-            segment.markForDisposal( onDisposeHandler );
-
-            // then
-            verify( onDisposeHandler, never() ).run();
+            assertFalse( segment.tryClose() );
 
             // when
             segment.closeWriter();
 
             // then
-            assertTrue( segment.isDisposed() );
-            verify( onDisposeHandler ).run();
+            assertTrue( segment.tryClose() );
         }
     }
 
     @Test
     public void shouldCallDisposeHandlerAfterLastReaderIsClosed() throws Exception
     {
-        try ( SegmentFile segment = create( fsRule.get(), raftLogFile, contentMarshal, logProvider, segmentHeader ) )
+        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, segmentHeader ) )
         {
             // given
-            Runnable onDisposeHandler = mock( Runnable.class );
             IOCursor<EntryRecord> reader0 = segment.getReader( 0 );
             IOCursor<EntryRecord> reader1 = segment.getReader( 1 );
 
             // when
             segment.closeWriter();
-            segment.markForDisposal( onDisposeHandler );
             reader0.close();
 
             // then
-            verify( onDisposeHandler, never() ).run();
+            assertFalse( segment.tryClose() );
 
             // when
             reader1.close();
 
             // then
-            assertTrue( segment.isDisposed() );
-            verify( onDisposeHandler ).run();
+            assertTrue( segment.tryClose() );
         }
     }
 
     @Test
-    public void shouldCallDisposeHandlerAfterBothReadersAndWriterAreClosed() throws Exception
+    public void shouldHaveIdempotentCloseMethods() throws Exception
     {
-        try ( SegmentFile segment = create( fsRule.get(), raftLogFile, contentMarshal, logProvider, segmentHeader ) )
-        {
-            // given
-            Runnable onDisposeHandler = mock( Runnable.class );
-            IOCursor<EntryRecord> reader0 = segment.getReader( 0 );
-            IOCursor<EntryRecord> reader1 = segment.getReader( 1 );
-            IOCursor<EntryRecord> reader2 = segment.getReader( 1 );
+        // given
+        SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, segmentHeader );
+        IOCursor<EntryRecord> reader = segment.getReader( 0 );
 
-            segment.write( 0, entry1 );
-            segment.flush();
+        // when
+        segment.closeWriter();
+        reader.close();
 
-            // when
-            segment.markForDisposal( onDisposeHandler );
-            reader0.close();
-            reader1.close();
-            segment.closeWriter();
-
-            // then
-            verify( onDisposeHandler, never() ).run();
-
-            // when
-            reader2.close();
-
-            // then
-            assertTrue( segment.isDisposed() );
-            verify( onDisposeHandler ).run();
-        }
-    }
-
-    @Test
-    public void shouldDisposePoolAndWriterOnClose() throws Exception
-    {
-        SegmentFile segment = create( fsRule.get(), raftLogFile, contentMarshal, logProvider, segmentHeader );
+        // then
+        assertTrue( segment.tryClose() );
         segment.close();
+        assertTrue( segment.tryClose() );
+        segment.close();
+    }
 
-        try
+    @Test
+    public void shouldCatchDoubleCloseReaderErrors() throws Exception
+    {
+        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, segmentHeader ) )
         {
-            segment.getReader( 0 );
-            fail( "should have thrown" );
-        }
-        catch ( RuntimeException ex )
-        {
-            // good!
-            assertEquals( StoreChannelPool.CLOSED_ERROR_MESSAGE, ex.getMessage() );
-        }
+            // given
+            IOCursor<EntryRecord> reader = segment.getReader( 0 );
 
-        try
-        {
-            segment.writer();
-            fail( "should have thrown" );
+            reader.close();
+            reader.close();
+            fail( "Should have caught double close error" );
         }
-        catch ( RuntimeException ex )
+        catch ( IllegalStateException e )
         {
-            // good!
-            assertEquals( format( SegmentFile.CLOSED_ERROR_MESSAGE, raftLogFile ), ex.getMessage() );
+            // expected
         }
     }
 }

@@ -19,33 +19,39 @@
  */
 package org.neo4j.coreedge.raft.log.segmented;
 
-import java.util.ListIterator;
+import org.neo4j.helpers.collection.Visitor;
 
-public class SizeBasedLogPruningStrategy implements CoreLogPruningStrategy
+class SizeBasedLogPruningStrategy implements CoreLogPruningStrategy, Visitor<SegmentFile,RuntimeException>
 {
     private final long bytesToKeep;
+    private long accumulatedSize;
+    private SegmentFile file;
 
-    public SizeBasedLogPruningStrategy( long bytesToKeep )
+    SizeBasedLogPruningStrategy( long bytesToKeep )
     {
         this.bytesToKeep = bytesToKeep;
     }
 
-    public long getIndexToKeep( Segments segments )
+    public synchronized long getIndexToKeep( Segments segments )
     {
-        long accumulatedSize = 0;
-        ListIterator<SegmentFile> iterator = segments.getSegmentFileIteratorAtEnd();
-        SegmentFile segmentFile = null;
-        while ( accumulatedSize < bytesToKeep && iterator.hasPrevious() )
-        {
-            segmentFile = iterator.previous();
-            accumulatedSize += sizeOf( segmentFile );
-        }
+        accumulatedSize = 0;
+        file = null;
 
-        return segmentFile != null ? segmentFile.header().prevIndex() : -1;
+        segments.visitBackwards( this );
+
+        return file != null ? (file.header().prevIndex() + 1) : -1;
     }
 
-    private long sizeOf( SegmentFile value )
+    @Override
+    public boolean visit( SegmentFile segment ) throws RuntimeException
     {
-        return value.size();
+        if ( accumulatedSize < bytesToKeep )
+        {
+            file = segment;
+            accumulatedSize += file.size();
+            return false;
+        }
+
+        return true;
     }
 }

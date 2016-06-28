@@ -21,6 +21,7 @@ package org.neo4j.coreedge.raft.log.debug;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Clock;
 
 import org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
@@ -50,9 +51,11 @@ public class ReplayRaftLog
         File logDirectory = new File( from );
         System.out.println( "logDirectory = " + logDirectory );
         Config config = new Config( stringMap() );
+
         SegmentedRaftLog log = new SegmentedRaftLog( new DefaultFileSystemAbstraction(), logDirectory,
                 config.get( CoreEdgeClusterSettings.raft_log_rotation_size ), new CoreReplicatedContentMarshal(),
-                NullLogProvider.getInstance(), config.get( CoreEdgeClusterSettings.raft_log_pruning_strategy ) );
+                NullLogProvider.getInstance(), config.get( CoreEdgeClusterSettings.raft_log_pruning_strategy ),
+                config.get( CoreEdgeClusterSettings.raft_log_reader_pool_size ), Clock.systemUTC() );
 
         long totalCommittedEntries = log.appendIndex(); // Not really, but we need to have a way to pass in the commit index
         for ( int i = 0; i <= totalCommittedEntries; i++ )

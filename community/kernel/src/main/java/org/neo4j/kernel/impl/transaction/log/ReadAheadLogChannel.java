@@ -56,7 +56,7 @@ public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChann
     @Override
     public LogPositionMarker getCurrentPosition( LogPositionMarker positionMarker ) throws IOException
     {
-        positionMarker.mark( channel.getVersion(), offset() );
+        positionMarker.mark( channel.getVersion(), position() );
         return positionMarker;
     }
 

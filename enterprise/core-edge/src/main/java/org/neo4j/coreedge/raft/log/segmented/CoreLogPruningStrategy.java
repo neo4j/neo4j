@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.raft.log.segmented;
 
-public interface CoreLogPruningStrategy
+interface CoreLogPruningStrategy
 {
     /**
      * Returns the index to keep depending on the configuration strategy.
@@ -27,8 +27,9 @@ public interface CoreLogPruningStrategy
      *
      * It is worth noting that the returned value may be the first available value,
      * rather than the first possible value. This signifies that no pruning is needed.
-     * @param segments
-     * @return  The lowest index the pruning configuration allows to keep. It is a value in the same range as
+     *
+     * @param segments The segments to inspect.
+     * @return The lowest index the pruning configuration allows to keep. It is a value in the same range as
      * append indexes, starting from -1 all the way to {@link Long#MAX_VALUE}.
      */
     long getIndexToKeep( Segments segments );

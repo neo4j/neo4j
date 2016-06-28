@@ -388,7 +388,7 @@ public abstract class RaftLogContractTest
     }
 
     @Test
-    public void shouldThrowExceptionIfReadingAnEntryThatDoesNotExist() throws Exception
+    public void shouldThrowExceptionWhenReadingAnEntryWhichHasBeenPruned() throws Exception
     {
         RaftLog log = createRaftLog();
         log.append( new RaftLogEntry( 0, string( 1024 ) ) );

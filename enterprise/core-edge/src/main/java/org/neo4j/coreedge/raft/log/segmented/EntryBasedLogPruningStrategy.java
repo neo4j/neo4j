@@ -19,17 +19,16 @@
  */
 package org.neo4j.coreedge.raft.log.segmented;
 
-import java.util.ListIterator;
-
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class EntryBasedLogPruningStrategy implements CoreLogPruningStrategy
+class EntryBasedLogPruningStrategy implements CoreLogPruningStrategy
 {
     private final long entriesToKeep;
     private final Log log;
 
-    public EntryBasedLogPruningStrategy( long entriesToKeep, LogProvider logProvider )
+    EntryBasedLogPruningStrategy( long entriesToKeep, LogProvider logProvider )
     {
         this.entriesToKeep = entriesToKeep;
         this.log = logProvider.getLog( getClass() );
@@ -38,27 +37,41 @@ public class EntryBasedLogPruningStrategy implements CoreLogPruningStrategy
     @Override
     public long getIndexToKeep( Segments segments )
     {
-        ListIterator<SegmentFile> iterator = segments.getSegmentFileIteratorAtEnd();
-        SegmentFile segmentFile = null;
-        long nextPrevIndex = 0;
-        long accumulated = 0;
-        if ( !iterator.hasPrevious() )
+        SegmentVisitor visitor = new SegmentVisitor();
+        segments.visitBackwards( visitor );
+
+        if ( visitor.visitedCount == 0 )
         {
             log.warn( "No log files found during the prune operation. This state should resolve on its own, but" +
-                    " if this warning continues, you may want to look for other errors in the user log." );
-            return -1; // -1 is the lowest possible append index and so always safe to return.
+                      " if this warning continues, you may want to look for other errors in the user log." );
         }
-        segmentFile = iterator.previous();
-        nextPrevIndex = segmentFile.header().prevIndex();
-        long prevIndex;
-        // Iterate backwards through the files, counting entries from the headers until the limit is reached.
-        while ( accumulated < entriesToKeep && iterator.hasPrevious() )
+
+        return visitor.prevIndex;
+    }
+
+    private class SegmentVisitor implements Visitor<SegmentFile,RuntimeException>
+    {
+        long visitedCount;
+        long accumulated;
+        long prevIndex = -1;
+        long lastPrevIndex = -1;
+
+        @Override
+        public boolean visit( SegmentFile segment ) throws RuntimeException
         {
-            segmentFile = iterator.previous();
-            prevIndex = segmentFile.header().prevIndex();
-            accumulated += (nextPrevIndex - prevIndex);
-            nextPrevIndex = prevIndex;
+            visitedCount++;
+
+            if ( lastPrevIndex == -1 )
+            {
+                lastPrevIndex = segment.header().prevIndex();
+                return false; // first entry, continue visiting next
+            }
+
+            prevIndex = segment.header().prevIndex();
+            accumulated += (lastPrevIndex - prevIndex);
+            lastPrevIndex = prevIndex;
+
+            return accumulated >= entriesToKeep;
         }
-        return segmentFile.header().prevIndex();
     }
 }

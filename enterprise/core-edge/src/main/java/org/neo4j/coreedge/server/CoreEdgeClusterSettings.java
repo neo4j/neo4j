@@ -197,6 +197,10 @@ public class CoreEdgeClusterSettings
     public static final Setting<Long> raft_log_rotation_size =
             setting( "core_edge.raft_log_rotation_size", BYTES, "1M", min( 1024L ) );
 
+    @Description( "RAFT log reader pool size" )
+    public static final Setting<Integer> raft_log_reader_pool_size =
+            setting( "core_edge.raft_log_reader_pool_size", INTEGER, "8" );
+
     @Description( "RAFT log pruning frequency" )
     public static final Setting<Long> raft_log_pruning_frequency =
             setting( "core_edge.raft_log_pruning_frequency", DURATION, "10m" );
