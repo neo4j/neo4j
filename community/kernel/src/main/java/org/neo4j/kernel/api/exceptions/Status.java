@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Collections;
 
 import static java.lang.String.format;
-
 import static org.neo4j.kernel.api.exceptions.Status.Classification.ClientError;
 import static org.neo4j.kernel.api.exceptions.Status.Classification.ClientNotification;
 import static org.neo4j.kernel.api.exceptions.Status.Classification.DatabaseError;
@@ -123,7 +122,9 @@ public interface Status
                 " and so this transaction was rolled back although it may have looked like it was going to be " +
                 "committed" ),
         Outdated( TransientError, "Transaction has seen state which has been invalidated by applied updates while " +
-                "transaction was active. Transaction should succeed if retried" )
+                "transaction was active. Transaction should succeed if retried." ),
+        LockClientStopped( TransientError, "Lock client is stopped, no more locks can be acquired." ),
+        Terminated( TransientError, "Explicitly terminated by the user." )
         ;
 
 

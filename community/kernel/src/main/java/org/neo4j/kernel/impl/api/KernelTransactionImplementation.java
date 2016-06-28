@@ -544,8 +544,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( success && terminated )
         {
-            String terminationMessage = terminationReason == null ? "" : terminationReason.code().description();
-            throw new TransactionTerminatedException( terminationMessage );
+            throw new TransactionTerminatedException( terminationReason );
         }
         if ( success )
         {

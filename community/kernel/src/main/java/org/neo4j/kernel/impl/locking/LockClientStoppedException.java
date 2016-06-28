@@ -20,8 +20,7 @@
 package org.neo4j.kernel.impl.locking;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
-
-import static java.util.Objects.requireNonNull;
+import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * Exception thrown when stopped {@link Locks.Client} used to acquire locks.
@@ -30,6 +29,6 @@ public class LockClientStoppedException extends TransactionTerminatedException
 {
     public LockClientStoppedException( Locks.Client client )
     {
-        super( requireNonNull( client ) + " is stopped" );
+        super( Status.Transaction.LockClientStopped, String.valueOf( client ) );
     }
 }

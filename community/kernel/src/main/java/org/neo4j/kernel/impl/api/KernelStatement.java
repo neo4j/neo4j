@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.graphdb.NotInTransactionException;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
@@ -37,8 +38,6 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.locking.Locks;
-
-import static org.neo4j.kernel.impl.api.TransactionTermination.throwCorrectExceptionBasedOnTerminationReason;
 
 public class KernelStatement implements TxStateHolder, Statement
 {
@@ -132,7 +131,7 @@ public class KernelStatement implements TxStateHolder, Statement
         Status terminationReason = transaction.shouldBeTerminated();
         if ( terminationReason != null )
         {
-            throwCorrectExceptionBasedOnTerminationReason( terminationReason );
+            throw new TransactionTerminatedException( terminationReason );
         }
     }
 

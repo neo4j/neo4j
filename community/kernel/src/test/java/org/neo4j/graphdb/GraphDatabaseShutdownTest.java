@@ -133,7 +133,7 @@ public class GraphDatabaseShutdownTest
         }
         catch ( Exception e )
         {
-            assertThat( rootCause( e ), instanceOf( TransientTransactionFailureException.class ) );
+            assertThat( rootCause( e ), instanceOf( TransactionTerminatedException.class ) );
         }
     }
 
