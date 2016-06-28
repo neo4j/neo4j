@@ -20,8 +20,12 @@
 package org.neo4j.server.rest.security;
 
 import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.node.ArrayNode;
+import org.codehaus.jackson.node.ObjectNode;
+import org.codehaus.jackson.node.TextNode;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Consumer;
@@ -35,6 +39,7 @@ import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.security.enterprise.auth.EnterpriseAuthManager;
+import org.neo4j.server.security.enterprise.auth.EnterpriseUserManager;
 import org.neo4j.server.security.enterprise.auth.NeoInteractionLevel;
 import org.neo4j.test.server.HTTP;
 
@@ -55,9 +60,9 @@ public class NeoFullRESTInteraction extends CommunityServerTestBase implements N
     }
 
     @Override
-    public EnterpriseAuthManager getManager()
+    public EnterpriseUserManager getManager()
     {
-        return server.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
+        return server.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class ).getUserManager();
     }
 
     @Override
@@ -146,7 +151,7 @@ public class NeoFullRESTInteraction extends CommunityServerTestBase implements N
         return server.baseUri().resolve( COMMIT_PATH ).toString();
     }
 
-    class RESTResult implements ResourceIterator<Map<String, Object>>
+    class RESTResult implements ResourceIterator<Map<String,Object>>
     {
         private JsonNode data;
         private JsonNode columns;
@@ -178,7 +183,30 @@ public class NeoFullRESTInteraction extends CommunityServerTestBase implements N
             for ( int i = 0; i < columns.size(); i++ )
             {
                 String key = columns.get( i ).asText();
-                map.put( key, row.get( i ).asText() );
+                JsonNode value = row.get( i );
+                if ( value instanceof TextNode )
+                {
+                    map.put( key, row.get( i ).asText() );
+                }
+                else if ( value instanceof ArrayNode )
+                {
+                    ArrayNode aNode = (ArrayNode) value;
+                    ArrayList<String> listValue = new ArrayList( aNode.size() );
+                    for ( int j = 0; j < aNode.size(); j++ )
+                    {
+                        listValue.add( aNode.get( j ).asText() );
+                    }
+                    map.put( key, listValue );
+                }
+                else if ( value instanceof ObjectNode )
+                {
+                    map.put( key, value );
+                }
+                else
+                {
+                    throw new RuntimeException( "Unhandled REST value type '" + value.getClass() +
+                            "'. Need String (TextNode) or List (ArrayNode)." );
+                }
             }
 
             return map;
