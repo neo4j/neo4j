@@ -1015,6 +1015,25 @@ public class ProcedureIT
         assertFalse( res.hasNext() );
     }
 
+    @Test
+    public void shouldIndicateDefaultValueWhenListingProcedures() throws Throwable
+    {
+        //Given/When
+        Result res = db.execute( "CALL dbms.procedures()" );
+
+        while(res.hasNext())
+        {
+            Map<String,Object> result = res.next();
+            if ( result.get("name").equals( "org.neo4j.procedure.nodeWithDefault" ))
+            {
+                assertThat(result.get("signature"),
+                        equalTo("org.neo4j.procedure.nodeWithDefault(node = null :: NODE?) :: (node :: NODE?)"));
+            }
+        }
+        // Then
+        assertFalse( res.hasNext() );
+    }
+
     @Before
     public void setUp() throws IOException
     {

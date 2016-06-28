@@ -130,7 +130,8 @@ public class ProcedureSignature
         @Override
         public String toString()
         {
-            return String.format("%s :: %s", name, type);
+            String nameValue = defaultValue.isPresent() ? name + " = " + defaultValue.get().value() : name;
+            return String.format("%s :: %s", nameValue, type);
         }
 
         @Override
