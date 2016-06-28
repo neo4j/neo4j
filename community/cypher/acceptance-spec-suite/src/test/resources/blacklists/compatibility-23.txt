@@ -5,3 +5,11 @@ Standalone call to VOID procedure
 Standalone call to VOID procedure without arguments
 Standalone call to empty procedure
 Standalone call to empty procedure without arguments
+Standalone call to procedure with explicit arguments
+Standalone call to procedure with implicit arguments
+Standalone call to procedure with argument of type NUMBER accepts value of type INTEGER
+Standalone call to procedure with argument of type NUMBER accepts value of type FLOAT
+Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT
+Standalone call to procedure with argument of type FLOAT accepts value of type INTEGER
+Standalone call to procedure with null argument
+

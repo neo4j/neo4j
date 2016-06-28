@@ -24,67 +24,12 @@ import org.neo4j.kernel.api.proc.Neo4jTypes
 
 class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
 
-  test("should be able to call procedure with explicit arguments") {
-    // Given
-    registerDummyInOutProcedure(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
-
-    // When
-    val result = execute("CALL my.first.proc('42', 42)")
-
-    // Then
-    result.toList should equal(List(Map("out0" -> "42", "out1" -> 42)))
-  }
-
-  test("should be able to call procedure with implicit arguments") {
-    // Given
-    registerDummyInOutProcedure(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
-
-    // When
-    val result = execute("CALL my.first.proc", "in0" -> "42", "in1" -> 42)
-
-    // Then
-    result.toList should equal(List(Map("out0" -> "42", "out1" -> 42)))
-  }
-
   test("should fail if input type is wrong") {
     // Given
     registerDummyInOutProcedure(Neo4jTypes.NTNumber)
 
     // Then
     a [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten')"))
-  }
-
-  test("if signature declares number all number types are valid") {
-    // Given
-    registerDummyInOutProcedure(Neo4jTypes.NTNumber)
-
-    // Then
-    execute("CALL my.first.proc(42)").toList should equal(List(Map("out0" -> 42)))
-    execute("CALL my.first.proc(42.3)").toList should equal(List(Map("out0" -> 42.3)))
-  }
-
-  test("arguments are nullable") {
-    // Given
-    registerDummyInOutProcedure(Neo4jTypes.NTNumber)
-
-    // Then
-    execute("CALL my.first.proc(NULL)").toList should equal(List(Map("out0" -> null)))
-  }
-
-  test("should not fail if a procedure declares a float but gets an integer") {
-    // Given
-    registerDummyInOutProcedure(Neo4jTypes.NTFloat)
-
-    // Then
-    a [CypherTypeException] shouldNot be(thrownBy(execute("CALL my.first.proc(42)")))
-  }
-
-  test("should not fail if a procedure declares a float but gets called with an integer") {
-    // Given
-    registerDummyInOutProcedure(Neo4jTypes.NTFloat)
-
-    // Then
-    a [CypherTypeException] shouldNot be(thrownBy(execute("CALL my.first.proc({param})", "param" -> 42)))
   }
 
   test("should fail if explicit argument is missing") {

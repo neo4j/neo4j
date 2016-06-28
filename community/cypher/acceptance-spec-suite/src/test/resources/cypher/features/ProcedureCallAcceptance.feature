@@ -24,24 +24,24 @@ Feature: ProcedureCallAcceptance
     Given an empty graph
 
   Scenario: Standalone call to procedure without arguments
-   And there exists a procedure test.labels() :: (label :: STRING?):
-     |label|
-     |'A'  |
-     |'B'  |
-     |'C'  |
-  When executing query:
+    And there exists a procedure test.labels() :: (label :: STRING?):
+      | label |
+      | 'A'   |
+      | 'B'   |
+      | 'C'   |
+    When executing query:
     """
     CALL test.labels()
     """
-  Then the result should be, in order:
-    |label|
-    |'A'  |
-    |'B'  |
-    |'C'  |
+    Then the result should be, in order:
+      | label |
+      | 'A'   |
+      | 'B'   |
+      | 'C'   |
 
   Scenario: Standalone call to VOID procedure
     And there exists a procedure test.doNothing() :: VOID:
-     |
+      |
     When executing query:
     """
     CALL test.doNothing()
@@ -74,3 +74,104 @@ Feature: ProcedureCallAcceptance
     CALL test.doNothing
     """
     Then the result should be empty
+
+  Scenario: Standalone call to procedure with explicit arguments
+    And there exists a procedure test.my.proc(name :: STRING?, id :: INTEGER?) :: (city :: STRING?, country_code :: INTEGER?):
+      | name     | id | city      | country_code |
+      | 'Andres' | 1  | 'Malmö'   | 46           |
+      | 'Tobias' | 1  | 'Malmö'   | 46           |
+      | 'Mats'   | 1  | 'Malmö'   | 46           |
+      | 'Stefan' | 1  | 'Berlin'  | 49           |
+      | 'Stefan' | 2  | 'München' | 49           |
+      | 'Petra'  | 1  | 'London'  | 44           |
+    When executing query:
+    """
+    CALL test.my.proc('Stefan', 1)
+    """
+    Then the result should be, in order:
+      | city     | country_code |
+      | 'Berlin' | 49           |
+
+  @pending
+  Scenario: Standalone call to procedure with implicit arguments
+    Given this scenario is pending on: decision to change semantics to be in line with the explicit argument form of standalone calls
+    And there exists a procedure test.my.proc(name :: STRING?, id :: INTEGER?) :: (city :: STRING?, country_code :: INTEGER?):
+      | name     | id | city      | country_code |
+      | 'Andres' | 1  | 'Malmö'   | 46           |
+      | 'Tobias' | 1  | 'Malmö'   | 46           |
+      | 'Mats'   | 1  | 'Malmö'   | 46           |
+      | 'Stefan' | 1  | 'Berlin'  | 49           |
+      | 'Stefan' | 2  | 'München' | 49           |
+      | 'Petra'  | 1  | 'London'  | 44           |
+    And parameters are:
+      | name | 'Stefan' |
+      | id   | 1        |
+    When executing query:
+    """
+    CALL test.my.proc
+    """
+    Then the result should be, in order:
+      | city     | country_code |
+      | 'Berlin' | 49           |
+
+  Scenario: Standalone call to procedure with argument of type NUMBER accepts value of type INTEGER
+    And there exists a procedure test.my.proc(in :: NUMBER?) :: (out :: STRING?):
+      | in   | out           |
+      | 42   | 'wisdom'      |
+      | 42.3 | 'about right' |
+    When executing query:
+    """
+    CALL test.my.proc(42)
+    """
+    Then the result should be, in order:
+      | out      |
+      | 'wisdom' |
+
+  Scenario: Standalone call to procedure with argument of type FLOAT accepts value of type INTEGER
+    And there exists a procedure test.my.proc(in :: FLOAT?) :: (out :: STRING?):
+      | in   | out            |
+      | 42.0 | 'close enough' |
+    When executing query:
+    """
+    CALL test.my.proc(42)
+    """
+    Then the result should be, in order:
+      | out            |
+      | 'close enough' |
+
+  Scenario: Standalone call to procedure with argument of type NUMBER accepts value of type FLOAT
+    And there exists a procedure test.my.proc(in :: NUMBER?) :: (out :: STRING?):
+      | in   | out           |
+      | 42   | 'wisdom'      |
+      | 42.3 | 'about right' |
+    When executing query:
+    """
+    CALL test.my.proc(42.3)
+    """
+    Then the result should be, in order:
+      | out           |
+      | 'about right' |
+
+  Scenario: Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT
+    And there exists a procedure test.my.proc(in :: INTEGER?) :: (out :: STRING?):
+      | in | out            |
+      | 42 | 'close enough' |
+    When executing query:
+    """
+    CALL test.my.proc(42.0)
+    """
+    Then the result should be, in order:
+      | out            |
+      | 'close enough' |
+
+  Scenario: Standalone call to procedure with null argument
+    And there exists a procedure test.my.proc(in :: INTEGER?) :: (out :: STRING?):
+      | in   | out   |
+      | null | 'nix' |
+    When executing query:
+    """
+    CALL test.my.proc(null)
+    """
+    Then the result should be, in order:
+      | out   |
+      | 'nix' |

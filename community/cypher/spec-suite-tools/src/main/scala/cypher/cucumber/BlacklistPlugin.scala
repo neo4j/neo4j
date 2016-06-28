@@ -65,7 +65,9 @@ class BlacklistPlugin(blacklistFile: URI) extends CucumberAdapter {
     if (url == null) throw new FileNotFoundException(s"blacklist file not found at: $blacklistFile")
     val itr = Source.fromFile(url.getPath, StandardCharsets.UTF_8.name()).getLines()
     BlacklistPlugin._blacklist = itr.foldLeft(Set.empty[String]) {
-      case (set, scenarioName) => set + BlacklistPlugin.normalizedScenarioName(scenarioName)
+      case (set, scenarioName) =>
+        val normalizedName = BlacklistPlugin.normalizedScenarioName(scenarioName)
+        if (normalizedName.isEmpty) set else set + normalizedName
     }
   }
 }
