@@ -19,27 +19,9 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, IncomparableValuesException, NewPlannerTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
 class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
-
-  // TCK'd
-  test("NOT(p1 AND p2) should return true when p2 is false") {
-    createNode("apa")
-
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n) WHERE NOT(n.name = 'apa' AND false) RETURN n")
-
-    result should have size 1
-  }
-
-  // TCK'd
-  test("should throw exception if comparing string and number") {
-    createLabeledNode(Map("prop" -> "15"), "Label")
-
-    val query = "MATCH (n:Label) WHERE n.prop < 10 RETURN n.prop AS prop"
-
-    a[IncomparableValuesException] should be thrownBy executeWithAllPlannersAndCompatibilityMode(query)
-  }
 
   // Not TCK material
   test("should be able to handle a large DNF predicate without running out of memory") {

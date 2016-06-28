@@ -20,74 +20,8 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{ExecutionEngineFunSuite, InvalidArgumentException, NewPlannerTestSupport, QueryStatisticsTestSupport}
-import org.neo4j.graphdb.Node
 
 class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
-
-  //TCK'd
-  test("set node property to null will remove existing property") {
-    // given
-    val node = createNode("property" -> 12)
-
-    // when
-    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) SET n.property = null RETURN count(*)")
-
-    // then
-    assertStats(result, propertiesWritten = 1)
-    node should not(haveProperty("property"))
-  }
-
-  //TCK'd
-  test("set relationship property to null will remove existing property") {
-    // given
-    val relationship = relate(createNode(), createNode(), "property" -> 12)
-
-    // when
-    val result = updateWithBothPlanners("MATCH ()-[r]->() SET r.property = null RETURN count(*)")
-
-    // then
-    assertStats(result, propertiesWritten = 1)
-    relationship should not(haveProperty("property"))
-  }
-
-  //TCK'd
-  test("set a property") {
-    // given
-    val a = createNode("name" -> "Andres")
-
-    // when
-    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) WHERE n.name = 'Andres' SET n.name = 'Michael'")
-
-    // then
-    assertStats(result, propertiesWritten = 1)
-    a should haveProperty("name").withValue("Michael")
-  }
-
-  //TCK'd
-  test("set a property to an expression") {
-    // given
-    val a = createNode("name" -> "Andres")
-
-    // when
-    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) WHERE n.name = 'Andres' SET n.name = n.name + ' was here' RETURN count(*)")
-
-    // then
-    assertStats(result, propertiesWritten = 1)
-    a should haveProperty("name").withValue("Andres was here")
-  }
-
-  //TCK'd
-  test("set a property by selecting the node through a simple expression") {
-    // given
-    val a = createNode()
-
-    // when
-    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) SET (n).name = 'neo4j' RETURN count(*)")
-
-    // then
-    assertStats(result, propertiesWritten = 1)
-    a should haveProperty("name").withValue("neo4j")
-  }
 
   //Not suitable for the TCK
   test("set a property by selecting the node through an expression") {
@@ -100,19 +34,6 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     // then
     assertStats(result, propertiesWritten = 1)
     a should haveProperty("name").withValue("neo4j")
-  }
-
-  //TCK'd
-  test("set a property by selecting the relationship through a simple expression") {
-    // given
-    val r = relate(createNode(), createNode())
-
-    // when
-    val result = updateWithBothPlannersAndCompatibilityMode("MATCH ()-[r]->() SET (r).name = 'neo4j' RETURN count(*)")
-
-    // then
-    assertStats(result, propertiesWritten = 1)
-    r should haveProperty("name").withValue("neo4j")
   }
 
   //Not suitable for the TCK
@@ -162,19 +83,6 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
       updateWithBothPlanners("SET (CASE WHEN true THEN {node} END).name = 'neo4j' RETURN count(*)", "node" -> 42)
   }
 
-  //TCK'd
-  test("set property for null removes the property") {
-    // given
-    val n = createNode("name" -> "Michael", "age" -> 35)
-
-    // when
-    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) WHERE n.name = 'Michael' SET n.name = null RETURN n.age")
-
-    // then
-    assertStats(result, propertiesWritten = 1)
-    n should not(haveProperty("name"))
-  }
-
   //Not suitable for the TCK
   test("mark nodes in path") {
     // given
@@ -195,95 +103,6 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     c should haveProperty("marked").withValue(true)
   }
 
-  //TCK'd
-  test("should be able to add label to node") {
-    // given
-    createNode()
-
-    // when
-    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) WHERE id(n) = 0 SET n:FOO RETURN n")
-
-    // then
-    val createdNode = result.columnAs[Node]("n").next()
-    createdNode should haveLabels("FOO")
-    assertStats(result, labelsAdded = 1)
-  }
-
-  //TCK'd
-  test("extract on arrays") {
-    // given
-    createNode()
-
-    // when
-    val result = updateWithBothPlannersAndCompatibilityMode( "MATCH (n) WHERE id(n) = 0 SET n.x = [1, 2, 3] RETURN extract (i IN n.x | i/2.0) AS x")
-
-    // then
-    result.toList should equal(List(Map("x" -> List(0.5, 1.0, 1.5))))
-  }
-
-  //TCK'd
-  test("concatenate to a collection") {
-    // given
-
-    // when
-    val result = executeScalarWithAllPlannersAndCompatibilityMode[Array[Long]]("CREATE (a {foo: [1, 2, 3]}) SET a.foo = a.foo + [4, 5] RETURN a.foo")
-
-    // then
-    result.toList should equal(List(1, 2, 3, 4, 5))
-  }
-
-  //TCK'd
-  test("concatenate to a collection in reverse") {
-    // given
-
-    // when
-    val result = executeScalarWithAllPlannersAndCompatibilityMode[Array[Long]]("CREATE (a {foo: [3, 4, 5]}) SET a.foo = [1, 2] + a.foo RETURN a.foo")
-
-    // then
-    result.toList should equal(List(1, 2, 3, 4, 5))
-  }
-
-  //TCK'd
-  test("overwrites values when using +=") {
-    // given
-    val a = createNode("foo"->"A", "bar"->"B")
-
-    // when
-    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n {foo: 'A'}) SET n += {bar: 'C'} RETURN count(*)")
-
-    // then
-    a should haveProperty("foo").withValue("A")
-    a should haveProperty("bar").withValue("C")
-  }
-
-  //TCK'd
-  test("old values are kept when using +=") {
-    // given
-    val a = createNode("foo"->"A")
-
-    // when
-    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n {foo: 'A'}) SET n += {bar: 'B'} RETURN count(*)")
-
-    // then
-    assertStats(result, propertiesWritten = 1)
-    a should haveProperty("foo").withValue("A")
-    a should haveProperty("bar").withValue("B")
-  }
-
-  //TCK'd
-  test("explicit null values in map removes old values") {
-    // given
-    val a = createNode("foo"->"A", "bar"->"B")
-
-    // when
-    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n {foo: 'A'}) SET n += {foo: null} RETURN count(*)")
-
-    // then
-    assertStats(result, propertiesWritten = 1)
-    a should not(haveProperty("foo"))
-    a should haveProperty("bar").withValue("B")
-  }
-
   //Not suitable for the TCK
   test("set += works well inside foreach") {
     // given
@@ -301,21 +120,6 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     a should haveProperty("x").withValue("X")
     b should haveProperty("x").withValue("X")
     c should haveProperty("x").withValue("X")
-  }
-
-  //TCK'd
-  test("non-existing values in an exact property map are removed with set =") {
-    // given
-    val a = createNode("foo"->"A", "bar"->"B")
-
-    // when
-    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n {foo: 'A'}) SET n = {foo: 'B', baz: 'C'} RETURN count(*)")
-
-    assertStats(result, propertiesWritten = 3)
-    // then
-    a should not(haveProperty("bar"))
-    a should haveProperty("foo").withValue("B")
-    a should haveProperty("baz").withValue("C")
   }
 
   //Not suitable for the TCK
