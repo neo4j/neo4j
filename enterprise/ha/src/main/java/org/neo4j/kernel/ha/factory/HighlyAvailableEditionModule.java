@@ -112,13 +112,13 @@ import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
 import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
+import org.neo4j.kernel.ha.id.HaIdReuseEligibility;
 import org.neo4j.kernel.ha.lock.LockManagerModeSwitcher;
 import org.neo4j.kernel.ha.management.ClusterDatabaseInfoProvider;
 import org.neo4j.kernel.ha.management.HighlyAvailableKernelData;
 import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
-import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
@@ -138,7 +138,6 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.storemigration.UpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByDatabaseModeException;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -556,37 +555,7 @@ public class HighlyAvailableEditionModule
 
         constraintSemantics = new EnterpriseConstraintSemantics();
 
-        // Only buffer ids for reuse when we're the master. This is mostly an optimization since
-        // when in slave role the ids are thrown away anyway.
-        eligibleForIdReuse = new IdReuseEligibility()
-        {
-            @Override
-            public boolean isEligible( KernelTransactionsSnapshot snapshot )
-            {
-                switch ( members.getCurrentMemberRole() )
-                {
-                case HighAvailabilityModeSwitcher.SLAVE:
-                    // If we're slave right now then just release them because the id generators in slave mode
-                    // will throw them away anyway, no need to keep them in memory. The architecture around
-                    // how buffering is done isn't a 100% fit for HA since the wrapping if IdGeneratorFactory
-                    // where the buffering takes place is done in a place which is oblivious to HA and roles
-                    // which means that buffering will always take place. For now we'll have to live with
-                    // always buffering and only just release them as soon as possible when slave.
-                    return true;
-                case HighAvailabilityModeSwitcher.MASTER:
-                    // If we're master then we have to keep these ids around during the configured safe zone time
-                    // so that slaves have a chance to read consistently as well (slaves will know and compensate
-                    // for falling outside of safe zone). Let's keep this separate from SLAVE since they
-                    // have different reasons for doing what they do.
-                    return Clock.SYSTEM_CLOCK.currentTimeMillis() - snapshot.snapshotTime() >= idReuseSafeZone;
-                default:
-                    // If we're anything other than slave, i.e. also pending then retain the ids since we're
-                    // not quite sure what state we're in at the moment and we clear the id buffers anyway
-                    // during state switch.
-                    return false;
-                }
-            }
-        };
+        eligibleForIdReuse = new HaIdReuseEligibility( members, Clock.SYSTEM_CLOCK, idReuseSafeZone );
 
         registerRecovery( config.get( GraphDatabaseFacadeFactory.Configuration.editionName ), dependencies, logging );
 
