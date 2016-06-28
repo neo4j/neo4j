@@ -23,6 +23,7 @@ import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.SimpleAuthenticationInfo;
 
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import static org.neo4j.kernel.api.security.AuthenticationResult.*;
 
 public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo
 {
@@ -57,11 +58,30 @@ public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo
 
         if ( info instanceof ShiroAuthenticationInfo )
         {
-            authenticationResult = ((ShiroAuthenticationInfo) info).getAuthenticationResult();
+            authenticationResult = mergeAuthenticationResult( authenticationResult,
+                    ((ShiroAuthenticationInfo) info).getAuthenticationResult() );
         }
         else
         {
-            authenticationResult = AuthenticationResult.SUCCESS;
+            // If we get here (which means no AuthenticationException or UnknownAccountException was thrown)
+            // it means the realm that provided the info was able to authenticate the subject,
+            // so we claim the result to be an implicit success
+            authenticationResult = mergeAuthenticationResult( authenticationResult, AuthenticationResult.SUCCESS );
         }
+    }
+
+    private static AuthenticationResult[][] mergeMatrix = {
+        /* v result | new res >   SUCCESS,                  FAILURE,                  TOO_MANY_ATTEMPTS,        PASSWORD_CHANGE_REQUIRED */
+        /* SUCCESS           */ { SUCCESS,                  SUCCESS,                  SUCCESS          ,        PASSWORD_CHANGE_REQUIRED },
+        /* FAILURE           */ { SUCCESS,                  FAILURE,                  TOO_MANY_ATTEMPTS,        PASSWORD_CHANGE_REQUIRED },
+        /* TOO_MANY_ATTEMPTS */ { SUCCESS,                  TOO_MANY_ATTEMPTS,        TOO_MANY_ATTEMPTS,        PASSWORD_CHANGE_REQUIRED },
+        /* PASSWORD_CHANGE.. */ { PASSWORD_CHANGE_REQUIRED, PASSWORD_CHANGE_REQUIRED, PASSWORD_CHANGE_REQUIRED, PASSWORD_CHANGE_REQUIRED }
+    };
+
+    private static AuthenticationResult mergeAuthenticationResult(
+            AuthenticationResult result, AuthenticationResult newResult )
+    {
+        AuthenticationResult mergedResult = mergeMatrix[result.ordinal()][newResult.ordinal()];
+        return mergedResult;
     }
 }
