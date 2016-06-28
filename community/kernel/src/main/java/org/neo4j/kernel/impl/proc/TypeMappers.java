@@ -30,6 +30,7 @@ import java.util.function.Function;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType;
 import org.neo4j.procedure.Name;
 
@@ -175,12 +176,9 @@ public class TypeMappers
         private final Class<?> javaClass;
         private final Function<String,Neo4jValue> defaultConverter;
 
-        public SimpleConverter( AnyType type, Class<?> javaClass)
+        public SimpleConverter( AnyType type, Class<?> javaClass )
         {
-            this( type, javaClass, s -> {
-                throw new UnsupportedOperationException(
-                        String.format("Default values for type %s is not supported", javaClass.getSimpleName() ));
-            } );
+            this( type, javaClass, nullParser(javaClass, type) );
         }
 
         public SimpleConverter( AnyType type, Class<?> javaClass, Function<String,Neo4jValue> defaultConverter )
@@ -190,7 +188,7 @@ public class TypeMappers
             this.defaultConverter = defaultConverter;
         }
 
-        public Optional<Neo4jValue> defaultValue(Name parameter) throws ProcedureException
+        public Optional<Neo4jValue> defaultValue( Name parameter ) throws ProcedureException
         {
             String defaultValue = parameter.defaultValue();
             if ( defaultValue.equals( Name.DEFAULT_VALUE ) )
@@ -206,7 +204,8 @@ public class TypeMappers
                 catch ( Exception e )
                 {
                     throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                            "Default value `%s` could not be parsed as a %s", parameter.defaultValue(), javaClass.getSimpleName() );
+                            "Default value `%s` could not be parsed as a %s", parameter.defaultValue(),
+                            javaClass.getSimpleName() );
                 }
             }
         }
@@ -220,12 +219,29 @@ public class TypeMappers
         @Override
         public Object toNeoValue( Object javaValue ) throws ProcedureException
         {
-            if( javaValue == null || javaClass.isInstance( javaValue ) )
+            if ( javaValue == null || javaClass.isInstance( javaValue ) )
             {
                 return javaValue;
             }
             throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
-                    "Expected `%s` to be a `%s`, found `%s`.", javaValue, javaClass.getSimpleName(), javaValue.getClass());
+                    "Expected `%s` to be a `%s`, found `%s`.", javaValue, javaClass.getSimpleName(),
+                    javaValue.getClass() );
+        }
+
+        private static Function<String,Neo4jValue> nullParser( Class<?> javaType, Neo4jTypes.AnyType neoType )
+        {
+            return s -> {
+                if ( s.equalsIgnoreCase( "null" ) )
+                {
+                    return new Neo4jValue( null, neoType );
+                }
+                else
+                {
+                    throw new IllegalArgumentException( String.format( "A %s can only have a `defaultValue = \"null\"",
+                            javaType.getSimpleName() ) );
+                }
+
+            };
         }
     }
 }

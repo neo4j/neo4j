@@ -1004,6 +1004,17 @@ public class ProcedureIT
         }
     }
 
+    @Test
+    public void shouldCallProcedureWithDefaultNodeArgument() throws Throwable
+    {
+        //Given/When
+        Result res = db.execute( "CALL org.neo4j.procedure.nodeWithDefault" );
+
+        // Then
+        assertThat( res.next(), equalTo( map( "node", null ) ) );
+        assertFalse( res.hasNext() );
+    }
+
     @Before
     public void setUp() throws IOException
     {
@@ -1096,6 +1107,11 @@ public class ProcedureIT
         public NodeOutput()
         {
 
+        }
+
+        public NodeOutput(Node node)
+        {
+            this.node = node;
         }
 
         void setNode( Node node )
@@ -1411,6 +1427,12 @@ public class ProcedureIT
         }
 
         @Procedure( mode = WRITE )
+        public Stream<NodeOutput> nodeWithDefault( @Name( value = "node", defaultValue = "null") Node node )
+        {
+            return Stream.of(new NodeOutput(node));
+        }
+
+        @Procedure
         public Stream<NodeListRecord> nodeList()
         {
             List<Node> nodesList = new ArrayList<>();
