@@ -197,7 +197,7 @@ case class SpecSuiteErrorHandler(typ: String, phase: String, detail: String) ext
       detail should equal(NUMBER_OUT_OF_RANGE)
     else if (msg.matches("step argument to range\\(\\) cannot be zero"))
       detail should equal(NUMBER_OUT_OF_RANGE)
-    else if (msg.matches("Expected a String, Number or Boolean, got: .+"))
+    else if (msg.matches("Expected a (.+), got: (.*)"))
       detail should equal(INVALID_ARGUMENT_VALUE)
     else if (msg.matches("The expression .+ should have been a node or a relationship, but got .+"))
       detail should equal(REQUIRES_DIRECTED_RELATIONSHIP)
