@@ -274,18 +274,6 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
   }
 
   // TCK'd
-  test("when merging a pattern that includes a unique node constraint violation fail") {
-    // given
-    graph.createConstraint("Person", "id")
-    createLabeledNode(Map("id" -> 666), "Person")
-
-    // when then fails
-    a [CypherExecutionException] should be thrownBy {
-      updateWithBothPlannersAndCompatibilityMode("CREATE (a:A) MERGE (a)-[:KNOWS]->(b:Person {id:666})")
-    }
-  }
-
-  // TCK'd
   test("should work well inside foreach") {
     val a = createLabeledNode("S")
     relate(a, createNode("prop" -> 2), "FOO")
