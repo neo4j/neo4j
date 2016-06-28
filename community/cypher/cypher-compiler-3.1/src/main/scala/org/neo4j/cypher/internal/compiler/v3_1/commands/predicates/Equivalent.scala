@@ -123,7 +123,7 @@ object Equivalent {
     if (it.isEmpty) return (e1, e2, e3)
 
     it.foldLeft(ArrayBuffer(e1, e2, e3)) {
-      case (acc, element: T) => acc += eager(element)
+      case (acc, element) => acc += eager(element)
     }
   }
 }
