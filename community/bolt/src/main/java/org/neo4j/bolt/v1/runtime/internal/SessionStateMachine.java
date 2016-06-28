@@ -599,7 +599,6 @@ public class SessionStateMachine implements Session, SessionState
         }
     }
 
-
     private final String id = UUID.randomUUID().toString();
 
     /** A re-usable statement metadata instance that always represents the currently running statement */

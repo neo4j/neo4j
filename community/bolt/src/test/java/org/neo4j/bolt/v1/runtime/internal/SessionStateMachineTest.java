@@ -256,7 +256,6 @@ public class SessionStateMachineTest
         assertThat( machine.state(), equalTo( SessionStateMachine.State.IN_TRANSACTION ) );
     }
 
-
     @Test
     public void shouldRemainStoppedAfterInterrupted() throws Throwable
     {

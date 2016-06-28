@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import org.neo4j.bolt.security.auth.BasicAuthenticationResult;
 import org.neo4j.bolt.v1.runtime.integration.RecordingCallback;
-import org.neo4j.kernel.api.security.AccessMode;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
@@ -43,7 +42,7 @@ public class SessionStateMachineResetTest
         // Given
         RecordingCallback recorder = new RecordingCallback();
         SessionStateMachine.SPI spi = mock( SessionStateMachine.SPI.class );
-        when( spi.authenticate( any() ) ).thenReturn( new BasicAuthenticationResult( AccessMode.Static.FULL, false) );
+        when( spi.authenticate( any() ) ).thenReturn( mock( BasicAuthenticationResult.class ) );
         SessionStateMachine ssm = new SessionStateMachine( spi );
         ssm.init( "bob/1.0", map(), null, noOp() );
 
@@ -67,7 +66,7 @@ public class SessionStateMachineResetTest
         // Given
         RecordingCallback recorder = new RecordingCallback();
         SessionStateMachine.SPI spi = mock( SessionStateMachine.SPI.class );
-        when( spi.authenticate( any() ) ).thenReturn( new BasicAuthenticationResult( AccessMode.Static.FULL, false) );
+        when( spi.authenticate( any() ) ).thenReturn( mock( BasicAuthenticationResult.class ) );
         SessionStateMachine ssm = new SessionStateMachine( spi );
         ssm.init( "bob/1.0", map(), null, noOp() );
 
