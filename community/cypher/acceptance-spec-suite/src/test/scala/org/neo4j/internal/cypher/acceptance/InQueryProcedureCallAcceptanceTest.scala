@@ -26,49 +26,6 @@ import org.neo4j.kernel.api.proc.Neo4jTypes
 
 class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
 
-  test("should be able to find labels from built-in-procedure") {
-    // Given
-    createLabeledNode("A")
-    createLabeledNode("B")
-    createLabeledNode("C")
-
-    //When
-    val result = execute("CALL db.labels() YIELD label RETURN *")
-
-    // Then
-    result.toList should equal(
-      List(
-        Map("label" -> "A"),
-        Map("label" -> "B"),
-        Map("label" -> "C")))
-  }
-
-  test("should be able to find labels from built-in-procedure from within a query") {
-    // Given
-    createLabeledNode(Map("name" -> "Tic"), "A")
-    createLabeledNode(Map("name" -> "Tac"), "B")
-    createLabeledNode(Map("name" -> "Toc"), "C")
-
-    //When
-    val result = execute("MATCH (n {name: 'Toc'}) WITH n.name AS name CALL db.labels() YIELD label RETURN *")
-
-    // Then
-    result.toList should equal(
-      List(
-        Map("name" -> "Toc", "label" -> "A"),
-        Map("name" -> "Toc", "label" -> "B"),
-        Map("name" -> "Toc", "label" -> "C")))
-  }
-
-  test("db.labels works on an empty database") {
-    // Given an empty database
-    //When
-    val result = execute("CALL db.labels() YIELD label RETURN *")
-
-    // Then
-    result.toList shouldBe empty
-  }
-
   test("should be able to call procedure with explicit arguments") {
     // Given
     registerDummyInOutProcedure(Neo4jTypes.NTString, Neo4jTypes.NTNumber)

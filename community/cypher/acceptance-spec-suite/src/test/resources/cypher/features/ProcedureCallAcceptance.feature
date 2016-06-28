@@ -23,7 +23,7 @@ Feature: ProcedureCallAcceptance
   Background:
     Given an empty graph
 
-  Scenario: Direct call to procedure without arguments
+  Scenario: Standalone call to procedure without arguments
    And there exists a procedure test.labels() :: (label :: STRING?):
      |label|
      |'A'  |
@@ -38,3 +38,39 @@ Feature: ProcedureCallAcceptance
     |'A'  |
     |'B'  |
     |'C'  |
+
+  Scenario: Standalone call to VOID procedure
+    And there exists a procedure test.doNothing() :: VOID:
+     |
+    When executing query:
+    """
+    CALL test.doNothing()
+    """
+    Then the result should be empty
+
+  Scenario: Standalone call to VOID procedure without arguments
+    And there exists a procedure test.doNothing() :: VOID:
+      |
+    When executing query:
+    """
+    CALL test.doNothing
+    """
+    Then the result should be empty
+
+  Scenario: Standalone call to empty procedure
+    And there exists a procedure test.doNothing() :: ():
+      |
+    When executing query:
+    """
+    CALL test.doNothing()
+    """
+    Then the result should be empty
+
+  Scenario: Standalone call to empty procedure without arguments
+    And there exists a procedure test.doNothing() :: ():
+      |
+    When executing query:
+    """
+    CALL test.doNothing
+    """
+    Then the result should be empty

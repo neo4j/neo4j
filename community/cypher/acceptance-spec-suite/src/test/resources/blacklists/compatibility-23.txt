@@ -1,3 +1,7 @@
 Find a combination of a shortest path and a pattern expression
 Getting all labels
-Direct call to procedure without arguments
+Standalone call to procedure without arguments
+Standalone call to VOID procedure
+Standalone call to VOID procedure without arguments
+Standalone call to empty procedure
+Standalone call to empty procedure without arguments

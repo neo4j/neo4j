@@ -123,7 +123,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
       val (tableColumns, tableValues) = parseValueTable(values)
       if (tableColumns != signatureFields)
         throw new IllegalArgumentException(
-          s"Data table columns must be the same as all signature fields (inputs + outputs) in order (Actual: $tableColumns Expected: $signatureFields)"
+          s"Data table columns must be the same as all signature fields (inputs + outputs) in order (Actual: ${formatColumns(tableColumns)} Expected: ${formatColumns(signatureFields)})"
         )
       val kernelSignature = asKernelSignature(parsedSignature)
       val kernelProcedure = new BasicProcedure(kernelSignature) {
@@ -140,6 +140,9 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
       kernelAPI.registerProcedure(kernelProcedure)
     }
   }
+
+  private def formatColumns(columns: List[String]) =
+    columns.map(column => s"'${column.replace("'", "\\'")}'")
 
   private def kernelAPI = graph.getDependencyResolver.resolveDependency(classOf[KernelAPI])
 
