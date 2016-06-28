@@ -50,6 +50,7 @@ public class AcceptanceSpecSuiteTest
             },
             glue = { GLUE_PATH },
             features = { FEATURE_PATH + FEATURE_TO_RUN },
+            tags = { "~@pending" },
             strict = true
     )
     public static class Rule
@@ -66,6 +67,7 @@ public class AcceptanceSpecSuiteTest
             },
             glue = { GLUE_PATH },
             features = { FEATURE_PATH + FEATURE_TO_RUN },
+            tags = { "~@pending" },
             strict = true
     )
     public static class Cost
@@ -82,6 +84,7 @@ public class AcceptanceSpecSuiteTest
             },
             glue = { GLUE_PATH },
             features = { FEATURE_PATH + FEATURE_TO_RUN },
+            tags = { "~@pending" },
             strict = true
     )
     public static class CostCompiled
@@ -98,6 +101,7 @@ public class AcceptanceSpecSuiteTest
             },
             glue = { GLUE_PATH },
             features = { FEATURE_PATH + FEATURE_TO_RUN },
+            tags = { "~@pending" },
             strict = true
     )
     public static class Compatibility23
@@ -114,6 +118,7 @@ public class AcceptanceSpecSuiteTest
             },
             glue = { GLUE_PATH },
             features = { FEATURE_PATH + FEATURE_TO_RUN },
+            tags = { "~@pending" },
             strict = true
     )
     public static class Compatibility30
