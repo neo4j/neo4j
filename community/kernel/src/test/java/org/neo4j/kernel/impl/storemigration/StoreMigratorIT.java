@@ -52,8 +52,6 @@ import org.neo4j.test.TargetDirectory.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.storemigration.StoreMigrator.readLastTxInformation;
-import static org.neo4j.kernel.impl.storemigration.StoreMigrator.readLastTxLogPosition;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP;
@@ -215,7 +213,7 @@ public class StoreMigratorIT
         migrator.migrate( storeDirectory, migrationDir, schemaIndexProvider, versionToMigrateFrom );
 
         // THEN it should compute the correct last tx log position
-        assertEquals( expectedLogPosition, readLastTxLogPosition( fs, migrationDir ) );
+        assertEquals( expectedLogPosition, migrator.readLastTxLogPosition( migrationDir ) );
     }
 
     @Test
@@ -241,7 +239,6 @@ public class StoreMigratorIT
         migrator.migrate( storeDirectory, migrationDir, schemaIndexProvider, versionToMigrateFrom );
 
         // then
-        System.out.println( readLastTxInformation( fs, migrationDir ) );
-        assertTrue( txIdComparator.apply( readLastTxInformation( fs, migrationDir ) ) );
+        assertTrue( txIdComparator.apply( migrator.readLastTxInformation( migrationDir ) ) );
     }
 }

@@ -98,5 +98,4 @@ public interface AdditionalInitialIds
             return TransactionIdStore.BASE_TX_LOG_BYTE_OFFSET;
         }
     };
-
 }

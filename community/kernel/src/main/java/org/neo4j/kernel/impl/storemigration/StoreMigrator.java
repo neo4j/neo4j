@@ -19,13 +19,15 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.Reader;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -130,6 +132,7 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.wit
 public class StoreMigrator implements StoreMigrationParticipant
 {
     private static final String UTF8 = Charsets.UTF_8.name();
+    private static final char TX_LOG_COUNTERS_SEPARATOR = 'A';
 
     // Developers: There is a benchmark, storemigrate-benchmark, that generates large stores and benchmarks
     // the upgrade process. Please utilize that when writing upgrade code to ensure the code is fast enough to
@@ -170,11 +173,9 @@ public class StoreMigrator implements StoreMigrationParticipant
         // Extract information about the last transaction from legacy neostore
         File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
         long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
-        // Checksum and timestamp
-        // TODO: Do we ever use this information during migration?
         TransactionId lastTxInfo = extractTransactionIdInformation( neoStore, storeDir, lastTxId );
         LogPosition lastTxLogPosition = extractTransactionLogPosition( neoStore, storeDir, lastTxId );
-        // Write the tx information to file in migrationDir, because we need it later when moving files into storeDir
+        // Write tx info to file in migrationDir, because we need it later when moveMigratedFiles into storeDir
         writeLastTxInformation( migrationDir, lastTxInfo );
         writeLastTxLogPosition( migrationDir, lastTxLogPosition );
 
@@ -209,48 +210,56 @@ public class StoreMigrator implements StoreMigrationParticipant
         progressMonitor.finished();
     }
 
-    private void writeLastTxInformation( File migrationDir, TransactionId txInfo ) throws IOException
+    void writeLastTxInformation( File migrationDir, TransactionId txInfo ) throws IOException
     {
-        try ( Writer writer = fileSystem.openAsWriter( lastTxInformationFile( migrationDir), UTF8, false ) )
+        writeTxLogCounters( fileSystem, lastTxInformationFile( migrationDir ),
+                txInfo.transactionId(), txInfo.checksum(), txInfo.commitTimestamp() );
+    }
+
+    void writeLastTxLogPosition( File migrationDir, LogPosition lastTxLogPosition ) throws IOException
+    {
+        writeTxLogCounters( fileSystem, lastTxLogPositionFile( migrationDir ),
+                lastTxLogPosition.getLogVersion(), lastTxLogPosition.getByteOffset() );
+    }
+
+    TransactionId readLastTxInformation( File migrationDir ) throws IOException
+    {
+        long[] counters = readTxLogCounters( fileSystem, lastTxInformationFile( migrationDir ), 3 );
+        return new TransactionId( counters[0], counters[1], counters[2] );
+    }
+
+    LogPosition readLastTxLogPosition( File migrationDir ) throws IOException
+    {
+        long[] counters = readTxLogCounters( fileSystem, lastTxLogPositionFile( migrationDir ), 2 );
+        return new LogPosition( counters[0], counters[1] );
+    }
+
+    private static void writeTxLogCounters( FileSystemAbstraction fs, File file, long... counters ) throws IOException
+    {
+        try ( Writer writer = fs.openAsWriter( file, UTF8, false ) )
         {
-            // TODO: Use same splitter as for writeLastTxPosition?
-            writer.write( txInfo.transactionId() + "A" + txInfo.checksum() + "A" + txInfo.commitTimestamp() );
+            writer.write( StringUtils.join( counters, TX_LOG_COUNTERS_SEPARATOR ) );
         }
     }
 
-    private void writeLastTxLogPosition( File migrationDir, LogPosition lastTxLogPosition ) throws IOException
+    private static long[] readTxLogCounters( FileSystemAbstraction fs, File file, int numberOfCounters )
+            throws IOException
     {
-        try ( Writer writer = fileSystem.openAsWriter( lastTxLogPositionFile( migrationDir ), UTF8, false ) )
+        try ( BufferedReader reader = new BufferedReader( fs.openAsReader( file, UTF8 ) ) )
         {
-            writer.write( lastTxLogPosition.getLogVersion() + "A" + lastTxLogPosition.getByteOffset() );
-        }
-    }
-
-    // TODO: WRITE TESTS
-    // accessible for tests
-    static TransactionId readLastTxInformation( FileSystemAbstraction fileSystem, File migrationDir ) throws IOException
-    {
-        try ( Reader reader = fileSystem.openAsReader( lastTxInformationFile( migrationDir ), UTF8 ) )
-        {
-            char[] buffer = new char[4096]; // TODO: Why so large buffer?
-            int chars = reader.read( buffer );
-            String s = String.valueOf( buffer, 0, chars );
-            String[] split = s.split( "A" );
-            return new TransactionId( Long.parseLong( split[0] ), Long.parseLong( split[1] ),
-                    Long.parseLong( split[2] ) );
-        }
-    }
-
-    // accessible for tests
-    static LogPosition readLastTxLogPosition( FileSystemAbstraction fileSystem, File migrationDir ) throws IOException
-    {
-        try ( Reader reader = fileSystem.openAsReader( lastTxLogPositionFile( migrationDir ), UTF8 ) )
-        {
-            char[] buffer = new char[4096]; // TODO: Why so large buffer?
-            int chars = reader.read( buffer );
-            String s = String.valueOf( buffer, 0, chars );
-            String[] split = s.split( "A" );
-            return new LogPosition( Long.parseLong( split[0] ), Long.parseLong( split[1] ) );
+            String line = reader.readLine();
+            String[] split = StringUtils.split( line, TX_LOG_COUNTERS_SEPARATOR );
+            if ( split.length != numberOfCounters )
+            {
+                throw new IllegalArgumentException( "Unexpected number of tx counters '" + numberOfCounters +
+                                                    "', file contains: '" + line + "'" );
+            }
+            long[] counters = new long[numberOfCounters];
+            for ( int i = 0; i < split.length; i++ )
+            {
+                counters[i] = Long.parseLong( split[i] );
+            }
+            return counters;
         }
     }
 
@@ -878,7 +887,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         //    problematic as long as we don't migrate and translate old logs.
 
         // TODO: Is this what we want to do with txInfo and do we not need UPGRADE_TRANSACTION_COMMIT_TIMESTAMP?
-        TransactionId lastTxInfo = readLastTxInformation( fileSystem, migrationDir );
+        TransactionId lastTxInfo = readLastTxInformation( migrationDir );
         // Checksum
         MetaDataStore.setRecord( pageCache, storeDirNeoStore, Position.LAST_TRANSACTION_CHECKSUM,
                 lastTxInfo.checksum() );
@@ -889,7 +898,7 @@ public class StoreMigrator implements StoreMigrationParticipant
 
         // add LAST_CLOSED_TRANSACTION_LOG_VERSION and LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET to the migrated
         // NeoStore
-        LogPosition logPosition = readLastTxLogPosition( fileSystem, migrationDir );
+        LogPosition logPosition = readLastTxLogPosition( migrationDir );
         MetaDataStore.setRecord( pageCache, storeDirNeoStore, Position.LAST_CLOSED_TRANSACTION_LOG_VERSION, logPosition
                 .getLogVersion() );
         MetaDataStore.setRecord( pageCache, storeDirNeoStore, Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET,

@@ -61,7 +61,6 @@ import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
 import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -73,7 +72,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
-import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.AssertableLogProvider;
@@ -803,47 +801,6 @@ public class TransactionCommittingResponseUnpackerTest
         public void setUnpacker( TransactionCommittingResponseUnpacker unpacker )
         {
             this.unpacker = unpacker;
-        }
-    }
-
-    private static class AssertingTransactionAppender implements TransactionAppender
-    {
-        private final TransactionAppender delegate;
-        private final KernelTransactions kernelTransactions;
-
-        AssertingTransactionAppender( TransactionAppender delegate, KernelTransactions kernelTransactions )
-        {
-            this.delegate = delegate;
-            this.kernelTransactions = kernelTransactions;
-        }
-
-
-        @Override
-        public Commitment append( TransactionRepresentation transaction, LogAppendEvent logAppendEvent )
-                throws IOException
-        {
-            return delegate.append( transaction, logAppendEvent );
-        }
-
-        @Override
-        public Commitment append( TransactionRepresentation transaction, long transactionId ) throws IOException
-        {
-            return delegate.append( transaction, transactionId );
-        }
-
-        @Override
-        public void checkPoint( LogPosition logPosition, LogCheckPointEvent logCheckPointEvent ) throws IOException
-        {
-            delegate.checkPoint( logPosition, logCheckPointEvent );
-        }
-
-        @Override
-        public void force() throws IOException
-        {
-            System.out.println( "newInstance" );
-            kernelTransactions.newInstance();
-            System.out.println( "Got passed" );
-            delegate.force();
         }
     }
 

@@ -117,7 +117,6 @@ public class LegacyLogs
         }
     }
 
-    // TODO: TEST THIS
     public TransactionId getTransactionInformation( File storeDir, long transactionId ) throws IOException
     {
         List<File> logFiles = Arrays.asList( fs.listFiles( storeDir, versionedLegacyLogFilesFilter ) );

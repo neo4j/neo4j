@@ -660,7 +660,6 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
                     setRecord( Position.LAST_TRANSACTION_ID, transactionId );
                     setRecord( Position.LAST_TRANSACTION_CHECKSUM, checksum );
                     setRecord( Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, commitTimestamp );
-                    // TODO: setRecords(...) to avoid multiple new pageCursor
                 }
             }
         }

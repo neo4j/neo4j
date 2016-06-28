@@ -113,13 +113,6 @@ public class CommunityEditionModule
         registerRecovery( config.get( GraphDatabaseFacadeFactory.Configuration.editionName), life, dependencies );
 
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ) );
-
-        eligibleForIdReuse = createEligibleForIdReuseFilter();
-    }
-
-    protected IdReuseEligibility createEligibleForIdReuseFilter()
-    {
-        return IdReuseEligibility.ALWAYS;
     }
 
     protected ConstraintSemantics createSchemaRuleVerifier()

@@ -21,19 +21,25 @@ package org.neo4j.kernel.impl.storemigration;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogs;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.test.PageCacheRule;
+import org.neo4j.test.RandomRule;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -50,11 +56,15 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.UNKNOWN_T
 
 public class StoreMigratorTest
 {
+    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    private final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final RandomRule random = new RandomRule();
+
     @Rule
-    public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
-    public final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    public final RuleChain ruleChain = RuleChain.outerRule( directory )
+            .around( pageCacheRule )
+            .around( random );
 
     @Test
     public void shouldExtractTransactionInformationFromMetaDataStore() throws Exception
@@ -158,5 +168,37 @@ public class StoreMigratorTest
         assertEquals( expected.transactionId(), actual.transactionId() );
         assertEquals( expected.commitTimestamp(), actual.commitTimestamp() );
         // We do not expect checksum to be equal as it is randomly generated
+    }
+
+    @Test
+    public void writeAndReadLastTxInformation() throws IOException
+    {
+        StoreMigrator migrator = newStoreMigrator();
+        TransactionId writtenTxId = new TransactionId( random.nextLong(), random.nextLong(), random.nextLong() );
+
+        migrator.writeLastTxInformation( directory.graphDbDir(), writtenTxId );
+
+        TransactionId readTxId = migrator.readLastTxInformation( directory.graphDbDir() );
+
+        assertEquals( writtenTxId, readTxId );
+    }
+
+    @Test
+    public void writeAndReadLastTxLogPosition() throws IOException
+    {
+        StoreMigrator migrator = newStoreMigrator();
+        LogPosition writtenLogPosition = new LogPosition( random.nextLong(), random.nextLong() );
+
+        migrator.writeLastTxLogPosition( directory.graphDbDir(), writtenLogPosition );
+
+        LogPosition readLogPosition = migrator.readLastTxLogPosition( directory.graphDbDir() );
+
+        assertEquals( writtenLogPosition, readLogPosition );
+    }
+
+    private StoreMigrator newStoreMigrator()
+    {
+        return new StoreMigrator( new SilentMigrationProgressMonitor(), fs, pageCacheRule.getPageCache( fs ),
+                new Config(), NullLogService.getInstance() );
     }
 }
