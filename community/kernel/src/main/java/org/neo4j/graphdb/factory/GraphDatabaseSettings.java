@@ -20,9 +20,6 @@
 package org.neo4j.graphdb.factory;
 
 import java.io.File;
-import java.lang.management.ManagementFactory;
-import java.lang.management.OperatingSystemMXBean;
-import java.lang.reflect.Method;
 import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
@@ -37,6 +34,7 @@ import org.neo4j.kernel.configuration.Migrator;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.impl.cache.MonitorGc;
+import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.logging.Level;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
@@ -384,10 +382,7 @@ public abstract class GraphDatabaseSettings
         {
             try
             {
-                OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
-                Method getTotalPhysicalMemorySize = os.getClass().getMethod( "getTotalPhysicalMemorySize" );
-                getTotalPhysicalMemorySize.setAccessible( true );
-                long physicalMemory = (long) getTotalPhysicalMemorySize.invoke( os );
+                long physicalMemory = OsBeanUtil.getTotalPhysicalMemory();
                 if ( 0 < physicalMemory && physicalMemory < Long.MAX_VALUE && maxHeapMemory < physicalMemory )
                 {
                     long heuristic = (long) ((physicalMemory - maxHeapMemory) * ratioOfFreeMem);
