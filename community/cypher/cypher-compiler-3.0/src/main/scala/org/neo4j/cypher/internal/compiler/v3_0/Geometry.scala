@@ -54,6 +54,12 @@ object CRS {
   def fromSRID(id: Int) = id match {
     case Cartesian.`code` => Cartesian
     case WGS84.`code` => WGS84
-    case _ => throw new InvalidArgumentException(s"SRID '$id' does not match any supported coordinate reference system for points, supported CRS are: '${WGS84.name}', '${Cartesian.name}'")
+    case _ => throw new InvalidArgumentException(s"SRID '$id' does not match any supported coordinate reference system for points, supported CRS are: '${WGS84.code}', '${Cartesian.code}'")
+  }
+
+  def fromURL(url: String) = url match {
+    case Cartesian.url => Cartesian
+    case WGS84.url => WGS84
+    case _ => throw new InvalidArgumentException(s"HREF '$url' does not match any supported coordinate reference system for points, supported CRS are: '${WGS84.url}', '${Cartesian.url}'")
   }
 }
