@@ -117,10 +117,21 @@ public class ReflectiveProcedureCompiler
         {
             mode = ProcedureSignature.Mode.SCHEMA_WRITE;
         }
-        else if ( procedure.mode().equals( Procedure.Mode.WRITE ) ||
-                method.isAnnotationPresent( PerformsWrites.class ) )
+        else if ( procedure.mode().equals( Procedure.Mode.WRITE ) )
         {
             mode = ProcedureSignature.Mode.READ_WRITE;
+        }
+        if ( method.isAnnotationPresent( PerformsWrites.class ) )
+        {
+            if ( mode == ProcedureSignature.Mode.DBMS || mode == ProcedureSignature.Mode.SCHEMA_WRITE )
+            {
+                throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                        "Conflicting procedure annotation, PerformsWrites and mode = %s.", procedure.mode() );
+            }
+            else
+            {
+                mode = ProcedureSignature.Mode.READ_WRITE;
+            }
         }
 
         ProcedureSignature signature = new ProcedureSignature( procName, inputSignature, outputMapper.signature(), mode );
