@@ -128,7 +128,7 @@ public class KernelStatement implements TxStateHolder, Statement
             throw new NotInTransactionException( "The statement has been closed." );
         }
 
-        Status terminationReason = transaction.shouldBeTerminated();
+        Status terminationReason = transaction.terminationReason();
         if ( terminationReason != null )
         {
             throw new TransactionTerminatedException( terminationReason );

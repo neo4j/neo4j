@@ -84,7 +84,7 @@ public class KernelTransactionTerminationTest
                     public void accept( TestKernelTransaction tx )
                     {
                         close( tx );
-                        assertNull( tx.shouldBeTerminated() );
+                        assertNull( tx.terminationReason() );
                         tx.initialize();
                     }
                 }
@@ -422,13 +422,13 @@ public class KernelTransactionTerminationTest
 
         void assertTerminated()
         {
-            assertEquals( Status.Transaction.MarkedAsFailed, shouldBeTerminated() );
+            assertEquals( Status.Transaction.MarkedAsFailed, terminationReason() );
             assertTrue( monitor.terminated );
         }
 
         void assertNotTerminated()
         {
-            assertNull( shouldBeTerminated() );
+            assertNull( terminationReason() );
             assertFalse( monitor.terminated );
         }
     }

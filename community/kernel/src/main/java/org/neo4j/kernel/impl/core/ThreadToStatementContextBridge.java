@@ -71,7 +71,7 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         {
             throw new NotInTransactionException();
         }
-        Status terminationReason = transaction.getTransaction().shouldBeTerminated();
+        Status terminationReason = transaction.getTransaction().terminationReason();
         if ( terminationReason != null )
         {
             throw new TransactionTerminatedException( terminationReason );

@@ -172,8 +172,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private StoreStatement storeStatement;
     private boolean closing, closed;
     private boolean failure, success;
-    private volatile boolean terminated;
-    private Status terminationReason;
+    private volatile Status terminationReason;
     // Some header information
     private long startTimeMillis;
     private long lastTransactionIdWhenStarted;
@@ -255,7 +254,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         this.locks = locksManager.newClient();
         this.terminationReason = null;
-        this.closing = closed = failure = success = terminated = false;
+        this.closing = closed = failure = success = false;
         this.transactionType = TransactionType.ANY;
         this.beforeHookInvoked = false;
         this.recordState.initialize( lastCommittedTx );
@@ -287,9 +286,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public Status shouldBeTerminated()
+    public Status terminationReason()
     {
-        return terminated ? terminationReason : null;
+        return terminationReason;
     }
 
     /**
@@ -317,7 +316,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             if ( stillSameTransaction && canBeTerminated() )
             {
                 failure = true;
-                terminated = true;
                 terminationReason = reason;
                 if ( txTerminationAwareLocks && locks != null )
                 {
@@ -490,7 +488,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         closing = true;
         try
         {
-            if ( failure || !success || terminated )
+            if ( failure || !success || isTerminated() )
             {
                 rollback();
                 failOnNonExplicitRollbackIfNeeded( );
@@ -542,7 +540,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private void failOnNonExplicitRollbackIfNeeded() throws TransactionFailureException
     {
-        if ( success && terminated )
+        if ( success && isTerminated() )
         {
             throw new TransactionTerminatedException( terminationReason );
         }
@@ -754,7 +752,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             locks.close();
             locks = null;
-            terminated = false;
             terminationReason = null;
             pool.release( this );
             if ( storeStatement != null )
@@ -776,7 +773,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private boolean canBeTerminated()
     {
-        return !closed && !terminated;
+        return !closed && !isTerminated();
+    }
+
+    private boolean isTerminated()
+    {
+        return terminationReason != null;
     }
 
     public long lastTransactionTimestampWhenStarted()

@@ -50,7 +50,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedParts;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 import static org.neo4j.kernel.impl.store.SchemaStorage.IndexRuleKind.CONSTRAINT;
@@ -199,7 +198,7 @@ public class ConstraintIndexCreatorTest
                 }
 
                 @Override
-                public Status shouldBeTerminated()
+                public Status terminationReason()
                 {
                     return null;
                 }

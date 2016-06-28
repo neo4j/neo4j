@@ -112,7 +112,7 @@ public class KernelTransactionsTest
         assertThat( postDispose, not( equalTo( first ) ) );
         assertThat( postDispose, not( equalTo( second ) ) );
 
-        assertTrue( leftOpen.shouldBeTerminated() != null );
+        assertTrue( leftOpen.terminationReason() != null );
     }
 
     @Test

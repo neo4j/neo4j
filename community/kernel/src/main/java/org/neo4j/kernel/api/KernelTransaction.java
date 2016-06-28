@@ -113,16 +113,16 @@ public interface KernelTransaction extends AutoCloseable
     boolean isOpen();
 
     /**
-     * @return {@code true} if {@link #markForTermination(Status)} has been invoked, otherwise {@code false}.
+     * @return {@link Status} if {@link #markForTermination(Status)} has been invoked, otherwise {@code null}.
      */
-    Status shouldBeTerminated();
+    Status terminationReason();
 
     /**
      * Marks this transaction for termination, such that it cannot commit successfully and will try to be
      * terminated by having other methods throw a specific termination exception, as to sooner reach the assumed
      * point where {@link #close()} will be invoked.
      */
-    void markForTermination( Status typeOfReason );
+    void markForTermination( Status reason );
 
     /**
      * Register a {@link CloseListener} to be invoked after commit, but before transaction events "after" hooks
