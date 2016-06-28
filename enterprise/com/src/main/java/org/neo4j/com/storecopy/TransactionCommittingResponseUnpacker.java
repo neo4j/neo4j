@@ -402,12 +402,12 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
         {
             // TODO:
-            //      - Change implementation of "freeze active transactions". How to block new transactions from starting
-            //      - Maybe move from time -> tx ids as safe zone (or support both)
-            //      - Flush buffered ids to disk (if memory intrusive)
-            //      - Only do assertOpen after property reads if we are slave
+            //      v Change implementation of "freeze active transactions". How to block new transactions from starting
+            //      - Maybe move from time -> tx ids as safe zone (or support both) -- ??
+            //      - Flush buffered ids to disk (if memory intrusive) -- ??
+            //      - Only do assertOpen after property reads if we are slave or wait for transactions to terminate
             //      - Place all comments describing the problem / solution in a better place
-            //      - Clean up how we handle Transient...Exception, TxTerminatedException, etc. + how we use Status.*
+            //      v Clean up how we handle Transient...Exception, TxTerminatedException, etc. + how we use Status.*
 
             // PROBLEM
             // A slave can read inconsistent or corrupted data (mixed state records) because of reuse of property ids.

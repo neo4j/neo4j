@@ -189,11 +189,10 @@ public class KernelTransactions extends LifecycleAdapter
         }
     };
 
-    // TODO: Optimize with read / write locks and or only do it on slaves
     @Override
     public KernelTransaction newInstance()
     {
-        assert !newTransactionsLock.isWriteLockedByCurrentThread();
+        assertCurrentThreadIsNotBlockingNewTransactions();
         newTransactionsLock.readLock().lock();
         try
         {
@@ -297,15 +296,24 @@ public class KernelTransactions extends LifecycleAdapter
     }
 
     /**
-     * Allow new transactions to be started again if current thread is the one who called {@link #blockNewTransactions()}.
-     * If current thread is not the one that called {@link #blockNewTransactions()} or it has not been called at all
-     * then NO_OP.
+     * Allow new transactions to be started again if current thread is the one who called
+     * {@link #blockNewTransactions()}. If current thread is not the one that called {@link #blockNewTransactions()}
+     * or it has not been called at all then NO_OP.
      */
     public void unblockNewTransactions()
     {
         if ( newTransactionsLock.isWriteLockedByCurrentThread() )
         {
             newTransactionsLock.writeLock().unlock();
+        }
+    }
+
+    private void assertCurrentThreadIsNotBlockingNewTransactions()
+    {
+        if ( newTransactionsLock.isWriteLockedByCurrentThread() )
+        {
+            throw new IllegalStateException(
+                    "Thread that is blocking new transactions from starting can't start new transaction" );
         }
     }
 }
