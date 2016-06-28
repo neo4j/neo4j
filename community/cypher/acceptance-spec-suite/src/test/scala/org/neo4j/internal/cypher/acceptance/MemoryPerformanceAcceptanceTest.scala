@@ -21,9 +21,9 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
-class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+// Only put tests that assert on memory performance behaviour in this class
+class MemoryPerformanceAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
-  // Not TCK material
   test("should be able to handle a large DNF predicate without running out of memory") {
     // given
     val query = """MATCH (a)-[r]->(b) WHERE
@@ -57,4 +57,13 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     executeWithAllPlannersAndCompatibilityMode(query)
     // then it should not fail or run out of memory
   }
+
+  test("should unwind a long range without going OOM") {
+    val expectedResult = 20000000
+
+    val result = executeScalarWithAllPlanners[Long](s"UNWIND range(1, $expectedResult) AS i RETURN count(*) AS c")
+
+    result should equal(expectedResult)
+  }
+
 }
