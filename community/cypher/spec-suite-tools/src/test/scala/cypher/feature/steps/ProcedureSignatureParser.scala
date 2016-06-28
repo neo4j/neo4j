@@ -63,7 +63,7 @@ class ProcedureSignatureParser extends Parser with Base with Expressions with Li
   }
 
   private def ProcedureSignatureFields: Rule1[Seq[(String, CypherType)]] = rule("procedure signature columns") {
-    "(" ~ zeroOrMore(ProcedureSignatureField) ~ ")"
+    "(" ~~ zeroOrMore(ProcedureSignatureField ~ WS, separator = "," ~ WS) ~ ")"
   }
 
   private def ProcedureSignatureField: Rule1[(String, CypherType)] = rule("procedure signature column") {
