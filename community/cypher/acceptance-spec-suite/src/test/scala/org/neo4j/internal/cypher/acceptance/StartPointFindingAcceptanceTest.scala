@@ -24,29 +24,6 @@ import org.neo4j.graphdb.Node
 
 class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
-  // TCK'd
-  test("Scan all nodes") {
-    val nodes = Set(createNode("a"), createNode("b"), createNode("c"))
-
-    executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n) return n").columnAs[Node]("n").toSet should equal(nodes)
-  }
-
-  // TCK'd
-  test("Scan labeled node") {
-    createNode("a")
-    createLabeledNode("Person")
-    val animals = Set(createLabeledNode("Animal"), createLabeledNode("Animal"))
-
-    executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n:Animal) return n").columnAs[Node]("n").toSet should equal(animals)
-  }
-
-  // TCK'd
-  test("Can find nodes by property") {
-    createNode("prop"->1)
-    val n = createNode("prop"->2)
-    executeScalarWithAllPlannersAndCompatibilityMode[Node](s"match (n) where n.prop = 2 return n") should equal(n)
-  }
-
   // Not TCK material below; use of id() or index-related
 
   test("Seek node by id given on the left") {
