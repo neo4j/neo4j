@@ -483,7 +483,6 @@ public class CodeGenerationTest
         verifyNoMoreInteractions( a, b, c );
     }
 
-
     @Test
     public void shouldGenerateWhileLoopWithMultipleTestExpressions() throws Throwable
     {
@@ -983,7 +982,6 @@ public class CodeGenerationTest
         assertThat( conditional.invoke( false, true ), equalTo( true ) );
         assertThat( conditional.invoke( false, false ), equalTo( false ) );
     }
-
 
     @Test
     public void shouldGenerateAnd() throws Throwable

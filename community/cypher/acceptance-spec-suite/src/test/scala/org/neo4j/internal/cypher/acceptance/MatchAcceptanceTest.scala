@@ -313,14 +313,14 @@ return p""")
   // Not TCK material -- id()
   test("id in where leads to empty result") {
     // when
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n) WHERE id(n)=1337 RETURN n")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n) WHERE id(n)=1337 RETURN n")
 
     // then DOESN'T THROW EXCEPTION
     result shouldBe empty
   }
 
   test("should not fail if asking for a non existent node id with WHERE") {
-    executeWithAllPlannersAndCompatibilityMode("match (n) where id(n) in [0,1] return n").toList
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n) where id(n) in [0,1] return n").toList
     // should not throw an exception
   }
 

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.codegen
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir._
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.{ManyQueryExpression, QueryExpression, RangeQueryExpression, SingleQueryExpression}
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.{One, ZeroOneOrMany}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
@@ -36,6 +37,7 @@ object LogicalPlanConverter {
     case p: AllNodesScan => allNodesScanAsCodeGenPlan(p)
     case p: NodeByLabelScan => nodeByLabelScanAsCodeGenPlan(p)
     case p: NodeIndexSeek => nodeIndexSeekAsCodeGenPlan(p)
+    case p: NodeByIdSeek => nodeByIdSeekAsCodeGenPlan(p)
     case p: NodeUniqueIndexSeek => nodeUniqueIndexSeekAsCodeGen(p)
     case p: Expand => expandAsCodeGenPlan(p)
     case p: OptionalExpand => optExpandAsCodeGenPlan(p)
@@ -171,6 +173,38 @@ object LogicalPlanConverter {
         (methodHandle, Seq(indexSeekInstruction))
       }
     }
+
+  private def nodeByIdSeekAsCodeGenPlan(seek: NodeByIdSeek) = new CodeGenPlan with LeafCodeGenPlan {
+    override val logicalPlan: LogicalPlan = seek
+
+    override def produce(context: CodeGenContext): (Option[JoinTableMethod], Seq[Instruction]) = {
+      val nodeVar = Variable(context.namer.newVarName(), CodeGenType.primitiveNode)
+      context.addVariable(seek.idName.name, nodeVar)
+      val (methodHandle, actions) = context.popParent().consume(context, this)
+      val opName = context.registerOperator(logicalPlan)
+      val seekOperation = seek.nodeIds match {
+        case SingleSeekableArg(e) => SeekNodeById(opName, nodeVar,
+                                                  ExpressionConverter.createExpression(e)(context), actions)
+        case ManySeekableArgs(e) => e match {
+          case coll: ast.Collection =>
+            ZeroOneOrMany(coll.expressions) match {
+              case One(value) => SeekNodeById(opName, nodeVar,
+                                              ExpressionConverter.createExpression(value)(context), actions)
+              case _ =>
+                val expression = ExpressionConverter.createExpression(e)(context)
+                val expressionVar = Variable(context.namer.newVarName(), CodeGenType(symbols.CTAny, ReferenceType), nullable = false)
+                ForEachExpression(expressionVar, expression, SeekNodeById(opName, nodeVar, LoadVariable(expressionVar), actions))
+            }
+
+          case e =>
+            val expression = ToSet(CastToCollection(ExpressionConverter.createExpression(e)(context)))
+            val expressionVar = Variable(context.namer.newVarName(), CodeGenType(symbols.CTAny, ReferenceType), nullable = false)
+            ForEachExpression(expressionVar, expression, SeekNodeById(opName, nodeVar, LoadVariable(expressionVar), actions))
+        }
+      }
+      (methodHandle, Seq(seekOperation))
+    }
+  }
 
   private def nodeIndexSeekAsCodeGenPlan(indexSeek: NodeIndexSeek) = {
     def indexSeekFun(opName: String, descriptorVar: String, expression: CodeGenExpression,

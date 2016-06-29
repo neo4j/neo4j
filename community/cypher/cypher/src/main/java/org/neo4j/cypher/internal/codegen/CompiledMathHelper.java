@@ -288,6 +288,20 @@ public final class CompiledMathHelper
         throw new CypherTypeException( String.format( "Expected a numeric value but got %s", value.toString() ), null );
     }
 
+    public static long transformToLong( Object value )
+    {
+        if ( value == null )
+        {
+            throw new CypherTypeException( "Expected a numeric value but got null", null );
+        }
+        if ( value instanceof Number )
+        {
+            Number number = (Number) value;
+            return number.longValue();
+        }
+        throw new CypherTypeException( String.format( "Expected a numeric value but got %s", value.toString() ), null );
+    }
+
     /**
      * Both a1 and a2 must be arrays
      */
