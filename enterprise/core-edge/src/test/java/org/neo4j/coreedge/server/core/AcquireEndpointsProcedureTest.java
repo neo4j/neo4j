@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.CoreAddresses;
@@ -44,7 +45,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.coreedge.server.core.DiscoverMembersProcedureTest.addresses;
 import static org.neo4j.coreedge.server.core.DiscoverMembersProcedureTest.coreAddresses;
-import static org.neo4j.coreedge.server.core.DiscoverMembersProcedureTest.coreMemberAtRaftPort;
 import static org.neo4j.helpers.collection.Iterators.asList;
 
 public class AcquireEndpointsProcedureTest
@@ -56,7 +56,7 @@ public class AcquireEndpointsProcedureTest
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
         Map<CoreMember,CoreAddresses> coreMembers = new HashMap<>();
-        CoreMember theLeader = coreMemberAtRaftPort( 9000 );
+        CoreMember theLeader = new CoreMember( UUID.randomUUID() );
         coreMembers.put( theLeader, coreAddresses( 0 ) );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 1 ) );
@@ -85,7 +85,7 @@ public class AcquireEndpointsProcedureTest
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
         Map<CoreMember, CoreAddresses> coreMembers = new HashMap<>();
-        CoreMember theLeader = coreMemberAtRaftPort( 9000 );
+        CoreMember theLeader = new CoreMember( UUID.randomUUID() );
         coreMembers.put( theLeader, coreAddresses( 0 ) );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 1, 2, 3 ) );
@@ -111,7 +111,7 @@ public class AcquireEndpointsProcedureTest
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
         Map<CoreMember, CoreAddresses> coreMembers = new HashMap<>();
-        CoreMember theLeader = coreMemberAtRaftPort( 9000 );
+        CoreMember theLeader = new CoreMember( UUID.randomUUID() );
         coreMembers.put( theLeader, coreAddresses( 0 ) );
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses() );
 
