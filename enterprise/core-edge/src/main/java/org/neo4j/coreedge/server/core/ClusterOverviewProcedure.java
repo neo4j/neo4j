@@ -25,7 +25,6 @@ import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.coreedge.discovery.ClusterTopology;
-import org.neo4j.coreedge.discovery.CoreAddresses;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
@@ -37,22 +36,20 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.coreedge.server.core.SysInfoProcedure.ReadWriteEndPoint.follower;
-import static org.neo4j.coreedge.server.core.SysInfoProcedure.ReadWriteEndPoint.leader;
+import static org.neo4j.coreedge.server.core.ClusterOverviewProcedure.ReadWriteEndPoint.follower;
+import static org.neo4j.coreedge.server.core.ClusterOverviewProcedure.ReadWriteEndPoint.leader;
 import static org.neo4j.helpers.collection.Iterators.asRawIterator;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
-class SysInfoProcedure extends CallableProcedure.BasicProcedure
+public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
 {
     public static final String NAME = "overview";
     private final CoreTopologyService discoveryService;
     private final LeaderLocator leaderLocator;
 
-    SysInfoProcedure(CoreTopologyService discoveryService,
-                     LeaderLocator leaderLocator)
+    ClusterOverviewProcedure( CoreTopologyService discoveryService,
+                              LeaderLocator leaderLocator)
     {
         super( procedureSignature( new ProcedureSignature.ProcedureName( new String[]{"dbms", "cluster"}, NAME ) )
                 .out( "id", Neo4jTypes.NTString )

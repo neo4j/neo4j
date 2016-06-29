@@ -183,7 +183,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         {
             procedures.register( new DiscoverMembersProcedure( discoveryService, logProvider ) );
             procedures.register( new AcquireEndpointsProcedure( discoveryService, raft, logProvider ) );
-            procedures.register(new SysInfoProcedure( discoveryService, raft ) );
+            procedures.register(new ClusterOverviewProcedure( discoveryService, raft ) );
         }
         catch ( ProcedureException e )
         {

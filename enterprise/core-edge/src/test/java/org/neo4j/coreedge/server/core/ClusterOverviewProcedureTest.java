@@ -45,7 +45,7 @@ import static org.neo4j.coreedge.server.core.DiscoverMembersProcedureTest.addres
 import static org.neo4j.coreedge.server.core.DiscoverMembersProcedureTest.coreAddresses;
 import static org.neo4j.helpers.collection.Iterators.asList;
 
-public class SysInfoProcedureTest
+public class ClusterOverviewProcedureTest
 {
     @Test
     public void shouldRecommendTheCoreLeaderForWriteAndEdgeForRead() throws Exception
@@ -70,7 +70,7 @@ public class SysInfoProcedureTest
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
 
-        SysInfoProcedure procedure = new SysInfoProcedure( topologyService, leaderLocator );
+        ClusterOverviewProcedure procedure = new ClusterOverviewProcedure( topologyService, leaderLocator );
 
         // when
         final List<Object[]> members = asList( procedure.apply( null, new Object[0] ) );
