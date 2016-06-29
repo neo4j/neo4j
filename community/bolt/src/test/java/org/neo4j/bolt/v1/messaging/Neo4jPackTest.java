@@ -180,4 +180,32 @@ public class Neo4jPackTest
             unpacked( packed( path ) );
         }
     }
+
+    @Test
+    public void shouldTreatSingleCharAsSingleCharacterString() throws IOException
+    {
+        // Given
+        PackedOutputArray output = new PackedOutputArray();
+        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
+        packer.pack( 'C' );
+        Object unpacked = unpacked( output.bytes() );
+
+        // Then
+        assertThat( unpacked, instanceOf( String.class ) );
+        assertThat( unpacked, equalTo( "C" ) );
+    }
+
+    @Test
+    public void shouldTreatCharArrayAsString() throws IOException
+    {
+        // Given
+        PackedOutputArray output = new PackedOutputArray();
+        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
+        packer.pack( new char[]{'W', 'H', 'Y'} );
+        Object unpacked = unpacked( output.bytes() );
+
+        // Then
+        assertThat( unpacked, instanceOf( String.class ) );
+        assertThat( unpacked, equalTo( "WHY" ) );
+    }
 }
