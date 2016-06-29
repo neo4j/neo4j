@@ -52,10 +52,17 @@ case class SpecSuiteErrorHandler(typ: String, phase: String, detail: String) ext
   private val DOTALL = "(?s)"
 
   private def checkError(result: Try[Result], msgHandler: String => Boolean) = {
-    val statusType = if (typ == TCKErrorTypes.CONSTRAINT_VALIDATION_FAILED) "Schema" else "Statement"
+    val statusType =
+      if (typ == TCKErrorTypes.CONSTRAINT_VALIDATION_FAILED) "Schema"
+      else if (typ == "ProcedureError") "Procedure"
+      else "Statement"
+
+    // TODO: Bloody hack
+    val statusDetail = if (typ == "ProcedureError") "ProcedureNotFound" else typ
+
     result match {
       case Failure(e: QueryExecutionException) =>
-        s"Neo.ClientError.$statusType.$typ" should equal(e.getStatusCode)
+        s"Neo.ClientError.$statusType.$statusDetail" should equal(e.getStatusCode)
 
         if (!msgHandler(e.getMessage)) fail(s"Unknown $phase error: $e", e)
 
@@ -150,6 +157,12 @@ case class SpecSuiteErrorHandler(typ: String, phase: String, detail: String) ext
       detail should equal(COLUMN_NAME_CONFLICT)
     else if (msg.matches(semanticError("RETURN \\* is not allowed when there are no variables in scope")))
       detail should equal(NO_VARIABLES_IN_SCOPE)
+    else if (msg.matches(semanticError("Procedure call does not provide the required number of arguments (.+)")))
+      detail should equal("InvalidNumberOfArguments")
+    else if (msg.matches("Expected a parameter named .+"))
+      detail should equal("MissingParameter")
+    else if (msg.matches("There is no procedure with the name `.+` registered for this database instance. Please ensure you've spelled the procedure name correctly and that the procedure is properly deployed."))
+      detail should equal("ProcedureNotFound")
     else r = false
 
     r

@@ -38,6 +38,7 @@ Feature: ProcedureCallAcceptance
       | 'A'   |
       | 'B'   |
       | 'C'   |
+    And no side effects
 
   Scenario: Standalone call to VOID procedure
     And there exists a procedure test.doNothing() :: VOID:
@@ -47,6 +48,7 @@ Feature: ProcedureCallAcceptance
     CALL test.doNothing()
     """
     Then the result should be empty
+    And no side effects
 
   Scenario: Standalone call to VOID procedure without arguments
     And there exists a procedure test.doNothing() :: VOID:
@@ -56,6 +58,7 @@ Feature: ProcedureCallAcceptance
     CALL test.doNothing
     """
     Then the result should be empty
+    And no side effects
 
   Scenario: Standalone call to empty procedure
     And there exists a procedure test.doNothing() :: ():
@@ -65,6 +68,7 @@ Feature: ProcedureCallAcceptance
     CALL test.doNothing()
     """
     Then the result should be empty
+    And no side effects
 
   Scenario: Standalone call to empty procedure without arguments
     And there exists a procedure test.doNothing() :: ():
@@ -74,6 +78,7 @@ Feature: ProcedureCallAcceptance
     CALL test.doNothing
     """
     Then the result should be empty
+    And no side effects
 
   Scenario: Standalone call to procedure with explicit arguments
     And there exists a procedure test.my.proc(name :: STRING?, id :: INTEGER?) :: (city :: STRING?, country_code :: INTEGER?):
@@ -113,6 +118,7 @@ Feature: ProcedureCallAcceptance
     Then the result should be, in order:
       | city     | country_code |
       | 'Berlin' | 49           |
+    And no side effects
 
   Scenario: Standalone call to procedure with argument of type NUMBER accepts value of type INTEGER
     And there exists a procedure test.my.proc(in :: NUMBER?) :: (out :: STRING?):
@@ -126,6 +132,7 @@ Feature: ProcedureCallAcceptance
     Then the result should be, in order:
       | out      |
       | 'wisdom' |
+    And no side effects
 
   Scenario: Standalone call to procedure with argument of type FLOAT accepts value of type INTEGER
     And there exists a procedure test.my.proc(in :: FLOAT?) :: (out :: STRING?):
@@ -138,6 +145,7 @@ Feature: ProcedureCallAcceptance
     Then the result should be, in order:
       | out            |
       | 'close enough' |
+    And no side effects
 
   Scenario: Standalone call to procedure with argument of type NUMBER accepts value of type FLOAT
     And there exists a procedure test.my.proc(in :: NUMBER?) :: (out :: STRING?):
@@ -151,6 +159,7 @@ Feature: ProcedureCallAcceptance
     Then the result should be, in order:
       | out           |
       | 'about right' |
+    And no side effects
 
   Scenario: Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT
     And there exists a procedure test.my.proc(in :: INTEGER?) :: (out :: STRING?):
@@ -163,6 +172,7 @@ Feature: ProcedureCallAcceptance
     Then the result should be, in order:
       | out            |
       | 'close enough' |
+    And no side effects
 
   Scenario: Standalone call to procedure with null argument
     And there exists a procedure test.my.proc(in :: INTEGER?) :: (out :: STRING?):
@@ -175,3 +185,49 @@ Feature: ProcedureCallAcceptance
     Then the result should be, in order:
       | out   |
       | 'nix' |
+    And no side effects
+
+  Scenario: Standalone call to procedure should fail if input type is wrong
+    And there exists a procedure test.my.proc(in :: INTEGER?) :: (out :: INTEGER?):
+      | in | out |
+    When executing query:
+    """
+    CALL test.my.proc(true)
+    """
+    Then a SyntaxError should be raised at compile time: InvalidArgumentType
+
+  Scenario: Standalone call to procedure should fail if explicit argument is missing
+    And there exists a procedure test.my.proc(name :: STRING?, in :: INTEGER?) :: (out :: INTEGER?):
+      | name | in | out |
+    When executing query:
+    """
+    CALL test.my.proc('Dobby')
+    """
+    Then a SyntaxError should be raised at compile time: InvalidNumberOfArguments
+
+  Scenario: Standalone call to procedure should fail if too many explicit argument are given
+    And there exists a procedure test.my.proc(in :: INTEGER?) :: (out :: INTEGER?):
+      | in | out |
+    When executing query:
+    """
+    CALL test.my.proc(1, 2, 3, 4)
+    """
+    Then a SyntaxError should be raised at compile time: InvalidNumberOfArguments
+
+  Scenario: Standalone call to procedure should fail if implicit argument is missing
+    And there exists a procedure test.my.proc(name :: STRING?, in :: INTEGER?) :: (out :: INTEGER?):
+      | name | in | out |
+    And parameters are:
+      | name | 'Stefan' |
+    When executing query:
+    """
+    CALL test.my.proc
+    """
+    Then a ParameterMissing should be raised at compile time: MissingParameter
+
+  Scenario: Standalone call to unknown procedure should fail
+    When executing query:
+    """
+    CALL test.my.proc
+    """
+    Then a ProcedureError should be raised at compile time: ProcedureNotFound

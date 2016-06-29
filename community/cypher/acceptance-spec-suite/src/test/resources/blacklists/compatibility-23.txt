@@ -1,5 +1,10 @@
+// ShortestPathAcceptance.feature
 Find a combination of a shortest path and a pattern expression
+
+// BuiltInProcedureAcceptance.feature
 Getting all labels
+
+// ProcedureCallAcceptance.feature
 Standalone call to procedure without arguments
 Standalone call to VOID procedure
 Standalone call to VOID procedure without arguments
@@ -12,4 +17,11 @@ Standalone call to procedure with argument of type NUMBER accepts value of type 
 Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT
 Standalone call to procedure with argument of type FLOAT accepts value of type INTEGER
 Standalone call to procedure with null argument
+Standalone call to procedure should fail if input type is wrong
+Standalone call to procedure should fail if explicit argument is missing
+Standalone call to procedure should fail if too many explicit argument are given
+Standalone call to procedure should fail if implicit argument is missing
+Standalone call to unknown procedure should fail
 
+//ExplainAcceptance.feature
+Explanation of standalone procedure call
