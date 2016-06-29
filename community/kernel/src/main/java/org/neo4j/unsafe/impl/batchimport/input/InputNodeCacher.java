@@ -38,10 +38,11 @@ public class InputNodeCacher extends InputEntityCacher<InputNode>
 {
     private String[] previousLabels = InputEntity.NO_LABELS;
 
-    public InputNodeCacher( StoreChannel channel, StoreChannel header, RecordFormats recordFormats, int bufferSize )
+    public InputNodeCacher( StoreChannel channel, StoreChannel header, RecordFormats recordFormats,
+            int bufferSize, int batchSize )
             throws IOException
     {
-        super( channel, header, recordFormats, bufferSize, 1 );
+        super( channel, header, recordFormats, bufferSize, batchSize, 1 );
     }
 
     @Override
@@ -70,6 +71,13 @@ public class InputNodeCacher extends InputEntityCacher<InputNode>
             channel.put( END_OF_LABEL_CHANGES );
             previousLabels = labels;
         }
+    }
+
+    @Override
+    protected void clearState()
+    {
+        previousLabels = InputEntity.NO_LABELS;
+        super.clearState();
     }
 
     protected void writeLabelDiff( byte mode, String[] compare, String[] with ) throws IOException

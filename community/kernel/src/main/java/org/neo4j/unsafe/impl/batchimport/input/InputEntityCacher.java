@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,6 +28,8 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChannel;
 
@@ -48,7 +51,7 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SAME_GROUP;
  */
 abstract class InputEntityCacher<ENTITY extends InputEntity> implements Receiver<ENTITY[],IOException>
 {
-    protected final FlushableChannel channel;
+    protected final PositionAwarePhysicalFlushableChannel channel;
     private final FlushableChannel header;
     private final StoreChannel storeChannel;
     private final StoreChannel headerChannel;
@@ -56,22 +59,27 @@ abstract class InputEntityCacher<ENTITY extends InputEntity> implements Receiver
 
     private final int[] nextKeyId = new int[HIGH_TOKEN_TYPE];
     private final int[] maxKeyId = new int[HIGH_TOKEN_TYPE];
+
     @SuppressWarnings( "unchecked" )
     private final Map<String,Integer>[] tokens = new Map[HIGH_TOKEN_TYPE];
 
-    protected InputEntityCacher( StoreChannel channel, StoreChannel header, RecordFormats recordFormats, int bufferSize,
-            int groupSlots ) throws IOException
+    private final LogPositionMarker positionMarker = new LogPositionMarker();
+    private LogPosition currentBatchStartPosition;
+    private int entitiesWritten;
+    private final int batchSize;
+
+    protected InputEntityCacher( StoreChannel channel, StoreChannel header, RecordFormats recordFormats,
+            int bufferSize, int batchSize, int groupSlots )
+            throws IOException
     {
         this.storeChannel = channel;
         this.headerChannel = header;
+        this.batchSize = batchSize;
         this.previousGroupIds = new int[groupSlots];
 
         initMaxTokenKeyIds( recordFormats );
+        clearState();
 
-        for ( int i = 0; i < groupSlots; i++ )
-        {
-            previousGroupIds[i] = Group.GLOBAL.id();
-        }
         // We don't really care about versions, it's just that apart from that the WritableLogChannel
         // does precisely what we want and there's certainly value in not duplicating that functionality.
         this.channel = new PositionAwarePhysicalFlushableChannel(
@@ -89,8 +97,54 @@ abstract class InputEntityCacher<ENTITY extends InputEntity> implements Receiver
     {
         for ( ENTITY entity : batch )
         {
+            if ( entitiesWritten % batchSize == 0 )
+            {
+                newBatch();
+            }
+            entitiesWritten++;
             writeEntity( entity );
         }
+    }
+
+    // [ A  ][ B  ][.................................]
+    //             |<-----A------------------------->| (B entities in total)
+    // |<------------------------------------------->|
+    private void newBatch() throws IOException
+    {
+        channel.getCurrentPosition( positionMarker );
+
+        // Set byte size in previous batch
+        if ( entitiesWritten > 0 )
+        {
+            // Remember the current position
+            // Go back to the start of this batch
+            channel.setCurrentPosition( currentBatchStartPosition );
+            // and set the size in that long field (not counting the size of the size field)
+            channel.putLong( positionMarker.getByteOffset() - currentBatchStartPosition.getByteOffset() - Long.BYTES );
+            // and number of entities written
+            channel.putInt( entitiesWritten );
+            // Now go back to where we were before updating this size field
+            channel.setCurrentPosition( positionMarker.newPosition() );
+        }
+
+        // Always add mark for the new batch here, this will simplify reader logic
+        startBatch();
+    }
+
+    private void startBatch() throws IOException
+    {
+        // Make room for size in new batch and number of entities
+        // Until this batch is finished, this mark the end of the cache.
+        clearState();
+        entitiesWritten = 0;
+        currentBatchStartPosition = positionMarker.newPosition();
+        channel.putLong( InputCache.END_OF_CACHE );
+        channel.putInt( InputCache.NO_ENTITIES );
+    }
+
+    protected void clearState()
+    {
+        Arrays.fill( previousGroupIds, Group.GLOBAL.id() );
     }
 
     protected void writeEntity( ENTITY entity ) throws IOException
@@ -160,7 +214,7 @@ abstract class InputEntityCacher<ENTITY extends InputEntity> implements Receiver
         else if ( key instanceof Integer )
         {
             // Here we signal that we have a real token id, not to be confused by the local and contrived
-            // toiken ids we generate in here. Following this -1 is the real token id.
+            // token ids we generate in here. Following this -1 is the real token id.
             channel.putInt( (short) -1 );
             channel.putInt( (Integer) key );
         }
@@ -173,6 +227,8 @@ abstract class InputEntityCacher<ENTITY extends InputEntity> implements Receiver
     @Override
     public void close() throws IOException
     {
+        newBatch();
+
         header.put( END_OF_HEADER );
         // This is a special value denoting the end of the stream. This is done like this since
         // properties are the first thing read for every entity.

@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import java.io.IOException;
 
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.NEW_TYPE;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.RELATIONSHIP_TYPE_TOKEN;
@@ -34,32 +35,32 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
  */
 public class InputRelationshipReader extends InputEntityReader<InputRelationship>
 {
-    private String previousType;
-
-    public InputRelationshipReader( StoreChannel channel, StoreChannel header, int bufferSize, Runnable closeAction )
-            throws IOException
+    public InputRelationshipReader( StoreChannel channel, StoreChannel header, int bufferSize, Runnable closeAction,
+            int maxNbrOfProcessors ) throws IOException
     {
-        super( channel, header, bufferSize, 2, closeAction );
+        super( channel, header, bufferSize, closeAction, maxNbrOfProcessors );
     }
 
     @Override
-    protected InputRelationship readNextOrNull( Object properties ) throws IOException
+    protected InputRelationship readNextOrNull( Object properties, ProcessorState state ) throws IOException
     {
+        ReadableClosablePositionAwareChannel channel = state.batchChannel;
+
         // groups
-        Group startNodeGroup = readGroup( 0 );
-        Group endNodeGroup = readGroup( 1 );
+        Group startNodeGroup = readGroup( 0, state );
+        Group endNodeGroup = readGroup( 1, state );
 
         // ids
-        Object startNodeId = readValue();
-        Object endNodeId = readValue();
+        Object startNodeId = readValue( channel );
+        Object endNodeId = readValue( channel );
 
         // type
         byte typeMode = channel.get();
         Object type;
         switch ( typeMode )
         {
-        case SAME_TYPE: type = previousType; break;
-        case NEW_TYPE: type = previousType = (String) readToken( RELATIONSHIP_TYPE_TOKEN ); break;
+        case SAME_TYPE: type = state.previousType; break;
+        case NEW_TYPE: type = state.previousType = (String) readToken( RELATIONSHIP_TYPE_TOKEN, channel ); break;
         case HAS_TYPE_ID: type = channel.getInt(); break;
         default: throw new IllegalArgumentException( "Unrecognized type mode " + typeMode );
         }

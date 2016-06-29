@@ -26,7 +26,6 @@ import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Mark;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
@@ -40,8 +39,7 @@ import static java.lang.String.format;
  * Converts a line of csv data into an {@link InputEntity} (either a node or relationship).
  * Does so by seeking values, using {@link CharSeeker}, interpreting the values using a {@link Header}.
  */
-public class InputEntityDeserializer<ENTITY extends InputEntity>
-        extends PrefetchingIterator<ENTITY> implements InputIterator<ENTITY>
+public class InputEntityDeserializer<ENTITY extends InputEntity> extends InputIterator.Adapter<ENTITY>
 {
     private final Header header;
     private final CharSeeker data;

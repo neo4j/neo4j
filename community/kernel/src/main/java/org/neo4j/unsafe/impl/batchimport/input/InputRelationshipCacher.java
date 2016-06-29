@@ -37,9 +37,10 @@ public class InputRelationshipCacher extends InputEntityCacher<InputRelationship
     private String previousType;
 
     public InputRelationshipCacher( StoreChannel channel, StoreChannel header, RecordFormats recordFormats,
-            int bufferSize ) throws IOException
+            int bufferSize, int batchSize )
+            throws IOException
     {
-        super( channel, header, recordFormats, bufferSize, 2 );
+        super( channel, header, recordFormats, bufferSize, batchSize, 2 );
     }
 
     @Override
@@ -74,5 +75,12 @@ public class InputRelationshipCacher extends InputEntityCacher<InputRelationship
                 writeToken( RELATIONSHIP_TYPE_TOKEN, previousType = relationship.type() );
             }
         }
+    }
+
+    @Override
+    protected void clearState()
+    {
+        previousType = null;
+        super.clearState();
     }
 }

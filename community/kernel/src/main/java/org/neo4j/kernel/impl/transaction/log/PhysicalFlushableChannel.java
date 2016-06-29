@@ -170,8 +170,29 @@ public class PhysicalFlushableChannel implements FlushableChannel
         channel.close();
     }
 
+    /**
+     * @return the position of the channel, also taking into account buffer position.
+     * @throws IOException if underlying channel throws {@link IOException}.
+     */
     public long position() throws IOException
     {
         return channel.position() + buffer.position();
+    }
+
+    /**
+     * Sets position of this channel to the new {@code position}. This works only if the underlying channel
+     * supports positioning.
+     *
+     * @param position new position (byte offset) to set as new current position.
+     * @throws IOException if underlying channel throws {@link IOException}.
+     */
+    public void position( long position ) throws IOException
+    {
+        // Currently we take the pessimistic approach of flushing (doesn't imply forcing) buffer to
+        // channel before moving to a new position. This works in all cases, but there could be
+        // made an optimization where we could see that we're moving within the current buffer range
+        // and if so skip flushing and simply move the cursor in the buffer.
+        prepareForFlush().flush();
+        channel.position( position );
     }
 }

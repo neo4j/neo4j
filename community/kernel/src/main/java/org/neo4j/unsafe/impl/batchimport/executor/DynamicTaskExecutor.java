@@ -28,7 +28,10 @@ import java.util.function.Supplier;
 
 import org.neo4j.function.Suppliers;
 
-import static java.lang.Math.min;
+import static java.lang.Integer.max;
+import static java.lang.Integer.min;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**
@@ -37,7 +40,7 @@ import static org.neo4j.helpers.Exceptions.launderedException;
  */
 public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
 {
-    public static final ParkStrategy DEFAULT_PARK_STRATEGY = new ParkStrategy.Park( 10 );
+    public static final ParkStrategy DEFAULT_PARK_STRATEGY = new ParkStrategy.Park( 10, MILLISECONDS );
 
     private final BlockingQueue<Task<LOCAL>> queue;
     private final ParkStrategy parkStrategy;
@@ -45,6 +48,7 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     @SuppressWarnings( "unchecked" )
     private volatile Processor[] processors = (Processor[]) Array.newInstance( Processor.class, 0 );
     private volatile boolean shutDown;
+    private volatile boolean abortQueued;
     private volatile Throwable panic;
     private final Supplier<LOCAL> initialLocalState;
     private final int maxProcessorCount;
@@ -68,66 +72,45 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
         this.processorThreadNamePrefix = processorThreadNamePrefix;
         this.initialLocalState = initialLocalState;
         this.queue = new ArrayBlockingQueue<>( maxQueueSize );
-        setNumberOfProcessors( initialProcessorCount );
+        processors( initialProcessorCount );
     }
 
     @Override
-    public synchronized void setNumberOfProcessors( int count )
+    public int processors( int delta )
     {
-        assertHealthy();
-        assert count > 0;
-        if ( count == processors.length )
+        if ( shutDown || delta == 0 )
         {
-            return;
+            return processors.length;
         }
 
-        count = min( count, maxProcessorCount );
-        Processor[] newProcessors;
-        if ( count > processors.length )
-        {   // Add one or more
-            newProcessors = Arrays.copyOf( processors, count );
-            for ( int i = processors.length; i < newProcessors.length; i++ )
+        int requestedNumber = processors.length + delta;
+        if ( delta > 0 )
+        {
+            requestedNumber = min( requestedNumber, maxProcessorCount );
+            if ( requestedNumber > processors.length )
             {
-                newProcessors[i] = new Processor( processorThreadNamePrefix + "-" + i );
+                Processor[] newProcessors = Arrays.copyOf( processors, requestedNumber );
+                for ( int i = processors.length; i < requestedNumber; i++ )
+                {
+                    newProcessors[i] = new Processor( processorThreadNamePrefix + "-" + i );
+                }
+                this.processors = newProcessors;
             }
         }
         else
-        {   // Remove one or more
-            newProcessors = Arrays.copyOf( processors, count );
-            for ( int i = newProcessors.length; i < processors.length; i++ )
+        {
+            requestedNumber = max( 1, requestedNumber );
+            if ( requestedNumber < processors.length )
             {
-                processors[i].shutDown = true;
+                Processor[] newProcessors = Arrays.copyOf( processors, requestedNumber );
+                for ( int i = newProcessors.length; i < processors.length; i++ )
+                {
+                    processors[i].shutDown = true;
+                }
+                this.processors = newProcessors;
             }
         }
-        this.processors = newProcessors;
-    }
-
-    @Override
-    public int numberOfProcessors()
-    {
         return processors.length;
-    }
-
-    @Override
-    public synchronized boolean incrementNumberOfProcessors()
-    {
-        if ( numberOfProcessors() >= maxProcessorCount )
-        {
-            return false;
-        }
-        setNumberOfProcessors( numberOfProcessors() + 1 );
-        return true;
-    }
-
-    @Override
-    public synchronized boolean decrementNumberOfProcessors()
-    {
-        if ( numberOfProcessors() == 1 )
-        {
-            return false;
-        }
-        setNumberOfProcessors( numberOfProcessors() - 1 );
-        return true;
     }
 
     @Override
@@ -147,10 +130,14 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     {
         if ( shutDown )
         {
-            String message = "Executor has been shut down";
-            throw panic != null
-                    ? new IllegalStateException( message, panic )
-                    : new IllegalStateException( message );
+            if ( panic != null )
+            {
+                throw new IllegalStateException( "Executor has been shut down in panic", panic );
+            }
+            if ( abortQueued )
+            {
+                throw new IllegalStateException( "Executor has been shut down, aborting queued" );
+            }
         }
     }
 
@@ -163,7 +150,7 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     }
 
     @Override
-    public synchronized void shutdown( boolean awaitAllCompleted )
+    public synchronized void shutdown( int flags )
     {
         if ( shutDown )
         {
@@ -171,10 +158,12 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
         }
 
         this.shutDown = true;
+        boolean awaitAllCompleted = (flags & TaskExecutor.SF_AWAIT_ALL_COMPLETED) != 0;
         while ( awaitAllCompleted && !queue.isEmpty() && panic == null /*all bets are off in the event of panic*/ )
         {
             parkAWhile();
         }
+        this.abortQueued = (flags & TaskExecutor.SF_ABORT_QUEUED) != 0;
         for ( Processor processor : processors )
         {
             processor.shutDown = true;
@@ -213,7 +202,6 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     private class Processor extends Thread
     {
         private volatile boolean shutDown;
-        private final LOCAL threadLocalState = initialLocalState.get();
 
         Processor( String name )
         {
@@ -225,7 +213,9 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
         @Override
         public void run()
         {
-            while ( !shutDown )
+            // Initialized here since it's the thread itself that needs to call it
+            final LOCAL threadLocalState = initialLocalState.get();
+            while ( !abortQueued && !shutDown )
             {
                 Task<LOCAL> task = queue.poll();
                 if ( task != null )
@@ -237,12 +227,16 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
                     catch ( Throwable e )
                     {
                         panic = e;
-                        shutdown( false );
+                        shutdown( TaskExecutor.SF_ABORT_QUEUED );
                         throw launderedException( e );
                     }
                 }
                 else
                 {
+                    if ( shutDown )
+                    {
+                        break;
+                    }
                     parkAWhile();
                 }
             }

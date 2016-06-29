@@ -20,20 +20,27 @@
 package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.util.collection.ContinuableArrayCursor;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.unsafe.impl.batchimport.staging.TicketedProcessing;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
+import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_ENTITIES;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_HEADER;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.GROUP_TOKEN;
@@ -47,34 +54,90 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SAME_GROUP;
 
 /**
  * Abstract class for reading cached entities previously stored using {@link InputEntityCacher} or derivative.
+ * Entity data is read in batches, each handed off to one ore more processors which interprets the bytes
+ * into {@link InputEntity} instances. From the outside this is simply an {@link InputIterator},
+ * the parallelization happens inside.
  */
-abstract class InputEntityReader<ENTITY extends InputEntity> extends PrefetchingIterator<ENTITY>
-        implements InputIterator<ENTITY>
+abstract class InputEntityReader<ENTITY extends InputEntity> extends InputIterator.Adapter<ENTITY>
 {
-    protected final ReadableLogChannel channel;
+    // Used by BatchProvidingIterator. To feed jobs into TicketedProcessing
     private final LogPositionMarker positionMarker = new LogPositionMarker();
     private int lineNumber;
-    private final Group[] previousGroups;
+    private TicketedProcessing<byte[],Void,Object[]> processing;
+
+    // Used by workers, immutable
     private final PrimitiveIntObjectMap<String>[] tokens;
+
+    // Not used by workers
     private final Runnable closeAction;
+    private final ReadAheadLogChannel cacheChannel;
+    private final ContinuableArrayCursor<Object> processedEntities;
+
+    protected static class ProcessorState
+    {
+        // Used by workers, mutable
+        protected final Group[] previousGroups;
+        protected String previousType;
+        protected String[] previousLabels = InputEntity.NO_LABELS;
+        protected ReadableClosablePositionAwareChannel batchChannel;
+
+        public ProcessorState( byte[] batchData )
+        {
+            this.batchChannel = new InMemoryClosableChannel( batchData, true/*append*/ );
+            this.previousGroups = new Group[2];
+            for ( int i = 0; i < previousGroups.length; i++ )
+            {
+                previousGroups[i] = Group.GLOBAL;
+            }
+        }
+    }
 
     @SuppressWarnings( "unchecked" )
-    InputEntityReader( StoreChannel channel, StoreChannel header, int bufferSize, int groupSlots,
-            Runnable closeAction ) throws IOException
+    InputEntityReader( StoreChannel channel, StoreChannel header, int bufferSize, Runnable closeAction,
+            int maxNbrOfProcessors )
+            throws IOException
     {
         tokens = new PrimitiveIntObjectMap[HIGH_TOKEN_TYPE];
         tokens[PROPERTY_KEY_TOKEN] = Primitive.intObjectMap();
         tokens[LABEL_TOKEN] = Primitive.intObjectMap();
         tokens[RELATIONSHIP_TYPE_TOKEN] = Primitive.intObjectMap();
         tokens[GROUP_TOKEN] = Primitive.intObjectMap();
-        this.previousGroups = new Group[groupSlots];
-        for ( int i = 0; i < groupSlots; i++ )
-        {
-            previousGroups[i] = Group.GLOBAL;
-        }
-        this.channel = reader( channel, bufferSize );
+        cacheChannel = reader( channel, bufferSize );
         this.closeAction = closeAction;
         readHeader( header );
+
+        /** The processor is the guy converting the byte[] to ENTITY[]
+         *  we will have a lot of those guys
+         */
+        BiFunction<byte[],Void,Object[]> processor = (batchData,ignore) ->
+        {
+            ProcessorState state = new ProcessorState( batchData );
+            try
+            {
+                int nbrOfEntries = state.batchChannel.getInt();
+
+                // Read all Entities and put in ENTITY[] to return.
+                Object[] result = new Object[nbrOfEntries];
+                for ( int i = 0; i < nbrOfEntries; i++ )
+                {
+                    result[i] = readOneEntity( state );
+                }
+
+                return result;
+            }
+            catch ( IOException e )
+            {
+                throw new IllegalStateException( e );
+            }
+        };
+        Supplier<Void> noState = () -> null;
+        processing = new TicketedProcessing<>( getClass().getName(), maxNbrOfProcessors, processor, noState );
+
+        // This iterator is only called from TicketedProcessing.slurp that submit jobs to new threads.
+        Iterator<byte[]> iterator = new BatchProvidingIterator();
+        processing.slurp( iterator, true );
+
+        processedEntities = new ContinuableArrayCursor<>( () -> processing.next() );
     }
 
     private ReadAheadLogChannel reader( StoreChannel channel, int bufferSize ) throws IOException
@@ -98,19 +161,19 @@ abstract class InputEntityReader<ENTITY extends InputEntity> extends Prefetching
         }
     }
 
-    @Override
-    protected final ENTITY fetchNextOrNull()
+    protected final ENTITY readOneEntity( ProcessorState state )
     {
+        ReadableClosablePositionAwareChannel channel = state.batchChannel;
         try
         {
-            lineNumber++;
-            Object properties = readProperties();
+            // Read next entity
+            Object properties = readProperties( channel );
             if ( properties == null )
             {
                 return null;
             }
 
-            return readNextOrNull( properties );
+            return readNextOrNull( properties, state );
         }
         catch ( IOException e )
         {
@@ -118,9 +181,16 @@ abstract class InputEntityReader<ENTITY extends InputEntity> extends Prefetching
         }
     }
 
-    protected abstract ENTITY readNextOrNull( Object properties ) throws IOException;
+    @Override
+    @SuppressWarnings( "unchecked" )
+    protected ENTITY fetchNextOrNull()
+    {
+        return processedEntities.next() ? (ENTITY) processedEntities.get() : null;
+    }
 
-    private Object readProperties() throws IOException
+    protected abstract ENTITY readNextOrNull( Object properties, ProcessorState state ) throws IOException;
+
+    private Object readProperties( ReadableClosablePositionAwareChannel channel ) throws IOException
     {
         short count = channel.getShort();
         switch ( count )
@@ -134,14 +204,14 @@ abstract class InputEntityReader<ENTITY extends InputEntity> extends Prefetching
             Object[] properties = new Object[count*2];
             for ( int i = 0; i < properties.length; i++ )
             {
-                properties[i++] = readToken( PROPERTY_KEY_TOKEN );
-                properties[i] = readValue();
+                properties[i++] = readToken( PROPERTY_KEY_TOKEN, channel );
+                properties[i] = readValue( channel );
             }
             return properties;
         }
     }
 
-    protected Object readToken( byte type ) throws IOException
+    protected Object readToken( byte type, ReadableClosablePositionAwareChannel channel ) throws IOException
     {
         int id = channel.getInt();
         if ( id == -1 )
@@ -158,19 +228,20 @@ abstract class InputEntityReader<ENTITY extends InputEntity> extends Prefetching
         return name;
     }
 
-    protected Object readValue() throws IOException
+    protected Object readValue( ReadableClosablePositionAwareChannel channel ) throws IOException
     {
         return ValueType.typeOf( channel.get() ).read( channel );
     }
 
-    protected Group readGroup( int slot ) throws IOException
+    protected Group readGroup( int slot, ProcessorState state ) throws IOException
     {
+        ReadableClosablePositionAwareChannel channel = state.batchChannel;
         byte groupMode = channel.get();
         switch ( groupMode )
         {
-        case SAME_GROUP: return previousGroups[slot];
-        case NEW_GROUP: return previousGroups[slot] = new Group.Adapter( channel.getInt(),
-                (String) readToken( GROUP_TOKEN ) );
+        case SAME_GROUP: return state.previousGroups[slot];
+        case NEW_GROUP: return state.previousGroups[slot] = new Group.Adapter( channel.getInt(),
+                (String) readToken( GROUP_TOKEN, channel ) );
         default: throw new IllegalArgumentException( "Unknown group mode " + groupMode );
         }
     }
@@ -192,7 +263,7 @@ abstract class InputEntityReader<ENTITY extends InputEntity> extends Prefetching
     {
         try
         {
-            return channel.getCurrentPosition( positionMarker ).getByteOffset();
+            return cacheChannel.getCurrentPosition( positionMarker ).getByteOffset();
         }
         catch ( IOException e )
         {
@@ -205,12 +276,44 @@ abstract class InputEntityReader<ENTITY extends InputEntity> extends Prefetching
     {
         try
         {
-            channel.close();
+            cacheChannel.close();
             closeAction.run();
         }
         catch ( IOException e )
         {
             throw new InputException( "Couldn't close channel for cached input data", e );
+        }
+    }
+
+    @Override
+    public int processors( int delta )
+    {
+        return processing.processors( delta );
+    }
+
+    private class BatchProvidingIterator extends PrefetchingIterator<byte[]>
+    {
+        @Override
+        protected byte[] fetchNextOrNull()
+        {
+            try
+            {
+                int batchSize = safeCastLongToInt( cacheChannel.getLong() );
+                if ( batchSize == InputCache.END_OF_CACHE )
+                {
+                    // We have reached end of cache
+                    return null;
+                }
+                byte[] bytes = new byte[batchSize];
+                cacheChannel.get( bytes, batchSize );
+
+                return bytes;
+            }
+            catch ( IOException e )
+            {
+                // Batch size was probably wrong if we ended up here.
+                throw new RuntimeException( e );
+            }
         }
     }
 }
