@@ -26,7 +26,6 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 import java.util.Collection;
 
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.RaftState;
@@ -38,7 +37,6 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.coreedge.raft.MessageUtils.messageFor;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.voteRequest;
 import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;
@@ -50,8 +48,6 @@ import static org.neo4j.coreedge.server.RaftTestMember.member;
 @RunWith(Parameterized.class)
 public class VoteRequestTest
 {
-    private final LocalDatabase storeId = mock( LocalDatabase.class);
-
     @Parameterized.Parameters(name = "{0}")
     public static Collection data() {
         return asList( Role.values() );
@@ -75,7 +71,7 @@ public class VoteRequestTest
 
         Outcome outcome = role.handler.handle( voteRequest().from( member1 ).term( candidateTerm )
                 .lastLogIndex( 0 )
-                .lastLogTerm( -1 ).build(), state, log(), storeId );
+                .lastLogTerm( -1 ).build(), state, log() );
 
         // then
         assertTrue( ((RaftMessages.Vote.Response) messageFor( outcome, member1 )).voteGranted() );
@@ -92,7 +88,7 @@ public class VoteRequestTest
 
         Outcome outcome = role.handler.handle( voteRequest().from( member1 ).term( candidateTerm )
                 .lastLogIndex( 0 )
-                .lastLogTerm( -1 ).build(), state, log(), storeId );
+                .lastLogTerm( -1 ).build(), state, log() );
 
         // then
         assertFalse( ((RaftMessages.Vote.Response) messageFor( outcome, member1 )).voteGranted() );
@@ -110,13 +106,13 @@ public class VoteRequestTest
 
         Outcome outcome1 = role.handler.handle( voteRequest().from( member1 ).term( candidateTerm )
                 .lastLogIndex( 0 )
-                .lastLogTerm( -1 ).build(), state, log(), storeId );
+                .lastLogTerm( -1 ).build(), state, log() );
 
         state.update( outcome1 );
 
         Outcome outcome2 = role.handler.handle( voteRequest().from( member2 ).term( candidateTerm )
                 .lastLogIndex( 0 )
-                .lastLogTerm( -1 ).build(), state, log(), storeId );
+                .lastLogTerm( -1 ).build(), state, log() );
 
         // then
         assertFalse( ((RaftMessages.Vote.Response) messageFor( outcome2, member2 )).voteGranted() );
@@ -133,7 +129,7 @@ public class VoteRequestTest
 
         Outcome outcome = role.handler.handle( voteRequest().from( member1 ).term( candidateTerm )
                 .lastLogIndex( 0 )
-                .lastLogTerm( -1 ).build(), state, log(), storeId );
+                .lastLogTerm( -1 ).build(), state, log() );
 
         // then
         assertEquals( role, outcome.getRole() );
@@ -150,7 +146,7 @@ public class VoteRequestTest
 
         Outcome outcome = role.handler.handle( voteRequest().from( member1 ).term( candidateTerm )
                 .lastLogIndex( 0 )
-                .lastLogTerm( -1 ).build(), state, log(), storeId );
+                .lastLogTerm( -1 ).build(), state, log() );
 
         // then
         assertEquals( Role.FOLLOWER, outcome.getRole() );
@@ -167,7 +163,7 @@ public class VoteRequestTest
 
         Outcome outcome = role.handler.handle( voteRequest().from( member1 ).term( candidateTerm )
                 .lastLogIndex( 0 )
-                .lastLogTerm( -1 ).build(), state, log(), storeId );
+                .lastLogTerm( -1 ).build(), state, log() );
 
         // then
         assertEquals( candidateTerm, outcome.getTerm() );

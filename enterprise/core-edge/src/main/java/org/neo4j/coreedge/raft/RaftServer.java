@@ -148,7 +148,7 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
             {
                 if ( localDatabase.isEmpty() )
                 {
-                    raftStateMachine.notifyNeedFreshSnapshot( message::from );
+                    raftStateMachine.downloadSnapshot( message.from() );
                 }
                 else
                 {

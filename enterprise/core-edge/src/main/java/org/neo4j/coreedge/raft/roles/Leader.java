@@ -22,7 +22,6 @@ package org.neo4j.coreedge.raft.roles;
 import java.io.IOException;
 import java.util.List;
 
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.Followers;
 import org.neo4j.coreedge.raft.RaftMessageHandler;
 import org.neo4j.coreedge.raft.RaftMessages;
@@ -35,7 +34,6 @@ import org.neo4j.coreedge.raft.state.follower.FollowerState;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.helpers.collection.FilteringIterable;
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.logging.Log;
 
 import static java.lang.Math.max;
@@ -49,8 +47,7 @@ public class Leader implements RaftMessageHandler
         return new FilteringIterable<>( ctx.replicationMembers(), member -> !member.equals( ctx.myself() ) );
     }
 
-    private static void sendHeartbeats( ReadableRaftState ctx,
-                                                 Outcome outcome, StoreId storeId ) throws IOException
+    private static void sendHeartbeats( ReadableRaftState ctx, Outcome outcome ) throws IOException
     {
         long commitIndex = ctx.leaderCommit();
         long commitIndexTerm = ctx.entryLog().readEntryTerm( commitIndex );
@@ -64,7 +61,7 @@ public class Leader implements RaftMessageHandler
 
     @Override
     public  Outcome handle( RaftMessages.RaftMessage message, ReadableRaftState ctx,
-                                            Log log, LocalDatabase localDatabase ) throws IOException
+            Log log ) throws IOException
     {
         Outcome outcome = new Outcome( LEADER, ctx );
 
@@ -89,7 +86,7 @@ public class Leader implements RaftMessageHandler
 
             case HEARTBEAT_TIMEOUT:
             {
-                sendHeartbeats( ctx, outcome, localDatabase.storeId() );
+                sendHeartbeats( ctx, outcome );
                 break;
             }
 
@@ -117,7 +114,7 @@ public class Leader implements RaftMessageHandler
                     outcome.setNextRole( FOLLOWER );
                     log.info( "Moving to FOLLOWER state after receiving append request at term %d (my term is " +
                             "%d) from %s", req.leaderTerm(), ctx.term(), req.from() );
-                    Appending.handleAppendEntriesRequest( ctx, outcome, req, localDatabase.storeId() );
+                    Appending.handleAppendEntriesRequest( ctx, outcome, req );
                     break;
                 }
             }
@@ -211,7 +208,7 @@ public class Leader implements RaftMessageHandler
                             "%d) from %s", req.term(), ctx.term(), req.from() );
 
                     outcome.setNextRole( FOLLOWER );
-                    Voting.handleVoteRequest( ctx, outcome, req, localDatabase.storeId() );
+                    Voting.handleVoteRequest( ctx, outcome, req );
                     break;
                 }
 

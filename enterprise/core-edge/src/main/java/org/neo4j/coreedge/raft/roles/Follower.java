@@ -21,7 +21,6 @@ package org.neo4j.coreedge.raft.roles;
 
 import java.io.IOException;
 
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.RaftMessageHandler;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.RaftMessages.AppendEntries;
@@ -34,10 +33,9 @@ import static java.lang.Long.min;
 import static org.neo4j.coreedge.raft.roles.Role.CANDIDATE;
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 
-public class Follower implements RaftMessageHandler
+class Follower implements RaftMessageHandler
 {
-    public static boolean logHistoryMatches( ReadableRaftState ctx, long prevLogIndex,
-                                                      long prevLogTerm )
+    static boolean logHistoryMatches( ReadableRaftState ctx, long prevLogIndex, long prevLogTerm )
             throws IOException
     {
         // NOTE: A prevLogIndex before or at our log's prevIndex means that we
@@ -50,8 +48,7 @@ public class Follower implements RaftMessageHandler
                 ctx.entryLog().readEntryTerm( prevLogIndex ) == prevLogTerm;
     }
 
-    public static void commitToLogOnUpdate(
-            ReadableRaftState ctx, long indexOfLastNewEntry, long leaderCommit, Outcome outcome )
+    static void commitToLogOnUpdate( ReadableRaftState ctx, long indexOfLastNewEntry, long leaderCommit, Outcome outcome )
     {
         long newCommitIndex = min( leaderCommit, indexOfLastNewEntry );
 
@@ -61,8 +58,7 @@ public class Follower implements RaftMessageHandler
         }
     }
 
-    public static void handleLeaderLogCompaction(
-            ReadableRaftState ctx, Outcome outcome, RaftMessages.LogCompactionInfo compactionInfo )
+    private static void handleLeaderLogCompaction( ReadableRaftState ctx, Outcome outcome, RaftMessages.LogCompactionInfo compactionInfo )
     {
         if ( compactionInfo.leaderTerm() < ctx.term() )
         {
@@ -76,8 +72,7 @@ public class Follower implements RaftMessageHandler
     }
 
     @Override
-    public Outcome handle( RaftMessages.RaftMessage message, ReadableRaftState ctx, Log log,
-            LocalDatabase localDatabase ) throws IOException
+    public Outcome handle( RaftMessages.RaftMessage message, ReadableRaftState ctx, Log log ) throws IOException
     {
         Outcome outcome = new Outcome( FOLLOWER, ctx );
 
@@ -91,15 +86,13 @@ public class Follower implements RaftMessageHandler
 
             case APPEND_ENTRIES_REQUEST:
             {
-                Appending.handleAppendEntriesRequest( ctx, outcome, (AppendEntries.Request) message,
-                        localDatabase.storeId() );
+                Appending.handleAppendEntriesRequest( ctx, outcome, (AppendEntries.Request) message );
                 break;
             }
 
             case VOTE_REQUEST:
             {
-                Voting.handleVoteRequest( ctx, outcome, (RaftMessages.Vote.Request) message,
-                        localDatabase.storeId() );
+                Voting.handleVoteRequest( ctx, outcome, (RaftMessages.Vote.Request) message );
                 break;
             }
 

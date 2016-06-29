@@ -45,9 +45,9 @@ public class RaftState implements ReadableRaftState
     private CoreMember leader;
     private long leaderCommit = -1;
     private final VoteState voteState;
-    private Set votesForMe = new HashSet<>();
+    private Set<CoreMember> votesForMe = new HashSet<>();
     private long lastLogIndexBeforeWeBecameLeader = -1;
-    private FollowerStates followerStates = new FollowerStates<>();
+    private FollowerStates<CoreMember> followerStates = new FollowerStates<>();
     private final RaftLog entryLog;
     private final InFlightMap<Long,RaftLogEntry> inFlightMap;
     private long commitIndex = -1;
@@ -76,13 +76,13 @@ public class RaftState implements ReadableRaftState
     }
 
     @Override
-    public Set votingMembers()
+    public Set<CoreMember> votingMembers()
     {
         return membership.votingMembers();
     }
 
     @Override
-    public Set replicationMembers()
+    public Set<CoreMember> replicationMembers()
     {
         return membership.replicationMembers();
     }
@@ -112,7 +112,7 @@ public class RaftState implements ReadableRaftState
     }
 
     @Override
-    public Set votesForMe()
+    public Set<CoreMember> votesForMe()
     {
         return votesForMe;
     }
@@ -124,7 +124,7 @@ public class RaftState implements ReadableRaftState
     }
 
     @Override
-    public FollowerStates followerStates()
+    public FollowerStates<CoreMember> followerStates()
     {
         return followerStates;
     }

@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.explorer.ClusterState;
@@ -56,8 +55,7 @@ public class ProcessMessage implements Action
         }
         ComparableRaftState memberState = previous.states.get( member );
         ComparableRaftState newMemberState = new ComparableRaftState( memberState );
-        Outcome outcome = previous.roles.get( member ).handler.handle( message, memberState, log,
-                mock( LocalDatabase.class) );
+        Outcome outcome = previous.roles.get( member ).handler.handle( message, memberState, log );
         newMemberState.update( outcome );
 
         for ( RaftMessages.Directed outgoingMessage : outcome.getOutgoingMessages() )

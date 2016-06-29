@@ -26,7 +26,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.IOException;
 
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.NewLeaderBarrier;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.net.Inbound;
@@ -41,7 +40,6 @@ import org.neo4j.logging.NullLogProvider;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.voteResponse;
 import static org.neo4j.coreedge.raft.roles.Role.CANDIDATE;
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
@@ -59,7 +57,6 @@ public class CandidateTest
     private Inbound inbound;
 
     private LogProvider logProvider = NullLogProvider.getInstance();
-    private final LocalDatabase storeId = mock( LocalDatabase.class);
 
     @Test
     public void shouldBeElectedLeaderOnReceivingGrantedVoteResponseWithCurrentTerm() throws Exception
@@ -72,7 +69,7 @@ public class CandidateTest
                 .term( state.term() )
                 .from( member1 )
                 .grant()
-                .build(), state, log(), storeId );
+                .build(), state, log() );
 
         // then
         assertEquals( LEADER, outcome.getRole() );
@@ -91,7 +88,7 @@ public class CandidateTest
                 .term( state.term() )
                 .from( member1 )
                 .deny()
-                .build(), state, log(), storeId );
+                .build(), state, log() );
 
         // then
         assertEquals( CANDIDATE, outcome.getRole() );
@@ -110,7 +107,7 @@ public class CandidateTest
                 .term( voterTerm )
                 .from( member1 )
                 .grant()
-                .build(), state, log(), storeId );
+                .build(), state, log() );
 
         // then
         assertEquals( FOLLOWER, outcome.getRole() );
@@ -130,7 +127,7 @@ public class CandidateTest
                 .term( voterTerm )
                 .from( member1 )
                 .grant()
-                .build(), state, log(), storeId );
+                .build(), state, log() );
 
         // then
         assertEquals( CANDIDATE, outcome.getRole() );

@@ -27,8 +27,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.helper.VolatileFuture;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
@@ -47,9 +45,6 @@ import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.core.LeaderOnlySelectionStrategy;
-import org.neo4j.coreedge.server.core.NotMyselfSelectionStrategy;
-import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -101,10 +96,8 @@ public class RaftInstance implements LeaderLocator,
     private final long electionTimeout;
 
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
-    private final LocalDatabase localDatabase;
     private final VolatileFuture<CoreMember> volatileLeader = new VolatileFuture<>( null );
 
-    private final CoreServerSelectionStrategy defaultStrategy;
     private final Outbound<CoreMember, RaftMessages.RaftMessage> outbound;
     private final Log log;
     private Role currentRole = Role.FOLLOWER;
@@ -112,16 +105,15 @@ public class RaftInstance implements LeaderLocator,
     private RaftLogShippingManager logShipping;
 
     public RaftInstance( CoreMember myself, StateStorage<TermState> termStorage,
-                         StateStorage<VoteState> voteStorage, RaftLog entryLog,
-                         RaftStateMachine raftStateMachine, long electionTimeout, long heartbeatInterval,
-                         RenewableTimeoutService renewableTimeoutService,
-                         CoreTopologyService discoveryService,
-                         Outbound<CoreMember, RaftMessages.RaftMessage> outbound,
-                         LogProvider logProvider, RaftMembershipManager membershipManager,
-                         RaftLogShippingManager logShipping,
-                         Supplier<DatabaseHealth> databaseHealthSupplier,
-                         InFlightMap<Long, RaftLogEntry> inFlightMap,
-                         Monitors monitors, LocalDatabase localDatabase )
+            StateStorage<VoteState> voteStorage, RaftLog entryLog,
+            RaftStateMachine raftStateMachine, long electionTimeout, long heartbeatInterval,
+            RenewableTimeoutService renewableTimeoutService,
+            Outbound<CoreMember,RaftMessages.RaftMessage> outbound,
+            LogProvider logProvider, RaftMembershipManager membershipManager,
+            RaftLogShippingManager logShipping,
+            Supplier<DatabaseHealth> databaseHealthSupplier,
+            InFlightMap<Long,RaftLogEntry> inFlightMap,
+            Monitors monitors )
     {
         this.myself = myself;
         this.entryLog = entryLog;
@@ -130,12 +122,10 @@ public class RaftInstance implements LeaderLocator,
         this.heartbeatInterval = heartbeatInterval;
 
         this.renewableTimeoutService = renewableTimeoutService;
-        this.defaultStrategy = new NotMyselfSelectionStrategy( discoveryService, myself );
 
         this.outbound = outbound;
         this.logShipping = logShipping;
         this.databaseHealthSupplier = databaseHealthSupplier;
-        this.localDatabase = localDatabase;
         this.log = logProvider.getLog( getClass() );
 
         this.membershipManager = membershipManager;
@@ -212,7 +202,7 @@ public class RaftInstance implements LeaderLocator,
         return waitForLeader( 0, member -> member != null );
     }
 
-    private CoreMember waitForLeader( long timeoutMillis, Predicate predicate ) throws NoLeaderFoundException
+    private CoreMember waitForLeader( long timeoutMillis, Predicate<CoreMember> predicate ) throws NoLeaderFoundException
     {
         try
         {
@@ -232,10 +222,10 @@ public class RaftInstance implements LeaderLocator,
         }
     }
 
-    private Collection<Listener> leaderListeners = new ArrayList<>();
+    private Collection<Listener<CoreMember>> leaderListeners = new ArrayList<>();
 
     @Override
-    public synchronized void registerListener( Listener listener )
+    public synchronized void registerListener( Listener<CoreMember> listener )
     {
         leaderListeners.add( listener );
         listener.receive( state.leader() );
@@ -256,16 +246,13 @@ public class RaftInstance implements LeaderLocator,
     {
         if ( outcome.needsFreshSnapshot() )
         {
-            CoreServerSelectionStrategy strategy = outcome.isProcessable()
-                    ? defaultStrategy
-                    : new LeaderOnlySelectionStrategy( outcome );
-            raftStateMachine.notifyNeedFreshSnapshot( strategy );
+            raftStateMachine.notifyNeedFreshSnapshot();
         }
     }
 
     private void notifyLeaderChanges( Outcome outcome )
     {
-        for ( Listener listener : leaderListeners )
+        for ( Listener<CoreMember> listener : leaderListeners )
         {
             listener.receive( outcome.getLeader() );
         }
@@ -314,7 +301,7 @@ public class RaftInstance implements LeaderLocator,
     {
         try
         {
-            Outcome outcome = currentRole.handler.handle( incomingMessage, state, log, localDatabase );
+            Outcome outcome = currentRole.handler.handle( incomingMessage, state, log );
 
             boolean newLeaderWasElected = leaderChanged( outcome, state.leader() );
             boolean newCommittedEntry = outcome.getCommitIndex() > state.commitIndex();
@@ -410,7 +397,7 @@ public class RaftInstance implements LeaderLocator,
 
     public static class BootstrapException extends Exception
     {
-        public BootstrapException( Throwable cause )
+        BootstrapException( Throwable cause )
         {
             super( cause );
         }
@@ -426,12 +413,12 @@ public class RaftInstance implements LeaderLocator,
         return electionTimeout;
     }
 
-    public Set votingMembers()
+    public Set<CoreMember> votingMembers()
     {
         return membershipManager.votingMembers();
     }
 
-    public Set replicationMembers()
+    public Set<CoreMember> replicationMembers()
     {
         return membershipManager.replicationMembers();
     }

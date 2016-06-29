@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogCursor;
@@ -33,7 +32,6 @@ import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -47,8 +45,6 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.neo4j.coreedge.raft.RaftInstance.Timeouts.ELECTION;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesRequest;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.voteRequest;
@@ -72,7 +68,6 @@ public class RaftInstanceTest
     private ReplicatedInteger data1 = ReplicatedInteger.valueOf( 1 );
 
     private RaftLog raftLog = new InMemoryRaftLog();
-    private StoreId storeId = new StoreId( 1, 2, 3, 4, 5 );
 
     @Test
     public void shouldAlwaysStartAsFollower() throws Exception
@@ -355,15 +350,10 @@ public class RaftInstanceTest
     public void shouldPersistAtSpecifiedLogIndex() throws Exception
     {
         // given
-        StoreId storeId = new StoreId( 1, 2, 3, 4, 5 );
-        LocalDatabase localDatabase = mock( LocalDatabase.class );
-        when(localDatabase.storeId()).thenReturn( storeId );
-
         ControlledRenewableTimeoutService timeouts = new ControlledRenewableTimeoutService();
         RaftInstance raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts )
                 .raftLog( raftLog )
-                .localDatabase( localDatabase )
                 .build();
 
         raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) ); // @logIndex=0

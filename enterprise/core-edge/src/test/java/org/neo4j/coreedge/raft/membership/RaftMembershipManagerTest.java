@@ -24,7 +24,6 @@ import org.junit.Test;
 import java.util.Collections;
 import java.util.List;
 
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
@@ -49,8 +48,6 @@ import static org.mockito.Mockito.when;
 
 public class RaftMembershipManagerTest
 {
-    private LocalDatabase localDatabase = mock( LocalDatabase.class );
-
     @Test
     public void membershipManagerShouldUseLatestAppendedMembershipSetEntries()
             throws Exception
@@ -61,7 +58,7 @@ public class RaftMembershipManagerTest
         RaftMembershipManager membershipManager = new RaftMembershipManager(
                 null, RaftTestMemberSetBuilder.INSTANCE, log,
                 NullLogProvider.getInstance(), 3, 1000, new FakeClock(),
-                1000, new InMemoryStateStorage<>( new RaftMembershipState() ), localDatabase );
+                1000, new InMemoryStateStorage<>( new RaftMembershipState() ) );
 
         // when
         membershipManager.processLog( 0, asList(
@@ -83,7 +80,7 @@ public class RaftMembershipManagerTest
         RaftMembershipManager membershipManager = new RaftMembershipManager(
                 null,
                 RaftTestMemberSetBuilder.INSTANCE, log, NullLogProvider.getInstance(), 3, 1000, new FakeClock(),
-                1000, new InMemoryStateStorage<>( new RaftMembershipState() ), localDatabase );
+                1000, new InMemoryStateStorage<>( new RaftMembershipState() ) );
 
         // when
         List<LogCommand> logCommands = asList(
@@ -113,7 +110,7 @@ public class RaftMembershipManagerTest
         RaftMembershipManager membershipManager = new RaftMembershipManager(
                 null,
                 RaftTestMemberSetBuilder.INSTANCE, log, NullLogProvider.getInstance(), 3, 1000, new FakeClock(),
-                1000, new InMemoryStateStorage<>( new RaftMembershipState() ), localDatabase );
+                1000, new InMemoryStateStorage<>( new RaftMembershipState() ) );
 
         // when
         List<LogCommand> logCommands = asList(
@@ -148,7 +145,7 @@ public class RaftMembershipManagerTest
         RaftMembershipManager membershipManager = new RaftMembershipManager(
                 null,
                 RaftTestMemberSetBuilder.INSTANCE, log, NullLogProvider.getInstance(), 3, 1000, new FakeClock(),
-                1000, stateStorage, localDatabase );
+                1000, stateStorage );
 
         // when
         membershipManager.processLog( 0, Collections.singletonList( new AppendLogEntry( 0, new RaftLogEntry( 0, new

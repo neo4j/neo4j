@@ -21,7 +21,6 @@ package org.neo4j.coreedge.raft.roles;
 
 import java.io.IOException;
 
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.NewLeaderBarrier;
 import org.neo4j.coreedge.raft.RaftMessageHandler;
 import org.neo4j.coreedge.raft.RaftMessages;
@@ -34,11 +33,10 @@ import static org.neo4j.coreedge.raft.roles.Role.CANDIDATE;
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 
-public class Candidate implements RaftMessageHandler
+class Candidate implements RaftMessageHandler
 {
     @Override
-    public  Outcome handle( RaftMessages.RaftMessage message, ReadableRaftState ctx,
-                                            Log log, LocalDatabase localDatabase ) throws IOException
+    public Outcome handle( RaftMessages.RaftMessage message, ReadableRaftState ctx, Log log ) throws IOException
     {
         Outcome outcome = new Outcome( CANDIDATE, ctx );
 
@@ -77,7 +75,7 @@ public class Candidate implements RaftMessageHandler
                 outcome.setNextRole( FOLLOWER );
                 log.info( "Moving to FOLLOWER state after receiving append entries request from %s at term %d (i am at %d)n",
                         req.from(), req.leaderTerm(), ctx.term() );
-                Appending.handleAppendEntriesRequest( ctx, outcome, req, localDatabase.storeId() );
+                Appending.handleAppendEntriesRequest( ctx, outcome, req );
                 break;
             }
 
@@ -127,7 +125,7 @@ public class Candidate implements RaftMessageHandler
                     outcome.setNextRole( FOLLOWER );
                     log.info( "Moving to FOLLOWER state after receiving vote request from %s at term %d (i am at %d)",
                             req.from(), req.term(), ctx.term() );
-                    Voting.handleVoteRequest( ctx, outcome, req, localDatabase.storeId() );
+                    Voting.handleVoteRequest( ctx, outcome, req );
                     break;
                 }
 

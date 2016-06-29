@@ -30,7 +30,6 @@ import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.kernel.impl.store.StoreId;
 
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.Matchers.empty;
@@ -41,8 +40,6 @@ import static org.neo4j.coreedge.server.RaftTestMember.member;
 
 public class CatchUpTest
 {
-    private StoreId storeId = new StoreId( 1, 2, 3, 4, 5 );
-
     @Test
     public void happyClusterPropagatesUpdates() throws Throwable
     {

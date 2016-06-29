@@ -26,7 +26,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.IOException;
 
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.RaftMessages.RaftMessage;
 import org.neo4j.coreedge.raft.RaftMessages.Timeout.Election;
@@ -36,7 +35,6 @@ import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 
@@ -44,7 +42,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.coreedge.raft.MessageUtils.messageFor;
 import static org.neo4j.coreedge.raft.RaftMessages.AppendEntries;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesRequest;
@@ -65,7 +62,6 @@ public class FollowerTest
 
     @Mock
     private Inbound inbound;
-    private final LocalDatabase storeId = mock( LocalDatabase.class);
 
     @Test
     public void followerShouldTransitToCandidateAndInstigateAnElectionAfterTimeout() throws Exception
@@ -77,7 +73,7 @@ public class FollowerTest
                 .build();
 
         // when
-        Outcome outcome = new Follower().handle( new Election( myself ), state, log(), storeId );
+        Outcome outcome = new Follower().handle( new Election( myself ), state, log() );
 
         state.update( outcome );
 
@@ -100,7 +96,7 @@ public class FollowerTest
         Follower follower = new Follower();
 
         // when
-        Outcome outcome = follower.handle( new Election( myself ), state, log(), storeId );
+        Outcome outcome = follower.handle( new Election( myself ), state, log() );
 
         // then
         assertEquals( CANDIDATE, outcome.getRole() );
@@ -126,7 +122,7 @@ public class FollowerTest
                 .prevLogTerm( term ) // in the same term
                 .build(); // no entries, this is a heartbeat
 
-        Outcome outcome = follower.handle( heartbeat, state, log(), storeId );
+        Outcome outcome = follower.handle( heartbeat, state, log() );
 
         assertEquals( 1, outcome.getOutgoingMessages().size() );
         RaftMessage outgoing = outcome.getOutgoingMessages().iterator().next().message();
@@ -151,14 +147,14 @@ public class FollowerTest
                 new RaftLogEntry[]{
                         new RaftLogEntry( 2, ContentGenerator.content() ),
                 },
-                -1 ), state, log(), storeId ) );
+                -1 ), state, log() ) );
 
         RaftLogEntry[] entries = {
                 new RaftLogEntry( 1, new ReplicatedString( "commit this!" ) ),
         };
 
         Outcome outcome = follower.handle(
-                new AppendEntries.Request( member1, 1, -1, -1, entries, -1 ), state, log(), storeId );
+                new AppendEntries.Request( member1, 1, -1, -1, entries, -1 ), state, log() );
         state.update( outcome );
 
         // then
@@ -181,8 +177,7 @@ public class FollowerTest
 
         // when receiving AppEntries with high leader commit (3)
         Outcome outcome = follower.handle( new AppendEntries.Request( myself, 0, 2, 0,
-                new RaftLogEntry[] { new RaftLogEntry( 0, ContentGenerator.content() ) }, 3 ), state, log(),
-                storeId );
+                new RaftLogEntry[] { new RaftLogEntry( 0, ContentGenerator.content() ) }, 3 ), state, log() );
 
         state.update( outcome );
 
@@ -221,7 +216,7 @@ public class FollowerTest
         Outcome outcome = follower.handle( appendEntriesRequest()
                 .leaderTerm( term ).prevLogIndex( 2 )
                 .prevLogTerm( term ).leaderCommit( localCommitIndex + 4 )
-                .build(), state, log(), storeId );
+                .build(), state, log() );
 
         state.update( outcome );
 
@@ -242,7 +237,7 @@ public class FollowerTest
         Follower follower = new Follower();
 
         Outcome outcome = follower.handle( new RaftMessages.Heartbeat( myself, 1, 1, 1 ),
-                state, log(), storeId );
+                state, log() );
 
         // then
         assertTrue( outcome.electionTimeoutRenewed() );
@@ -260,7 +255,7 @@ public class FollowerTest
         Follower follower = new Follower();
 
         Outcome outcome = follower.handle( new RaftMessages.Heartbeat( myself, 1, 1, 1 ),
-                state, log(), storeId );
+                state, log() );
 
         // then
         assertFalse( outcome.electionTimeoutRenewed() );
@@ -275,13 +270,13 @@ public class FollowerTest
             {
                 raft.update( follower.handle( new AppendEntries.Request( myself, term, i - 1, -1,
                         new RaftLogEntry[] { new RaftLogEntry( term, ContentGenerator.content() ) }, -1
-                ), raft, log(), storeId ) );
+                ), raft, log() ) );
             }
             else
             {
                 raft.update( follower.handle( new AppendEntries.Request( myself, term, i - 1, term,
                         new RaftLogEntry[]{new RaftLogEntry( term, ContentGenerator.content() )}, -1 ), raft,
-                        log(), storeId ) );
+                        log() ) );
             }
         }
     }

@@ -23,8 +23,6 @@ import java.time.Clock;
 import java.util.Collection;
 import java.util.function.Supplier;
 
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
@@ -45,8 +43,6 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-
-import static org.mockito.Mockito.mock;
 
 public class RaftInstanceBuilder
 {
@@ -89,9 +85,8 @@ public class RaftInstanceBuilder
     private StateStorage<RaftMembershipState> raftMembership =
             new InMemoryStateStorage<>( new RaftMembershipState() );
     private Monitors monitors = new Monitors();
-    private RaftStateMachine raftStateMachine = new RaftStateMachine(){};
+    private RaftStateMachine raftStateMachine = new EmptyStateMachine();
     private final InFlightMap<Long,RaftLogEntry> inFlightMap;
-    private LocalDatabase localDatabase = mock( LocalDatabase.class );
 
     public RaftInstanceBuilder( CoreMember member, int expectedClusterSize, RaftGroup.Builder memberSetBuilder )
     {
@@ -106,24 +101,15 @@ public class RaftInstanceBuilder
         SendToMyself leaderOnlyReplicator = new SendToMyself( member, outbound );
         RaftMembershipManager membershipManager = new RaftMembershipManager( leaderOnlyReplicator,
                 memberSetBuilder, raftLog, logProvider, expectedClusterSize, electionTimeout, clock, catchupTimeout,
-                raftMembership, localDatabase );
+                raftMembership );
         RaftLogShippingManager logShipping =
                 new RaftLogShippingManager( outbound, logProvider, raftLog, clock, member, membershipManager,
                         retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, inFlightMap );
-
         RaftInstance raft = new RaftInstance( member, termState, voteState, raftLog, raftStateMachine, electionTimeout,
-                heartbeatInterval, renewableTimeoutService, mock( CoreTopologyService.class),
-                outbound,
-                logProvider, membershipManager, logShipping, databaseHealthSupplier, inFlightMap, monitors,
-                localDatabase );
+                heartbeatInterval, renewableTimeoutService, outbound, logProvider,
+                membershipManager, logShipping, databaseHealthSupplier, inFlightMap, monitors );
         inbound.registerHandler( raft );
         return raft;
-    }
-
-    public RaftInstanceBuilder localDatabase( LocalDatabase localDatabase  )
-    {
-        this.localDatabase = localDatabase;
-        return this;
     }
 
     public RaftInstanceBuilder electionTimeout( long electionTimeout )

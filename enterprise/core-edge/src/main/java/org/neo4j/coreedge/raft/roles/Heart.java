@@ -25,9 +25,9 @@ import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 
-public class Heart
+class Heart
 {
-    public static  void beat( ReadableRaftState state, Outcome outcome, RaftMessages.Heartbeat request ) throws IOException
+    static  void beat( ReadableRaftState state, Outcome outcome, RaftMessages.Heartbeat request ) throws IOException
     {
         if ( request.leaderTerm() < state.term() )
         {

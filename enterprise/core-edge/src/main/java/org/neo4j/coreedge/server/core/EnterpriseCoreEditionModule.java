@@ -318,11 +318,13 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
             InFlightMap<Long,RaftLogEntry> inFlightMap = new InFlightMap<>();
 
+            NotMyselfSelectionStrategy someoneElse = new NotMyselfSelectionStrategy( discoveryService, myself );
+
             coreState = dependencies.satisfyDependency( new CoreState(
                     raftLog, config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
                     config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),
                     databaseHealthSupplier, logProvider, progressTracker, lastFlushedStorage,
-                    sessionTrackerStorage, applier, downloader, inFlightMap, platformModule.monitors ) );
+                    sessionTrackerStorage, someoneElse, applier, downloader, inFlightMap, platformModule.monitors ) );
 
             raftServer = new RaftServer( marshal, raftListenAddress, localDatabase, logProvider, coreState );
 
@@ -617,8 +619,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         RaftMembershipManager raftMembershipManager =
                 new RaftMembershipManager( leaderOnlyReplicator, memberSetBuilder, raftLog, logProvider,
                         expectedClusterSize, electionTimeout, systemUTC(),
-                        config.get( CoreEdgeClusterSettings.join_catch_up_timeout ), raftMembershipStorage,
-                        localDatabase );
+                        config.get( CoreEdgeClusterSettings.join_catch_up_timeout ), raftMembershipStorage
+                );
 
         RaftLogShippingManager logShipping =
                 new RaftLogShippingManager( raftOutbound, logProvider, raftLog, systemUTC(),
@@ -628,10 +630,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         RaftInstance raftInstance =
                 new RaftInstance( myself, termState, voteState, raftLog, raftStateMachine, electionTimeout,
-                        heartbeatInterval, raftTimeoutService,
-                        discoveryService, raftOutbound,
-                        logProvider, raftMembershipManager, logShipping, databaseHealthSupplier, inFlightMap, monitors,
-                        localDatabase );
+                        heartbeatInterval, raftTimeoutService, raftOutbound, logProvider, raftMembershipManager,
+                        logShipping, databaseHealthSupplier, inFlightMap, monitors );
 
         int queueSize = config.get( CoreEdgeClusterSettings.raft_in_queue_size );
         int maxBatch = config.get( CoreEdgeClusterSettings.raft_in_queue_max_batch );

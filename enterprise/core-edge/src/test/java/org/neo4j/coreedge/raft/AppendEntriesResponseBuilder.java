@@ -20,11 +20,10 @@
 package org.neo4j.coreedge.raft;
 
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.kernel.impl.store.StoreId;
 
 public class AppendEntriesResponseBuilder
 {
-    boolean success;
+    private boolean success;
     private long term = -1;
     private CoreMember from;
     private long matchIndex = -1;
@@ -33,7 +32,7 @@ public class AppendEntriesResponseBuilder
     public RaftMessages.AppendEntries.Response build()
     {
         // a response of false should always have a match index of -1
-        assert !(success == false && matchIndex != -1);
+        assert success || matchIndex == -1;
         return new RaftMessages.AppendEntries.Response( from, term, success, matchIndex, appendIndex );
     }
 

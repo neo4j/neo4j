@@ -54,8 +54,6 @@ public class Outcome implements Message
 
     private long commitIndex;
 
-    private boolean processable;
-
     /* Follower */
     private CoreMember votedFor;
     private boolean renewElectionTimeout;
@@ -66,7 +64,7 @@ public class Outcome implements Message
     private long lastLogIndexBeforeWeBecameLeader;
 
     /* Leader */
-    private FollowerStates followerStates;
+    private FollowerStates<CoreMember> followerStates;
     private Collection<ShipCommand> shipCommands = new ArrayList<>();
     private boolean electedLeader;
     private boolean steppingDown;
@@ -78,7 +76,7 @@ public class Outcome implements Message
 
     public Outcome( Role nextRole, long term, CoreMember leader, long leaderCommit, CoreMember votedFor,
                     Set<CoreMember> votesForMe, long lastLogIndexBeforeWeBecameLeader,
-                    FollowerStates followerStates, boolean renewElectionTimeout,
+                    FollowerStates<CoreMember> followerStates, boolean renewElectionTimeout,
                     Collection<LogCommand> logCommands, Collection<RaftMessages.Directed> outgoingMessages,
                     Collection<ShipCommand> shipCommands, long commitIndex )
     {
@@ -110,7 +108,6 @@ public class Outcome implements Message
         votedFor = ctx.votedFor();
         renewElectionTimeout = false;
         needsFreshSnapshot = false;
-        processable = true;
 
         votesForMe = (currentRole == Role.CANDIDATE) ? new HashSet<>( ctx.votesForMe() ) : new HashSet<>();
 
@@ -165,16 +162,6 @@ public class Outcome implements Message
         this.needsFreshSnapshot = true;
     }
 
-    public void markUnprocessable()
-    {
-        this.processable = false;
-    }
-
-    public boolean isProcessable()
-    {
-        return processable;
-    }
-
     public void addVoteForMe( CoreMember voteFrom )
     {
         this.votesForMe.add( voteFrom );
@@ -185,7 +172,7 @@ public class Outcome implements Message
         this.lastLogIndexBeforeWeBecameLeader = lastLogIndexBeforeWeBecameLeader;
     }
 
-    public void replaceFollowerStates( FollowerStates followerStates )
+    public void replaceFollowerStates( FollowerStates<CoreMember> followerStates )
     {
         this.followerStates = followerStates;
     }
@@ -274,7 +261,7 @@ public class Outcome implements Message
         return needsFreshSnapshot;
     }
 
-    public Set getVotesForMe()
+    public Set<CoreMember> getVotesForMe()
     {
         return votesForMe;
     }
@@ -284,7 +271,7 @@ public class Outcome implements Message
         return lastLogIndexBeforeWeBecameLeader;
     }
 
-    public FollowerStates getFollowerStates()
+    public FollowerStates<CoreMember> getFollowerStates()
     {
         return followerStates;
     }

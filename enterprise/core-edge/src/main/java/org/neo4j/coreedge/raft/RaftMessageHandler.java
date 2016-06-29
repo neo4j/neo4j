@@ -21,15 +21,11 @@ package org.neo4j.coreedge.raft;
 
 import java.io.IOException;
 
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.outcome.Outcome;
-import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.logging.Log;
 
 public interface RaftMessageHandler
 {
-    Outcome handle( RaftMessages.RaftMessage message, ReadableRaftState context, Log log, LocalDatabase localDatabase )
-            throws IOException;
+    Outcome handle( RaftMessages.RaftMessage message, ReadableRaftState context, Log log ) throws IOException;
 }
