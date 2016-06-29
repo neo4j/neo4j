@@ -709,13 +709,8 @@ public class HighlyAvailableEditionModule
     protected void registerRecovery( final DatabaseInfo databaseInfo, final DependencyResolver dependencyResolver,
                                      final LogService logging )
     {
-        memberStateMachine.addHighAvailabilityMemberListener( new HighAvailabilityMemberListener()
+        memberStateMachine.addHighAvailabilityMemberListener( new HighAvailabilityMemberListener.Adapter()
         {
-            @Override
-            public void masterIsElected( HighAvailabilityMemberChangeEvent event )
-            {
-            }
-
             @Override
             public void masterIsAvailable( HighAvailabilityMemberChangeEvent event )
             {
@@ -734,11 +729,6 @@ public class HighlyAvailableEditionModule
                 {
                     doAfterRecoveryAndStartup( false );
                 }
-            }
-
-            @Override
-            public void instanceStops( HighAvailabilityMemberChangeEvent event )
-            {
             }
 
             private void doAfterRecoveryAndStartup( boolean isMaster )

@@ -267,21 +267,17 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
     @Override
     public boolean isFailed( InstanceId node )
     {
-        List<InstanceId> suspicions = getSuspicionsOf( node );
+        List<InstanceId> suspicionsForNode = getSuspicionsOf( node );
+        int countOfInstancesSuspectedByMe = getSuspicionsFor( getMyId() ).size();
 
         /*
-         * This looks weird but trust me, there is a reason for it.
-         * See below in the test, where we subtract the failed size() from the total cluster size? If the instance
-         * under question is already in the failed set then that's it, as expected. But if it is not in the failed set
-         * then we must not take it's opinion under consideration (which we implicitly don't for every member of the
-         * failed set). That's what the adjust represents - the node's opinion on whether it is alive or not. Run a
-         * 3 cluster simulation in your head with 2 instances failed and one coming back online and you'll see why.
+         * If more than half *non suspected instances* suspect this node, fail it. This takes care of partitions
+         * that contain less than half of the cluster, ensuring that they will eventually detect the disconnect without
+         * waiting to have a majority of suspicions. This is accomplished by counting as quorum only instances
+         * that are not suspected by me.
          */
-        int adjust = failed.contains( node ) ? 0 : 1;
-
-        // If more than half suspect this node, fail it
-        return suspicions.size() >
-                (commonState.configuration().getMembers().size() - failed.size() - adjust) / 2;
+        return suspicionsForNode.size() >
+                (commonState.configuration().getMembers().size() - countOfInstancesSuspectedByMe ) / 2;
     }
 
     /**
@@ -320,13 +316,13 @@ class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatConte
         return new HashSet<>( suspicions );
     }
 
-    private Set<InstanceId> suspicionsFor( InstanceId uri )
+    private Set<InstanceId> suspicionsFor( InstanceId instanceId )
     {
-        Set<InstanceId> serverSuspicions = nodeSuspicions.get( uri );
+        Set<InstanceId> serverSuspicions = nodeSuspicions.get( instanceId );
         if ( serverSuspicions == null )
         {
             serverSuspicions = new HashSet<>();
-            nodeSuspicions.put( uri, serverSuspicions );
+            nodeSuspicions.put( instanceId, serverSuspicions );
         }
         return serverSuspicions;
     }

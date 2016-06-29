@@ -27,9 +27,9 @@ import java.net.URI;
 import org.neo4j.cluster.InstanceId;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.ILLEGAL;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.MASTER;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.PENDING;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.SLAVE;
@@ -73,15 +73,8 @@ public class HighAvailabilityMemberStateTest
     public void testPendingMasterIsAvailable()
     {
         // CASE 1: Got MasterIsAvailable for me - should not happen
-        try
-        {
-            PENDING.masterIsAvailable( context, myId, SampleUri );
-            fail( "Should not accept MasterIsAvailable for myself from PENDING" );
-        }
-        catch( RuntimeException e )
-        {
-            // marvellous
-        }
+        HighAvailabilityMemberState illegal = PENDING.masterIsAvailable( context, myId, SampleUri );
+        assertEquals( ILLEGAL, illegal );
 
         // CASE 2: Got MasterIsAvailable for someone else - should transition to TO_SLAVE
         // TODO test correct info is passed through to context
@@ -93,15 +86,8 @@ public class HighAvailabilityMemberStateTest
     public void testPendingSlaveIsAvailable()
     {
         // CASE 1: Got SlaveIsAvailable for me - should not happen, that's what TO_SLAVE exists for
-        try
-        {
-            PENDING.slaveIsAvailable( context, myId, SampleUri );
-            fail( "Should not accept SlaveIsAvailable for myself from PENDING" );
-        }
-        catch( RuntimeException e )
-        {
-            // marvellous
-        }
+        HighAvailabilityMemberState illegal = PENDING.slaveIsAvailable( context, myId, SampleUri );
+        assertEquals( ILLEGAL, illegal );
 
         // CASE 2: Got SlaveIsAvailable for someone else - it's ok, remain in PENDING
         HighAvailabilityMemberState newState = PENDING.slaveIsAvailable( context, new InstanceId( 2 ), SampleUri );
@@ -128,30 +114,18 @@ public class HighAvailabilityMemberStateTest
         assertEquals( MASTER, newState );
 
         // CASE 2: Got MasterIsAvailable for someone else - should not happen, should have received a MasterIsElected
-        try
-        {
-            TO_MASTER.masterIsAvailable( context, new InstanceId( 2 ), SampleUri );
-            fail( "Should not accept MasterIsAvailable for someone else from TO_MASTER" );
-        }
-        catch( RuntimeException e )
-        {
-            // marvellous
-        }
+        HighAvailabilityMemberState illegal = TO_MASTER.masterIsAvailable( context, new
+                InstanceId( 2 ), SampleUri );
+        assertEquals( ILLEGAL, illegal );
     }
 
     @Test
     public void testToMasterSlaveIsAvailable()
     {
         // CASE 1: Got SlaveIsAvailable for me - not ok, i'm currently switching to master
-        try
-        {
-            TO_MASTER.slaveIsAvailable( context, myId, SampleUri );
-            fail( "Should not accept SlaveIsAvailable for me while in TO_MASTER" );
-        }
-        catch( RuntimeException e )
-        {
-            // marvellous
-        }
+        HighAvailabilityMemberState illegal = TO_MASTER.slaveIsAvailable( context, myId,
+                SampleUri );
+        assertEquals( ILLEGAL, illegal );
 
         // CASE 2: Got SlaveIsAvailable for someone else - don't really care
         HighAvailabilityMemberState newState = TO_MASTER.slaveIsAvailable( context, new InstanceId( 2 ), SampleUri );
@@ -174,15 +148,9 @@ public class HighAvailabilityMemberStateTest
     public void testMasterMasterIsAvailable()
     {
         // CASE 1: Got MasterIsAvailable for someone else - should fail.
-        try
-        {
-            MASTER.masterIsAvailable( context, new InstanceId( 2 ), SampleUri );
-            fail( "Should not allow master switch with missing masterIsElected" );
-        }
-        catch ( RuntimeException e )
-        {
-            // wonderful
-        }
+        HighAvailabilityMemberState illegal = MASTER.masterIsAvailable( context, new InstanceId(
+                2 ), SampleUri );
+        assertEquals( ILLEGAL, illegal );
 
         // CASE 2: Got MasterIsAvailable for us - it's ok, should pass
         HighAvailabilityMemberState newState = MASTER.masterIsAvailable( context, myId, SampleUri );
@@ -193,15 +161,8 @@ public class HighAvailabilityMemberStateTest
     public void testMasterSlaveIsAvailable()
     {
         // CASE 1: Got SlaveIsAvailable for me - should fail.
-        try
-        {
-            MASTER.slaveIsAvailable( context, myId, SampleUri );
-            fail( "MASTER to SLAVE is not allowed" );
-        }
-        catch( RuntimeException e )
-        {
-            // awesome
-        }
+        HighAvailabilityMemberState illegal = MASTER.slaveIsAvailable( context, myId, SampleUri );
+        assertEquals( ILLEGAL, illegal );
 
         // CASE 2: Got SlaveIsAvailable for someone else - who cares? Should succeed.
         HighAvailabilityMemberState newState = MASTER.slaveIsAvailable( context, new InstanceId( 2 ), SampleUri );
@@ -224,15 +185,10 @@ public class HighAvailabilityMemberStateTest
     public void testToSlaveMasterIsAvailable()
     {
         // CASE 1: Got MasterIsAvailable for me - should fail, i am currently trying to become slave
-        try
-        {
-            TO_SLAVE.masterIsAvailable( context, myId, SampleUri );
-            fail( "TO_SLAVE to MASTER is not allowed" );
-        }
-        catch( RuntimeException e )
-        {
-            // fantastic
-        }
+        HighAvailabilityMemberState illegal = TO_SLAVE.masterIsAvailable( context, myId,
+                SampleUri );
+        assertEquals( ILLEGAL, illegal );
+
 
         // CASE 2: Got MasterIsAvailable for someone else who is already the master - should continue switching
         InstanceId currentMaster = new InstanceId( 2 );
@@ -241,15 +197,9 @@ public class HighAvailabilityMemberStateTest
         assertEquals( TO_SLAVE, newState );
 
         // CASE 3: Got MasterIsAvailable for someone else who is not the master - should fail
-        try
-        {
-            TO_SLAVE.masterIsAvailable( context, new InstanceId( 3 ), SampleUri );
-            fail( "Should have gotten an election result first" );
-        }
-        catch( RuntimeException e )
-        {
-            // phenomenal
-        }
+        HighAvailabilityMemberState moreIllegal = TO_SLAVE.masterIsAvailable( context, new InstanceId
+                ( 3 ), SampleUri );
+        assertEquals( ILLEGAL, moreIllegal );
     }
 
     @Test
@@ -287,28 +237,15 @@ public class HighAvailabilityMemberStateTest
     public void testSlaveMasterIsAvailable()
     {
         // CASE 1: It is me who is available as master - i don't think so
-        try
-        {
-            SLAVE.masterIsAvailable( context, myId, SampleUri );
-            fail( "Should have gotten an election result first" );
-        }
-        catch( RuntimeException e )
-        {
-            // outstanding
-        }
+        HighAvailabilityMemberState illegal = SLAVE.masterIsAvailable( context, myId, SampleUri );
+        assertEquals( ILLEGAL, illegal );
 
         // CASE 2: It is someone else that is available as master and is not the master now - missed the election, fail
         InstanceId masterInstanceId = new InstanceId( 2 );
         when( context.getElectedMasterId() ).thenReturn( masterInstanceId );
-        try
-        {
-            SLAVE.masterIsAvailable( context, new InstanceId( 3 ), SampleUri );
-            fail( "Should have gotten an election result first" );
-        }
-        catch( RuntimeException e )
-        {
-            // outstanding
-        }
+        HighAvailabilityMemberState moreIllegal = SLAVE.masterIsAvailable( context, new InstanceId( 3
+        ), SampleUri );
+        assertEquals( ILLEGAL, moreIllegal );
 
         // CASE 3: It is the same master as now - it's ok, stay calm and carry on
         HighAvailabilityMemberState newState = SLAVE.masterIsAvailable( context, masterInstanceId, SampleUri );

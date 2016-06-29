@@ -32,7 +32,6 @@ import org.junit.runners.Parameterized.Parameters;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.impl.ha.ClusterManager;
-import org.neo4j.kernel.impl.ha.ClusterManager.NetworkFlag;
 import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
@@ -106,13 +105,13 @@ public class FailoverWithAdditionalSlaveFailuresIT
             {
                 HighlyAvailableGraphDatabase nthSlave = getNthSlave( cluster, slaveIndex );
                 failed.add( nthSlave );
-                RepairKit repairKit = cluster.fail( nthSlave, false, NetworkFlag.values() );
+                RepairKit repairKit = cluster.fail( nthSlave );
                 repairKits.add( repairKit );
             }
 
             HighlyAvailableGraphDatabase oldMaster = cluster.getMaster();
             failed.add( oldMaster );
-            repairKits.add( cluster.fail( oldMaster, false, NetworkFlag.values() ) );
+            repairKits.add( cluster.fail( oldMaster ) );
 
             cluster.await( masterAvailable( toArray( failed ) ) );
 

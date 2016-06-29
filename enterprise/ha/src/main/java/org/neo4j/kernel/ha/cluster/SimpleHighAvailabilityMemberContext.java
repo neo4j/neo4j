@@ -75,4 +75,15 @@ public class SimpleHighAvailabilityMemberContext implements HighAvailabilityMemb
     {
         return slaveOnly;
     }
+
+    @Override
+    public String toString()
+    {
+        return "SimpleHighAvailabilityMemberContext{" +
+                "electedMasterId=" + electedMasterId +
+                ", availableHaMasterId=" + availableHaMasterId +
+                ", myId=" + myId +
+                ", slaveOnly=" + slaveOnly +
+                '}';
+    }
 }
