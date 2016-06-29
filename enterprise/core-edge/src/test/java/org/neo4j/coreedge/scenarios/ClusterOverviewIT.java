@@ -47,26 +47,31 @@ import static org.neo4j.kernel.api.security.AccessMode.Static.READ;
 public class ClusterOverviewIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
-            .withNumberOfCoreServers( 3 );
+    public final ClusterRule clusterRule = new ClusterRule( getClass() ).withNumberOfCoreServers( 3 );
 
     @Test
     public void shouldDiscoverCoreClusterMembers() throws Exception
     {
         // when
-        Cluster cluster = clusterRule.withNumberOfEdgeServers( 0 ).startCluster();
+        Cluster cluster = clusterRule.withNumberOfEdgeServers( 1 ).startCluster();
 
         // then
-
         List<Object[]> overview;
         for ( int i = 0; i < 3; i++ )
         {
             overview = clusterOverview( cluster.getCoreServerById( i ) );
 
-            assertThat( overview, containsLeader() );
+            assertThat( overview, containsRole( "leader", 1 ) );
+            assertThat( overview, containsRole( "follower", 2 ) );
+            assertThat( overview, containsRole( "read_replica", 1 ) );
+
+            // core
             assertThat( overview, containsAddress( "127.0.0.1:8000" ) );
             assertThat( overview, containsAddress( "127.0.0.1:8001" ) );
             assertThat( overview, containsAddress( "127.0.0.1:8002" ) );
+
+            // read replicas
+            assertThat( overview, containsAddress( "127.0.0.1:9000" ) );
         }
     }
 
@@ -96,28 +101,30 @@ public class ClusterOverviewIT
         };
     }
 
-    private Matcher<? super List<Object[]>> containsLeader()
+    private Matcher<? super List<Object[]>> containsRole(String role, int expectedRoleCount)
     {
         return new TypeSafeMatcher<List<Object[]>>()
         {
             @Override
             public boolean matchesSafely( List<Object[]> overview )
             {
+                int numberOfMachinesForRole = 0;
+
                 for ( Object[] row : overview )
                 {
-                    if ( row[2].toString().equals( "leader" ) )
+                    if ( row[2].toString().equals( role ) )
                     {
-                        return true;
+                        numberOfMachinesForRole++;
                     }
                 }
 
-                return false;
+                return numberOfMachinesForRole == expectedRoleCount;
             }
 
             @Override
             public void describeTo( Description description )
             {
-                description.appendText( "Expected to find leader in the cluster but didn't" );
+                description.appendText( "Expected to find " + role + " in the cluster but didn't" );
             }
         };
     }
