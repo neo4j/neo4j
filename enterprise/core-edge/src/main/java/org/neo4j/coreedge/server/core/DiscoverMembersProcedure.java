@@ -67,8 +67,7 @@ public class DiscoverMembersProcedure extends CallableProcedure.BasicProcedure
     private Stream<AdvertisedSocketAddress> findAddresses()
     {
         ClusterTopology clusterTopology = discoveryService.currentTopology();
-        return clusterTopology.coreMembers().stream()
-                .map( clusterTopology::coreAddresses ).map( CoreAddresses::getBoltServer );
+        return clusterTopology.coreMemberAddresses().stream().map( CoreAddresses::getBoltServer );
     }
 
     private int noOfAddressesToReturn( Object[] input )

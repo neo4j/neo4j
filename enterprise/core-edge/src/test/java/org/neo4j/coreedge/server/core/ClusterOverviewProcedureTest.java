@@ -19,13 +19,13 @@
  */
 package org.neo4j.coreedge.server.core;
 
+import org.junit.Test;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-
-import org.junit.Test;
 
 import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.CoreAddresses;
@@ -33,14 +33,12 @@ import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.EdgeAddresses;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.coreedge.server.core.DiscoverMembersProcedureTest.addresses;
 import static org.neo4j.coreedge.server.core.DiscoverMembersProcedureTest.coreAddresses;
 import static org.neo4j.helpers.collection.Iterators.asList;
@@ -70,7 +68,8 @@ public class ClusterOverviewProcedureTest
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
 
-        ClusterOverviewProcedure procedure = new ClusterOverviewProcedure( topologyService, leaderLocator );
+        ClusterOverviewProcedure procedure = new ClusterOverviewProcedure( topologyService, leaderLocator,
+                NullLogProvider.getInstance() );
 
         // when
         final List<Object[]> members = asList( procedure.apply( null, new Object[0] ) );

@@ -160,8 +160,10 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         NonBlockingChannels nonBlockingChannels = new NonBlockingChannels();
         EdgeToCoreClient.ChannelInitializer channelInitializer = new EdgeToCoreClient.ChannelInitializer( logProvider, nonBlockingChannels );
         int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
+        long logThresholdMillis = config.get( CoreEdgeClusterSettings.unknown_address_logging_throttle );
         EdgeToCoreClient edgeToCoreClient = life.add( new EdgeToCoreClient( logProvider,
-                channelInitializer, platformModule.monitors, maxQueueSize, nonBlockingChannels, discoveryService ) );
+                channelInitializer, platformModule.monitors, maxQueueSize, nonBlockingChannels, discoveryService,
+                logThresholdMillis ) );
         channelInitializer.setOwner( edgeToCoreClient );
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );

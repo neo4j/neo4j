@@ -66,11 +66,12 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
     private Outbound<CoreMember, Message> outbound;
 
     public CoreClient( LogProvider logProvider, ChannelInitializer<SocketChannel> channelInitializer, Monitors monitors,
-            int maxQueueSize, NonBlockingChannels nonBlockingChannels, TopologyService discoveryService )
+            int maxQueueSize, NonBlockingChannels nonBlockingChannels, TopologyService discoveryService,
+            long logThresholdMillis )
     {
         senderService =
                 new SenderService( channelInitializer, logProvider, monitors, maxQueueSize, nonBlockingChannels );
-        this.outbound = new CoreOutbound( discoveryService, senderService );
+        this.outbound = new CoreOutbound( discoveryService, senderService, logProvider, logThresholdMillis );
         this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
     }
 

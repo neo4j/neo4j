@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.neo4j.coreedge.discovery.ClusterTopology;
@@ -43,6 +42,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.coreedge.server.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asList;
 
 public class DiscoverMembersProcedureTest
@@ -54,11 +54,11 @@ public class DiscoverMembersProcedureTest
         final CoreTopologyService coreTopologyService = mock( CoreTopologyService.class );
 
         Map<CoreMember,CoreAddresses> coreMembers = new HashMap<>();
-        coreMembers.put( new CoreMember( UUID.randomUUID() ), coreAddresses( 1 ) );
-        coreMembers.put( new CoreMember( UUID.randomUUID() ), coreAddresses( 2 ) );
-        coreMembers.put( new CoreMember( UUID.randomUUID() ), coreAddresses( 3 ) );
+        coreMembers.put( member( 0 ), coreAddresses( 0 ) );
+        coreMembers.put( member( 1 ), coreAddresses( 1 ) );
+        coreMembers.put( member( 2 ), coreAddresses( 2 ) );
 
-        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 4, 5, 6 ) );
+        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 3, 4, 5 ) );
         when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
 
         final DiscoverMembersProcedure proc =
@@ -68,9 +68,11 @@ public class DiscoverMembersProcedureTest
         final List<Object[]> members = asList( proc.apply( null, new Object[0] ) );
 
         // then
-        assertThat( members, containsInAnyOrder( new Object[]{coreAddresses( 1 ).getRaftServer().toString()},
-                new Object[]{coreAddresses( 2 ).getRaftServer().toString()},
-                new Object[]{coreAddresses( 3 ).getRaftServer().toString()} ) );
+        assertThat( members, containsInAnyOrder(
+                new Object[]{coreAddresses( 0 ).getRaftServer().toString()},
+                new Object[]{coreAddresses( 1 ).getRaftServer().toString()},
+                new Object[]{coreAddresses( 2 ).getRaftServer().toString()} )
+        );
     }
 
     @Test
@@ -79,9 +81,9 @@ public class DiscoverMembersProcedureTest
         final CoreTopologyService coreTopologyService = mock( CoreTopologyService.class );
 
         Map<CoreMember,CoreAddresses> coreMembers = new HashMap<>();
-        coreMembers.put( new CoreMember( UUID.randomUUID() ), coreAddresses( 1 ) );
+        coreMembers.put( member( 0 ), coreAddresses( 0 ) );
 
-        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 4, 5, 6 ) );
+        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 3, 4, 5 ) );
         when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
         final DiscoverMembersProcedure proc =
                 new DiscoverMembersProcedure( coreTopologyService, NullLogProvider.getInstance() );
@@ -90,7 +92,7 @@ public class DiscoverMembersProcedureTest
         final List<Object[]> members = asList( proc.apply( null, new Object[0] ) );
 
         // then
-        assertArrayEquals( members.get( 0 ), new Object[]{coreAddresses( 1 ).getRaftServer().toString()} );
+        assertArrayEquals( members.get( 0 ), new Object[]{coreAddresses( 0 ).getRaftServer().toString()} );
     }
 
     @Test
@@ -100,11 +102,11 @@ public class DiscoverMembersProcedureTest
         final CoreTopologyService coreTopologyService = mock( CoreTopologyService.class );
 
         Map<CoreMember,CoreAddresses> coreMembers = new HashMap<>();
-        coreMembers.put( new CoreMember( UUID.randomUUID() ), coreAddresses( 1 ) );
-        coreMembers.put( new CoreMember( UUID.randomUUID() ), coreAddresses( 2 ) );
-        coreMembers.put( new CoreMember( UUID.randomUUID() ), coreAddresses( 3 ) );
+        coreMembers.put( member( 0 ), coreAddresses( 0 ) );
+        coreMembers.put( member( 1 ), coreAddresses( 1 ) );
+        coreMembers.put( member( 2 ), coreAddresses( 2 ) );
 
-        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 4, 5, 6 ) );
+        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 3, 4, 5) );
         when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
 
         final DiscoverMembersProcedure proc =
@@ -118,24 +120,24 @@ public class DiscoverMembersProcedureTest
     }
 
     @Test
-    public void shouldReturnAllAddressesForStupidLimit() throws Exception
+    public void shouldReturnAllAddressesWhenLimitInNotNumeric() throws Exception
     {
         // given
         final CoreTopologyService coreTopologyService = mock( CoreTopologyService.class );
 
         Map<CoreMember,CoreAddresses> coreMembers = new HashMap<>();
-        coreMembers.put( new CoreMember( UUID.randomUUID() ), coreAddresses( 1 ) );
-        coreMembers.put( new CoreMember( UUID.randomUUID() ), coreAddresses( 2 ) );
-        coreMembers.put( new CoreMember( UUID.randomUUID() ), coreAddresses( 3 ) );
+        coreMembers.put( member( 0 ), coreAddresses( 0 ) );
+        coreMembers.put( member( 1 ), coreAddresses( 1 ) );
+        coreMembers.put( member( 2 ), coreAddresses( 2 ) );
 
-        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 4, 5, 6 ) );
+        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 3, 4, 5 ) );
         when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
 
         final DiscoverMembersProcedure proc =
                 new DiscoverMembersProcedure( coreTopologyService, NullLogProvider.getInstance() );
 
         // when
-        final List<Object[]> members = asList( proc.apply( null, new Object[]{"bam"} ) );
+        final List<Object[]> members = asList( proc.apply( null, new Object[]{"not numeric"} ) );
 
         // then
         assertEquals( 3, members.size() );

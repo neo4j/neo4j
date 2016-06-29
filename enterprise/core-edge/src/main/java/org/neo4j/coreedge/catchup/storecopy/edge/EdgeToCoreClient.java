@@ -50,9 +50,11 @@ import org.neo4j.logging.LogProvider;
 public class EdgeToCoreClient extends CoreClient
 {
     public EdgeToCoreClient( LogProvider logProvider, ChannelInitializer channelInitializer, Monitors monitors,
-            int maxQueueSize, NonBlockingChannels nonBlockingChannels, EdgeTopologyService discoveryService )
+            int maxQueueSize, NonBlockingChannels nonBlockingChannels, EdgeTopologyService discoveryService,
+            long logThresholdMillis )
     {
-        super( logProvider, channelInitializer, monitors, maxQueueSize, nonBlockingChannels, discoveryService );
+        super( logProvider, channelInitializer, monitors, maxQueueSize, nonBlockingChannels, discoveryService,
+                logThresholdMillis );
     }
 
     public static class ChannelInitializer extends io.netty.channel.ChannelInitializer<SocketChannel>

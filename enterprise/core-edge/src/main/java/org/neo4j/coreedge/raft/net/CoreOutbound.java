@@ -19,46 +19,57 @@
  */
 package org.neo4j.coreedge.raft.net;
 
+import java.time.Clock;
 import java.util.Collection;
 
 import org.neo4j.coreedge.discovery.CoreAddresses;
+import org.neo4j.coreedge.discovery.NoKnownAddressesException;
 import org.neo4j.coreedge.discovery.TopologyService;
 import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.logging.LogProvider;
 
 public class CoreOutbound implements Outbound<CoreMember, Message>
 {
     private final TopologyService discoveryService;
     private final Outbound<AdvertisedSocketAddress, Message> outbound;
+    private UnknownAddressMonitor unknownAddressMonitor;
 
-    public CoreOutbound( TopologyService discoveryService, Outbound<AdvertisedSocketAddress, Message> outbound )
+    public CoreOutbound( TopologyService discoveryService, Outbound<AdvertisedSocketAddress,Message> outbound,
+            LogProvider logProvider, long logThresholdMillis )
     {
         this.discoveryService = discoveryService;
         this.outbound = outbound;
+        this.unknownAddressMonitor = new UnknownAddressMonitor(
+                logProvider.getLog( this.getClass() ), Clock.systemUTC(), logThresholdMillis );
     }
 
     @Override
     public void send( CoreMember to, Message message )
     {
-        CoreAddresses coreAddresses = discoveryService.currentTopology().coreAddresses( to );
-        if ( coreAddresses != null )
+        try
         {
+            CoreAddresses coreAddresses = discoveryService.currentTopology().coreAddresses( to );
             outbound.send( coreAddresses.getCoreServer(), message );
         }
-        // Drop messages for servers that are missing from the cluster topology;
-        // discovery service thinks that they are offline, so it's not worth trying to send them anything.
+        catch ( NoKnownAddressesException e )
+        {
+            unknownAddressMonitor.logAttemptToSendToMemberWithNoKnownAddress( to );
+        }
     }
 
     @Override
     public void send( CoreMember to, Collection<Message> messages )
     {
-        CoreAddresses coreAddresses = discoveryService.currentTopology().coreAddresses( to );
-        if ( coreAddresses != null )
+        try
         {
+            CoreAddresses coreAddresses = discoveryService.currentTopology().coreAddresses( to );
             outbound.send( coreAddresses.getCoreServer(), messages );
         }
-        // Drop messages for servers that are missing from the cluster topology;
-        // discovery service thinks that they are offline, so it's not worth trying to send them anything.
+        catch ( NoKnownAddressesException e )
+        {
+            unknownAddressMonitor.logAttemptToSendToMemberWithNoKnownAddress( to );
+        }
     }
 }

@@ -28,19 +28,20 @@ import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.CoreAddresses;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.EdgeAddresses;
+import org.neo4j.coreedge.discovery.NoKnownAddressesException;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.util.Collections.emptySet;
 import static java.util.stream.Collectors.toSet;
 import static org.neo4j.helpers.collection.Iterators.asRawIterator;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
@@ -65,25 +66,25 @@ public class AcquireEndpointsProcedure extends CallableProcedure.BasicProcedure
     @Override
     public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
+        Set<ReadWriteEndPoint> writeEndpoints = emptySet();
         try
         {
             CoreMember leader = leaderLocator.getLeader();
             AdvertisedSocketAddress leaderAddress =
                     discoveryService.currentTopology().coreAddresses( leader ).getBoltServer();
-            Set<ReadWriteEndPoint> writeEndpoints = writeEndpoints( leaderAddress );
-            Set<ReadWriteEndPoint> readEndpoints = readEndpoints( leaderAddress );
-
-            log.info( "Write: %s, Read: %s",
-                    writeEndpoints.stream().map( ReadWriteEndPoint::address ).collect( toSet() ),
-                    readEndpoints.stream().map( ReadWriteEndPoint::address ).collect( toSet() ) );
-
-            return wrapUpEndpoints( writeEndpoints, readEndpoints );
+            writeEndpoints = writeEndpoints( leaderAddress );
         }
-        catch ( NoLeaderFoundException e )
+        catch ( NoLeaderFoundException | NoKnownAddressesException e )
         {
-            throw new ProcedureException( Status.Cluster.NoLeader,
-                    "No write server found. This can happen during a leader switch. " );
+            log.debug( "No write server found. This can happen during a leader switch." );
         }
+        Set<ReadWriteEndPoint> readEndpoints = readEndpoints();
+
+        log.info( "Write: %s, Read: %s",
+                writeEndpoints.stream().map( ReadWriteEndPoint::address ).collect( toSet() ),
+                readEndpoints.stream().map( ReadWriteEndPoint::address ).collect( toSet() ) );
+
+        return wrapUpEndpoints( writeEndpoints, readEndpoints );
     }
 
     private Set<ReadWriteEndPoint> writeEndpoints( AdvertisedSocketAddress leader )
@@ -98,17 +99,16 @@ public class AcquireEndpointsProcedure extends CallableProcedure.BasicProcedure
                 asRawIterator( Stream.concat( writeEndpoints.stream(), readEndpoints.stream() ).iterator() ) );
     }
 
-    private Set<ReadWriteEndPoint> readEndpoints( AdvertisedSocketAddress leader ) throws NoLeaderFoundException
+    private Set<ReadWriteEndPoint> readEndpoints()
     {
         ClusterTopology clusterTopology = discoveryService.currentTopology();
 
-        Stream<AdvertisedSocketAddress> readEdge = clusterTopology.edgeMembers().stream()
+        Stream<AdvertisedSocketAddress> readEdge = clusterTopology.edgeMemberAddresses().stream()
                 .map( EdgeAddresses::getBoltAddress );
-        Stream<AdvertisedSocketAddress> readCore = clusterTopology.coreMembers().stream()
-                .map( clusterTopology::coreAddresses ).map( CoreAddresses::getBoltServer );
-        Stream<AdvertisedSocketAddress> readLeader = Stream.of( leader );
+        Stream<AdvertisedSocketAddress> readCore = clusterTopology.coreMemberAddresses().stream()
+                .map( CoreAddresses::getBoltServer );
 
-        return Stream.concat( Stream.concat( readEdge, readCore ), readLeader ).map( ReadWriteEndPoint::read )
+        return Stream.concat( readEdge, readCore ).map( ReadWriteEndPoint::read )
                 .limit( 1 ).collect( toSet() );
     }
 

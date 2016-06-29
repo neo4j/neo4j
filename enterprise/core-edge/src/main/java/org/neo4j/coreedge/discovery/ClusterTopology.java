@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.discovery;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -45,7 +46,12 @@ public class ClusterTopology
         return coreMembers.keySet();
     }
 
-    public Set<EdgeAddresses> edgeMembers()
+    public Collection<CoreAddresses> coreMemberAddresses()
+    {
+        return coreMembers.values();
+    }
+
+    public Set<EdgeAddresses> edgeMemberAddresses()
     {
         return edgeAddresses;
     }
@@ -55,9 +61,14 @@ public class ClusterTopology
         return canBeBootstrapped;
     }
 
-    public CoreAddresses coreAddresses(CoreMember coreMember)
+    public CoreAddresses coreAddresses( CoreMember coreMember ) throws NoKnownAddressesException
     {
-         return coreMembers.get( coreMember );
+        CoreAddresses coreAddresses = coreMembers.get( coreMember );
+        if ( coreAddresses == null )
+        {
+            throw new NoKnownAddressesException();
+        }
+        return coreAddresses;
     }
 
     @Override
@@ -66,7 +77,7 @@ public class ClusterTopology
         return "TestOnlyClusterTopology{" +
                 "coreMembers.size()=" + coreMembers.size() +
                 ", bootstrappable=" + canBeBootstrapped() +
-                ", edgeMembers.size()=" + edgeAddresses.size() +
+                ", edgeMemberAddresses.size()=" + edgeAddresses.size() +
                 '}';
     }
 }
