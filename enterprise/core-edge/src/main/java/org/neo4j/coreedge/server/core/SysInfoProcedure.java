@@ -45,14 +45,14 @@ import static org.neo4j.coreedge.server.core.SysInfoProcedure.ReadWriteEndPoint.
 import static org.neo4j.helpers.collection.Iterators.asRawIterator;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
-public class SysInfoProcedure extends CallableProcedure.BasicProcedure
+class SysInfoProcedure extends CallableProcedure.BasicProcedure
 {
-    public static final String NAME = "acquireEndpoints";
+    public static final String NAME = "overview";
     private final CoreTopologyService discoveryService;
     private final LeaderLocator leaderLocator;
 
-    public SysInfoProcedure( CoreTopologyService discoveryService,
-                             LeaderLocator leaderLocator )
+    SysInfoProcedure(CoreTopologyService discoveryService,
+                     LeaderLocator leaderLocator)
     {
         super( procedureSignature( new ProcedureSignature.ProcedureName( new String[]{"dbms", "cluster"}, NAME ) )
                 .out( "id", Neo4jTypes.NTString )
@@ -118,12 +118,12 @@ public class SysInfoProcedure extends CallableProcedure.BasicProcedure
             return type.toString().toLowerCase();
         }
 
-        public String identifier()
+        String identifier()
         {
             return identifier ;
         }
 
-        public ReadWriteEndPoint( AdvertisedSocketAddress address, Type type, String identifier )
+        ReadWriteEndPoint(AdvertisedSocketAddress address, Type type, String identifier)
         {
             this.address = address;
             this.type = type;
@@ -140,7 +140,7 @@ public class SysInfoProcedure extends CallableProcedure.BasicProcedure
             return new ReadWriteEndPoint( address, Type.FOLLOWER, identifier.toString() );
         }
 
-        public static ReadWriteEndPoint readReplica( AdvertisedSocketAddress address )
+        static ReadWriteEndPoint readReplica(AdvertisedSocketAddress address)
         {
             return new ReadWriteEndPoint( address, Type.READ_REPLICA, null );
         }

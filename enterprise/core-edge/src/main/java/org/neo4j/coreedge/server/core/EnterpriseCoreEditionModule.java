@@ -183,6 +183,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         {
             procedures.register( new DiscoverMembersProcedure( discoveryService, logProvider ) );
             procedures.register( new AcquireEndpointsProcedure( discoveryService, raft, logProvider ) );
+            procedures.register(new SysInfoProcedure( discoveryService, raft ) );
         }
         catch ( ProcedureException e )
         {
@@ -190,8 +191,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         }
     }
 
-    public EnterpriseCoreEditionModule( final PlatformModule platformModule,
-            DiscoveryServiceFactory discoveryServiceFactory )
+    EnterpriseCoreEditionModule(final PlatformModule platformModule,
+                                DiscoveryServiceFactory discoveryServiceFactory)
     {
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
 
