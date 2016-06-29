@@ -35,3 +35,18 @@ Feature: ExplainAcceptance
     """
     Then the result should be empty
     And no side effects
+
+  Scenario: Explanation of in-query procedure call
+    And there exists a procedure test.labels() :: (label :: STRING?):
+      | label |
+      | 'A'   |
+      | 'B'   |
+      | 'C'   |
+    When executing query:
+    """
+    EXPLAIN
+    CALL test.labels() YIELD label
+    RETURN *
+    """
+    Then the result should be empty
+    And no side effects
