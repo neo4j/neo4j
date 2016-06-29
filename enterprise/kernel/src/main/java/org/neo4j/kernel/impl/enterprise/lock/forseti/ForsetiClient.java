@@ -21,15 +21,15 @@ package org.neo4j.kernel.impl.enterprise.lock.forseti;
 
 import java.util.concurrent.ConcurrentMap;
 
-import org.neo4j.collection.pool.LinkedQueuePool;
+import org.neo4j.collection.pool.Pool;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
-import org.neo4j.kernel.impl.locking.LockClientAlreadyClosedException;
 import org.neo4j.kernel.impl.locking.LockClientStateHolder;
+import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 import org.neo4j.kernel.impl.util.concurrent.WaitStrategy;
@@ -59,7 +59,7 @@ public class ForsetiClient extends Locks.ClientAdapter
     private final WaitStrategy<AcquireLockTimeoutException>[] waitStrategies;
 
     /** Handle to return client to pool when closed. */
-    private final LinkedQueuePool<ForsetiClient> clientPool;
+    private final Pool<ForsetiClient> clientPool;
 
     /**
      * The client uses this to track which locks it holds. It is solely an optimization to ensure we don't need to
@@ -92,7 +92,7 @@ public class ForsetiClient extends Locks.ClientAdapter
     public ForsetiClient( int id,
                           ConcurrentMap<Long, ForsetiLockManager.Lock>[] lockMaps,
                           WaitStrategy<AcquireLockTimeoutException>[] waitStrategies,
-                          LinkedQueuePool<ForsetiClient> clientPool )
+                          Pool<ForsetiClient> clientPool )
     {
         this.clientId = id;
         this.lockMaps = lockMaps;
@@ -120,11 +120,8 @@ public class ForsetiClient extends Locks.ClientAdapter
     @Override
     public void acquireShared( Locks.ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
     {
-        // increment number of active clients if we can't do so we are closed so exiting
-        if ( !stateHolder.incrementActiveClients() )
-        {
-            throw new LockClientAlreadyClosedException( String.format( "%s is already closed", this ) );
-        }
+        stateHolder.incrementActiveClients( this );
+
         try
         {
             // Grab the global lock map we will be using
@@ -136,6 +133,7 @@ public class ForsetiClient extends Locks.ClientAdapter
 
             for ( long resourceId : resourceIds )
             {
+//<<<<<<< HEAD
                 // First, check if we already hold this as a shared lock
                 int heldCount = heldShareLocks.get( resourceId );
                 if(heldCount != -1)
@@ -146,6 +144,36 @@ public class ForsetiClient extends Locks.ClientAdapter
                 }
                 // Second, check if we hold it as an exclusive lock
                 if( heldExclusiveLocks.containsKey( resourceId ) )
+//=======
+//                // We already have a lock on this, just increment our local reference counter.
+//                heldShareLocks.put( resourceId, heldCount + 1 );
+//                return;
+//            }
+//
+//            // Second, check if we hold it as an exclusive lock
+//            if( heldExclusiveLocks.containsKey( resourceId ) )
+//            {
+//                // We already have an exclusive lock, so just leave that in place. When the exclusive lock is released,
+//                // it will be automatically downgraded to a shared lock, since we bumped the share lock reference count.
+//                heldShareLocks.put( resourceId, 1 );
+//                return;
+//            }
+//
+//            // We don't hold the lock, so we need to grab it via the global lock map
+//            int tries = 0;
+//            SharedLock mySharedLock = null;
+//
+//            // Retry loop
+//            while(true)
+//            {
+//                assertNotStopped();
+//
+//                // Check if there is a lock for this entity in the map
+//                ForsetiLockManager.Lock existingLock = lockMap.get( resourceId );
+//
+//                // No lock
+//                if(existingLock == null)
+//>>>>>>> 2.3
                 {
                     // We already have an exclusive lock, so just leave that in place. When the exclusive lock is released,
                     // it will be automatically downgraded to a shared lock, since we bumped the share lock reference count.
@@ -161,7 +189,7 @@ public class ForsetiClient extends Locks.ClientAdapter
                     // client closed exiting
                     if ( stateHolder.isStopped() )
                     {
-                        throw new LockClientAlreadyClosedException( String.format( "%s is already closed", this ) );
+                        throw new LockClientStoppedException( this );
                     }
                     // Check if there is a lock for this entity in the map
                     ForsetiLockManager.Lock existingLock = lockMap.get( resourceId );
@@ -229,11 +257,8 @@ public class ForsetiClient extends Locks.ClientAdapter
     {
         // For details on how this works, refer to the acquireShared method call, as the two are very similar
 
-        // increment number of active clients if we can't do so we are closed so exiting
-        if ( !stateHolder.incrementActiveClients() )
-        {
-            throw new LockClientAlreadyClosedException( String.format( "%s is already closed", this ) );
-        }
+        stateHolder.incrementActiveClients( this );
+
         try
         {
             ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap = lockMaps[resourceType.typeId()];
@@ -241,6 +266,7 @@ public class ForsetiClient extends Locks.ClientAdapter
 
             for ( long resourceId : resourceIds )
             {
+//<<<<<<< HEAD
                 int heldCount = heldLocks.get( resourceId );
                 if(heldCount != -1)
                 {
@@ -252,11 +278,19 @@ public class ForsetiClient extends Locks.ClientAdapter
                 ForsetiLockManager.Lock existingLock;
                 int tries = 0;
                 while( (existingLock = lockMap.putIfAbsent( resourceId, myExclusiveLock )) != null)
+//=======
+//                assertNotStopped();
+//
+//                // If this is a shared lock:
+//                // Given a grace period of tries (to try and not starve readers), grab an update lock and wait for it
+//                // to convert to an exclusive lock.
+//                if( tries > 50 && existingLock instanceof SharedLock)
+//>>>>>>> 2.3
                 {
                     // client closed exiting
                     if ( stateHolder.isStopped() )
                     {
-                        throw new LockClientAlreadyClosedException( String.format( "%s is already closed", this ) );
+                        throw new LockClientStoppedException( this );
                     }
                     // If this is a shared lock:
                     // Given a grace period of tries (to try and not starve readers), grab an update lock and wait for it
@@ -271,11 +305,16 @@ public class ForsetiClient extends Locks.ClientAdapter
                         }
                     }
 
+//<<<<<<< HEAD
                     waitStrategies[resourceType.typeId()].apply( tries++ );
                     markAsWaitingFor( existingLock, resourceType, resourceId );
                 }
                 clearWaitList();
                 heldLocks.put( resourceId, 1 );
+//=======
+//                applyWaitStrategy( resourceType, tries++ );
+//                markAsWaitingFor( existingLock, resourceType, resourceId );
+//>>>>>>> 2.3
             }
         }
         finally
@@ -287,11 +326,7 @@ public class ForsetiClient extends Locks.ClientAdapter
     @Override
     public boolean tryExclusiveLock( Locks.ResourceType resourceType, long resourceId )
     {
-        // increment number of active clients if we can't do so we are closed so exiting
-        if ( !stateHolder.incrementActiveClients() )
-        {
-            return false;
-        }
+        stateHolder.incrementActiveClients( this );
 
         try
         {
@@ -342,11 +377,8 @@ public class ForsetiClient extends Locks.ClientAdapter
     @Override
     public boolean trySharedLock( Locks.ResourceType resourceType, long resourceId )
     {
-        // increment number of active clients if we can't do so we are closed so exiting
-        if ( !stateHolder.incrementActiveClients() )
-        {
-            return false;
-        }
+        stateHolder.incrementActiveClients( this );
+
         try
         {
             ConcurrentMap<Long,ForsetiLockManager.Lock> lockMap = lockMaps[resourceType.typeId()];
@@ -371,11 +403,8 @@ public class ForsetiClient extends Locks.ClientAdapter
 
             while ( true )
             {
-                // client closed exiting
-                if ( stateHolder.isStopped() )
-                {
-                    return false;
-                }
+                assertNotStopped();
+
                 ForsetiLockManager.Lock existingLock = lockMap.get( resourceId );
                 if ( existingLock == null )
                 {
@@ -422,11 +451,8 @@ public class ForsetiClient extends Locks.ClientAdapter
     @Override
     public void releaseShared( Locks.ResourceType resourceType, long resourceId )
     {
-        // increment number of active clients if we can't do so we are closed so exiting
-        if ( !stateHolder.incrementActiveClients() )
-        {
-            throw new LockClientAlreadyClosedException( String.format( "%s is already closed", this ) );
-        }
+        stateHolder.incrementActiveClients( this );
+
         try
         {
             if ( releaseLocalLock( resourceType, resourceId, sharedLockCounts[resourceType.typeId()] ) )
@@ -449,11 +475,8 @@ public class ForsetiClient extends Locks.ClientAdapter
     @Override
     public void releaseExclusive( Locks.ResourceType resourceType, long resourceId )
     {
-        // increment number of active clients if we can't do so we are closed so exiting
-        if ( !stateHolder.incrementActiveClients() )
-        {
-            throw new LockClientAlreadyClosedException( String.format( "%s is already closed", this ) );
-        }
+        stateHolder.incrementActiveClients( this );
+
         try
         {
             if ( releaseLocalLock( resourceType, resourceId, exclusiveLockCounts[resourceType.typeId()] ) )
@@ -491,25 +514,6 @@ public class ForsetiClient extends Locks.ClientAdapter
                 // we do not hold shared lock so we just releasing it
                 releaseGlobalLock( lockMap, resourceId );
             }
-        }
-        finally
-        {
-            stateHolder.decrementActiveClients();
-        }
-    }
-
-    @Override
-    public void releaseAll()
-    {
-        // increment number of active clients if we can't do so we are closed so exiting
-        if ( !stateHolder.incrementActiveClients() )
-        {
-            throw new LockClientAlreadyClosedException( String.format( "%s is already closed", this ) );
-        }
-
-        try
-        {
-            releaseAllClientLocks();
         }
         finally
         {
@@ -734,32 +738,38 @@ public class ForsetiClient extends Locks.ClientAdapter
                 // Now we just wait for all clients to release the the share lock
                 while(sharedLock.numberOfHolders() > 1)
                 {
-                    // client closed exiting
-                    if ( stateHolder.isStopped() )
-                    {
-                        sharedLock.releaseUpdateLock( this );
-                        return false;
-                    }
-                    waitStrategies[resourceType.typeId()].apply( tries++ );
+                    applyWaitStrategy( resourceType, tries++ );
                     markAsWaitingFor( sharedLock, resourceType, resourceId );
                 }
 
                 return true;
 
             }
-            catch(DeadlockDetectedException e)
+            catch ( DeadlockDetectedException e )
             {
-                sharedLock.releaseUpdateLock(this);
+                sharedLock.releaseUpdateLock( this );
+                // wait list is not cleared here as in other catch blocks because it is cleared in
+                // markAsWaitingFor() before throwing DeadlockDetectedException
                 throw e;
             }
-            catch(Throwable e)
+            catch ( LockClientStoppedException e )
             {
-                sharedLock.releaseUpdateLock(this);
-                clearWaitList();
+                handleUpgradeToExclusiveFailure( sharedLock );
+                throw e;
+            }
+            catch ( Throwable e )
+            {
+                handleUpgradeToExclusiveFailure( sharedLock );
                 throw new RuntimeException( e );
             }
         }
         return false;
+    }
+
+    private void handleUpgradeToExclusiveFailure( SharedLock sharedLock )
+    {
+        sharedLock.releaseUpdateLock( this );
+        clearWaitList();
     }
 
     private void clearWaitList()
@@ -804,6 +814,22 @@ public class ForsetiClient extends Locks.ClientAdapter
     public int id()
     {
         return clientId;
+    }
+
+    private void applyWaitStrategy( Locks.ResourceType resourceType, int tries )
+    {
+        WaitStrategy<AcquireLockTimeoutException> waitStrategy = waitStrategies[resourceType.typeId()];
+        waitStrategy.apply( tries );
+
+        assertNotStopped();
+    }
+
+    private void assertNotStopped()
+    {
+        if ( stateHolder.isStopped() )
+        {
+            throw new LockClientStoppedException( this );
+        }
     }
 
     // Visitors used for bulk ops on the lock maps (such as releasing all locks)

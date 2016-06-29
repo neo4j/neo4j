@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.store.id;
 
 import java.io.File;
+
+import org.neo4j.function.Predicate;
 import org.neo4j.function.Supplier;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdReuseEligibility;

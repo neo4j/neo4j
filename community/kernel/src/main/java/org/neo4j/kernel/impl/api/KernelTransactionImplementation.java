@@ -23,11 +23,14 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -163,6 +166,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionToRecordStateVisitor txStateToRecordStateVisitor = new TransactionToRecordStateVisitor();
     private final Collection<Command> extractedCommands = new ArrayCollection<>( 32 );
     private final Locks locksManager;
+    private final boolean txTerminationAwareLocks;
     private TransactionState txState;
     private LegacyIndexTransactionState legacyIndexTransactionState;
     private TransactionType transactionType = TransactionType.ANY;
@@ -190,6 +194,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final NeoStoreTransactionContext context;
     private volatile int reuseCount;
 
+    private final Lock terminationReleaseLock = new ReentrantLock();
+
     public KernelTransactionImplementation( StatementOperationParts operations,
                                             SchemaWriteGuard schemaWriteGuard,
                                             LabelScanStore labelScanStore,
@@ -211,7 +217,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             Clock clock,
                                             TransactionTracer tracer,
                                             ProcedureCache procedureCache,
-                                            NeoStoreTransactionContext context )
+                                            NeoStoreTransactionContext context,
+                                            boolean txTerminationAwareLocks )
     {
         this.operations = operations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -221,6 +228,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.providerMap = providerMap;
         this.schemaState = schemaState;
         this.locksManager = locks;
+        this.txTerminationAwareLocks = txTerminationAwareLocks;
         this.hooks = hooks;
         this.constraintIndexCreator = constraintIndexCreator;
         this.headerInformationFactory = headerInformationFactory;
@@ -281,15 +289,44 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return terminated ? terminationReason : null;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * This method is guarded by {@link #terminationReleaseLock} to coordinate concurrent
+     * {@link #close()} and {@link #release()} calls.
+     */
     @Override
     public void markForTermination( Status reason )
     {
-        if ( !terminated )
+        if ( !canBeTerminated() )
         {
-            failure = true;
+            return;
+        }
+
+        int initialReuseCount = reuseCount;
+        terminationReleaseLock.lock();
+        try
+        {
+            // this instance could have been reused, make sure we are trying to terminate the right transaction
+            // without this check there exists a possibility to terminate lock client that has just been returned to
+            // the pool or a transaction that was reused and represents a completely different logical transaction
+            boolean stillSameTransaction = initialReuseCount == reuseCount;
+            if ( stillSameTransaction && canBeTerminated() )
+            {
+                failure = true;
+                terminated = true;
+                if ( txTerminationAwareLocks && locks != null )
+                {
+                    locks.stop();
+                }
+            }
+        }
+        finally
+        {
             terminationReason = reason;
             terminated = true;
             transactionMonitor.transactionTerminated();
+            terminationReleaseLock.unlock();
         }
     }
 
@@ -459,7 +496,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             if ( failure || !success || terminated )
             {
                 rollback();
-                if ( CHECK_TERMINATION_ON_CLOSE && terminated )
+                if ( CHECK_TERMINATION_ON_CLOSE && success && terminated )
                 {
                     TransactionTermination.throwCorrectExceptionBasedOnTerminationReason( terminationReason );
                 }
@@ -695,10 +732,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private void release()
     {
+        terminationReleaseLock.lock();
         try
         {
             locks.close();
             locks = null;
+            terminated = false;
             pool.release( this );
             if ( storeStatement != null )
             {
@@ -709,12 +748,22 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         finally
         {
             reuseCount++;
+            terminationReleaseLock.unlock();
         }
     }
 
     public long lastTransactionTimestampWhenStarted()
     {
         return lastTransactionTimestampWhenStarted;
+    }
+
+    /**
+     * Transaction can be terminated only when it is not closed and not already terminated.
+     * Otherwise termination does not make sense.
+     */
+    private boolean canBeTerminated()
+    {
+        return !closed && !terminated;
     }
 
     private class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter

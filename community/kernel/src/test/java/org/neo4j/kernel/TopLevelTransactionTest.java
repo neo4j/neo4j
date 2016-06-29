@@ -21,6 +21,7 @@ package org.neo4j.kernel;
 
 import org.junit.Test;
 
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientDatabaseFailureException;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
@@ -29,7 +30,11 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -82,7 +87,7 @@ public class TopLevelTransactionTest
     }
 
     @Test
-    public void shouldLetThroughTransactionFailureException() throws Exception
+    public void shouldLetThroughTransientFailureException() throws Exception
     {
         // GIVEN
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
@@ -100,6 +105,29 @@ public class TopLevelTransactionTest
         }
         catch ( TransientFailureException e )
         {   // THEN Good
+        }
+    }
+
+    @Test
+    public void shouldLetThroughTransactionTerminatedException() throws Exception
+    {
+        KernelTransaction kernelTransaction = mock( KernelTransaction.class );
+        doReturn( true ).when( kernelTransaction ).isOpen();
+        RuntimeException error = new TransactionTerminatedException();
+        doThrow( error ).when( kernelTransaction ).close();
+        ThreadToStatementContextBridge bridge = new ThreadToStatementContextBridge();
+        TopLevelTransaction transaction = new TopLevelTransaction( kernelTransaction, bridge );
+
+        transaction.success();
+        try
+        {
+            transaction.close();
+            fail( "Should have failed" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( org.neo4j.graphdb.TransactionFailureException.class ) );
+            assertSame( error, e.getCause() );
         }
     }
 }

@@ -25,8 +25,12 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.util.Collection;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.collection.pool.Pool;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -52,18 +56,24 @@ import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.test.DoubleLatch;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.exceptions.Status.General.UnknownFailure;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 public class KernelTransactionImplementationTest
@@ -72,7 +82,7 @@ public class KernelTransactionImplementationTest
     public void shouldCommitSuccessfulTransaction() throws Exception
     {
         // GIVEN
-        try ( KernelTransaction transaction = newTransaction() )
+        try ( KernelTransaction transaction = newInitializedTransaction() )
         {
             // WHEN
             transaction.success();
@@ -87,7 +97,7 @@ public class KernelTransactionImplementationTest
     public void shouldRollbackUnsuccessfulTransaction() throws Exception
     {
         // GIVEN
-        try ( KernelTransaction transaction = newTransaction() )
+        try ( KernelTransaction transaction = newInitializedTransaction() )
         {
             // WHEN
         }
@@ -101,7 +111,7 @@ public class KernelTransactionImplementationTest
     public void shouldRollbackFailedTransaction() throws Exception
     {
         // GIVEN
-        try ( KernelTransaction transaction = newTransaction() )
+        try ( KernelTransaction transaction = newInitializedTransaction() )
         {
             // WHEN
             transaction.failure();
@@ -117,7 +127,7 @@ public class KernelTransactionImplementationTest
     {
         // GIVEN
         boolean exceptionReceived = false;
-        try ( KernelTransaction transaction = newTransaction() )
+        try ( KernelTransaction transaction = newInitializedTransaction() )
         {
             // WHEN
             transaction.failure();
@@ -139,21 +149,20 @@ public class KernelTransactionImplementationTest
     public void shouldRollbackOnClosingTerminatedTransaction() throws Exception
     {
         // GIVEN
-        boolean exceptionReceived = false;
-        try ( KernelTransaction transaction = newTransaction() )
+        KernelTransaction transaction = newInitializedTransaction();
+
+        try
         {
             // WHEN
             transaction.success();
-            transaction.markForTermination( Status.General.UnknownFailure );
+            transaction.markForTermination( UnknownFailure );
+            transaction.close();
+            fail( "Exception expected" );
         }
-        catch ( TransactionFailureException e )
+        catch ( Exception e )
         {
-            // Expected.
-            exceptionReceived = true;
+            assertThat( e, instanceOf( TransactionTerminatedException.class ) );
         }
-
-        // THEN
-        assertTrue( exceptionReceived );
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
@@ -164,11 +173,11 @@ public class KernelTransactionImplementationTest
     @Test
     public void shouldRollbackOnClosingSuccessfulButTerminatedTransaction() throws Exception
     {
-        try ( KernelTransaction transaction = newTransaction() )
+        try ( KernelTransaction transaction = newInitializedTransaction() )
         {
             // WHEN
-            transaction.markForTermination( Status.General.UnknownFailure );
-            assertEquals( Status.General.UnknownFailure, transaction.shouldBeTerminated() );
+            transaction.markForTermination( UnknownFailure );
+            assertEquals( UnknownFailure, transaction.shouldBeTerminated() );
         }
 
         // THEN
@@ -181,22 +190,23 @@ public class KernelTransactionImplementationTest
     public void shouldRollbackOnClosingTerminatedButSuccessfulTransaction() throws Exception
     {
         // GIVEN
-        boolean exceptionReceived = false;
-        try ( KernelTransaction transaction = newTransaction() )
+        KernelTransaction transaction = newInitializedTransaction();
+
+        try
         {
             // WHEN
-            transaction.markForTermination( Status.General.UnknownFailure );
+            transaction.markForTermination( UnknownFailure );
             transaction.success();
-            assertEquals( Status.General.UnknownFailure, transaction.shouldBeTerminated() );
+            assertEquals( UnknownFailure, transaction.shouldBeTerminated() );
+            transaction.close();
+            fail( "Exception expected" );
         }
-        catch ( TransactionFailureException e )
+        catch ( Exception e )
         {
-            // Expected.
-            exceptionReceived = true;
+            assertThat( e, instanceOf( TransactionTerminatedException.class ) );
         }
 
         // THEN
-        assertTrue( exceptionReceived );
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
         verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
@@ -205,12 +215,12 @@ public class KernelTransactionImplementationTest
     @Test
     public void shouldNotDowngradeFailureState() throws Exception
     {
-        try ( KernelTransaction transaction = newTransaction() )
+        try ( KernelTransaction transaction = newInitializedTransaction() )
         {
             // WHEN
-            transaction.markForTermination( Status.General.UnknownFailure );
+            transaction.markForTermination( UnknownFailure );
             transaction.failure();
-            assertEquals( Status.General.UnknownFailure, transaction.shouldBeTerminated() );
+            assertEquals( UnknownFailure, transaction.shouldBeTerminated() );
         }
 
         // THEN
@@ -222,36 +232,46 @@ public class KernelTransactionImplementationTest
     @Test
     public void shouldIgnoreTerminateAfterCommit() throws Exception
     {
-        KernelTransaction transaction = newTransaction();
+        Locks locks = mock( Locks.class );
+        Locks.Client client = mock( Locks.Client.class );
+        when( locks.newClient() ).thenReturn( client );
+
+        KernelTransaction transaction = newInitializedTransaction( true, locks );
         transaction.success();
         transaction.close();
-        transaction.markForTermination( Status.General.UnknownFailure );
+        transaction.markForTermination( UnknownFailure );
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( true );
-        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
+        verify( transactionMonitor, never() ).transactionTerminated();
+        verify( client, never() ).stop();
         verifyNoMoreInteractions( transactionMonitor );
     }
 
     @Test
     public void shouldIgnoreTerminateAfterRollback() throws Exception
     {
-        KernelTransaction transaction = newTransaction();
+        Locks locks = mock( Locks.class );
+        Locks.Client client = mock( Locks.Client.class );
+        when( locks.newClient() ).thenReturn( client );
+
+        KernelTransaction transaction = newInitializedTransaction( true, locks );
         transaction.close();
-        transaction.markForTermination( Status.General.UnknownFailure );
+        transaction.markForTermination( UnknownFailure );
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
-        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
+        verify( transactionMonitor, never() ).transactionTerminated();
+        verify( client, never() ).stop();
         verifyNoMoreInteractions( transactionMonitor );
     }
 
-    @Test(expected = TransactionFailureException.class)
+    @Test(expected = TransactionTerminatedException.class)
     public void shouldThrowOnTerminationInCommit() throws Exception
     {
-        KernelTransaction transaction = newTransaction();
+        KernelTransaction transaction = newInitializedTransaction();
         transaction.success();
-        transaction.markForTermination( Status.General.UnknownFailure );
+        transaction.markForTermination( UnknownFailure );
 
         transaction.close();
     }
@@ -259,8 +279,8 @@ public class KernelTransactionImplementationTest
     @Test
     public void shouldIgnoreTerminationDuringRollback() throws Exception
     {
-        KernelTransaction transaction = newTransaction();
-        transaction.markForTermination( Status.General.UnknownFailure );
+        KernelTransaction transaction = newInitializedTransaction();
+        transaction.markForTermination( UnknownFailure );
         transaction.close();
 
         // THEN
@@ -269,59 +289,41 @@ public class KernelTransactionImplementationTest
         verifyNoMoreInteractions( transactionMonitor );
     }
 
-    class ChildException
-    {
-        public Exception exception = null;
-    }
-
     @Test
     public void shouldAllowTerminatingFromADifferentThread() throws Exception
     {
         // GIVEN
-        final ChildException childException = new ChildException();
         final DoubleLatch latch = new DoubleLatch( 1 );
-        final KernelTransaction transaction = newTransaction();
-        Thread thread = new Thread( new Runnable()
+        final KernelTransaction transaction = newInitializedTransaction();
+
+        Future<?> terminationFuture = Executors.newSingleThreadExecutor().submit( new Runnable()
         {
             @Override
             public void run()
             {
-                try
-                {
-                    latch.awaitStart();
-                    transaction.markForTermination( Status.General.UnknownFailure );
-                    latch.finish();
-                }
-                catch ( Exception e )
-                {
-                    childException.exception = e;
-                }
+                latch.awaitStart();
+                transaction.markForTermination( UnknownFailure );
+                latch.finish();
             }
         } );
 
         // WHEN
-        thread.start();
         transaction.success();
         latch.startAndAwaitFinish();
 
-        if ( childException.exception != null )
-        {
-            throw childException.exception;
-        }
+        assertNull( terminationFuture.get( 1, TimeUnit.MINUTES ) );
 
-        boolean exceptionReceived = false;
         try
         {
             transaction.close();
+            fail( "Exception expected" );
         }
-        catch ( TransactionFailureException e )
+        catch ( Exception e )
         {
-            // Expected.
-            exceptionReceived = true;
+            assertThat( e, instanceOf( TransactionTerminatedException.class ) );
         }
 
         // THEN
-        assertTrue( exceptionReceived );
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
         verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
@@ -343,7 +345,7 @@ public class KernelTransactionImplementationTest
                 return null;
             }
         } ).when( recordState ).extractCommands( anyListOf( Command.class ) );
-        try ( KernelTransactionImplementation transaction = newTransaction() )
+        try ( KernelTransactionImplementation transaction = newInitializedTransaction() )
         {
             transaction.initialize( 5L, BASE_TX_COMMIT_TIMESTAMP );
 
@@ -364,10 +366,10 @@ public class KernelTransactionImplementationTest
     public void shouldStillReturnTransactionInstanceWithTerminationMarkToPool() throws Exception
     {
         // GIVEN
-        KernelTransactionImplementation transaction = newTransaction();
+        KernelTransactionImplementation transaction = newInitializedTransaction();
 
         // WHEN
-        transaction.markForTermination( Status.General.UnknownFailure );
+        transaction.markForTermination( UnknownFailure );
         transaction.close();
 
         // THEN
@@ -378,9 +380,9 @@ public class KernelTransactionImplementationTest
     public void shouldBeAbleToReuseTerminatedTransaction() throws Exception
     {
         // GIVEN
-        KernelTransactionImplementation transaction = newTransaction();
+        KernelTransactionImplementation transaction = newInitializedTransaction();
         transaction.close();
-        transaction.markForTermination( Status.General.UnknownFailure );
+        transaction.markForTermination( UnknownFailure );
 
         // WHEN
         transaction.initialize( 10L, BASE_TX_COMMIT_TIMESTAMP );
@@ -397,7 +399,7 @@ public class KernelTransactionImplementationTest
     public void shouldAcquireNewLocksClientEveryTimeTransactionIsReused() throws Exception
     {
         // GIVEN
-        KernelTransactionImplementation transaction = newTransaction();
+        KernelTransactionImplementation transaction = newInitializedTransaction();
         transaction.close();
         verify( locks ).newClient();
         reset( locks );
@@ -414,7 +416,7 @@ public class KernelTransactionImplementationTest
     public void shouldIncrementReuseCounterOnReuse() throws Exception
     {
         // GIVEN
-        KernelTransactionImplementation transaction = newTransaction();
+        KernelTransactionImplementation transaction = newInitializedTransaction();
         int reuseCount = transaction.getReuseCount();
 
         // WHEN
@@ -425,6 +427,147 @@ public class KernelTransactionImplementationTest
         assertEquals( reuseCount + 1, transaction.getReuseCount() );
     }
 
+    @Test
+    public void markForTerminationNotInitializedTransaction()
+    {
+        KernelTransactionImplementation transaction = newTransaction( true, new NoOpLocks() );
+
+        transaction.markForTermination( UnknownFailure );
+
+        assertEquals( UnknownFailure, transaction.shouldBeTerminated() );
+    }
+
+    @Test
+    public void markForTerminationInitializedTransaction()
+    {
+        Locks locks = mock( Locks.class );
+        Locks.Client client = mock( Locks.Client.class );
+        when( locks.newClient() ).thenReturn( client );
+
+        KernelTransactionImplementation transaction = newInitializedTransaction( true, locks );
+
+        transaction.markForTermination( UnknownFailure );
+
+        assertEquals( UnknownFailure, transaction.shouldBeTerminated() );
+        verify( client ).stop();
+    }
+
+    @Test
+    public void markForTerminationTerminatedTransaction()
+    {
+        Locks locks = mock( Locks.class );
+        Locks.Client client = mock( Locks.Client.class );
+        when( locks.newClient() ).thenReturn( client );
+
+        KernelTransactionImplementation transaction = newInitializedTransaction( true, locks );
+
+        transaction.markForTermination( UnknownFailure );
+        transaction.markForTermination( UnknownFailure );
+        transaction.markForTermination( UnknownFailure );
+
+        assertEquals( UnknownFailure, transaction.shouldBeTerminated() );
+        verify( client ).stop();
+        verify( transactionMonitor ).transactionTerminated();
+    }
+
+    @Test
+    public void terminatedTxMarkedNeitherSuccessNorFailureClosesWithoutThrowing() throws TransactionFailureException
+    {
+        Locks locks = mock( Locks.class );
+        Locks.Client client = mock( Locks.Client.class );
+        when( locks.newClient() ).thenReturn( client );
+
+        KernelTransactionImplementation tx = newInitializedTransaction( true, locks );
+        tx.markForTermination( UnknownFailure );
+
+        tx.close();
+
+        verify( client ).stop();
+        verify( transactionMonitor ).transactionTerminated();
+    }
+
+    @Test
+    public void terminatedTxMarkedForSuccessThrowsOnClose()
+    {
+        Locks locks = mock( Locks.class );
+        Locks.Client client = mock( Locks.Client.class );
+        when( locks.newClient() ).thenReturn( client );
+
+        KernelTransactionImplementation tx = newInitializedTransaction( true, locks );
+        tx.success();
+        tx.markForTermination( UnknownFailure );
+
+        try
+        {
+            tx.close();
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( TransactionTerminatedException.class ) );
+        }
+    }
+
+    @Test
+    public void terminatedTxMarkedForFailureClosesWithoutThrowing() throws TransactionFailureException
+    {
+        Locks locks = mock( Locks.class );
+        Locks.Client client = mock( Locks.Client.class );
+        when( locks.newClient() ).thenReturn( client );
+
+        KernelTransactionImplementation tx = newInitializedTransaction( true, locks );
+        tx.failure();
+        tx.markForTermination( UnknownFailure );
+
+        tx.close();
+
+        verify( client ).stop();
+        verify( transactionMonitor ).transactionTerminated();
+    }
+
+    @Test
+    public void terminatedTxMarkedForBothSuccessAndFailureThrowsOnClose()
+    {
+        Locks locks = mock( Locks.class );
+        Locks.Client client = mock( Locks.Client.class );
+        when( locks.newClient() ).thenReturn( client );
+
+        KernelTransactionImplementation tx = newInitializedTransaction( true, locks );
+        tx.success();
+        tx.failure();
+        tx.markForTermination( UnknownFailure );
+
+        try
+        {
+            tx.close();
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( TransactionTerminatedException.class ) );
+        }
+    }
+
+    @Test
+    public void txMarkedForBothSuccessAndFailureThrowsOnClose()
+    {
+        Locks locks = mock( Locks.class );
+        Locks.Client client = mock( Locks.Client.class );
+        when( locks.newClient() ).thenReturn( client );
+
+        KernelTransactionImplementation tx = newInitializedTransaction( true, locks );
+        tx.success();
+        tx.failure();
+
+        try
+        {
+            tx.close();
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( TransactionFailureException.class ) );
+        }
+    }
+
     private final NeoStores neoStores = mock( NeoStores.class );
     private final MetaDataStore metaDataStore = mock( MetaDataStore.class );
     private final TransactionHooks hooks = new TransactionHooks();
@@ -433,8 +576,7 @@ public class KernelTransactionImplementationTest
     private final TransactionMonitor transactionMonitor = mock( TransactionMonitor.class );
     private final CapturingCommitProcess commitProcess = spy( new CapturingCommitProcess() );
     private final TransactionHeaderInformation headerInformation = mock( TransactionHeaderInformation.class );
-    private final TransactionHeaderInformationFactory headerInformationFactory =
-            mock( TransactionHeaderInformationFactory.class );
+    private final TransactionHeaderInformationFactory headerInformationFactory = mock( TransactionHeaderInformationFactory.class );
     private final FakeClock clock = new FakeClock();
     private final Pool<KernelTransactionImplementation> pool = mock( Pool.class );
     private final Locks locks = spy( new NoOpLocks() );
@@ -448,17 +590,26 @@ public class KernelTransactionImplementationTest
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
     }
 
-    private KernelTransactionImplementation newTransaction()
+    private KernelTransactionImplementation newInitializedTransaction()
     {
-        when(storeReadLayer.acquireStatement()).thenReturn( mock(StoreStatement.class) );
+        return newInitializedTransaction( false, locks );
+    }
 
-        KernelTransactionImplementation transaction = new KernelTransactionImplementation(
-                null, null, null, null, null, recordState, null, neoStores, locks,
-                hooks, null, headerInformationFactory, commitProcess, transactionMonitor, storeReadLayer, legacyIndexState,
-                pool, new StandardConstraintSemantics(), clock, TransactionTracer.NULL, new ProcedureCache(), mock( NeoStoreTransactionContext
-                .class ) );
+    private KernelTransactionImplementation newInitializedTransaction( boolean txTerminationAware, Locks locks )
+    {
+        KernelTransactionImplementation transaction = newTransaction( txTerminationAware, locks );
         transaction.initialize( 0, BASE_TX_COMMIT_TIMESTAMP );
         return transaction;
+    }
+
+    private KernelTransactionImplementation newTransaction( boolean txTerminationAware, Locks locks )
+    {
+        when( storeReadLayer.acquireStatement() ).thenReturn( mock( StoreStatement.class ) );
+
+        return new KernelTransactionImplementation( null, null, null, null, null, recordState, null, neoStores, locks,
+                hooks, null, headerInformationFactory, commitProcess, transactionMonitor, storeReadLayer,
+                legacyIndexState, pool, new StandardConstraintSemantics(), clock, TransactionTracer.NULL,
+                new ProcedureCache(), mock( NeoStoreTransactionContext.class ), txTerminationAware );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

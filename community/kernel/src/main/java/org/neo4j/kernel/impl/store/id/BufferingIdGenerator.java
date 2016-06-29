@@ -41,7 +41,7 @@ class BufferingIdGenerator extends IdGenerator.Delegate
             @Override
             public boolean test( KernelTransactionsSnapshot snapshot )
             {
-                return snapshot.allClosed() && eligibleForReuse.test( snapshot );
+                return snapshot.allClosed() && eligibleForReuse.isEligible( snapshot );
             }
         }, 10_000, new Consumer<long[]>()
         {

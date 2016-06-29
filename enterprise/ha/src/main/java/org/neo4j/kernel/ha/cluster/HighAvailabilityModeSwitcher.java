@@ -202,6 +202,12 @@ public class HighAvailabilityModeSwitcher
     }
 
     @Override
+    public void instanceDetached( HighAvailabilityMemberChangeEvent event )
+    {
+        switchToDetached();
+    }
+
+    @Override
     public void addModeSwitcher( ModeSwitcher modeSwitcher )
     {
         modeSwitchListeners = Listeners.addListener( modeSwitcher, modeSwitchListeners );
@@ -479,8 +485,55 @@ public class HighAvailabilityModeSwitcher
         {
             modeSwitcherFuture.get( 10, TimeUnit.SECONDS );
         }
-        catch ( Exception ignored )
+        catch ( Exception e )
         {
+            msgLog.warn( "Exception received while waiting for switching to pending", e );
+        }
+    }
+
+    private void switchToDetached()
+    {
+        msgLog.info( "I am %s, moving to detached", instanceId );
+
+        startModeSwitching( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                if ( cancellationHandle.cancellationRequested() )
+                {
+                    msgLog.info( "Switch to pending cancelled on start." );
+                    return;
+                }
+
+                Listeners.notifyListeners( modeSwitchListeners, new Listeners.Notification<ModeSwitcher>()
+                {
+                    @Override
+                    public void notify( ModeSwitcher listener )
+                    {
+                        listener.switchToSlave();
+                    }
+                } );
+                neoStoreDataSourceSupplier.getDataSource().beforeModeSwitch();
+
+                if ( cancellationHandle.cancellationRequested() )
+                {
+                    msgLog.info( "Switch to pending cancelled before ha communication shutdown." );
+                    return;
+                }
+
+                haCommunicationLife.shutdown();
+                haCommunicationLife = new LifeSupport();
+            }
+        }, new CancellationHandle() );
+
+        try
+        {
+            modeSwitcherFuture.get( 10, TimeUnit.SECONDS );
+        }
+        catch ( Exception e )
+        {
+            msgLog.warn( "Exception received while waiting for switching to detached", e );
         }
     }
 

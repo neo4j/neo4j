@@ -561,7 +561,7 @@ public class HighlyAvailableEditionModule
         eligibleForIdReuse = new IdReuseEligibility()
         {
             @Override
-            public boolean test( KernelTransactionsSnapshot snapshot )
+            public boolean isEligible( KernelTransactionsSnapshot snapshot )
             {
                 switch ( members.getCurrentMemberRole() )
                 {
@@ -665,14 +665,14 @@ public class HighlyAvailableEditionModule
                 lockManagerDelegate );
         modeSwitchersLife.add( new LockManagerModeSwitcher( highAvailabilityModeSwitcher, lockManagerDelegate,
                 masterDelegateInvocationHandler,
-                requestContextFactory, availabilityGuard, config, new Factory<Locks>()
+                requestContextFactory, availabilityGuard, new Factory<Locks>()
         {
             @Override
             public Locks newInstance()
             {
                 return CommunityEditionModule.createLockManager( config, logging );
             }
-        } ) );
+        }, config ) );
         return lockManager;
     }
 
@@ -758,13 +758,8 @@ public class HighlyAvailableEditionModule
     protected void registerRecovery( final String editionName, final DependencyResolver dependencyResolver,
                                      final LogService logging )
     {
-        memberStateMachine.addHighAvailabilityMemberListener( new HighAvailabilityMemberListener()
+        memberStateMachine.addHighAvailabilityMemberListener( new HighAvailabilityMemberListener.Adapter()
         {
-            @Override
-            public void masterIsElected( HighAvailabilityMemberChangeEvent event )
-            {
-            }
-
             @Override
             public void masterIsAvailable( HighAvailabilityMemberChangeEvent event )
             {
@@ -783,11 +778,6 @@ public class HighlyAvailableEditionModule
                 {
                     doAfterRecoveryAndStartup( false );
                 }
-            }
-
-            @Override
-            public void instanceStops( HighAvailabilityMemberChangeEvent event )
-            {
             }
 
             private void doAfterRecoveryAndStartup( boolean isMaster )

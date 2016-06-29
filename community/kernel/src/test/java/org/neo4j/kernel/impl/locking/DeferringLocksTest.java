@@ -140,11 +140,6 @@ public class DeferringLocksTest
         }
 
         @Override
-        public void releaseAll()
-        {
-        }
-
-        @Override
         public void stop()
         {
         }

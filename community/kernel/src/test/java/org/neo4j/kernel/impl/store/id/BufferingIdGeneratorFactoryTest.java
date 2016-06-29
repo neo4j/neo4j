@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+
 import org.neo4j.function.Supplier;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -85,7 +86,7 @@ public class BufferingIdGeneratorFactoryTest
         bufferingIdGeneratorFactory.initialize( boundaries, new IdReuseEligibility()
         {
             @Override
-            public boolean test( KernelTransactionsSnapshot t )
+            public boolean isEligible( KernelTransactionsSnapshot t )
             {
                 return clock.currentTimeMillis() - t.snapshotTime() >= safeZone;
             }

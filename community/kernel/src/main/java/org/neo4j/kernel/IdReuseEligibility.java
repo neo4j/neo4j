@@ -19,17 +19,21 @@
  */
 package org.neo4j.kernel;
 
-import org.neo4j.function.Predicate;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 
-public interface IdReuseEligibility extends Predicate<KernelTransactionsSnapshot>
+/**
+ * Deciding whether or not ids are eligible for being released from buffering since being deleted.
+ */
+public interface IdReuseEligibility
 {
     IdReuseEligibility ALWAYS = new IdReuseEligibility()
     {
         @Override
-        public boolean test( KernelTransactionsSnapshot snapshot )
+        public boolean isEligible( KernelTransactionsSnapshot snapshot )
         {
             return true;
         }
     };
+
+    boolean isEligible( KernelTransactionsSnapshot snapshot );
 }

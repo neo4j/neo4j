@@ -43,14 +43,14 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<Locks>
     public LockManagerModeSwitcher( ModeSwitcherNotifier modeSwitcherNotifier,
                                     DelegateInvocationHandler<Locks> delegate, DelegateInvocationHandler<Master> master,
                                     RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
-                                    Config config, Factory<Locks> locksFactory )
+                                    Factory<Locks> locksFactory, Config config )
     {
         super( modeSwitcherNotifier, delegate );
         this.master = master;
         this.requestContextFactory = requestContextFactory;
         this.availabilityGuard = availabilityGuard;
-        this.config = config;
         this.locksFactory = locksFactory;
+        this.config = config;
     }
 
     @Override
@@ -64,7 +64,7 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<Locks>
     {
         SlaveLockManager lockManager =
                 new SlaveLockManager( locksFactory.newInstance(), requestContextFactory, master.cement(),
-                        availabilityGuard );
+                        availabilityGuard, config );
         return life.add( maybeWrapWithDeferringLockManager( config, lockManager ) );
     }
 }

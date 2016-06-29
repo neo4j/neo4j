@@ -182,12 +182,6 @@ public class DeferringLocks extends Lifecycle.Delegate implements Locks
         }
 
         @Override
-        public void releaseAll()
-        {
-            throw new UnsupportedOperationException( "Should not be needed" );
-        }
-
-        @Override
         public void prepare()
         {
             long[] current = new long[10];
