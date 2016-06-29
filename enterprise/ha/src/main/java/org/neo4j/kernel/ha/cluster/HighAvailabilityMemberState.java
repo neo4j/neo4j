@@ -61,8 +61,10 @@ public enum HighAvailabilityMemberState
                 {
                     if ( masterId.equals( context.getMyId() ) )
                     {
-                        throw new RuntimeException( "Received a MasterIsAvailable event for my InstanceId while in" +
+                        HighAvailabilityMemberState result = ILLEGAL;
+                        result.setErrorMessage( "Received a MasterIsAvailable event for my InstanceId while in" +
                                 " PENDING state" );
+                        return result;
                     }
                     return TO_SLAVE;
                 }
@@ -74,7 +76,9 @@ public enum HighAvailabilityMemberState
                 {
                     if ( slaveId.equals( context.getMyId() ) )
                     {
-                        throw new RuntimeException( "Cannot go from pending to slave" );
+                        HighAvailabilityMemberState result = ILLEGAL;
+                        result.setErrorMessage( "Cannot go from pending to slave" );
+                        return result;
                     }
                     return this;
                 }
@@ -122,17 +126,21 @@ public enum HighAvailabilityMemberState
                 {
                     if ( masterId.equals( context.getMyId() ) )
                     {
-                        throw new RuntimeException( "i (" + context.getMyId() + ") am trying to become a slave but " +
+                        HighAvailabilityMemberState result = ILLEGAL;
+                        result.setErrorMessage( "i (" + context.getMyId() + ") am trying to become a slave but " +
                                 "someone said i am available as master" );
+                        return result;
                     }
                     if ( masterId.equals( context.getElectedMasterId() ) )
                     {
                         // A member joined and we all got the same event
                         return this;
                     }
-                    throw new RuntimeException( "my (" + context.getMyId() + ") current master is " + context
+                    HighAvailabilityMemberState result = ILLEGAL;
+                    result.setErrorMessage( "my (" + context.getMyId() + ") current master is " + context
                             .getAvailableHaMaster() + " (elected as " + context.getElectedMasterId() + " but i got a " +
-                            "masterIsAvailable event for " + masterHaURI );
+                            "masterIsAvailable event for " + masterHaURI  );
+                    return result;
                 }
 
                 @Override
@@ -186,8 +194,10 @@ public enum HighAvailabilityMemberState
                     {
                         return MASTER;
                     }
-                    throw new RuntimeException( "Received a MasterIsAvailable event for instance " + masterId
-                    + " while in TO_MASTER state");
+                    HighAvailabilityMemberState result = ILLEGAL;
+                    result.setErrorMessage( "Received a MasterIsAvailable event for instance " + masterId
+                            + " while in TO_MASTER state" );
+                    return result;
                 }
 
                 @Override
@@ -197,7 +207,9 @@ public enum HighAvailabilityMemberState
                 {
                     if ( slaveId.equals( context.getMyId() ) )
                     {
-                        throw new RuntimeException( "Cannot be transitioning to master and slave at the same time" );
+                        HighAvailabilityMemberState result = ILLEGAL;
+                        result.setErrorMessage( "Cannot be transitioning to master and slave at the same time" );
+                        return result;
                     }
                     return this;
                 }
@@ -242,9 +254,11 @@ public enum HighAvailabilityMemberState
                     {
                         return this;
                     }
-                    throw new RuntimeException( "I, " + context.getMyId() + " got a masterIsAvailable for " +
+                    HighAvailabilityMemberState result = ILLEGAL;
+                    result.setErrorMessage( "I, " + context.getMyId() + " got a masterIsAvailable for " +
                             masterHaURI + " (id is " + masterId + " ) while in MASTER state. Probably missed a " +
-                            "MasterIsElected event." );
+                            "MasterIsElected event."  );
+                    return result;
                 }
 
                 @Override
@@ -254,7 +268,9 @@ public enum HighAvailabilityMemberState
                 {
                     if ( slaveId.equals( context.getMyId() ) )
                     {
-                        throw new RuntimeException( "Cannot be master and transition to slave at the same time" );
+                        HighAvailabilityMemberState result = ILLEGAL;
+                        result.setErrorMessage( "Cannot be master and transition to slave at the same time" );
+                        return result;
                     }
                     return this;
                 }
@@ -299,16 +315,20 @@ public enum HighAvailabilityMemberState
                 {
                     if ( masterId.equals( context.getMyId() ) )
                     {
-                        throw new RuntimeException( "Cannot transition to MASTER directly from SLAVE state" );
+                        HighAvailabilityMemberState returnValue = ILLEGAL;
+                        returnValue.setErrorMessage( "Cannot transition to MASTER directly from SLAVE state" );
+                        return returnValue;
                     }
                     else if ( masterId.equals( context.getElectedMasterId() ) )
                     {
                         // this is just someone else that joined the cluster
                         return this;
                     }
-                    throw new RuntimeException( "Received a MasterIsAvailable event for " + masterId +
+                    HighAvailabilityMemberState returnValue = ILLEGAL;
+                    returnValue.setErrorMessage( "Received a MasterIsAvailable event for " + masterId +
                             " which is different from the current master (" + context.getElectedMasterId() +
                             ") while in the SLAVE state (probably missed a MasterIsElected event)" );
+                    return returnValue;
                 }
 
                 @Override
@@ -328,7 +348,47 @@ public enum HighAvailabilityMemberState
                 {
                     return true;
                 }
+            },
+    ILLEGAL
+            {
+                @Override
+                public HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context, InstanceId masterId )
+                {
+                    throw new IllegalStateException("The ILLEGAL state is not meant to be used as a state, merely as an indicator that" +
+                            " something went wrong while handling a message and the state should be set to PENDING");
+                }
+
+                @Override
+                public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context, InstanceId masterId, URI masterHaURI )
+                {
+                    throw new IllegalStateException("The ILLEGAL state is not meant to be used as a state, merely as an indicator that" +
+                            " something went wrong while handling a message and the state should be set to PENDING");
+                }
+
+                @Override
+                public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context,
+                                                                     InstanceId slaveId, URI slaveUri )
+                {
+                    throw new IllegalStateException("The ILLEGAL state is not meant to be used as a state, merely as an indicator that" +
+                            " something went wrong while handling a message and the state should be set to PENDING");
+                }
+
+                @Override
+                public boolean isEligibleForElection()
+                {
+                    throw new IllegalStateException("The ILLEGAL state is not meant to be used as a state, merely as an indicator that" +
+                            " something went wrong while handling a message and the state should be set to PENDING");
+                }
+
+                @Override
+                public boolean isAccessAllowed()
+                {
+                    throw new IllegalStateException("The ILLEGAL state is not meant to be used as a state, merely as an indicator that" +
+                            " something went wrong while handling a message and the state should be set to PENDING");
+                }
             };
+
+    private String errorMessage = "";
 
     public abstract HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context, InstanceId masterId );
 
@@ -346,4 +406,14 @@ public enum HighAvailabilityMemberState
     public abstract boolean isEligibleForElection();
 
     public abstract boolean isAccessAllowed();
+
+    public String errorMessage()
+    {
+        return errorMessage;
+    }
+
+    private void setErrorMessage( String message )
+    {
+        errorMessage = message;
+    }
 }

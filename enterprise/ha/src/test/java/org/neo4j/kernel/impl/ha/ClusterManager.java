@@ -43,6 +43,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -1455,7 +1456,7 @@ public class ClusterManager
             }
             String state = stateToString( this );
             throw new IllegalStateException( format(
-                    "Awaited condition never met, waited %s secondes for %s:%n%s", maxSeconds, predicate, state ) );
+                    "Awaited condition never met, waited %s seconds for %s:%n%s", maxSeconds, predicate, state ) );
         }
 
         /**

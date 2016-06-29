@@ -20,7 +20,8 @@
 package org.neo4j.kernel.ha.cluster;
 
 /**
- * These callback methods correspond to the cluster
+ * These callback methods correspond to broadcasted HA events. The supplied event argument contains the
+ * result of the state change and required information, as interpreted by the HA state machine.
  */
 public interface HighAvailabilityMemberListener
 {
@@ -31,6 +32,13 @@ public interface HighAvailabilityMemberListener
     void slaveIsAvailable( HighAvailabilityMemberChangeEvent event );
 
     void instanceStops( HighAvailabilityMemberChangeEvent event );
+
+    /**
+     * This event is different than the rest, in the sense that it is not a response to a broadcasted message,
+     * rather than the interpretation of the loss of connectivity to other cluster members. This corresponds generally
+     * to a loss of quorum but a special case is the event of being partitioned away completely from the cluster.
+     */
+    void instanceDetached( HighAvailabilityMemberChangeEvent event );
 
     class Adapter implements HighAvailabilityMemberListener
     {
@@ -51,6 +59,11 @@ public interface HighAvailabilityMemberListener
 
         @Override
         public void instanceStops( HighAvailabilityMemberChangeEvent event )
+        {
+        }
+
+        @Override
+        public void instanceDetached( HighAvailabilityMemberChangeEvent event )
         {
         }
     }

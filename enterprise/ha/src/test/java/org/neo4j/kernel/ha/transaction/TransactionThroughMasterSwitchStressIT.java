@@ -27,9 +27,12 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.function.IntFunction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
@@ -77,7 +80,24 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.memberThinksItIsRole;
 public class TransactionThroughMasterSwitchStressIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() );
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+                .withInstanceSetting( HaSettings.slave_only,
+                        new IntFunction<String>() // instances 1 and 2 are slave only
+                        {
+                            @Override
+                            public String apply( int value )
+                            {
+                                if ( value == 1 || value == 2 )
+                                {
+                                    return Settings.TRUE;
+                                }
+                                else
+                                {
+                                    return Settings.FALSE;
+                                }
+                            }
+                        }
+                );
 
     @Test
     public void shouldNotHaveTransactionsRunningThroughRoleSwitchProduceInconsistencies() throws Throwable
@@ -173,21 +193,14 @@ public class TransactionThroughMasterSwitchStressIT
     private void reelectTheSameMasterMakingItGoToPendingAndBack( ManagedCluster cluster ) throws Throwable
     {
         HighlyAvailableGraphDatabase master = cluster.getMaster();
-        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-
-        // Fail one slave, so that there's only two alive left
-        RepairKit slaveRepair = cluster.fail( slave );
-        cluster.await( memberSeesOtherMemberAsFailed( master, slave ) );
-
-        // Fail master and wait for master to go to pending, since cluster lost quorum
-        RepairKit masterRepair = cluster.fail( master, NetworkFlag.IN );
+        // Fail master and wait for master to go to pending, since it detects it's partitioned away
+        RepairKit masterRepair = cluster.fail( master, NetworkFlag.IN, NetworkFlag.OUT );
         cluster.await( memberThinksItIsRole( master, UNKNOWN ) );
 
         // Then Immediately repair
         masterRepair.repair();
-        slaveRepair.repair();
 
-        // Wait for this instance to go to master again
+        // Wait for this instance to go to master again, since the other instances are slave only
         cluster.await( memberThinksItIsRole( master, MASTER ) );
         cluster.await( ClusterManager.masterAvailable() );
         assertEquals( master, cluster.getMaster() );

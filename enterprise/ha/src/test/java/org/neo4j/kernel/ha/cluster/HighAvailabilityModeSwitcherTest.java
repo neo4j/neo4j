@@ -613,6 +613,34 @@ public class HighAvailabilityModeSwitcherTest
         verify( election ).demote( instanceId );
     }
 
+    @Test
+    public void shouldSwitchToSlaveForNullMasterAndBeSilentWhenMovingToDetached() throws Throwable
+    {
+        // Given
+        ClusterMemberAvailability availability = mock( ClusterMemberAvailability.class );
+        HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( mock( SwitchToSlave.class ),
+                mock( SwitchToMaster.class ),
+                mock( Election.class ),
+                availability,
+                mock( ClusterClient.class ),
+                storeSupplierMock(),
+                mock( InstanceId.class ), NullLogService.getInstance(),
+                neoStoreDataSourceSupplierMock() );
+        ModeSwitcher mockSwitcher = mock( ModeSwitcher.class );
+        toTest.addModeSwitcher( mockSwitcher );
+
+        // When
+        toTest.init();
+        toTest.start();
+        toTest.instanceDetached( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.MASTER,
+                HighAvailabilityMemberState.PENDING, null, null ) );
+
+        // Then
+        verify( mockSwitcher ).switchToSlave();
+        verifyZeroInteractions( availability );
+
+    }
+
     public static Supplier<StoreId> storeSupplierMock()
     {
         Supplier<StoreId> supplier = mock( Supplier.class );
