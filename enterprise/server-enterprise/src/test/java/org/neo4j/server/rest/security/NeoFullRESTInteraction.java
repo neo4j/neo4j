@@ -122,7 +122,8 @@ public class NeoFullRESTInteraction extends CommunityServerTestBase implements N
     {
         subject.response = authenticate( subject.principalCredentials );
         return subject.response.status() == 200 || // OK
-                subject.response.status() == 403; // PASSWORD CHANGE REQUIRED
+                ( subject.response.status() == 403 &&
+                  subject.response.rawContent().contains( "password_change" ) );
     }
 
     @Override
