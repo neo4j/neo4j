@@ -641,6 +641,44 @@ public class CodeGenerationTest
     }
 
     @Test
+    public void shouldGenerateIfWithMultipleTestsStatement() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock conditional = simple.generateMethod( void.class, "conditional",
+                    param( boolean.class, "test1" ),  param( boolean.class, "test2" ), param( Runnable.class, "runner" ) ) )
+            {
+                try ( CodeBlock doStuff = conditional.ifStatement( conditional.load( "test1" ), conditional.load( "test2" ) ) )
+                {
+                    doStuff.expression(
+                            invoke( doStuff.load( "runner" ), RUN ) );
+                }
+            }
+
+            handle = simple.handle();
+        }
+
+        Runnable runner1 = mock( Runnable.class );
+        Runnable runner2 = mock( Runnable.class );
+        Runnable runner3 = mock( Runnable.class );
+        Runnable runner4 = mock( Runnable.class );
+
+        // when
+        MethodHandle conditional = instanceMethod( handle.newInstance(), "conditional", boolean.class, boolean.class, Runnable.class );
+        conditional.invoke( true, true, runner1 );
+        conditional.invoke( false, true, runner2 );
+        conditional.invoke( true, false, runner3 );
+        conditional.invoke( false, false, runner4 );
+
+        // then
+        verify( runner1 ).run();
+        verifyZeroInteractions( runner2 );
+        verifyZeroInteractions( runner3 );
+        verifyZeroInteractions( runner4 );
+    }
+    @Test
     public void shouldGenerateIfNotExpressionStatement() throws Throwable
     {
         // given

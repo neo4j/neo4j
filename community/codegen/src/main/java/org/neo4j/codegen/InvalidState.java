@@ -95,25 +95,25 @@ class InvalidState implements MethodEmitter
     }
 
     @Override
-    public void beginIf( Expression test )
+    public void beginIf( Expression...tests )
     {
         throw new IllegalStateException( reason );
     }
 
     @Override
-    public void beginIfNot( Expression test )
+    public void beginIfNot( Expression...tests )
     {
         throw new IllegalStateException( reason );
     }
 
     @Override
-    public void beginIfNull( Expression test )
+    public void beginIfNull( Expression...tests )
     {
         throw new IllegalStateException( reason );
     }
 
     @Override
-    public void beginIfNonNull( Expression test )
+    public void beginIfNonNull( Expression...tests )
     {
         throw new IllegalStateException( reason );
     }

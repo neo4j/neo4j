@@ -149,31 +149,52 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
-    public void beginIf( Expression test )
+    public void beginIf( Expression...tests )
     {
         indent().append( "if ( " );
-        test.accept( this );
+        String sep = "";
+        for (Expression test: tests)
+        {
+            append( sep );
+            test.accept( this );
+            sep = " && ";
+        }
         append( " )\n" );
         indent().append( "{\n" );
         level.push( LEVEL );
     }
 
     @Override
-    public void beginIfNot( Expression test )
+    public void beginIfNot( Expression...tests )
     {
-        beginIf(Expression.not(test));
+        Expression[] nots = new Expression[tests.length];
+        for ( int i = 0; i < tests.length; i++ )
+        {
+            nots[i] = Expression.not( tests[i] );
+        }
+        beginIf( nots );
     }
 
     @Override
-    public void beginIfNull( Expression test )
+    public void beginIfNull( Expression...tests )
     {
-        beginIf(Expression.equal(test, Expression.constant( null ), TypeReference.OBJECT));
+        Expression[] nulls = new Expression[tests.length];
+        for ( int i = 0; i < tests.length; i++ )
+        {
+            nulls[i] = Expression.equal(tests[i], Expression.constant( null ), TypeReference.OBJECT);
+        }
+        beginIf(nulls);
     }
 
     @Override
-    public void beginIfNonNull( Expression test )
+    public void beginIfNonNull( Expression...tests )
     {
-        beginIfNot(Expression.equal(test, Expression.constant( null ), TypeReference.OBJECT));
+        Expression[] notNulls = new Expression[tests.length];
+        for ( int i = 0; i < tests.length; i++ )
+        {
+            notNulls[i] = Expression.not(Expression.equal(tests[i], Expression.constant( null ), TypeReference.OBJECT));
+        }
+        beginIf(notNulls);
     }
 
     @Override

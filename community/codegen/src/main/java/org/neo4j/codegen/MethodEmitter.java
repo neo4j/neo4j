@@ -44,13 +44,20 @@ public interface MethodEmitter
      */
     void beginWhile( Expression...tests );
 
-    void beginIf( Expression test );
+    /**
+     * Begin an if block,
+     * <code>
+     * if (tests[0] && tests[1]...)
+     * ...
+     * </code>
+     */
+    void beginIf( Expression... tests );
 
-    void beginIfNot( Expression test );
+    void beginIfNot( Expression...tests );
 
-    void beginIfNull( Expression test );
+    void beginIfNull( Expression...tests );
 
-    void beginIfNonNull( Expression test );
+    void beginIfNonNull( Expression...tests );
 
     void endBlock();
 
