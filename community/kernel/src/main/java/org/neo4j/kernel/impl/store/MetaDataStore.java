@@ -115,8 +115,6 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
 
     // This is not a field in the store, but something keeping track of which is the currently highest
     // committed transaction id, together with its checksum.
-    // TODO: Set commit timestamp to FIELD_NOT_INITIALIZED is risky as we do not know what that means.
-    // TODO: But do we know what state we are in? BASE_LAST_COMMIT_TIMESTAMP or UNKNOWN_LAST_COMMIT_TIMESTAMP?
     private final HighestTransactionId highestCommittedTransaction =
             new HighestTransactionId( FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED );
 

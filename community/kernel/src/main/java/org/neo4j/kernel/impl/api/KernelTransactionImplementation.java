@@ -491,7 +491,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             if ( failure || !success || isTerminated() )
             {
                 rollback();
-                failOnNonExplicitRollbackIfNeeded( );
+                failOnNonExplicitRollbackIfNeeded();
             }
             else
             {

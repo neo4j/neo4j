@@ -886,7 +886,6 @@ public class StoreMigrator implements StoreMigrationParticipant
         //    but T needs to be stored in neostore to be accessible. Obvioously this scenario is only
         //    problematic as long as we don't migrate and translate old logs.
 
-        // TODO: Is this what we want to do with txInfo and do we not need UPGRADE_TRANSACTION_COMMIT_TIMESTAMP?
         TransactionId lastTxInfo = readLastTxInformation( migrationDir );
         // Checksum
         MetaDataStore.setRecord( pageCache, storeDirNeoStore, Position.LAST_TRANSACTION_CHECKSUM,

@@ -27,7 +27,7 @@ import java.io.File;
 import org.neo4j.function.Supplier;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel .IdType;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.test.EphemeralFileSystemRule;
 
