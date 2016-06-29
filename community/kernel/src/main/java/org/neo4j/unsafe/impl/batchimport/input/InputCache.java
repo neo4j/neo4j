@@ -30,6 +30,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
@@ -85,6 +86,9 @@ import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
  *     ELSE IF {@link #NEW_TYPE}
  *     4B token id
  * </pre>
+ *
+ * The format stores entities in batches, each batch having a small header containing number of bytes
+ * and number of entities.
  */
 public class InputCache implements Closeable
 {
@@ -113,37 +117,53 @@ public class InputCache implements Closeable
     static final byte NEW_TYPE = 1;
     static final byte END_OF_HEADER = -2;
     static final short END_OF_ENTITIES = -3;
+    static final int NO_ENTITIES = 0;
+    static final long END_OF_CACHE = 0L;
 
     private final FileSystemAbstraction fs;
     private final File cacheDirectory;
-    private RecordFormats recordFormats;
+    private final RecordFormats recordFormats;
+    private final Configuration config;
+
     private final int bufferSize;
     private final Set<String> subTypes = new HashSet<>();
+    private final int batchSize;
 
-    public InputCache( FileSystemAbstraction fs, File cacheDirectory, RecordFormats recordFormats )
+    public InputCache( FileSystemAbstraction fs, File cacheDirectory, RecordFormats recordFormats,
+            Configuration config )
     {
-        this( fs, cacheDirectory, recordFormats, (int) ByteUnit.kibiBytes( 512 ) );
+        this( fs, cacheDirectory, recordFormats, config, (int) ByteUnit.kibiBytes( 512 ), 10_000 );
     }
 
-    public InputCache( FileSystemAbstraction fs, File cacheDirectory, RecordFormats recordFormats, int bufferSize )
+    /**
+     * @param fs {@link FileSystemAbstraction} to use
+     * @param cacheDirectory directory for placing the cached files
+     * @param config import configuration
+     * @param bufferSize buffer size for writing/reading cache files
+     * @param batchSize number of entities in each batch
+     */
+    public InputCache( FileSystemAbstraction fs, File cacheDirectory, RecordFormats recordFormats,
+            Configuration config, int bufferSize, int batchSize )
     {
         this.fs = fs;
         this.cacheDirectory = cacheDirectory;
         this.recordFormats = recordFormats;
+        this.config = config;
         this.bufferSize = bufferSize;
+        this.batchSize = batchSize;
     }
 
     public Receiver<InputNode[],IOException> cacheNodes( String subType ) throws IOException
     {
         return new InputNodeCacher( channel( NODES, subType, "rw" ), channel( NODES_HEADER, subType, "rw" ),
-                recordFormats, bufferSize );
+                recordFormats, bufferSize, batchSize );
     }
 
     public Receiver<InputRelationship[],IOException> cacheRelationships( String subType ) throws
             IOException
     {
         return new InputRelationshipCacher( channel( RELATIONSHIPS, subType, "rw" ),
-                channel( RELATIONSHIPS_HEADER, subType, "rw" ), recordFormats, bufferSize );
+                channel( RELATIONSHIPS_HEADER, subType, "rw" ), recordFormats, bufferSize, batchSize );
     }
 
     private StoreChannel channel( String type, String subType, String mode ) throws IOException
@@ -165,7 +185,8 @@ public class InputCache implements Closeable
             public InputIterator<InputNode> get() throws IOException
             {
                 return new InputNodeReader( channel( NODES, subType, "r" ), channel( NODES_HEADER, subType, "r" ),
-                        bufferSize, deleteAction( deleteAfterUse, NODES, NODES_HEADER, subType ) );
+                        bufferSize, deleteAction( deleteAfterUse, NODES, NODES_HEADER, subType ),
+                        config.maxNumberOfProcessors() );
             }
         } );
     }
@@ -179,7 +200,8 @@ public class InputCache implements Closeable
             {
                 return new InputRelationshipReader( channel( RELATIONSHIPS, subType, "r" ),
                         channel( RELATIONSHIPS_HEADER, subType, "r" ), bufferSize,
-                        deleteAction( deleteAfterUse, RELATIONSHIPS, RELATIONSHIPS_HEADER, subType ) );
+                        deleteAction( deleteAfterUse, RELATIONSHIPS, RELATIONSHIPS_HEADER, subType ),
+                        config.maxNumberOfProcessors() );
             }
         } );
     }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -35,14 +36,21 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.test.rule.TargetDirectory.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.unsafe.impl.batchimport.Configuration;
+import org.neo4j.unsafe.impl.batchimport.Configuration.Default;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 
 import static java.lang.Math.abs;
+import static java.lang.System.currentTimeMillis;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.helpers.Format.duration;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.MAIN;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_LABELS;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
@@ -69,7 +77,7 @@ public class InputCacheTest
     {
         // GIVEN
         try ( InputCache cache = new InputCache( fileSystemRule.get(), dir.directory(), StandardV3_0.RECORD_FORMATS,
-                (int) ByteUnit.kibiBytes( 8 ) ) )
+                withMaxProcessors( 50 ), (int) ByteUnit.kibiBytes( 8 ), BATCH_SIZE ) )
         {
             List<InputNode> nodes = new ArrayList<>();
             Randoms random = getRandoms();
@@ -91,6 +99,7 @@ public class InputCacheTest
             // WHEN/THEN
             try ( InputIterator<InputNode> reader = cache.nodes( MAIN, true ).iterator() )
             {
+                reader.processors( 50 - reader.processors( 0 ) );
                 Iterator<InputNode> expected = nodes.iterator();
                 while ( expected.hasNext() )
                 {
@@ -110,7 +119,7 @@ public class InputCacheTest
     {
         // GIVEN
         try ( InputCache cache = new InputCache( fileSystemRule.get(), dir.directory(), StandardV3_0.RECORD_FORMATS,
-                (int) ByteUnit.kibiBytes( 8 ) ) )
+                withMaxProcessors( 50 ), (int) ByteUnit.kibiBytes( 8 ), BATCH_SIZE ) )
         {
             List<InputRelationship> relationships = new ArrayList<>();
             Randoms random = getRandoms();
@@ -132,6 +141,7 @@ public class InputCacheTest
             // WHEN/THEN
             try ( InputIterator<InputRelationship> reader = cache.relationships( MAIN, true ).iterator() )
             {
+                reader.processors( 50 - reader.processors( 0 ) );
                 Iterator<InputRelationship> expected = relationships.iterator();
                 while ( expected.hasNext() )
                 {
@@ -144,6 +154,58 @@ public class InputCacheTest
             }
         }
         assertNoFilesLeftBehind();
+    }
+
+    @Ignore( "Shows performance improvement of adding more threads" )
+    @Test
+    public void shouldReadQuickly() throws Exception
+    {
+        try ( InputCache cache = new InputCache( fileSystemRule.get(), dir.directory(),
+                StandardV3_0.RECORD_FORMATS, withMaxProcessors( 8 ) ) )
+        {
+            Randoms random = new Randoms( randomRule.random(), Randoms.DEFAULT );
+            try ( Receiver<InputRelationship[],IOException> cacher = cache.cacheRelationships( MAIN ) )
+            {
+                InputRelationship[] batch = new InputRelationship[1_000];
+                for ( int i = 0; i < batch.length; i++ )
+                {
+                    batch[i] = randomRelationship( random );
+                }
+
+                for ( int b = 0; b < 100_000; b++ )
+                {
+                    cacher.receive( batch );
+                    if ( b % 10_000 == 0 )
+                    {
+                        System.out.println( b );
+                    }
+                }
+            }
+
+            for ( int i = 1; i <= 8; i++ )
+            {
+                try ( InputIterator<InputRelationship> reader = cache.relationships( MAIN, false ).iterator() )
+                {
+                    reader.processors( i - reader.processors( 0 ) );
+                    long time = currentTimeMillis();
+                    count( reader );
+                    time = currentTimeMillis() - time;
+                    System.out.println( i + ":" + duration( time ) );
+                }
+            }
+        }
+    }
+
+    private Default withMaxProcessors( int maxProcessors )
+    {
+        return new Configuration.Default()
+        {
+            @Override
+            public int maxNumberOfProcessors()
+            {
+                return maxProcessors;
+            }
+        };
     }
 
     private void assertNoFilesLeftBehind()
@@ -193,7 +255,7 @@ public class InputCacheTest
                     NO_PROPERTIES, abs( random.random().nextLong() ),
                     randomGroup( random, 0 ), randomId( random ),
                     randomGroup( random, 1 ), randomId( random ),
-                    null, abs( random.random().nextInt( Short.MAX_VALUE ) ) );
+                    null, abs( random.random().nextInt( 20_000 ) ) );
         }
 
         return new InputRelationship( null, 0, 0,
@@ -254,7 +316,7 @@ public class InputCacheTest
     {
         if ( random.random().nextFloat() < 0.01f )
         {   // Next group
-            return previousGroups[slot] = new Group.Adapter( previousGroups[slot].id()+1, random.string() );
+            return previousGroups[slot] = new Group.Adapter( random.nextInt( 20_000 ), random.string() );
         }
         // Keep same as previous
         return previousGroups[slot];

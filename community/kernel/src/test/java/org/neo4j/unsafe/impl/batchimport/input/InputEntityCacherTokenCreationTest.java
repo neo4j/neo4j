@@ -247,13 +247,13 @@ public class InputEntityCacherTokenCreationTest
     private InputNodeCacher getNodeCacher( RecordFormats recordFormats ) throws IOException
     {
         return new InputNodeCacher( mock( StoreChannel.class ),
-                mock( StoreChannel.class ), recordFormats, 100 );
+                mock( StoreChannel.class ), recordFormats, 100, 100 );
     }
 
     private InputRelationshipCacher getRelationshipCacher( RecordFormats recordFormats ) throws IOException
     {
         return new InputRelationshipCacher( mock( StoreChannel.class ),
-                mock( StoreChannel.class ), recordFormats, 100 );
+                mock( StoreChannel.class ), recordFormats, 100, 100 );
     }
 
     private class TestInputEntityCacher extends InputEntityCacher
@@ -261,7 +261,7 @@ public class InputEntityCacherTokenCreationTest
         TestInputEntityCacher( StoreChannel channel, StoreChannel header,
                 RecordFormats recordFormats, int bufferSize, int groupSlots ) throws IOException
         {
-            super( channel, header, recordFormats, bufferSize, groupSlots );
+            super( channel, header, recordFormats, bufferSize, 100, groupSlots );
         }
     }
 }

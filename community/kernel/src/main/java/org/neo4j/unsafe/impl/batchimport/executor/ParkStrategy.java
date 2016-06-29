@@ -19,9 +19,10 @@
  */
 package org.neo4j.unsafe.impl.batchimport.executor;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * Strategy for waiting a while, given a certain {@link Thread}.
@@ -36,9 +37,9 @@ public interface ParkStrategy
     {
         private final long nanos;
 
-        public Park( int millis )
+        public Park( long time, TimeUnit unit )
         {
-            this.nanos = MILLISECONDS.toNanos( millis );
+            this.nanos = NANOSECONDS.convert( time, unit );
         }
 
         @Override

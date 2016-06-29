@@ -60,7 +60,8 @@ public class ProcessorAssignmentStrategies
                     {
                         for ( Step<?> step : execution.steps() )
                         {
-                            if ( random.nextBoolean() && step.incrementNumberOfProcessors() && --processors == 0 )
+                            int before = step.processors( 0 );
+                            if ( random.nextBoolean() && step.processors( 1 ) > before && --processors == 0 )
                             {
                                 return;
                             }
@@ -105,7 +106,8 @@ public class ProcessorAssignmentStrategies
                 {
                     for ( Step<?> step : execution.steps() )
                     {
-                        if ( random.nextBoolean() && step.incrementNumberOfProcessors() )
+                        int before = step.processors( 0 );
+                        if ( random.nextBoolean() && step.processors( -1 ) < before )
                         {
                             processors--;
                             if ( --maxThisCheck == 0 )
@@ -136,7 +138,7 @@ public class ProcessorAssignmentStrategies
                 processors.put( execution.getStageName(), byStage );
                 for ( Step<?> step : execution.steps() )
                 {
-                    byStage.put( step.name(), step.numberOfProcessors() );
+                    byStage.put( step.name(), step.processors( 0 ) );
                 }
             }
         }

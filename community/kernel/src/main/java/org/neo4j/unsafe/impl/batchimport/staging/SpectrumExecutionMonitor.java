@@ -154,11 +154,11 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
                 boolean isBottleNeck = bottleNeck.first() == step;
                 String name =
                         (isBottleNeck ? "*" : "") +
-                        stats.toString( DetailLevel.IMPORTANT ) + (step.numberOfProcessors() > 1
-                        ? "(" + step.numberOfProcessors() + ")"
+                        stats.toString( DetailLevel.IMPORTANT ) + (step.processors( 0 ) > 1
+                        ? "(" + step.processors( 0 ) + ")"
                         : "");
                 int charIndex = 0; // negative value "delays" the text, i.e. pushes it to the right
-                char backgroundChar = step.numberOfProcessors() > 1 ? '=' : '-';
+                char backgroundChar = step.processors( 0 ) > 1 ? '=' : '-';
                 for ( int i = 0; i < stepWidth; i++, charIndex++ )
                 {
                     char ch = backgroundChar;

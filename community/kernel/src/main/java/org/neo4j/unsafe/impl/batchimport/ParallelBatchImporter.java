@@ -132,7 +132,7 @@ public class ParallelBatchImporter implements BatchImporter
                 additionalInitialIds, dbConfig );
               CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(
                     neoStore.getLastCommittedTransactionId() );
-              InputCache inputCache = new InputCache( fileSystem, storeDir, recordFormats ) )
+              InputCache inputCache = new InputCache( fileSystem, storeDir, recordFormats, config ) )
         {
             Collector badCollector = input.badCollector();
             // Some temporary caches and indexes in the import

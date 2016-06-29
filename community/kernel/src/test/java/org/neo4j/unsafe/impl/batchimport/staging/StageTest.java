@@ -79,7 +79,7 @@ public class StageTest
         for ( Step<?> step : execution.steps() )
         {
             // we start off with two in each step
-            step.incrementNumberOfProcessors();
+            step.processors( 1 );
         }
         new ExecutionSupervisor( ExecutionMonitors.invisible() ).supervise( execution );
 

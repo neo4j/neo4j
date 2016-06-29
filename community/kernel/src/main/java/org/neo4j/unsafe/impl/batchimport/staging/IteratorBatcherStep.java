@@ -58,7 +58,7 @@ public class IteratorBatcherStep<T> extends IoProducerStep
     }
 
     @Override
-    public void close()
+    public void close() throws Exception
     {
         data.close();
     }
@@ -67,5 +67,11 @@ public class IteratorBatcherStep<T> extends IoProducerStep
     protected long position()
     {
         return data.position();
+    }
+
+    @Override
+    public int processors( int delta )
+    {
+        return data.processors( delta );
     }
 }
