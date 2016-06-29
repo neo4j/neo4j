@@ -23,12 +23,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.BufferingLog;
@@ -43,10 +39,10 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_swapper;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.pagecache.PageSwapperFactoryForTesting.TEST_PAGESWAPPER_NAME;
 
 public class ConfiguringPageCacheFactoryTest
 {
-    private static final String TEST_IMPL_NAME = "pageswapperForTesting";
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
 
@@ -87,7 +83,7 @@ public class ConfiguringPageCacheFactoryTest
         // Given
         Config config = new Config( stringMap(
                 pagecache_memory.name(), "8m",
-                pagecache_swapper.name(), TEST_IMPL_NAME ) );
+                pagecache_swapper.name(), TEST_PAGESWAPPER_NAME ) );
         BufferingLog log = new BufferingLog();
 
         // When
@@ -96,7 +92,7 @@ public class ConfiguringPageCacheFactoryTest
         // Then
         assertThat( PageSwapperFactoryForTesting.countCreatedPageSwapperFactories(), is( 1 ) );
         assertThat( PageSwapperFactoryForTesting.countConfiguredPageSwapperFactories(), is( 1 ) );
-        assertThat( log.toString(), containsString( TEST_IMPL_NAME ) );
+        assertThat( log.toString(), containsString( TEST_PAGESWAPPER_NAME ) );
     }
 
     @Test( expected = IllegalArgumentException.class )
@@ -118,7 +114,7 @@ public class ConfiguringPageCacheFactoryTest
         int cachePageSizeHint = 16 * 1024;
         PageSwapperFactoryForTesting.cachePageSizeHint.set( cachePageSizeHint );
         Config config = new Config( stringMap(
-                GraphDatabaseSettings.pagecache_swapper.name(), TEST_IMPL_NAME ) );
+                GraphDatabaseSettings.pagecache_swapper.name(), TEST_PAGESWAPPER_NAME ) );
 
         // When
         ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
@@ -140,7 +136,7 @@ public class ConfiguringPageCacheFactoryTest
         PageSwapperFactoryForTesting.cachePageSizeHintIsStrict.set( true );
         Config config = new Config( stringMap(
                 GraphDatabaseSettings.mapped_memory_page_size.name(), "4096",
-                GraphDatabaseSettings.pagecache_swapper.name(), TEST_IMPL_NAME ) );
+                GraphDatabaseSettings.pagecache_swapper.name(), TEST_PAGESWAPPER_NAME ) );
 
         // When
         ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
@@ -153,52 +149,4 @@ public class ConfiguringPageCacheFactoryTest
         }
     }
 
-    public static class PageSwapperFactoryForTesting
-            extends SingleFilePageSwapperFactory
-            implements ConfigurablePageSwapperFactory
-    {
-        private static final AtomicInteger createdCounter = new AtomicInteger();
-        private static final AtomicInteger configuredCounter = new AtomicInteger();
-        private static final AtomicInteger cachePageSizeHint = new AtomicInteger( 8192 );
-        private static final AtomicBoolean cachePageSizeHintIsStrict = new AtomicBoolean();
-
-        public static int countCreatedPageSwapperFactories()
-        {
-            return createdCounter.get();
-        }
-
-        public static int countConfiguredPageSwapperFactories()
-        {
-            return configuredCounter.get();
-        }
-
-        public PageSwapperFactoryForTesting()
-        {
-            createdCounter.getAndIncrement();
-        }
-
-        @Override
-        public String implementationName()
-        {
-            return TEST_IMPL_NAME;
-        }
-
-        @Override
-        public int getCachePageSizeHint()
-        {
-            return cachePageSizeHint.get();
-        }
-
-        @Override
-        public boolean isCachePageSizeHintStrict()
-        {
-            return cachePageSizeHintIsStrict.get();
-        }
-
-        @Override
-        public void configure( Config config )
-        {
-            configuredCounter.getAndIncrement();
-        }
-    }
 }

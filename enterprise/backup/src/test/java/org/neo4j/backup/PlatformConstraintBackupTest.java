@@ -34,6 +34,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.pagecache.PageSwapperFactoryForTesting.TEST_PAGESWAPPER_NAME;
 
 public class PlatformConstraintBackupTest
 {
@@ -55,7 +56,7 @@ public class PlatformConstraintBackupTest
         {
             GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( workingDir );
             builder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE );
-            builder.setConfig( GraphDatabaseSettings.pagecache_swapper, "custom" );
+            builder.setConfig( GraphDatabaseSettings.pagecache_swapper, TEST_PAGESWAPPER_NAME );
             builder.newGraphDatabase();
             fail( "Should not have created database with custom IO configuration and online backup." );
         }
@@ -71,7 +72,7 @@ public class PlatformConstraintBackupTest
     {
         GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( workingDir );
         builder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
-        builder.setConfig( GraphDatabaseSettings.pagecache_swapper, "custom" );
+        builder.setConfig( GraphDatabaseSettings.pagecache_swapper, TEST_PAGESWAPPER_NAME );
         builder.newGraphDatabase().shutdown();
     }
 
@@ -79,6 +80,6 @@ public class PlatformConstraintBackupTest
     {
         return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( workingDir )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
-                .setConfig( GraphDatabaseSettings.pagecache_swapper, "custom" ).newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.pagecache_swapper, TEST_PAGESWAPPER_NAME ).newGraphDatabase();
     }
 }
