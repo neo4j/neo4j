@@ -183,6 +183,18 @@ public interface Session extends AutoCloseable
     <A> void reset( A attachment, Callback<Void,A> callback );
 
     /**
+     * Signals that the infrastructure around the session has failed in some non-recoverable way; it will
+     * not be able to deliver more messages to the session. This is meant to allow the session to signal
+     * back out any final message it wants delivered.
+     *
+     * Note that this does not close the session; close can be expected to be called immediately after
+     * this call.
+     *
+     * @param error cause of the fatal error
+     */
+    <A> void externalError( Neo4jError error, A attachment, Callback<Void,A> callback  );
+
+    /**
      * This is a special mechanism, it is the only method on this interface
      * that is thread safe. When this is invoked, the machine will make attempts
      * at interrupting any currently running action,

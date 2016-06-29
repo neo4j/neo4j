@@ -20,7 +20,6 @@
 package org.neo4j.bolt.v1.transport;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.io.IOException;
@@ -28,19 +27,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.bolt.transport.BoltProtocol;
 import org.neo4j.bolt.v1.messaging.MessageFormat;
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1;
 import org.neo4j.bolt.v1.messaging.msgprocess.TransportBridge;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.internal.Neo4jError;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.logging.Log;
-
-import static java.lang.String.format;
-import static org.neo4j.bolt.v1.messaging.msgprocess.MessageProcessingCallback.publishError;
 
 /**
- * Implements version one of the Neo4j protocol when transported over a socket. This means this class will handle a
+ * Implements version one of the Bolt Protocol when transported over a socket. This means this class will handle a
  * simple message framing protocol and forward messages to the messaging protocol implementation, version 1.
  * <p/>
  * Versions of the framing protocol are lock-step with the messaging protocol versioning.
@@ -48,27 +42,24 @@ import static org.neo4j.bolt.v1.messaging.msgprocess.MessageProcessingCallback.p
 public class BoltProtocolV1 implements BoltProtocol
 {
     public static final int VERSION = 1;
-    public static final int DEFAULT_BUFFER_SIZE = 8192;
-
-    private final ChunkedOutput output;
     private final MessageFormat.Writer packer;
     private final BoltV1Dechunker dechunker;
 
     private final Session session;
 
-    private final Log log;
     private final AtomicInteger inFlight = new AtomicInteger( 0 );
+    private final TransportBridge bridge;
 
-    public BoltProtocolV1( final LogService logging, Session session, Channel channel)
+    public BoltProtocolV1( final LogService logging, Session session, PackStreamMessageFormatV1.Writer output )
     {
-        this.log = logging.getInternalLog( getClass() );
+        // TODO; this part of the Bolt server side is rather messy - notably, the MessageHandler, Session and Session.Callback interfaces all
+        //       should reasonably be able to be refactored into something much less complicated.
+        //       Likewise the tracking of when to flush the outbound channel - if we moved that logic to ThreadedSessions, a lot of the complexity
+        //       below could likely be undone.
         this.session = session;
-        this.output = new ChunkedOutput( channel, DEFAULT_BUFFER_SIZE );
-        this.packer = new PackStreamMessageFormatV1.Writer( new Neo4jPack.Packer( output ), output );
-        this.dechunker = new BoltV1Dechunker(
-            new TransportBridge( log, session, packer, this::onMessageDone) ,
-            this::onMessageStarted
-        );
+        this.packer = output;
+        this.bridge = new TransportBridge( logging.getInternalLog( getClass() ), session, packer, this::onMessageDone );
+        this.dechunker = new BoltV1Dechunker( bridge, this::onMessageStarted );
     }
 
     /**
@@ -86,7 +77,8 @@ public class BoltProtocolV1 implements BoltProtocol
         }
         catch ( Throwable e )
         {
-            handleUnexpectedError( channelContext, e );
+            bridge.handleFatalError( Neo4jError.from( e ) );
+            close();
         }
         finally
         {
@@ -105,34 +97,6 @@ public class BoltProtocolV1 implements BoltProtocol
     {
         dechunker.close();
         session.close();
-        output.close();
-    }
-
-    private void handleUnexpectedError( ChannelHandlerContext channelContext, Throwable e )
-    {
-        try
-        {
-            try
-            {
-                // TODO: This is dangerousish, since the worker thread may be writing to the packer at the same time. Better have an approach where we can
-                // signal to the worker that we are shutting it down because of this error, and it can signal to the client.
-                publishError( packer, Neo4jError.from( e ) );
-                packer.flush();
-            }
-            catch ( Throwable e1 )
-            {
-                log.error( format( "Session %s: Secondary error while notifying client of problem: %s",
-                        session.key(), e.getMessage() ), e );
-            }
-            finally
-            {
-                channelContext.close();
-            }
-        }
-        finally
-        {
-            close();
-        }
     }
 
     /*
@@ -145,6 +109,9 @@ public class BoltProtocolV1 implements BoltProtocol
         inFlight.incrementAndGet();
     }
 
+    // Note: This will get called from another thread; specifically, while most of the code in this class runs in an IO Thread, this method gets
+    //       called from a the session worker thread. This smells bad, and can likely be resolved by moving this whole "when to flush" logic to something
+    //       that hooks into ThreadedSessions somehow, since that class has a lot of knowledge about when there are no pending requests.
     private void onMessageDone()
     {
         // If this is the last in-flight message, and we're not in the middle of reading another message over the wire

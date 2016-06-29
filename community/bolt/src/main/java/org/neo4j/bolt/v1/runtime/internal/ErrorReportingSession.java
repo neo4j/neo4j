@@ -97,6 +97,12 @@ public class ErrorReportingSession implements Session
     }
 
     @Override
+    public <A> void externalError( Neo4jError error, A attachment, Callback<Void,A> callback )
+    {
+        reportError( attachment, callback );
+    }
+
+    @Override
     public void interrupt()
     {
 
