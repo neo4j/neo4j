@@ -54,9 +54,9 @@ public class DiscoverMembersProcedureTest
         final CoreTopologyService coreTopologyService = mock( CoreTopologyService.class );
 
         Map<CoreMember,CoreAddresses> coreMembers = new HashMap<>();
-        coreMembers.put( coreMemberAtRaftPort( 9000 ), coreAddresses( 1 ) );
-        coreMembers.put( coreMemberAtRaftPort( 9001 ), coreAddresses( 2 ) );
-        coreMembers.put( coreMemberAtRaftPort( 9002 ), coreAddresses( 3 ) );
+        coreMembers.put( new CoreMember( UUID.randomUUID() ), coreAddresses( 1 ) );
+        coreMembers.put( new CoreMember( UUID.randomUUID() ), coreAddresses( 2 ) );
+        coreMembers.put( new CoreMember( UUID.randomUUID() ), coreAddresses( 3 ) );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 4, 5, 6 ) );
         when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
@@ -79,7 +79,7 @@ public class DiscoverMembersProcedureTest
         final CoreTopologyService coreTopologyService = mock( CoreTopologyService.class );
 
         Map<CoreMember,CoreAddresses> coreMembers = new HashMap<>();
-        coreMembers.put( coreMemberAtRaftPort( 9000 ), coreAddresses( 1 ) );
+        coreMembers.put( new CoreMember( UUID.randomUUID() ), coreAddresses( 1 ) );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 4, 5, 6 ) );
         when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
@@ -100,9 +100,9 @@ public class DiscoverMembersProcedureTest
         final CoreTopologyService coreTopologyService = mock( CoreTopologyService.class );
 
         Map<CoreMember,CoreAddresses> coreMembers = new HashMap<>();
-        coreMembers.put( coreMemberAtRaftPort( 9000 ), coreAddresses( 1 ) );
-        coreMembers.put( coreMemberAtRaftPort( 9001 ), coreAddresses( 2 ) );
-        coreMembers.put( coreMemberAtRaftPort( 9002 ), coreAddresses( 3 ) );
+        coreMembers.put( new CoreMember( UUID.randomUUID() ), coreAddresses( 1 ) );
+        coreMembers.put( new CoreMember( UUID.randomUUID() ), coreAddresses( 2 ) );
+        coreMembers.put( new CoreMember( UUID.randomUUID() ), coreAddresses( 3 ) );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 4, 5, 6 ) );
         when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
@@ -124,9 +124,9 @@ public class DiscoverMembersProcedureTest
         final CoreTopologyService coreTopologyService = mock( CoreTopologyService.class );
 
         Map<CoreMember,CoreAddresses> coreMembers = new HashMap<>();
-        coreMembers.put( coreMemberAtRaftPort( 9000 ), coreAddresses( 1 ) );
-        coreMembers.put( coreMemberAtRaftPort( 9001 ), coreAddresses( 2 ) );
-        coreMembers.put( coreMemberAtRaftPort( 9002 ), coreAddresses( 3 ) );
+        coreMembers.put( new CoreMember( UUID.randomUUID() ), coreAddresses( 1 ) );
+        coreMembers.put( new CoreMember( UUID.randomUUID() ), coreAddresses( 2 ) );
+        coreMembers.put( new CoreMember( UUID.randomUUID() ), coreAddresses( 3 ) );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 4, 5, 6 ) );
         when( coreTopologyService.currentTopology() ).thenReturn( clusterTopology );
@@ -141,14 +141,10 @@ public class DiscoverMembersProcedureTest
         assertEquals( 3, members.size() );
     }
 
-    static CoreMember coreMemberAtRaftPort( int raftPort )
-    {
-        return new CoreMember( UUID.randomUUID() );
-    }
-
     static Set<EdgeAddresses> addresses( int... ids )
     {
-        return Arrays.stream( ids ).mapToObj( DiscoverMembersProcedureTest::edgeAddresses )
+        return Arrays.stream( ids )
+                .mapToObj( DiscoverMembersProcedureTest::edgeAddresses )
                 .collect( Collectors.toSet() );
     }
 
