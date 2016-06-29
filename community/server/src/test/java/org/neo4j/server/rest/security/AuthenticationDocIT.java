@@ -19,9 +19,7 @@
  */
 package org.neo4j.server.rest.security;
 
-import com.sun.jersey.core.util.Base64;
 import org.codehaus.jackson.JsonNode;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,16 +27,11 @@ import org.junit.Test;
 import java.io.IOException;
 import javax.ws.rs.core.HttpHeaders;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.string.UTF8;
 import org.neo4j.test.TestData;
-import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.RawPayload;
 
@@ -46,11 +39,10 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-public class AuthenticationDocIT extends ExclusiveServerTestBase
+public class AuthenticationDocIT extends CommunityServerTestBase
 {
     @Rule
     public TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
-    protected CommunityNeoServer server;
 
     @Before
     public void setUp()
@@ -303,12 +295,6 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         assertThat(response.status(), equalTo(expectedAuthorizedStatus));
     }
 
-    @After
-    public void cleanup()
-    {
-        if(server != null) {server.stop();}
-    }
-
     public void startServerWithConfiguredUser() throws IOException
     {
         startServer( true );
@@ -318,38 +304,5 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
                 RawPayload.quotedJson( "{'password':'secret'}" )
         );
         assertEquals( 200, post.status() );
-    }
-
-    public void startServer( boolean authEnabled ) throws IOException
-    {
-        server = CommunityServerBuilder.server()
-                .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
-                .build();
-        server.start();
-    }
-
-    protected String challengeResponse( String username, String password )
-    {
-        return "Basic " + base64( username + ":" + password );
-    }
-
-    private String dataURL()
-    {
-        return server.baseUri().resolve( "db/data/" ).toString();
-    }
-
-    private String userURL( String username )
-    {
-        return server.baseUri().resolve( "user/" + username ).toString();
-    }
-
-    private String passwordURL( String username )
-    {
-        return server.baseUri().resolve( "user/" + username + "/password" ).toString();
-    }
-
-    private String base64(String value)
-    {
-        return UTF8.decode( Base64.encode( value ) );
     }
 }
