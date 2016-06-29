@@ -45,7 +45,6 @@ import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.cluster.statemachine.StateMachine;
 import org.neo4j.cluster.timeout.TimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
@@ -58,6 +57,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import static org.neo4j.helpers.collection.Iterables.asSet;
+import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class HeartbeatStateTest
@@ -73,7 +74,7 @@ public class HeartbeatStateTest
         configuration.joined( instanceId, URI.create( "cluster://1" ) );
         configuration.joined( new InstanceId( 2 ), URI.create( "cluster://2" ) );
 
-        MultiPaxosContext context = new MultiPaxosContext( instanceId, 10, Iterables.iterable(
+        MultiPaxosContext context = new MultiPaxosContext( instanceId, 10, iterable(
                 new ElectionRole( "coordinator" ) ), configuration,
                 Mockito.mock( Executor.class ), NullLogProvider.getInstance(),
                 Mockito.mock( ObjectInputStreamFactory.class ), Mockito.mock( ObjectOutputStreamFactory.class ),
@@ -82,8 +83,7 @@ public class HeartbeatStateTest
 
         HeartbeatContext heartbeatContext = context.getHeartbeatContext();
         Message received = Message.internal( HeartbeatMessage.suspicions,
-                new HeartbeatMessage.SuspicionsState( Iterables.asSet( Iterables.<InstanceId, InstanceId>iterable(
-                        instanceId ) ) ) );
+                new HeartbeatMessage.SuspicionsState( asSet( iterable( instanceId ) ) ) );
         received.setHeader( Message.FROM, "cluster://2" ).setHeader( Message.INSTANCE_ID, "2" );
 
         // When
@@ -105,7 +105,7 @@ public class HeartbeatStateTest
         configuration.joined( myId, URI.create( "cluster://1" ) );
         configuration.joined( new InstanceId( 2 ), URI.create( "cluster://2" ) );
 
-        MultiPaxosContext context = new MultiPaxosContext( myId, 10, Iterables.iterable(
+        MultiPaxosContext context = new MultiPaxosContext( myId, 10, iterable(
                 new ElectionRole( "coordinator" ) ), configuration,
                 Mockito.mock( Executor.class ), NullLogProvider.getInstance(),
                 Mockito.mock( ObjectInputStreamFactory.class ), Mockito.mock( ObjectOutputStreamFactory.class ),
@@ -114,8 +114,7 @@ public class HeartbeatStateTest
 
         HeartbeatContext heartbeatContext = context.getHeartbeatContext();
         Message received = Message.internal( HeartbeatMessage.suspicions,
-                new HeartbeatMessage.SuspicionsState( Iterables.asSet( Iterables.<InstanceId, InstanceId>iterable(
-                        myId, foreignId ) ) ) );
+                new HeartbeatMessage.SuspicionsState( asSet( iterable( myId, foreignId ) ) ) );
         received.setHeader( Message.FROM, "cluster://2" ).setHeader( Message.INSTANCE_ID, "2" );
 
         // When
@@ -140,7 +139,7 @@ public class HeartbeatStateTest
 
         MultiPaxosContext context = new MultiPaxosContext(
                 instanceId, 10,
-                Iterables.iterable( new ElectionRole( "coordinator" ) ),
+                iterable( new ElectionRole( "coordinator" ) ),
                 configuration,
                 Mockito.mock( Executor.class ),
                 NullLogProvider.getInstance(),
@@ -185,7 +184,7 @@ public class HeartbeatStateTest
         MultiPaxosContext context = new MultiPaxosContext(
                 instanceId,
                 10,
-                Iterables.iterable( new ElectionRole( "coordinator" ) ),
+                iterable( new ElectionRole( "coordinator" ) ),
                 configuration,
                 mock( Executor.class ),
                 internalLog,

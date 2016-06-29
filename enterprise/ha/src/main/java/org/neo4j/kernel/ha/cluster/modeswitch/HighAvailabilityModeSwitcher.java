@@ -34,6 +34,7 @@ import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.helpers.CancellationRequest;
+import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
@@ -205,6 +206,12 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         stateChanged( event );
     }
 
+    @Override
+    public void instanceDetached( HighAvailabilityMemberChangeEvent event )
+    {
+        switchToDetached();
+    }
+
     public void forceElections()
     {
         if ( canAskForElections.compareAndSet( true, false ) )
@@ -248,7 +255,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 break;
             case PENDING:
 
-                switchToPending( event.getOldState(), event.shouldBroadcast() );
+                switchToPending( event.getOldState() );
                 break;
             default:
                 // do nothing
@@ -403,7 +410,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         }, cancellationHandle );
     }
 
-    private void switchToPending( final HighAvailabilityMemberState oldState, boolean broadcast )
+    private void switchToPending( final HighAvailabilityMemberState oldState )
     {
         msgLog.info( "I am %s, moving to pending", instanceId );
 
@@ -412,18 +419,6 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             {
                 msgLog.info( "Switch to pending cancelled on start." );
                 return;
-            }
-
-            if ( broadcast )
-            {
-                if ( oldState.equals( HighAvailabilityMemberState.SLAVE ) )
-                {
-                    clusterMemberAvailability.memberIsUnavailable( SLAVE );
-                }
-                else if ( oldState.equals( HighAvailabilityMemberState.MASTER ) )
-                {
-                    clusterMemberAvailability.memberIsUnavailable( MASTER );
-                }
             }
 
             componentSwitcher.switchToPending();
@@ -445,6 +440,40 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         }
         catch ( Exception ignored )
         {
+        }
+    }
+
+    private void switchToDetached()
+    {
+        msgLog.info( "I am %s, moving to detached", instanceId );
+
+        startModeSwitching( () -> {
+            if ( cancellationHandle.cancellationRequested() )
+            {
+                msgLog.info( "Switch to pending cancelled on start." );
+                return;
+            }
+
+            componentSwitcher.switchToSlave();
+            neoStoreDataSourceSupplier.getDataSource().beforeModeSwitch();
+
+            if ( cancellationHandle.cancellationRequested() )
+            {
+                msgLog.info( "Switch to pending cancelled before ha communication shutdown." );
+                return;
+            }
+
+            haCommunicationLife.shutdown();
+            haCommunicationLife = new LifeSupport();
+        }, new CancellationHandle() );
+
+        try
+        {
+            modeSwitcherFuture.get( 10, TimeUnit.SECONDS );
+        }
+        catch ( Exception e )
+        {
+            msgLog.warn( "Exception received while waiting for switching to detached", e );
         }
     }
 

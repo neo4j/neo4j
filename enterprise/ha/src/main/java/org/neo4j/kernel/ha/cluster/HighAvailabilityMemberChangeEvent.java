@@ -26,9 +26,6 @@ import org.neo4j.cluster.InstanceId;
 /**
  * This event represents a change in the cluster members internal state. The possible states
  * are enumerated in {@link HighAvailabilityMemberState}.
- * {@link #shouldBroadcast} flags whether the event should be broadcast or not. Broadcasting may not be a good idea
- * in cases where the event is generated as a response to a loss of connectivity, resulting in loss of quorum, since
- * broadcasting in this case is impossible anyway.
  */
 public class HighAvailabilityMemberChangeEvent
 {
@@ -36,18 +33,15 @@ public class HighAvailabilityMemberChangeEvent
     private final HighAvailabilityMemberState newState;
     private final InstanceId instanceId;
     private final URI serverHaUri;
-    private final boolean shouldBroadcast;
 
     public HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState oldState,
                                               HighAvailabilityMemberState newState,
-                                              InstanceId instanceId, URI serverHaUri,
-                                              boolean shouldBroadcast )
+                                              InstanceId instanceId, URI serverHaUri )
     {
         this.oldState = oldState;
         this.newState = newState;
         this.instanceId = instanceId;
         this.serverHaUri = serverHaUri;
-        this.shouldBroadcast = shouldBroadcast;
     }
 
     public HighAvailabilityMemberState getOldState()
@@ -68,11 +62,6 @@ public class HighAvailabilityMemberChangeEvent
     public URI getServerHaUri()
     {
         return serverHaUri;
-    }
-
-    public boolean shouldBroadcast()
-    {
-        return shouldBroadcast;
     }
 
     @Override

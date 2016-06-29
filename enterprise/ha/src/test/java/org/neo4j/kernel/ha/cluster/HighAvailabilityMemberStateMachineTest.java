@@ -176,7 +176,6 @@ public class HighAvailabilityMemberStateMachineTest
 
         // Then
         assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.TO_SLAVE ) );
-        assertThat( probe.lastEvent.shouldBroadcast(), is( true ) );
         assertThat( probe.masterIsAvailable, is( true ) );
     }
 
@@ -212,9 +211,9 @@ public class HighAvailabilityMemberStateMachineTest
 
         // Then
         assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
-        assertThat( probe.instanceStops, is( true ) );
-        assertThat( probe.lastEvent.shouldBroadcast(), is( false ) );
-        verify( guard, times( 2 ) ).require( any( AvailabilityRequirement.class ) );
+        assertThat( probe.instanceStops, is( false ) );
+        assertThat( probe.instanceDetached, is( true ) );
+        verify( guard, times( 1 ) ).require( any( AvailabilityRequirement.class ) );
     }
 
     @Test
@@ -251,7 +250,6 @@ public class HighAvailabilityMemberStateMachineTest
         // Then
         assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.SLAVE ) );
         assertThat( probe.instanceStops, is( false ) );
-        assertThat( probe.lastEvent.shouldBroadcast(), is( true ) );
     }
 
     @Test
@@ -288,9 +286,9 @@ public class HighAvailabilityMemberStateMachineTest
 
         // Then
         assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
-        assertThat( probe.instanceStops, is( true ) );
-        assertThat( probe.lastEvent.shouldBroadcast(), is( false ) );
-        verify( guard, times( 2 ) ).require( any( AvailabilityRequirement.class ) );
+        assertThat( probe.instanceStops, is( false ) );
+        assertThat( probe.instanceDetached, is( true ) );
+        verify( guard, times( 1 ) ).require( any( AvailabilityRequirement.class ) );
     }
 
     @Test
@@ -323,8 +321,8 @@ public class HighAvailabilityMemberStateMachineTest
 
         // Then
         assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
-        assertThat( probe.instanceStops, is( true ) );
-        assertThat( probe.lastEvent.shouldBroadcast(), is( false ) );
+        assertThat( probe.instanceStops, is( false ) );
+        assertThat( probe.instanceDetached, is( true ) );
         verify( guard, times( 1 ) ).require( any( AvailabilityRequirement.class ) );
     }
 
@@ -357,8 +355,8 @@ public class HighAvailabilityMemberStateMachineTest
 
         // Then
         assertThat( stateMachine.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
-        assertThat( probe.instanceStops, is( true ) );
-        assertThat( probe.lastEvent.shouldBroadcast(), is( false ) );
+        assertThat( probe.instanceStops, is( false ) );
+        assertThat( probe.instanceDetached, is( true ) );
         verify( guard, times( 1 ) ).require( any( AvailabilityRequirement.class ) );
     }
 
@@ -618,7 +616,7 @@ public class HighAvailabilityMemberStateMachineTest
         return dataSourceManager;
     }
 
-    private ClusterMemberListenerContainer mockAddClusterMemberListener( ClusterMemberEvents events )
+    static ClusterMemberListenerContainer mockAddClusterMemberListener( ClusterMemberEvents events )
     {
         final ClusterMemberListenerContainer listenerContainer = new ClusterMemberListenerContainer();
         doAnswer( invocation -> {
@@ -646,7 +644,7 @@ public class HighAvailabilityMemberStateMachineTest
                 clusterMembers ).withGuard( guard ).build();
     }
 
-    private class StateMachineBuilder
+    static class StateMachineBuilder
     {
         HighAvailabilityMemberContext context = mock( HighAvailabilityMemberContext.class );
         ClusterMemberEvents events = mock( ClusterMemberEvents.class );
@@ -691,7 +689,7 @@ public class HighAvailabilityMemberStateMachineTest
         }
     }
 
-    private static class ClusterMemberListenerContainer
+    static class ClusterMemberListenerContainer
     {
         private ClusterMemberListener clusterMemberListener;
 
@@ -712,12 +710,13 @@ public class HighAvailabilityMemberStateMachineTest
         }
     }
 
-    private static final class HAStateChangeListener implements HighAvailabilityMemberListener
+    static final class HAStateChangeListener implements HighAvailabilityMemberListener
     {
         boolean masterIsElected = false;
         boolean masterIsAvailable = false;
         boolean slaveIsAvailable = false;
         boolean instanceStops = false;
+        boolean instanceDetached = false;
         HighAvailabilityMemberChangeEvent lastEvent = null;
 
         @Override
@@ -727,6 +726,7 @@ public class HighAvailabilityMemberStateMachineTest
             masterIsAvailable = false;
             slaveIsAvailable = false;
             instanceStops = false;
+            instanceDetached = false;
             lastEvent = event;
         }
 
@@ -737,6 +737,7 @@ public class HighAvailabilityMemberStateMachineTest
             masterIsAvailable = true;
             slaveIsAvailable = false;
             instanceStops = false;
+            instanceDetached = false;
             lastEvent = event;
         }
 
@@ -747,6 +748,7 @@ public class HighAvailabilityMemberStateMachineTest
             masterIsAvailable = false;
             slaveIsAvailable = true;
             instanceStops = false;
+            instanceDetached = false;
             lastEvent = event;
         }
 
@@ -757,6 +759,18 @@ public class HighAvailabilityMemberStateMachineTest
             masterIsAvailable = false;
             slaveIsAvailable = false;
             instanceStops = true;
+            instanceDetached = false;
+            lastEvent = event;
+        }
+
+        @Override
+        public void instanceDetached( HighAvailabilityMemberChangeEvent event )
+        {
+            masterIsElected = false;
+            masterIsAvailable = false;
+            slaveIsAvailable = false;
+            instanceStops = false;
+            instanceDetached = true;
             lastEvent = event;
         }
     }

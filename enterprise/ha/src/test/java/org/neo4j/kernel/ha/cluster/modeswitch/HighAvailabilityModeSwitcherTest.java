@@ -82,7 +82,7 @@ public class HighAvailabilityModeSwitcherTest
 
         // When
         toTest.masterIsElected( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.MASTER,
-                HighAvailabilityMemberState.MASTER, new InstanceId( 2 ), URI.create( "ha://someone" ), true ) );
+                HighAvailabilityMemberState.MASTER, new InstanceId( 2 ), URI.create( "ha://someone" ) ) );
 
         // Then
           /*
@@ -102,7 +102,7 @@ public class HighAvailabilityModeSwitcherTest
 
         // When
         toTest.masterIsAvailable( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.SLAVE,
-                HighAvailabilityMemberState.SLAVE, new InstanceId( 2 ), URI.create( "ha://someone" ), true ) );
+                HighAvailabilityMemberState.SLAVE, new InstanceId( 2 ), URI.create( "ha://someone" ) ) );
 
         // Then
           /*
@@ -122,7 +122,7 @@ public class HighAvailabilityModeSwitcherTest
 
         // When
         toTest.masterIsElected( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.SLAVE,
-                HighAvailabilityMemberState.SLAVE, new InstanceId( 2 ), URI.create( "ha://someone" ), true ) );
+                HighAvailabilityMemberState.SLAVE, new InstanceId( 2 ), URI.create( "ha://someone" ) ) );
 
         // Then
           /*
@@ -142,7 +142,7 @@ public class HighAvailabilityModeSwitcherTest
 
         // When
         toTest.slaveIsAvailable( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.MASTER,
-                HighAvailabilityMemberState.MASTER, new InstanceId( 2 ), URI.create( "ha://someone" ), true ) );
+                HighAvailabilityMemberState.MASTER, new InstanceId( 2 ), URI.create( "ha://someone" ) ) );
 
         // Then
           /*
@@ -191,16 +191,16 @@ public class HighAvailabilityModeSwitcherTest
         // When
         // This will start a switch to slave
         toTest.masterIsAvailable( new HighAvailabilityMemberChangeEvent( PENDING,
-                TO_SLAVE, mock( InstanceId.class ), URI.create( "ha://server1" ), true ) );
+                TO_SLAVE, mock( InstanceId.class ), URI.create( "ha://server1" ) ) );
         // Wait until it starts and blocks on the cancellation request
         switching.await();
         // change the elected master, moving to pending, cancelling the previous change. This will block until the
         // previous switch is aborted
         toTest.masterIsElected( new HighAvailabilityMemberChangeEvent( TO_SLAVE, PENDING, new InstanceId( 2 ),
-                URI.create( "ha://server2" ), true ) );
+                URI.create( "ha://server2" ) ) );
         // Now move to the new master by switching to TO_SLAVE
         toTest.masterIsAvailable( new HighAvailabilityMemberChangeEvent( PENDING, TO_SLAVE, new InstanceId( 2 ),
-                URI.create( "ha://server2" ), true ) );
+                URI.create( "ha://server2" ) ) );
 
         // Then
         // The second switch must happen and this test won't block
@@ -269,7 +269,7 @@ public class HighAvailabilityModeSwitcherTest
                         .class ) );
 
         modeSwitcher.masterIsAvailable(
-                new HighAvailabilityMemberChangeEvent( PENDING, TO_SLAVE, new InstanceId( 1 ), uri1, true ) );
+                new HighAvailabilityMemberChangeEvent( PENDING, TO_SLAVE, new InstanceId( 1 ), uri1 ) );
         firstMasterAvailableHandled.await(); // wait until the first masterIsAvailable triggers the exception handling
         verify( switchToSlave ).switchToSlave( any( LifeSupport.class ), any( URI.class ), eq( uri1 ),
                 any( CancellationRequest.class ) );
@@ -277,7 +277,7 @@ public class HighAvailabilityModeSwitcherTest
         // masterIsAvailable for instance 2
         URI uri2 = URI.create( "ha://server2" );
         modeSwitcher.masterIsAvailable(
-                new HighAvailabilityMemberChangeEvent( TO_SLAVE, TO_SLAVE, new InstanceId( 2 ), uri2, true ) );
+                new HighAvailabilityMemberChangeEvent( TO_SLAVE, TO_SLAVE, new InstanceId( 2 ), uri2 ) );
         secondMasterAvailableComes.countDown();
         secondMasterAvailableHandled.await(); // wait until switchToSlave method is invoked again
 
@@ -329,12 +329,12 @@ public class HighAvailabilityModeSwitcherTest
 
         // The first message goes through, start the first run
         toTest.masterIsAvailable(
-                new HighAvailabilityMemberChangeEvent( PENDING, TO_SLAVE, new InstanceId( 1 ), uri1, true ) );
+                new HighAvailabilityMemberChangeEvent( PENDING, TO_SLAVE, new InstanceId( 1 ), uri1 ) );
         // Wait for it to be processed but get just before the exception
         firstCallMade.await();
         // It is just about to throw the exception, i.e. rerun. Send in the event
         toTest.masterIsElected(
-                new HighAvailabilityMemberChangeEvent( TO_SLAVE, TO_SLAVE, new InstanceId( 1 ), null, true ) );
+                new HighAvailabilityMemberChangeEvent( TO_SLAVE, TO_SLAVE, new InstanceId( 1 ), null ) );
         // Allow to continue and do the second run
         waitForSecondMessage.countDown();
         // Wait for the call to finish
@@ -371,7 +371,7 @@ public class HighAvailabilityModeSwitcherTest
         // When
         // The HAMS tries to switch to slave for a master that is itself
         toTest.masterIsAvailable(
-                new HighAvailabilityMemberChangeEvent( PENDING, TO_SLAVE, new InstanceId( 2 ), serverHaUri, true ) );
+                new HighAvailabilityMemberChangeEvent( PENDING, TO_SLAVE, new InstanceId( 2 ), serverHaUri ) );
 
         // Then
         // No switching to slave must happen
@@ -470,7 +470,7 @@ public class HighAvailabilityModeSwitcherTest
         // When
         modeSwitcher.masterIsAvailable( new HighAvailabilityMemberChangeEvent( PENDING, TO_SLAVE, mock( InstanceId
                 .class ),
-                URI.create( "http://localhost:9090?serverId=42" ), true ) );
+                URI.create( "http://localhost:9090?serverId=42" ) ) );
         modeSwitchHappened.await();
         modeSwitcher.forceElections();
 
@@ -520,7 +520,7 @@ public class HighAvailabilityModeSwitcherTest
         {
             // the instance fails to switch to master
             theSwitcher.masterIsElected( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.PENDING,
-                    HighAvailabilityMemberState.TO_MASTER, instanceId, listeningAt, true ) );
+                    HighAvailabilityMemberState.TO_MASTER, instanceId, listeningAt ) );
 
         }
         finally
@@ -532,6 +532,32 @@ public class HighAvailabilityModeSwitcherTest
         // Then
         // The demotion message must have used the proper instance id
         verify( election ).demote( instanceId );
+    }
+
+    @Test
+    public void shouldSwitchToSlaveForNullMasterAndBeSilentWhenMovingToDetached() throws Throwable
+    {
+        // Given
+        SwitchToSlave sts = mock( SwitchToSlave.class );
+        SwitchToMaster stm = mock( SwitchToMaster.class );
+        Election election = mock( Election.class );
+        ClusterMemberAvailability cma = mock( ClusterMemberAvailability.class );
+        InstanceId instanceId = new InstanceId( 14 );
+        ComponentSwitcher componentSwitcher = mock( ComponentSwitcher.class );
+
+        HighAvailabilityModeSwitcher theSwitcher = new HighAvailabilityModeSwitcher( sts, stm, election, cma,
+                mock( ClusterClient.class ), storeSupplierMock(), instanceId, componentSwitcher,
+                neoStoreDataSourceSupplierMock(), NullLogService.getInstance() );
+
+        // When
+        theSwitcher.init();
+        theSwitcher.start();
+        theSwitcher.instanceDetached( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.MASTER,
+                       HighAvailabilityMemberState.PENDING, null, null ) );
+
+        // Then
+        verify( componentSwitcher ).switchToSlave();
+        verifyZeroInteractions( cma );
     }
 
     @SuppressWarnings( "unchecked" )

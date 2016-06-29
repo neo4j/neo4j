@@ -66,7 +66,7 @@ public class ClusterFailoverIT
     {
         // given
         ClusterManager clusterManager = new ClusterManager.Builder().withRootDirectory( dir.cleanDirectory( "failover" ) ).
-                withCluster( ClusterManager.clusterOfSize( clusterSize ) )
+        withCluster( ClusterManager.clusterOfSize( clusterSize ) )
                 .withSharedConfig( stringMap(
                     ClusterSettings.heartbeat_interval.name(), "1" ) )
                 .build();
