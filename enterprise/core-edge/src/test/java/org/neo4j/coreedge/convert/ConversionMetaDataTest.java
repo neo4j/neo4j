@@ -21,9 +21,9 @@ package org.neo4j.coreedge.convert;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.coreedge.server.StoreId;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class ConversionMetaDataTest
 {
@@ -31,8 +31,8 @@ public class ConversionMetaDataTest
     public void shouldMarshalAndUnmarshalConversionId() throws Exception
     {
         // given
-        StoreId before = new StoreId( 1, 2, 3, 4, 5 );
-        StoreId after = new StoreId( 6, 7, 8, 9, 10 );
+        StoreId before = new StoreId( 1, 2, 3, 4 );
+        StoreId after = new StoreId( 6, 7, 8, 9 );
         long transactionId = 44L;
 
         ClusterSeed initialMetadata = new ClusterSeed( before, after, transactionId );

@@ -42,7 +42,6 @@ import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.RaftDiscoveryServiceConnector;
-import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.BatchingMessageHandler;
 import org.neo4j.coreedge.raft.ContinuousJob;
 import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
@@ -240,19 +239,16 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         AdvertisedSocketAddress raftAddress = config.get( CoreEdgeClusterSettings.raft_advertised_address );
 
-        final MessageLogger<AdvertisedSocketAddress> messageLogger;
+        final MessageLogger<CoreMember> messageLogger;
         if ( config.get( CoreEdgeClusterSettings.raft_messages_log_enable ) )
         {
             messageLogger =
-                    life.add( new BetterMessageLogger<>( raftAddress, raftMessagesLog( storeDir ) ) );
+                    life.add( new BetterMessageLogger<>( myself, raftMessagesLog( storeDir ) ) );
         }
         else
         {
             messageLogger = new NullMessageLogger<>();
         }
-
-        LoggingOutbound<AdvertisedSocketAddress,Message> loggingOutbound = new LoggingOutbound<>(
-                senderService, raftAddress, messageLogger );
 
         ListenSocketAddress raftListenAddress = config.get( CoreEdgeClusterSettings.raft_listen_address );
 
@@ -287,6 +283,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         GlobalSession myGlobalSession = new GlobalSession( UUID.randomUUID(), myself );
         LocalSessionPool sessionPool = new LocalSessionPool( myGlobalSession );
         ProgressTrackerImpl progressTracker = new ProgressTrackerImpl( myGlobalSession );
+        Outbound<CoreMember,RaftMessages.RaftMessage> loggingOutbound = new LoggingOutbound<>(
+                new RaftOutbound( discoveryService, senderService, localDatabase ), myself, messageLogger );
 
         RaftServer raftServer;
         CoreState coreState;
@@ -343,7 +341,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         RaftReplicator replicator =
                 new RaftReplicator( raft, myself,
-                        new RaftOutbound( discoveryService, loggingOutbound, localDatabase ),
+                        loggingOutbound,
                         sessionPool, progressTracker,
                         new ExponentialBackoffStrategy( 10, SECONDS ) );
 
@@ -541,22 +539,12 @@ public class EnterpriseCoreEditionModule extends EditionModule
     }
 
     private static RaftInstance createRaft( LifeSupport life,
-                                                        Outbound<AdvertisedSocketAddress, Message> outbound,
-                                                        CoreTopologyService discoveryService,
-                                                        Config config,
-                                                        MessageLogger<AdvertisedSocketAddress> messageLogger,
-                                                        RaftLog raftLog,
-                                                        RaftStateMachine raftStateMachine,
-                                                        FileSystemAbstraction fileSystem,
-                                                        File clusterStateDirectory,
-                                                        CoreMember myself,
-                                                        LogProvider logProvider,
-                                                        RaftServer raftServer,
-                                                        DelayedRenewableTimeoutService raftTimeoutService,
-                                                        Supplier<DatabaseHealth> databaseHealthSupplier,
-                                                        InFlightMap<Long, RaftLogEntry> inFlightMap,
-                                                        Monitors monitors,
-                                                        JobScheduler jobScheduler, LocalDatabase localDatabase )
+            Outbound<CoreMember,RaftMessages.RaftMessage> raftOutbound, CoreTopologyService discoveryService,
+            Config config, MessageLogger messageLogger, RaftLog raftLog, RaftStateMachine raftStateMachine,
+            FileSystemAbstraction fileSystem, File clusterStateDirectory, CoreMember myself, LogProvider logProvider,
+            RaftServer raftServer, DelayedRenewableTimeoutService raftTimeoutService,
+            Supplier<DatabaseHealth> databaseHealthSupplier, InFlightMap<Long,RaftLogEntry> inFlightMap,
+            Monitors monitors, JobScheduler jobScheduler, LocalDatabase localDatabase )
     {
         StateStorage<TermState> termState;
         try
@@ -602,7 +590,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         }
 
         LoggingInbound<RaftMessages.RaftMessage> loggingRaftInbound =
-                new LoggingInbound<>( raftServer, messageLogger, config.get( CoreEdgeClusterSettings.raft_advertised_address ) );
+                new LoggingInbound<>( raftServer, messageLogger, myself );
 
         long electionTimeout = config.get( CoreEdgeClusterSettings.leader_election_timeout );
         long heartbeatInterval = electionTimeout / 3;
@@ -610,8 +598,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
         Integer expectedClusterSize = config.get( CoreEdgeClusterSettings.expected_core_cluster_size );
 
         CoreMemberSetBuilder memberSetBuilder = new CoreMemberSetBuilder();
-
-        RaftOutbound raftOutbound = new RaftOutbound( discoveryService, outbound, localDatabase );
 
         SendToMyself leaderOnlyReplicator =
                 new SendToMyself( myself, raftOutbound );

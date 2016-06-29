@@ -19,7 +19,7 @@
  */
 package org.neo4j.coreedge.convert;
 
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.coreedge.server.StoreId;
 
 public class ConversionVerifier
 {
@@ -32,7 +32,7 @@ public class ConversionVerifier
         long sourceLastTxId = source.lastTxId();
         long targetLastTxId = target.lastTxId();
 
-        if ( !(sourceBefore.theRealEquals( targetBefore ) && sourceLastTxId == targetLastTxId) )
+        if ( !(sourceBefore.equals( targetBefore ) && sourceLastTxId == targetLastTxId) )
         {
             throw new RuntimeException(
                     String.format( "Cannot convert store. Backup ID does not match on source and target databases. Source: %s, Target: %s", source, target ) );

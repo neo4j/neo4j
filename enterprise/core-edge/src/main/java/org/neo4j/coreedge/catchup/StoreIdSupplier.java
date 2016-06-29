@@ -21,8 +21,8 @@ package org.neo4j.coreedge.catchup;
 
 import java.util.function.Supplier;
 
+import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.kernel.impl.factory.PlatformModule;
-import org.neo4j.kernel.impl.store.StoreId;
 
 public class StoreIdSupplier implements Supplier<StoreId>
 {
@@ -36,6 +36,8 @@ public class StoreIdSupplier implements Supplier<StoreId>
     @Override
     public StoreId get()
     {
-        return platformModule.dataSourceManager.getDataSource().getStoreId();
+        org.neo4j.kernel.impl.store.StoreId storeId = platformModule.dataSourceManager.getDataSource().getStoreId();
+        return new StoreId( storeId.getCreationTime(),
+                storeId.getRandomId(), storeId.getUpgradeTime(), storeId.getUpgradeId() );
     }
 }

@@ -17,27 +17,44 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.convert;
+package org.neo4j.coreedge.server;
 
 import java.util.Objects;
 
-import org.neo4j.coreedge.server.StoreId;
-
-public class StoreMetadata
+public final class StoreId
 {
-    private final StoreId storeId;
-    private final long lastTxId;
 
-    public StoreMetadata( StoreId storeId, long lastTxId )
+    private long creationTime;
+    private long randomId;
+    private long upgradeTime;
+    private long upgradeId;
+
+    public StoreId( long creationTime, long randomId, long upgradeTime, long upgradeId )
     {
-        this.storeId = storeId;
-        this.lastTxId = lastTxId;
+        this.creationTime = creationTime;
+        this.randomId = randomId;
+        this.upgradeTime = upgradeTime;
+        this.upgradeId = upgradeId;
     }
 
-    @Override
-    public String toString()
+    public long getCreationTime()
     {
-        return String.format( "TargetMetadata{before=%s, lastTxId=%d}", storeId, lastTxId );
+        return creationTime;
+    }
+
+    public long getRandomId()
+    {
+        return randomId;
+    }
+
+    public long getUpgradeTime()
+    {
+        return upgradeTime;
+    }
+
+    public long getUpgradeId()
+    {
+        return upgradeId;
     }
 
     @Override
@@ -51,23 +68,22 @@ public class StoreMetadata
         {
             return false;
         }
-        StoreMetadata that = (StoreMetadata) o;
-        return lastTxId == that.lastTxId && Objects.equals( storeId, that.storeId );
+        StoreId storeId = (StoreId) o;
+        return creationTime == storeId.creationTime &&
+                randomId == storeId.randomId &&
+                upgradeTime == storeId.upgradeTime &&
+                upgradeId == storeId.upgradeId;
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( storeId, lastTxId );
+        return Objects.hash( creationTime, randomId, upgradeTime, upgradeId );
     }
 
-    public StoreId storeId()
+    @Override
+    public String toString()
     {
-        return storeId;
-    }
-
-    public long lastTxId()
-    {
-        return lastTxId;
+        return "Store{" + Long.toString( randomId, Character.MAX_RADIX )+ "_" + upgradeId + '}';
     }
 }

@@ -20,19 +20,17 @@
 package org.neo4j.coreedge.raft.net;
 
 import org.neo4j.coreedge.network.Message;
-
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.logging.MessageLogger;
-import org.neo4j.kernel.impl.store.StoreId;
 
 public class LoggingInbound<M extends Message> implements Inbound<M>
 {
     private final Inbound<M> inbound;
-    private final MessageLogger<AdvertisedSocketAddress> messageLogger;
-    private final AdvertisedSocketAddress me;
+    private final MessageLogger messageLogger;
+    private final CoreMember me;
 
-    public LoggingInbound( Inbound<M> inbound, MessageLogger<AdvertisedSocketAddress> messageLogger,
-                           AdvertisedSocketAddress me )
+    public LoggingInbound( Inbound<M> inbound, MessageLogger messageLogger,
+                           CoreMember me )
     {
         this.inbound = inbound;
         this.messageLogger = messageLogger;

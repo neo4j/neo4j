@@ -21,7 +21,7 @@ package org.neo4j.coreedge.raft.replication.storeid;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
@@ -41,7 +41,6 @@ public final class StoreIdMarshal
         channel.put( (byte) 1 );
         channel.putLong( storeId.getCreationTime() );
         channel.putLong( storeId.getRandomId() );
-        channel.putLong( storeId.getStoreVersion() );
         channel.putLong( storeId.getUpgradeTime() );
         channel.putLong( storeId.getUpgradeId() );
     }
@@ -57,10 +56,9 @@ public final class StoreIdMarshal
 
             long creationTime = channel.getLong();
             long randomId = channel.getLong();
-            long storeVersion = channel.getLong();
             long upgradeTime = channel.getLong();
             long upgradeId = channel.getLong();
-            return new StoreId( creationTime, randomId, storeVersion, upgradeTime, upgradeId );
+            return new StoreId( creationTime, randomId, upgradeTime, upgradeId );
         }
         catch ( ReadPastEndException notEnoughBytes )
         {

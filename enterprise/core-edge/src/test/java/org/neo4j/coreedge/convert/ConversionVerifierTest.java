@@ -21,10 +21,11 @@ package org.neo4j.coreedge.convert;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.coreedge.server.StoreId;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class ConversionVerifierTest
 {
@@ -34,8 +35,8 @@ public class ConversionVerifierTest
         // given
         ConversionVerifier verifier = new ConversionVerifier();
 
-        StoreId before = new StoreId( 1, 2, 3, 4, 5 );
-        StoreId after = new StoreId( 6, 7, 8, 9, 10 );
+        StoreId before = new StoreId( 1, 2, 3, 4 );
+        StoreId after = new StoreId( 6, 7, 8, 9 );
         long transactionId = 44L;
 
         ClusterSeed metadata = new ClusterSeed( before, after, transactionId );
@@ -53,12 +54,12 @@ public class ConversionVerifierTest
         // given
         ConversionVerifier verifier = new ConversionVerifier();
 
-        StoreId before = new StoreId( 1, 2, 3, 4, 5 );
-        StoreId after = new StoreId( 6, 7, 8, 9, 10 );
+        StoreId before = new StoreId( 1, 2, 3, 4 );
+        StoreId after = new StoreId( 6, 7, 8, 9 );
         long transactionId = 44L;
 
         ClusterSeed metadata = new ClusterSeed( before, after, transactionId );
-        StoreMetadata storeMetadata = new StoreMetadata( new StoreId( 9, 9, 9, 9, 9 ), transactionId );
+        StoreMetadata storeMetadata = new StoreMetadata( new StoreId( 9, 9, 9, 9 ), transactionId );
 
         // when
         try
@@ -82,8 +83,8 @@ public class ConversionVerifierTest
         // given
         ConversionVerifier verifier = new ConversionVerifier();
 
-        StoreId before = new StoreId( 1, 2, 3, 4, 5 );
-        StoreId after = new StoreId( 6, 7, 8, 9, 10 );
+        StoreId before = new StoreId( 1, 2, 3, 4 );
+        StoreId after = new StoreId( 6, 7, 8, 9 );
         long transactionId = 44L;
 
         ClusterSeed metadata = new ClusterSeed( before, after, transactionId );

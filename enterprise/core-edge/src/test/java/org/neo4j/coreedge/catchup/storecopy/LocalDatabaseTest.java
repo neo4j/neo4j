@@ -24,16 +24,15 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
+import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.DatabaseHealth;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
 import static org.neo4j.function.Suppliers.singleton;
 
 public class LocalDatabaseTest
@@ -42,11 +41,11 @@ public class LocalDatabaseTest
     public void shouldRetrieveStoreId() throws Throwable
     {
         // given
-        StoreId storeId = newStoreIdForCurrentVersion();
+        StoreId storeId = new StoreId( 1, 2, 3, 4 );
 
         // when
         NeoStoreDataSource neoStoreDataSource = mock( NeoStoreDataSource.class );
-        when( neoStoreDataSource.getStoreId() ).thenReturn( storeId );
+        when( neoStoreDataSource.getStoreId() ).thenReturn( new org.neo4j.kernel.impl.store.StoreId( 1, 2, 5, 3, 4 ) );
 
         LocalDatabase localDatabase = new LocalDatabase( new File( "directory" ),
                 mock( CopiedStoreRecovery.class ),

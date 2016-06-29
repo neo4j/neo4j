@@ -39,7 +39,7 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -50,7 +50,7 @@ import static org.mockito.Mockito.when;
 public class RaftMessageEncodingDecodingTest
 {
 
-    private StoreId storeId = new StoreId( 1, 2, 3, 4, 5 );
+    private StoreId storeId = new StoreId( 1, 2, 3, 4 );
 
     @Test
     public void shouldSerializeAppendRequestWithMultipleEntries() throws Exception
