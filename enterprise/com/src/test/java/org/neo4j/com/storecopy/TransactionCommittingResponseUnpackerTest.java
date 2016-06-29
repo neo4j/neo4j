@@ -21,6 +21,8 @@ package org.neo4j.com.storecopy;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.IOException;
@@ -109,13 +111,12 @@ public class TransactionCommittingResponseUnpackerTest
     @Test
     public void panicAndSkipBatchOnApplyingFailure() throws Throwable
     {
-        long committingTransactionId = BASE_TX_ID + 1;
-        TransactionIdStore txIdStore = mock( TransactionIdStore.class );
+        final long committingTransactionId = BASE_TX_ID + 1;
+        final TransactionIdStore txIdStore = mock( TransactionIdStore.class );
         BatchingTransactionRepresentationStoreApplier applier = mock( BatchingTransactionRepresentationStoreApplier.class );
         TransactionAppender appender = mock( TransactionAppender.class );
-        FakeCommitment fakeCommitment = new FakeCommitment( committingTransactionId, txIdStore );
         when( appender.append( any( TransactionRepresentation.class ), anyLong() ) )
-                .thenReturn( fakeCommitment );
+                .thenAnswer( new FakeCommitmentAnswer( committingTransactionId, txIdStore ) );
 
         LogFile logFile = mock( LogFile.class );
         LogRotation logRotation = mock( LogRotation.class );
@@ -156,7 +157,7 @@ public class TransactionCommittingResponseUnpackerTest
 
         // 2 transactions where committed by none was closed.
         verify( txIdStore, times( 2 ) ).transactionCommitted( anyLong(), anyLong() );
-        verify( txIdStore, times( 0 ) ).transactionClosed( anyLong(), anyLong(), anyLong() );
+        verify( txIdStore, times( 2 ) ).transactionClosed( anyLong(), anyLong(), anyLong() );
     }
 
     /*
@@ -659,6 +660,24 @@ public class TransactionCommittingResponseUnpackerTest
                     verifyNoMoreInteractions( appender );
                 }
             }
+        }
+    }
+
+    private static class FakeCommitmentAnswer implements Answer<FakeCommitment>
+    {
+        private final long committingTransactionId;
+        private final TransactionIdStore txIdStore;
+
+        FakeCommitmentAnswer( long committingTransactionId, TransactionIdStore txIdStore )
+        {
+            this.committingTransactionId = committingTransactionId;
+            this.txIdStore = txIdStore;
+        }
+
+        @Override
+        public FakeCommitment answer( InvocationOnMock invocation ) throws Throwable
+        {
+            return new FakeCommitment( committingTransactionId, txIdStore );
         }
     }
 }

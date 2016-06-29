@@ -232,11 +232,6 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
                         // ensure that all pending changes are applied and flushed properly.
                         storeApplier.closeBatch();
                     }
-                    catch ( Throwable cause )
-                    {
-                        updateKernelHealth( cause );
-                        throw cause;
-                    }
                     finally
                     {
                         // Mark the applied transactions as closed. We must do this as a separate step after
@@ -244,30 +239,20 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
                         // threads waiting for transaction obligations to be fulfilled and since they are looking
                         // at last closed transaction id they might get notified to continue before all data
                         // has actually been flushed properly.
-                        if ( kernelHealth.isHealthy() )
-                        {
-                            transactionQueue.accept( batchCloser );
-                        }
+                        transactionQueue.accept( batchCloser );
                     }
                 }
             }
             catch ( Throwable cause )
             {
-                updateKernelHealth( cause );
+
+                kernelHealth.panic( cause );
                 throw cause;
             }
             finally
             {
                 transactionQueue.clear();
             }
-        }
-    }
-
-    private void updateKernelHealth( Throwable cause )
-    {
-        if ( kernelHealth.isHealthy() )
-        {
-            kernelHealth.panic( cause );
         }
     }
 
