@@ -45,7 +45,7 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.CoreMatchers.hasItems;
@@ -140,7 +140,7 @@ public class HazelcastClusterTopologyTest
 
         // when
         Map<CoreMember, CoreAddresses> coreMemberMap =
-                HazelcastClusterTopology.toCoreMemberMap( hazelcastMembers, NullLogProvider.getInstance() );
+                HazelcastClusterTopology.toCoreMemberMap( hazelcastMembers, NullLog.getInstance() );
 
         // then
         for ( int i = 0; i < 5; i++ )
@@ -169,11 +169,9 @@ public class HazelcastClusterTopologyTest
             }
             hazelcastMembers.add( new MemberImpl( new Address( "localhost", i ), null, attributes ) );
         }
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-
         // when
         Map<CoreMember, CoreAddresses> map =
-                HazelcastClusterTopology.toCoreMemberMap( hazelcastMembers, logProvider );
+                HazelcastClusterTopology.toCoreMemberMap( hazelcastMembers, NullLog.getInstance() );
 
         // then
         assertThat( map.keySet(), hasItems( coreMembers.get( 0 ), coreMembers.get( 1 ), coreMembers.get( 3 ) ) );

@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.discovery;
 
+import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
@@ -27,15 +28,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.emptySet;
 
 class MembershipListenerAdapter implements MembershipListener
 {
     private final List<CoreTopologyService.Listener> listeners = new ArrayList<>();
     private final Log log;
+    private ClusterTopology currentTopology = new ClusterTopology( false, emptyMap(), emptySet() );
+    private String membershipRegistrationId;
+    private HazelcastInstance hazelcastInstance;
 
-    MembershipListenerAdapter( Log log )
+    MembershipListenerAdapter( LogProvider logProvider )
     {
-        this.log = log;
+        this.log = logProvider.getLog( getClass() );
     }
 
     void addMembershipListener( CoreTopologyService.Listener listener )
@@ -47,18 +55,42 @@ class MembershipListenerAdapter implements MembershipListener
     public void memberAdded( MembershipEvent membershipEvent )
     {
         log.info( "Member added %s", membershipEvent );
-        listeners.forEach( CoreTopologyService.Listener::onTopologyChange );
+        topologyChanged();
     }
 
     @Override
     public void memberRemoved( MembershipEvent membershipEvent )
     {
         log.info( "Member removed %s", membershipEvent );
-        listeners.forEach( CoreTopologyService.Listener::onTopologyChange );
+        topologyChanged();
     }
 
     @Override
     public void memberAttributeChanged( MemberAttributeEvent memberAttributeEvent )
     {
+    }
+
+    public ClusterTopology currentTopology()
+    {
+        return currentTopology;
+    }
+
+    void attach( HazelcastInstance hazelcastInstance )
+    {
+        this.hazelcastInstance = hazelcastInstance;
+        membershipRegistrationId = hazelcastInstance.getCluster().addMembershipListener( this );
+        topologyChanged();
+    }
+
+    void detach()
+    {
+        hazelcastInstance.getCluster().removeMembershipListener( membershipRegistrationId );
+    }
+
+    private void topologyChanged()
+    {
+        currentTopology = HazelcastClusterTopology.fromHazelcastInstance( hazelcastInstance, log );
+        listeners.forEach( CoreTopologyService.Listener::onTopologyChange );
+        log.info( "Current topology is %s.", currentTopology );
     }
 }

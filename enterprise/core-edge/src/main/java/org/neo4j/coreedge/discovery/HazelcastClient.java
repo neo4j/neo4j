@@ -35,13 +35,11 @@ class HazelcastClient extends LifecycleAdapter implements EdgeTopologyService
 {
     private final Log log;
     private HazelcastConnector connector;
-    private final LogProvider logProvider;
     private HazelcastInstance hazelcastInstance;
 
     HazelcastClient( HazelcastConnector connector, LogProvider logProvider )
     {
         this.connector = connector;
-        this.logProvider = logProvider;
         log = logProvider.getLog( getClass() );
     }
 
@@ -69,7 +67,7 @@ class HazelcastClient extends LifecycleAdapter implements EdgeTopologyService
 
             try
             {
-                clusterTopology = HazelcastClusterTopology.fromHazelcastInstance( hazelcastInstance, logProvider );
+                clusterTopology = HazelcastClusterTopology.fromHazelcastInstance( hazelcastInstance, log );
             }
             catch ( HazelcastInstanceNotActiveException e )
             {

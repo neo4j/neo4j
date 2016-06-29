@@ -42,20 +42,17 @@ class HazelcastServerLifecycle extends LifecycleAdapter implements CoreTopologyS
 {
     private final Config config;
     private final CoreMember myself;
-    private final LogProvider logProvider;
     private final Log log;
     private final MembershipListenerAdapter membershipListener;
 
     private HazelcastInstance hazelcastInstance;
-    private String membershipRegistrationId = null;
 
     HazelcastServerLifecycle( Config config, CoreMember myself, LogProvider logProvider )
     {
         this.config = config;
         this.myself = myself;
-        this.logProvider = logProvider;
+        this.membershipListener = new MembershipListenerAdapter( logProvider );
         this.log = logProvider.getLog( getClass() );
-        membershipListener = new MembershipListenerAdapter( log );
     }
 
     @Override
@@ -71,7 +68,7 @@ class HazelcastServerLifecycle extends LifecycleAdapter implements CoreTopologyS
         hazelcastInstance = createHazelcastInstance();
         log.info( "Cluster discovery service started" );
 
-        membershipRegistrationId = hazelcastInstance.getCluster().addMembershipListener( membershipListener );
+        membershipListener.attach( hazelcastInstance );
     }
 
     @Override
@@ -79,7 +76,7 @@ class HazelcastServerLifecycle extends LifecycleAdapter implements CoreTopologyS
     {
         try
         {
-            hazelcastInstance.getCluster().removeMembershipListener( membershipRegistrationId );
+            membershipListener.detach();
             hazelcastInstance.shutdown();
         }
         catch ( Throwable e )
@@ -133,9 +130,6 @@ class HazelcastServerLifecycle extends LifecycleAdapter implements CoreTopologyS
     @Override
     public ClusterTopology currentTopology()
     {
-        ClusterTopology clusterTopology =
-                HazelcastClusterTopology.fromHazelcastInstance( hazelcastInstance, logProvider );
-        log.info( "Current topology is %s.", clusterTopology );
-        return clusterTopology;
+        return membershipListener.currentTopology();
     }
 }

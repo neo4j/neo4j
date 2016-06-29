@@ -35,7 +35,7 @@ import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.Log;
 
 import static java.util.Collections.emptySet;
 import static java.util.stream.Collectors.toSet;
@@ -48,14 +48,14 @@ class HazelcastClusterTopology
     static final String RAFT_SERVER = "raft_server";
     static final String BOLT_SERVER = "bolt_server";
 
-    static ClusterTopology fromHazelcastInstance( HazelcastInstance hazelcastInstance, LogProvider logProvider )
+    static ClusterTopology fromHazelcastInstance( HazelcastInstance hazelcastInstance, Log log )
     {
         Set<Member> coreMembers = emptySet();
         if ( hazelcastInstance != null )
         {
             coreMembers = hazelcastInstance.getCluster().getMembers();
         }
-        return new ClusterTopology( canBeBootstrapped( coreMembers ), toCoreMemberMap( coreMembers, logProvider ),
+        return new ClusterTopology( canBeBootstrapped( coreMembers ), toCoreMemberMap( coreMembers, log ),
                 edgeMembers( hazelcastInstance ) );
     }
 
@@ -77,7 +77,7 @@ class HazelcastClusterTopology
         return iterator.hasNext() && iterator.next().localMember();
     }
 
-    static Map<CoreMember, CoreAddresses> toCoreMemberMap( Set<Member> members, LogProvider logProvider )
+    static Map<CoreMember, CoreAddresses> toCoreMemberMap( Set<Member> members, Log log )
     {
         Map<CoreMember, CoreAddresses> coreMembers = new HashMap<>();
 
@@ -90,8 +90,7 @@ class HazelcastClusterTopology
             }
             catch ( IllegalArgumentException e )
             {
-                logProvider.getLog( HazelcastClusterTopology.class )
-                        .warn( "Incomplete member attributes supplied from Hazelcast", e );
+                log.warn( "Incomplete member attributes supplied from Hazelcast", e );
             }
         }
 
