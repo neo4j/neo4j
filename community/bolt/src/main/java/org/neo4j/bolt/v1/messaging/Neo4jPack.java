@@ -90,6 +90,11 @@ public class Neo4jPack
             {
                 pack( (String) obj );
             }
+            else if (obj instanceof Character )
+            {
+                Character character = (Character) obj;
+                pack( character.toString() );
+            }
             else if ( obj instanceof Map )
             {
                 Map<Object, Object> map = (Map<Object, Object>) obj;
@@ -114,6 +119,11 @@ public class Neo4jPack
             {
                 // Pending decision
                 throw new UnsupportedOperationException( "Binary values cannot be packed." );
+            }
+            else if ( obj instanceof char[] )
+            {
+                // Treat it as a String
+                pack( new String( (char[]) obj ) );
             }
             else if ( obj instanceof short[] )
             {
