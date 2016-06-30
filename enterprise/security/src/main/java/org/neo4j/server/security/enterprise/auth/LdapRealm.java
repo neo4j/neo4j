@@ -23,32 +23,57 @@ import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.Permission;
+import org.apache.shiro.authz.SimpleAuthorizationInfo;
 import org.apache.shiro.authz.SimpleRole;
 import org.apache.shiro.authz.permission.RolePermissionResolver;
 import org.apache.shiro.realm.ldap.JndiLdapContextFactory;
 import org.apache.shiro.realm.ldap.JndiLdapRealm;
 import org.apache.shiro.realm.ldap.LdapContextFactory;
+import org.apache.shiro.realm.ldap.LdapUtils;
 import org.apache.shiro.subject.PrincipalCollection;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
+import javax.naming.directory.Attribute;
+import javax.naming.directory.Attributes;
+import javax.naming.directory.SearchControls;
+import javax.naming.directory.SearchResult;
 import javax.naming.ldap.LdapContext;
 
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Shiro realm for LDAP based on configuration settings
  */
 public class LdapRealm extends JndiLdapRealm
 {
-    private boolean authenticationEnabled;
-    private boolean authorizationEnabled;
+    private static final String GROUP_DELIMITER = ";";
+    private static final String KEY_VALUE_DELIMITER = "=";
+    private static final String ROLE_DELIMITER = ",";
 
-    public LdapRealm( Config config )
+    private Boolean authenticationEnabled;
+    private Boolean authorizationEnabled;
+    private String userSearchBase;
+    private String userSearchFilter;
+    private String membershipAttributeName;
+    private Boolean useSystemAccountForAuthorization;
+    private Map<String,Collection<String>> groupToRoleMapping;
+    private final Log log;
+
+    public LdapRealm( Config config, LogProvider logProvider )
     {
         super();
+        log = logProvider.getLog( getClass() );
         setRolePermissionResolver( rolePermissionResolver );
         configureRealm( config );
     }
@@ -62,21 +87,41 @@ public class LdapRealm extends JndiLdapRealm
     }
 
     @Override
-    protected AuthorizationInfo queryForAuthorizationInfo(PrincipalCollection principals,
-            LdapContextFactory ldapContextFactory) throws NamingException
+    protected AuthorizationInfo queryForAuthorizationInfo( PrincipalCollection principals,
+            LdapContextFactory ldapContextFactory ) throws NamingException
     {
-        if ( authorizationEnabled )
+        if ( authorizationEnabled && useSystemAccountForAuthorization )
         {
-            // TODO: Implement LDAP authorization
+            String username = (String) getAvailablePrincipal( principals );
+
+            // Perform context search using the system context
+            LdapContext ldapContext = ldapContextFactory.getSystemLdapContext();
+
+            Set<String> roleNames;
+            try
+            {
+                roleNames = findRoleNamesForUser( username, ldapContext );
+            }
+            finally
+            {
+                LdapUtils.closeContext( ldapContext );
+            }
+
+            return new SimpleAuthorizationInfo( roleNames );
         }
         return null;
     }
 
     @Override
-    protected AuthenticationInfo createAuthenticationInfo(AuthenticationToken token, Object ldapPrincipal,
-            Object ldapCredentials, LdapContext ldapContext)
-            throws NamingException {
+    protected AuthenticationInfo createAuthenticationInfo( AuthenticationToken token, Object ldapPrincipal,
+            Object ldapCredentials, LdapContext ldapContext )
+            throws NamingException
+    {
         // NOTE: This will be called only if authentication with the ldap context was successful
+
+        // TODO: If authorization is enabled but useSystemAccountForAuthorization is disabled, we should perform
+        // the search for groups directly here while the context is open.
+
         return new ShiroAuthenticationInfo( token.getPrincipal(), token.getCredentials(), getName(),
                 AuthenticationResult.SUCCESS );
     }
@@ -108,9 +153,144 @@ public class LdapRealm extends JndiLdapRealm
         contextFactory.setSystemPassword( config.get( SecuritySettings.ldap_system_password ) );
 
         setContextFactory( contextFactory );
-        setUserDnTemplate( config.get( SecuritySettings.ldap_user_dn_template ) );
+
+        String userDnTemplate = config.get( SecuritySettings.ldap_user_dn_template );
+        if ( userDnTemplate != null )
+        {
+            setUserDnTemplate( userDnTemplate );
+        }
 
         authenticationEnabled = config.get( SecuritySettings.ldap_authentication_enabled );
         authorizationEnabled = config.get( SecuritySettings.ldap_authorization_enabled );
+
+        userSearchBase = config.get( SecuritySettings.ldap_authorization_user_search_base );
+        userSearchFilter = config.get( SecuritySettings.ldap_authorization_user_search_filter );
+        membershipAttributeName = config.get( SecuritySettings.ldap_authorization_group_membership_attribute_name );
+        useSystemAccountForAuthorization = config.get( SecuritySettings.ldap_authorization_use_system_account );
+        groupToRoleMapping =
+                parseGroupToRoleMapping( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) );
+    }
+
+    Map<String,Collection<String>> parseGroupToRoleMapping( String groupToRoleMappingString )
+    {
+        Map<String,Collection<String>> map = new HashMap<>();
+
+        if ( groupToRoleMappingString != null )
+        {
+            for ( String groupAndRoles : groupToRoleMappingString.split( GROUP_DELIMITER ) )
+            {
+                if ( !groupAndRoles.isEmpty() )
+                {
+                    String[] parts = groupAndRoles.split( KEY_VALUE_DELIMITER, 2 );
+                    if ( parts.length != 2 )
+                    {
+                        String errorMessage = String.format( "Failed to parse setting %s: wrong number of fields",
+                                SecuritySettings.ldap_authorization_group_to_role_mapping.name() );
+                        log.error( errorMessage );
+                        throw new IllegalArgumentException( errorMessage );
+                    }
+                    String group = parts[0];
+                    if ( group.isEmpty() )
+                    {
+                        String errorMessage = String.format( "Failed to parse setting %s: empty group name",
+                                SecuritySettings.ldap_authorization_group_to_role_mapping.name() );
+                        log.error( errorMessage );
+                        throw new IllegalArgumentException( errorMessage );
+                    }
+                    Collection<String> roleList = new ArrayList<>();
+                    for ( String role : parts[1].split( ROLE_DELIMITER ) )
+                    {
+                        if ( !role.isEmpty() )
+                        {
+                            roleList.add( role );
+                        }
+                    }
+                    map.put( group, roleList );
+                }
+            }
+        }
+
+        return map;
+    }
+
+    Set<String> findRoleNamesForUser( String username, LdapContext ldapContext ) throws NamingException
+    {
+        Set<String> roleNames = new LinkedHashSet<String>();
+
+        SearchControls searchCtls = new SearchControls();
+        searchCtls.setSearchScope( SearchControls.SUBTREE_SCOPE );
+        searchCtls.setReturningAttributes( new String[]{membershipAttributeName} );
+
+        // Use search argument to prevent potential code injection
+        String searchFilter = userSearchFilter;
+        Object[] searchArguments = new Object[]{username};
+
+        validateUserSearchFilter( searchFilter );
+
+        NamingEnumeration result = ldapContext.search( userSearchBase, searchFilter, searchArguments, searchCtls );
+
+        if ( result.hasMoreElements() )
+        {
+            SearchResult searchResult = (SearchResult) result.next();
+
+            if ( result.hasMoreElements() )
+            {
+                log.warn( String.format(
+                        "LDAP user search for user principal '%s' is ambiguous. The first match that will be checked " +
+                        "for group membership is '%s' " +
+                        "but the search also matches '%s'. Please check your LDAP realm configuration.",
+                        username,
+                        // TODO: Check if it is ok to write this potentially sensitive information to the log
+                        searchResult.toString(),
+                        ((SearchResult) result.next()).toString() ) );
+            }
+
+            Attributes attributes = searchResult.getAttributes();
+            if ( attributes != null )
+            {
+                NamingEnumeration attributeEnumeration = attributes.getAll();
+                while ( attributeEnumeration.hasMore() )
+                {
+                    Attribute attribute = (Attribute) attributeEnumeration.next();
+                    if ( attribute.getID().toLowerCase().equals( membershipAttributeName.toLowerCase() ) )
+                    {
+                        Collection<String> groupNames = LdapUtils.getAllAttributeValues( attribute );
+                        Collection<String> rolesForGroups = getRoleNamesForGroups( groupNames );
+                        roleNames.addAll( rolesForGroups );
+                        break;
+                    }
+                }
+            }
+        }
+        return roleNames;
+    }
+
+    private void validateUserSearchFilter( String searchFilter )
+    {
+        if ( !searchFilter.contains( "{0}" ) )
+        {
+            log.warn( "LDAP user search filter does not contain the argument placeholder {0}, so the search result " +
+                      "will be independent of the user principal." );
+        }
+    }
+
+    private Collection<String> getRoleNamesForGroups( Collection<String> groupNames )
+    {
+        Collection<String> roles = new ArrayList<>();
+        for ( String group : groupNames )
+        {
+            Collection<String> rolesForGroup = groupToRoleMapping.get( group );
+            if ( rolesForGroup != null )
+            {
+                roles.addAll( rolesForGroup );
+            }
+        }
+        return roles;
+    }
+
+    // Exposed for testing
+    Map<String,Collection<String>> getGroupToRoleMapping()
+    {
+        return groupToRoleMapping;
     }
 }

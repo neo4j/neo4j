@@ -25,7 +25,6 @@ import java.util.function.Consumer;
 import org.neo4j.bolt.v1.transport.integration.AuthenticationIT;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.server.security.enterprise.auth.SecuritySettings;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
