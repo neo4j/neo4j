@@ -133,34 +133,38 @@ cmd_generate_cluster_seed() {
   exec "${JAVA_CMD}" -cp "${CLASSPATH}" -Dfile.encoding=UTF-8 "org.neo4j.coreedge.convert.GenerateClusterSeedCli" --home-dir=${NEO4J_HOME} --config=${NEO4J_CONF} "$@"
 }
 
-bad_usage() {
-  echo "Error: $1" >&2
-  echo >&2
-  echo "$(usage)" >&2
-  exit 1
+pass_through() {
+  setup_environment
+  check_java
+  build_classpath
+  export NEO4J_HOME NEO4J_CONF
+  export NEO4J_EXTRA_HELP="$(extra_help)"
+  exec "${JAVA_CMD}" -cp "${CLASSPATH}" -Dfile.encoding=UTF-8 "org.neo4j.commandline.admin.AdminTool" "$@"
 }
 
-usage() {
-  echo "Usage:
+bad_usage() {
+  pass_through bad-usage "$1"
+}
 
-  ${PROGRAM} import --mode=<mode> --database=<database-name> --from=<source-directory>
+extra_help() {
+  echo "${PROGRAM} import --mode=<mode> --database=<database-name> --from=<source-directory>
 
     Create a new database by importing existing data.
 
     --mode=database
 
-      Import a database from a pre-3.0 Neo4j installation. <source-directory> is the database location (e.g.
-      <neo4j-root>/data/graph.db).
+        Import a database from a pre-3.0 Neo4j installation. <source-directory> is the database location (e.g.
+        <neo4j-root>/data/graph.db).
 
-  ${PROGRAM} generate-cluster-seed --database=<database-name>
+${PROGRAM} generate-cluster-seed --database=<database-name>
 
     Generates a cluster seed to be used with the core-convert command when restoring a backup for a core-edge cluster
 
-  ${PROGRAM} core-convert --database=<database-name>
+${PROGRAM} core-convert --database=<database-name>
 
     Converts a database created in a non core-edge Neo4j installation into one that is core format friendly.
 
-  ${PROGRAM} restore ---from <backup-directory> --database=<database-name> [--force]
+${PROGRAM} restore ---from <backup-directory> --database=<database-name> [--force]
 
     Restores a database backed up using the neo4j-backup tool.
 
@@ -172,11 +176,7 @@ usage() {
 
     Restores a database backed up using the neo4j-backup tool to be used as an additional instance of an existing cluster.
 
-  ${PROGRAM} help
-
-    Display this help text.
 "
-  exit 0
 }
 
 main() {
@@ -190,8 +190,7 @@ main() {
     restore)                        cmd_restore "$@" ;;
     restore-new-cluster)            cmd_restore_new_cluster "$@" ;;
     restore-existing-cluster)       cmd_restore_existing_cluster "$@" ;;
-    help|--help|-h)                 usage ;;
-    *)                              bad_usage "unrecognised command '${command}'" ;;
+     *)                             pass_through "${command}" "$@" ;;
   esac
 }
 
