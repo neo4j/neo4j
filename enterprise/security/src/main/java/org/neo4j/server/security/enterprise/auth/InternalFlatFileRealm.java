@@ -334,34 +334,34 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     }
 
     @Override
+    public RoleRecord assertAndGetRole( String roleName ) throws IllegalArgumentException
+    {
+        RoleRecord role = roleRepository.getRoleByName( roleName );
+        if ( role == null )
+        {
+            throw new IllegalArgumentException( "Role " + roleName + " does not exist." );
+        }
+        return role;
+    }
+
+    @Override
     public void addUserToRole( String username, String roleName ) throws IOException
     {
         checkValidityOfUsernameAndRoleName( username, roleName );
 
         synchronized ( this )
         {
-            User user = userRepository.getUserByName( username );
-            if ( user == null )
+            assertAndGetUser( username );
+            RoleRecord role = assertAndGetRole( roleName );
+            RoleRecord newRole = role.augment().withUser( username ).build();
+            try
             {
-                throw new IllegalArgumentException( "User " + username + " does not exist." );
+                roleRepository.update( role, newRole );
             }
-            RoleRecord role = roleRepository.getRoleByName( roleName );
-            if ( role == null )
+            catch ( ConcurrentModificationException e )
             {
-                throw new IllegalArgumentException( "Role " + roleName + " does not exist." );
-            }
-            else
-            {
-                RoleRecord newRole = role.augment().withUser( username ).build();
-                try
-                {
-                    roleRepository.update( role, newRole );
-                }
-                catch ( ConcurrentModificationException e )
-                {
-                    // Try again
-                    addUserToRole( username, roleName );
-                }
+                // Try again
+                addUserToRole( username, roleName );
             }
         }
         clearCachedAuthorizationInfoForUser( username );
@@ -374,28 +374,18 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
 
         synchronized ( this )
         {
-            User user = userRepository.getUserByName( username );
-            if ( user == null )
+            assertAndGetUser( username );
+            RoleRecord role = assertAndGetRole( roleName );
+
+            RoleRecord newRole = role.augment().withoutUser( username ).build();
+            try
             {
-                throw new IllegalArgumentException( "User " + username + " does not exist." );
+                roleRepository.update( role, newRole );
             }
-            RoleRecord role = roleRepository.getRoleByName( roleName );
-            if ( role == null )
+            catch ( ConcurrentModificationException e )
             {
-                throw new IllegalArgumentException( "Role " + roleName + " does not exist." );
-            }
-            else
-            {
-                RoleRecord newRole = role.augment().withoutUser( username ).build();
-                try
-                {
-                    roleRepository.update( role, newRole );
-                }
-                catch ( ConcurrentModificationException e )
-                {
-                    // Try again
-                    removeUserFromRole( username, roleName );
-                }
+                // Try again
+                removeUserFromRole( username, roleName );
             }
         }
         clearCachedAuthorizationInfoForUser( username );
@@ -407,15 +397,16 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         boolean result = false;
         synchronized ( this )
         {
-            User user = userRepository.getUserByName( username );
-            if ( user != null && userRepository.delete( user ) )
+            User user = assertAndGetUser( username );
+            if ( userRepository.delete( user ) )
             {
                 removeUserFromAllRoles( username );
                 result = true;
             }
             else
             {
-                throw new IllegalArgumentException( "The user '" + username + "' does not exist" );
+                // We should not get here, but if we do the assert will fail and give a nice error msg
+                assertAndGetUser( username );
             }
         }
         clearCacheForUser( username );
@@ -429,13 +420,18 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     }
 
     @Override
+    public User assertAndGetUser( String username ) throws IllegalArgumentException
+    {
+        User u = getUser( username );
+        if ( u == null )
+            throw new IllegalArgumentException( "User " + username + " does not exist." );
+        return u;
+    }
+
+    @Override
     public void setUserPassword( String username, String password ) throws IOException, IllegalCredentialsException
     {
-        User existingUser = userRepository.getUserByName( username );
-        if ( existingUser == null )
-        {
-            throw new IllegalCredentialsException( "User " + username + " does not exist" );
-        }
+        User existingUser = assertAndGetUser( username );
 
         passwordPolicy.validatePassword( password );
 
@@ -463,11 +459,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     {
         // This method is not synchronized as it only modifies the UserRepository, which is synchronized in itself
         // If user is modified between getUserByName and update, we get ConcurrentModificationException and try again
-        User user = userRepository.getUserByName( username );
-        if ( user == null )
-        {
-            throw new IllegalArgumentException( "User " + username + " does not exist." );
-        }
+        User user = assertAndGetUser( username );
         if ( !user.hasFlag( IS_SUSPENDED ) )
         {
             User suspendedUser = user.augment().withFlag( IS_SUSPENDED ).build();
@@ -489,11 +481,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     {
         // This method is not synchronized as it only modifies the UserRepository, which is synchronized in itself
         // If user is modified between getUserByName and update, we get ConcurrentModificationException and try again
-        User user = userRepository.getUserByName( username );
-        if ( user == null )
-        {
-            throw new IllegalArgumentException( "User " + username + " does not exist." );
-        }
+        User user = assertAndGetUser( username );
         if ( user.hasFlag( IS_SUSPENDED ) )
         {
             User activatedUser = user.augment().withoutFlag( IS_SUSPENDED ).build();
@@ -529,11 +517,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     @Override
     public Set<String> getUsernamesForRole( String roleName )
     {
-        RoleRecord role = roleRepository.getRoleByName( roleName );
-        if ( role == null )
-        {
-            throw new IllegalArgumentException( "Role " + roleName + " does not exist." );
-        }
+        RoleRecord role = assertAndGetRole( roleName );
         return role.users();
     }
 
@@ -541,11 +525,6 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     public Set<String> getAllUsernames()
     {
         return userRepository.getAllUsernames();
-    }
-
-    User findUser( String username )
-    {
-        return userRepository.getUserByName( username );
     }
 
     private void removeUserFromAllRoles( String username ) throws IOException

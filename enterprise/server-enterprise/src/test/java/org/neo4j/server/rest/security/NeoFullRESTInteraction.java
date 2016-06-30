@@ -34,7 +34,11 @@ import javax.ws.rs.core.HttpHeaders;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -44,11 +48,14 @@ import org.neo4j.server.security.enterprise.auth.NeoInteractionLevel;
 import org.neo4j.test.server.HTTP;
 
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 
 public class NeoFullRESTInteraction extends CommunityServerTestBase implements NeoInteractionLevel<RESTSubject>
 {
     String COMMIT_PATH = "db/data/transaction/commit";
     String POST = "POST";
+
+    EnterpriseAuthManager authManager;
 
     public NeoFullRESTInteraction() throws IOException
     {
@@ -57,12 +64,26 @@ public class NeoFullRESTInteraction extends CommunityServerTestBase implements N
                 .withProperty( GraphDatabaseSettings.auth_manager.name(), "enterprise-auth-manager" )
                 .build();
         server.start();
+        authManager = server.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
     }
 
     @Override
     public EnterpriseUserManager getManager()
     {
-        return server.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class ).getUserManager();
+        return authManager.getUserManager();
+    }
+
+    @Override
+    public GraphDatabaseFacade getGraph()
+    {
+        return server.getDatabase().getGraph();
+    }
+
+    @Override
+    public InternalTransaction startTransactionAsUser( RESTSubject subject ) throws Throwable
+    {
+        AuthSubject authSubject = authManager.login( newBasicAuthToken( subject.username, subject.password ) );
+        return getGraph().beginTransaction( KernelTransaction.Type.explicit, authSubject );
     }
 
     @Override
@@ -106,7 +127,7 @@ public class NeoFullRESTInteraction extends CommunityServerTestBase implements N
     {
         String principalCredentials = challengeResponse( username, password );
         HTTP.Response response = authenticate( principalCredentials );
-        return new RESTSubject( response, principalCredentials );
+        return new RESTSubject( response, username, password, principalCredentials );
     }
 
     private HTTP.Response authenticate( String principalCredentials )
@@ -142,6 +163,12 @@ public class NeoFullRESTInteraction extends CommunityServerTestBase implements N
     public void updateAuthToken( RESTSubject subject, String username, String password )
     {
         subject.principalCredentials = challengeResponse( username, password );
+    }
+
+    @Override
+    public String nameOf( RESTSubject subject )
+    {
+        return subject.username;
     }
 
     @Override

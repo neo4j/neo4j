@@ -297,22 +297,41 @@ abstract class AuthTestBase<S>
     void assertKeyIsArray( ResourceIterator<Map<String, Object>> r, String key, String[] items )
     {
         List<Object> results = getObjectsAsList( r, key );
-        Assert.assertThat( results, containsInAnyOrder( items ) );
         assertEquals( Arrays.asList( items ).size(), results.size() );
+        Assert.assertThat( results, containsInAnyOrder( items ) );
     }
 
     protected void assertKeyIsMap( ResourceIterator<Map<String, Object>> r, String keyKey, String valueKey, Map<String,Object> expected )
     {
-        r.stream().forEach( s -> {
-            String key = (String) s.get( keyKey );
-            List<String> value = (List<String>) s.get( valueKey );
-            assertTrue( "Expected to find values for '" + key + "'", expected.containsKey( key ) );
-            List<String> expectedValues = (List<String>) expected.get( key );
-            assertEquals(
-                    "Results for '" + key + "' should have size " + expectedValues.size() + " but was " + value.size(),
-                    value.size(), expectedValues.size() );
-            assertThat( value, containsInAnyOrder( expectedValues.toArray() ) );
-        } );
+        List<Map<String, Object>> result = r.stream().collect( Collectors.toList() );
+
+        assertEquals( "Results for should have size " + expected.size() + " but was " + result.size(),
+                expected.size(), result.size() );
+
+        for ( Map<String, Object> row : result )
+        {
+            String key = (String) row.get( keyKey );
+            assertTrue( "Unexpected key '" + key + "'", expected.containsKey( key ) );
+
+            Object objectValue = row.get( valueKey );
+            if ( objectValue instanceof List )
+            {
+                List<String> value = (List<String>) objectValue;
+                List<String> expectedValues = (List<String>) expected.get( key );
+                assertEquals( "Results for '" + key + "' should have size " + expectedValues.size() + " but was " +
+                        value.size(), value.size(), expectedValues.size() );
+                assertThat( value, containsInAnyOrder( expectedValues.toArray() ) );
+            }
+            else
+            {
+                String value = objectValue.toString();
+                String expectedValue = expected.get( key ).toString();
+                assertTrue(
+                        String.format( "Wrong value for '%s', expected '%s', got '%s'", key, expectedValue, value),
+                        value.equals( expectedValue )
+                    );
+            }
+        }
     }
 
     void assertNoError( String errMsg )

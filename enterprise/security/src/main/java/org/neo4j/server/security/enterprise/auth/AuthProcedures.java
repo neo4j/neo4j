@@ -25,9 +25,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+import org.neo4j.kernel.impl.api.KernelTransactions;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
@@ -40,6 +44,9 @@ public class AuthProcedures
 
     @Context
     public AuthSubject authSubject;
+
+    @Context
+    public GraphDatabaseAPI graph;
 
     @Procedure( name = "dbms.createUser", mode = DBMS )
     public void createUser( @Name( "username" ) String username, @Name( "password" ) String password,
@@ -169,6 +176,44 @@ public class AuthProcedures
         return adminSubject.getUserManager().getUsernamesForRole( roleName ).stream().map( StringResult::new );
     }
 
+    @Procedure( name = "dbms.listTransactions", mode = DBMS )
+    public Stream<TransactionResult> listTransactions()
+            throws IllegalCredentialsException, IOException
+    {
+        ensureAdminAuthSubject();
+
+        DependencyResolver resolver = graph.getDependencyResolver();
+        KernelTransactions kernelTransactions = resolver.resolveDependency( KernelTransactions.class );
+        return kernelTransactions.activeTransactions().stream()
+                .filter( tx -> !tx.shouldBeTerminated() )
+                .map( tx -> new TransactionResult( tx ) );
+    }
+
+    @Procedure( name = "dbms.terminateTransactionsForUser", mode = DBMS )
+    public Stream<TransactionResult> terminateTransactionsForUser( @Name( "username" ) String username )
+            throws IllegalCredentialsException, IOException
+    {
+        EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
+
+        adminSubject.getUserManager().assertAndGetUser( username );
+
+        DependencyResolver resolver = graph.getDependencyResolver();
+        KernelTransactions kernelTransactions = resolver.resolveDependency( KernelTransactions.class );
+        ArrayList<TransactionResult> killedTransactions = new ArrayList<>();
+        for ( KernelTransaction tx : kernelTransactions.activeTransactions() )
+        {
+            if (( (EnterpriseAuthSubject) tx.mode()).doesUsernameMatch( username ))
+            {
+                TransactionResult r = new TransactionResult( tx );
+                tx.markForTermination();
+                killedTransactions.add( r );
+            }
+        }
+        return killedTransactions.stream();
+    }
+
+    // --------------------------------------
+
     private EnterpriseAuthSubject ensureAdminAuthSubject()
     {
         EnterpriseAuthSubject enterpriseAuthSubject = EnterpriseAuthSubject.castOrFail( authSubject );
@@ -212,6 +257,26 @@ public class AuthProcedures
             this.role = role;
             this.users = new ArrayList<>();
             this.users.addAll( users );
+        }
+    }
+
+    public class TransactionResult
+    {
+        public final String username;
+        public final String transaction;
+
+        public TransactionResult( KernelTransaction tx )
+        {
+            if ( tx.mode() instanceof AuthSubject )
+            {
+                AuthSubject authSubject = (AuthSubject) tx.mode();
+                username = authSubject.name();
+            }
+            else
+            {
+                username = "-";
+            }
+            transaction = tx.toString();
         }
     }
 }

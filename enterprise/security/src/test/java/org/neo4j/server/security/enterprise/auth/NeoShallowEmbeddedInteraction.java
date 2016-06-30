@@ -23,12 +23,12 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.function.Consumer;
 
-
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AuthenticationResult;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
@@ -40,13 +40,13 @@ import static java.time.Clock.systemUTC;
 
 class NeoShallowEmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSubject>
 {
-    private GraphDatabaseAPI db;
+    private GraphDatabaseFacade db;
     private MultiRealmAuthManager manager;
     private EnterpriseUserManager userManager;
 
     NeoShallowEmbeddedInteraction() throws Throwable
     {
-        db = (GraphDatabaseAPI) new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase();
+        db = (GraphDatabaseFacade) new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase();
         InternalFlatFileRealm internalRealm =
                 new InternalFlatFileRealm( new InMemoryUserRepository(), new InMemoryRoleRepository(),
                         new BasicPasswordPolicy(), new RateLimitedAuthenticationStrategy( systemUTC(), 3 ) );
@@ -60,6 +60,15 @@ class NeoShallowEmbeddedInteraction implements NeoInteractionLevel<EnterpriseAut
     public EnterpriseUserManager getManager()
     {
         return userManager;
+    }
+
+    @Override
+    public GraphDatabaseFacade getGraph() { return db; }
+
+    @Override
+    public InternalTransaction startTransactionAsUser( EnterpriseAuthSubject subject ) throws Throwable
+    {
+        return db.beginTransaction( KernelTransaction.Type.explicit, subject );
     }
 
     @Override
@@ -104,8 +113,12 @@ class NeoShallowEmbeddedInteraction implements NeoInteractionLevel<EnterpriseAut
     }
 
     @Override
-    public void updateAuthToken( EnterpriseAuthSubject subject, String username, String password )
+    public void updateAuthToken( EnterpriseAuthSubject subject, String username, String password ) {}
+
+    @Override
+    public String nameOf( EnterpriseAuthSubject subject )
     {
+        return subject.name();
     }
 
     @Override

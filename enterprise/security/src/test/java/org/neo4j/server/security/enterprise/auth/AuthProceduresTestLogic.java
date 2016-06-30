@@ -20,13 +20,14 @@
 package org.neo4j.server.security.enterprise.auth;
 
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
-import org.neo4j.graphdb.QueryExecutionException;
-import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.test.rule.concurrent.ThreadingRule;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -34,7 +35,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.kernel.api.security.AuthenticationResult.*;
 import static org.neo4j.server.security.enterprise.auth.AuthProcedures.*;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
@@ -45,6 +45,8 @@ import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.R
 // TODO: homogenize "'' does not exist" type error messages. In short, add quotes in the right places
 public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
 {
+    @Rule
+    public final ThreadingRule threading = new ThreadingRule();
     //---------- Change own password -----------
 
     // Enterprise version of test in BuiltInProceduresIT.callChangePasswordWithAccessModeInDbmsMode.
@@ -53,7 +55,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     public void shouldChangeOwnPassword() throws Throwable
     {
         assertCallSuccess( readSubject, "CALL dbms.changePassword( '321' )" );
-        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( readSubject ) );
+        assertEquals( SUCCESS, neo.authenticationResult( readSubject ) );
         neo.updateAuthToken( readSubject, "readSubject", "321" ); // Because RESTSubject caches an auth token that is sent with every request
         testSuccessfulRead( readSubject, 3 );
     }
@@ -71,6 +73,139 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     {
         assertCallFail( readSubject, "CALL dbms.changePassword( '' )", "Password cannot be empty" );
         assertCallFail( readSubject, "CALL dbms.changePassword( '123' )", "Old password and new password cannot be the same" );
+    }
+
+    //---------- list running transactions -----------
+
+    @Test
+    public void shouldListSelfTransaction()
+    {
+        assertCallSuccess( adminSubject, "CALL dbms.listTransactions()",
+                r -> assertKeyIsMap( r, "username", "transaction", map( "adminSubject", "KernelTransaction[1]" ) ) );
+    }
+
+    @Test
+    public void shouldNotListTransactionsIfNotAdmin()
+    {
+        assertCallFail( noneSubject, "CALL dbms.listTransactions()", PERMISSION_DENIED );
+        assertCallFail( readSubject, "CALL dbms.listTransactions()", PERMISSION_DENIED );
+        assertCallFail( writeSubject, "CALL dbms.listTransactions()", PERMISSION_DENIED );
+        assertCallFail( schemaSubject, "CALL dbms.listTransactions()", PERMISSION_DENIED );
+    }
+
+    @Test
+    public void shouldListTransactions() throws InterruptedException, ExecutionException
+    {
+
+        ThreadedTransactionCreate<S> read = new ThreadedTransactionCreate<>( neo );
+        read.execute( threading, readSubject );
+        read.barrier.await();
+
+        assertCallSuccess( adminSubject, "CALL dbms.listTransactions()",
+                r -> assertKeyIsMap( r, "username", "transaction",
+                        map( "adminSubject", "KernelTransaction[0]",
+                                "readSubject", "KernelTransaction[1]" ) ) );
+
+        read.close();
+    }
+
+    //---------- terminate transactions for user -----------
+
+    @Test
+    public void shouldTerminateTransaction() throws InterruptedException, ExecutionException
+    {
+        ThreadedTransactionCreate<S> read = new ThreadedTransactionCreate<>( neo );
+        read.execute( threading, writeSubject );
+        read.barrier.await();
+
+        assertCallSuccess( adminSubject, "CALL dbms.terminateTransactionsForUser( 'writeSubject' )",
+                r -> assertKeyIs( r, "username", "writeSubject" ) );
+
+        assertCallSuccess( adminSubject, "CALL dbms.listTransactions()",
+                r -> assertKeyIs( r, "username", "adminSubject" ) );
+
+        read.close();
+
+        assertCallSuccess( adminSubject, "MATCH (n:Test) RETURN n.name AS name" );
+    }
+
+    @Test
+    public void shouldTerminateOnlyGivenUsersTransaction() throws InterruptedException, ExecutionException
+    {
+        ThreadedTransactionCreate<S> schema = new ThreadedTransactionCreate<>( neo );
+        ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo );
+
+        schema.execute( threading, schemaSubject );
+        write.execute( threading, writeSubject );
+
+        schema.barrier.await();
+        write.barrier.await();
+
+        assertCallSuccess( adminSubject, "CALL dbms.terminateTransactionsForUser( 'schemaSubject' )",
+                r -> assertKeyIs( r, "username", "schemaSubject" ) );
+
+        assertCallSuccess( adminSubject, "CALL dbms.listTransactions()",
+                r ->  assertKeyIs( r, "username", "adminSubject", "writeSubject" ) );
+
+        schema.close();
+        write.close();
+
+        assertCallSuccess( adminSubject, "MATCH (n:Test) RETURN n.name AS name",
+                r -> assertKeyIs( r, "name", "writeSubject-node" ) );
+    }
+
+    @Test
+    public void shouldTerminateAllGivenUsersTransaction() throws InterruptedException, ExecutionException
+    {
+        ThreadedTransactionCreate<S> schema1 = new ThreadedTransactionCreate<>( neo );
+        ThreadedTransactionCreate<S> schema2 = new ThreadedTransactionCreate<>( neo );
+
+        schema1.execute( threading, schemaSubject );
+        schema2.execute( threading, schemaSubject );
+
+        schema1.barrier.await();
+        schema2.barrier.await();
+
+        assertCallSuccess( adminSubject, "CALL dbms.terminateTransactionsForUser( 'schemaSubject' )",
+                r -> assertKeyIs( r, "username", "schemaSubject", "schemaSubject" ) );
+
+        assertCallSuccess( adminSubject, "CALL dbms.listTransactions()",
+                r ->  assertKeyIs( r, "username", "adminSubject" ) );
+
+        schema1.close();
+        schema2.close();
+
+        assertCallSuccess( adminSubject, "MATCH (n:Test) RETURN n.name AS name" );
+    }
+
+    @Test
+    public void shouldNotTerminateTransactionsIfNonExistentUser() throws InterruptedException, ExecutionException
+    {
+        assertCallFail( adminSubject, "CALL dbms.terminateTransactionsForUser( 'Petra' )",
+                "User Petra does not exist" );
+        assertCallFail( adminSubject, "CALL dbms.terminateTransactionsForUser( '' )",
+                "User  does not exist" );
+    }
+
+    @Test
+    public void shouldNotTerminateTransactionsIfNotAdmin() throws InterruptedException, ExecutionException
+    {
+        ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo );
+        write.execute( threading, writeSubject );
+        write.barrier.await();
+
+        assertCallFail( noneSubject, "CALL dbms.terminateTransactionsForUser( 'writeSubject' )", PERMISSION_DENIED );
+        assertCallFail( pwdSubject, "CALL dbms.terminateTransactionsForUser( 'writeSubject' )", CHANGE_PWD_ERR_MSG );
+        assertCallFail( readSubject, "CALL dbms.terminateTransactionsForUser( 'writeSubject' )", PERMISSION_DENIED );
+        assertCallFail( schemaSubject, "CALL dbms.terminateTransactionsForUser( 'writeSubject' )", PERMISSION_DENIED );
+
+        assertCallSuccess( adminSubject, "CALL dbms.listTransactions()",
+                r -> assertKeyIs( r, "username", "adminSubject", "writeSubject" ) );
+
+        write.close();
+
+        assertCallSuccess( adminSubject, "MATCH (n:Test) RETURN n.name AS name",
+                r -> assertKeyIs( r, "name", "writeSubject-node" ) );
     }
 
     //---------- change user password -----------
@@ -102,12 +237,12 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     public void shouldChangeUserPasswordIfSameUser() throws Throwable
     {
         assertCallSuccess( readSubject, "CALL dbms.changeUserPassword( 'readSubject', '321' )" );
-        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( readSubject ) );
+        assertEquals( SUCCESS, neo.authenticationResult( readSubject ) );
         neo.updateAuthToken( readSubject, "readSubject", "321" ); // Because RESTSubject caches an auth token that is sent with every request
         testSuccessfulRead( readSubject, 3 );
 
         assertCallSuccess( adminSubject, "CALL dbms.changeUserPassword( 'adminSubject', 'cba' )" );
-        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( adminSubject ) );
+        assertEquals( SUCCESS, neo.authenticationResult( adminSubject ) );
         neo.updateAuthToken( adminSubject, "adminSubject", "cba" ); // Because RESTSubject caches an auth token that is sent with every request
         testSuccessfulRead( adminSubject, 3 );
     }
@@ -217,8 +352,8 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldNotAllowDeletingNonExistingUser() throws Exception
     {
-        testFailDeleteUser( adminSubject, "Craig", "The user 'Craig' does not exist" );
-        testFailDeleteUser( adminSubject, "", "The user '' does not exist" );
+        testFailDeleteUser( adminSubject, "Craig", "User Craig does not exist" );
+        testFailDeleteUser( adminSubject, "", "User  does not exist" );
     }
 
     @Test
