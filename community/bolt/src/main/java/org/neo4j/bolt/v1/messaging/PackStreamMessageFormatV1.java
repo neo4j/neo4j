@@ -136,6 +136,11 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 packer.pack( field );
             }
             onMessageComplete.onMessageComplete();
+
+            //The record might contain unpackable values,
+            //hence we must consume any errors that might
+            //have occurred.
+            packer.consumeError();
         }
 
         @Override
