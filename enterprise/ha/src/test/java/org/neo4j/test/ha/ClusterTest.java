@@ -20,6 +20,7 @@
 package org.neo4j.test.ha;
 
 import org.hamcrest.CoreMatchers;
+import org.hamcrest.Matchers;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,9 +32,11 @@ import org.neo4j.cluster.client.Clusters;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -44,6 +47,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.helpers.Exceptions.rootCause;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
@@ -387,7 +391,11 @@ public class ClusterTest
             }
             catch ( Exception e )
             {
-                assertThat( e, instanceOf( TransactionFailureException.class ) );
+                assertThat( e, instanceOf( TransientTransactionFailureException.class ) );
+                Throwable rootCause = rootCause( e );
+                assertThat( rootCause, instanceOf( TransactionTerminatedException.class ) );
+                assertThat( ((TransactionTerminatedException)rootCause).status(),
+                        Matchers.<Status>equalTo( Status.General.DatabaseUnavailable ) );
             }
         }
         finally
