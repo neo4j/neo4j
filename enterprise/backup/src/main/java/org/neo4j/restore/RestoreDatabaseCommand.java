@@ -46,13 +46,7 @@ public class RestoreDatabaseCommand
         this.fromPath = fromPath;
         this.databaseName = databaseName;
         this.forceOverwrite = forceOverwrite;
-        this.databaseDir = configWith( config, databaseName ).get( database_path ).getAbsoluteFile();
-
-    }
-
-    public static Config configWith( Config config, String databaseName )
-    {
-        return config.with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) );
+        this.databaseDir = config.get( database_path ).getAbsoluteFile();
     }
 
     public void execute() throws IOException

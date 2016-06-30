@@ -30,11 +30,10 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.coreedge.convert.ConversionVerifier;
-import org.neo4j.coreedge.convert.ConvertClassicStoreCommand;
+import org.neo4j.coreedge.convert.ConvertClassicStoreToCoreCommand;
 import org.neo4j.coreedge.convert.GenerateClusterSeedCommand;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -44,11 +43,14 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.restore.RestoreClusterCliTest;
+import org.neo4j.restore.RestoreClusterUtils;
 import org.neo4j.restore.RestoreDatabaseCommand;
+import org.neo4j.restore.RestoreExistingClusterCli;
+import org.neo4j.restore.RestoreNewClusterCli;
 import org.neo4j.test.coreedge.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -60,6 +62,8 @@ import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.restore.ArgsBuilder.args;
+import static org.neo4j.restore.ArgsBuilder.toArray;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 @RunWith(Parameterized.class)
@@ -90,13 +94,19 @@ public class ConvertNonCoreEdgeStoreIT
         File classicNeo4jStore = createClassicNeo4jStore( dbDir, 10, recordFormat );
 
         File clusterDirectory = clusterRule.clusterDirectory();
-        String conversionMetadata = new GenerateClusterSeedCommand().generate( classicNeo4jStore ).getConversionId();
 
-        for ( int serverId = 0; serverId < CLUSTER_SIZE; serverId++ )
+        File homeDir = new File( clusterDirectory, "server-core-" + 0 ) ;
+        StringBuilder output = RestoreClusterUtils.execute( () -> RestoreNewClusterCli.main( toArray( args()
+                .homeDir( homeDir ).config( homeDir ).from( classicNeo4jStore )
+                .database( "graph.db" ).force().build() ) ) );
+
+        String seed = RestoreClusterCliTest.extractSeed( output );
+
+        for ( int serverId = 1; serverId < CLUSTER_SIZE; serverId++ )
         {
-            File destination = coreServerStoreDirectory( clusterDirectory, serverId );
-            restoreDatabase( classicNeo4jStore, destination );
-            new ConvertClassicStoreCommand( new ConversionVerifier() ).convert( destination, recordFormat, conversionMetadata );
+            File destination = new File( clusterDirectory, "server-core-" + serverId ) ;
+            RestoreClusterUtils.execute( () -> RestoreExistingClusterCli.main( toArray( args().homeDir( destination )
+                    .config( destination ).from( classicNeo4jStore ).database( "graph.db" ).seed( seed ).force().build() ) ) );
         }
 
         Cluster cluster = clusterRule.withRecordFormat( recordFormat ).startCluster();
@@ -130,13 +140,6 @@ public class ConvertNonCoreEdgeStoreIT
                 tx.success();
             }
         }
-    }
-
-    private void restoreDatabase( File backupPath, File coreStoreDir ) throws IOException
-    {
-        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        Config config = Config.empty().with( stringMap( database_path.name(), coreStoreDir.getAbsolutePath() ) );
-        new RestoreDatabaseCommand( fs, backupPath, config, "graph.db", true ).execute();
     }
 
     private File createClassicNeo4jStore( File base, int nodesToCreate, String recordFormat )

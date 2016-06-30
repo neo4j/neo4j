@@ -24,8 +24,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.util.LinkedList;
 import java.util.Optional;
 
@@ -73,8 +71,11 @@ public class RestoreClusterCliTest
         StoreMetadata storeMetadata = metadataFor( classicNeo4jStore );
 
         // when
-        LinkedList<String> args = args( classicNeo4jStore, testDirectory.cleanDirectory( "new-db-1" ) );
-        StringBuilder out = execute( () -> RestoreNewClusterCli.main( args.toArray( new String[args.size()] ) ) );
+        File homeDir = testDirectory.cleanDirectory( "new-db-1" );
+        LinkedList<String> args = ArgsBuilder.args().homeDir( homeDir ).config( homeDir )
+                .from( classicNeo4jStore ).database( "graph.db" ).build() ;
+
+        StringBuilder out = RestoreClusterUtils.execute( () -> RestoreNewClusterCli.main( args.toArray( new String[args.size()] ) ) );
 
         // then
         String seed = extractSeed( out );
@@ -86,9 +87,10 @@ public class RestoreClusterCliTest
 
         // when restore to another place
         File rootNewDatabaseDir = testDirectory.cleanDirectory( "new-db-2" );
-        LinkedList<String> newArgs = args( classicNeo4jStore, rootNewDatabaseDir );
-        newArgs.add( "--cluster-seed=" + seed );
-        execute( () -> RestoreExistingClusterCli.main( newArgs.toArray( new String[newArgs.size()] ) ) );
+        LinkedList<String> newArgs = ArgsBuilder.args().homeDir( rootNewDatabaseDir ).config( rootNewDatabaseDir )
+                .from( classicNeo4jStore ).database( "graph.db" ).seed( seed ).build() ;
+
+        RestoreClusterUtils.execute( () -> RestoreExistingClusterCli.main( newArgs.toArray( new String[newArgs.size()] ) ) );
 
         // then
         StoreMetadata newMetadata = metadataFor( extractDatabaseDir( rootNewDatabaseDir ) );
@@ -100,32 +102,6 @@ public class RestoreClusterCliTest
         Config config = new ConfigLoader( settings() ).loadConfig( Optional.of( rootNewDatabaseDir ),
                 Optional.of( new File( rootNewDatabaseDir, "neo4j.conf" ) ), NullLog.getInstance() );
         return config.get( DatabaseManagementSystemSettings.database_path );
-    }
-
-    private LinkedList<String> args( File classicNeo4jStore, File newDatabaseDir ) throws IOException
-    {
-        String homeDir = newDatabaseDir.getPath();
-        String configPath = newDatabaseDir.getPath();
-        String databaseName = "graph.db";
-
-        // given
-        LinkedList<String> args = new LinkedList<>();
-        args.add( "--home-dir=" + homeDir );
-        args.add( "--database=" + databaseName );
-        args.add( "--config=" + configPath );
-        args.add( "--from=" + classicNeo4jStore );
-        return args;
-    }
-
-    private StringBuilder execute( Runnable function )
-    {
-        StringBuilder builder = new StringBuilder();
-
-        PrintStream theRealOut = System.out;
-        System.setOut( new PrintStream( new MyOutputStream( builder ) ) );
-        function.run();
-        System.setOut( theRealOut );
-        return builder;
     }
 
     private StoreMetadata metadataFor( File classicNeo4jStore ) throws IOException
@@ -142,7 +118,7 @@ public class RestoreClusterCliTest
         }
     }
 
-    private String extractSeed( StringBuilder builder )
+    public static String extractSeed( StringBuilder builder )
     {
         return builder.toString().replace( "Cluster Seed: ", "" ).replace( "\n", "" );
     }
@@ -171,20 +147,4 @@ public class RestoreClusterCliTest
         return existingDbDir;
     }
 
-    private class MyOutputStream extends OutputStream
-    {
-        private final StringBuilder stringBuilder;
-
-        public MyOutputStream( StringBuilder stringBuilder )
-        {
-
-            this.stringBuilder = stringBuilder;
-        }
-
-        @Override
-        public void write( int b ) throws IOException
-        {
-            stringBuilder.append( (char) b );
-        }
-    }
 }

@@ -38,6 +38,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 public class RestoreDatabaseCommandTest
 {
     @Rule
@@ -49,7 +51,7 @@ public class RestoreDatabaseCommandTest
         // given
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         String databaseName = "to";
-        Config config = RestoreDatabaseCommand.configWith(  Config.empty(), databaseName);
+        Config config = configWith(  Config.empty(), databaseName);
 
         File fromPath = new File( directory.absolutePath(), "from" );
         File toPath = config.get( DatabaseManagementSystemSettings.database_path );
@@ -78,7 +80,7 @@ public class RestoreDatabaseCommandTest
         // given
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         String databaseName = "to";
-        Config config = RestoreDatabaseCommand.configWith(  Config.empty(), databaseName);
+        Config config = configWith(  Config.empty(), databaseName);
 
         File fromPath = new File( directory.absolutePath(), "from" );
         File toPath = config.get( DatabaseManagementSystemSettings.database_path );
@@ -106,7 +108,7 @@ public class RestoreDatabaseCommandTest
         // given
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         String databaseName = "to";
-        Config config = RestoreDatabaseCommand.configWith(  Config.empty(), databaseName);
+        Config config = configWith(  Config.empty(), databaseName);
 
         File fromPath = new File( directory.absolutePath(), "from" );
         File toPath = config.get( DatabaseManagementSystemSettings.database_path );
@@ -128,6 +130,11 @@ public class RestoreDatabaseCommandTest
         }
 
         copiedDb.shutdown();
+    }
+
+    public static Config configWith( Config config, String databaseName )
+    {
+        return config.with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) );
     }
 
     private void createDbAt( File fromPath, int nodesToCreate )
