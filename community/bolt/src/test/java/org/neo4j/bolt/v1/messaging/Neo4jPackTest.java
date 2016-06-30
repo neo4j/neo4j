@@ -39,12 +39,14 @@ import org.neo4j.kernel.impl.util.HexPrinter;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.ALICE;
 import static org.neo4j.bolt.v1.messaging.example.Paths.ALL_PATHS;
 import static org.neo4j.bolt.v1.messaging.example.Relationships.ALICE_KNOWS_BOB;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class Neo4jPackTest
 {
@@ -108,6 +110,22 @@ public class Neo4jPackTest
         assertThat( unpacked, instanceOf( Map.class ) );
         Map<String, Object> unpackedMap = (Map<String, Object>) unpacked;
         assertThat( unpackedMap, equalTo( ALICE.getAllProperties() ) );
+    }
+
+    @Test
+    public void shouldFailNicelyWhenPackingAMapWithUnpackableValues() throws IOException
+    {
+        // Given
+        PackedOutputArray output = new PackedOutputArray();
+        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
+        packer.packRawMap( map("unpackable", new Unpackable() ) );
+        Object unpacked = unpacked( output.bytes() );
+
+        // Then
+        assertThat( unpacked, instanceOf( Map.class ) );
+        Map<String,Object> unpackedMap = (Map<String,Object>) unpacked;
+        assertThat( unpackedMap, equalTo( map( "unpackable", null ) ) );
+        assertTrue( packer.hasErrors() );
     }
 
     @Test
@@ -207,5 +225,10 @@ public class Neo4jPackTest
         // Then
         assertThat( unpacked, instanceOf( String.class ) );
         assertThat( unpacked, equalTo( "WHY" ) );
+    }
+
+    private static class Unpackable
+    {
+
     }
 }

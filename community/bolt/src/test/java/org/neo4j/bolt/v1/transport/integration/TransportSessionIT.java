@@ -34,8 +34,11 @@ import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.function.Factory;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.InputPosition;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.SeverityLevel;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -44,6 +47,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.message.Messages.init;
 import static org.neo4j.bolt.v1.messaging.message.Messages.pullAll;
@@ -56,6 +60,7 @@ import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyRecieves;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
+@SuppressWarnings( "unchecked" )
 @RunWith(Parameterized.class)
 public class TransportSessionIT
 {
@@ -283,7 +288,37 @@ public class TransportSessionIT
         assertThat( client, eventuallyRecieves(
                 msgSuccess(),
                 msgSuccess( map( "fields", singletonList( "p") ) ),
+                msgRecord(eqRecord( nullValue() )),
                 msgFailure( Status.Request.Invalid, "Point is not yet supported as a return type in Bolt")) );
+    }
+
+    @Test
+    public void shouldFailNicelyOnBinary() throws Throwable
+    {
+        //Given
+        GraphDatabaseService db = server.graphDatabaseService();
+        try ( Transaction tx = db.beginTx())
+        {
+            Node node = db.createNode();
+            node.setProperty( "binary", new byte[]{(byte)0xB0, 0x17} );
+            tx.success();
+        }
+
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", emptyMap() ),
+                        run( "MATCH (n) RETURN n.binary" ),
+                        pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves(
+                msgSuccess(),
+                msgSuccess( map( "fields", singletonList( "n.binary") ) ),
+                msgRecord(eqRecord( nullValue() )),
+                msgFailure( Status.Request.Invalid, "Binary values is not yet supported in Bolt")) );
     }
 
     @Before

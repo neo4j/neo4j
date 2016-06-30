@@ -44,6 +44,7 @@ public class Neo4jWithSocket implements TestRule
 {
     private final Consumer<Map<Setting<?>,String>> configure;
     private StoreId storeId;
+    private  GraphDatabaseService gdb;
 
     public Neo4jWithSocket()
     {
@@ -69,7 +70,7 @@ public class Neo4jWithSocket implements TestRule
                 settings.put( BoltKernelExtension.Settings.tls_key_file, tempPath( "key", ".key" ) );
                 settings.put( BoltKernelExtension.Settings.tls_certificate_file, tempPath( "cert", ".cert" ) );
                 configure.accept( settings );
-                final GraphDatabaseService gdb = new TestGraphDatabaseFactory().newImpermanentDatabase( settings );
+                gdb = new TestGraphDatabaseFactory().newImpermanentDatabase( settings );
                 storeId = ((GraphDatabaseFacade) gdb).storeId();
                 try
                 {
@@ -81,6 +82,11 @@ public class Neo4jWithSocket implements TestRule
                 }
             }
         };
+    }
+
+    public GraphDatabaseService graphDatabaseService()
+    {
+        return gdb;
     }
 
     private String tempPath(String prefix, String suffix ) throws IOException
