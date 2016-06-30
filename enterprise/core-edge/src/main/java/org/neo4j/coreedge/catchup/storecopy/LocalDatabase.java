@@ -29,15 +29,16 @@ import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 
-public class LocalDatabase
+public class LocalDatabase implements Supplier<StoreId>
 {
     private final File storeDir;
 
     private final CopiedStoreRecovery copiedStoreRecovery;
     private final StoreFiles storeFiles;
-    private Supplier<NeoStoreDataSource> neoDataSourceSupplier;
+    private final DataSourceManager dataSourceManager;
     private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
 
@@ -47,34 +48,34 @@ public class LocalDatabase
     public LocalDatabase(
             File storeDir,
             CopiedStoreRecovery copiedStoreRecovery, StoreFiles storeFiles,
-            Supplier<NeoStoreDataSource> neoDataSourceSupplier,
+            DataSourceManager dataSourceManager,
             Supplier<TransactionIdStore> transactionIdStoreSupplier,
             Supplier<DatabaseHealth> databaseHealthSupplier )
     {
         this.storeDir = storeDir;
         this.copiedStoreRecovery = copiedStoreRecovery;
         this.storeFiles = storeFiles;
-        this.neoDataSourceSupplier = neoDataSourceSupplier;
+        this.dataSourceManager = dataSourceManager;
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
         this.databaseHealthSupplier = databaseHealthSupplier;
     }
 
     public void start() throws IOException
     {
-        neoDataSourceSupplier.get().start();
+        dataSourceManager.getDataSource().start();
     }
 
     public void stop()
     {
         clearCache();
-        neoDataSourceSupplier.get().stop();
+        dataSourceManager.getDataSource().stop();
     }
 
     public StoreId storeId()
     {
         if ( storeId == null )
         {
-            org.neo4j.kernel.impl.store.StoreId kernelStoreId = neoDataSourceSupplier.get().getStoreId();
+            org.neo4j.kernel.impl.store.StoreId kernelStoreId = dataSourceManager.getDataSource().getStoreId();
             storeId = new StoreId( kernelStoreId.getCreationTime(),
                     kernelStoreId.getRandomId(), kernelStoreId.getUpgradeTime(), kernelStoreId.getUpgradeId() );
         }
@@ -131,5 +132,11 @@ public class LocalDatabase
     {
         storeId = null;
         databaseHealth = null;
+    }
+
+    @Override
+    public StoreId get()
+    {
+        return storeId();
     }
 }

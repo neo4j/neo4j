@@ -30,7 +30,6 @@ import java.util.function.Supplier;
 import org.neo4j.coreedge.catchup.CatchupServer;
 import org.neo4j.coreedge.catchup.CheckpointerSupplier;
 import org.neo4j.coreedge.catchup.DataSourceSupplier;
-import org.neo4j.coreedge.catchup.StoreIdSupplier;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
 import org.neo4j.coreedge.catchup.storecopy.core.CoreToCoreClient;
@@ -284,7 +283,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir, copiedStoreRecovery,
                 new StoreFiles( new DefaultFileSystemAbstraction() ),
-                dependencies.provideDependency( NeoStoreDataSource.class ),
+                platformModule.dataSourceManager,
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ), databaseHealthSupplier );
 
         final DelayedRenewableTimeoutService raftTimeoutService =
@@ -446,7 +445,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         this.lockManager = dependencies.satisfyDependency( lockManager );
 
-        CatchupServer catchupServer = new CatchupServer( logProvider, new StoreIdSupplier( platformModule ),
+        CatchupServer catchupServer = new CatchupServer( logProvider, localDatabase,
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ),
                 new DataSourceSupplier( platformModule ), new CheckpointerSupplier( platformModule.dependencies ),

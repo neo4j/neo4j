@@ -28,6 +28,7 @@ import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 
 import static junit.framework.TestCase.assertEquals;
@@ -44,13 +45,14 @@ public class LocalDatabaseTest
         StoreId storeId = new StoreId( 1, 2, 3, 4 );
 
         // when
+        DataSourceManager dataSourceManager = mock( DataSourceManager.class );
         NeoStoreDataSource neoStoreDataSource = mock( NeoStoreDataSource.class );
+        when( dataSourceManager.getDataSource() ).thenReturn( neoStoreDataSource );
         when( neoStoreDataSource.getStoreId() ).thenReturn( new org.neo4j.kernel.impl.store.StoreId( 1, 2, 5, 3, 4 ) );
 
-        LocalDatabase localDatabase = new LocalDatabase( new File( "directory" ),
-                mock( CopiedStoreRecovery.class ),
-                new StoreFiles( mock( FileSystemAbstraction.class ) ),
-                singleton( neoStoreDataSource ), singleton( mock( TransactionIdStore.class ) ), () -> mock( DatabaseHealth.class ) );
+        LocalDatabase localDatabase = new LocalDatabase( new File( "directory" ), mock( CopiedStoreRecovery.class ),
+                new StoreFiles( mock( FileSystemAbstraction.class ) ), dataSourceManager,
+                singleton( mock( TransactionIdStore.class ) ), () -> mock( DatabaseHealth.class ) );
 
         // then
         assertEquals( storeId, localDatabase.storeId() );
