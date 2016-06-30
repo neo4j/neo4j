@@ -136,12 +136,12 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
 
     protected long keyAddress( int index )
     {
-        return address + (index*bytesPerEntry) + 4;
+        return address + (index*((long) bytesPerEntry)) + 4;
     }
 
     protected long hopBitsAddress( int index )
     {
-        return address + (index*bytesPerEntry);
+        return address + (index*((long) bytesPerEntry));
     }
 
     @Override
