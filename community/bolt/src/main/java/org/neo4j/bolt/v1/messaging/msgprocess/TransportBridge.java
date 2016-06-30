@@ -25,6 +25,7 @@ import java.util.Map;
 import org.neo4j.bolt.v1.messaging.MessageHandler;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.StatementMetadata;
+import org.neo4j.bolt.v1.runtime.internal.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.logging.Log;
 
@@ -89,5 +90,10 @@ public class TransportBridge extends MessageHandler.Adapter<RuntimeException>
     public void handleAckFailureMessage() throws RuntimeException
     {
         session.ackFailure( null, simpleCallback );
+    }
+
+    public void handleFatalError( Neo4jError from )
+    {
+        session.externalError( from, null, simpleCallback );
     }
 }

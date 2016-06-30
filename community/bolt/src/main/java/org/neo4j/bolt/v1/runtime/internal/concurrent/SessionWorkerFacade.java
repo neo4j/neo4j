@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.StatementMetadata;
+import org.neo4j.bolt.v1.runtime.internal.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 
 /**
@@ -91,6 +92,13 @@ public class SessionWorkerFacade implements Session
     public <A> void ackFailure( A attachment, Callback<Void,A> callback )
     {
         queue( session -> session.ackFailure( attachment, callback ) );
+    }
+
+
+    @Override
+    public <A> void externalError( Neo4jError error, A attachment, Callback<Void,A> callback )
+    {
+        queue( session -> session.externalError( error, attachment, callback ) );
     }
 
     @Override
