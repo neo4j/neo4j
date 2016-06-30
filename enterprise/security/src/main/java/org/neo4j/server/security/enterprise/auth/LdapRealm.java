@@ -39,6 +39,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
@@ -70,6 +71,8 @@ public class LdapRealm extends JndiLdapRealm
     private Map<String,Collection<String>> groupToRoleMapping;
     private final Log log;
 
+    private Map<String, SimpleAuthorizationInfo> authorizationInfoCache = new ConcurrentHashMap<>();
+
     public LdapRealm( Config config, LogProvider logProvider )
     {
         super();
@@ -90,24 +93,32 @@ public class LdapRealm extends JndiLdapRealm
     protected AuthorizationInfo queryForAuthorizationInfo( PrincipalCollection principals,
             LdapContextFactory ldapContextFactory ) throws NamingException
     {
-        if ( authorizationEnabled && useSystemAccountForAuthorization )
+        if ( authorizationEnabled )
         {
             String username = (String) getAvailablePrincipal( principals );
 
-            // Perform context search using the system context
-            LdapContext ldapContext = ldapContextFactory.getSystemLdapContext();
-
-            Set<String> roleNames;
-            try
+            if ( useSystemAccountForAuthorization )
             {
-                roleNames = findRoleNamesForUser( username, ldapContext );
-            }
-            finally
-            {
-                LdapUtils.closeContext( ldapContext );
-            }
+                // Perform context search using the system context
+                LdapContext ldapContext = ldapContextFactory.getSystemLdapContext();
 
-            return new SimpleAuthorizationInfo( roleNames );
+                Set<String> roleNames;
+                try
+                {
+                    roleNames = findRoleNamesForUser( username, ldapContext );
+                }
+                finally
+                {
+                    LdapUtils.closeContext( ldapContext );
+                }
+
+                return new SimpleAuthorizationInfo( roleNames );
+            }
+            else
+            {
+                // Authorization info is cached during authentication
+                return authorizationInfoCache.get( username );
+            }
         }
         return null;
     }
@@ -119,11 +130,34 @@ public class LdapRealm extends JndiLdapRealm
     {
         // NOTE: This will be called only if authentication with the ldap context was successful
 
-        // TODO: If authorization is enabled but useSystemAccountForAuthorization is disabled, we should perform
-        // the search for groups directly here while the context is open.
+        // If authorization is enabled but useSystemAccountForAuthorization is disabled, we should perform
+        // the search for groups directly here while the user's authenticated ldap context is open.
+        if ( authorizationEnabled && !useSystemAccountForAuthorization )
+        {
+            String username = (String) token.getPrincipal();
+            Set<String> roleNames = findRoleNamesForUser( username, ldapContext );
+            cacheAuthorizationInfo( username, roleNames );
+        }
 
         return new ShiroAuthenticationInfo( token.getPrincipal(), token.getCredentials(), getName(),
                 AuthenticationResult.SUCCESS );
+    }
+
+    @Override
+    protected void clearCachedAuthorizationInfo( PrincipalCollection principals )
+    {
+        super.clearCachedAuthorizationInfo( principals );
+
+        String username = (String) getAvailablePrincipal( principals );
+
+        authorizationInfoCache.remove( username );
+    }
+
+    private void cacheAuthorizationInfo( String username, Set<String> roleNames )
+    {
+        // Ideally we would like to use the existing authorizationCache in our base class,
+        // but unfortunately it is private to AuthorizingRealm
+        authorizationInfoCache.put( username, new SimpleAuthorizationInfo( roleNames ) );
     }
 
     private final RolePermissionResolver rolePermissionResolver = new RolePermissionResolver()
