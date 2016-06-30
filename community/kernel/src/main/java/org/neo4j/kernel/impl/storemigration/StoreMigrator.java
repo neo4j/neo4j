@@ -160,6 +160,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
         long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
         long lastTxChecksum = extractTransactionChecksum( neoStore, storeDir, lastTxId );
+        // TODO: Add to MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_COMMIT_TIMESTAMP )?
         LogPosition lastTxLogPosition = extractTransactionLogPosition( neoStore, storeDir, lastTxId );
         // Write the tx checksum to file in migrationDir, because we need it later when moving files into storeDir
         writeLastTxChecksum( migrationDir, lastTxChecksum );
@@ -372,7 +373,7 @@ public class StoreMigrator implements StoreMigrationParticipant
 
         Configuration importConfig = new Configuration.Overridden( config );
         AdditionalInitialIds additionalInitialIds =
-                readAdditionalIds( storeDir, lastTxId, lastTxChecksum,  lastTxLogVersion, lastTxLogByteOffset );
+                readAdditionalIds( storeDir, lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset );
         BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsoluteFile(), fileSystem,
                 importConfig, logService, withDynamicProcessorAssignment( migrationBatchImporterMonitor(
                 legacyStore ), importConfig ),

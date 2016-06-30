@@ -46,6 +46,7 @@ public class RecoveryVisitor implements CloseableVisitor<RecoverableTransaction,
     private final IndexUpdatesValidator indexUpdatesValidator;
     private final Monitor monitor;
     private long lastTransactionIdApplied = -1;
+    private long lastTransactionCommitTimestamp;
     private long lastTransactionChecksum;
     private LogPosition lastTransactionLogPosition;
 
@@ -74,6 +75,7 @@ public class RecoveryVisitor implements CloseableVisitor<RecoverableTransaction,
         }
 
         lastTransactionIdApplied = txId;
+        lastTransactionCommitTimestamp = transaction.representation().getCommitEntry().getTimeWritten();
         lastTransactionChecksum = LogEntryStart.checksum( representation.getStartEntry() );
         lastTransactionLogPosition = transaction.positionAfterTx();
         monitor.transactionRecovered( txId );
@@ -86,7 +88,8 @@ public class RecoveryVisitor implements CloseableVisitor<RecoverableTransaction,
         if ( lastTransactionIdApplied != -1 )
         {
             store.setLastCommittedAndClosedTransactionId( lastTransactionIdApplied, lastTransactionChecksum,
-                    lastTransactionLogPosition.getLogVersion(), lastTransactionLogPosition.getByteOffset() );
+                    lastTransactionCommitTimestamp, lastTransactionLogPosition.getByteOffset(),
+                    lastTransactionLogPosition.getLogVersion() );
         }
     }
 

@@ -86,6 +86,7 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.util.collection.ArrayCollection;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
@@ -98,6 +99,9 @@ import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
  */
 public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder
 {
+    private static final boolean CHECK_TERMINATION_ON_CLOSE =
+            FeatureToggles.flag( KernelTransactionImplementation.class, "check_termination_on_close", true );
+
     /*
      * IMPORTANT:
      * This class is pooled and re-used. If you add *any* state to it, you *must* make sure that the #initialize()
@@ -173,9 +177,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private boolean closing, closed;
     private boolean failure, success;
     private volatile boolean terminated;
+    private Status terminationReason;
     // Some header information
     private long startTimeMillis;
     private long lastTransactionIdWhenStarted;
+    private long lastTransactionTimestampWhenStarted;
+
     /**
      * Implements reusing the same underlying {@link KernelStatement} for overlapping statements.
      */
@@ -187,13 +194,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final NeoStoreTransactionContext context;
     private volatile int reuseCount;
 
-    /**
-     * Lock prevents transaction {@link #markForTermination() transction termination} from interfering with {@link
-     * #close() transaction commit} and specifically with {@link #release()}.
-     * Termination can run concurrently with commit and we need to make sure that it terminates the right lock client
-     * and the right transaction (with the right {@link #reuseCount}) because {@link KernelTransactionImplementation}
-     * instances are pooled.
-     */
     private final Lock terminationReleaseLock = new ReentrantLock();
 
     public KernelTransactionImplementation( StatementOperationParts operations,
@@ -248,15 +248,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     /**
      * Reset this transaction to a vanilla state, turning it into a logically new transaction.
      */
-    public KernelTransactionImplementation initialize( long lastCommittedTx )
+    public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp )
     {
         this.locks = locksManager.newClient();
+        this.terminationReason = null;
         this.closing = closed = failure = success = terminated = false;
         this.transactionType = TransactionType.ANY;
         this.beforeHookInvoked = false;
         this.recordState.initialize( lastCommittedTx );
         this.startTimeMillis = clock.currentTimeMillis();
         this.lastTransactionIdWhenStarted = lastCommittedTx;
+        this.lastTransactionTimestampWhenStarted = lastTimeStamp;
         this.transactionEvent = tracer.beginTransaction();
         assert transactionEvent != null : "transactionEvent was null!";
         this.storeStatement = storeLayer.acquireStatement();
@@ -282,9 +284,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public boolean shouldBeTerminated()
+    public Status shouldBeTerminated()
     {
-        return terminated;
+        return terminated ? terminationReason : null;
     }
 
     /**
@@ -294,7 +296,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * {@link #close()} and {@link #release()} calls.
      */
     @Override
-    public void markForTermination()
+    public void markForTermination( Status reason )
     {
         if ( !canBeTerminated() )
         {
@@ -317,11 +319,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 {
                     locks.stop();
                 }
-                transactionMonitor.transactionTerminated();
             }
         }
         finally
         {
+            terminationReason = reason;
+            terminated = true;
+            transactionMonitor.transactionTerminated();
             terminationReleaseLock.unlock();
         }
     }
@@ -492,7 +496,19 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             if ( failure || !success || terminated )
             {
                 rollback();
-                failOnNonExplicitRollbackIfNeeded();
+                if ( CHECK_TERMINATION_ON_CLOSE && success && terminated )
+                {
+                    TransactionTermination.throwCorrectExceptionBasedOnTerminationReason( terminationReason );
+                }
+                if ( success )
+                {
+                    // Success was called, but also failure which means that the client code using this
+                    // transaction passed through a happy path, but the transaction was still marked as
+                    // failed for one or more reasons. Tell the user that although it looked happy it
+                    // wasn't committed, but was instead rolled back.
+                    throw new TransactionFailureException( Status.Transaction.MarkedAsFailed,
+                            "Transaction rolled back even if marked as successful" );
+                }
             }
             else
             {
@@ -522,37 +538,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             {
                 release();
             }
-        }
-    }
-
-    /**
-     * Throws exception if this transaction was marked as successful but failure flag has also been set to true.
-     * <p>
-     * This could happen when:
-     * <ul>
-     * <li>caller explicitly calls both {@link #success()} and {@link #failure()}</li>
-     * <li>caller explicitly calls {@link #success()} but transaction execution fails</li>
-     * <li>caller explicitly calls {@link #success()} but transaction is terminated</li>
-     * </ul>
-     * <p>
-     *
-     * @throws TransactionFailureException when execution failed
-     * @throws TransactionTerminatedException when transaction was terminated
-     */
-    private void failOnNonExplicitRollbackIfNeeded() throws TransactionFailureException
-    {
-        if ( success && terminated )
-        {
-            throw new TransactionTerminatedException();
-        }
-        if ( success )
-        {
-            // Success was called, but also failure which means that the client code using this
-            // transaction passed through a happy path, but the transaction was still marked as
-            // failed for one or more reasons. Tell the user that although it looked happy it
-            // wasn't committed, but was instead rolled back.
-            throw new TransactionFailureException( Status.Transaction.MarkedAsFailed,
-                    "Transaction rolled back even if marked as successful" );
         }
     }
 
@@ -601,7 +586,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     }
                 }
 
-                context.init( locks );
+                locks.prepare();
+                context.init( locks.delegate() );
                 prepareRecordChangesFromTransactionState();
             }
 
@@ -743,8 +729,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     /**
      * Release resources held up by this transaction & return it to the transaction pool.
-     * This method is guarded by {@link #terminationReleaseLock} to coordinate concurrent
-     * {@link #markForTermination()} calls.
      */
     private void release()
     {
@@ -766,6 +750,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             reuseCount++;
             terminationReleaseLock.unlock();
         }
+    }
+
+    public long lastTransactionTimestampWhenStarted()
+    {
+        return lastTransactionTimestampWhenStarted;
     }
 
     /**

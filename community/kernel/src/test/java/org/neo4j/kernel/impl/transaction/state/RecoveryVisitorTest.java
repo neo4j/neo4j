@@ -68,7 +68,7 @@ public class RecoveryVisitorTest
 
         visitor.close();
 
-        verify( store, never() ).setLastCommittedAndClosedTransactionId( anyLong(), anyLong(), anyLong(), anyLong() );
+        verify( store, never() ).setLastCommittedAndClosedTransactionId( anyLong(), anyLong(), anyLong(), anyLong(), anyLong() );
     }
 
     @Test
@@ -107,9 +107,8 @@ public class RecoveryVisitorTest
 
         verify( store, times( 1 ) ).setLastCommittedAndClosedTransactionId(
                 commitEntry.getTxId(),
-                LogEntryStart.checksum( startEntry ),
-                logPosition.getLogVersion(),
-                logPosition.getByteOffset()
-        );
+                LogEntryStart.checksum( startEntry ), commitEntry.getTimeWritten(),
+                logPosition.getByteOffset(),
+                logPosition.getLogVersion() );
     }
 }

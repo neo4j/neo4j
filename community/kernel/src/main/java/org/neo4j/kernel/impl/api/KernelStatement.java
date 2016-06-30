@@ -20,13 +20,13 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -37,6 +37,8 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.locking.Locks;
+
+import static org.neo4j.kernel.impl.api.TransactionTermination.throwCorrectExceptionBasedOnTerminationReason;
 
 public class KernelStatement implements TxStateHolder, Statement
 {
@@ -126,9 +128,11 @@ public class KernelStatement implements TxStateHolder, Statement
         {
             throw new NotInTransactionException( "The statement has been closed." );
         }
-        if ( transaction.shouldBeTerminated() )
+
+        Status terminationReason = transaction.shouldBeTerminated();
+        if ( terminationReason != null )
         {
-            throw new TransactionTerminatedException();
+            throwCorrectExceptionBasedOnTerminationReason( terminationReason );
         }
     }
 

@@ -93,6 +93,13 @@
       <type>test-jar</type>
     </dependency>
     <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-consistency-check</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+      <type>test-jar</type>
+    </dependency>
+    <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
       <version>${project.version}</version>

@@ -38,7 +38,7 @@ public class NoOpLocks extends LifecycleAdapter implements Locks
         {
             throw new IllegalStateException();
         }
-        return new NoOpClient();
+        return NoOpClient.NO_LOCKS;
     }
 
     @Override

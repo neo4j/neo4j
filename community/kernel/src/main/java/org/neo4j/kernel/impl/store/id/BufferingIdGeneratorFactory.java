@@ -35,32 +35,25 @@ import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
  */
 public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
 {
-    private final BufferingIdGenerator[/*IdType#ordinal as key*/] overriddenIdGenerators =
-            new BufferingIdGenerator[IdType.values().length];
+    private final BufferingIdGenerator[] overriddenIdGenerators =
+            new BufferingIdGenerator[IdType.getAllIdTypes().size()];
     private Supplier<KernelTransactionsSnapshot> boundaries;
-    private Predicate<KernelTransactionsSnapshot> safeThreshold;
+    private IdReuseEligibility eligibleForReuse;
 
     public BufferingIdGeneratorFactory( IdGeneratorFactory delegate )
     {
         super( delegate );
     }
 
-    public void initialize( Supplier<KernelTransactionsSnapshot> boundaries, final IdReuseEligibility eligibleForReuse )
+    public void initialize( Supplier<KernelTransactionsSnapshot> boundaries, IdReuseEligibility eligibleForReuse )
     {
         this.boundaries = boundaries;
-        this.safeThreshold = new Predicate<KernelTransactionsSnapshot>()
-        {
-            @Override
-            public boolean test( KernelTransactionsSnapshot snapshot )
-            {
-                return snapshot.allClosed() && eligibleForReuse.isEligible();
-            }
-        };
+        this.eligibleForReuse = eligibleForReuse;
         for ( BufferingIdGenerator generator : overriddenIdGenerators )
         {
             if ( generator != null )
             {
-                generator.initialize( boundaries, safeThreshold );
+                generator.initialize( boundaries, eligibleForReuse );
             }
         }
     }
@@ -91,7 +84,7 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
             //   = that is why this if-statement is here
             if ( boundaries != null )
             {
-                bufferingGenerator.initialize( boundaries, safeThreshold );
+                bufferingGenerator.initialize( boundaries, eligibleForReuse );
             }
             overriddenIdGenerators[idType.ordinal()] = bufferingGenerator;
             generator = bufferingGenerator;

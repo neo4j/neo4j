@@ -203,16 +203,18 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         private final boolean hasLegacyIndexChanges;
         private final long transactionId;
         private final long transactionChecksum;
+        private final long transactionCommitTimestamp;
         private final LogPosition logPosition;
         private final TransactionIdStore transactionIdStore;
         private boolean markedAsCommitted;
 
         TransactionCommitment( boolean hasLegacyIndexChanges, long transactionId, long transactionChecksum,
-                LogPosition logPosition, TransactionIdStore transactionIdStore )
+                long transactionCommitTimestamp, LogPosition logPosition, TransactionIdStore transactionIdStore )
         {
             this.hasLegacyIndexChanges = hasLegacyIndexChanges;
             this.transactionId = transactionId;
             this.transactionChecksum = transactionChecksum;
+            this.transactionCommitTimestamp = transactionCommitTimestamp;
             this.logPosition = logPosition;
             this.transactionIdStore = transactionIdStore;
         }
@@ -221,7 +223,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         public void publishAsCommitted()
         {
             markedAsCommitted = true;
-            transactionIdStore.transactionCommitted( transactionId, transactionChecksum );
+            transactionIdStore.transactionCommitted( transactionId, transactionChecksum, transactionCommitTimestamp );
         }
 
         @Override
@@ -280,8 +282,8 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
                 legacyIndexTransactionOrdering.offer( transactionId );
             }
             return new TransactionCommitment(
-                    hasLegacyIndexChanges, transactionId, transactionChecksum, logPositionAfterCommit,
-                    transactionIdStore );
+                    hasLegacyIndexChanges, transactionId, transactionChecksum, transaction.getTimeCommitted(),
+                    logPositionAfterCommit, transactionIdStore );
         }
         catch ( final Throwable panic )
         {

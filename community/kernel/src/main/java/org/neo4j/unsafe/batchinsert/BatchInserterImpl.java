@@ -405,24 +405,13 @@ public class BatchInserterImpl implements BatchInserter
         return new IndexCreatorImpl( actions, label );
     }
 
-    private void removePropertyIfExist( RecordProxy<Long, ? extends PrimitiveRecord,Void> recordProxy,
-            int propertyKey, RecordAccess<Long,PropertyRecord,PrimitiveRecord> propertyRecords )
-    {
-        if ( propertyTraverser.findPropertyRecordContaining( recordProxy.forReadingData(),
-                propertyKey, propertyRecords, false ) != Record.NO_NEXT_PROPERTY.intValue() )
-        {
-            propertyDeletor.removeProperty( recordProxy, propertyKey, propertyRecords );
-        }
-    }
-
     private void setPrimitiveProperty( RecordProxy<Long,? extends PrimitiveRecord,Void> primitiveRecord,
             String propertyName, Object propertyValue )
     {
         int propertyKey = getOrCreatePropertyKeyId( propertyName );
         RecordAccess<Long,PropertyRecord,PrimitiveRecord> propertyRecords = recordAccess.getPropertyRecords();
 
-        removePropertyIfExist( primitiveRecord, propertyKey, propertyRecords );
-        propertyCreator.primitiveAddProperty( primitiveRecord, propertyKey, propertyValue, propertyRecords );
+        propertyCreator.primitiveSetProperty( primitiveRecord, propertyKey, propertyValue, propertyRecords );
     }
 
     private void validateIndexCanBeCreated( int labelId, int propertyKeyId )

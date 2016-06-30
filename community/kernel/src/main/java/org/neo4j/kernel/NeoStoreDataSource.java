@@ -130,6 +130,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointScheduler;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThreshold;
@@ -183,6 +184,7 @@ import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
@@ -534,7 +536,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             LegacyIndexApplierLookup legacyIndexApplierLookup =
                     dependencies.satisfyDependency( new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup ) );
 
-            boolean safeIdBuffering = FeatureToggles.flag( getClass(), "safeIdBuffering", false );
+            boolean safeIdBuffering = FeatureToggles.flag( getClass(), "safeIdBuffering", true );
             if ( safeIdBuffering )
             {
                 // This buffering id generator factory will have properly buffering id generators injected into
@@ -584,7 +586,10 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                 // Now that we've instantiated the component which can keep track of transaction boundaries
                 // we let the id generator know about it.
                 bufferingIdGeneratorFactory.initialize( kernelModule.kernelTransactions(), eligibleForReuse );
-                life.add( freeIdMaintenance( bufferingIdGeneratorFactory ) );
+                BufferedIdMaintenanceController idMaintenanceController =
+                        new BufferedIdMaintenanceController( bufferingIdGeneratorFactory );
+                dependencies.satisfyDependencies( idMaintenanceController );
+                life.add( (Lifecycle) idMaintenanceController );
             }
 
             // Do these assignments last so that we can ensure no cyclical dependencies exist
@@ -639,33 +644,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
          * kernel panics.
          */
         kernelHealth.healed();
-    }
-
-    private Lifecycle freeIdMaintenance( final BufferingIdGeneratorFactory bufferingIdGeneratorFactory )
-    {
-        return new LifecycleAdapter()
-        {
-            private JobHandle jobHandle;
-
-            @Override
-            public void start() throws Throwable
-            {
-                jobHandle = scheduler.scheduleRecurring( JobScheduler.Groups.storageMaintenance, new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        bufferingIdGeneratorFactory.maintenance();
-                    }
-                }, 1, SECONDS );
-            }
-
-            @Override
-            public void stop() throws Throwable
-            {
-                jobHandle.cancel( false );
-            }
-        };
     }
 
     // Startup sequence
@@ -851,7 +829,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
 
     private Factory<StoreStatement> storeStatementFactory( final NeoStores neoStores )
     {
-        final LockService lockService = FeatureToggles.flag( getClass(), "propertyReadLocks", true ) ?
+        final LockService lockService = FeatureToggles.flag( getClass(), "propertyReadLocks", false ) ?
                 this.lockService : NO_LOCK_SERVICE;
         return new Factory<StoreStatement>()
         {
@@ -1037,7 +1015,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             final StartupStatisticsProvider startupStatistics,
             LegacyIndexApplierLookup legacyIndexApplierLookup )
     {
-        MetaDataStore metaDataStore = neoStores.getMetaDataStore();
+        final MetaDataStore metaDataStore = neoStores.getMetaDataStore();
         final RecoveryLabelScanWriterProvider labelScanWriters =
                 new RecoveryLabelScanWriterProvider( labelScanStore, 1000 );
         final RecoveryLegacyIndexApplierLookup recoveryLegacyIndexApplierLookup = new RecoveryLegacyIndexApplierLookup(
@@ -1056,7 +1034,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
 
         final LatestCheckPointFinder checkPointFinder =
                 new LatestCheckPointFinder( logFiles, fileSystemAbstraction, logEntryReader );
-        Recovery.SPI spi = new DefaultRecoverySPI( labelScanWriters, recoveryLegacyIndexApplierLookup,
+        final Recovery.SPI spi = new DefaultRecoverySPI( labelScanWriters, recoveryLegacyIndexApplierLookup,
                 storeFlusher, neoStores, logFileRecoverer, logFiles, fileSystemAbstraction, metaDataStore,
                 checkPointFinder, indexUpdatesValidator );
         Recovery recovery = new Recovery( spi, recoveryMonitor );
@@ -1070,6 +1048,35 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             {
                 startupStatistics.setNumberOfRecoveredTransactions( recoveredCount.get() );
                 recoveredCount.set( 0 );
+            }
+        } );
+
+        life.add( new LifecycleAdapter()
+        {
+            @Override
+            public void start() throws Throwable
+            {
+                // Normally we get here after recovery have been or at least checked, at which point we
+                // know whether or not there's a commit time stamp in our transaction log and if so what it is.
+                // In HA though, we may just call start() after a store copy and so the normal recovery
+                // mechanisms doesn't kick in. In this case there will be a log scan as part of this call.
+                if ( spi.hasFoundLastCommitedTimestamp() )
+                {
+                    metaDataStore.setLastCommitTimestamp( spi.lastCommitedTimestamp() );
+                }
+                else
+                {
+                    if ( metaDataStore.getLastCommittedTransactionId() != TransactionIdStore.BASE_TX_ID )
+                    {
+                        // We haz stuff in store but no logz. Timestamps is unclearly known.
+                        metaDataStore.setLastCommitTimestamp( TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP );
+                    }
+                    else
+                    {
+                        // We haz no stuffs in store... no logz (no shit Sherlock), but all is good
+                        metaDataStore.setLastCommitTimestamp( TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP );
+                    }
+                }
             }
         } );
     }
@@ -1446,5 +1453,40 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     {
         public static final Setting<String> keep_logical_logs = GraphDatabaseSettings.keep_logical_logs;
         public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
+    }
+
+    public class BufferedIdMaintenanceController extends LifecycleAdapter
+    {
+        private final BufferingIdGeneratorFactory bufferingIdGeneratorFactory;
+        private JobHandle jobHandle;
+
+        BufferedIdMaintenanceController( BufferingIdGeneratorFactory bufferingIdGeneratorFactory )
+        {
+            this.bufferingIdGeneratorFactory = bufferingIdGeneratorFactory;
+        }
+
+        @Override
+        public void start() throws Throwable
+        {
+            jobHandle = scheduler.scheduleRecurring( JobScheduler.Groups.storageMaintenance, new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    maintenance();
+                }
+            }, 1, SECONDS );
+        }
+
+        @Override
+        public void stop() throws Throwable
+        {
+            jobHandle.cancel( false );
+        }
+
+        public void maintenance()
+        {
+            bufferingIdGeneratorFactory.maintenance();
+        }
     }
 }

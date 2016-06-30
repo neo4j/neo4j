@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.id;
 import org.neo4j.function.Consumer;
 import org.neo4j.function.Predicate;
 import org.neo4j.function.Supplier;
+import org.neo4j.kernel.IdReuseEligibility;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 
 class BufferingIdGenerator extends IdGenerator.Delegate
@@ -33,10 +34,16 @@ class BufferingIdGenerator extends IdGenerator.Delegate
         super( delegate );
     }
 
-    void initialize( Supplier<KernelTransactionsSnapshot> boundaries,
-            Predicate<KernelTransactionsSnapshot> safeThreshold )
+    void initialize( Supplier<KernelTransactionsSnapshot> boundaries, final IdReuseEligibility eligibleForReuse )
     {
-        buffer = new DelayedBuffer<>( boundaries, safeThreshold, 10_000, new Consumer<long[]>()
+        buffer = new DelayedBuffer<>( boundaries, new Predicate<KernelTransactionsSnapshot>()
+        {
+            @Override
+            public boolean test( KernelTransactionsSnapshot snapshot )
+            {
+                return snapshot.allClosed() && eligibleForReuse.isEligible( snapshot );
+            }
+        }, 10_000, new Consumer<long[]>()
         {
             @Override
             public void accept( long[] freedIds )
@@ -68,5 +75,15 @@ class BufferingIdGenerator extends IdGenerator.Delegate
     void clear()
     {
         buffer.clear();
+    }
+
+    @Override
+    public void close()
+    {
+        if ( buffer != null )
+        {
+            buffer.maintenance();
+        }
+        super.close();
     }
 }

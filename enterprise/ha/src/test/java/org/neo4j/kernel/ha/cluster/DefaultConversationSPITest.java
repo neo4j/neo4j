@@ -32,11 +32,11 @@ import org.neo4j.kernel.impl.util.JobScheduler;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith( MockitoJUnitRunner.class )
 public class DefaultConversationSPITest
 {
-
     @Mock
     private Locks locks;
     @Mock
@@ -47,6 +47,7 @@ public class DefaultConversationSPITest
     @Test
     public void testAcquireClient() throws Exception
     {
+        when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
         conversationSpi.acquireClient();
 
         verify(locks).newClient();

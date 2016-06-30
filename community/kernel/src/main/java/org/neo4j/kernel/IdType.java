@@ -19,45 +19,86 @@
  */
 package org.neo4j.kernel;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * @deprecated This will be moved to internal packages in the next major release.
  */
 @Deprecated
-public enum IdType
+public class IdType
 {
-    NODE( 35, false ),
-    RELATIONSHIP( 35, false ),
-    PROPERTY( 36, true ),
-    STRING_BLOCK( 36, true ),
-    ARRAY_BLOCK( 36, true ),
-    PROPERTY_KEY_TOKEN( false ),
-    PROPERTY_KEY_TOKEN_NAME( false ),
-    RELATIONSHIP_TYPE_TOKEN( 16, false ),
-    RELATIONSHIP_TYPE_TOKEN_NAME( false ),
-    LABEL_TOKEN( false ),
-    LABEL_TOKEN_NAME( false ),
-    NEOSTORE_BLOCK( false ),
-    SCHEMA( 35, false ),
-    NODE_LABELS( 35, true ),
-    RELATIONSHIP_GROUP( 35, false );
+    public static final IdType NODE = new IdType( 35, Name.NODE, false );
+    public static final IdType RELATIONSHIP = new IdType( 35, Name.RELATIONSHIP, false );
+    public static final IdType PROPERTY = new IdType( 36, Name.PROPERTY, true );
+    public static final IdType STRING_BLOCK = new IdType( 36, Name.STRING_BLOCK, true );
+    public static final IdType ARRAY_BLOCK = new IdType( 36, Name.ARRAY_BLOCK, true );
+    public static final IdType PROPERTY_KEY_TOKEN = new IdType( Name.PROPERTY_KEY_TOKEN, false );
+    public static final IdType PROPERTY_KEY_TOKEN_NAME = new IdType( Name.PROPERTY_KEY_TOKEN_NAME, false );
+    public static final IdType RELATIONSHIP_TYPE_TOKEN = new IdType( 16, Name.RELATIONSHIP_TYPE_TOKEN, false );
+    public static final IdType RELATIONSHIP_TYPE_TOKEN_NAME = new IdType( Name.RELATIONSHIP_TYPE_TOKEN_NAME, false );
+    public static final IdType LABEL_TOKEN = new IdType( Name.LABEL_TOKEN, false );
+    public static final IdType LABEL_TOKEN_NAME = new IdType( Name.LABEL_TOKEN_NAME, false );
+    public static final IdType NEOSTORE_BLOCK = new IdType( Name.NEOSTORE_BLOCK, false );
+    public static final IdType SCHEMA = new IdType( 35, Name.SCHEMA, false );
+    public static final IdType NODE_LABELS = new IdType( 35, Name.NODE_LABELS, true );
+    public static final IdType RELATIONSHIP_GROUP = new IdType( 35, Name.RELATIONSHIP_GROUP, false );
 
-    private final long max;
-    private final boolean allowAggressiveReuse;
+    private static final List<IdType> ALL_ID_TYPES = Arrays.asList( NODE, RELATIONSHIP, PROPERTY, STRING_BLOCK,
+            ARRAY_BLOCK, PROPERTY_KEY_TOKEN, PROPERTY_KEY_TOKEN_NAME, RELATIONSHIP_TYPE_TOKEN,
+            RELATIONSHIP_TYPE_TOKEN_NAME, LABEL_TOKEN, LABEL_TOKEN_NAME, NEOSTORE_BLOCK,
+            SCHEMA, NODE_LABELS, RELATIONSHIP_GROUP );
 
-    IdType( boolean allowAggressiveReuse )
+    /**
+     * Get all defined id types.
+     * @return list of all id types.
+     */
+    public static List<IdType> getAllIdTypes()
     {
-        this( 32, allowAggressiveReuse );
+        return ALL_ID_TYPES;
     }
 
-    IdType( int bits, boolean allowAggressiveReuse )
+    public static IdType forName(IdType.Name typeName)
+    {
+        for ( IdType idType : ALL_ID_TYPES )
+        {
+            if ( idType.getName().equals( typeName ) )
+            {
+                return idType;
+            }
+        }
+        throw new IllegalArgumentException( "IdType with requested name: " + typeName + " does not exist." );
+    }
+
+    private final long max;
+    private boolean allowAggressiveReuse;
+    private final Name name;
+
+    private IdType( Name name, boolean allowAggressiveReuse )
+    {
+        this( 32, name, allowAggressiveReuse );
+    }
+
+    private IdType( int bits, Name name, boolean allowAggressiveReuse )
     {
         this.allowAggressiveReuse = allowAggressiveReuse;
-        this.max = (long)Math.pow( 2, bits )-1;
+        this.name = name;
+        this.max = (long) Math.pow( 2, bits ) - 1;
+    }
+
+    public int ordinal()
+    {
+        return name.ordinal();
     }
 
     public long getMaxValue()
     {
         return this.max;
+    }
+
+    public void setAllowAggressiveReuse( boolean allowAggressiveReuse )
+    {
+        this.allowAggressiveReuse = allowAggressiveReuse;
     }
 
     public boolean allowAggressiveReuse()
@@ -68,5 +109,39 @@ public enum IdType
     public int getGrabSize()
     {
         return allowAggressiveReuse ? 50000 : 1024;
+    }
+
+    public Name getName()
+    {
+        return name;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "IdType{" +
+               "max=" + max +
+               ", allowAggressiveReuse=" + allowAggressiveReuse +
+               ", name=" + name +
+               '}';
+    }
+
+    public enum Name
+    {
+        NODE,
+        RELATIONSHIP,
+        PROPERTY,
+        STRING_BLOCK,
+        ARRAY_BLOCK,
+        PROPERTY_KEY_TOKEN,
+        PROPERTY_KEY_TOKEN_NAME,
+        RELATIONSHIP_TYPE_TOKEN,
+        RELATIONSHIP_TYPE_TOKEN_NAME,
+        LABEL_TOKEN,
+        LABEL_TOKEN_NAME,
+        NEOSTORE_BLOCK,
+        SCHEMA,
+        NODE_LABELS,
+        RELATIONSHIP_GROUP
     }
 }

@@ -52,6 +52,7 @@ import org.neo4j.function.Function;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -116,6 +117,7 @@ import org.neo4j.kernel.ha.management.HighlyAvailableKernelData;
 import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
+import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
@@ -127,6 +129,8 @@ import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
+import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionConfigurator;
+import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -182,6 +186,9 @@ public class HighlyAvailableEditionModule
         final LogService logging = platformModule.logging;
         final Monitors monitors = platformModule.monitors;
 
+        // configure enterprise specifics
+        new EnterpriseEditionConfigurator( config ).configure();
+
         // Set Netty logger
         InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( logging.getInternalLogProvider() ) );
 
@@ -196,9 +203,11 @@ public class HighlyAvailableEditionModule
                 serverId.toIntegerIndex(),
                 dependencies.provideDependency( TransactionIdStore.class ) ) );
 
+        final long idReuseSafeZone =
+                config.get( EnterpriseEditionSettings.id_reuse_safe_zone_time );
         TransactionCommittingResponseUnpacker responseUnpacker = dependencies.satisfyDependency(
-                new TransactionCommittingResponseUnpacker( new DefaultUnpackerDependencies( dependencies ),
-                        config.get( HaSettings.pull_apply_batch_size ) ) );
+                new TransactionCommittingResponseUnpacker( new DefaultUnpackerDependencies( dependencies,
+                        idReuseSafeZone ), config.get( HaSettings.pull_apply_batch_size ) ) );
 
         Supplier<KernelAPI> kernelProvider = dependencies.provideDependency( KernelAPI.class );
 
@@ -552,7 +561,7 @@ public class HighlyAvailableEditionModule
         eligibleForIdReuse = new IdReuseEligibility()
         {
             @Override
-            public boolean isEligible()
+            public boolean isEligible( KernelTransactionsSnapshot snapshot )
             {
                 switch ( members.getCurrentMemberRole() )
                 {
@@ -567,9 +576,8 @@ public class HighlyAvailableEditionModule
                 case HighAvailabilityModeSwitcher.MASTER:
                     // If we're master then we have to keep these ids around during the configured safe zone time
                     // so that slaves have a chance to read consistently as well (slaves will know and compensate
-                    // for falling outside of safe zone). Let's keep this separate from SLAVE since they
-                    // have different reasons for doing what they do.
-                    return true;
+                    // for falling outside of safe zone).
+                    return Clock.SYSTEM_CLOCK.currentTimeMillis() - snapshot.snapshotTime() >= idReuseSafeZone;
                 default:
                     // If we're anything other than slave, i.e. also pending then retain the ids since we're
                     // not quite sure what state we're in at the moment and we clear the id buffers anyway

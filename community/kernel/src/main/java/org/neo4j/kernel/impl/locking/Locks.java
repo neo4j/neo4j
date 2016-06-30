@@ -78,14 +78,14 @@ public interface Locks extends Lifecycle
          * Can be grabbed when there are no locks or only share locks on a resource. If the lock cannot be acquired,
          * behavior is specified by the {@link WaitStrategy} for the given {@link ResourceType}.
          */
-        void acquireShared( ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException;
+        void acquireShared( ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException;
 
         /**
          * Can be grabbed when no other client holds locks on the relevant resources. No other clients can hold locks
          * while one client holds an exclusive lock. If the lock cannot be acquired,
          * behavior is specified by the {@link WaitStrategy} for the given {@link ResourceType}.
          */
-        void acquireExclusive( ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException;
+        void acquireExclusive( ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException;
 
         /** Try grabbing exclusive lock, not waiting and returning a boolean indicating if we got the lock. */
         boolean tryExclusiveLock( ResourceType resourceType, long resourceId );
@@ -98,6 +98,8 @@ public interface Locks extends Lifecycle
 
         /** Release a set of exclusive locks */
         void releaseExclusive( ResourceType resourceType, long resourceId );
+
+        void prepare();
 
         /**
          * Stop all active lock waiters and release them. All already held locks remains.
@@ -112,6 +114,12 @@ public interface Locks extends Lifecycle
 
         /** For slave transactions, this tracks an identifier for the lock session running on the master */
         int getLockSessionId();
+
+        /**
+         * Get a potential delegate to this client.
+         * NOTE this is a hack to get {@link DeferringLocks} to work. Do no take seriously.
+         */
+        Client delegate();
     }
 
     /**
@@ -124,4 +132,19 @@ public interface Locks extends Lifecycle
 
     /** Visit all held locks. */
     void accept(Visitor visitor);
+
+    public abstract class ClientAdapter implements Client
+    {
+        @Override
+        public void prepare()
+        {
+            // Nothing to prepare
+        }
+
+        @Override
+        public Client delegate()
+        {
+            return this;
+        }
+    }
 }

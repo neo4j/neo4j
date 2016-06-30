@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
+
 public class FakeCommitment implements Commitment
 {
     private final long id;
@@ -35,7 +37,7 @@ public class FakeCommitment implements Commitment
     public void publishAsCommitted()
     {
         committed = true;
-        transactionIdStore.transactionCommitted( id, 3 );
+        transactionIdStore.transactionCommitted( id, 3, BASE_TX_COMMIT_TIMESTAMP );
     }
 
     @Override

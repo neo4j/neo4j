@@ -20,7 +20,7 @@
 package org.neo4j.test.impl;
 
 import java.io.File;
-import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -36,7 +36,7 @@ public class EphemeralIdGenerator implements IdGenerator
 {
     public static class Factory implements IdGeneratorFactory
     {
-        protected final Map<IdType, IdGenerator> generators = new EnumMap<>( IdType.class );
+        protected final Map<IdType,IdGenerator> generators = new HashMap<>();
 
         @Override
         public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )

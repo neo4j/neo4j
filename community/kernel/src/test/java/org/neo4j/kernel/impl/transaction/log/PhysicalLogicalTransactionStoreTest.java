@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -26,10 +30,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.helpers.collection.CloseableVisitor;
 import org.neo4j.helpers.collection.Visitor;
@@ -204,9 +204,21 @@ public class PhysicalLogicalTransactionStoreTest
             }
 
             @Override
+            public long lastCommitedTimestamp()
+            {
+                return 0;
+            }
+
+            @Override
             public void recoveryRequired()
             {
                 recoveryRequiredCalled.set( true );
+            }
+
+            @Override
+            public boolean hasFoundLastCommitedTimestamp()
+            {
+                return false;
             }
         }, mock(Recovery.Monitor.class)));
 

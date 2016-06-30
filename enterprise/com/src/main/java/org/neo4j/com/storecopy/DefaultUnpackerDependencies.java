@@ -24,6 +24,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.BatchingTransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.LegacyIndexApplierLookup;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
@@ -44,10 +45,12 @@ import org.neo4j.kernel.impl.util.IdOrderingQueue;
 public class DefaultUnpackerDependencies implements TransactionCommittingResponseUnpacker.Dependencies
 {
     private final DependencyResolver resolver;
+    private final long idReuseSafeZoneTime;
 
-    public DefaultUnpackerDependencies( DependencyResolver resolver )
+    public DefaultUnpackerDependencies( DependencyResolver resolver, long idReuseSafeZoneTime )
     {
         this.resolver = resolver;
+        this.idReuseSafeZoneTime = idReuseSafeZoneTime;
     }
 
     @Override
@@ -124,8 +127,20 @@ public class DefaultUnpackerDependencies implements TransactionCommittingRespons
     }
 
     @Override
+    public KernelTransactions kernelTransactions()
+    {
+        return resolver.resolveDependency( KernelTransactions.class );
+    }
+
+    @Override
     public LogService logService()
     {
         return resolver.resolveDependency( LogService.class );
+    }
+
+    @Override
+    public long idReuseSafeZoneTime()
+    {
+        return idReuseSafeZoneTime;
     }
 }

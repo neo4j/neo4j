@@ -31,8 +31,9 @@ import java.util.Set;
 public class KernelTransactionsSnapshot
 {
     private Tx relevantTransactions;
+    private final long snapshotTime;
 
-    public KernelTransactionsSnapshot( Set<KernelTransactionImplementation> allTransactions )
+    public KernelTransactionsSnapshot( Set<KernelTransactionImplementation> allTransactions, long snapshotTime )
     {
         Tx head = null;
         for ( KernelTransactionImplementation tx : allTransactions )
@@ -52,6 +53,7 @@ public class KernelTransactionsSnapshot
             }
         }
         relevantTransactions = head;
+        this.snapshotTime = snapshotTime;
     }
 
     public boolean allClosed()
@@ -70,6 +72,11 @@ public class KernelTransactionsSnapshot
 
         // All transactions have been closed
         return true;
+    }
+
+    public long snapshotTime()
+    {
+        return snapshotTime;
     }
 
     private static class Tx

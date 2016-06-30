@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransaction.CloseListener;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.Status.Classification;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
@@ -84,7 +85,7 @@ public class TopLevelTransaction implements Transaction
     @Override
     public final void terminate()
     {
-        this.transaction.markForTermination();
+        this.transaction.markForTermination( Status.General.UnknownFailure );
     }
 
     @Override

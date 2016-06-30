@@ -49,6 +49,7 @@ public class DefaultRecoverySPI implements Recovery.SPI
     private final FileSystemAbstraction fileSystemAbstraction;
     private final LogVersionRepository logVersionRepository;
     private final PositionToRecoverFrom positionToRecoverFrom;
+    private final LatestCheckPointFinder checkPointFinder;
     private final RecoveryIndexingUpdatesValidator indexUpdatesValidator;
 
     public DefaultRecoverySPI( RecoveryLabelScanWriterProvider labelScanWriters,
@@ -67,6 +68,7 @@ public class DefaultRecoverySPI implements Recovery.SPI
         this.logFiles = logFiles;
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.logVersionRepository = logVersionRepository;
+        this.checkPointFinder = checkPointFinder;
         this.indexUpdatesValidator = indexUpdatesValidator;
         this.positionToRecoverFrom = new PositionToRecoverFrom( checkPointFinder );
     }
@@ -135,6 +137,26 @@ public class DefaultRecoverySPI implements Recovery.SPI
         return positionToRecoverFrom.apply( logVersionRepository.getCurrentLogVersion() );
     }
 
+    @Override
+    public long lastCommitedTimestamp()
+    {
+        return checkPointFinder.lastCommitedTimestamp();
+    }
+
+    @Override
+    public boolean hasFoundLastCommitedTimestamp() throws IOException
+    {
+        ensureCheckedLatestCheckpointPosition();
+        return checkPointFinder.hasFoundLastCommitTimestamp();
+    }
+
+    private void ensureCheckedLatestCheckpointPosition() throws IOException
+    {
+        if ( !checkPointFinder.hasBeenRun() )
+        {
+            getPositionToRecoverFrom(); // which will do it
+        }
+    }
 
     @Override
     public void recoveryRequired()

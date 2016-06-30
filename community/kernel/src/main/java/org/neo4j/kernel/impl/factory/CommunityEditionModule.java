@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
+import org.neo4j.kernel.impl.locking.DeferringLocks;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
@@ -82,8 +83,10 @@ public class CommunityEditionModule
         LifeSupport life = platformModule.life;
         GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 
-        lockManager = dependencies.satisfyDependency( createLockManager( config, logging ) );
+        preConfigureEdition(config);
 
+        lockManager = dependencies.satisfyDependency(
+                maybeWrapWithDeferringLockManager( config, createLockManager( config, logging ) ) );
         idGeneratorFactory = dependencies.satisfyDependency( createIdGeneratorFactory( fileSystem ) );
 
         propertyKeyTokenHolder = life.add( dependencies.satisfyDependency( new DelegatingPropertyKeyTokenHolder(
@@ -118,6 +121,11 @@ public class CommunityEditionModule
     protected IdReuseEligibility createEligibleForIdReuseFilter()
     {
         return IdReuseEligibility.ALWAYS;
+    }
+
+    protected void preConfigureEdition( Config config )
+    {
+        // empty
     }
 
     protected ConstraintSemantics createSchemaRuleVerifier()
@@ -221,7 +229,13 @@ public class CommunityEditionModule
 
     public static Locks createLockManager( Config config, LogService logging )
     {
-        String key = config.get( GraphDatabaseFacadeFactory.Configuration.lock_manager );
+        // If we want to use deferred locking then use the community lock manager since it won't give
+        // false positives about deadlocks. Besides when we use deferred locking we batch locks
+        // and so the locking should scale better anyway. So if we configured deferred locking then
+        // we'll simply strole right through the loop immediately below because there's no external
+        // lock manager (of ours) named "community".
+        String key = config.get( GraphDatabaseFacadeFactory.Configuration.deferred_locking ) ?
+                "community" : config.get( GraphDatabaseFacadeFactory.Configuration.lock_manager );
         for ( Locks.Factory candidate : Service.load( Locks.Factory.class ) )
         {
             String candidateId = candidate.getKeys().iterator().next();
@@ -249,6 +263,15 @@ public class CommunityEditionModule
         }
 
         throw new IllegalArgumentException( "No lock manager found with the name '" + key + "'." );
+    }
+
+    public static Locks maybeWrapWithDeferringLockManager( Config config, Locks delegate )
+    {
+        if ( config.get( GraphDatabaseFacadeFactory.Configuration.deferred_locking ) )
+        {
+            return new DeferringLocks( delegate );
+        }
+        return delegate;
     }
 
     protected TransactionHeaderInformationFactory createHeaderInformationFactory()

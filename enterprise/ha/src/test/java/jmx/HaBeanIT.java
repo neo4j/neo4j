@@ -248,14 +248,14 @@ public class HaBeanIT
     public void leftInstanceDisappearsFromMemberList() throws Throwable
     {
         // Start the cluster and make sure it's up.
-        // Then shut down one of the slaves to see if it disappears from the member list.
         ManagedCluster cluster = clusterRule.startCluster();
+        cluster.await( masterSeesMembers( 2 ) );
         assertEquals( 3, ha( cluster.getAnySlave() ).getInstancesInCluster().length );
-        RepairKit repair = cluster.shutdown( cluster.getAnySlave() );
 
+        // Then shut down one of the slaves to see if it disappears from the member list.
+        RepairKit repair = cluster.shutdown( cluster.getAnySlave() );
         try
         {
-            cluster.await( masterSeesMembers( 2 ) );
             HighAvailability haMaster = ha( cluster.getMaster() );
             assertEquals( 2, haMaster.getInstancesInCluster().length );
         }

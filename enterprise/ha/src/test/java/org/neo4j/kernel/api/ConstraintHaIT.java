@@ -36,6 +36,8 @@ import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -346,7 +348,15 @@ public class ConstraintHaIT
             // when
             try ( Transaction ignored = slave.beginTx() )
             {
-                createConstraint( slave, type, key );
+                try
+                {
+                    createConstraint( slave, type, key );
+                }
+                catch ( TransactionTerminatedException e )
+                {
+                    // Whatever retry
+                    createConstraint( slave, type, key );
+                }
                 fail( "We expected to not be able to create a constraint on a slave in a cluster." );
             }
             catch ( QueryExecutionException e )
@@ -487,6 +497,37 @@ public class ConstraintHaIT
                 assertThat( definition, instanceOf( constraintDefinitionClass() ) );
                 assertThat( single( definition.getPropertyKeys() ), equalTo( key ) );
                 validateLabelOrRelationshipType( definition, type );
+            }
+        }
+
+        @Test
+        public void shouldHandleSlaveWritingAfterCrash() throws Throwable
+        {
+            // Given
+            ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
+
+            createEntityInTx( cluster.getMaster(), type( 7), key( 7 ), "Foo");
+            cluster.sync();
+
+            HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+            File slaveStoreDirectory = cluster.getStoreDir( slave );
+
+            // Crash the slave
+            ClusterManager.RepairKit shutdownSlave = cluster.shutdown( slave );
+            deleteRecursively( slaveStoreDirectory );
+
+            // When
+            slave = shutdownSlave.repair();
+
+            // Then
+            try
+            {
+                createEntityInTx( slave, type( 6 ), key( 6 ), "Bar" );
+                fail( "Should fail here, actually" );
+            }
+            catch ( TransientFailureException e )
+            {
+                createEntityInTx( slave, type( 6 ), key( 6 ), "Bar" );
             }
         }
 
