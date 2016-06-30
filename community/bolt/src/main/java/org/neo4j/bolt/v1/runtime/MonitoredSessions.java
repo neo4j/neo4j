@@ -118,6 +118,13 @@ public class MonitoredSessions implements Sessions
         }
 
         @Override
+        public <A> void externalError( Neo4jError error, A attachment, Callback<Void,A> callback )
+        {
+            monitor.messageReceived();
+            delegate.externalError( error, attachment, withMonitor( callback ) );
+        }
+
+        @Override
         public <A> void ackFailure( A attachment, Callback<Void,A> callback )
         {
             monitor.messageReceived();

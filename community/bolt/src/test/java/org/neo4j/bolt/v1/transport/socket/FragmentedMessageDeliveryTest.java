@@ -36,6 +36,7 @@ import org.neo4j.bolt.v1.messaging.message.Message;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.transport.BoltProtocolV1;
+import org.neo4j.bolt.v1.transport.ChunkedOutput;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.HexPrinter;
 
@@ -115,7 +116,9 @@ public class FragmentedMessageDeliveryTest
         ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
         when(ctx.channel()).thenReturn( ch );
 
-        BoltProtocolV1 protocol = new BoltProtocolV1( NullLogService.getInstance(), sess, ch );
+        ChunkedOutput output = new ChunkedOutput( ch, 8192 );
+        BoltProtocolV1 protocol = new BoltProtocolV1( NullLogService.getInstance(), sess,
+                new PackStreamMessageFormatV1.Writer( new Neo4jPack.Packer( output ), output ) );
 
         // When data arrives split up according to the current permutation
         for ( ByteBuf fragment : fragments )

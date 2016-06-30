@@ -19,17 +19,17 @@
  */
 package org.neo4j.bolt;
 
+import io.netty.channel.Channel;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import org.bouncycastle.operator.OperatorCreationException;
+
 import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.Clock;
 import java.util.List;
 import java.util.function.BiFunction;
-
-import io.netty.channel.Channel;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-import org.bouncycastle.operator.OperatorCreationException;
 
 import org.neo4j.bolt.security.ssl.Certificates;
 import org.neo4j.bolt.security.ssl.KeyStoreFactory;
@@ -39,12 +39,15 @@ import org.neo4j.bolt.transport.Netty4LogBridge;
 import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.bolt.transport.NettyServer.ProtocolInitializer;
 import org.neo4j.bolt.transport.SocketTransport;
+import org.neo4j.bolt.v1.messaging.Neo4jPack;
+import org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1;
 import org.neo4j.bolt.v1.runtime.MonitoredSessions;
 import org.neo4j.bolt.v1.runtime.Sessions;
 import org.neo4j.bolt.v1.runtime.internal.EncryptionRequiredSessions;
 import org.neo4j.bolt.v1.runtime.internal.StandardSessions;
 import org.neo4j.bolt.v1.runtime.internal.concurrent.ThreadedSessions;
 import org.neo4j.bolt.v1.transport.BoltProtocolV1;
+import org.neo4j.bolt.v1.transport.ChunkedOutput;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
@@ -70,11 +73,12 @@ import org.neo4j.udc.UsageData;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
-
 import static org.neo4j.collection.primitive.Primitive.longObjectMap;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
 import static org.neo4j.kernel.configuration.GroupSettingSupport.enumerate;
-import static org.neo4j.kernel.configuration.Settings.*;
+import static org.neo4j.kernel.configuration.Settings.PATH;
+import static org.neo4j.kernel.configuration.Settings.derivedSetting;
+import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.boltNetworkIO;
 
 /**
@@ -214,7 +218,9 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                 BoltProtocolV1.VERSION,
                 ( channel, isEncrypted ) -> {
                     String descriptor = format( "\tclient%s\tserver%s", channel.remoteAddress(), channel.localAddress() );
-                    return new BoltProtocolV1( logging, sessions.newSession( descriptor, isEncrypted ), channel );
+                    ChunkedOutput output = new ChunkedOutput( channel, 8192 );
+                    return new BoltProtocolV1( logging, sessions.newSession( descriptor, isEncrypted ),
+                            new PackStreamMessageFormatV1.Writer( new Neo4jPack.Packer( output ), output ) );
                 }
         );
         return availableVersions;

@@ -773,6 +773,18 @@ public class SessionStateMachine implements Session, SessionState
     }
 
     @Override
+    public <A> void externalError( Neo4jError error, A attachment, Callback<Void,A> callback )
+    {
+        before( attachment, callback );
+        try
+        {
+            state = state.error( this, error );
+        }
+        finally { after(); }
+
+    }
+
+    @Override
     public <A> void reset( A attachment, Callback<Void,A> callback )
     {
         before( attachment, callback );

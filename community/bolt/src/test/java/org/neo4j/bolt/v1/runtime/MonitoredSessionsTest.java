@@ -27,6 +27,7 @@ import java.time.ZoneId;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.runtime.MonitoredSessions.MonitoredSession;
+import org.neo4j.bolt.v1.runtime.internal.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -168,6 +169,12 @@ public class MonitoredSessionsTest
         public <A> void reset( A attachment, Callback<Void,A> callback )
         {
             this.callback = callback;
+        }
+
+        @Override
+        public <A> void externalError( Neo4jError error, A attachment, Callback<Void,A> callback )
+        {
+
         }
 
         @Override
