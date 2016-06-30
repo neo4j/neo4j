@@ -80,7 +80,7 @@ object parseParameters extends (DataTable => java.util.Map[String, AnyRef]) {
 /**
   * Parses a whole data table into a list of column names and a list of maps from column names to values.
   *
-  * Values in each cell are parsed as if they where parameters.
+  * Values in each cell are parsed as if they were parameters.
   */
 object parseValueTable extends (DataTable => (List[String], List[Array[AnyRef]])) {
   override def apply(input: DataTable): (List[String], List[Array[AnyRef]]) = {

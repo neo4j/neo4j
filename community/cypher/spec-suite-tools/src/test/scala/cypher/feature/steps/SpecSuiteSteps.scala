@@ -291,7 +291,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     builder.build()
   }
 
-  private def asKernelType(tpe: CypherType):  Neo4jTypes.AnyType= tpe match {
+  private def asKernelType(tpe: CypherType):  Neo4jTypes.AnyType = tpe match {
     case CTMap => Neo4jTypes.NTMap
     case CTNode => Neo4jTypes.NTNode
     case CTRelationship => Neo4jTypes.NTRelationship
