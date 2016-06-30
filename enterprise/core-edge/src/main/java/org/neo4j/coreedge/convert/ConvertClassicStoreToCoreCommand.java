@@ -86,11 +86,11 @@ import static org.neo4j.kernel.impl.store.id.IdType.RELATIONSHIP_TYPE_TOKEN_NAME
 import static org.neo4j.kernel.impl.store.id.IdType.SCHEMA;
 import static org.neo4j.kernel.impl.store.id.IdType.STRING_BLOCK;
 
-public class ConvertClassicStoreCommand
+public class ConvertClassicStoreToCoreCommand
 {
     private final ConversionVerifier conversionVerifier;
 
-    public ConvertClassicStoreCommand( ConversionVerifier conversionVerifier )
+    public ConvertClassicStoreToCoreCommand( ConversionVerifier conversionVerifier )
     {
         this.conversionVerifier = conversionVerifier;
     }
@@ -123,7 +123,7 @@ public class ConvertClassicStoreCommand
         }
     }
 
-    private ClusterSeed changeStoreId( File storeDir, ClusterSeed conversionId ) throws IOException
+    public static ClusterSeed changeStoreId( File storeDir, ClusterSeed conversionId ) throws IOException
     {
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         File metadataStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
@@ -141,7 +141,7 @@ public class ConvertClassicStoreCommand
         }
     }
 
-    private StoreId readStoreId( File metadataStore, PageCache pageCache ) throws IOException
+    public static StoreId readStoreId( File metadataStore, PageCache pageCache ) throws IOException
     {
         long creationTime = MetaDataStore.getRecord( pageCache, metadataStore, TIME );
         long randomNumber = MetaDataStore.getRecord( pageCache, metadataStore, RANDOM_NUMBER );

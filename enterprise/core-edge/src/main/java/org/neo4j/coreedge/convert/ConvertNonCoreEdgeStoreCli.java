@@ -54,7 +54,7 @@ public class ConvertNonCoreEdgeStoreCli
 
         Config config = createConfig( homeDir, databaseName, configPath );
 
-        new ConvertClassicStoreCommand( new ConversionVerifier() ).convert(
+        new ConvertClassicStoreToCoreCommand( new ConversionVerifier() ).convert(
                 config.get( DatabaseManagementSystemSettings.database_path ),
                 config.get( GraphDatabaseSettings.record_format ),
                 clusterSeed );

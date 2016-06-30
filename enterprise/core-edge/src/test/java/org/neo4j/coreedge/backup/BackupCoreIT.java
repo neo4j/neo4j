@@ -24,23 +24,19 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.coreedge.TestStoreId;
-import org.neo4j.coreedge.convert.ConversionVerifier;
-import org.neo4j.coreedge.convert.ConvertClassicStoreCommand;
-import org.neo4j.coreedge.convert.GenerateClusterSeedCommand;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -49,7 +45,10 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
-import org.neo4j.restore.RestoreDatabaseCommand;
+import org.neo4j.restore.RestoreClusterCliTest;
+import org.neo4j.restore.RestoreClusterUtils;
+import org.neo4j.restore.RestoreExistingClusterCli;
+import org.neo4j.restore.RestoreNewClusterCli;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.coreedge.ClusterRule;
 import org.neo4j.test.rule.SuppressOutput;
@@ -59,9 +58,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.coreedge.TestStoreId.assertAllStoresHaveTheSameStoreId;
-import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.restore.ArgsBuilder.args;
+import static org.neo4j.restore.ArgsBuilder.toArray;
 
 public class BackupCoreIT
 {
@@ -143,16 +143,17 @@ public class BackupCoreIT
         TestStoreId storeId = TestStoreId.readStoreId( dbPaths.get( 0 ), fs );
 
         // when
-        File initialStoreDir = cluster.coreServerStoreDirectory( 0 );
-        restoreDatabase( backupPath, initialStoreDir );
-        String conversionMetadata = new GenerateClusterSeedCommand().generate( initialStoreDir).getConversionId();
+        StringBuilder output = RestoreClusterUtils.execute( () -> RestoreNewClusterCli.main( toArray( args()
+                .homeDir( cluster.homeDir( 0 ) ).config( cluster.homeDir( 0 ) ).from( backupPath )
+                .database( "graph.db" ).force().build() ) ) );
 
-        ConvertClassicStoreCommand convertClassicStoreCommand = new ConvertClassicStoreCommand( new ConversionVerifier() );
-        for ( int i = 0; i < numberOfCoreServers; i++ )
+        String seed = RestoreClusterCliTest.extractSeed( output );
+
+        for ( int i = 1; i < numberOfCoreServers; i++ )
         {
-            File coreStoreDir = cluster.coreServerStoreDirectory( i );
-            restoreDatabase( backupPath, coreStoreDir );
-            convertClassicStoreCommand.convert( coreStoreDir, StandardV3_0.NAME , conversionMetadata );
+            File homeDir = cluster.homeDir( i );
+            RestoreClusterUtils.execute( () -> RestoreExistingClusterCli.main( toArray( args().homeDir( homeDir )
+                    .config( homeDir ).from( backupPath ).database( "graph.db" ).seed( seed ).force().build() ) ) );
         }
 
         cluster.start();
@@ -168,13 +169,6 @@ public class BackupCoreIT
         assertAllStoresHaveTheSameStoreId( afterRestoreDbPaths, fs );
         TestStoreId afterRestoreStoreId = TestStoreId.readStoreId( afterRestoreDbPaths.get( 0 ), fs );
         assertNotEquals( storeId, afterRestoreStoreId );
-    }
-
-    private void restoreDatabase( File backupPath, File coreStoreDir ) throws IOException
-    {
-        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        Config config = Config.empty().with( stringMap( database_path.name(), coreStoreDir.getAbsolutePath() ) );
-        new RestoreDatabaseCommand( fs, backupPath, config, "graph.db", true ).execute();
     }
 
     static CoreGraphDatabase createSomeData( Cluster cluster ) throws TimeoutException, InterruptedException

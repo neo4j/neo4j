@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.coreedge.convert.ConversionVerifier;
-import org.neo4j.coreedge.convert.ConvertClassicStoreCommand;
+import org.neo4j.coreedge.convert.ConvertClassicStoreToCoreCommand;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
@@ -42,6 +42,7 @@ import org.neo4j.server.configuration.ConfigLoader;
 
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.record_format;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class RestoreExistingClusterCli
 {
@@ -63,7 +64,7 @@ public class RestoreExistingClusterCli
 
         try
         {
-            Config config = loadNeo4jConfig( homeDir, configPath );
+            Config config = loadNeo4jConfig( homeDir, configPath, databaseName );
             restoreDatabase( databaseName, fromPath, forceOverwrite, config );
             convertStore( config, clusterSeed );
         }
@@ -73,15 +74,20 @@ public class RestoreExistingClusterCli
         }
     }
 
-    private static Config loadNeo4jConfig( File homeDir, String configPath )
+    private static Config loadNeo4jConfig( File homeDir, String configPath, String databaseName )
     {
-        return new ConfigLoader( settings() ).loadConfig( Optional.of( homeDir ),
-                Optional.of( new File( configPath, "neo4j.conf" ) ), NullLog.getInstance() );
+        ConfigLoader configLoader = new ConfigLoader( settings() );
+        Config config = configLoader.loadConfig(
+                Optional.of( homeDir ),
+                Optional.of( new File( configPath, "neo4j.conf" ) ),
+                NullLog.getInstance() );
+
+        return config.with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) );
     }
 
     private static void convertStore( Config config, String seed ) throws IOException, TransactionFailureException
     {
-        ConvertClassicStoreCommand convert = new ConvertClassicStoreCommand( new ConversionVerifier() );
+        ConvertClassicStoreToCoreCommand convert = new ConvertClassicStoreToCoreCommand( new ConversionVerifier() );
         convert.convert( config.get( database_path ), config.get( record_format ), seed );
     }
 

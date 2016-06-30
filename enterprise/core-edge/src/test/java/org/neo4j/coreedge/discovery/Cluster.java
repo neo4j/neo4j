@@ -53,7 +53,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.Level;
@@ -120,12 +119,17 @@ public class Cluster
 
     public File coreServerStoreDirectory( int serverId )
     {
-        return coreServerStoreDirectory( parentDir, serverId );
+        return coreServerStoreDirectory( homeDir( serverId ) );
     }
 
-    public static File coreServerStoreDirectory( File parentDir, int serverId )
+    public File homeDir( int serverId )
     {
         return new File( parentDir, "server-core-" + serverId );
+    }
+
+    public static File coreServerStoreDirectory( File neo4jHome )
+    {
+        return new File( new File( new File( neo4jHome, "data" ), "databases" ), "graph.db" );
     }
 
     public static File edgeServerStoreDirectory( File parentDir, int serverId )
@@ -238,8 +242,9 @@ public class Cluster
             params.put( entry.getKey(), entry.getValue().apply( serverId ) );
         }
 
-        final File storeDir = coreServerStoreDirectory( parentDir, serverId );
-        params.put( GraphDatabaseSettings.logs_directory.name(), storeDir.getAbsolutePath() );
+        File neo4jHome = new File( parentDir, "server-core-" + serverId );
+        final File storeDir = coreServerStoreDirectory( neo4jHome );
+        params.put( GraphDatabaseSettings.logs_directory.name(), new File(neo4jHome, "logs").getAbsolutePath() );
         return new CoreGraphDatabase( storeDir, params, GraphDatabaseDependencies.newDependencies(),
                 discoveryServiceFactory );
     }
