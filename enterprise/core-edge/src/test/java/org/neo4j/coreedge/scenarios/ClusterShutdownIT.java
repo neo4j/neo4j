@@ -65,8 +65,9 @@ public class ClusterShutdownIT
 
         for ( int victimId = 0; victimId < cluster.numberOfCoreServers(); victimId++ )
         {
-            assertTrue( cluster.getCoreServerById( victimId ).isAvailable( 1000 ) );
+            assertTrue( cluster.getCoreServerById( victimId ).database().isAvailable( 1000 ) );
             shouldShutdownEvenThoughWaitingForLock0( cluster, victimId, shutdownOrder );
+            cluster.start();
         }
     }
 
@@ -86,7 +87,7 @@ public class ClusterShutdownIT
         {
             // when - blocking on lock acquiring
             final AtomicReference<Node> someNode = new AtomicReference<>();
-            final GraphDatabaseService victimDB = cluster.getCoreServerById( victimId );
+            final GraphDatabaseService victimDB = cluster.getCoreServerById( victimId ).database();
 
             try ( Transaction tx = victimDB.beginTx() )
             {

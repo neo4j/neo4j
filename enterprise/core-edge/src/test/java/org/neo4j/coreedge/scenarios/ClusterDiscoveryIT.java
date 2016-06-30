@@ -62,7 +62,7 @@ public class ClusterDiscoveryIT
         List<Object[]> currentMembers;
         for ( int i = 0; i < 3; i++ )
         {
-            currentMembers = discoverClusterMembers( cluster.getCoreServerById( i ) );
+            currentMembers = discoverClusterMembers( cluster.getCoreServerById( i ).database() );
             assertThat( currentMembers, containsInAnyOrder(
                     new Object[]{"127.0.0.1:8000"},
                     new Object[]{"127.0.0.1:8001"},
@@ -81,7 +81,7 @@ public class ClusterDiscoveryIT
         List<Object[]> currentMembers;
         for ( int i = 0; i < 3; i++ )
         {
-            currentMembers = endPoints( cluster.getCoreServerById( i ) );
+            currentMembers = endPoints( cluster.getCoreServerById( i ).database() );
 
             assertEquals(1, currentMembers.stream().filter( x -> x[1].equals( "write" ) ).count());
             assertEquals(1, currentMembers.stream().filter( x -> x[1].equals( "read" ) ).count());

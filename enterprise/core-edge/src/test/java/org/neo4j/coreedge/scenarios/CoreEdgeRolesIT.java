@@ -44,7 +44,7 @@ public class CoreEdgeRolesIT
     {
         // given
         Cluster cluster = clusterRule.startCluster();
-        GraphDatabaseService db = cluster.findAnEdgeServer();
+        GraphDatabaseService db = cluster.findAnEdgeServer().database();
         Transaction tx = db.beginTx();
         db.createNode();
 

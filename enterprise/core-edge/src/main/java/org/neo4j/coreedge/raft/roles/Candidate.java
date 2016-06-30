@@ -54,7 +54,7 @@ class Candidate implements RaftMessageHandler
                 outcome.setNextRole( FOLLOWER );
                 log.info( "Moving to FOLLOWER state after receiving heartbeat from %s at term %d (i am at %d)",
                         req.from(), req.leaderTerm(), ctx.term() );
-                Heart.beat( ctx, outcome, (RaftMessages.Heartbeat) message );
+                Heart.beat( ctx, outcome, (RaftMessages.Heartbeat) message, log );
                 break;
             }
 
@@ -75,7 +75,7 @@ class Candidate implements RaftMessageHandler
                 outcome.setNextRole( FOLLOWER );
                 log.info( "Moving to FOLLOWER state after receiving append entries request from %s at term %d (i am at %d)n",
                         req.from(), req.leaderTerm(), ctx.term() );
-                Appending.handleAppendEntriesRequest( ctx, outcome, req );
+                Appending.handleAppendEntriesRequest( ctx, outcome, req, log );
                 break;
             }
 

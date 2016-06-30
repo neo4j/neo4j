@@ -19,20 +19,17 @@
  */
 package org.neo4j.coreedge.scenarios;
 
+import java.io.File;
+import java.util.Arrays;
+import java.util.Collection;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-
-import org.neo4j.coreedge.convert.ConversionVerifier;
-import org.neo4j.coreedge.convert.ConvertClassicStoreToCoreCommand;
-import org.neo4j.coreedge.convert.GenerateClusterSeedCommand;
 import org.neo4j.coreedge.discovery.Cluster;
+import org.neo4j.coreedge.discovery.CoreServer;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -42,26 +39,23 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.restore.RestoreClusterCliTest;
 import org.neo4j.restore.RestoreClusterUtils;
-import org.neo4j.restore.RestoreDatabaseCommand;
 import org.neo4j.restore.RestoreExistingClusterCli;
 import org.neo4j.restore.RestoreNewClusterCli;
 import org.neo4j.test.coreedge.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.coreedge.discovery.Cluster.coreServerStoreDirectory;
+
 import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_advertised_address;
-import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.restore.ArgsBuilder.args;
 import static org.neo4j.restore.ArgsBuilder.toArray;
 import static org.neo4j.test.assertion.Assert.assertEventually;
@@ -93,9 +87,10 @@ public class ConvertNonCoreEdgeStoreIT
         File dbDir = clusterRule.testDirectory().cleanDirectory( "classic-db" );
         File classicNeo4jStore = createClassicNeo4jStore( dbDir, 10, recordFormat );
 
-        File clusterDirectory = clusterRule.clusterDirectory();
+        Cluster cluster = this.clusterRule.withRecordFormat( recordFormat ).createCluster();
 
-        File homeDir = new File( clusterDirectory, "server-core-" + 0 ) ;
+        File homeDir = cluster.getCoreServerById( 0 ).homeDir();
+
         StringBuilder output = RestoreClusterUtils.execute( () -> RestoreNewClusterCli.main( toArray( args()
                 .homeDir( homeDir ).config( homeDir ).from( classicNeo4jStore )
                 .database( "graph.db" ).force().build() ) ) );
@@ -104,15 +99,15 @@ public class ConvertNonCoreEdgeStoreIT
 
         for ( int serverId = 1; serverId < CLUSTER_SIZE; serverId++ )
         {
-            File destination = new File( clusterDirectory, "server-core-" + serverId ) ;
+            File destination = cluster.getCoreServerById( serverId ).homeDir();
             RestoreClusterUtils.execute( () -> RestoreExistingClusterCli.main( toArray( args().homeDir( destination )
                     .config( destination ).from( classicNeo4jStore ).database( "graph.db" ).seed( seed ).force().build() ) ) );
         }
 
-        Cluster cluster = clusterRule.withRecordFormat( recordFormat ).startCluster();
+        cluster.start();
 
         // when
-        GraphDatabaseService coreDB = cluster.awaitLeader( 5000 );
+        CoreGraphDatabase coreDB = cluster.awaitLeader( 5000 ).database();
 
         try ( Transaction tx = coreDB.beginTx() )
         {
@@ -121,11 +116,13 @@ public class ConvertNonCoreEdgeStoreIT
             tx.success();
         }
 
-        cluster.addEdgeServerWithFileLocation( 4, recordFormat );
+        cluster.addEdgeServerWithIdAndRecordFormat( 4, recordFormat ).start();
 
         // then
-        for ( final CoreGraphDatabase db : cluster.coreServers() )
+        for ( final CoreServer server : cluster.coreServers() )
         {
+            CoreGraphDatabase db = server.database();
+
             try ( Transaction tx = db.beginTx() )
             {
                 ThrowingSupplier<Long, Exception> nodeCount = () -> count( db.getAllNodes() );

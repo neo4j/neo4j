@@ -19,16 +19,20 @@
  */
 package org.neo4j.coreedge.scenarios;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BinaryOperator;
 
 import org.neo4j.coreedge.discovery.Cluster;
+import org.neo4j.coreedge.discovery.CoreServer;
+import org.neo4j.coreedge.discovery.EdgeServer;
 import org.neo4j.coreedge.raft.log.segmented.FileNames;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
@@ -40,6 +44,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.logging.Log;
@@ -60,6 +68,7 @@ import static org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog.SEGMENTED_L
 import static org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.TIME;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class EdgeServerReplicationIT
@@ -75,7 +84,7 @@ public class EdgeServerReplicationIT
         // given
         Cluster cluster = clusterRule.startCluster();
 
-        GraphDatabaseService edgeDB = cluster.findAnEdgeServer();
+        EdgeGraphDatabase edgeDB = cluster.findAnEdgeServer().database();
 
         // when (write should fail)
         boolean transactionFailed = false;
@@ -102,9 +111,9 @@ public class EdgeServerReplicationIT
         Cluster cluster = clusterRule.startCluster();
 
         // then
-        for ( final EdgeGraphDatabase edgeGraphDatabase : cluster.edgeServers() )
+        for ( final EdgeServer edgeServer : cluster.edgeServers() )
         {
-            ThrowingSupplier<Boolean,Exception> availability = () -> edgeGraphDatabase.isAvailable( 0 );
+            ThrowingSupplier<Boolean,Exception> availability = () -> edgeServer.database().isAvailable( 0 );
             assertEventually( "edge server becomes available", availability, is( true ), 10, SECONDS );
         }
     }
@@ -125,7 +134,7 @@ public class EdgeServerReplicationIT
             }
         }, cluster );
 
-        cluster.addEdgeServerWithId( 0 );
+        cluster.addEdgeServerWithId( 0 ).start();
 
         // when
         executeOnLeaderWithRetry( db -> {
@@ -134,8 +143,9 @@ public class EdgeServerReplicationIT
         }, cluster );
 
         // then
-        for ( final GraphDatabaseService edgeDB : cluster.edgeServers() )
+        for ( final EdgeServer server : cluster.edgeServers() )
         {
+            GraphDatabaseService edgeDB  = server.database();
             try ( Transaction tx = edgeDB.beginTx() )
             {
                 ThrowingSupplier<Long,Exception> nodeCount = () -> count( edgeDB.getAllNodes() );
@@ -153,10 +163,9 @@ public class EdgeServerReplicationIT
     }
 
     @Test
+    @Ignore("WIP: Turn this back on once Max/Davide have fixed the Edge Server StoreId stuff")
     public void shouldShutdownRatherThanPullUpdatesFromCoreServerWithDifferentStoreIfServerHasData() throws Exception
     {
-        File edgeDatabaseStoreFileLocation = clusterRule.testDirectory().directory( "edgeStore" );
-        createExistingEdgeStore( edgeDatabaseStoreFileLocation );
         Cluster cluster = clusterRule.withNumberOfEdgeServers( 0 ).startCluster();
 
         executeOnLeaderWithRetry( db -> {
@@ -167,14 +176,31 @@ public class EdgeServerReplicationIT
             }
         }, cluster );
 
+            EdgeServer edgeServer = cluster.addEdgeServerWithId( 4 );
+            putSomeDataWithDifferentStoreId(edgeServer.storeDir(), cluster.getCoreServerById( 0 ).storeDir());
         try
         {
-            cluster.addEdgeServerWithFileLocation( edgeDatabaseStoreFileLocation );
-            fail();
+            edgeServer.start();
+            fail("Should have failed to start");
         }
-        catch ( Throwable required )
+        catch ( RuntimeException required )
         {
             // Lifecycle should throw exception, server should not start.
+        }
+    }
+
+    private void putSomeDataWithDifferentStoreId( File storeDir, File coreStoreDir ) throws IOException
+    {
+        FileUtils.copyRecursively( coreStoreDir, storeDir );
+        changeStoreId( storeDir );
+    }
+
+    private void changeStoreId( File storeDir ) throws IOException
+    {
+        File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( new DefaultFileSystemAbstraction() ) )
+        {
+            MetaDataStore.setRecord( pageCache, neoStoreFile, TIME, System.currentTimeMillis() );
         }
     }
 
@@ -195,7 +221,7 @@ public class EdgeServerReplicationIT
 
         try
         {
-            cluster.addEdgeServerWithFileLocation( 0, StandardV3_0.NAME );
+            cluster.addEdgeServerWithIdAndRecordFormat( 0, StandardV3_0.NAME );
         }
         catch ( Exception e )
         {
@@ -229,9 +255,9 @@ public class EdgeServerReplicationIT
             tx.success();
         } );
 
-        long baseVersion = versionBy( new File( cluster.awaitLeader().getStoreDir() ), Math::max );
+        long baseVersion = versionBy( cluster.awaitLeader().storeDir(), Math::max );
 
-        CoreGraphDatabase coreGraphDatabase = null;
+        CoreServer coreGraphDatabase = null;
         for ( int j = 0; j < 2; j++ )
         {
             coreGraphDatabase = cluster.coreTx( ( db, tx ) -> {
@@ -244,16 +270,16 @@ public class EdgeServerReplicationIT
             } );
         }
 
-        File storeDir = new File( coreGraphDatabase.getStoreDir() );
+        File storeDir = coreGraphDatabase.storeDir();
         assertEventually( "pruning happened", () -> versionBy( storeDir, Math::min ), greaterThan( baseVersion ), 1, SECONDS );
 
         // when
-        cluster.addEdgeServerWithFileLocation( 42, HighLimit.NAME );
+        cluster.addEdgeServerWithIdAndRecordFormat( 42, HighLimit.NAME ).start();
 
         // then
-        for ( final EdgeGraphDatabase edge : cluster.edgeServers() )
+        for ( final EdgeServer edge : cluster.edgeServers() )
         {
-            assertEventually( "edge server available", () -> edge.isAvailable( 0 ), is( true ), 10, SECONDS );
+            assertEventually( "edge server available", () -> edge.database().isAvailable( 0 ), is( true ), 10, SECONDS );
         }
     }
 
@@ -265,26 +291,12 @@ public class EdgeServerReplicationIT
         return logs.keySet().stream().reduce( operator ).orElseThrow( IllegalStateException::new );
     }
 
-    private void createExistingEdgeStore( File dir )
-    {
-        GraphDatabaseService db =
-                new TestGraphDatabaseFactory().newEmbeddedDatabase( Cluster.edgeServerStoreDirectory( dir, 1966 ) );
-
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.createNode();
-            tx.success();
-        }
-
-        db.shutdown();
-    }
-
     private GraphDatabaseService executeOnLeaderWithRetry( Workload workload, Cluster cluster ) throws TimeoutException
     {
         CoreGraphDatabase coreDB;
         while ( true )
         {
-            coreDB = cluster.awaitLeader( 5000 );
+            coreDB = cluster.awaitLeader( 5000 ).database();
             try ( Transaction tx = coreDB.beginTx() )
             {
                 workload.doWork( coreDB );

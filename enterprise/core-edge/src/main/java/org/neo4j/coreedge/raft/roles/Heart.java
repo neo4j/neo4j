@@ -24,10 +24,11 @@ import java.io.IOException;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
+import org.neo4j.logging.Log;
 
 class Heart
 {
-    static  void beat( ReadableRaftState state, Outcome outcome, RaftMessages.Heartbeat request ) throws IOException
+    static  void beat( ReadableRaftState state, Outcome outcome, RaftMessages.Heartbeat request, Log log ) throws IOException
     {
         if ( request.leaderTerm() < state.term() )
         {
@@ -39,7 +40,7 @@ class Heart
         outcome.setLeader( request.from() );
         outcome.setLeaderCommit( request.commitIndex() );
 
-        if ( !Follower.logHistoryMatches( state, request.commitIndex(), request.commitIndexTerm() ) )
+        if ( !Follower.logHistoryMatches( state, request.commitIndex(), request.commitIndexTerm(), log ) )
         {
             return;
         }

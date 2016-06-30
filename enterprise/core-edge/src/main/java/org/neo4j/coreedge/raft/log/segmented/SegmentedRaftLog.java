@@ -33,6 +33,7 @@ import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
@@ -63,6 +64,7 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
     private final long rotateAtSize;
     private final ChannelMarshal<ReplicatedContent> contentMarshal;
     private final FileNames fileNames;
+    private final Log log;
 
     private boolean needsRecovery;
     private final LogProvider logProvider;
@@ -87,6 +89,7 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
         this.fileNames = new FileNames( directory );
         this.readerPool = new ReaderPool( readerPoolSize, logProvider, fileNames, fileSystem, clock );
         this.pruner = new SegmentedRaftLogPruner( pruningConfig, logProvider );
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -99,6 +102,7 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
 
         RecoveryProtocol recoveryProtocol = new RecoveryProtocol( fileSystem, fileNames, readerPool, contentMarshal, logProvider, scanStats );
         state = recoveryProtocol.run();
+        log.info( "log started with recovered state %s", state );
     }
 
     @Override
@@ -216,11 +220,14 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
     @Override
     public synchronized long skip( long newIndex, long newTerm ) throws IOException
     {
+        log.info( "Skipping from {index: %d, term: %d} to {index: %d, term: %d}", state.appendIndex, state.currentTerm, newIndex, newTerm );
         if ( state.appendIndex < newIndex )
         {
             skipSegment( state.appendIndex, newIndex, newTerm );
 
             state.prevTerm = newTerm;
+            state.currentTerm = newTerm;
+
             state.prevIndex = newIndex;
             state.appendIndex = newIndex;
         }
@@ -239,6 +246,7 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
     @Override
     public long readEntryTerm( long logIndex ) throws IOException
     {
+        log.info( "reading entry term at %d. prevIndex:%d, prevTerm:%d", logIndex, state.prevIndex, state.prevTerm );
         if ( logIndex == state.prevIndex )
         {
             return state.prevTerm;
@@ -257,8 +265,20 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
     {
         long pruneIndex = pruner.getIndexToPruneFrom( safeIndex, state.segments );
         SegmentFile oldestNotDisposed = state.segments.prune( pruneIndex );
-        state.prevIndex = oldestNotDisposed.header().prevIndex();
-        state.prevTerm = oldestNotDisposed.header().prevTerm();
+
+        long newPrevIndex = oldestNotDisposed.header().prevIndex();
+        long newPrevTerm = oldestNotDisposed.header().prevTerm();
+
+        if ( newPrevIndex > state.prevIndex )
+        {
+            state.prevIndex = newPrevIndex;
+        }
+
+        if ( newPrevTerm > state.prevTerm )
+        {
+            state.prevTerm = newPrevTerm;
+        }
+
         return state.prevIndex;
     }
 }

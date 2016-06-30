@@ -20,6 +20,8 @@
 package org.neo4j.coreedge.server.core;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.catchup.CatchupServer;
 import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
@@ -52,7 +54,7 @@ public class CoreServerStartupProcess
         services.add( raftServer );
         services.add( catchupServer );
         services.add( raftTimeoutService );
-        services.add( new MembershipWaiterLifecycle( membershipWaiter, joinCatchupTimeout, raft, logProvider ) );
+        services.add( new MembershipWaiterLifecycle( membershipWaiter, joinCatchupTimeout, raft, raftServer, logProvider ) );
 
         return services;
     }
@@ -62,14 +64,16 @@ public class CoreServerStartupProcess
         private final MembershipWaiter membershipWaiter;
         private final Long joinCatchupTimeout;
         private final RaftInstance raft;
+        private final RaftServer raftServer;
         private final Log log;
 
         private MembershipWaiterLifecycle( MembershipWaiter membershipWaiter, Long joinCatchupTimeout,
-                RaftInstance raft, LogProvider logProvider )
+                                           RaftInstance raft, RaftServer raftServer, LogProvider logProvider )
         {
             this.membershipWaiter = membershipWaiter;
             this.joinCatchupTimeout = joinCatchupTimeout;
             this.raft = raft;
+            this.raftServer = raftServer;
             this.log = logProvider.getLog( getClass() );
         }
 
@@ -82,7 +86,12 @@ public class CoreServerStartupProcess
             {
                 caughtUp.get( joinCatchupTimeout, MILLISECONDS );
             }
-            catch ( Throwable e )
+            catch(ExecutionException e)
+            {
+                log.error( "Server failed to join cluster", e.getCause() );
+                throw e.getCause() ;
+            }
+            catch ( InterruptedException | TimeoutException e )
             {
                 String message =
                         format( "Server failed to join cluster within catchup time limit [%d ms]", joinCatchupTimeout );

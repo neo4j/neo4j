@@ -32,7 +32,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BiConsumer;
@@ -49,18 +48,14 @@ import org.neo4j.coreedge.server.core.locks.LeaderOnlyLockManager;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.logging.Level;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.stream.Collectors.joining;
+
 import static org.neo4j.concurrent.Futures.combine;
 import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -68,48 +63,35 @@ import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionExpi
 
 public class Cluster
 {
-    private static final String CLUSTER_NAME = "core-neo4j";
     private static final int DEFAULT_TIMEOUT_MS = 15_000;
     private static final int DEFAULT_BACKOFF_MS = 100;
 
     private final File parentDir;
-    private final Map<String, String> coreParams;
-    private Map<String, IntFunction<String>> instanceCoreParams;
-    private final Map<String, String> edgeParams;
-    private final Map<String, IntFunction<String>> instanceEdgeParams;
-    private final String recordFormat;
     private final DiscoveryServiceFactory discoveryServiceFactory;
-    private final int noOfCoreServers;
-    private final int noOfEdgeServers;
 
-    private Map<Integer, CoreGraphDatabase> coreServers = new ConcurrentHashMap<>();
-    private Map<Integer, EdgeGraphDatabase> edgeServers = new ConcurrentHashMap<>();
+    private Map<Integer, CoreServer> coreServers = new ConcurrentHashMap<>();
+    private Map<Integer, EdgeServer> edgeServers = new ConcurrentHashMap<>();
 
-    public Cluster( File parentDir, int noOfCoreServers, int noOfEdgeServers, DiscoveryServiceFactory fatory,
+    public Cluster( File parentDir, int noOfCoreServers, int noOfEdgeServers,
+                    DiscoveryServiceFactory discoveryServiceFactory,
                     Map<String, String> coreParams, Map<String, IntFunction<String>> instanceCoreParams,
                     Map<String, String> edgeParams, Map<String, IntFunction<String>> instanceEdgeParams,
                     String recordFormat )
-            throws ExecutionException, InterruptedException
     {
-        this.noOfCoreServers = noOfCoreServers;
-        this.noOfEdgeServers = noOfEdgeServers;
-        this.discoveryServiceFactory = fatory;
+        this.discoveryServiceFactory = discoveryServiceFactory;
         this.parentDir = parentDir;
-        this.coreParams = coreParams;
-        this.instanceCoreParams = instanceCoreParams;
-        this.edgeParams = edgeParams;
-        this.instanceEdgeParams = instanceEdgeParams;
-        this.recordFormat = recordFormat;
+        List<AdvertisedSocketAddress> initialHosts = buildAddresses( noOfCoreServers );
+        createCoreServers( noOfCoreServers, initialHosts, coreParams, instanceCoreParams, recordFormat );
+        createEdgeServers( noOfEdgeServers, initialHosts, edgeParams, instanceEdgeParams, recordFormat );
     }
 
     public void start() throws InterruptedException, ExecutionException
     {
-        List<AdvertisedSocketAddress> initialHosts = buildAddresses( noOfCoreServers );
         ExecutorService executor = Executors.newCachedThreadPool();
         try
         {
-            startCoreServers( executor, noOfCoreServers, initialHosts, coreParams, instanceCoreParams, recordFormat );
-            startEdgeServers( executor, noOfEdgeServers, initialHosts, edgeParams, instanceEdgeParams, recordFormat );
+            startCoreServers( executor );
+            startEdgeServers( executor );
         }
         finally
         {
@@ -117,174 +99,43 @@ public class Cluster
         }
     }
 
-    public File coreServerStoreDirectory( int serverId )
+    public Set<CoreServer> healthyCoreMembers()
     {
-        return coreServerStoreDirectory( homeDir( serverId ) );
+        return coreServers.values().stream()
+                .filter( db -> db.database().getDependencyResolver().resolveDependency( DatabaseHealth.class ).isHealthy() )
+                .collect( Collectors.toSet() );
     }
 
-    public File homeDir( int serverId )
+    public CoreServer getCoreServerById( int serverId )
     {
-        return new File( parentDir, "server-core-" + serverId );
+        return coreServers.get( serverId );
     }
 
-    public static File coreServerStoreDirectory( File neo4jHome )
+    public EdgeGraphDatabase getEdgeServerById( int serverId )
     {
-        return new File( new File( new File( neo4jHome, "data" ), "databases" ), "graph.db" );
+        return edgeServers.get( serverId ).database();
     }
 
-    public static File edgeServerStoreDirectory( File parentDir, int serverId )
+    public CoreServer addCoreServerWithServerId( int serverId, int intendedClusterSize )
     {
-        return new File( parentDir, "server-edge-" + serverId );
+        return addCoreServerWithServerId( serverId, intendedClusterSize, stringMap(), emptyMap(), StandardV3_0.NAME );
     }
 
-    private Map<String, String> serverParams( String serverType, int serverId, String initialHosts )
+    public EdgeServer addEdgeServerWithIdAndRecordFormat( int serverId, String recordFormat )
     {
-        Map<String, String> params = stringMap();
-        params.put( "dbms.mode", serverType );
-        params.put( GraphDatabaseSettings.store_internal_log_level.name(), Level.DEBUG.name() );
-        params.put( CoreEdgeClusterSettings.cluster_name.name(), CLUSTER_NAME );
-        params.put( CoreEdgeClusterSettings.initial_core_cluster_members.name(), initialHosts );
-        return params;
+        Config config = firstOrNull( coreServers.values() ).database().getDependencyResolver().resolveDependency( Config.class );
+        List<AdvertisedSocketAddress> advertisedAddresses =
+                config.get( CoreEdgeClusterSettings.initial_core_cluster_members );
+
+        EdgeServer server = new EdgeServer( parentDir, serverId, discoveryServiceFactory, advertisedAddresses,
+                stringMap(), emptyMap(), recordFormat );
+        edgeServers.put( serverId, server );
+        return server;
     }
 
-    private static List<AdvertisedSocketAddress> buildAddresses( int noOfCoreServers )
+    public EdgeServer addEdgeServerWithId( int serverId )
     {
-        List<AdvertisedSocketAddress> addresses = new ArrayList<>();
-        for ( int i = 0; i < noOfCoreServers; i++ )
-        {
-            int port = 5000 + i;
-            addresses.add( new AdvertisedSocketAddress( "localhost:" + port ) );
-        }
-        return addresses;
-    }
-
-    private void startCoreServers( ExecutorService executor, final int noOfCoreServers,
-                                   List<AdvertisedSocketAddress> addresses, Map<String, String> extraParams,
-                                   Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
-            throws InterruptedException, ExecutionException
-    {
-        CompletionService<CoreGraphDatabase> ecs = new ExecutorCompletionService<>( executor );
-
-        for ( int i = 0; i < noOfCoreServers; i++ )
-        {
-            final int serverId = i;
-            ecs.submit( () -> {
-                CoreGraphDatabase coreServer = startCoreServer( serverId, noOfCoreServers, addresses, extraParams,
-                        instanceExtraParams, recordFormat );
-                return coreServers.put( serverId, coreServer );
-            } );
-        }
-
-        for ( int i = 0; i < noOfCoreServers; i++ )
-        {
-            ecs.take().get();
-        }
-    }
-
-    private void startEdgeServers( ExecutorService executor, int noOfEdgeServers,
-                                   final List<AdvertisedSocketAddress> addresses,
-                                   Map<String, String> extraParams,
-                                   Map<String, IntFunction<String>> instanceExtraParams,
-                                   String recordFormat )
-            throws InterruptedException, ExecutionException
-    {
-        CompletionService<EdgeGraphDatabase> ecs = new ExecutorCompletionService<>( executor );
-
-        for ( int i = 0; i < noOfEdgeServers; i++ )
-        {
-            final int serverId = i;
-            ecs.submit( () -> startEdgeServer( serverId, addresses, extraParams, instanceExtraParams, recordFormat ) );
-        }
-
-        for ( int i = 0; i < noOfEdgeServers; i++ )
-        {
-            this.edgeServers.put( i, ecs.take().get() );
-        }
-    }
-
-    private CoreGraphDatabase startCoreServer( int serverId, int clusterSize, List<AdvertisedSocketAddress> addresses,
-                                               Map<String, String> extraParams,
-                                               Map<String, IntFunction<String>> instanceExtraParams,
-                                               String recordFormat )
-    {
-        int clusterPort = 5000 + serverId;
-        int txPort = 6000 + serverId;
-        int raftPort = 7000 + serverId;
-        int boltPort = 8000 + serverId;
-
-        String initialHosts = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
-
-        final Map<String, String> params = serverParams( "CORE", serverId, initialHosts );
-
-        params.put( GraphDatabaseSettings.record_format.name(), recordFormat );
-
-        params.put( CoreEdgeClusterSettings.cluster_listen_address.name(), "localhost:" + clusterPort );
-
-        params.put( CoreEdgeClusterSettings.transaction_advertised_address.name(), "localhost:" + txPort );
-        params.put( CoreEdgeClusterSettings.transaction_listen_address.name(), "127.0.0.1:" + txPort );
-        params.put( CoreEdgeClusterSettings.raft_advertised_address.name(), "localhost:" + raftPort );
-        params.put( CoreEdgeClusterSettings.raft_listen_address.name(), "127.0.0.1:" + raftPort );
-
-        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
-        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
-        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).address.name(), "0.0.0.0:" + boltPort );
-
-        params.put( GraphDatabaseSettings.bolt_advertised_address.name(), "127.0.0.1:" + boltPort );
-
-        params.put( CoreEdgeClusterSettings.expected_core_cluster_size.name(), String.valueOf( clusterSize ) );
-        params.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
-        params.put( GraphDatabaseSettings.auth_store.name(), new File( parentDir, "auth" ).getAbsolutePath() );
-
-        params.putAll( extraParams );
-
-        for ( Map.Entry<String, IntFunction<String>> entry : instanceExtraParams.entrySet() )
-        {
-            params.put( entry.getKey(), entry.getValue().apply( serverId ) );
-        }
-
-        File neo4jHome = new File( parentDir, "server-core-" + serverId );
-        final File storeDir = coreServerStoreDirectory( neo4jHome );
-        params.put( GraphDatabaseSettings.logs_directory.name(), new File(neo4jHome, "logs").getAbsolutePath() );
-        return new CoreGraphDatabase( storeDir, params, GraphDatabaseDependencies.newDependencies(),
-                discoveryServiceFactory );
-    }
-
-    private EdgeGraphDatabase startEdgeServer( int serverId, List<AdvertisedSocketAddress> addresses,
-                                               Map<String, String> extraParams,
-                                               Map<String, IntFunction<String>> instanceExtraParams,
-                                               String recordFormat )
-    {
-        final File storeDir = edgeServerStoreDirectory( parentDir, serverId );
-        return startEdgeServer( serverId, storeDir, addresses, extraParams, instanceExtraParams, recordFormat );
-    }
-
-    private EdgeGraphDatabase startEdgeServer( int serverId, File storeDir, List<AdvertisedSocketAddress> addresses,
-                                               Map<String, String> extraParams,
-                                               Map<String, IntFunction<String>> instanceExtraParams,
-                                               String recordFormat )
-    {
-        String initialHosts = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
-
-        final Map<String, String> params = serverParams( "EDGE", serverId, initialHosts );
-        params.put( GraphDatabaseSettings.record_format.name(), recordFormat );
-        params.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
-        params.put( GraphDatabaseSettings.auth_store.name(), new File( parentDir, "auth" ).getAbsolutePath() );
-        params.put( GraphDatabaseSettings.logs_directory.name(), storeDir.getAbsolutePath() );
-
-        params.putAll( extraParams );
-
-        for ( Map.Entry<String, IntFunction<String>> entry : instanceExtraParams.entrySet() )
-        {
-            params.put( entry.getKey(), entry.getValue().apply( serverId ) );
-        }
-        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
-        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
-        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).address.name(), "0.0.0.0:" + (9000 + serverId) );
-
-        params.put( GraphDatabaseSettings.bolt_advertised_address.name(), "127.0.0.1:" + (9000 + serverId) );
-
-        return new EdgeGraphDatabase( storeDir, params, GraphDatabaseDependencies.newDependencies(),
-                discoveryServiceFactory );
+        return addEdgeServerWithIdAndRecordFormat( serverId, StandardV3_0.NAME );
     }
 
     public void shutdown() throws ExecutionException, InterruptedException
@@ -297,7 +148,7 @@ public class Cluster
     {
         ExecutorService executor = Executors.newCachedThreadPool();
         List<Callable<Object>> serverShutdownSuppliers = new ArrayList<>();
-        for ( final CoreGraphDatabase coreServer : coreServers.values() )
+        for ( final CoreServer coreServer : coreServers.values() )
         {
             serverShutdownSuppliers.add( () -> {
                 coreServer.shutdown();
@@ -312,35 +163,16 @@ public class Cluster
         finally
         {
             executor.shutdown();
-            coreServers.clear();
         }
-    }
-
-    private void shutdownEdgeServers()
-    {
-        for ( EdgeGraphDatabase edgeServer : edgeServers.values() )
-        {
-            edgeServer.shutdown();
-        }
-        edgeServers.clear();
-    }
-
-    public CoreGraphDatabase getCoreServerById( int serverId )
-    {
-        return coreServers.get( serverId );
-    }
-
-    public EdgeGraphDatabase getEdgeServerById( int serverId )
-    {
-        return edgeServers.get( serverId );
     }
 
     public void removeCoreServerWithServerId( int serverId )
     {
-        CoreGraphDatabase serverToRemove = getCoreServerById( serverId );
+        CoreServer serverToRemove = getCoreServerById( serverId );
 
         if ( serverToRemove != null )
         {
+            serverToRemove.shutdown();
             removeCoreServer( serverToRemove );
         }
         else
@@ -349,87 +181,32 @@ public class Cluster
         }
     }
 
-    public void removeCoreServer( CoreGraphDatabase serverToRemove )
+    public void removeCoreServer( CoreServer serverToRemove )
     {
         serverToRemove.shutdown();
         coreServers.values().remove( serverToRemove );
     }
 
-    public void addCoreServerWithServerId( int serverId, int intendedClusterSize )
-    {
-        addCoreServerWithServerId( serverId, intendedClusterSize, stringMap(), emptyMap(), StandardV3_0.NAME );
-    }
-
-    public Future<?> asyncAddCoreServerWithServerId( int serverId, int intendedClusterSize )
-    {
-        ExecutorService executor = Executors.newCachedThreadPool();
-        return executor.submit( () -> {
-                    addCoreServerWithServerId( serverId, intendedClusterSize, stringMap(), emptyMap(),
-                            StandardV3_0.NAME );
-                    executor.shutdown();
-                }
-        );
-    }
-
-    private void addCoreServerWithServerId( int serverId, int intendedClusterSize, Map<String, String> extraParams,
-                                            Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
-    {
-        Config config = firstOrNull( coreServers.values() )
-                .getDependencyResolver().resolveDependency( Config.class );
-        List<AdvertisedSocketAddress> advertisedAddress =
-                config.get( CoreEdgeClusterSettings.initial_core_cluster_members );
-
-        coreServers.put( serverId, startCoreServer( serverId, intendedClusterSize, advertisedAddress, extraParams,
-                instanceExtraParams, recordFormat ) );
-    }
-
-    public void addEdgeServerWithFileLocation( int serverId, String recordFormat )
-    {
-        Config config = firstOrNull( coreServers.values() ).getDependencyResolver().resolveDependency( Config.class );
-        List<AdvertisedSocketAddress> advertisedAddresses =
-                config.get( CoreEdgeClusterSettings.initial_core_cluster_members );
-
-        edgeServers.put( serverId,
-                startEdgeServer( serverId, advertisedAddresses, stringMap(), emptyMap(), recordFormat ) );
-    }
-
-    public void addEdgeServerWithId( int serverId )
-    {
-        addEdgeServerWithFileLocation( serverId, StandardV3_0.NAME );
-    }
-
-    public int serverIdFor( GraphDatabaseFacade graphDatabaseFacade )
-    {
-        for ( Map.Entry<Integer,CoreGraphDatabase> entry : coreServers.entrySet() )
-        {
-            if (entry.getValue() == graphDatabaseFacade)
-            {
-                return entry.getKey();
-            }
-        }
-        throw new IllegalArgumentException( "No such database found." );
-    }
-
-    public Collection<CoreGraphDatabase> coreServers()
+    public Collection<CoreServer> coreServers()
     {
         return coreServers.values();
     }
 
-    public Collection<EdgeGraphDatabase> edgeServers()
+    public Collection<EdgeServer> edgeServers()
     {
         return edgeServers.values();
     }
 
-    public EdgeGraphDatabase findAnEdgeServer()
+    public EdgeServer findAnEdgeServer()
     {
         return firstOrNull( edgeServers.values() );
     }
 
-    public CoreGraphDatabase getDbWithRole( Role role )
+    public CoreServer getDbWithRole( Role role )
     {
-        for ( CoreGraphDatabase coreServer : coreServers.values() )
+        for ( CoreServer coreServer : coreServers.values() )
         {
-            if ( coreServer.getRole().equals( role ) )
+            if ( coreServer.database() != null && coreServer.database().getRole().equals( role ) )
             {
                 return coreServer;
             }
@@ -437,21 +214,21 @@ public class Cluster
         return null;
     }
 
-    public CoreGraphDatabase awaitLeader() throws TimeoutException
+    public CoreServer awaitLeader() throws TimeoutException
     {
         return awaitCoreGraphDatabaseWithRole( DEFAULT_TIMEOUT_MS, Role.LEADER );
     }
 
-    public CoreGraphDatabase awaitLeader( long timeoutMillis ) throws TimeoutException
+    public CoreServer awaitLeader( long timeoutMillis ) throws TimeoutException
     {
         return awaitCoreGraphDatabaseWithRole( timeoutMillis, Role.LEADER );
     }
 
-    public CoreGraphDatabase awaitCoreGraphDatabaseWithRole( long timeoutMillis, Role role ) throws TimeoutException
+    public CoreServer awaitCoreGraphDatabaseWithRole( long timeoutMillis, Role role ) throws TimeoutException
     {
         long endTimeMillis = timeoutMillis + System.currentTimeMillis();
 
-        CoreGraphDatabase db;
+        CoreServer db;
         while ( (db = getDbWithRole( role )) == null && (System.currentTimeMillis() < endTimeMillis) )
         {
             LockSupport.parkNanos( MILLISECONDS.toNanos( 100 ) );
@@ -466,52 +243,55 @@ public class Cluster
 
     public int numberOfCoreServers()
     {
-        CoreGraphDatabase aCoreGraphDb = coreServers.values().iterator().next();
-        CoreTopologyService coreTopologyService = aCoreGraphDb.getDependencyResolver()
+        CoreServer aCoreGraphDb = coreServers.values().stream()
+                .filter( ( server ) -> server.database() != null ).findAny().get();
+        CoreTopologyService coreTopologyService = aCoreGraphDb.database().getDependencyResolver()
                 .resolveDependency( CoreTopologyService.class );
         return coreTopologyService.currentTopology().coreMembers().size();
-    }
-
-    public void addEdgeServerWithFileLocation( File edgeDatabaseStoreFileLocation )
-    {
-        Config config =
-                coreServers.values().iterator().next().getDependencyResolver().resolveDependency( Config.class );
-        List<AdvertisedSocketAddress> advertisedAddresses =
-                config.get( CoreEdgeClusterSettings.initial_core_cluster_members );
-
-        edgeServers.put( 999,
-                startEdgeServer( 999, edgeDatabaseStoreFileLocation, advertisedAddresses, stringMap(), emptyMap(),
-                        StandardV3_0.NAME ) );
     }
 
     /**
      * Perform a transaction against the core cluster, selecting the target and retrying as necessary.
      */
-    public CoreGraphDatabase coreTx( BiConsumer<CoreGraphDatabase, Transaction> op )
+    public CoreServer coreTx( BiConsumer<CoreGraphDatabase, Transaction> op )
             throws TimeoutException, InterruptedException
     {
         // this currently wraps the leader-only strategy, since it is the recommended and only approach
         return leaderTx( op );
     }
 
+    private CoreServer addCoreServerWithServerId( int serverId, int intendedClusterSize, Map<String, String> extraParams,
+                                                  Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
+    {
+        Config config = firstOrNull( coreServers.values() ).database().getDependencyResolver().resolveDependency( Config.class );
+        List<AdvertisedSocketAddress> advertisedAddress = config.get( CoreEdgeClusterSettings.initial_core_cluster_members );
+
+        CoreServer coreServer = new CoreServer( serverId, intendedClusterSize, advertisedAddress,
+                discoveryServiceFactory, recordFormat, parentDir,
+                extraParams, instanceExtraParams );
+        coreServers.put( serverId, coreServer );
+        return coreServer;
+    }
+
     /**
      * Perform a transaction against the leader of the core cluster, retrying as necessary.
      */
-    private CoreGraphDatabase leaderTx( BiConsumer<CoreGraphDatabase, Transaction> op )
+    private CoreServer leaderTx( BiConsumer<CoreGraphDatabase, Transaction> op )
             throws TimeoutException, InterruptedException
     {
         long endTime = System.currentTimeMillis() + DEFAULT_TIMEOUT_MS;
 
         do
         {
-            CoreGraphDatabase db = awaitCoreGraphDatabaseWithRole( DEFAULT_TIMEOUT_MS, Role.LEADER );
+            CoreServer server = awaitCoreGraphDatabaseWithRole( DEFAULT_TIMEOUT_MS, Role.LEADER );
+            CoreGraphDatabase db = server.database();
 
             try
             {
                 Transaction tx = db.beginTx();
                 op.accept( db, tx );
                 tx.close();
-                return db;
+                return server;
             }
             catch ( Throwable e )
             {
@@ -554,10 +334,84 @@ public class Cluster
                         LockSessionExpired;
     }
 
-    public Set<CoreGraphDatabase> healthyCoreMembers()
+    private static List<AdvertisedSocketAddress> buildAddresses( int noOfCoreServers )
     {
-        return coreServers.values().stream()
-                .filter( db -> db.getDependencyResolver().resolveDependency( DatabaseHealth.class ).isHealthy() )
-                .collect( Collectors.toSet() );
+        List<AdvertisedSocketAddress> addresses = new ArrayList<>();
+        for ( int i = 0; i < noOfCoreServers; i++ )
+        {
+            int port = 5000 + i;
+            addresses.add( new AdvertisedSocketAddress( "localhost:" + port ) );
+        }
+        return addresses;
     }
+
+    private void createCoreServers( final int noOfCoreServers,
+                                    List<AdvertisedSocketAddress> addresses, Map<String, String> extraParams,
+                                    Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
+    {
+
+        for ( int i = 0; i < noOfCoreServers; i++ )
+        {
+            CoreServer coreServer = new CoreServer( i, noOfCoreServers, addresses, discoveryServiceFactory,
+                    recordFormat, parentDir,
+                    extraParams, instanceExtraParams );
+            coreServers.put( i, coreServer );
+        }
+    }
+
+    private void startCoreServers( ExecutorService executor ) throws InterruptedException, ExecutionException
+    {
+        CompletionService<CoreGraphDatabase> ecs = new ExecutorCompletionService<>( executor );
+
+        for ( CoreServer coreServer : coreServers.values() )
+        {
+            ecs.submit( () -> {
+                coreServer.start();
+                return coreServer.database();
+            } );
+        }
+
+        for ( int i = 0; i < coreServers.size(); i++ )
+        {
+            ecs.take().get();
+        }
+    }
+
+    private void startEdgeServers( ExecutorService executor ) throws InterruptedException, ExecutionException
+    {
+        CompletionService<EdgeGraphDatabase> ecs = new ExecutorCompletionService<>( executor );
+
+        for ( EdgeServer edgeServer : edgeServers.values() )
+        {
+            ecs.submit( () -> {
+                edgeServer.start();
+                return edgeServer.database();
+            } );
+        }
+
+        for ( int i = 0; i < edgeServers.size(); i++ )
+        {
+            ecs.take().get();
+        }
+    }
+
+    private void createEdgeServers( int noOfEdgeServers,
+                                    final List<AdvertisedSocketAddress> addresses,
+                                    Map<String, String> extraParams,
+                                    Map<String, IntFunction<String>> instanceExtraParams,
+                                    String recordFormat )
+    {
+
+        for ( int i = 0; i < noOfEdgeServers; i++ )
+        {
+            edgeServers.put( i, new EdgeServer( parentDir, i, discoveryServiceFactory, addresses,
+                    extraParams, instanceExtraParams, recordFormat ) );
+        }
+    }
+
+    private void shutdownEdgeServers()
+    {
+        edgeServers.values().forEach( EdgeServer::shutdown );
+    }
+
 }

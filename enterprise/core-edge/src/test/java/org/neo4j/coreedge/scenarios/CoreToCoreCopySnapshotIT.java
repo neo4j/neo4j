@@ -22,33 +22,28 @@ package org.neo4j.coreedge.scenarios;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.util.Map;
-import java.util.SortedMap;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.raft.log.segmented.FileNames;
+import org.neo4j.coreedge.discovery.CoreServer;
+import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.coreedge.raft.roles.Role;
-import org.neo4j.coreedge.raft.state.CoreState;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.coreedge.ClusterRule;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
+
 import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning_frequency;
 import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning_strategy;
-import static org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class CoreToCoreCopySnapshotIT
@@ -66,14 +61,14 @@ public class CoreToCoreCopySnapshotIT
         // given
         Cluster cluster = clusterRule.startCluster();
 
-        CoreGraphDatabase leader = cluster.awaitLeader( TIMEOUT_MS );
+        CoreServer leader = cluster.awaitLeader( TIMEOUT_MS );
 
         // when
-        CoreGraphDatabase follower = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.FOLLOWER );
-        getCoreState( follower ).downloadSnapshot( leader.id() );
+        CoreServer follower = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.FOLLOWER );
+        follower.coreState().downloadSnapshot( leader.id() );
 
         // then
-        assertEquals( DbRepresentation.of( leader ), DbRepresentation.of( follower ) );
+        assertEquals( DbRepresentation.of( leader.database() ), DbRepresentation.of( follower.database() ) );
     }
 
     @Test
@@ -82,19 +77,19 @@ public class CoreToCoreCopySnapshotIT
         // given
         Cluster cluster = clusterRule.startCluster();
 
-        CoreGraphDatabase source = cluster.coreTx( ( db, tx ) -> {
+        CoreServer source = cluster.coreTx( ( db, tx ) -> {
             Node node = db.createNode();
             node.setProperty( "hej", "svej" );
             tx.success();
         } );
 
         // when
-        CoreGraphDatabase follower = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.FOLLOWER );
+        CoreServer follower = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.FOLLOWER );
 
-        getCoreState( follower ).downloadSnapshot( source.id() );
+        follower.coreState().downloadSnapshot( source.id() );
 
         // then
-        assertEquals( DbRepresentation.of( source ), DbRepresentation.of( follower ) );
+        assertEquals( DbRepresentation.of( source.database() ), DbRepresentation.of( follower.database() ) );
     }
 
     @Test
@@ -103,17 +98,17 @@ public class CoreToCoreCopySnapshotIT
         // given
         Cluster cluster = clusterRule.startCluster();
 
-        CoreGraphDatabase source = cluster.coreTx( ( db, tx ) -> {
+        CoreServer source = cluster.coreTx( ( db, tx ) -> {
             createData( db, 1000 );
             tx.success();
         } );
 
         // when
-        CoreGraphDatabase follower = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.FOLLOWER );
-        getCoreState( follower ).downloadSnapshot( source.id() );
+        CoreServer follower = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.FOLLOWER );
+        follower.coreState().downloadSnapshot( source.id() );
 
         // then
-        assertEquals( DbRepresentation.of( source ), DbRepresentation.of( follower ) );
+        assertEquals( DbRepresentation.of( source.database() ), DbRepresentation.of( follower.database() ) );
     }
 
     @Test
@@ -126,26 +121,26 @@ public class CoreToCoreCopySnapshotIT
 
         Cluster cluster = clusterRule.withSharedCoreParams( params ).startCluster();
 
-        CoreGraphDatabase leader = cluster.coreTx( ( db, tx ) -> {
+        CoreServer leader = cluster.coreTx( ( db, tx ) -> {
             createData( db, 10000 );
             tx.success();
         } );
 
         // when
-        for ( CoreGraphDatabase coreDb : cluster.coreServers() )
+        for ( CoreServer coreDb : cluster.coreServers() )
         {
-            getCoreState( coreDb ).compact();
+            coreDb.coreState().compact();
         }
 
         cluster.removeCoreServer( leader ); // to force a change of leader
         leader = cluster.awaitLeader();
 
         int newDbId = 3;
-        cluster.addCoreServerWithServerId( newDbId, 3 );
-        CoreGraphDatabase newDb = cluster.getCoreServerById( newDbId );
+        cluster.addCoreServerWithServerId( newDbId, 3 ).start();
+        CoreGraphDatabase newDb = cluster.getCoreServerById( newDbId ).database();
 
         // then
-        assertEquals( DbRepresentation.of( leader ), DbRepresentation.of( newDb ) );
+        assertEquals( DbRepresentation.of( leader.database() ), DbRepresentation.of( newDb ) );
     }
 
     @Test
@@ -160,7 +155,7 @@ public class CoreToCoreCopySnapshotIT
         //Start the cluster and accumulate some log files.
         Cluster cluster = clusterRule.withSharedCoreParams( coreParams ).startCluster();
 
-        CoreGraphDatabase leader = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.LEADER );
+        CoreServer leader = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.LEADER );
         int followersLastLog = getMostRecentLogIdOn( leader );
         while ( followersLastLog < 2 )
         {
@@ -168,9 +163,8 @@ public class CoreToCoreCopySnapshotIT
             followersLastLog = getMostRecentLogIdOn( leader );
         }
 
-        CoreGraphDatabase follower = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.FOLLOWER );
+        CoreServer follower = cluster.awaitCoreGraphDatabaseWithRole( TIMEOUT_MS, Role.FOLLOWER );
         follower.shutdown();
-        Config config = follower.getDependencyResolver().resolveDependency( Config.class );
 
         /**
          * After a follower is shutdown, wait until we accumulate some logs such that the oldest log is older than
@@ -189,7 +183,7 @@ public class CoreToCoreCopySnapshotIT
         //then
         assertThat( leadersOldestLog, greaterThan( followersLastLog ) );
         //The cluster member should join. Otherwise this line will hang forever.
-        cluster.addCoreServerWithServerId( cluster.serverIdFor( follower ), 3 );
+        follower.start();
     }
 
     static void createData( GraphDatabaseService db, int size )
@@ -207,21 +201,14 @@ public class CoreToCoreCopySnapshotIT
         }
     }
 
-    private int getOldestLogIdOn( CoreGraphDatabase clusterMember ) throws TimeoutException
+    private int getOldestLogIdOn( CoreServer clusterMember ) throws TimeoutException
     {
-        return getLogFileNames( clusterMember ).firstKey().intValue();
+        return clusterMember.getLogFileNames().firstKey().intValue();
     }
 
-    private int getMostRecentLogIdOn( CoreGraphDatabase clusterMember ) throws TimeoutException
+    private int getMostRecentLogIdOn( CoreServer clusterMember ) throws TimeoutException
     {
-        return getLogFileNames( clusterMember ).lastKey().intValue();
-    }
-
-    private SortedMap<Long,File> getLogFileNames( CoreGraphDatabase clusterMember )
-    {
-        File clusterDir = new File( clusterMember.getStoreDir(), CLUSTER_STATE_DIRECTORY_NAME );
-        File logFilesDir = new File( clusterDir, SEGMENTED_LOG_DIRECTORY_NAME );
-        return new FileNames( logFilesDir ).getAllFiles( new DefaultFileSystemAbstraction(), null );
+        return clusterMember.getLogFileNames().lastKey().intValue();
     }
 
     private void doSomeTransactions( Cluster cluster, int count )
@@ -254,8 +241,4 @@ public class CoreToCoreCopySnapshotIT
         return s.toString();
     }
 
-    private CoreState getCoreState( CoreGraphDatabase follower )
-    {
-        return follower.getDependencyResolver().resolveDependency( CoreState.class );
-    }
 }

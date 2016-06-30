@@ -89,13 +89,13 @@ public class TestStoreId
                 '}';
     }
 
-    public static void assertAllStoresHaveTheSameStoreId( List<String> coreStoreDirs, FileSystemAbstraction fs )
+    public static void assertAllStoresHaveTheSameStoreId( List<File> coreStoreDirs, FileSystemAbstraction fs )
             throws IOException
     {
         Set<TestStoreId> storeIds = new HashSet<>();
         try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
         {
-            for ( String coreStoreDir : coreStoreDirs )
+            for ( File coreStoreDir : coreStoreDirs )
             {
                 storeIds.add( doReadStoreId( coreStoreDir, pageCache ) );
             }
@@ -103,7 +103,7 @@ public class TestStoreId
         assertEquals( "Store Ids " + storeIds, 1, storeIds.size() );
     }
 
-    public static TestStoreId readStoreId( String coreStoreDir, DefaultFileSystemAbstraction fs ) throws IOException
+    public static TestStoreId readStoreId( File coreStoreDir, DefaultFileSystemAbstraction fs ) throws IOException
     {
         try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
         {
@@ -111,7 +111,7 @@ public class TestStoreId
         }
     }
 
-    private static TestStoreId doReadStoreId( String coreStoreDir, PageCache pageCache ) throws IOException
+    private static TestStoreId doReadStoreId( File coreStoreDir, PageCache pageCache ) throws IOException
     {
         File metadataStore = new File( coreStoreDir, MetaDataStore.DEFAULT_NAME );
 

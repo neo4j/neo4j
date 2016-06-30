@@ -32,19 +32,24 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.raft.state.CoreState;
+import org.neo4j.coreedge.discovery.CoreServer;
+import org.neo4j.coreedge.raft.RaftServer;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
+import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.test.coreedge.ClusterRule;
 import org.neo4j.test.rule.SuppressOutput;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import static org.neo4j.coreedge.TestStoreId.assertAllStoresHaveTheSameStoreId;
 import static org.neo4j.graphdb.Label.label;
@@ -82,7 +87,7 @@ public class ClusterIdentityIT
             tx.success();
         } );
 
-        List<String> coreStoreDirs = storeDirs( cluster.coreServers() );
+        List<File> coreStoreDirs = storeDirs( cluster.coreServers() );
 
         cluster.shutdown();
 
@@ -105,7 +110,7 @@ public class ClusterIdentityIT
         // WHEN
         cluster.start();
 
-        List<String> coreStoreDirs = storeDirs( cluster.coreServers() );
+        List<File> coreStoreDirs = storeDirs( cluster.coreServers() );
 
         cluster.coreTx( ( db, tx ) -> {
             Node node = db.createNode( label( "boo" ) );
@@ -129,20 +134,21 @@ public class ClusterIdentityIT
             tx.success();
         } );
 
-        String storeDir = cluster.getCoreServerById( 0 ).getStoreDir();
+        File storeDir = cluster.getCoreServerById( 0 ).storeDir();
 
         cluster.removeCoreServerWithServerId( 0 );
         changeStoreId( storeDir );
 
         // WHEN
-        Future<?> future = cluster.asyncAddCoreServerWithServerId( 0, 3 );
-
-        cluster.awaitLeader();
-
-        // THEN
-        assertEquals( 2, cluster.healthyCoreMembers().size() );
-
-        future.cancel( true );
+        try
+        {
+            cluster.addCoreServerWithServerId( 0, 3 ).start();
+            fail( "Should not have joined the cluster" );
+        }
+        catch ( RuntimeException e )
+        {
+            assertThat(e.getCause(), instanceOf(LifecycleException.class));
+        }
     }
 
     @Test
@@ -159,20 +165,20 @@ public class ClusterIdentityIT
 
         createSomeData( 100, cluster );
 
-        for ( CoreGraphDatabase db : cluster.coreServers() )
+        for ( CoreServer db : cluster.coreServers() )
         {
-            getCoreState( db ).compact();
+            db.coreState().compact();
         }
 
         // WHEN
-        cluster.addCoreServerWithServerId( 0, 3 );
+        cluster.addCoreServerWithServerId( 0, 3 ).start();
 
         cluster.awaitLeader();
 
         // THEN
         assertEquals( 3, cluster.healthyCoreMembers().size() );
 
-        List<String> coreStoreDirs = storeDirs( cluster.coreServers() );
+        List<File> coreStoreDirs = storeDirs( cluster.coreServers() );
         cluster.shutdown();
         assertAllStoresHaveTheSameStoreId( coreStoreDirs, fs );
     }
@@ -187,25 +193,27 @@ public class ClusterIdentityIT
             tx.success();
         } );
 
-        String storeDir = cluster.getCoreServerById( 0 ).getStoreDir();
+        File storeDir = cluster.getCoreServerById( 0 ).storeDir();
         cluster.removeCoreServerWithServerId( 0 );
         changeStoreId( storeDir );
 
         createSomeData( 100, cluster );
 
-        for ( CoreGraphDatabase db : cluster.coreServers() )
+        for ( CoreServer db : cluster.coreServers() )
         {
-            getCoreState( db ).compact();
+            db.coreState().compact();
         }
 
         // WHEN
-        Future<?> future = cluster.asyncAddCoreServerWithServerId( 0, 3 );
-        cluster.awaitLeader();
-
-        // THEN
-        assertEquals( 2, cluster.healthyCoreMembers().size() );
-
-        future.cancel( true );
+        try
+        {
+            cluster.addCoreServerWithServerId( 0, 3 ).start();
+            fail( "Should not have joined the cluster" );
+        }
+        catch ( RuntimeException e )
+        {
+            assertThat(e.getCause(), instanceOf(LifecycleException.class));
+        }
     }
 
     @Test
@@ -220,27 +228,27 @@ public class ClusterIdentityIT
 
         createSomeData( 100, cluster );
 
-        for ( CoreGraphDatabase db : cluster.coreServers() )
+        for ( CoreServer db : cluster.coreServers() )
         {
-            getCoreState( db ).compact();
+            db.coreState().compact();
         }
 
         // WHEN
-        cluster.addCoreServerWithServerId( 4, 4 );
+        cluster.addCoreServerWithServerId( 4, 4 ).start();
 
         cluster.awaitLeader();
 
         // THEN
         assertEquals( 4, cluster.healthyCoreMembers().size() );
 
-        List<String> coreStoreDirs = storeDirs( cluster.coreServers() );
+        List<File> coreStoreDirs = storeDirs( cluster.coreServers() );
         cluster.shutdown();
         assertAllStoresHaveTheSameStoreId( coreStoreDirs, fs );
     }
 
-    private List<String> storeDirs( Collection<CoreGraphDatabase> dbs )
+    private List<File> storeDirs( Collection<CoreServer> dbs )
     {
-        return dbs.stream().map( GraphDatabaseFacade::getStoreDir ).collect( Collectors.toList() );
+        return dbs.stream().map( CoreServer::storeDir ).collect( Collectors.toList() );
     }
 
     private void createSomeData( int items, Cluster cluster ) throws TimeoutException, InterruptedException
@@ -255,7 +263,7 @@ public class ClusterIdentityIT
         }
     }
 
-    private void changeStoreId( String storeDir ) throws IOException
+    private void changeStoreId( File storeDir ) throws IOException
     {
         File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
         try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
@@ -264,8 +272,4 @@ public class ClusterIdentityIT
         }
     }
 
-    private CoreState getCoreState( CoreGraphDatabase db )
-    {
-        return db.getDependencyResolver().resolveDependency( CoreState.class );
-    }
 }

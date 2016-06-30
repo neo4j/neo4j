@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.discovery.Cluster;
+import org.neo4j.coreedge.discovery.CoreServer;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Node;
@@ -65,7 +66,7 @@ public class CoreServerReplicationIT
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
         } );
-        CoreGraphDatabase last = cluster.coreTx( ( db, tx ) -> {
+        CoreServer last = cluster.coreTx( ( db, tx ) -> {
             db.schema().indexFor( label( "boo" ) ).on( "foobar" ).create();
             tx.success();
         } );
@@ -79,7 +80,7 @@ public class CoreServerReplicationIT
     public void shouldReplicateTransactionToCoreServerAddedAfterInitialStartUp() throws Exception
     {
         // given
-        cluster.addCoreServerWithServerId( 3, 4 );
+        cluster.addCoreServerWithServerId( 3, 4 ).start();
 
         cluster.coreTx( ( db, tx ) -> {
             Node node = db.createNode();
@@ -88,8 +89,8 @@ public class CoreServerReplicationIT
         } );
 
         // when
-        cluster.addCoreServerWithServerId( 4, 5 );
-        CoreGraphDatabase last = cluster.coreTx( ( db, tx ) -> {
+        cluster.addCoreServerWithServerId( 4, 5 ).start();
+        CoreServer last = cluster.coreTx( ( db, tx ) -> {
             Node node = db.createNode();
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
@@ -112,7 +113,7 @@ public class CoreServerReplicationIT
 
         // when
         cluster.removeCoreServer( cluster.awaitLeader() );
-        CoreGraphDatabase last = cluster.coreTx( ( db, tx ) -> {
+        CoreServer last = cluster.coreTx( ( db, tx ) -> {
             Node node = db.createNode();
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
@@ -127,7 +128,7 @@ public class CoreServerReplicationIT
     public void shouldReplicateToCoreServersAddedAfterInitialTransactions() throws Exception
     {
         // when
-        CoreGraphDatabase last = null;
+        CoreServer last = null;
         for ( int i = 0; i < 15; i++ )
         {
             last = cluster.coreTx( ( db, tx ) -> {
@@ -137,16 +138,17 @@ public class CoreServerReplicationIT
             } );
         }
 
-        cluster.addCoreServerWithServerId( 3, 4 );
-        cluster.addCoreServerWithServerId( 4, 5 );
+        cluster.addCoreServerWithServerId( 3, 4 ).start();
+        cluster.addCoreServerWithServerId( 4, 5 ).start();
 
         // then
         assertEquals( 15, countNodes( last ) );
         dataMatchesEventually( last, cluster.coreServers() );
     }
 
-    private long countNodes( CoreGraphDatabase db )
+    private long countNodes( CoreServer server )
     {
+        CoreGraphDatabase db = server.database();
         long count;
         try ( Transaction tx = db.beginTx() )
         {
@@ -156,13 +158,14 @@ public class CoreServerReplicationIT
         return count;
     }
 
-    private void dataMatchesEventually( CoreGraphDatabase sourceDB, Collection<CoreGraphDatabase> targetDBs ) throws
+    private void dataMatchesEventually( CoreServer server, Collection<CoreServer> targetDBs ) throws
             TimeoutException, InterruptedException
     {
+        CoreGraphDatabase sourceDB = server.database();
         DbRepresentation sourceRepresentation = DbRepresentation.of( sourceDB );
-        for ( CoreGraphDatabase targetDB : targetDBs )
+        for ( CoreServer targetDB : targetDBs )
         {
-            Predicates.await( () -> sourceRepresentation.equals( DbRepresentation.of( targetDB ) ),
+            Predicates.await( () -> sourceRepresentation.equals( DbRepresentation.of( targetDB.database() ) ),
                     DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
         }
     }

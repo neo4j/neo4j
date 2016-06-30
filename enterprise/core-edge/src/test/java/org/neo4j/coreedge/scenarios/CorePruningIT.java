@@ -26,8 +26,8 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.coreedge.discovery.Cluster;
+import org.neo4j.coreedge.discovery.CoreServer;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule;
 import org.neo4j.test.coreedge.ClusterRule;
 
@@ -53,7 +53,7 @@ public class CorePruningIT
         // given
         Cluster cluster = clusterRule.startCluster();
 
-        CoreGraphDatabase coreGraphDatabase = null;
+        CoreServer coreGraphDatabase = null;
         int txs = 10;
         for ( int i = 0; i < txs; i++ )
         {
@@ -64,7 +64,7 @@ public class CorePruningIT
         }
 
         // when pruning kicks in then some files are actually deleted
-        File storeDir = new File( coreGraphDatabase.getStoreDir() );
+        File storeDir = coreGraphDatabase.storeDir();
         int expectedNumberOfLogFilesAfterPruning = 2;
         assertEventually( "raft logs eventually pruned", () -> numberOfFiles( storeDir ),
                 equalTo( expectedNumberOfLogFilesAfterPruning ), 1, TimeUnit.SECONDS );
@@ -77,7 +77,7 @@ public class CorePruningIT
         // given
         Cluster cluster = clusterRule.startCluster();
 
-        CoreGraphDatabase coreGraphDatabase = null;
+        CoreServer coreGraphDatabase = null;
         int txs = 1000;
         for ( int i = 0; i < txs; i++ )
         {
@@ -87,7 +87,7 @@ public class CorePruningIT
         }
 
         // when pruning kicks in then some files are actually deleted
-        File storeDir = new File( coreGraphDatabase.getStoreDir() );
+        File storeDir = coreGraphDatabase.storeDir();
         int expectedNumberOfLogFilesAfterPruning = 2;
         assertEventually( "raft logs eventually pruned", () -> numberOfFiles( storeDir ),
                 equalTo( expectedNumberOfLogFilesAfterPruning ), 1, TimeUnit.SECONDS );
