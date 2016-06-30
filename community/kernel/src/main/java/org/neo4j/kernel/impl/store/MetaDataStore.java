@@ -78,7 +78,8 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         LAST_CLOSED_TRANSACTION_LOG_VERSION( 11, "Log version where the last transaction commit entry has been written into" ),
         LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET( 12, "Byte offset in the log file where the last transaction commit entry " +
                                                      "has been written into" ),
-        LAST_TRANSACTION_COMMIT_TIMESTAMP( 13, "Commit time timestamp for last committed transaction" );
+        LAST_TRANSACTION_COMMIT_TIMESTAMP( 13, "Commit time timestamp for last committed transaction" ),
+        UPGRADE_TRANSACTION_COMMIT_TIMESTAMP( 14, "Commit timestamp of transaction the most recent upgrade was performed at" );
 
         private final int id;
         private final String description;
@@ -112,6 +113,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
     private volatile long lastClosedTransactionLogVersion = FIELD_NOT_INITIALIZED;
     private volatile long lastClosedTransactionLogByteOffset = FIELD_NOT_INITIALIZED;
     private volatile long upgradeTxChecksumField = FIELD_NOT_INITIALIZED;
+    private volatile long upgradeCommitTimestampField = FIELD_NOT_INITIALIZED;
 
     // This is not a field in the store, but something keeping track of which is the currently highest
     // committed transaction id, together with its checksum.
@@ -146,7 +148,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         // If metaDataStore.creationTime == metaDataStore.upgradeTime && metaDataStore.upgradeTransactionId == BASE_TX_ID
         // then store has never been upgraded
         setUpgradeTime( storeId.getCreationTime() );
-        setUpgradeTransaction( BASE_TX_ID, BASE_TX_CHECKSUM );
+        setUpgradeTransaction( BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP );
         setCurrentLogVersion( 0 );
         setLastCommittedAndClosedTransactionId(
                 BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, BASE_TX_LOG_BYTE_OFFSET, BASE_TX_LOG_VERSION );
@@ -325,12 +327,14 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         upgradeTimeField = time;
     }
 
-    public void setUpgradeTransaction( long id, long checksum )
+    public void setUpgradeTransaction( long id, long checksum, long timestamp )
     {
         setRecord( Position.UPGRADE_TRANSACTION_ID, id );
         upgradeTxIdField = id;
         setRecord( Position.UPGRADE_TRANSACTION_CHECKSUM, checksum );
         upgradeTxChecksumField = checksum;
+        setRecord( Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, timestamp );
+        upgradeCommitTimestampField = timestamp;
     }
 
     public long getCreationTime()
@@ -468,6 +472,8 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
                     getRecordValue( cursor, Position.LAST_TRANSACTION_CHECKSUM ),
                     getRecordValue( cursor, Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, BASE_TX_COMMIT_TIMESTAMP ) );
             upgradeTxChecksumField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_CHECKSUM );
+            upgradeCommitTimestampField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP,
+                    BASE_TX_COMMIT_TIMESTAMP );
         }
         while ( cursor.shouldRetry() );
     }
@@ -684,7 +690,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
     {
         assertNotClosed();
         checkInitialized( upgradeTxChecksumField );
-        return new TransactionId( upgradeTxIdField, upgradeTxChecksumField, BASE_TX_COMMIT_TIMESTAMP );
+        return new TransactionId( upgradeTxIdField, upgradeTxChecksumField, upgradeCommitTimestampField );
     }
 
     @Override

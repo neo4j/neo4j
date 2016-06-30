@@ -894,6 +894,8 @@ public class StoreMigrator implements StoreMigrationParticipant
                 lastTxInfo.checksum() );
         MetaDataStore.setRecord( pageCache, storeDirNeoStore, Position.LAST_TRANSACTION_COMMIT_TIMESTAMP,
                 lastTxInfo.commitTimestamp() );
+        MetaDataStore.setRecord( pageCache, storeDirNeoStore, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP,
+                lastTxInfo.commitTimestamp() );
 
         // add LAST_CLOSED_TRANSACTION_LOG_VERSION and LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET to the migrated
         // NeoStore
