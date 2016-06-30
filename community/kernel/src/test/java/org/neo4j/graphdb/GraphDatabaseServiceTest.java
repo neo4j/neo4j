@@ -184,7 +184,7 @@ public class GraphDatabaseServiceTest
 
         // When
         final CountDownLatch shutdown = new CountDownLatch( 1 );
-        final AtomicReference result = new AtomicReference();
+        final AtomicReference<Object> result = new AtomicReference<>();
         Executors.newSingleThreadExecutor().submit( new Runnable()
         {
             @Override
@@ -230,7 +230,7 @@ public class GraphDatabaseServiceTest
                 }
                 catch ( Throwable e )
                 {
-                    e.printStackTrace();
+                    throw new RuntimeException( e );
                 }
             }
         } );
@@ -246,7 +246,7 @@ public class GraphDatabaseServiceTest
             }
         }
 
-        assertThat( result.get().getClass(), CoreMatchers.<Object>equalTo( DatabaseShutdownException.class ) );
+        assertThat( result.get(), CoreMatchers.instanceOf( DatabaseShutdownException.class ) );
     }
 
     @Test
