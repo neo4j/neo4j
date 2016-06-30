@@ -286,7 +286,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public Status terminationReason()
+    public Status getReasonIfTerminated()
     {
         return terminationReason;
     }

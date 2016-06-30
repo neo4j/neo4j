@@ -70,7 +70,7 @@ public class KernelStatementTest
     public void shouldThrowTerminateExceptionWhenTransactionTerminated() throws Exception
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        when( transaction.terminationReason() ).thenReturn( Status.General.UnknownFailure );
+        when( transaction.getReasonIfTerminated() ).thenReturn( Status.General.UnknownFailure );
 
         KernelStatement statement = new KernelStatement(
             transaction, mock( IndexReaderFactory.class ),

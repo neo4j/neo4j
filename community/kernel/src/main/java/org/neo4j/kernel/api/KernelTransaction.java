@@ -115,7 +115,7 @@ public interface KernelTransaction extends AutoCloseable
     /**
      * @return {@link Status} if {@link #markForTermination(Status)} has been invoked, otherwise {@code null}.
      */
-    Status terminationReason();
+    Status getReasonIfTerminated();
 
     /**
      * Marks this transaction for termination, such that it cannot commit successfully and will try to be

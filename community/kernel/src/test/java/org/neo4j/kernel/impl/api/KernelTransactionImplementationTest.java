@@ -177,7 +177,7 @@ public class KernelTransactionImplementationTest
         {
             // WHEN
             transaction.markForTermination( Status.General.UnknownFailure );
-            assertEquals( Status.General.UnknownFailure, transaction.terminationReason() );
+            assertEquals( Status.General.UnknownFailure, transaction.getReasonIfTerminated() );
         }
 
         // THEN
@@ -194,7 +194,7 @@ public class KernelTransactionImplementationTest
         transaction.markForTermination( Status.General.UnknownFailure );
         transaction.success();
 
-        assertEquals( Status.General.UnknownFailure, transaction.terminationReason() );
+        assertEquals( Status.General.UnknownFailure, transaction.getReasonIfTerminated() );
 
         try
         {
@@ -220,7 +220,7 @@ public class KernelTransactionImplementationTest
             // WHEN
             transaction.markForTermination( Status.General.UnknownFailure );
             transaction.failure();
-            assertEquals( Status.General.UnknownFailure, transaction.terminationReason() );
+            assertEquals( Status.General.UnknownFailure, transaction.getReasonIfTerminated() );
         }
 
         // THEN
@@ -434,7 +434,7 @@ public class KernelTransactionImplementationTest
 
         transaction.markForTermination( Status.General.UnknownFailure );
 
-        assertEquals( Status.General.UnknownFailure, transaction.terminationReason() );
+        assertEquals( Status.General.UnknownFailure, transaction.getReasonIfTerminated() );
     }
 
     @Test
@@ -448,7 +448,7 @@ public class KernelTransactionImplementationTest
 
         transaction.markForTermination( Status.General.UnknownFailure );
 
-        assertEquals( Status.General.UnknownFailure, transaction.terminationReason() );
+        assertEquals( Status.General.UnknownFailure, transaction.getReasonIfTerminated() );
         verify( client ).stop();
     }
 
@@ -465,7 +465,7 @@ public class KernelTransactionImplementationTest
         transaction.markForTermination( Status.General.UnknownFailure );
         transaction.markForTermination( Status.General.UnknownFailure );
 
-        assertEquals( Status.General.UnknownFailure, transaction.terminationReason() );
+        assertEquals( Status.General.UnknownFailure, transaction.getReasonIfTerminated() );
         verify( client ).stop();
         verify( transactionMonitor ).transactionTerminated();
     }
@@ -572,7 +572,7 @@ public class KernelTransactionImplementationTest
     public void initializedTransactionShouldHaveNoTerminationReason() throws Exception
     {
         KernelTransactionImplementation tx = newInitializedTransaction();
-        assertNull( tx.terminationReason() );
+        assertNull( tx.getReasonIfTerminated() );
     }
 
     @Test
@@ -581,7 +581,7 @@ public class KernelTransactionImplementationTest
         Status status = Status.Transaction.Terminated;
         KernelTransactionImplementation tx = newInitializedTransaction();
         tx.markForTermination( status );
-        assertSame( status, tx.terminationReason() );
+        assertSame( status, tx.getReasonIfTerminated() );
     }
 
     @Test
@@ -590,7 +590,7 @@ public class KernelTransactionImplementationTest
         KernelTransactionImplementation tx = newInitializedTransaction();
         tx.markForTermination( Status.Transaction.Terminated );
         tx.close();
-        assertNull( tx.terminationReason() );
+        assertNull( tx.getReasonIfTerminated() );
     }
 
     private final NeoStores neoStores = mock( NeoStores.class );

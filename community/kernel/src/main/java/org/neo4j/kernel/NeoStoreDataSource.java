@@ -343,6 +343,11 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
 
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
 
+    private static final boolean takePropertyReadLocks = FeatureToggles.flag(
+            NeoStoreDataSource.class, "propertyReadLocks", false );
+    private static final boolean safeIdBuffering = FeatureToggles.flag(
+            NeoStoreDataSource.class, "safeIdBuffering", true );
+
     private final Monitors monitors;
     private final Tracers tracers;
 
@@ -534,7 +539,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             LegacyIndexApplierLookup legacyIndexApplierLookup =
                     dependencies.satisfyDependency( new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup ) );
 
-            boolean safeIdBuffering = FeatureToggles.flag( getClass(), "safeIdBuffering", true );
             if ( safeIdBuffering )
             {
                 // This buffering id generator factory will have properly buffering id generators injected into
@@ -851,8 +855,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
 
     private Factory<StoreStatement> storeStatementFactory( final NeoStores neoStores )
     {
-        final LockService lockService = FeatureToggles.flag( getClass(), "propertyReadLocks", false ) ?
-                this.lockService : NO_LOCK_SERVICE;
+        final LockService lockService = takePropertyReadLocks ? this.lockService : NO_LOCK_SERVICE;
         return new Factory<StoreStatement>()
         {
             @Override

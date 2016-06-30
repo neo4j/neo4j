@@ -198,7 +198,7 @@ public class ConstraintIndexCreatorTest
                 }
 
                 @Override
-                public Status terminationReason()
+                public Status getReasonIfTerminated()
                 {
                     return null;
                 }
