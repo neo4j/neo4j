@@ -123,10 +123,10 @@ public class ReflectiveProcedureCompiler
         }
         if ( method.isAnnotationPresent( PerformsWrites.class ) )
         {
-            if ( mode == ProcedureSignature.Mode.DBMS || mode == ProcedureSignature.Mode.SCHEMA_WRITE )
+            if ( !procedure.mode().equals( Procedure.Mode.DEFAULT ) )
             {
                 throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                        "Conflicting procedure annotation, PerformsWrites and mode = %s.", procedure.mode() );
+                        "Conflicting procedure annotation, cannot use PerformsWrites and mode" );
             }
             else
             {

@@ -128,10 +128,10 @@ public @interface Procedure
      *      SCHEMA  allows reading the graphs and performing schema operations
      *      DBMS    allows managing the database (i.e. change password)
      */
-    Mode mode() default Mode.READ;
+    Mode mode() default Mode.DEFAULT;
 
     enum Mode
     {
-        READ, WRITE, SCHEMA, DBMS
+        READ, WRITE, SCHEMA, DBMS, DEFAULT
     }
 }
