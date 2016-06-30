@@ -21,8 +21,7 @@ package org.neo4j.coreedge.raft.state.term;
 
 import java.io.IOException;
 
-import org.neo4j.coreedge.raft.state.StateMarshal;
-import org.neo4j.storageengine.api.ReadPastEndException;
+import org.neo4j.coreedge.raft.state.SafeStateMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -65,7 +64,7 @@ public class TermState
      * newTerm is lower than the term already stored in this class, it will throw an
      * {@link IllegalArgumentException}.
      */
-    public void failIfInvalid( long newTerm )
+    private void failIfInvalid( long newTerm )
     {
         if ( newTerm < term )
         {
@@ -73,7 +72,7 @@ public class TermState
         }
     }
 
-    public static class Marshal implements StateMarshal<TermState>
+    public static class Marshal extends SafeStateMarshal<TermState>
     {
         @Override
         public void marshal( TermState termState, WritableChannel channel ) throws IOException
@@ -82,16 +81,9 @@ public class TermState
         }
 
         @Override
-        public TermState unmarshal( ReadableChannel source ) throws IOException
+        protected TermState unmarshal0( ReadableChannel channel ) throws IOException
         {
-            try
-            {
-                return new TermState( source.getLong() );
-            }
-            catch ( ReadPastEndException ex )
-            {
-                return null;
-            }
+            return new TermState( channel.getLong() );
         }
 
         @Override

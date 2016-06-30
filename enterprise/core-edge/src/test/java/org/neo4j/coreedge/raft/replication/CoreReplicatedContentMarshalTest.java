@@ -23,6 +23,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.UUID;
@@ -37,6 +38,7 @@ import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequestSerialize
 import org.neo4j.coreedge.raft.replication.token.TokenType;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionFactory;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.coreedge.raft.state.EndOfStreamException;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -119,7 +121,7 @@ public class CoreReplicatedContentMarshalTest
         assertMarshalingEquality( buffer, message );
     }
 
-    private void assertMarshalingEquality( ByteBuf buffer, ReplicatedContent replicatedTx ) throws java.io.IOException
+    private void assertMarshalingEquality( ByteBuf buffer, ReplicatedContent replicatedTx ) throws IOException, EndOfStreamException
     {
         marshal.marshal( replicatedTx, new NetworkFlushableByteBuf( buffer ) );
 

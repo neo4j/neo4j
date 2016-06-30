@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.coreedge.raft.state.EndOfStreamException;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
@@ -77,7 +78,7 @@ public class CoreMemberSetSerializer
         }
     }
 
-    public static CoreMemberSet unmarshal( ReadableChannel channel ) throws IOException
+    public static CoreMemberSet unmarshal( ReadableChannel channel ) throws IOException, EndOfStreamException
     {
         HashSet<CoreMember> members = new HashSet<>();
         int memberCount = channel.getInt();

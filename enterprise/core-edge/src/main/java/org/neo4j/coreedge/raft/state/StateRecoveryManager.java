@@ -25,7 +25,6 @@ import java.io.IOException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
-import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 
 public class StateRecoveryManager<STATE>
@@ -35,7 +34,7 @@ public class StateRecoveryManager<STATE>
         private final File activeFile;
         private final STATE recoveredState;
 
-        public RecoveryStatus( File activeFile, STATE recoveredState )
+        RecoveryStatus( File activeFile, STATE recoveredState )
         {
             this.activeFile = activeFile;
             this.recoveredState = recoveredState;
@@ -96,7 +95,7 @@ public class StateRecoveryManager<STATE>
         }
     }
 
-    public STATE readLastEntryFrom( File file ) throws IOException
+    private STATE readLastEntryFrom( File file ) throws IOException
     {
         try ( StoreChannel storeChannel = fileSystem.open( file, "r" ) )
         {
@@ -112,7 +111,7 @@ public class StateRecoveryManager<STATE>
                     result = lastRead;
                 }
             }
-            catch ( ReadPastEndException e )
+            catch ( EndOfStreamException e )
             {
                 // ignore; just use previous complete entry
             }

@@ -19,6 +19,18 @@
  */
 package org.neo4j.coreedge.raft.state;
 
-public class UnexpectedEndOfStreamException extends Exception
+/**
+ * An exception which works around the fact that ReadPastEndException inherits from
+ * IOException even though the handling of an end of stream situation in general is
+ * recoverable and must be handled explicitly.
+ */
+public class EndOfStreamException extends Exception
 {
+    @SuppressWarnings( "ThrowableInstanceNeverThrown" )
+    public static final EndOfStreamException INSTANCE = new EndOfStreamException();
+
+    private EndOfStreamException()
+    {
+        // consider using the INSTANCE
+    }
 }

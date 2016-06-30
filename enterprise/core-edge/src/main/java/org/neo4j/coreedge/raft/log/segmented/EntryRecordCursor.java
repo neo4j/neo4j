@@ -25,6 +25,7 @@ import org.neo4j.coreedge.raft.log.EntryRecord;
 import org.neo4j.coreedge.raft.log.LogPosition;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.coreedge.raft.state.EndOfStreamException;
 import org.neo4j.cursor.CursorValue;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.io.fs.StoreChannel;
@@ -42,49 +43,84 @@ class EntryRecordCursor implements IOCursor<EntryRecord>
 
     private final LogPosition position;
     private final CursorValue<EntryRecord> currentRecord = new CursorValue<>();
+    private final Reader reader;
     private ChannelMarshal<ReplicatedContent> contentMarshal;
+    private final SegmentFile segment;
 
-    EntryRecordCursor( ReadAheadChannel<StoreChannel> bufferedReader,
-            ChannelMarshal<ReplicatedContent> contentMarshal, long startIndex ) throws IOException
+    private boolean hadError;
+    private boolean closed;
+
+    EntryRecordCursor( Reader reader, ChannelMarshal<ReplicatedContent> contentMarshal,
+            long currentIndex, long wantedIndex, SegmentFile segment ) throws IOException, EndOfStreamException
     {
-        this.bufferedReader = bufferedReader;
+        this.bufferedReader = new ReadAheadChannel<>( reader.channel() );
+        this.reader = reader;
         this.contentMarshal = contentMarshal;
-        position = new LogPosition( startIndex, bufferedReader.position() );
+        this.segment = segment;
+
+        /* The cache lookup might have given us an earlier position, scan forward to the exact position. */
+        while ( currentIndex < wantedIndex )
+        {
+            read( bufferedReader, contentMarshal );
+            currentIndex++;
+        }
+
+        this.position = new LogPosition( currentIndex, bufferedReader.position() );
     }
 
     @Override
     public boolean next() throws IOException
     {
-        EntryRecord entryRecord = read( bufferedReader, contentMarshal );
-        if ( entryRecord != null )
+        EntryRecord entryRecord;
+        try
         {
-            currentRecord.set( entryRecord );
-            position.byteOffset = bufferedReader.position();
-            position.logIndex++;
-            return true;
+            entryRecord = read( bufferedReader, contentMarshal );
         }
-        else
+        catch ( EndOfStreamException e )
         {
             currentRecord.invalidate();
             return false;
         }
+        catch ( IOException e )
+        {
+            hadError = true;
+            throw e;
+        }
+
+        currentRecord.set( entryRecord );
+        position.byteOffset = bufferedReader.position();
+        position.logIndex++;
+        return true;
     }
 
     @Override
     public void close() throws IOException
     {
-        // the cursor does not own any resources, the channel is owned by the pooled Reader
+        if ( closed )
+        {
+            /* This is just a defensive measure, for catching user errors from messing up the refCount. */
+            throw new IllegalStateException( "Already closed" );
+        }
+
         bufferedReader = null;
+        closed = true;
+        segment.refCount().decrease();
+
+        if ( hadError )
+        {
+            /* If the reader had en error, then it should be closed instead of returned to the pool. */
+            reader.close();
+        }
+        else
+        {
+            segment.positionCache().put( position );
+            segment.readerPool().release( reader );
+        }
     }
 
     @Override
     public EntryRecord get()
     {
         return currentRecord.get();
-    }
-
-    public LogPosition position()
-    {
-        return position;
     }
 }

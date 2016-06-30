@@ -23,8 +23,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import org.junit.Test;
-import org.neo4j.coreedge.raft.log.segmented.SegmentHeader;
-import org.neo4j.coreedge.raft.state.UnexpectedEndOfStreamException;
+
+import org.neo4j.coreedge.raft.state.EndOfStreamException;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 
 public class SegmentHeaderTest
@@ -73,7 +73,7 @@ public class SegmentHeaderTest
             marshal.unmarshal( channel );
             fail();
         }
-        catch ( UnexpectedEndOfStreamException e )
+        catch ( EndOfStreamException e )
         {
             // expected
         }

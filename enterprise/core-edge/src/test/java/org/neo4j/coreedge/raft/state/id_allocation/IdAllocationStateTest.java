@@ -21,10 +21,14 @@ package org.neo4j.coreedge.raft.state.id_allocation;
 
 import org.junit.Test;
 
+import java.io.IOException;
+
+import org.neo4j.coreedge.raft.state.EndOfStreamException;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.log.InMemoryVersionableReadableClosablePositionAwareChannel;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class IdAllocationStateTest
 {
@@ -52,7 +56,7 @@ public class IdAllocationStateTest
     }
 
     @Test
-    public void shouldReturnNullForHalfWrittenEntries() throws Exception
+    public void shouldThrowExceptionForHalfWrittenEntries() throws IOException, EndOfStreamException
     {
         // given
         final IdAllocationState state = new IdAllocationState();
@@ -72,11 +76,16 @@ public class IdAllocationStateTest
         channel.putInt( 1 ).putInt( 2 ).putInt( 3 ).putLong( 4L );
         // read back in the first one
         marshal.unmarshal( channel );
-        // the second one will be half read (the ints and longs appended above). Result should be null
-        IdAllocationState unmarshalled = marshal.unmarshal( channel );
 
-        // then
-        // the result should be null (and not a half read entry or any exception)
-        assertEquals( null, unmarshalled );
+        // the second one will be half read (the ints and longs appended above).
+        try
+        {
+            marshal.unmarshal( channel );
+            fail();
+        }
+        catch ( EndOfStreamException e )
+        {
+            // expected
+        }
     }
 }

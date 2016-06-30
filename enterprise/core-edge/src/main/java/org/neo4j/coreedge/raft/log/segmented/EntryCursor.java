@@ -35,7 +35,7 @@ import org.neo4j.cursor.IOCursor;
 class EntryCursor implements IOCursor<EntryRecord>
 {
     private final Segments segments;
-    private IOCursor<EntryRecord> reader;
+    private IOCursor<EntryRecord> cursor;
     private ValueRange<Long,SegmentFile> segmentRange = null;
     private long currentIndex;
 
@@ -60,9 +60,9 @@ class EntryCursor implements IOCursor<EntryRecord>
             }
         }
 
-        if ( reader.next() )
+        if ( cursor.next() )
         {
-            currentRecord.set( reader.get() );
+            currentRecord.set( cursor.get() );
             return true;
         }
 
@@ -84,10 +84,10 @@ class EntryCursor implements IOCursor<EntryRecord>
         SegmentFile file = optionalFile.get();
 
         /* Open new reader before closing old, so that pruner cannot overtake us. */
-        IOCursor<EntryRecord> oldReader = reader;
+        IOCursor<EntryRecord> oldCursor = cursor;
         try
         {
-            reader = file.getReader( currentIndex );
+            cursor = file.getCursor( currentIndex );
         }
         catch ( DisposedException e )
         {
@@ -95,9 +95,9 @@ class EntryCursor implements IOCursor<EntryRecord>
             return false;
         }
 
-        if ( oldReader != null )
+        if ( oldCursor != null )
         {
-            oldReader.close();
+            oldCursor.close();
         }
 
         limit = segmentRange.limit().orElse( Long.MAX_VALUE );
@@ -108,9 +108,9 @@ class EntryCursor implements IOCursor<EntryRecord>
     @Override
     public void close() throws IOException
     {
-        if ( reader != null )
+        if ( cursor != null )
         {
-            reader.close();
+            cursor.close();
         }
     }
 

@@ -39,7 +39,6 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.test.rule.TargetDirectory;
@@ -256,7 +255,7 @@ public class DurableStateStorageIT
         public LongState( FileSystemAbstraction fileSystemAbstraction, File stateDir,
                           int numberOfEntriesBeforeRotation ) throws IOException
         {
-            StateMarshal<Long> byteBufferMarshal = new StateMarshal<Long>()
+            StateMarshal<Long> byteBufferMarshal = new SafeStateMarshal<Long>()
             {
                 @Override
                 public Long startState()
@@ -277,16 +276,9 @@ public class DurableStateStorageIT
                 }
 
                 @Override
-                public Long unmarshal( ReadableChannel source ) throws IOException
+                public Long unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
                 {
-                    try
-                    {
-                        return source.getLong();
-                    }
-                    catch ( ReadPastEndException notEnoughBytes )
-                    {
-                        return null;
-                    }
+                    return channel.getLong();
                 }
             };
 

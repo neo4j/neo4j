@@ -32,6 +32,7 @@ import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.storeid.StoreIdMarshal;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.coreedge.raft.state.EndOfStreamException;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.storageengine.api.ReadableChannel;
@@ -143,7 +144,7 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
         list.add( new RaftMessages.StoreIdAwareMessage( storeId, result ) );
     }
 
-    private CoreMember retrieveMember( ReadableChannel buffer ) throws IOException
+    private CoreMember retrieveMember( ReadableChannel buffer ) throws IOException, EndOfStreamException
     {
         CoreMember.CoreMemberMarshal coreMemberMarshal = new CoreMember.CoreMemberMarshal();
         return coreMemberMarshal.unmarshal( buffer );

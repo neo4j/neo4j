@@ -22,9 +22,8 @@ package org.neo4j.coreedge.raft.state.id_allocation;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.neo4j.coreedge.raft.state.StateMarshal;
+import org.neo4j.coreedge.raft.state.SafeStateMarshal;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -126,7 +125,7 @@ public class IdAllocationState implements UnallocatedIds
         return new IdAllocationState( firstUnallocated.clone(), logIndex );
     }
 
-    public static class Marshal implements StateMarshal<IdAllocationState>
+    public static class Marshal extends SafeStateMarshal<IdAllocationState>
     {
         @Override
         public void marshal( IdAllocationState state, WritableChannel channel ) throws IOException
@@ -141,25 +140,18 @@ public class IdAllocationState implements UnallocatedIds
         }
 
         @Override
-        public IdAllocationState unmarshal( ReadableChannel channel ) throws IOException
+        public IdAllocationState unmarshal0( ReadableChannel channel ) throws IOException
         {
-            try
+            long[] firstNotAllocated = new long[(int) channel.getLong()];
+
+            for ( int i = 0; i < firstNotAllocated.length; i++ )
             {
-                long[] firstNotAllocated = new long[(int) channel.getLong()];
-
-                for ( int i = 0; i < firstNotAllocated.length; i++ )
-                {
-                    firstNotAllocated[i] = channel.getLong();
-                }
-
-                long logIndex = channel.getLong();
-
-                return new IdAllocationState( firstNotAllocated, logIndex );
+                firstNotAllocated[i] = channel.getLong();
             }
-            catch ( ReadPastEndException ex )
-            {
-                return null;
-            }
+
+            long logIndex = channel.getLong();
+
+            return new IdAllocationState( firstNotAllocated, logIndex );
         }
 
         @Override

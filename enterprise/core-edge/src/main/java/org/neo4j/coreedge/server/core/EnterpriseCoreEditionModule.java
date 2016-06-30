@@ -94,7 +94,7 @@ import org.neo4j.coreedge.raft.state.DurableStateStorage;
 import org.neo4j.coreedge.raft.state.LongIndexMarshal;
 import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
-import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
+import org.neo4j.coreedge.raft.membership.RaftMembershipState;
 import org.neo4j.coreedge.raft.state.term.MonitoredTermStateStorage;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;

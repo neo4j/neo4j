@@ -23,41 +23,37 @@ import java.io.IOException;
 
 import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
-import org.neo4j.storageengine.api.WritableChannel;
 
 /**
- * A marshal for an index that starts with -1 at the empty slot before the first real entry at 0.
+ * Wrapper class to handle ReadPastEndExceptions in a safe manner transforming it
+ * to the checked EndOfStreamException which does not inherit from an IOException.
+ *
+ * @param <STATE> The type of state marshalled.
  */
-public class LongIndexMarshal implements StateMarshal<Long>
+public abstract class SafeChannelMarshal<STATE> implements ChannelMarshal<STATE>
 {
     @Override
-    public Long startState()
-    {
-        return -1L;
-    }
-
-    @Override
-    public long ordinal( Long index )
-    {
-        return index;
-    }
-
-    @Override
-    public void marshal( Long index, WritableChannel channel ) throws IOException
-    {
-        channel.putLong( index );
-    }
-
-    @Override
-    public Long unmarshal( ReadableChannel channel ) throws IOException
+    public STATE unmarshal( ReadableChannel channel ) throws IOException, EndOfStreamException
     {
         try
         {
-            return channel.getLong();
+            return unmarshal0( channel );
         }
-        catch( ReadPastEndException e )
+        catch ( ReadPastEndException e )
         {
-            return null;
+            throw EndOfStreamException.INSTANCE;
         }
     }
+
+    /**
+     * The specific implementation of unmarshal which does not have to deal
+     * with the IOException {@link ReadPastEndException} and can safely throw
+     * the checked EndOfStreamException.
+     *
+     * @param channel The channel to read from.
+     * @return An unmarshalled object.
+     * @throws IOException
+     * @throws EndOfStreamException
+     */
+    protected abstract STATE unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException;
 }

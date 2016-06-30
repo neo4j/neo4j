@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.coreedge.raft.state.EndOfStreamException;
 import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
@@ -51,33 +52,24 @@ public class EntryRecord
         return logIndex;
     }
 
-    public static EntryRecord read(
-            ReadableChannel channel,
-            ChannelMarshal<ReplicatedContent> contentMarshal ) throws IOException
+    public static EntryRecord read( ReadableChannel channel, ChannelMarshal<ReplicatedContent> contentMarshal )
+            throws IOException, EndOfStreamException
     {
         try
         {
             long appendIndex = channel.getLong();
             long term = channel.getLong();
             ReplicatedContent content = contentMarshal.unmarshal( channel );
-            if (content == null )
-            {
-                return null;
-            }
             return new EntryRecord( appendIndex, new RaftLogEntry( term, content ) );
         }
         catch ( ReadPastEndException e )
         {
-            return null;
+            throw EndOfStreamException.INSTANCE;
         }
     }
 
-    public static void write(
-            WritableChannel channel,
-            ChannelMarshal<ReplicatedContent> contentMarshal,
-            long logIndex,
-            long term,
-            ReplicatedContent content ) throws IOException
+    public static void write( WritableChannel channel, ChannelMarshal<ReplicatedContent> contentMarshal,
+            long logIndex, long term, ReplicatedContent content ) throws IOException
     {
         channel.putLong( logIndex );
         channel.putLong( term );

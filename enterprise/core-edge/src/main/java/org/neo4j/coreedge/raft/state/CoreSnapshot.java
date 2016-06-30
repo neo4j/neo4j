@@ -70,7 +70,7 @@ public class CoreSnapshot
         return snapshotCollection.size();
     }
 
-    public static class Marshal implements ChannelMarshal<CoreSnapshot>
+    public static class Marshal extends SafeChannelMarshal<CoreSnapshot>
     {
         @Override
         public void marshal( CoreSnapshot coreSnapshot, WritableChannel buffer ) throws IOException
@@ -81,39 +81,25 @@ public class CoreSnapshot
             buffer.putInt( coreSnapshot.size() );
             for ( CoreStateType type : coreSnapshot.types() )
             {
-                try
-                {
-                    buffer.putInt( type.ordinal() );
-                    type.marshal.marshal( coreSnapshot.get( type ), buffer );
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( "Not possible" );
-                }
+                buffer.putInt( type.ordinal() );
+                type.marshal.marshal( coreSnapshot.get( type ), buffer );
             }
         }
 
         @Override
-        public CoreSnapshot unmarshal( ReadableChannel source ) throws IOException
+        public CoreSnapshot unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
         {
-            long prevIndex = source.getLong();
-            long prevTerm = source.getLong();
+            long prevIndex = channel.getLong();
+            long prevTerm = channel.getLong();
 
             CoreSnapshot coreSnapshot = new CoreSnapshot( prevIndex, prevTerm );
-            int snapshotCount = source.getInt();
+            int snapshotCount = channel.getInt();
             for ( int i = 0; i < snapshotCount; i++ )
             {
-                int typeOrdinal = source.getInt();
-                try
-                {
-                    CoreStateType type = CoreStateType.values()[typeOrdinal];
-                    Object state = type.marshal.unmarshal( source );
-                    coreSnapshot.add( type, state );
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( "Not possible" );
-                }
+                int typeOrdinal = channel.getInt();
+                CoreStateType type = CoreStateType.values()[typeOrdinal];
+                Object state = type.marshal.unmarshal( channel );
+                coreSnapshot.add( type, state );
             }
 
             return coreSnapshot;

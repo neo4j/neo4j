@@ -21,6 +21,7 @@ package org.neo4j.coreedge.raft.replication.id;
 
 import java.io.IOException;
 
+import org.neo4j.coreedge.raft.state.EndOfStreamException;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.storageengine.api.ReadableChannel;
@@ -37,7 +38,7 @@ public class ReplicatedIdAllocationRequestSerializer
         channel.putInt( idRangeRequest.idRangeLength() );
     }
 
-    public static ReplicatedIdAllocationRequest unmarshal( ReadableChannel channel ) throws IOException
+    public static ReplicatedIdAllocationRequest unmarshal( ReadableChannel channel ) throws IOException, EndOfStreamException
     {
         CoreMember owner = new CoreMember.CoreMemberMarshal().unmarshal( channel );
         IdType idType = IdType.values()[ channel.getInt() ];
