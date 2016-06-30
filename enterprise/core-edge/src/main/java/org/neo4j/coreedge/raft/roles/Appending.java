@@ -34,7 +34,7 @@ import org.neo4j.coreedge.raft.state.ReadableRaftState;
 
 public class Appending
 {
-    static  void handleAppendEntriesRequest( ReadableRaftState state, Outcome outcome,
+    static void handleAppendEntriesRequest( ReadableRaftState state, Outcome outcome,
             RaftMessages.AppendEntries.Request request ) throws IOException
     {
         if ( request.leaderTerm() < state.term() )

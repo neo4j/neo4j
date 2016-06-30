@@ -62,7 +62,7 @@ public class RaftMembershipManager implements RaftMembership, MembershipDriver
     private int uncommittedMemberChanges = 0;
 
     private final SendToMyself replicator;
-    private final RaftGroup.Builder memberSetBuilder;
+    private final RaftGroup.Builder<CoreMember> memberSetBuilder;
     private final ReadableRaftLog entryLog;
     private final Log log;
     private final int expectedClusterSize;
@@ -70,9 +70,8 @@ public class RaftMembershipManager implements RaftMembership, MembershipDriver
     private final RaftMembershipState raftMembershipState;
     private long lastApplied = -1;
 
-    public RaftMembershipManager( SendToMyself replicator, RaftGroup.Builder memberSetBuilder, RaftLog entryLog,
-            LogProvider logProvider, int expectedClusterSize, long electionTimeout,
-            Clock clock, long catchupTimeout,
+    public RaftMembershipManager( SendToMyself replicator, RaftGroup.Builder<CoreMember> memberSetBuilder, RaftLog entryLog,
+            LogProvider logProvider, int expectedClusterSize, long electionTimeout, Clock clock, long catchupTimeout,
             StateStorage<RaftMembershipState> stateStorage )
     {
         this.replicator = replicator;

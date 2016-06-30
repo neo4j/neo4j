@@ -31,13 +31,13 @@ interface RaftMembershipStateMachineEventHandler
 
     RaftMembershipStateMachineEventHandler onRaftGroupCommitted();
 
-    RaftMembershipStateMachineEventHandler onFollowerStateChange( FollowerStates followerStates );
+    RaftMembershipStateMachineEventHandler onFollowerStateChange( FollowerStates<CoreMember> followerStates );
 
     RaftMembershipStateMachineEventHandler onMissingMember( CoreMember member );
 
     RaftMembershipStateMachineEventHandler onSuperfluousMember( CoreMember member );
 
-    RaftMembershipStateMachineEventHandler onTargetChanged( Set targetMembers );
+    RaftMembershipStateMachineEventHandler onTargetChanged( Set<CoreMember> targetMembers );
 
     void onExit();
 
@@ -70,7 +70,7 @@ interface RaftMembershipStateMachineEventHandler
         }
 
         @Override
-        public RaftMembershipStateMachineEventHandler onFollowerStateChange( FollowerStates followerStates )
+        public RaftMembershipStateMachineEventHandler onFollowerStateChange( FollowerStates<CoreMember> followerStates )
         {
             return this;
         }

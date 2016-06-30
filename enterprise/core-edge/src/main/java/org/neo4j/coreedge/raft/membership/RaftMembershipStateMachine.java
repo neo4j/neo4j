@@ -112,7 +112,7 @@ class RaftMembershipStateMachine
         handleState( state.onRaftGroupCommitted() );
     }
 
-    void onFollowerStateChange( FollowerStates followerStates )
+    void onFollowerStateChange( FollowerStates<CoreMember> followerStates )
     {
         handleState( state.onFollowerStateChange( followerStates ) );
     }
@@ -127,7 +127,7 @@ class RaftMembershipStateMachine
         handleState( state.onSuperfluousMember( member ) );
     }
 
-    void onTargetChanged( Set targetMembers )
+    void onTargetChanged( Set<CoreMember> targetMembers )
     {
         handleState( state.onTargetChanged( targetMembers ) );
     }
@@ -185,7 +185,7 @@ class RaftMembershipStateMachine
         @Override
         public RaftMembershipStateMachineEventHandler onSuperfluousMember( CoreMember member )
         {
-            Set updatedVotingMembers = new HashSet<>( membershipState.votingMembers() );
+            Set<CoreMember> updatedVotingMembers = new HashSet<>( membershipState.votingMembers() );
             updatedVotingMembers.remove( member );
             membershipDriver.doConsensus( updatedVotingMembers );
 
@@ -241,7 +241,7 @@ class RaftMembershipStateMachine
         }
 
         @Override
-        public RaftMembershipStateMachineEventHandler onFollowerStateChange( FollowerStates followerStates )
+        public RaftMembershipStateMachineEventHandler onFollowerStateChange( FollowerStates<CoreMember> followerStates )
         {
             catchupGoalTracker.updateProgress( followerStates.get( catchingUpMember ) );
 
@@ -249,7 +249,7 @@ class RaftMembershipStateMachine
             {
                 if ( catchupGoalTracker.isGoalAchieved() )
                 {
-                    Set updatedVotingMembers = new HashSet<>( membershipState.votingMembers() );
+                    Set<CoreMember> updatedVotingMembers = new HashSet<>( membershipState.votingMembers() );
                     updatedVotingMembers.add( catchingUpMember );
                     membershipDriver.doConsensus( updatedVotingMembers );
 

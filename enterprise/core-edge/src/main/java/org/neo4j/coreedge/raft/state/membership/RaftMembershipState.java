@@ -63,6 +63,12 @@ public class RaftMembershipState implements RaftMembership
         notifyListeners();
     }
 
+    /**
+     * Adds an additional member to replicate to. Members that are joining need to
+     * catch up sufficiently before they become part of the voting group.
+     *
+     * @param member The member which will be added to the replication group.
+     */
     public synchronized void addAdditionalReplicationMember( CoreMember member )
     {
         additionalReplicationMembers.add( member );
@@ -71,6 +77,14 @@ public class RaftMembershipState implements RaftMembership
         notifyListeners();
     }
 
+    /**
+     * Removes a member previously part of the additional replication member group.
+     *
+     * This either happens because they caught up sufficiently and became part of the
+     * voting group or because they failed to catch up in time.
+     *
+     * @param member The member to remove from the replication group.
+     */
     public synchronized void removeAdditionalReplicationMember( CoreMember member )
     {
         additionalReplicationMembers.remove( member );

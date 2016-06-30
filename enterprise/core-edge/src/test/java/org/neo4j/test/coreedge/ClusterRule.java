@@ -33,7 +33,6 @@ import org.neo4j.test.rule.TargetDirectory;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.function.IntFunction;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
