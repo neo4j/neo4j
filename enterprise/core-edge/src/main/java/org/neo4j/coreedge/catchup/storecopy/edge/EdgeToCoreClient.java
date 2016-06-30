@@ -40,7 +40,7 @@ import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseDecoder;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseHandler;
 import org.neo4j.coreedge.catchup.tx.edge.TxStreamFinishedResponseDecoder;
 import org.neo4j.coreedge.catchup.tx.edge.TxStreamFinishedResponseHandler;
-import org.neo4j.coreedge.discovery.CoreTopologyService;
+import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.server.IdleChannelReaperHandler;
 import org.neo4j.coreedge.server.NonBlockingChannels;
 import org.neo4j.coreedge.server.logging.ExceptionLoggingHandler;
@@ -50,9 +50,11 @@ import org.neo4j.logging.LogProvider;
 public class EdgeToCoreClient extends CoreClient
 {
     public EdgeToCoreClient( LogProvider logProvider, ChannelInitializer channelInitializer, Monitors monitors,
-            int maxQueueSize, NonBlockingChannels nonBlockingChannels, CoreTopologyService discoveryService )
+            int maxQueueSize, NonBlockingChannels nonBlockingChannels, EdgeTopologyService discoveryService,
+            long logThresholdMillis )
     {
-        super( logProvider, channelInitializer, monitors, maxQueueSize, nonBlockingChannels, discoveryService );
+        super( logProvider, channelInitializer, monitors, maxQueueSize, nonBlockingChannels, discoveryService,
+                logThresholdMillis );
     }
 
     public static class ChannelInitializer extends io.netty.channel.ChannelInitializer<SocketChannel>

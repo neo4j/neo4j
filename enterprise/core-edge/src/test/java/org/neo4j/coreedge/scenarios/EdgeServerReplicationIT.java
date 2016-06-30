@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.Collection;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.concurrent.TimeoutException;

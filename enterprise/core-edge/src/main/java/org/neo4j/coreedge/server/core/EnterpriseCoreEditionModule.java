@@ -98,7 +98,6 @@ import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
 import org.neo4j.coreedge.raft.state.term.MonitoredTermStateStorage;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.CoreMember.CoreMemberMarshal;
@@ -183,7 +182,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         {
             procedures.register( new DiscoverMembersProcedure( discoveryService, logProvider ) );
             procedures.register( new AcquireEndpointsProcedure( discoveryService, raft, logProvider ) );
-            procedures.register(new ClusterOverviewProcedure( discoveryService, raft ) );
+            procedures.register( new ClusterOverviewProcedure( discoveryService, raft, logProvider ) );
         }
         catch ( ProcedureException e )
         {
@@ -233,12 +232,11 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         final CoreReplicatedContentMarshal marshal = new CoreReplicatedContentMarshal();
         int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
+        long logThresholdMillis = config.get( CoreEdgeClusterSettings.unknown_address_logging_throttle );
         final SenderService senderService =
                 new SenderService( new RaftChannelInitializer( marshal ), logProvider, platformModule.monitors,
                         maxQueueSize, new NonBlockingChannels() );
         life.add( senderService );
-
-        AdvertisedSocketAddress raftAddress = config.get( CoreEdgeClusterSettings.raft_advertised_address );
 
         final MessageLogger<CoreMember> messageLogger;
         if ( config.get( CoreEdgeClusterSettings.raft_messages_log_enable ) )
@@ -274,7 +272,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 new CoreToCoreClient.ChannelInitializer( logProvider, nonBlockingChannels );
         CoreToCoreClient coreToCoreClient = life.add(
                 new CoreToCoreClient( logProvider, channelInitializer, platformModule.monitors, maxQueueSize,
-                        nonBlockingChannels, discoveryService ) );
+                        nonBlockingChannels, discoveryService, logThresholdMillis ) );
         channelInitializer.setOwner( coreToCoreClient );
 
         StoreFetcher storeFetcher = new StoreFetcher( logProvider, fileSystem, platformModule.pageCache,
@@ -284,8 +282,10 @@ public class EnterpriseCoreEditionModule extends EditionModule
         GlobalSession myGlobalSession = new GlobalSession( UUID.randomUUID(), myself );
         LocalSessionPool sessionPool = new LocalSessionPool( myGlobalSession );
         ProgressTrackerImpl progressTracker = new ProgressTrackerImpl( myGlobalSession );
+        RaftOutbound raftOutbound =
+                new RaftOutbound( discoveryService, senderService, localDatabase, logProvider, logThresholdMillis );
         Outbound<CoreMember,RaftMessages.RaftMessage> loggingOutbound = new LoggingOutbound<>(
-                new RaftOutbound( discoveryService, senderService, localDatabase ), myself, messageLogger );
+                raftOutbound, myself, messageLogger );
 
         RaftServer raftServer;
         CoreState coreState;

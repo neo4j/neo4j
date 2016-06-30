@@ -217,6 +217,10 @@ public class CoreEdgeClusterSettings
     public static final Setting<String> cluster_name = setting( "core_edge.cluster_name", STRING, "core-cluster",
             illegalValueMessage( "must be a valid cluster name", matches( ANY ) ) );
 
+    @Description("Throttle limit for logging unknown cluster member address")
+    public static final Setting<Long> unknown_address_logging_throttle =
+            setting( "core_edge.unknown_address_logging_throttle", DURATION, "10000ms" );
+
     @Description( "Maximum transaction batch size for edge servers when applying transactions pulled from core servers." )
     @Internal
     public static Setting<Integer> edge_transaction_applier_batch_size = setting( "core_edge.edge_transaction_applier_batch_size", INTEGER, "16" );

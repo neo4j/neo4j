@@ -21,14 +21,14 @@ package org.neo4j.coreedge.server.edge;
 
 import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
-import org.neo4j.coreedge.discovery.EdgeTopologyService;
+import org.neo4j.coreedge.discovery.TopologyService;
 import org.neo4j.coreedge.server.CoreMember;
 
 public class AlwaysChooseFirstServer implements CoreServerSelectionStrategy
 {
-    private final EdgeTopologyService discoveryService;
+    private final TopologyService discoveryService;
 
-    public AlwaysChooseFirstServer( EdgeTopologyService discoveryService)
+    public AlwaysChooseFirstServer( TopologyService discoveryService)
     {
         this.discoveryService = discoveryService;
     }

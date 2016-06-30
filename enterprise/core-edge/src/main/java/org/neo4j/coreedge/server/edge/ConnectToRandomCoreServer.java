@@ -24,15 +24,15 @@ import java.util.Random;
 
 import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
-import org.neo4j.coreedge.discovery.EdgeTopologyService;
+import org.neo4j.coreedge.discovery.TopologyService;
 import org.neo4j.coreedge.server.CoreMember;
 
 public class ConnectToRandomCoreServer implements CoreServerSelectionStrategy
 {
-    private final EdgeTopologyService discoveryService;
+    private final TopologyService discoveryService;
     private final Random random = new Random();
 
-    public ConnectToRandomCoreServer( EdgeTopologyService discoveryService )
+    public ConnectToRandomCoreServer( TopologyService discoveryService )
     {
         this.discoveryService = discoveryService;
     }

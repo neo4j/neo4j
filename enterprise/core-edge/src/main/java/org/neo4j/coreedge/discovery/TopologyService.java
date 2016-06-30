@@ -19,12 +19,9 @@
  */
 package org.neo4j.coreedge.discovery;
 
-public interface CoreTopologyService extends TopologyService
-{
-    void addMembershipListener( Listener listener );
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
-    interface Listener
-    {
-        void onTopologyChange();
-    }
+public interface TopologyService extends Lifecycle
+{
+    ClusterTopology currentTopology();
 }

@@ -33,16 +33,14 @@ import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.coreedge.server.RaftTestMember.member;
 import static org.neo4j.coreedge.server.core.DiscoverMembersProcedureTest.addresses;
 import static org.neo4j.coreedge.server.core.DiscoverMembersProcedureTest.coreAddresses;
 import static org.neo4j.helpers.collection.Iterators.asList;
@@ -56,7 +54,7 @@ public class AcquireEndpointsProcedureTest
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
         Map<CoreMember,CoreAddresses> coreMembers = new HashMap<>();
-        CoreMember theLeader = new CoreMember( UUID.randomUUID() );
+        CoreMember theLeader = member( 0 );
         coreMembers.put( theLeader, coreAddresses( 0 ) );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 1 ) );
@@ -85,7 +83,7 @@ public class AcquireEndpointsProcedureTest
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
         Map<CoreMember, CoreAddresses> coreMembers = new HashMap<>();
-        CoreMember theLeader = new CoreMember( UUID.randomUUID() );
+        CoreMember theLeader = member( 0 );
         coreMembers.put( theLeader, coreAddresses( 0 ) );
 
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses( 1, 2, 3 ) );
@@ -111,7 +109,7 @@ public class AcquireEndpointsProcedureTest
         final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
         Map<CoreMember, CoreAddresses> coreMembers = new HashMap<>();
-        CoreMember theLeader = new CoreMember( UUID.randomUUID() );
+        CoreMember theLeader = member( 0 );
         coreMembers.put( theLeader, coreAddresses( 0 ) );
         final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses() );
 
@@ -127,30 +125,63 @@ public class AcquireEndpointsProcedureTest
         final List<Object[]> members = asList( procedure.apply( null, new Object[0] ) );
 
         // then
-        List<Object[]> readAddresses = members.stream().filter( row -> row[1].equals( "read" ) ).collect( toList() );
-
-        assertEquals( 1, readAddresses.size() );
-        assertArrayEquals( readAddresses.get( 0 ), new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "read"} );
+        MatcherAssert.assertThat( members, containsInAnyOrder(
+                new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "write"},
+                new Object[]{coreAddresses( 0 ).getRaftServer().toString(), "read"}
+        ) );
     }
 
     @Test
-    public void shouldThrowExceptionIfThereIsNoLeader() throws Exception
+    public void shouldReturnNoWriteEndpointsIfThereIsNoLeader() throws Exception
     {
         // given
-        LeaderLocator leaderLocator = mock( LeaderLocator.class );
-        when( leaderLocator.getLeader() ).thenThrow( NoLeaderFoundException.class );
+        final CoreTopologyService topologyService = mock( CoreTopologyService.class );
 
-        AcquireEndpointsProcedure procedure = new AcquireEndpointsProcedure(
-                mock( CoreTopologyService.class ), leaderLocator, NullLogProvider.getInstance() );
+        Map<CoreMember, CoreAddresses> coreMembers = new HashMap<>();
+        coreMembers.put( member( 0 ), coreAddresses( 0 ) );
+
+        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses() );
+
+        when( topologyService.currentTopology() ).thenReturn( clusterTopology );
+
+        LeaderLocator leaderLocator = mock( LeaderLocator.class );
+        when( leaderLocator.getLeader() ).thenThrow( new NoLeaderFoundException() );
+
+        AcquireEndpointsProcedure procedure = new AcquireEndpointsProcedure( topologyService, leaderLocator,
+                NullLogProvider.getInstance() );
 
         // when
-        try
-        {
-            procedure.apply( null, new Object[]{"bam"} );
-        }
-        catch ( ProcedureException e )
-        {
-            assertEquals( Status.Cluster.NoLeader, e.status() );
-        }
+        final List<Object[]> members = asList( procedure.apply( null, new Object[0] ) );
+
+        // then
+        assertEquals( 1, members.stream().filter( row1 -> row1[1].equals( "read" ) ).collect( toList() ).size() );
+        assertEquals( 0, members.stream().filter( row1 -> row1[1].equals( "write" ) ).collect( toList() ).size() );
+    }
+
+    @Test
+    public void shouldReturnNoWriteEndpointsIfThereIsNoAddressForTheLeader() throws Exception
+    {
+        // given
+        final CoreTopologyService topologyService = mock( CoreTopologyService.class );
+
+        Map<CoreMember, CoreAddresses> coreMembers = new HashMap<>();
+        coreMembers.put( member( 0 ), coreAddresses( 0 ) );
+
+        final ClusterTopology clusterTopology = new ClusterTopology( false, coreMembers, addresses() );
+
+        when( topologyService.currentTopology() ).thenReturn( clusterTopology );
+
+        LeaderLocator leaderLocator = mock( LeaderLocator.class );
+        when( leaderLocator.getLeader() ).thenReturn( member( 1 ) );
+
+        AcquireEndpointsProcedure procedure = new AcquireEndpointsProcedure( topologyService, leaderLocator,
+                NullLogProvider.getInstance() );
+
+        // when
+        final List<Object[]> members = asList( procedure.apply( null, new Object[0] ) );
+
+        // then
+        assertEquals( 1, members.stream().filter( row1 -> row1[1].equals( "read" ) ).collect( toList() ).size() );
+        assertEquals( 0, members.stream().filter( row1 -> row1[1].equals( "write" ) ).collect( toList() ).size() );
     }
 }

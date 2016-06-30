@@ -55,12 +55,6 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     }
 
     @Override
-    public synchronized void removeMembershipListener( Listener listener )
-    {
-        listeners.remove( listener );
-    }
-
-    @Override
     public void start() throws InterruptedException
     {
         sharedDiscoveryService.registerCoreServer( member, coreAddresses, this );

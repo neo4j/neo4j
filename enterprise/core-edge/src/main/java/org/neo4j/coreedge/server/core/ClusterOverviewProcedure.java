@@ -19,27 +19,28 @@
  */
 package org.neo4j.coreedge.server.core;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
+import org.neo4j.coreedge.discovery.EdgeAddresses;
+import org.neo4j.coreedge.discovery.NoKnownAddressesException;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.coreedge.server.core.ClusterOverviewProcedure.ReadWriteEndPoint.follower;
-import static org.neo4j.coreedge.server.core.ClusterOverviewProcedure.ReadWriteEndPoint.leader;
 import static org.neo4j.helpers.collection.Iterators.asRawIterator;
+import static org.neo4j.helpers.collection.Iterators.map;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
@@ -47,67 +48,73 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
     public static final String NAME = "overview";
     private final CoreTopologyService discoveryService;
     private final LeaderLocator leaderLocator;
+    private final Log log;
 
     ClusterOverviewProcedure( CoreTopologyService discoveryService,
-                              LeaderLocator leaderLocator)
+                              LeaderLocator leaderLocator, LogProvider logProvider )
     {
         super( procedureSignature( new ProcedureSignature.ProcedureName( new String[]{"dbms", "cluster"}, NAME ) )
-                .out( "id", Neo4jTypes.NTString )
-                .out( "address", Neo4jTypes.NTString )
+                .out( "id", Neo4jTypes.NTString ).out( "address", Neo4jTypes.NTString )
                 .out( "role", Neo4jTypes.NTString ).build() );
         this.discoveryService = discoveryService;
         this.leaderLocator = leaderLocator;
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
-    public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+    public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
+        Set<ReadWriteEndPoint> endpoints = new HashSet<>();
+        ClusterTopology clusterTopology = discoveryService.currentTopology();
+        Set<CoreMember> coreMembers = clusterTopology.coreMembers();
+        CoreMember leader = null;
         try
         {
-            CoreMember leader = leaderLocator.getLeader();
-            ClusterTopology clusterTopology = discoveryService.currentTopology();
-
-            Set<CoreMember> coreMembers = clusterTopology.coreMembers();
-
-            Stream<ReadWriteEndPoint> leaderEndpoint = coreMembers.stream()
-                    .filter( c -> c.equals( leader ) )
-                    .map( c -> leader( clusterTopology.coreAddresses( c ).getBoltServer(), c.getUuid() ) );
-
-            Stream<ReadWriteEndPoint> followerEndpoints = coreMembers.stream()
-                    .filter( c -> !c.equals( leader ) )
-                    .map( c -> follower( clusterTopology.coreAddresses( c ).getBoltServer(), c.getUuid() ) );
-
-            Stream<ReadWriteEndPoint> readReplicaEndpoints = clusterTopology.edgeMembers().stream().map( m ->
-                    ReadWriteEndPoint.readReplica( m.getBoltAddress() ) );
-
-            Stream<ReadWriteEndPoint> allTheEndpoints = Stream.concat( leaderEndpoint,
-                    Stream.concat( followerEndpoints, readReplicaEndpoints ) );
-
-            return Iterators.map( ( l ) -> new Object[]{l.identifier(), l.address(), l.type()},
-                    asRawIterator( allTheEndpoints.iterator() ) );
-
+            leader = leaderLocator.getLeader();
         }
         catch ( NoLeaderFoundException e )
         {
-            throw new ProcedureException( Status.Cluster.NoLeader,
-                    "No write server found. This can happen during a leader switch. " );
+            log.debug( "No write server found. This can happen during a leader switch." );
         }
+
+        for ( CoreMember coreMember : coreMembers )
+        {
+            AdvertisedSocketAddress boltServerAddress = null;
+            try
+            {
+                boltServerAddress = clusterTopology.coreAddresses( coreMember ).getBoltServer();
+            }
+            catch ( NoKnownAddressesException e )
+            {
+                log.debug( "Address found for " );
+            }
+            Type type = coreMember.equals( leader ) ? Type.LEADER : Type.FOLLOWER;
+            endpoints.add( new ReadWriteEndPoint( boltServerAddress, type, coreMember.getUuid() ) );
+        }
+        for ( EdgeAddresses edgeAddresses : clusterTopology.edgeMemberAddresses() )
+        {
+            endpoints.add( new ReadWriteEndPoint( edgeAddresses.getBoltAddress(), Type.READ_REPLICA, null ) );
+        }
+        return map( ( l ) -> new Object[]{l.identifier(), l.address(), l.type()},
+                asRawIterator( endpoints.iterator() ) );
     }
 
     public enum Type
     {
-        LEADER, FOLLOWER, READ_REPLICA
+        LEADER,
+        FOLLOWER,
+        READ_REPLICA
     }
 
-    static class ReadWriteEndPoint
+    private static class ReadWriteEndPoint
     {
         private final AdvertisedSocketAddress address;
         private final Type type;
-        private final String identifier;
+        private final UUID identifier;
 
         public String address()
         {
-            return address.toString();
+            return address == null ? null : address.toString();
         }
 
         public String type()
@@ -117,29 +124,15 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
 
         String identifier()
         {
-            return identifier ;
+            return identifier == null ? null : identifier.toString();
         }
 
-        ReadWriteEndPoint(AdvertisedSocketAddress address, Type type, String identifier)
+        public ReadWriteEndPoint( AdvertisedSocketAddress address, Type type, UUID identifier )
         {
             this.address = address;
             this.type = type;
             this.identifier = identifier;
         }
 
-        public static ReadWriteEndPoint leader( AdvertisedSocketAddress address, UUID identifier )
-        {
-            return new ReadWriteEndPoint( address, Type.LEADER, identifier.toString() );
-        }
-
-        public static ReadWriteEndPoint follower( AdvertisedSocketAddress address, UUID identifier )
-        {
-            return new ReadWriteEndPoint( address, Type.FOLLOWER, identifier.toString() );
-        }
-
-        static ReadWriteEndPoint readReplica(AdvertisedSocketAddress address)
-        {
-            return new ReadWriteEndPoint( address, Type.READ_REPLICA, null );
-        }
     }
 }

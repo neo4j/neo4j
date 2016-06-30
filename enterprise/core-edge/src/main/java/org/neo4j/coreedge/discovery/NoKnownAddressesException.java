@@ -19,12 +19,6 @@
  */
 package org.neo4j.coreedge.discovery;
 
-public interface CoreTopologyService extends TopologyService
+public class NoKnownAddressesException extends Exception
 {
-    void addMembershipListener( Listener listener );
-
-    interface Listener
-    {
-        void onTopologyChange();
-    }
 }

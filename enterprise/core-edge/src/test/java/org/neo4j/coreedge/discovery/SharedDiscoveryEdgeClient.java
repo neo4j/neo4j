@@ -43,16 +43,6 @@ class SharedDiscoveryEdgeClient extends LifecycleAdapter implements EdgeTopology
     }
 
     @Override
-    public void addMembershipListener( Listener listener )
-    {
-    }
-
-    @Override
-    public void removeMembershipListener( Listener listener )
-    {
-    }
-
-    @Override
     public ClusterTopology currentTopology()
     {
         ClusterTopology topology = sharedDiscoveryService.currentTopology( null );

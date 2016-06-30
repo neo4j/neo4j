@@ -224,7 +224,7 @@ public class HazelcastClientTest
         client.registerEdgeServer( new AdvertisedSocketAddress( "localhost:7000" ) );
 
         // then
-        assertEquals( 1, client.currentTopology().edgeMembers().size() );
+        assertEquals( 1, client.currentTopology().edgeMemberAddresses().size() );
     }
 
     private Member makeMember( int id ) throws UnknownHostException

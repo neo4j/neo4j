@@ -29,6 +29,7 @@ import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
 import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
+import org.neo4j.coreedge.discovery.TopologyService;
 import org.neo4j.coreedge.raft.replication.tx.ConstantTimeRetryStrategy;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.edge.AlwaysChooseFirstServer;
@@ -63,7 +64,7 @@ public class EdgeServerStartupProcessTest
         LocalDatabase localDatabase = mock( LocalDatabase.class );
 
         CoreMember coreMember = new CoreMember( UUID.randomUUID() );
-        EdgeTopologyService hazelcastTopology = mock( EdgeTopologyService.class );
+        TopologyService hazelcastTopology = mock( TopologyService.class );
 
         ClusterTopology clusterTopology = mock( ClusterTopology.class );
         when( hazelcastTopology.currentTopology() ).thenReturn( clusterTopology );
@@ -96,7 +97,7 @@ public class EdgeServerStartupProcessTest
         LocalDatabase localDatabase = mock( LocalDatabase.class );
 
         CoreMember coreMember = new CoreMember( UUID.randomUUID() );
-        EdgeTopologyService hazelcastTopology = mock( EdgeTopologyService.class );
+        TopologyService hazelcastTopology = mock( TopologyService.class );
         ClusterTopology clusterTopology = mock( ClusterTopology.class );
         when( clusterTopology.coreMembers() ).thenReturn( asSet( coreMember ) );
 

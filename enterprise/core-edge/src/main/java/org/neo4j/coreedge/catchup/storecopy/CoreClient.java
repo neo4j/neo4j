@@ -36,7 +36,7 @@ import org.neo4j.coreedge.catchup.tx.edge.TxPullRequest;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponse;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseListener;
 import org.neo4j.coreedge.catchup.tx.edge.TxStreamCompleteListener;
-import org.neo4j.coreedge.discovery.CoreTopologyService;
+import org.neo4j.coreedge.discovery.TopologyService;
 import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.net.CoreOutbound;
 import org.neo4j.coreedge.raft.net.Outbound;
@@ -66,11 +66,12 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
     private Outbound<CoreMember, Message> outbound;
 
     public CoreClient( LogProvider logProvider, ChannelInitializer<SocketChannel> channelInitializer, Monitors monitors,
-            int maxQueueSize, NonBlockingChannels nonBlockingChannels, CoreTopologyService discoveryService )
+            int maxQueueSize, NonBlockingChannels nonBlockingChannels, TopologyService discoveryService,
+            long logThresholdMillis )
     {
         senderService =
                 new SenderService( channelInitializer, logProvider, monitors, maxQueueSize, nonBlockingChannels );
-        this.outbound = new CoreOutbound( discoveryService, senderService );
+        this.outbound = new CoreOutbound( discoveryService, senderService, logProvider, logThresholdMillis );
         this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
     }
 
