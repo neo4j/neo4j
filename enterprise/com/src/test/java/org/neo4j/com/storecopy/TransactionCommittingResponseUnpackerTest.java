@@ -21,6 +21,8 @@ package org.neo4j.com.storecopy;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.IOException;
@@ -75,6 +77,7 @@ import org.neo4j.test.CleanupRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -90,18 +93,72 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_TX_HANDLER;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class TransactionCommittingResponseUnpackerTest
 {
-    public final @Rule CleanupRule cleanup = new CleanupRule();
-    public final @Rule LifeRule life = new LifeRule();
+    @Rule
+    public final CleanupRule cleanup = new CleanupRule();
+    @Rule
+    public final LifeRule life = new LifeRule();
 
     private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
     private final LogService logging = new SimpleLogService(
             new AssertableLogProvider(), new AssertableLogProvider() );
+
+
+    @Test
+    public void panicAndSkipBatchOnApplyingFailure() throws Throwable
+    {
+        final long committingTransactionId = BASE_TX_ID + 1;
+        final TransactionIdStore txIdStore = mock( TransactionIdStore.class );
+        BatchingTransactionRepresentationStoreApplier applier = mock( BatchingTransactionRepresentationStoreApplier.class );
+        TransactionAppender appender = mock( TransactionAppender.class );
+        when( appender.append( any( TransactionRepresentation.class ), anyLong() ) )
+                .thenAnswer( new FakeCommitmentAnswer( committingTransactionId, txIdStore ) );
+
+        LogFile logFile = mock( LogFile.class );
+        LogRotation logRotation = mock( LogRotation.class );
+        KernelHealth kernelHealth = newKernelHealth();
+
+        IndexUpdatesValidator indexUpdatesValidator = mock( IndexUpdatesValidator.class );
+        String errorMessage = "Too many open files";
+
+        doReturn(null).
+        doThrow( new IOException( errorMessage ) )
+                .when( indexUpdatesValidator )
+                .validate( any( TransactionRepresentation.class ) );
+
+        TransactionCommittingResponseUnpacker.Dependencies dependencies = buildDependencies( logFile,
+                logRotation, indexUpdatesValidator, applier, appender,
+                mock( TransactionObligationFulfiller.class ), kernelHealth );
+
+        int maxBatchSize = 10;
+        DummyTransactionResponse response = new DummyTransactionResponse( committingTransactionId, 10, appender,
+                maxBatchSize );
+
+        TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( dependencies, maxBatchSize );
+        unpacker.start();
+
+        try
+        {
+            unpacker.unpackResponse( response, NO_OP_TX_HANDLER );
+            fail("Should fail during batch processing");
+        }
+        catch ( IOException ignore )
+        {
+            // ignored
+        }
+
+        assertFalse("Kernel should be unhealthy because of failure during index updates validation.", kernelHealth.isHealthy() );
+        assertEquals( "Root cause should have expected exception",
+                errorMessage, kernelHealth.getCauseOfPanic().getMessage() );
+
+        // 2 transactions where committed by none was closed.
+        verify( txIdStore, times( 2 ) ).transactionCommitted( anyLong(), anyLong() );
+        verify( txIdStore, times( 2 ) ).transactionClosed( anyLong(), anyLong(), anyLong() );
+    }
 
     /*
      * Tests that shutting down the response unpacker while in the middle of committing a transaction will
@@ -167,19 +224,6 @@ public class TransactionCommittingResponseUnpackerTest
         }
         verifyNoMoreInteractions( txIdStore );
         verifyNoMoreInteractions( appender );
-    }
-
-    private Function<DependencyResolver,BatchingTransactionRepresentationStoreApplier> customApplier(
-            final BatchingTransactionRepresentationStoreApplier storeApplier )
-    {
-        return new Function<DependencyResolver,BatchingTransactionRepresentationStoreApplier>()
-        {
-            @Override
-            public BatchingTransactionRepresentationStoreApplier apply( DependencyResolver from )
-            {
-                return storeApplier;
-            }
-        };
     }
 
     @Test
@@ -266,12 +310,6 @@ public class TransactionCommittingResponseUnpackerTest
         {
             assertThat( e.getMessage(), containsString( failure.getMessage() ) );
         }
-    }
-
-    private KernelHealth newKernelHealth()
-    {
-        Log log = logging.getInternalLog( getClass() );
-        return new KernelHealth( new KernelPanicEventGenerator( new KernelEventHandlers( log ) ), log );
     }
 
     @Test
@@ -396,18 +434,6 @@ public class TransactionCommittingResponseUnpackerTest
         verifyZeroInteractions( storeApplier );
     }
 
-    private Function<DependencyResolver,IndexUpdatesValidator> customValidator( final IndexUpdatesValidator validator )
-    {
-        return new Function<DependencyResolver,IndexUpdatesValidator>()
-        {
-            @Override
-            public IndexUpdatesValidator apply( DependencyResolver from ) throws RuntimeException
-            {
-                return validator;
-            }
-        };
-    }
-
     @Test
     public void shouldNotMarkTransactionsAsCommittedIfAppenderClosed() throws Throwable
     {
@@ -456,6 +482,12 @@ public class TransactionCommittingResponseUnpackerTest
             verify( transactionIdStore, times( 0 ) ).transactionCommitted( anyLong(), anyLong() );
             verify( transactionIdStore, times( 0 ) ).transactionClosed( anyLong(), anyLong(), anyLong() );
         }
+    }
+
+    private KernelHealth newKernelHealth()
+    {
+        Log log = logging.getInternalLog( getClass() );
+        return new KernelHealth( new KernelPanicEventGenerator( new KernelEventHandlers( log ) ), log );
     }
 
     private TransactionCommittingResponseUnpacker.Dependencies buildDependencies(
@@ -628,6 +660,24 @@ public class TransactionCommittingResponseUnpackerTest
                     verifyNoMoreInteractions( appender );
                 }
             }
+        }
+    }
+
+    private static class FakeCommitmentAnswer implements Answer<FakeCommitment>
+    {
+        private final long committingTransactionId;
+        private final TransactionIdStore txIdStore;
+
+        FakeCommitmentAnswer( long committingTransactionId, TransactionIdStore txIdStore )
+        {
+            this.committingTransactionId = committingTransactionId;
+            this.txIdStore = txIdStore;
+        }
+
+        @Override
+        public FakeCommitment answer( InvocationOnMock invocation ) throws Throwable
+        {
+            return new FakeCommitment( committingTransactionId, txIdStore );
         }
     }
 }

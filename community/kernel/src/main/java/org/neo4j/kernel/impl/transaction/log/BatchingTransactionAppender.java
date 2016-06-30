@@ -28,7 +28,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
@@ -169,9 +168,11 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
             long transactionId = transactionIdStore.nextCommittingTransactionId();
             if ( transactionId != expectedTransactionId )
             {
-                throw new ThisShouldNotHappenError( "Zhen Li and Mattias Persson",
+                IllegalStateException illegalStateException = new IllegalStateException(
                         "Received " + transaction + " with txId:" + expectedTransactionId +
                         " to be applied, but appending it ended up generating an unexpected txId:" + transactionId );
+                kernelHealth.panic( illegalStateException );
+                throw illegalStateException;
             }
             return appendToLog( transaction, transactionId );
         }

@@ -243,6 +243,12 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
                     }
                 }
             }
+            catch ( Throwable cause )
+            {
+
+                kernelHealth.panic( cause );
+                throw cause;
+            }
             finally
             {
                 transactionQueue.clear();
