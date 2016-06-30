@@ -35,6 +35,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -220,11 +221,28 @@ abstract class AuthTestBase<S>
         assertThat( err, containsString( partOfErrorMsg ) );
     }
 
+    void assertCallSuccess( S subject, String call )
+    {
+        String err = assertCallEmpty( subject, call );
+        assertThat( err, equalTo( "" ) );
+    }
+
+    void assertCallSuccess( S subject, String call, Consumer<ResourceIterator<Map<String, Object>>> resultConsumer )
+    {
+        String err = neo.executeQuery( subject, call, null, resultConsumer );
+        assertThat( err, equalTo( "" ) );
+    }
+
     String assertCallEmpty( S subject, String call )
     {
         return neo.executeQuery( subject, call, null,
                 ( res ) -> assertFalse( "Expected no results", res.hasNext()
             ) );
+    }
+
+    void testAuthenticated( S subject )
+    {
+        assertTrue( neo.isAuthenticated( subject ) );
     }
 
     void testUnAuthenticated( S subject )

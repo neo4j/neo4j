@@ -379,7 +379,7 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         assertCallEmpty( adminSubject, "CALL dbms.suspendUser('Henrik')" );
 
         // TODO: uncomment and fix
-        // testUnAuthenticated( subject );
+        testUnAuthenticated( subject );
 
         subject = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.FAILURE, neo.authenticationResult( subject ) );
@@ -458,7 +458,8 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
     Henrik lists all roles for user Craig → permission denied
     Admin lists all roles for user Craig → ok
     Admin adds user Henrik to role Publisher
-    Henrik lists all roles for user Henrik → ok
+    Craig logs in with correct password → ok
+    Craig lists all roles for user Craig → ok
     */
     @Test
     public void listingUserRoles() throws Throwable
@@ -473,10 +474,9 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         executeQuery( adminSubject, "CALL dbms.listRolesForUser('Craig') YIELD value as roles RETURN roles",
                 r -> assertKeyIs( r, "roles", PUBLISHER ) );
 
-        assertCallEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
-        //TODO: uncomment the next line and make the test pass
-        //testResult( subject, "CALL dbms.listRolesForUser('Henrik') YIELD value as roles RETURN roles",
-        //        r -> assertKeyIs( r, "roles", PUBLISHER ) );
+        S craigSubject = neo.login( "Craig", "foo" );
+        executeQuery( craigSubject, "CALL dbms.listRolesForUser('Craig') YIELD value as roles RETURN roles",
+                r -> assertKeyIs( r, "roles", PUBLISHER ) );
     }
 
     /*

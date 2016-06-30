@@ -75,7 +75,7 @@ public class EnterpriseAuthSubject implements AuthSubject
 
     public boolean isAdmin()
     {
-        return shiroSubject.isPermitted( "*" );
+        return shiroSubject.isAuthenticated() && shiroSubject.isPermitted( "*" );
     }
 
     public boolean doesUsernameMatch( String username )

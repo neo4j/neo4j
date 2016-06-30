@@ -19,11 +19,19 @@
  */
 package org.neo4j.server.rest.security;
 
+import org.junit.Rule;
+
 import org.neo4j.server.security.enterprise.auth.AuthProceduresTestLogic;
 import org.neo4j.server.security.enterprise.auth.NeoInteractionLevel;
+import org.neo4j.test.rule.SuppressOutput;
+
+import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 public class NeoFullRESTProceduresIT extends AuthProceduresTestLogic<RESTSubject>
 {
+    @Rule
+    public SuppressOutput suppressOutput = suppressAll();
+
     public NeoFullRESTProceduresIT()
     {
         super();

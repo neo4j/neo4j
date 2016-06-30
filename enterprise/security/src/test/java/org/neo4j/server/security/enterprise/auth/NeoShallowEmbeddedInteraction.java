@@ -91,10 +91,12 @@ class NeoShallowEmbeddedInteraction implements NeoInteractionLevel<EnterpriseAut
         subject.logout();
     }
 
+    // To overcome that the Shiro subject caches it's authentication status.
+    // This assumes that zero authorization equals not being authenticated.
     @Override
     public boolean isAuthenticated( EnterpriseAuthSubject subject )
     {
-        return subject.getShiroSubject().isAuthenticated();
+        return subject.getShiroSubject().isAuthenticated() && subject.allowsReads();
     }
 
     @Override
