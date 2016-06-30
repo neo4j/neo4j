@@ -54,6 +54,7 @@ public class CompatibilitySpecSuiteTest
             },
             glue = { GLUE_PATH },
             features = { FEATURE_PATH + FEATURE_TO_RUN },
+            tags = { "~@pending" },
             strict = true
     )
     public static class Rule
@@ -70,6 +71,7 @@ public class CompatibilitySpecSuiteTest
             },
             glue = { GLUE_PATH },
             features = { FEATURE_PATH + FEATURE_TO_RUN },
+            tags = { "~@pending" },
             strict = true
     )
     public static class Cost
@@ -86,6 +88,7 @@ public class CompatibilitySpecSuiteTest
             },
             glue = { GLUE_PATH },
             features = { FEATURE_PATH + FEATURE_TO_RUN },
+            tags = { "~@pending" },
             strict = true
     )
     public static class CostCompiled
@@ -102,6 +105,7 @@ public class CompatibilitySpecSuiteTest
             },
             glue = { GLUE_PATH },
             features = { FEATURE_PATH + FEATURE_TO_RUN },
+            tags = { "~@pending" },
             strict = true
     )
     public static class Compatibility23
@@ -118,6 +122,7 @@ public class CompatibilitySpecSuiteTest
             },
             glue = { GLUE_PATH },
             features = { FEATURE_PATH + FEATURE_TO_RUN },
+            tags = { "~@pending" },
             strict = true
     )
     public static class Compatibility30
@@ -132,5 +137,4 @@ public class CompatibilitySpecSuiteTest
     public static final Class<?> RESOURCE_CLASS = TCKCucumberTemplate.class;
 
     private static final String FEATURE_PATH = "target/" + SUITE_NAME + "/features/";
-
 }

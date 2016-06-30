@@ -19,10 +19,20 @@
  */
 package cypher.feature.steps
 
-import cypher.CompatibilitySpecSuiteTest
+import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
 
-class CompatibilitySpecSuiteSteps extends SpecSuiteSteps {
-  override val specSuiteClass = classOf[CompatibilitySpecSuiteTest]
+object ProcedureSignature {
+  private val parser = new ProcedureSignatureParser
+
+  def parse(signatureText: String) =
+    parser.parse(signatureText)
 }
 
+case class ProcedureSignature(namespace: Seq[String],
+                              name: String,
+                              inputs: Seq[(String, CypherType)],
+                              outputs: Option[Seq[(String, CypherType)]]) {
 
+  val fields: List[String] =
+    (inputs ++ outputs.getOrElse(Seq.empty)).map { case (fieldName, _) => fieldName }.toList
+}

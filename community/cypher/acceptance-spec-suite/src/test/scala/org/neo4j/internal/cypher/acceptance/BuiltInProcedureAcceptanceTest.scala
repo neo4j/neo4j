@@ -19,10 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher._
-import org.neo4j.kernel.api.proc.Neo4jTypes
-
-class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
+class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest {
 
   test("should be able to find labels from built-in-procedure") {
     // Given
@@ -31,7 +28,7 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
     createLabeledNode("C")
 
     //When
-    val result = execute("CALL db.labels")
+    val result = execute("CALL db.labels() YIELD label RETURN *")
 
     // Then
     result.toList should equal(
@@ -41,45 +38,27 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
         Map("label" -> "C")))
   }
 
-  test("should be able to call void procedure") {
-    //Given
-    registerVoidProcedure()
+  test("should be able to find labels from built-in-procedure from within a query") {
+    // Given
+    createLabeledNode(Map("name" -> "Tic"), "A")
+    createLabeledNode(Map("name" -> "Tac"), "B")
+    createLabeledNode(Map("name" -> "Toc"), "C")
 
     //When
-    val result = execute("CALL dbms.do_nothing()")
+    val result = execute("MATCH (n {name: 'Toc'}) WITH n.name AS name CALL db.labels() YIELD label RETURN *")
 
     // Then
-    result.toList shouldBe empty
+    result.toList should equal(
+      List(
+        Map("name" -> "Toc", "label" -> "A"),
+        Map("name" -> "Toc", "label" -> "B"),
+        Map("name" -> "Toc", "label" -> "C")))
   }
 
-  test("should be able to call void procedure without arguments") {
-    //Given
-    registerVoidProcedure()
-
+  test("db.labels works on an empty database") {
+    // Given an empty database
     //When
-    val result = execute("CALL dbms.do_nothing")
-
-    // Then
-    result.toList shouldBe empty
-  }
-
-  test("should be able to call empty procedure") {
-    //Given
-    registerProcedureReturningNoRowsOrColumns()
-
-    //When
-    val result = execute("CALL dbms.return_nothing()")
-
-    // Then
-    result.toList shouldBe empty
-  }
-
-  test("should be able to call empty procedure without arguments") {
-    //Given
-    registerProcedureReturningNoRowsOrColumns()
-
-    //When
-    val result = execute("CALL dbms.return_nothing")
+    val result = execute("CALL db.labels() YIELD label RETURN *")
 
     // Then
     result.toList shouldBe empty
@@ -214,108 +193,6 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
         Map("propertyKey" -> "A"),
         Map("propertyKey" -> "B"),
         Map("propertyKey" -> "R")))
-  }
-
-  test("should be able to call procedure with explicit arguments") {
-    // Given
-    registerDummyInOutProcedure(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
-
-    // When
-    val result = execute("CALL my.first.proc('42', 42)")
-
-    // Then
-    result.toList should equal(List(Map("out0" -> "42", "out1" -> 42)))
-  }
-
-  test("should be able to call procedure with implicit arguments") {
-    // Given
-    registerDummyInOutProcedure(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
-
-    // When
-    val result = execute("CALL my.first.proc", "in0" -> "42", "in1" -> 42)
-
-    // Then
-    result.toList should equal(List(Map("out0" -> "42", "out1" -> 42)))
-  }
-
-  test("should fail if input type is wrong") {
-    // Given
-    registerDummyInOutProcedure(Neo4jTypes.NTNumber)
-
-    // Then
-    a [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten')"))
-  }
-
-  test("if signature declares number all number types are valid") {
-    // Given
-    registerDummyInOutProcedure(Neo4jTypes.NTNumber)
-
-    // Then
-    execute("CALL my.first.proc(42)").toList should equal(List(Map("out0" -> 42)))
-    execute("CALL my.first.proc(42.3)").toList should equal(List(Map("out0" -> 42.3)))
-  }
-
-  test("arguments are nullable") {
-    // Given
-    registerDummyInOutProcedure(Neo4jTypes.NTNumber)
-
-    // Then
-    execute("CALL my.first.proc(NULL)").toList should equal(List(Map("out0" -> null)))
-  }
-
-  test("should not fail if a procedure declares a float but gets an integer") {
-    // Given
-    registerDummyInOutProcedure(Neo4jTypes.NTFloat)
-
-    // Then
-    a [CypherTypeException] shouldNot be(thrownBy(execute("CALL my.first.proc(42)")))
-  }
-
-  test("should not fail if a procedure declares a float but gets called with an integer") {
-    // Given
-    registerDummyInOutProcedure(Neo4jTypes.NTFloat)
-
-    // Then
-    a [CypherTypeException] shouldNot be(thrownBy(execute("CALL my.first.proc({param})", "param" -> 42)))
-  }
-
-  test("should fail if explicit argument is missing") {
-    // Given
-    registerDummyInOutProcedure(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
-
-    // Then
-    an [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten')"))
-  }
-
-  test("should fail if too many arguments") {
-    // Given
-    registerDummyInOutProcedure(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
-
-    // Then
-    an [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten', 10, 42)"))
-  }
-
-  test("should fail if implicit argument is missing") {
-    // Given
-    registerDummyInOutProcedure(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
-
-    // Then
-    a [ParameterNotFoundException] shouldBe thrownBy(execute("CALL my.first.proc", "in0" -> "42", "in42" -> 42))
-  }
-
-  test("should be able to call a procedure with explain") {
-    // Given
-    registerDummyInOutProcedure(Neo4jTypes.NTNumber)
-
-    // When
-    val result = execute("EXPLAIN CALL my.first.proc(42)")
-
-    // Then
-    result shouldBe empty
-  }
-
-  test("should fail if calling non-existent procedure") {
-    a [CypherExecutionException] shouldBe thrownBy(execute("CALL no.such.thing.exists(42)"))
   }
 
   test("should be able to find indexes from built-in-procedure") {
