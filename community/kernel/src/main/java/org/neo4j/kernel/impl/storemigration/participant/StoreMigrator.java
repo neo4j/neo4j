@@ -30,7 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
 
 import org.neo4j.helpers.collection.Iterables;
@@ -247,7 +247,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 // copy that database.
                 return txId == TransactionIdStore.BASE_TX_ID
                        ? TransactionIdStore.BASE_TX_CHECKSUM
-                       : Math.abs( new Random().nextLong() );
+                       : Math.abs( ThreadLocalRandom.current().nextLong() );
             }
         }
     }
