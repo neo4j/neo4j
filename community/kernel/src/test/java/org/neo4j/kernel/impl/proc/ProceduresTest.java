@@ -187,39 +187,48 @@ public class ProceduresTest
     }
 
     @Test
-    public void shouldCompileProcedureWithPerformsWrites() throws Throwable
+    public void shouldFailCompileProcedureWithReadConflict() throws Throwable
     {
-        procs.register( ProcedureWithPerformsWritesAndRead.class );
-        assertNotNull( procs.get( new ProcedureSignature.ProcedureName( "org.neo4j.kernel.impl.proc".split( "\\." ),
-                "shouldCompile" ) ) );
-        assertNotNull( procs.get( new ProcedureSignature.ProcedureName( "org.neo4j.kernel.impl.proc".split( "\\." ),
-                "shouldCompileToo" ) ) );
+        exception.expect( ProcedureException.class );
+        exception.expectMessage( "Conflicting procedure annotation, cannot use PerformsWrites and mode" );
+        procs.register( ProcedureWithReadConflictAnnotation.class );
     }
 
     @Test
-    public void shouldFailCompileProcedureWithDBMSConflict() throws Throwable
+    public void shouldFailCompileProcedureWithWriteConflict() throws Throwable
     {
         exception.expect( ProcedureException.class );
-        exception.expectMessage( "Conflicting procedure annotation, PerformsWrites and mode = DBMS." );
-        procs.register( ProcedureWithDBMSConflictAnnotation.class );
+        exception.expectMessage( "Conflicting procedure annotation, cannot use PerformsWrites and mode" );
+        procs.register( ProcedureWithWriteConflictAnnotation.class );
     }
 
     @Test
     public void shouldFailCompileProcedureWithSchemaConflict() throws Throwable
     {
         exception.expect( ProcedureException.class );
-        exception.expectMessage( "Conflicting procedure annotation, PerformsWrites and mode = SCHEMA." );
+        exception.expectMessage( "Conflicting procedure annotation, cannot use PerformsWrites and mode" );
         procs.register( ProcedureWithSchemaConflictAnnotation.class );
     }
 
-    public static class ProcedureWithPerformsWritesAndRead
+    @Test
+    public void shouldFailCompileProcedureWithDBMSConflict() throws Throwable
+    {
+        exception.expect( ProcedureException.class );
+        exception.expectMessage( "Conflicting procedure annotation, cannot use PerformsWrites and mode" );
+        procs.register( ProcedureWithDBMSConflictAnnotation.class );
+    }
+
+    public static class ProcedureWithReadConflictAnnotation
     {
         @PerformsWrites
         @Procedure( mode = Procedure.Mode.READ )
         public void shouldCompile()
         {
         }
+    }
 
+    public static class ProcedureWithWriteConflictAnnotation
+    {
         @PerformsWrites
         @Procedure( mode = Procedure.Mode.WRITE )
         public void shouldCompileToo()
