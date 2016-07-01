@@ -25,6 +25,7 @@ import org.mockito.stubbing.Answer;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
@@ -70,7 +71,6 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -289,7 +289,7 @@ public class KernelTransactionsTest
     }
 
     @Test
-    public void unblockNewTransactionsFromWrongThreadDoesNothing() throws Exception
+    public void unblockNewTransactionsFromWrongThreadThrows() throws Exception
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
         kernelTransactions.blockNewTransactions();
@@ -302,7 +302,15 @@ public class KernelTransactionsTest
 
         Future<?> wrongUnblocker = unblockTxsInSeparateThread( kernelTransactions );
 
-        assertDone( wrongUnblocker );
+        try
+        {
+            wrongUnblocker.get( 2, TimeUnit.SECONDS );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( ExecutionException.class ) );
+            assertThat( e.getCause(), instanceOf( IllegalStateException.class ) );
+        }
         assertNotDone( txOpener );
 
         kernelTransactions.unblockNewTransactions();
@@ -418,11 +426,6 @@ public class KernelTransactionsTest
     private void await( CountDownLatch latch ) throws InterruptedException
     {
         assertTrue( latch.await( 1, MINUTES ) );
-    }
-
-    private static void assertDone( Future<?> future ) throws Exception
-    {
-        assertNull( future.get( 2, TimeUnit.SECONDS ) );
     }
 
     private static void assertNotDone( Future<?> future )

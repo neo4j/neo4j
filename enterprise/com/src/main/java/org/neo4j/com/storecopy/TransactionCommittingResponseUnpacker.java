@@ -339,32 +339,32 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
             return;
         }
 
-        /**
-         * Problem 1 (Not really a problem but we thought it where)
-         *  - chunk of batch is smaller than safe zone
-         *  - tx started after activeTransactions() is called
-         *  is safe because those transactions will see the latest state of store before chunk is applied and
-         *  because chunk is smaller than safe zone we are guarantied to not see two different states of any record
-         *  when applying the chunk.
-         *
-         *    activeTransactions() is called
-         *    |        start committing chunk
-         * ---|----+---|--|------> TIME
-         *         |      |
-         *         |      Start applying chunk
-         *         New tx starts here. Does not get terminated because not among active transactions, this is safe.
-         *
-         * Problem 2
-         *  - chunk of batch is larger than safe zone
-         *  - tx started after activeTransactions() but before apply
-         *
-         *    activeTransactions() is called
-         *    |        start committing chunk
-         * ---|--------|+-|------> TIME
-         *              | |
-         *              | Start applying chunk
-         *              New tx starts here. Does not get terminated because not among active transactions, but will read
-         *              outdated data and can be affected by reuse contamination.
+        /*
+          Problem 1 (Not really a problem but we thought it where)
+           - chunk of batch is smaller than safe zone
+           - tx started after activeTransactions() is called
+           is safe because those transactions will see the latest state of store before chunk is applied and
+           because chunk is smaller than safe zone we are guarantied to not see two different states of any record
+           when applying the chunk.
+
+             activeTransactions() is called
+             |        start committing chunk
+          ---|----+---|--|------> TIME
+                  |      |
+                  |      Start applying chunk
+                  New tx starts here. Does not get terminated because not among active transactions, this is safe.
+
+          Problem 2
+           - chunk of batch is larger than safe zone
+           - tx started after activeTransactions() but before apply
+
+             activeTransactions() is called
+             |        start committing chunk
+          ---|--------|+-|------> TIME
+                       | |
+                       | Start applying chunk
+                       New tx starts here. Does not get terminated because not among active transactions, but will read
+                       outdated data and can be affected by reuse contamination.
          */
 
         // We stop new transactions from starting to avoid problem 1
@@ -372,15 +372,20 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         {
             // Problem 2
             kernelTransactions.blockNewTransactions();
+            try
+            {
+                markUnsafeTransactionsForTermination();
+                applyQueuedTransactions();
+            }
+            finally
+            {
+                kernelTransactions.unblockNewTransactions();
+            }
         }
-        try
+        else
         {
             markUnsafeTransactionsForTermination();
             applyQueuedTransactions();
-        }
-        finally
-        {
-            kernelTransactions.unblockNewTransactions();
         }
     }
 

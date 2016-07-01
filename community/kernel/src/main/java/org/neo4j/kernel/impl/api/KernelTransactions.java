@@ -300,15 +300,17 @@ public class KernelTransactions extends LifecycleAdapter
 
     /**
      * Allow new transactions to be started again if current thread is the one who called
-     * {@link #blockNewTransactions()}. If current thread is not the one that called {@link #blockNewTransactions()}
-     * or it has not been called at all then NO_OP.
+     * {@link #blockNewTransactions()}.
+     *
+     * @throws IllegalStateException if current thread is not the one that called {@link #blockNewTransactions()}.
      */
     public void unblockNewTransactions()
     {
-        if ( newTransactionsLock.isWriteLockedByCurrentThread() )
+        if ( !newTransactionsLock.writeLock().isHeldByCurrentThread() )
         {
-            newTransactionsLock.writeLock().unlock();
+            throw new IllegalStateException( "This thread did not block transactions previously" );
         }
+        newTransactionsLock.writeLock().unlock();
     }
 
     private void assertCurrentThreadIsNotBlockingNewTransactions()
