@@ -38,7 +38,6 @@ import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature.FieldSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.impl.proc.OutputMappers.OutputMapper;
-import org.neo4j.procedure.PerformsDBMS;
 import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
 
@@ -109,13 +108,30 @@ public class ReflectiveProcedureCompiler
         List<FieldInjections.FieldSetter> setters = fieldInjections.setters( procDefinition );
 
         ProcedureSignature.Mode mode = ProcedureSignature.Mode.READ_ONLY;
-        if ( method.isAnnotationPresent( PerformsWrites.class ) )
+        Procedure procedure = method.getAnnotation( Procedure.class );
+        if ( procedure.mode().equals( Procedure.Mode.DBMS ) )
+        {
+            mode = ProcedureSignature.Mode.DBMS;
+        }
+        else if ( procedure.mode().equals( Procedure.Mode.SCHEMA ) )
+        {
+            mode = ProcedureSignature.Mode.SCHEMA_WRITE;
+        }
+        else if ( procedure.mode().equals( Procedure.Mode.WRITE ) )
         {
             mode = ProcedureSignature.Mode.READ_WRITE;
         }
-        else if ( method.isAnnotationPresent( PerformsDBMS.class ) )
+        if ( method.isAnnotationPresent( PerformsWrites.class ) )
         {
-            mode = ProcedureSignature.Mode.DBMS;
+            if ( mode == ProcedureSignature.Mode.DBMS || mode == ProcedureSignature.Mode.SCHEMA_WRITE )
+            {
+                throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                        "Conflicting procedure annotation, PerformsWrites and mode = %s.", procedure.mode() );
+            }
+            else
+            {
+                mode = ProcedureSignature.Mode.READ_WRITE;
+            }
         }
 
         ProcedureSignature signature = new ProcedureSignature( procName, inputSignature, outputMapper.signature(), mode );
@@ -140,10 +156,12 @@ public class ReflectiveProcedureCompiler
 
     private ProcedureName extractName( Class<?> procDefinition, Method m )
     {
-        String definedName = m.getAnnotation( Procedure.class ).value();
-        if( definedName.trim().length() > 0 )
+        String valueName = m.getAnnotation( Procedure.class ).value();
+        String definedName = m.getAnnotation( Procedure.class ).name();
+        String procName = (definedName.trim().isEmpty() ? valueName : definedName);
+        if( procName.trim().length() > 0 )
         {
-            String[] split = definedName.split( "\\." );
+            String[] split = procName.split( "\\." );
             if( split.length == 1)
             {
                 return new ProcedureName( new String[0], split[0] );

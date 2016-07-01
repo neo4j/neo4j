@@ -47,4 +47,5 @@ sealed trait ProcedureAccessMode
 
 case object ProcedureReadOnlyAccess extends ProcedureAccessMode
 case object ProcedureReadWriteAccess extends ProcedureAccessMode
+case object ProcedureSchemaWriteAccess extends ProcedureAccessMode
 case object ProcedureDbmsAccess extends ProcedureAccessMode

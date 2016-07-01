@@ -27,6 +27,7 @@ object ProcedureCallMode {
   def fromAccessMode(mode: ProcedureAccessMode): ProcedureCallMode = mode match {
     case ProcedureReadOnlyAccess => LazyReadOnlyCallMode
     case ProcedureReadWriteAccess => EagerReadWriteCallMode
+    case ProcedureSchemaWriteAccess => SchemaWriteCallMode
     case ProcedureDbmsAccess => DbmsCallMode
   }
 }
@@ -49,6 +50,19 @@ case object EagerReadWriteCallMode extends ProcedureCallMode {
   override def call(ctx: QueryContext, name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = {
     val builder = ArrayBuffer.newBuilder[Array[AnyRef]]
     val iterator = ctx.callReadWriteProcedure(name, args)
+    while (iterator.hasNext) {
+      builder += iterator.next()
+    }
+    builder.result().iterator
+  }
+}
+
+case object SchemaWriteCallMode extends ProcedureCallMode {
+  override val queryType: InternalQueryType = SCHEMA_WRITE
+
+  override def call(ctx: QueryContext, name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = {
+    val builder = ArrayBuffer.newBuilder[Array[AnyRef]]
+    val iterator = ctx.callSchemaWriteProcedure(name, args)
     while (iterator.hasNext) {
       builder += iterator.next()
     }

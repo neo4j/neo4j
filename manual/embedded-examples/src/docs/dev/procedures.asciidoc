@@ -276,7 +276,7 @@ The full example is available in the {procedure-template-url}[Neo4j Procedure Te
 Particular things to note:
 
 * All procedures are annotated `@Procedure`.
-  Procedures that write to the database are additionally annotated `@PerformsWrites`.
+  Procedures that write to the database specify `mode = WRITE`.
 * The _context_ of the procedure, which is the same as each resource that the procedure wants to use, is annotated `@Context`.
 * The _input_ and _output_.
 
@@ -313,10 +313,11 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
-import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.procedure.Procedure.Mode.SCHEMA;
+import static org.neo4j.procedure.Procedure.Mode.WRITE;
 
 /**
  * This is an example showing how you could expose Neo4j's full text indexes as
@@ -373,8 +374,7 @@ public class FullTextIndex
      *              documentation for full available syntax.
      * @return the nodes found by the query
      */
-    @Procedure("example.search")
-    @PerformsWrites
+    @Procedure( name = "example.search", mode = WRITE )
     public Stream<SearchHit> search( @Name("label") String label,
                                      @Name("query") String query )
     {
@@ -405,8 +405,8 @@ public class FullTextIndex
      * the current state of the node.
      *
      * This procedure works largely the same as {@link #search(String, String)},
-     * with two notable differences. One, it is annotated with {@link PerformsWrites},
-     * which is <i>required</i> if you want to perform updates to the graph in your
+     * with two notable differences. One, it is annotated with `mode = SCHEMA`,
+     * which is <i>required</i> if you want to perform updates to indexes in your
      * procedure.
      *
      * Two, it returns {@code void} rather than a stream. This is simply a short-hand
@@ -416,8 +416,7 @@ public class FullTextIndex
      * @param propKeys a list of property keys to index, only the ones the node
      *                 actually contains will be added
      */
-    @Procedure("example.index")
-    @PerformsWrites
+    @Procedure( name = "example.index", mode = SCHEMA )
     public void index( @Name("nodeId") long nodeId,
                        @Name("properties") List<String> propKeys )
     {

@@ -140,6 +140,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
   private def asCypherProcMode(mode: KernelProcedureSignature.Mode): ProcedureAccessMode = mode match {
     case KernelProcedureSignature.Mode.READ_ONLY => ProcedureReadOnlyAccess
     case KernelProcedureSignature.Mode.READ_WRITE => ProcedureReadWriteAccess
+    case KernelProcedureSignature.Mode.SCHEMA_WRITE => ProcedureSchemaWriteAccess
     case KernelProcedureSignature.Mode.DBMS => ProcedureDbmsAccess
     case _ => throw new CypherExecutionException(
       "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null )

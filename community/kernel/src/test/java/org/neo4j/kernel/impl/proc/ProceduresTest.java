@@ -30,10 +30,13 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.procedure.PerformsWrites;
+import org.neo4j.procedure.Procedure;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.CallableProcedure.Key.key;
@@ -181,6 +184,65 @@ public class ProceduresTest
 
         // Then
         assertThat( asList( result ), contains( equalTo( new Object[]{ "hello, world" } ) ) );
+    }
+
+    @Test
+    public void shouldCompileProcedureWithPerformsWrites() throws Throwable
+    {
+        procs.register( ProcedureWithPerformsWritesAndRead.class );
+        assertNotNull( procs.get( new ProcedureSignature.ProcedureName( "org.neo4j.kernel.impl.proc".split( "\\." ),
+                "shouldCompile" ) ) );
+        assertNotNull( procs.get( new ProcedureSignature.ProcedureName( "org.neo4j.kernel.impl.proc".split( "\\." ),
+                "shouldCompileToo" ) ) );
+    }
+
+    @Test
+    public void shouldFailCompileProcedureWithDBMSConflict() throws Throwable
+    {
+        exception.expect( ProcedureException.class );
+        exception.expectMessage( "Conflicting procedure annotation, PerformsWrites and mode = DBMS." );
+        procs.register( ProcedureWithDBMSConflictAnnotation.class );
+    }
+
+    @Test
+    public void shouldFailCompileProcedureWithSchemaConflict() throws Throwable
+    {
+        exception.expect( ProcedureException.class );
+        exception.expectMessage( "Conflicting procedure annotation, PerformsWrites and mode = SCHEMA." );
+        procs.register( ProcedureWithSchemaConflictAnnotation.class );
+    }
+
+    public static class ProcedureWithPerformsWritesAndRead
+    {
+        @PerformsWrites
+        @Procedure( mode = Procedure.Mode.READ )
+        public void shouldCompile()
+        {
+        }
+
+        @PerformsWrites
+        @Procedure( mode = Procedure.Mode.WRITE )
+        public void shouldCompileToo()
+        {
+        }
+    }
+
+    public static class ProcedureWithDBMSConflictAnnotation
+    {
+        @PerformsWrites
+        @Procedure( mode = Procedure.Mode.DBMS )
+        public void shouldNotCompile()
+        {
+        }
+    }
+
+    public static class ProcedureWithSchemaConflictAnnotation
+    {
+        @PerformsWrites
+        @Procedure( mode = Procedure.Mode.SCHEMA )
+        public void shouldNotCompile()
+        {
+        }
     }
 
     private CallableProcedure.BasicProcedure procedureWithSignature( final ProcedureSignature signature )
