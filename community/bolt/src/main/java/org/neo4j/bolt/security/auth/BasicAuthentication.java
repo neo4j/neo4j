@@ -52,7 +52,7 @@ public class BasicAuthentication implements Authentication
         if ( !SCHEME.equals( authToken.get( SCHEME_KEY ) ) )
         {
             throw new AuthenticationException( Status.Security.Unauthorized,
-                    "Authentication token must contain: '" + SCHEME_KEY + " : " + SCHEME + "'" );
+                    "Missing username and password" );
         }
 
         String user = safeCast( PRINCIPAL, authToken );

@@ -194,7 +194,7 @@ public class BasicAuthenticationTest
         // Expect
         exception.expect( AuthenticationException.class );
         exception.expect( hasStatus( Status.Security.Unauthorized ) );
-        exception.expectMessage( "Authentication token must contain: 'scheme : basic'" );
+        exception.expectMessage( "Missing username and password" );
 
         // When
         authentication.authenticate( map( "scheme", "UNKNOWN", "principal", "bob", "credentials", "secret" ) );
