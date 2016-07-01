@@ -26,8 +26,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.function.Supplier;
-
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -47,7 +45,6 @@ public class BasicAuthenticationTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    private final Supplier<String> identifier = () -> "UNIQUE";
 
     @Test
     public void shouldNotDoAnythingOnSuccess() throws AuthenticationException
@@ -55,7 +52,7 @@ public class BasicAuthenticationTest
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
         BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier  );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class )  );
         when( manager.login( anyString(), anyString() ) ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );
 
@@ -74,7 +71,7 @@ public class BasicAuthenticationTest
         Log log = mock( Log.class );
         LogProvider logProvider = mock( LogProvider.class );
         when( logProvider.getLog( BasicAuthentication.class ) ).thenReturn( log );
-        BasicAuthentication authentication = new BasicAuthentication( manager, logProvider, identifier );
+        BasicAuthentication authentication = new BasicAuthentication( manager, logProvider );
         when( manager.login( anyString(), anyString() ) ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.FAILURE );
 
@@ -96,7 +93,7 @@ public class BasicAuthenticationTest
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
         BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
         when( manager.login( anyString(), anyString() ) ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
 
@@ -116,7 +113,7 @@ public class BasicAuthenticationTest
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
         BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
         when( manager.login( anyString(), anyString() ) ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.TOO_MANY_ATTEMPTS );
 
@@ -135,7 +132,7 @@ public class BasicAuthenticationTest
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
         BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
         when( manager.login( anyString(), anyString() ) ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );
 
@@ -152,7 +149,7 @@ public class BasicAuthenticationTest
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
         BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
         when( manager.login( anyString(), anyString() ) ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
 
@@ -169,7 +166,7 @@ public class BasicAuthenticationTest
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
         BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
         when( manager.login( anyString(), anyString() ) ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.FAILURE );
 
@@ -190,7 +187,7 @@ public class BasicAuthenticationTest
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
         BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
         when( manager.login( anyString(), anyString() ) ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );
 
@@ -209,7 +206,7 @@ public class BasicAuthenticationTest
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
         BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
         when( manager.login( anyString(), anyString() ) ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );
 

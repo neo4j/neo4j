@@ -117,7 +117,7 @@ public class AuthenticationIT
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyRecieves( msgFailure( Status.Security.Unauthorized,
-                String.format( "The client is unauthorized due to authentication failure. (ID:%s)", server.uniqueIdentier()) ) ) );
+                "The client is unauthorized due to authentication failure." ) ) );
     }
 
     @Test
@@ -143,7 +143,7 @@ public class AuthenticationIT
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyRecieves( msgFailure( Status.Security.Unauthorized,
-                String.format( "The client is unauthorized due to authentication failure. (ID:%s)", server.uniqueIdentier()) ) ) );
+                "The client is unauthorized due to authentication failure." ) ) );
 
         // But the new password works fine
         reconnect();
@@ -188,7 +188,7 @@ public class AuthenticationIT
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyRecieves( msgFailure( Status.Security.Unauthorized,
-                String.format( "The client is unauthorized due to authentication failure. (ID:%s)", server.uniqueIdentier()) ) ) );
+                "The client is unauthorized due to authentication failure." ) ) );
 
         // But the new password works fine
         reconnect();
