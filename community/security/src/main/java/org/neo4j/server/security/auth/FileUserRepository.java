@@ -60,7 +60,7 @@ public class FileUserRepository extends AbstractUserRepository
     }
 
     @Override
-    public void saveUsers() throws IOException
+    protected void saveUsers() throws IOException
     {
         saveUsersToFile();
     }

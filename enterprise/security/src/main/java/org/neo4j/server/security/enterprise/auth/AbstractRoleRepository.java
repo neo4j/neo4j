@@ -134,36 +134,33 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     }
 
     @Override
-    public boolean delete( RoleRecord role ) throws IOException
+    public synchronized boolean delete( RoleRecord role ) throws IOException
     {
         boolean foundRole = false;
-        synchronized ( this )
+        // Copy-on-write for the roles list
+        List<RoleRecord> newRoles = new ArrayList<>();
+        for ( RoleRecord other : roles )
         {
-            // Copy-on-write for the roles list
-            List<RoleRecord> newRoles = new ArrayList<>();
-            for ( RoleRecord other : roles )
+            if ( other.name().equals( role.name() ) )
             {
-                if ( other.name().equals( role.name() ) )
-                {
-                    foundRole = true;
-                }
-                else
-                {
-                    newRoles.add( other );
-                }
+                foundRole = true;
             }
-
-            if ( foundRole )
+            else
             {
-                roles = newRoles;
-
-                saveRoles();
-
-                rolesByName.remove( role.name() );
+                newRoles.add( other );
             }
-
-            removeFromUserMap( role );
         }
+
+        if ( foundRole )
+        {
+            roles = newRoles;
+
+            saveRoles();
+
+            rolesByName.remove( role.name() );
+        }
+
+        removeFromUserMap( role );
         return foundRole;
     }
 
@@ -175,7 +172,7 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     protected abstract void saveRoles() throws IOException;
 
     @Override
-    public int numberOfRoles()
+    public synchronized int numberOfRoles()
     {
         return roles.size();
     }
@@ -187,27 +184,24 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     }
 
     @Override
-    public void removeUserFromAllRoles( String username ) throws ConcurrentModificationException, IOException
+    public synchronized void removeUserFromAllRoles( String username ) throws ConcurrentModificationException, IOException
     {
-        synchronized ( this )
+        Set<String> roles = rolesByUsername.get( username );
+        if ( roles != null )
         {
-            Set<String> roles = rolesByUsername.get( username );
-            if ( roles != null )
+            // Since update() is modifying the set we create a copy for the iteration
+            List<String> rolesToRemoveFrom = new ArrayList<>( roles );
+            for ( String roleName : rolesToRemoveFrom )
             {
-                // Since update() is modifying the set we create a copy for the iteration
-                List<String> rolesToRemoveFrom = new ArrayList<>( roles );
-                for ( String roleName : rolesToRemoveFrom )
-                {
-                    RoleRecord role = rolesByName.get( roleName );
-                    RoleRecord newRole = role.augment().withoutUser( username ).build();
-                    update( role, newRole );
-                }
+                RoleRecord role = rolesByName.get( roleName );
+                RoleRecord newRole = role.augment().withoutUser( username ).build();
+                update( role, newRole );
             }
         }
     }
 
     @Override
-    public Set<String> getAllRoleNames()
+    public synchronized Set<String> getAllRoleNames()
     {
         return roles.stream().map( RoleRecord::name ).collect( Collectors.toSet() );
     }

@@ -74,7 +74,12 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
         }
     }
 
-    public abstract void saveUsers() throws IOException;
+    /**
+     * Override this in the implementing class to persist users
+     *
+     * @throws IOException
+     */
+    protected abstract void saveUsers() throws IOException;
 
     @Override
     public void update( User existingUser, User updatedUser ) throws ConcurrentModificationException, IOException
@@ -82,7 +87,7 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
         // Assert input is ok
         if ( !existingUser.name().equals( updatedUser.name() ) )
         {
-            throw new IllegalArgumentException( "updatedUser has a different name" );
+            throw new IllegalArgumentException( "updated user has a different name" );
         }
 
         synchronized (this)
@@ -116,38 +121,36 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
     }
 
     @Override
-    public boolean delete( User user ) throws IOException
+    public synchronized boolean delete( User user ) throws IOException
     {
         boolean foundUser = false;
-        synchronized (this)
+        // Copy-on-write for the users list
+        List<User> newUsers = new ArrayList<>();
+        for ( User other : users )
         {
-            // Copy-on-write for the users list
-            List<User> newUsers = new ArrayList<>();
-            for ( User other : users )
+            if ( other.name().equals( user.name() ) )
             {
-                if ( other.name().equals( user.name() ) )
-                {
-                    foundUser = true;
-                } else
-                {
-                    newUsers.add( other );
-                }
+                foundUser = true;
             }
-
-            if ( foundUser )
+            else
             {
-                users = newUsers;
-
-                saveUsers();
-
-                usersByName.remove( user.name() );
+                newUsers.add( other );
             }
+        }
+
+        if ( foundUser )
+        {
+            users = newUsers;
+
+            saveUsers();
+
+            usersByName.remove( user.name() );
         }
         return foundUser;
     }
 
     @Override
-    public int numberOfUsers()
+    public synchronized int numberOfUsers()
     {
         return users.size();
     }
@@ -159,7 +162,7 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
     }
 
     @Override
-    public Set<String> getAllUsernames()
+    public synchronized Set<String> getAllUsernames()
     {
         return users.stream().map( User::name ).collect( Collectors.toSet() );
     }

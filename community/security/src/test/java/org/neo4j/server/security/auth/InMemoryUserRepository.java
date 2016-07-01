@@ -32,7 +32,7 @@ import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 public class InMemoryUserRepository extends AbstractUserRepository
 {
     @Override
-    public void saveUsers() throws IOException
+    protected void saveUsers() throws IOException
     {
         // Nothing to do
     }
