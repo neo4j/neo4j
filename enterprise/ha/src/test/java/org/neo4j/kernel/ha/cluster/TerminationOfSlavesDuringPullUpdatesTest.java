@@ -55,7 +55,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.runners.Parameterized.Parameters;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.kernel.ha.factory.HighlyAvailableEditionModule.id_reuse_safe_zone_time;
 
 @RunWith( Parameterized.class )
 public class TerminationOfSlavesDuringPullUpdatesTest
@@ -95,7 +94,7 @@ public class TerminationOfSlavesDuringPullUpdatesTest
     public void slavesTerminateOrReadConsistentDataWhenApplyingBatchLargerThanSafeZone() throws Throwable
     {
         long safeZone = TimeUnit.MILLISECONDS.toMillis( 0 );
-        clusterRule.withSharedSetting( id_reuse_safe_zone_time, String.valueOf( safeZone ) );
+        clusterRule.withSharedSetting( HaSettings.id_reuse_safe_zone_time, String.valueOf( safeZone ) );
         // given
         final ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
         HighlyAvailableGraphDatabase master = cluster.getMaster();
@@ -130,7 +129,7 @@ public class TerminationOfSlavesDuringPullUpdatesTest
     public void slavesDontTerminateAndReadConsistentDataWhenApplyingBatchSmallerThanSafeZone() throws Throwable
     {
         long safeZone = TimeUnit.MINUTES.toMillis( 1 );
-        clusterRule.withSharedSetting( id_reuse_safe_zone_time, String.valueOf( safeZone ) );
+        clusterRule.withSharedSetting( HaSettings.id_reuse_safe_zone_time, String.valueOf( safeZone ) );
         // given
         final ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
         HighlyAvailableGraphDatabase master = cluster.getMaster();

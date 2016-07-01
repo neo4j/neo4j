@@ -52,7 +52,6 @@ import org.neo4j.function.Factory;
 import org.neo4j.function.Function;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.HostnamePort;
@@ -67,7 +66,6 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.BranchDetectingTxVerifier;
 import org.neo4j.kernel.ha.BranchedDataMigrator;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
@@ -160,7 +158,6 @@ import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
 import static java.lang.reflect.Proxy.newProxyInstance;
-import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 
 /**
@@ -170,9 +167,6 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.Tra
 public class HighlyAvailableEditionModule
         extends EditionModule
 {
-    public static final Setting<Long> id_reuse_safe_zone_time =
-            setting( "dbms.id_reuse_safe_zone", Settings.DURATION, "1h" );
-
     public HighAvailabilityMemberStateMachine memberStateMachine;
     public ClusterMembers members;
 
@@ -208,7 +202,7 @@ public class HighlyAvailableEditionModule
                 serverId.toIntegerIndex(),
                 dependencies.provideDependency( TransactionIdStore.class ) ) );
 
-        final long idReuseSafeZone = config.get( id_reuse_safe_zone_time );
+        final long idReuseSafeZone = config.get( HaSettings.id_reuse_safe_zone_time );
         TransactionCommittingResponseUnpacker responseUnpacker = dependencies.satisfyDependency(
                 new TransactionCommittingResponseUnpacker( new DefaultUnpackerDependencies( dependencies,
                         idReuseSafeZone ), config.get( HaSettings.pull_apply_batch_size ) ) );
