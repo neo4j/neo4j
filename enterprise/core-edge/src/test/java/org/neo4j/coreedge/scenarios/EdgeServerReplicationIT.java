@@ -19,7 +19,6 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -50,15 +49,17 @@ import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.Log;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.coreedge.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -74,9 +75,8 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 public class EdgeServerReplicationIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() )
-            .withNumberOfCoreServers( 3 )
-            .withNumberOfEdgeServers( 1 );
+    public final ClusterRule clusterRule =
+            new ClusterRule( getClass() ).withNumberOfCoreServers( 3 ).withNumberOfEdgeServers( 1 );
 
     @Test
     public void shouldNotBeAbleToWriteToEdge() throws Exception
@@ -145,7 +145,7 @@ public class EdgeServerReplicationIT
         // then
         for ( final EdgeServer server : cluster.edgeServers() )
         {
-            GraphDatabaseService edgeDB  = server.database();
+            GraphDatabaseService edgeDB = server.database();
             try ( Transaction tx = edgeDB.beginTx() )
             {
                 ThrowingSupplier<Long,Exception> nodeCount = () -> count( edgeDB.getAllNodes() );
@@ -163,7 +163,6 @@ public class EdgeServerReplicationIT
     }
 
     @Test
-    @Ignore("WIP: Turn this back on once Max/Davide have fixed the Edge Server StoreId stuff")
     public void shouldShutdownRatherThanPullUpdatesFromCoreServerWithDifferentStoreIfServerHasData() throws Exception
     {
         Cluster cluster = clusterRule.withNumberOfEdgeServers( 0 ).startCluster();
@@ -176,16 +175,21 @@ public class EdgeServerReplicationIT
             }
         }, cluster );
 
-            EdgeServer edgeServer = cluster.addEdgeServerWithId( 4 );
-            putSomeDataWithDifferentStoreId(edgeServer.storeDir(), cluster.getCoreServerById( 0 ).storeDir());
+        EdgeServer edgeServer = cluster.addEdgeServerWithId( 4 );
+        putSomeDataWithDifferentStoreId( edgeServer.storeDir(), cluster.getCoreServerById( 0 ).storeDir() );
+
         try
         {
             edgeServer.start();
-            fail("Should have failed to start");
+            fail( "Should have failed to start" );
         }
-        catch ( RuntimeException required )
+        catch ( LifecycleException required )
         {
             // Lifecycle should throw exception, server should not start.
+            assertThat( required.getCause(), instanceOf( LifecycleException.class ) );
+            assertThat( required.getCause().getCause(), instanceOf( IllegalStateException.class ) );
+            assertThat( required.getCause().getCause().getMessage(),
+                    equalTo( "Local database is not empty cannot copy store" ) );
         }
     }
 
@@ -225,8 +229,8 @@ public class EdgeServerReplicationIT
         }
         catch ( Exception e )
         {
-            assertThat(e.getCause().getCause().getMessage(),
-                    containsString("Failed to start database with copied store"));
+            assertThat( e.getCause().getCause().getMessage(),
+                    containsString( "Failed to start database with copied store" ) );
         }
     }
 
@@ -234,17 +238,12 @@ public class EdgeServerReplicationIT
     public void shouldBeAbleToCopyStoresFromCoreToEdge() throws Exception
     {
         // given
-        Map<String,String> params = stringMap(
-                CoreEdgeClusterSettings.raft_log_rotation_size.name(), "1k",
+        Map<String,String> params = stringMap( CoreEdgeClusterSettings.raft_log_rotation_size.name(), "1k",
                 CoreEdgeClusterSettings.raft_log_pruning_frequency.name(), "500ms",
                 CoreEdgeClusterSettings.state_machine_flush_window_size.name(), "1",
-                CoreEdgeClusterSettings.raft_log_pruning_strategy.name(), "1 entries"
-        );
-        Cluster cluster = clusterRule
-                .withNumberOfEdgeServers( 0 )
-                .withSharedCoreParams( params )
-                .withRecordFormat( HighLimit.NAME )
-                .startCluster();
+                CoreEdgeClusterSettings.raft_log_pruning_strategy.name(), "1 entries" );
+        Cluster cluster = clusterRule.withNumberOfEdgeServers( 0 ).withSharedCoreParams( params )
+                .withRecordFormat( HighLimit.NAME ).startCluster();
 
         cluster.coreTx( ( db, tx ) -> {
             Node node = db.createNode( Label.label( "L" ) );
@@ -271,7 +270,8 @@ public class EdgeServerReplicationIT
         }
 
         File storeDir = coreGraphDatabase.storeDir();
-        assertEventually( "pruning happened", () -> versionBy( storeDir, Math::min ), greaterThan( baseVersion ), 1, SECONDS );
+        assertEventually( "pruning happened", () -> versionBy( storeDir, Math::min ), greaterThan( baseVersion ), 1,
+                SECONDS );
 
         // when
         cluster.addEdgeServerWithIdAndRecordFormat( 42, HighLimit.NAME ).start();
@@ -279,7 +279,8 @@ public class EdgeServerReplicationIT
         // then
         for ( final EdgeServer edge : cluster.edgeServers() )
         {
-            assertEventually( "edge server available", () -> edge.database().isAvailable( 0 ), is( true ), 10, SECONDS );
+            assertEventually( "edge server available", () -> edge.database().isAvailable( 0 ), is( true ), 10,
+                    SECONDS );
         }
     }
 

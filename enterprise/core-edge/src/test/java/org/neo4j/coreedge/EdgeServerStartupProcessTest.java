@@ -21,6 +21,7 @@ package org.neo4j.coreedge;
 
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -41,25 +42,20 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class EdgeServerStartupProcessTest
 {
     @Test
-    public void startShouldReplaceLocalStoreWithStoreFromCoreServerAndStartPolling() throws Throwable
+    public void startShouldReplaceTheEmptyLocalStoreWithStoreFromCoreServerAndStartPolling() throws Throwable
     {
         // given
-        final Map<String, String> params = new HashMap<>();
-
-        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
-        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
-        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).address.name(), "127.0.0.1:" + 8001 );
-
-        Config config = new Config( params );
-
         StoreFetcher storeFetcher = mock( StoreFetcher.class );
         LocalDatabase localDatabase = mock( LocalDatabase.class );
 
@@ -78,15 +74,61 @@ public class EdgeServerStartupProcessTest
         EdgeServerStartupProcess edgeServerStartupProcess = new EdgeServerStartupProcess( storeFetcher, localDatabase,
                 txPulling, dataSourceManager, new AlwaysChooseFirstServer( hazelcastTopology ),
                 new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(),
-                mock( EdgeTopologyService.class ), config );
+                mock( EdgeTopologyService.class ), new Config( Collections.emptyMap() ) );
 
         // when
         edgeServerStartupProcess.start();
 
         // then
-        verify( localDatabase ).copyStoreFrom( coreMember, storeFetcher );
         verify( dataSourceManager ).start();
+        verify( localDatabase ).isEmpty();
+        verify( localDatabase ).stop();
+        verify( localDatabase ).copyStoreFrom( coreMember, storeFetcher );
+        verify( localDatabase ).start();
         verify( txPulling ).start();
+        verifyNoMoreInteractions( localDatabase, dataSourceManager, txPulling );
+    }
+
+    @Test
+    public void startShouldNotReplaceTheNonEmptyLocalStoreWithStoreFromCoreServerAndStartPolling() throws Throwable
+    {
+        // given
+        StoreFetcher storeFetcher = mock( StoreFetcher.class );
+        LocalDatabase localDatabase = mock( LocalDatabase.class );
+
+        CoreMember coreMember = new CoreMember( UUID.randomUUID() );
+        TopologyService hazelcastTopology = mock( TopologyService.class );
+
+        ClusterTopology clusterTopology = mock( ClusterTopology.class );
+        when( hazelcastTopology.currentTopology() ).thenReturn( clusterTopology );
+
+        when( clusterTopology.coreMembers() ).thenReturn( asSet( coreMember ) );
+        when( localDatabase.isEmpty() ).thenReturn( false );
+
+        DataSourceManager dataSourceManager = mock( DataSourceManager.class );
+        Lifecycle txPulling = mock( Lifecycle.class );
+
+        EdgeServerStartupProcess edgeServerStartupProcess = new EdgeServerStartupProcess( storeFetcher, localDatabase,
+                txPulling, dataSourceManager, new AlwaysChooseFirstServer( hazelcastTopology ),
+                new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(),
+                mock( EdgeTopologyService.class ), new Config( Collections.emptyMap() ) );
+
+        // when
+        try
+        {
+            edgeServerStartupProcess.start();
+            fail( "shoud have thrown" );
+        }
+        catch ( IllegalStateException ex )
+        {
+            // expected
+        }
+
+        // then
+        verify( localDatabase ).isEmpty();
+        verify( dataSourceManager ).start();
+        verifyNoMoreInteractions( localDatabase, dataSourceManager );
+        verifyZeroInteractions( txPulling );
     }
 
     @Test
@@ -117,5 +159,6 @@ public class EdgeServerStartupProcessTest
         // then
         verify( txPulling ).stop();
         verify( dataSourceManager ).stop();
+        verifyNoMoreInteractions( txPulling, dataSourceManager );
     }
 }
