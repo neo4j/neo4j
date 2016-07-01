@@ -160,6 +160,8 @@ trait QueryContext extends TokenContext {
 
   def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
 
+  def callSchemaWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
+
   def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
 
   // Check if a runtime value is a node, relationship, path or some such value returned from

@@ -30,6 +30,7 @@ import java.lang.annotation.Target;
  * <p>
  * This is <i>required</i> if the procedure performs write operations.
  */
+@Deprecated
 @Target( ElementType.METHOD )
 @Retention( RetentionPolicy.RUNTIME )
 public @interface PerformsWrites

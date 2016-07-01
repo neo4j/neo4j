@@ -589,6 +589,9 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]) =
     callProcedure(name, args, transactionalContext.statement.dataWriteOperations().procedureCallWrite)
 
+  override def callSchemaWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]) =
+    callProcedure(name, args, transactionalContext.statement.schemaWriteOperations().procedureCallSchema)
+
   override def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any]) =
     callProcedure(name, args, transactionalContext.dbmsOperations.procedureCallDbms(_, _, transactionalContext.accessMode))
 

@@ -152,6 +152,8 @@ public class ProcedureSignature
         READ_ONLY,
         /** This procedure may perform both read and write operations against the graph */
         READ_WRITE,
+        /** This procedure will perform operations against the schema */
+        SCHEMA_WRITE,
         /** This procedure will perform system operations - i.e. not against the graph */
         DBMS
     }

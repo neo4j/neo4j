@@ -1103,6 +1103,12 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         schemaWrite().uniqueIndexDrop( statement, descriptor );
     }
 
+    @Override
+    public RawIterator<Object[], ProcedureException> procedureCallSchema( ProcedureName name, Object[] input ) throws ProcedureException
+    {
+        return callProcedure( name, input, AccessMode.Static.FULL );
+    }
+
     // </SchemaWrite>
 
     // <Locking>
