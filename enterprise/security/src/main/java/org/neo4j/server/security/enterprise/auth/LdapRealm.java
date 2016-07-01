@@ -37,6 +37,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -66,7 +67,7 @@ public class LdapRealm extends JndiLdapRealm
     private Boolean authorizationEnabled;
     private String userSearchBase;
     private String userSearchFilter;
-    private String membershipAttributeName;
+    private List<String> membershipAttributeNames;
     private Boolean useSystemAccountForAuthorization;
     private Map<String,Collection<String>> groupToRoleMapping;
     private final Log log;
@@ -117,7 +118,12 @@ public class LdapRealm extends JndiLdapRealm
             else
             {
                 // Authorization info is cached during authentication
-                return authorizationInfoCache.get( username );
+                AuthorizationInfo authorizationInfo = authorizationInfoCache.get( username );
+                if ( authorizationInfo == null )
+                {
+                    // TODO: Do a new LDAP search? But we need to cache the credentials for that...
+                }
+                return authorizationInfo;
             }
         }
         return null;
@@ -199,7 +205,7 @@ public class LdapRealm extends JndiLdapRealm
 
         userSearchBase = config.get( SecuritySettings.ldap_authorization_user_search_base );
         userSearchFilter = config.get( SecuritySettings.ldap_authorization_user_search_filter );
-        membershipAttributeName = config.get( SecuritySettings.ldap_authorization_group_membership_attribute_name );
+        membershipAttributeNames = config.get( SecuritySettings.ldap_authorization_group_membership_attribute_names );
         useSystemAccountForAuthorization = config.get( SecuritySettings.ldap_authorization_use_system_account );
         groupToRoleMapping =
                 parseGroupToRoleMapping( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) );
@@ -247,21 +253,25 @@ public class LdapRealm extends JndiLdapRealm
         return map;
     }
 
+    // TODO: Extract to an LdapAuthorizationStrategy ? This ("group by attribute") is one of multiple possible strategies
     Set<String> findRoleNamesForUser( String username, LdapContext ldapContext ) throws NamingException
     {
         Set<String> roleNames = new LinkedHashSet<String>();
 
+        // For some combinations of settings we will never find anything
+        if ( !validateUserSearchSettings() )
+        {
+            return roleNames;
+        }
+
         SearchControls searchCtls = new SearchControls();
         searchCtls.setSearchScope( SearchControls.SUBTREE_SCOPE );
-        searchCtls.setReturningAttributes( new String[]{membershipAttributeName} );
+        searchCtls.setReturningAttributes( membershipAttributeNames.toArray( new String[1] ) );
 
         // Use search argument to prevent potential code injection
-        String searchFilter = userSearchFilter;
         Object[] searchArguments = new Object[]{username};
 
-        validateUserSearchFilter( searchFilter );
-
-        NamingEnumeration result = ldapContext.search( userSearchBase, searchFilter, searchArguments, searchCtls );
+        NamingEnumeration result = ldapContext.search( userSearchBase, userSearchFilter, searchArguments, searchCtls );
 
         if ( result.hasMoreElements() )
         {
@@ -286,12 +296,13 @@ public class LdapRealm extends JndiLdapRealm
                 while ( attributeEnumeration.hasMore() )
                 {
                     Attribute attribute = (Attribute) attributeEnumeration.next();
-                    if ( attribute.getID().toLowerCase().equals( membershipAttributeName.toLowerCase() ) )
+                    String attributeId = attribute.getID();
+                    if ( membershipAttributeNames.stream()
+                            .anyMatch( searchAttribute -> attributeId.equalsIgnoreCase( searchAttribute ) ) )
                     {
                         Collection<String> groupNames = LdapUtils.getAllAttributeValues( attribute );
                         Collection<String> rolesForGroups = getRoleNamesForGroups( groupNames );
                         roleNames.addAll( rolesForGroups );
-                        break;
                     }
                 }
             }
@@ -299,13 +310,28 @@ public class LdapRealm extends JndiLdapRealm
         return roleNames;
     }
 
-    private void validateUserSearchFilter( String searchFilter )
+    private boolean validateUserSearchSettings()
     {
-        if ( !searchFilter.contains( "{0}" ) )
+        boolean proceedWithSearch = true;
+
+        if ( userSearchBase == null || userSearchBase.isEmpty() )
+        {
+            log.warn( "LDAP user search base is empty." );
+            proceedWithSearch = false;
+        }
+        if ( userSearchFilter == null || !userSearchFilter.contains( "{0}" ) )
         {
             log.warn( "LDAP user search filter does not contain the argument placeholder {0}, so the search result " +
                       "will be independent of the user principal." );
         }
+        if ( membershipAttributeNames == null || membershipAttributeNames.isEmpty() )
+        {
+            // If we don't have any attributes to look for we will never find anything
+            log.warn( "LDAP group membership attribute names are empty. Authorization will not be possible." );
+            proceedWithSearch = false;
+        }
+
+        return proceedWithSearch;
     }
 
     private Collection<String> getRoleNamesForGroups( Collection<String> groupNames )

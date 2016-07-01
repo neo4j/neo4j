@@ -107,7 +107,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
             settings.put( SecuritySettings.ldap_authorization_use_system_account, "true" );
             settings.put( SecuritySettings.ldap_authorization_user_search_base, "dc=example,dc=com" );
             settings.put( SecuritySettings.ldap_authorization_user_search_filter, "(&(objectClass=*)(uid={0}))" );
-            settings.put( SecuritySettings.ldap_authorization_group_membership_attribute_name, "gidnumber" );
+            settings.put( SecuritySettings.ldap_authorization_group_membership_attribute_names, "gidnumber" );
             settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, "500=reader;501=publisher;502=architect;503=admin" );
         };
     }
@@ -138,12 +138,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldBeAbleToLoginAndAuthorizeReaderWithLdapOnly() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.internal_authentication_enabled, "false" );
-            settings.put( SecuritySettings.internal_authorization_enabled, "false" );
-            settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
-            settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
-        } );
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings );
 
         testAuthWithReaderUser();
     }
@@ -152,12 +147,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldBeAbleToLoginAndAuthorizePublisherWithLdapOnly() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.internal_authentication_enabled, "false" );
-            settings.put( SecuritySettings.internal_authorization_enabled, "false" );
-            settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
-            settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
-        } );
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings );
 
         testAuthWithPublisherUser();
     }
@@ -166,12 +156,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithLdapOnly() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.internal_authentication_enabled, "false" );
-            settings.put( SecuritySettings.internal_authorization_enabled, "false" );
-            settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
-            settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
-        } );
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings );
 
         testAuthWithNoPermissionUser( "smith" );
     }
@@ -180,13 +165,9 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithLdapOnlyAndNoGroupToRoleMapping() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> {
-            settings.put( SecuritySettings.internal_authentication_enabled, "false" );
-            settings.put( SecuritySettings.internal_authorization_enabled, "false" );
-            settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
-            settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
             settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, null );
-        } );
+        } ) );
 
         // User 'neo' has reader role by default, but since we are not passing a group-to-role mapping
         // he should get no permissions

@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import java.util.List;
+
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
@@ -27,6 +29,7 @@ import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.HOSTNAME_PORT;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.STRING;
+import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
@@ -115,10 +118,10 @@ public class SecuritySettings
     public static Setting<String> ldap_authorization_user_search_filter =
             setting( "dbms.security.realms.ldap.authorization.user_search_filter", STRING, "(&(objectClass=*)(uid={0})" );
 
-    @Description( "The name of an attribute on a user object that contains groups to be used for mapping to roles " +
+    @Description( "A list of attribute names on a user object that contains groups to be used for mapping to roles " +
                   "when LDAP authorization is enabled." )
-    public static Setting<String> ldap_authorization_group_membership_attribute_name =
-            setting( "dbms.security.realms.ldap.authorization.group_membership_attribute", STRING, "memberOf" );
+    public static Setting<List<String>> ldap_authorization_group_membership_attribute_names =
+            setting( "dbms.security.realms.ldap.authorization.group_membership_attributes", STRING_LIST, "memberOf" );
 
     @Description( "An authorization mapping from LDAP group names to internal role names. " +
                   "The map should be formatted as semicolon separated list of key-value pairs, where the " +

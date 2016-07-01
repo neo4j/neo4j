@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.apache.shiro.realm.ldap.LdapContextFactory;
-import org.apache.shiro.subject.PrincipalCollection;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,12 +26,14 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
+import javax.naming.directory.Attribute;
+import javax.naming.directory.Attributes;
 import javax.naming.directory.SearchResult;
 import javax.naming.ldap.LdapContext;
 
@@ -43,6 +43,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
@@ -58,6 +59,16 @@ public class LdapRealmTest
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
+
+    @Before
+    public void setUp()
+    {
+        // Some dummy settings to pass validation
+        when( config.get( SecuritySettings.ldap_authorization_user_search_base ) )
+                .thenReturn( "dc=example,dc=com" );
+        when( config.get( SecuritySettings.ldap_authorization_group_membership_attribute_names ) )
+                .thenReturn( Collections.singletonList( "memberOf" ) );
+    }
 
     @Test
     public void groupToRoleMappingShouldBeAbleToBeNull()
@@ -202,5 +213,59 @@ public class LdapRealmTest
         realm.findRoleNamesForUser( "username", ldapContext );
 
         verify( log ).warn( contains( "LDAP user search for user principal 'username' is ambiguous" ) );
+    }
+
+    @Test
+    public void shouldAllowMultipleGroupMembershipAttributes() throws NamingException
+    {
+        when( config.get( SecuritySettings.ldap_authorization_user_search_filter ) ).thenReturn( "{0}" );
+        when( config.get( SecuritySettings.ldap_authorization_group_membership_attribute_names ) )
+                .thenReturn( Arrays.asList( "attr0", "attr1", "attr2" ) );
+        when( config.get( SecuritySettings.ldap_authorization_group_to_role_mapping ) )
+                .thenReturn( "group1=role1;group2=role2,role3" );
+
+        LdapContext ldapContext = mock( LdapContext.class );
+        NamingEnumeration result = mock( NamingEnumeration.class );
+        SearchResult searchResult = mock( SearchResult.class );
+        Attributes attributes = mock( Attributes.class );
+        Attribute attribute1 = mock( Attribute.class );
+        Attribute attribute2 = mock( Attribute.class );
+        Attribute attribute3 = mock( Attribute.class );
+        NamingEnumeration attributeEnumeration = mock( NamingEnumeration.class );
+        NamingEnumeration groupEnumeration1 = mock( NamingEnumeration.class );
+        NamingEnumeration groupEnumeration2 = mock( NamingEnumeration.class );
+        NamingEnumeration groupEnumeration3 = mock( NamingEnumeration.class );
+
+        // Mock ldap search result "attr1" contains "group1" and "attr2" contains "group2" (a bit brittle...)
+        // "attr0" is non-existing and should have no effect
+        when( ldapContext.search( anyString(), anyString(), anyObject(), anyObject() ) ).thenReturn( result );
+        when( result.hasMoreElements() ).thenReturn( true, false );
+        when( result.next() ).thenReturn( searchResult );
+        when( searchResult.getAttributes() ).thenReturn( attributes );
+        when( attributes.getAll() ).thenReturn( attributeEnumeration );
+        when( attributeEnumeration.hasMore() ).thenReturn( true, true, false );
+        when( attributeEnumeration.next() ).thenReturn( attribute1, attribute2, attribute3 );
+
+        when( attribute1.getID() ).thenReturn( "attr1" ); // This attribute should yield role1
+        when( attribute1.getAll() ).thenReturn( groupEnumeration1 );
+        when( groupEnumeration1.hasMore() ).thenReturn( true, false );
+        when( groupEnumeration1.next() ).thenReturn( "group1" );
+
+        when( attribute2.getID() ).thenReturn( "attr2" ); // This attribute should yield role2 and role3
+        when( attribute2.getAll() ).thenReturn( groupEnumeration2 );
+        when( groupEnumeration2.hasMore() ).thenReturn( true, false );
+        when( groupEnumeration2.next() ).thenReturn( "group2" );
+
+        when( attribute3.getID() ).thenReturn( "attr3" ); // This attribute should have no effect
+        when( attribute3.getAll() ).thenReturn( groupEnumeration3 );
+        when( groupEnumeration3.hasMore() ).thenReturn( true, false );
+        when( groupEnumeration3.next() ).thenReturn( "groupWithNoRole" );
+
+        // When
+        LdapRealm realm = new LdapRealm( config, logProvider );
+        Set<String> roles = realm.findRoleNamesForUser( "username", ldapContext );
+
+        // Then
+        assertThat( roles, hasItems( "role1", "role2", "role3" ) );
     }
 }
