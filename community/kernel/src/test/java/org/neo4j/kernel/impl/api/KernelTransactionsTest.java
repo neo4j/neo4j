@@ -33,6 +33,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
+import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -333,7 +334,8 @@ public class KernelTransactionsTest
                 mock( IntegrityValidator.class ), null, null, null, null, null, null, null,
                 TransactionHeaderInformationFactory.DEFAULT, readLayer, commitProcess, null,
                 null, new TransactionHooks(), mock( ConstraintSemantics.class ), mock( TransactionMonitor.class ),
-                life, new ProcedureCache(), new Config(), new Tracers( "null", NullLog.getInstance() ) );
+                life, new ProcedureCache(), new Config(), new Tracers( "null", NullLog.getInstance() ),
+                Clock.SYSTEM_CLOCK );
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )

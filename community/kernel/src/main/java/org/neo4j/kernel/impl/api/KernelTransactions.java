@@ -102,6 +102,7 @@ public class KernelTransactions extends LifecycleAdapter
     private final LifeSupport dataSourceLife;
     private final ProcedureCache procedureCache;
     private final Tracers tracers;
+    private final Clock clock;
     private final ReentrantReadWriteLock newTransactionsLock = new ReentrantReadWriteLock();
 
     // End Tx Dependencies
@@ -136,7 +137,8 @@ public class KernelTransactions extends LifecycleAdapter
                                TransactionMonitor transactionMonitor,
                                LifeSupport dataSourceLife, ProcedureCache procedureCache,
                                Config config,
-                               Tracers tracers )
+                               Tracers tracers,
+                               Clock clock )
     {
         this.neoStoreTransactionContextFactory = neoStoreTransactionContextFactory;
         this.neoStores = neoStores;
@@ -161,6 +163,7 @@ public class KernelTransactions extends LifecycleAdapter
         this.dataSourceLife = dataSourceLife;
         this.procedureCache = procedureCache;
         this.tracers = tracers;
+        this.clock = clock;
     }
 
     /**
@@ -181,7 +184,7 @@ public class KernelTransactions extends LifecycleAdapter
                     labelScanStore, indexingService, updateableSchemaState, recordState, providerMap,
                     neoStores, locks, hooks, constraintIndexCreator, transactionHeaderInformationFactory,
                     transactionCommitProcess, transactionMonitor, storeLayer, legacyIndexTransactionState,
-                    localTxPool, constraintSemantics, Clock.SYSTEM_CLOCK, tracers.transactionTracer, procedureCache,
+                    localTxPool, constraintSemantics, clock, tracers.transactionTracer, procedureCache,
                     context, txTerminationAwareLocks );
             allTransactions.add( tx );
 
@@ -281,7 +284,7 @@ public class KernelTransactions extends LifecycleAdapter
     @Override
     public KernelTransactionsSnapshot get()
     {
-        return new KernelTransactionsSnapshot( allTransactions, Clock.SYSTEM_CLOCK.currentTimeMillis() );
+        return new KernelTransactionsSnapshot( allTransactions, clock.currentTimeMillis() );
     }
 
     /**
