@@ -221,6 +221,11 @@ public class PackStream
             pack( new String( new char[]{character} ) );
         }
 
+        public void pack( Character character ) throws IOException
+        {
+            pack( new String( new char[]{character} ) );
+        }
+
         public void pack( String value ) throws IOException
         {
             if ( value == null ) { packNull(); }

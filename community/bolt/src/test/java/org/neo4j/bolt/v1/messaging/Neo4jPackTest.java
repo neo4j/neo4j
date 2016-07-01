@@ -36,6 +36,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Path;
 import org.neo4j.kernel.impl.util.HexPrinter;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -68,6 +69,7 @@ public class Neo4jPackTest
         return unpacker.unpack();
     }
 
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldBeAbleToPackAndUnpackListStream() throws IOException
     {
@@ -91,6 +93,7 @@ public class Neo4jPackTest
         assertThat( unpackedList, equalTo( expected ) );
     }
 
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldBeAbleToPackAndUnpackMapStream() throws IOException
     {
@@ -98,7 +101,7 @@ public class Neo4jPackTest
         PackedOutputArray output = new PackedOutputArray();
         Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
         packer.packMapStreamHeader();
-        for ( Map.Entry<String, Object> entry : ALICE.getAllProperties().entrySet() )
+        for ( Map.Entry<String,Object> entry : ALICE.getAllProperties().entrySet() )
         {
             packer.pack( entry.getKey() );
             packer.pack( entry.getValue() );
@@ -108,17 +111,18 @@ public class Neo4jPackTest
 
         // Then
         assertThat( unpacked, instanceOf( Map.class ) );
-        Map<String, Object> unpackedMap = (Map<String, Object>) unpacked;
+        Map<String,Object> unpackedMap = (Map<String,Object>) unpacked;
         assertThat( unpackedMap, equalTo( ALICE.getAllProperties() ) );
     }
 
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldFailNicelyWhenPackingAMapWithUnpackableValues() throws IOException
     {
         // Given
         PackedOutputArray output = new PackedOutputArray();
         Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
-        packer.packRawMap( map("unpackable", new Unpackable() ) );
+        packer.packRawMap( map( "unpackable", new Unpackable() ) );
         Object unpacked = unpacked( output.bytes() );
 
         // Then
@@ -151,10 +155,10 @@ public class Neo4jPackTest
     public void shouldHandleDeletedNodesGracefully() throws IOException
     {
         // Given
-        Node node = mock(Node.class);
-        when(node.getId()).thenReturn( 42L );
-        doThrow( NotFoundException.class ).when(node).getAllProperties(  );
-        doThrow( NotFoundException.class ).when(node).getLabels(  );
+        Node node = mock( Node.class );
+        when( node.getId() ).thenReturn( 42L );
+        doThrow( NotFoundException.class ).when( node ).getAllProperties();
+        doThrow( NotFoundException.class ).when( node ).getLabels();
 
         // When
         byte[] packed = packed( node );
@@ -166,7 +170,7 @@ public class Neo4jPackTest
         //    labels: [] (90)
         //    props: {} (A0)
         //}
-        assertThat(HexPrinter.hex( packed ), equalTo("B3 4E 2A 90 A0"));
+        assertThat( HexPrinter.hex( packed ), equalTo( "B3 4E 2A 90 A0" ) );
     }
 
     @Test
@@ -214,7 +218,7 @@ public class Neo4jPackTest
     }
 
     @Test
-    public void shouldTreatCharArrayAsString() throws IOException
+    public void shouldTreatCharArrayAsListOfStrings() throws IOException
     {
         // Given
         PackedOutputArray output = new PackedOutputArray();
@@ -223,8 +227,8 @@ public class Neo4jPackTest
         Object unpacked = unpacked( output.bytes() );
 
         // Then
-        assertThat( unpacked, instanceOf( String.class ) );
-        assertThat( unpacked, equalTo( "WHY" ) );
+        assertThat( unpacked, instanceOf( List.class ) );
+        assertThat( unpacked, equalTo( asList( "W", "H", "Y" ) ) );
     }
 
     private static class Unpackable

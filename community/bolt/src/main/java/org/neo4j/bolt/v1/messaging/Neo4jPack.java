@@ -66,6 +66,7 @@ public class Neo4jPack
             super( output );
         }
 
+        @SuppressWarnings( "unchecked" )
         public void pack( Object obj ) throws IOException
         {
             // Note: below uses instanceof for quick implementation, this should be swapped over
@@ -96,8 +97,7 @@ public class Neo4jPack
             }
             else if (obj instanceof Character )
             {
-                Character character = (Character) obj;
-                pack( character.toString() );
+                pack( (Character) obj );
             }
             else if ( obj instanceof Map )
             {
@@ -127,8 +127,12 @@ public class Neo4jPack
             }
             else if ( obj instanceof char[] )
             {
-                // Treat it as a String
-                pack( new String( (char[]) obj ) );
+                char[] array = (char[]) obj;
+                packListHeader( array.length );
+                for ( char item : array )
+                {
+                    pack( item );
+                }
             }
             else if ( obj instanceof short[] )
             {
