@@ -30,6 +30,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 import org.neo4j.function.IntFunction;
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -40,6 +41,7 @@ import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -57,13 +59,17 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.qa.tooling.DumpProcessInformationRule.localVm;
 
 public class TransactionConstraintsIT
 {
+    private static final int SLAVE_ONLY_ID = 1;
+
     @ClassRule
     public static final ClusterRule clusterRule = new ClusterRule( TransactionConstraintsIT.class )
             .withSharedSetting( HaSettings.pull_interval, "0" )
@@ -72,7 +78,7 @@ public class TransactionConstraintsIT
                 @Override
                 public String apply( int serverId )
                 {
-                    return serverId == 1 ? "true" : "false";
+                    return serverId == SLAVE_ONLY_ID ? "true" : "false";
                 }
             });
 
@@ -156,8 +162,14 @@ public class TransactionConstraintsIT
 
     private HighlyAvailableGraphDatabase getSlaveOnlySlave()
     {
-        HighlyAvailableGraphDatabase db = first( cluster.getAllMembers() );
-        assertEquals( 1, cluster.getServerId( db ).toIntegerIndex() );
+        HighlyAvailableGraphDatabase db = single( filter( new Predicate<HighlyAvailableGraphDatabase>()
+        {
+            @Override
+            public boolean test( HighlyAvailableGraphDatabase db )
+            {
+                return cluster.getServerId( db ).toIntegerIndex() == SLAVE_ONLY_ID;
+            }
+        }, cluster.getAllMembers() ) );
         assertFalse( db.isMaster() );
         return db;
     }
