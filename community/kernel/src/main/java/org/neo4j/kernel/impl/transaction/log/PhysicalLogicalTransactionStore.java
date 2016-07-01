@@ -131,6 +131,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
         private final long startTransactionId;
         private final LogEntryReader<ReadableVersionableLogChannel> logEntryReader;
         private LogEntryStart startEntryForFoundTransaction;
+        private long commitTimestamp;
 
         public TransactionPositionLocator( long startTransactionId,
                 LogEntryReader<ReadableVersionableLogChannel> logEntryReader )
@@ -156,6 +157,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
                     if ( commit.getTxId() == startTransactionId )
                     {
                         startEntryForFoundTransaction = startEntry;
+                        commitTimestamp = commit.getTimeWritten();
                         return false;
                     }
                 default: // just skip commands
@@ -178,7 +180,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
                     startEntryForFoundTransaction.getMasterId(),
                     startEntryForFoundTransaction.getLocalId(),
                     LogEntryStart.checksum( startEntryForFoundTransaction ),
-                    startEntryForFoundTransaction.getTimeWritten()
+                    commitTimestamp
             );
             return startEntryForFoundTransaction.getStartPosition();
         }

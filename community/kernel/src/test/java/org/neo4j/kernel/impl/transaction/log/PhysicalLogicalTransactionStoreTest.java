@@ -50,17 +50,15 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.test.TargetDirectory;
 
-import static java.lang.String.format;
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.DEFAULT_NAME;
+import static org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
@@ -229,7 +227,7 @@ public class PhysicalLogicalTransactionStoreTest
     public void shouldExtractMetadataFromExistingTransaction() throws Exception
     {
         // GIVEN
-        TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore();
+        TransactionIdStore txIdStore = new DeadSimpleTransactionIdStore();
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         final byte[] additionalHeader = new byte[]{1, 2, 5};
         final int masterId = 2, authorId = 1;
@@ -238,13 +236,13 @@ public class PhysicalLogicalTransactionStoreTest
         PhysicalLogFiles logFiles = new PhysicalLogFiles( testDir, DEFAULT_NAME, fs );
         Monitor monitor = new Monitors().newMonitor( PhysicalLogFile.Monitor.class );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
-                transactionIdStore, mock( LogVersionRepository.class ), monitor,
+                txIdStore, mock( LogVersionRepository.class ), monitor,
                 positionCache ) );
 
         life.start();
         try
         {
-            addATransactionAndRewind( life, logFile, positionCache, transactionIdStore,
+            addATransactionAndRewind( life, logFile, positionCache, txIdStore,
                     additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted, timeCommitted );
         }
         finally
@@ -257,7 +255,7 @@ public class PhysicalLogicalTransactionStoreTest
                 authorId, timeStarted, timeCommitted, latestCommittedTxWhenStarted );
         final LogFileRecoverer recoverer = new LogFileRecoverer( new VersionAwareLogEntryReader<>(), visitor );
         logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
-                transactionIdStore, mock( LogVersionRepository.class ), monitor,
+                txIdStore, mock( LogVersionRepository.class ), monitor,
                 positionCache ) );
         final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFile, positionCache );
 
@@ -269,10 +267,11 @@ public class PhysicalLogicalTransactionStoreTest
 
             positionCache.clear();
 
-            assertThat( store.getMetadataFor( transactionIdStore.getLastCommittedTransactionId() ).toString(),
-                    equalTo(
-                            format( "TransactionMetadata[masterId=%d, authorId=%d, startPosition=%s, checksum=%d]",
-                                    masterId, authorId, visitor.getStartPosition(), visitor.getChecksum() ) ) );
+            TransactionMetadata expectedMetadata = new TransactionMetadata( masterId, authorId,
+                    visitor.getStartPosition(), visitor.getChecksum(), visitor.getTimeCommitted() );
+
+            TransactionMetadata actualMetadata = store.getMetadataFor( txIdStore.getLastCommittedTransactionId() );
+            assertEquals( expectedMetadata, actualMetadata );
         }
         finally
         {
@@ -429,6 +428,11 @@ public class PhysicalLogicalTransactionStoreTest
         public long getChecksum()
         {
             return checksum;
+        }
+
+        public long getTimeCommitted()
+        {
+            return timeCommitted;
         }
 
         public LogPosition getStartPosition()
