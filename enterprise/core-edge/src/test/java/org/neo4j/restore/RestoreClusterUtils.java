@@ -23,6 +23,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 
+import org.neo4j.commandline.admin.AdminCommand;
+import org.neo4j.commandline.admin.CommandFailed;
+import org.neo4j.commandline.admin.IncorrectUsage;
+
 public class RestoreClusterUtils
 {
     public static StringBuilder execute( Runnable function )
@@ -33,6 +37,20 @@ public class RestoreClusterUtils
         function.run();
         System.setOut( theRealOut );
         return builder;
+    }
+
+    public static StringBuilder execute( AdminCommand command, String[] args )
+    {
+        return execute( () -> {
+            try
+            {
+                command.execute( args );
+            }
+            catch ( IncorrectUsage | CommandFailed incorrectUsage )
+            {
+                throw new RuntimeException( incorrectUsage );
+            }
+        });
     }
 
     private static class MyOutputStream extends OutputStream

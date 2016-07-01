@@ -19,13 +19,14 @@
  */
 package org.neo4j.restore;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.Optional;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.coreedge.convert.ClusterSeed;
 import org.neo4j.coreedge.convert.StoreMetadata;
@@ -52,10 +53,13 @@ import org.neo4j.test.rule.TargetDirectory;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.coreedge.convert.GenerateClusterSeedCommand.storeId;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TIME;
 import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
+import static org.neo4j.restore.ArgsBuilder.args;
+import static org.neo4j.restore.ArgsBuilder.toArray;
 import static org.neo4j.restore.RestoreExistingClusterCli.settings;
 
 public class RestoreClusterCliTest
@@ -71,11 +75,10 @@ public class RestoreClusterCliTest
         StoreMetadata storeMetadata = metadataFor( classicNeo4jStore );
 
         // when
-        File homeDir = testDirectory.cleanDirectory( "new-db-1" );
-        LinkedList<String> args = ArgsBuilder.args().homeDir( homeDir ).config( homeDir )
-                .from( classicNeo4jStore ).database( "graph.db" ).build() ;
+        Path homeDir = testDirectory.cleanDirectory( "new-db-1" ).toPath();
 
-        StringBuilder out = RestoreClusterUtils.execute( () -> RestoreNewClusterCli.main( args.toArray( new String[args.size()] ) ) );
+        StringBuilder out = RestoreClusterUtils.execute( new RestoreNewClusterCli( homeDir, homeDir ),
+                toArray( args().from( classicNeo4jStore ).database( "graph.db" ).build() ) );
 
         // then
         String seed = extractSeed( out );
@@ -87,7 +90,7 @@ public class RestoreClusterCliTest
 
         // when restore to another place
         File rootNewDatabaseDir = testDirectory.cleanDirectory( "new-db-2" );
-        LinkedList<String> newArgs = ArgsBuilder.args().homeDir( rootNewDatabaseDir ).config( rootNewDatabaseDir )
+        LinkedList<String> newArgs = args().homeDir( rootNewDatabaseDir ).config( rootNewDatabaseDir )
                 .from( classicNeo4jStore ).database( "graph.db" ).seed( seed ).build() ;
 
         RestoreClusterUtils.execute( () -> RestoreExistingClusterCli.main( newArgs.toArray( new String[newArgs.size()] ) ) );

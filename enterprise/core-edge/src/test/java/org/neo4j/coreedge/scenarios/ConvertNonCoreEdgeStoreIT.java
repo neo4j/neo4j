@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.scenarios;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -89,11 +90,9 @@ public class ConvertNonCoreEdgeStoreIT
 
         Cluster cluster = this.clusterRule.withRecordFormat( recordFormat ).createCluster();
 
-        File homeDir = cluster.getCoreServerById( 0 ).homeDir();
-
-        StringBuilder output = RestoreClusterUtils.execute( () -> RestoreNewClusterCli.main( toArray( args()
-                .homeDir( homeDir ).config( homeDir ).from( classicNeo4jStore )
-                .database( "graph.db" ).force().build() ) ) );
+        Path homeDir = cluster.getCoreServerById( 0 ).homeDir().toPath();
+        StringBuilder output = RestoreClusterUtils.execute( new RestoreNewClusterCli( homeDir, homeDir ),
+                toArray( args().from( classicNeo4jStore ).database( "graph.db" ).force().build() ) );
 
         String seed = RestoreClusterCliTest.extractSeed( output );
 

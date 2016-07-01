@@ -112,13 +112,6 @@ cmd_restore() {
   exec "${JAVA_CMD}" -cp "${CLASSPATH}" -Dfile.encoding=UTF-8 "org.neo4j.restore.RestoreDatabaseCli" --home-dir=${NEO4J_HOME} --config=${NEO4J_CONF} "$@"
 }
 
-cmd_restore_new_cluster() {
-  setup_environment
-  check_java
-  build_classpath
-  exec "${JAVA_CMD}" -cp "${CLASSPATH}" -Dfile.encoding=UTF-8 "org.neo4j.restore.RestoreNewClusterCli" --home-dir=${NEO4J_HOME} --config=${NEO4J_CONF} "$@"
-}
-
 cmd_restore_existing_cluster() {
   setup_environment
   check_java
@@ -168,11 +161,7 @@ ${PROGRAM} restore ---from <backup-directory> --database=<database-name> [--forc
 
     Restores a database backed up using the neo4j-backup tool.
 
-  ${PROGRAM} restore-new-cluster ---from <backup-directory> --database=<database-name> [--force]
-
-    Restores a database backed up using the neo4j-backup tool to be used as the first instance of a new cluster.
-
-  ${PROGRAM} restore-existing-cluster ---from <backup-directory> --database=<database-name> --cluster-seed=<generated id> [--force]
+${PROGRAM} restore-existing-cluster ---from <backup-directory> --database=<database-name> --cluster-seed=<generated id> [--force]
 
     Restores a database backed up using the neo4j-backup tool to be used as an additional instance of an existing cluster.
 
@@ -188,7 +177,6 @@ main() {
     core-convert)                   cmd_core_convert "$@" ;;
     generate-cluster-seed)          cmd_generate_cluster_seed "$@" ;;
     restore)                        cmd_restore "$@" ;;
-    restore-new-cluster)            cmd_restore_new_cluster "$@" ;;
     restore-existing-cluster)       cmd_restore_existing_cluster "$@" ;;
      *)                             pass_through "${command}" "$@" ;;
   esac
