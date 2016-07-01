@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.neo4j.bolt.BoltKernelExtension;
-import org.neo4j.bolt.security.auth.AuthUtils;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -55,12 +54,6 @@ public class Neo4jWithSocket implements TestRule
     {
         this.configure = configure;
     }
-
-    public String uniqueIdentier()
-    {
-        return AuthUtils.uniqueIdentifier( storeId );
-    }
-
 
     @Override
     public Statement apply( final Statement statement, Description description )

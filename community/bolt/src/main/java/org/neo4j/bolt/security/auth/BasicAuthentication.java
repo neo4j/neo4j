@@ -21,7 +21,6 @@ package org.neo4j.bolt.security.auth;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -39,15 +38,12 @@ public class BasicAuthentication implements Authentication
     private final BasicAuthManager authManager;
     private final static String SCHEME = "basic";
     private final Log log;
-    private final Supplier<String> identifier;
     private AuthSubject authSubject;
 
-
-    public BasicAuthentication( BasicAuthManager authManager, LogProvider logProvider, Supplier<String> identifier )
+    public BasicAuthentication( BasicAuthManager authManager, LogProvider logProvider)
     {
         this.authManager = authManager;
         this.log = logProvider.getLog( getClass() );
-        this.identifier = identifier;
     }
 
     @Override
@@ -55,8 +51,8 @@ public class BasicAuthentication implements Authentication
     {
         if ( !SCHEME.equals( authToken.get( SCHEME_KEY ) ) )
         {
-            throw new AuthenticationException( Status.Security.Unauthorized, identifier.get(),
-                    "Authentication token must contain: '" + SCHEME_KEY + " : " + SCHEME + "'" );
+            throw new AuthenticationException( Status.Security.Unauthorized,
+                    "Missing username and password" );
         }
 
         String user = safeCast( PRINCIPAL, authToken );
@@ -83,10 +79,10 @@ public class BasicAuthentication implements Authentication
             credentialsExpired = true;
             break;
         case TOO_MANY_ATTEMPTS:
-            throw new AuthenticationException( Status.Security.AuthenticationRateLimit, identifier.get() );
+            throw new AuthenticationException( Status.Security.AuthenticationRateLimit);
         default:
             log.warn( "Failed authentication attempt for '%s'", user);
-            throw new AuthenticationException( Status.Security.Unauthorized, identifier.get() );
+            throw new AuthenticationException( Status.Security.Unauthorized);
         }
         return new BasicAuthenticationResult( authSubject, credentialsExpired );
     }
@@ -106,19 +102,19 @@ public class BasicAuthentication implements Authentication
             }
             catch ( AuthorizationViolationException e )
             {
-                throw new AuthenticationException( Status.Security.Forbidden, identifier.get(), e.getMessage(), e );
+                throw new AuthenticationException( Status.Security.Forbidden, e.getMessage(), e );
             }
             catch ( IOException e )
             {
-                throw new AuthenticationException( Status.Security.Unauthorized, identifier.get(), e.getMessage(), e );
+                throw new AuthenticationException( Status.Security.Unauthorized, e.getMessage(), e );
             }
             catch ( IllegalCredentialsException e )
             {
-                throw new AuthenticationException(e.status(), identifier.get(), e.getMessage(), e );
+                throw new AuthenticationException(e.status(), e.getMessage(), e );
             }
             break;
         default:
-            throw new AuthenticationException( Status.Security.Unauthorized, identifier.get() );
+            throw new AuthenticationException( Status.Security.Unauthorized );
         }
         return new BasicAuthenticationResult( authSubject, false );
     }
@@ -128,7 +124,7 @@ public class BasicAuthentication implements Authentication
         Object value = authToken.get( key );
         if ( value == null || !(value instanceof String) )
         {
-            throw new AuthenticationException( Status.Security.Unauthorized, identifier.get(),
+            throw new AuthenticationException( Status.Security.Unauthorized,
                     "The value associated with the key `" + key + "` must be a String but was: " +
                     (value == null ? "null" : value.getClass().getSimpleName()));
         }
