@@ -21,6 +21,7 @@ package org.neo4j.test.rule;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.helpers.collection.Iterables;
@@ -31,28 +32,34 @@ import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.impl.EphemeralIdGenerator;
 
 import static org.mockito.Mockito.mock;
@@ -63,7 +70,7 @@ import static org.mockito.Mockito.when;
  * {@link PageCache}, which usually are managed by test rules themselves. That's why they are passed in
  * when {@link #getWith(FileSystemAbstraction, PageCache) getting (constructing)} the engine. Further
  * dependencies can be overridden in that returned builder as well.
- *
+ * <p>
  * Keep in mind that this rule must be created BEFORE {@link PageCacheRule} and any file system rule so that
  * shutdown order gets correct.
  */
@@ -84,7 +91,8 @@ public class RecordStorageEngineRule extends ExternalResource
     }
 
     private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache, LabelScanStore labelScanStore,
-            SchemaIndexProvider schemaIndexProvider, DatabaseHealth databaseHealth, File storeDirectory )
+            SchemaIndexProvider schemaIndexProvider, DatabaseHealth databaseHealth, File storeDirectory,
+            Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer )
     {
         if ( !fs.fileExists( storeDirectory ) && !fs.mkdir( storeDirectory ) )
         {
@@ -99,14 +107,16 @@ public class RecordStorageEngineRule extends ExternalResource
         Config config = Config.defaults();
         Supplier<KernelTransactionsSnapshot> txSnapshotSupplier =
                 () -> new KernelTransactionsSnapshot( Collections.emptySet() );
-        return life.add( new RecordStorageEngine( storeDirectory, config, idGeneratorFactory,
+        return life.add( new ExtendedRecordStorageEngine( storeDirectory, config, idGeneratorFactory,
                 IdReuseEligibility.ALWAYS, pageCache, fs, NullLogProvider.getInstance(),
                 mock( PropertyKeyTokenHolder.class ), mock( LabelTokenHolder.class ),
-                mock( RelationshipTypeTokenHolder.class ), () -> {}, new StandardConstraintSemantics(),
+                mock( RelationshipTypeTokenHolder.class ), () ->
+        {
+        }, new StandardConstraintSemantics(),
                 scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(),
                 schemaIndexProvider, IndexingService.NO_MONITOR, databaseHealth,
                 labelScanStoreProvider, legacyIndexProviderLookup, indexConfigStore,
-                new SynchronizedArrayIdOrderingQueue( 20 ), txSnapshotSupplier ) );
+                new SynchronizedArrayIdOrderingQueue( 20 ), txSnapshotSupplier, transactionApplierTransformer ) );
     }
 
     @Override
@@ -125,6 +135,8 @@ public class RecordStorageEngineRule extends ExternalResource
                 new DatabasePanicEventGenerator( new KernelEventHandlers( NullLog.getInstance() ) ),
                 NullLog.getInstance() );
         private File storeDirectory = new File( "/graph.db" );
+        private Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer =
+                applierFacade -> applierFacade;
         private SchemaIndexProvider schemaIndexProvider = SchemaIndexProvider.NO_INDEX_PROVIDER;
 
         public Builder( FileSystemAbstraction fs, PageCache pageCache )
@@ -136,6 +148,13 @@ public class RecordStorageEngineRule extends ExternalResource
         public Builder labelScanStore( LabelScanStore labelScanStore )
         {
             this.labelScanStore = labelScanStore;
+            return this;
+        }
+
+        public Builder transactionApplierTransformer(
+                Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer )
+        {
+            this.transactionApplierTransformer = transactionApplierTransformer;
             return this;
         }
 
@@ -161,7 +180,49 @@ public class RecordStorageEngineRule extends ExternalResource
 
         public RecordStorageEngine build()
         {
-            return get( fs, pageCache, labelScanStore, schemaIndexProvider, databaseHealth, storeDirectory );
+            return get( fs, pageCache, labelScanStore, schemaIndexProvider, databaseHealth, storeDirectory,
+                    transactionApplierTransformer );
+        }
+
+    }
+
+    private class ExtendedRecordStorageEngine extends RecordStorageEngine
+    {
+
+        private final Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade>
+                transactionApplierTransformer;
+
+        public ExtendedRecordStorageEngine( File storeDir, Config config,
+                IdGeneratorFactory idGeneratorFactory, IdReuseEligibility eligibleForReuse,
+                PageCache pageCache, FileSystemAbstraction fs, LogProvider logProvider,
+                PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens,
+                RelationshipTypeTokenHolder relationshipTypeTokens, Runnable schemaStateChangeCallback,
+                ConstraintSemantics constraintSemantics, JobScheduler scheduler,
+                TokenNameLookup tokenNameLookup, LockService lockService,
+                SchemaIndexProvider indexProvider,
+                IndexingService.Monitor indexingServiceMonitor, DatabaseHealth databaseHealth,
+                LabelScanStoreProvider labelScanStoreProvider,
+                LegacyIndexProviderLookup legacyIndexProviderLookup,
+                IndexConfigStore indexConfigStore, IdOrderingQueue legacyIndexTransactionOrdering,
+                Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier,
+                Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade>
+                        transactionApplierTransformer )
+        {
+            super( storeDir, config, idGeneratorFactory, eligibleForReuse, pageCache, fs, logProvider,
+                    propertyKeyTokenHolder,
+                    labelTokens, relationshipTypeTokens, schemaStateChangeCallback, constraintSemantics, scheduler,
+                    tokenNameLookup, lockService, indexProvider, indexingServiceMonitor, databaseHealth,
+                    labelScanStoreProvider,
+                    legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering,
+                    transactionsSnapshotSupplier );
+            this.transactionApplierTransformer = transactionApplierTransformer;
+        }
+
+        @Override
+        protected BatchTransactionApplierFacade applier( TransactionApplicationMode mode )
+        {
+            BatchTransactionApplierFacade recordEngineApplier = super.applier( mode );
+            return transactionApplierTransformer.apply( recordEngineApplier );
         }
     }
 }

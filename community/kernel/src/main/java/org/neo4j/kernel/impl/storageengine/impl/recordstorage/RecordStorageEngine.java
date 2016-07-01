@@ -337,12 +337,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     }
                     batch = batch.next();
                 }
-                catch ( Throwable cause )
-                {
-                    databaseHealth.panic( cause );
-                    throw cause;
-                }
             }
+        }
+        catch ( Throwable cause )
+        {
+            databaseHealth.panic( cause );
+            throw cause;
         }
     }
 
@@ -353,7 +353,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
      *
      * After all transactions have been applied the appliers are closed.
      */
-    private BatchTransactionApplierFacade applier( TransactionApplicationMode mode )
+    protected BatchTransactionApplierFacade applier( TransactionApplicationMode mode )
     {
         ArrayList<BatchTransactionApplier> appliers = new ArrayList<>();
         // Graph store application. The order of the decorated store appliers is irrelevant
