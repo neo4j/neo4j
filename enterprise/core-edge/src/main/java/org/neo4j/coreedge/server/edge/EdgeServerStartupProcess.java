@@ -90,14 +90,7 @@ public class EdgeServerStartupProcess implements Lifecycle
         }
         else
         {
-            StoreId localStoreId = localDatabase.storeId();
-            StoreId remoteStoreId = storeFetcher.storeId( coreMember );
-            if ( !localStoreId.equals( remoteStoreId ) )
-            {
-                throw new IllegalStateException( format( "This edge machine cannot join the cluster. " +
-                                "The local database is not empty and has a mismatching storeId: expected %s actual %s.",
-                        remoteStoreId, localStoreId ) );
-            }
+            localDatabase.ensureSameStoreId( coreMember, storeFetcher );
         }
 
         txPulling.start();

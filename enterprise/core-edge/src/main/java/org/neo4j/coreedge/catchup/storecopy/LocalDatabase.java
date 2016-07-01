@@ -27,10 +27,11 @@ import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.StoreId;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
+
+import static java.lang.String.format;
 
 public class LocalDatabase implements Supplier<StoreId>
 {
@@ -45,11 +46,8 @@ public class LocalDatabase implements Supplier<StoreId>
     private volatile StoreId storeId;
     private volatile DatabaseHealth databaseHealth;
 
-    public LocalDatabase(
-            File storeDir,
-            CopiedStoreRecovery copiedStoreRecovery, StoreFiles storeFiles,
-            DataSourceManager dataSourceManager,
-            Supplier<TransactionIdStore> transactionIdStoreSupplier,
+    public LocalDatabase( File storeDir, CopiedStoreRecovery copiedStoreRecovery, StoreFiles storeFiles,
+            DataSourceManager dataSourceManager, Supplier<TransactionIdStore> transactionIdStoreSupplier,
             Supplier<DatabaseHealth> databaseHealthSupplier )
     {
         this.storeDir = storeDir;
@@ -76,8 +74,8 @@ public class LocalDatabase implements Supplier<StoreId>
         if ( storeId == null )
         {
             org.neo4j.kernel.impl.store.StoreId kernelStoreId = dataSourceManager.getDataSource().getStoreId();
-            storeId = new StoreId( kernelStoreId.getCreationTime(),
-                    kernelStoreId.getRandomId(), kernelStoreId.getUpgradeTime(), kernelStoreId.getUpgradeId() );
+            storeId = new StoreId( kernelStoreId.getCreationTime(), kernelStoreId.getRandomId(),
+                    kernelStoreId.getUpgradeTime(), kernelStoreId.getUpgradeId() );
         }
         return storeId;
     }
@@ -111,7 +109,6 @@ public class LocalDatabase implements Supplier<StoreId>
         try
         {
             storeFiles.delete( storeDir );
-
             TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( storeDir );
             storeFetcher.copyStore( from, tempStore.storeDir() );
             copiedStoreRecovery.recoverCopiedStore( tempStore.storeDir() );
@@ -138,5 +135,18 @@ public class LocalDatabase implements Supplier<StoreId>
     public StoreId get()
     {
         return storeId();
+    }
+
+    public void ensureSameStoreId( CoreMember coreMember, StoreFetcher storeFetcher )
+            throws StoreIdDownloadFailedException
+    {
+        StoreId localStoreId = storeId();
+        StoreId remoteStoreId = storeFetcher.storeId( coreMember );
+        if ( !localStoreId.equals( remoteStoreId ) )
+        {
+            throw new IllegalStateException( format( "This edge machine cannot join the cluster. " +
+                            "The local database is not empty and has a mismatching storeId: expected %s actual %s.",
+                    remoteStoreId, localStoreId ) );
+        }
     }
 }

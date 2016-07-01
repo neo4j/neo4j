@@ -24,6 +24,8 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
+import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -32,6 +34,9 @@ import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 
 import static junit.framework.TestCase.assertEquals;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.function.Suppliers.singleton;
@@ -45,16 +50,61 @@ public class LocalDatabaseTest
         StoreId storeId = new StoreId( 1, 2, 3, 4 );
 
         // when
-        DataSourceManager dataSourceManager = mock( DataSourceManager.class );
-        NeoStoreDataSource neoStoreDataSource = mock( NeoStoreDataSource.class );
-        when( dataSourceManager.getDataSource() ).thenReturn( neoStoreDataSource );
-        when( neoStoreDataSource.getStoreId() ).thenReturn( new org.neo4j.kernel.impl.store.StoreId( 1, 2, 5, 3, 4 ) );
-
-        LocalDatabase localDatabase = new LocalDatabase( new File( "directory" ), mock( CopiedStoreRecovery.class ),
-                new StoreFiles( mock( FileSystemAbstraction.class ) ), dataSourceManager,
-                singleton( mock( TransactionIdStore.class ) ), () -> mock( DatabaseHealth.class ) );
+        LocalDatabase localDatabase = createLocalDatabase( new org.neo4j.kernel.impl.store.StoreId( 1, 2, 5, 3, 4 )  );
 
         // then
         assertEquals( storeId, localDatabase.storeId() );
+    }
+
+    @Test
+    public void shouldNotThrowWhenSameStoreIds() throws Throwable
+    {
+        // given
+        StoreId storeId = new StoreId( 1, 2, 3, 4 );
+        CoreMember coreMember = mock( CoreMember.class );
+        StoreFetcher storeFetcher = mock( StoreFetcher.class );
+        when( storeFetcher.storeId( coreMember ) ).thenReturn( storeId );
+
+        // when
+        LocalDatabase localDatabase = createLocalDatabase( new org.neo4j.kernel.impl.store.StoreId( 1, 2, 5, 3, 4 ) );
+
+        localDatabase.ensureSameStoreId( coreMember, storeFetcher );
+
+        // no exception is thrown
+    }
+
+    @Test
+    public void shouldThrowWhenDifferentStoreIds() throws Throwable
+    {
+        // given
+        StoreId storeId = new StoreId( 6, 7, 8, 9 );
+        CoreMember coreMember = mock( CoreMember.class );
+        StoreFetcher storeFetcher = mock( StoreFetcher.class );
+        when( storeFetcher.storeId( coreMember ) ).thenReturn( storeId );
+
+        // when
+        LocalDatabase localDatabase = createLocalDatabase( new org.neo4j.kernel.impl.store.StoreId( 1, 2, 5, 3, 4 ) );
+
+        try
+        {
+            localDatabase.ensureSameStoreId( coreMember, storeFetcher );
+            fail( "should have thrown ");
+        }
+        catch ( IllegalStateException ex )
+        {
+            assertThat( ex.getMessage(), containsString( "This edge machine cannot join the cluster. " +
+                    "The local database is not empty and has a mismatching storeId:" ) );
+        }
+    }
+
+    private LocalDatabase createLocalDatabase( org.neo4j.kernel.impl.store.StoreId storeId )
+    {
+        DataSourceManager dataSourceManager = mock( DataSourceManager.class );
+        NeoStoreDataSource neoStoreDataSource = mock( NeoStoreDataSource.class );
+        when( dataSourceManager.getDataSource() ).thenReturn( neoStoreDataSource );
+        when( neoStoreDataSource.getStoreId() ).thenReturn( storeId );
+        return new LocalDatabase( new File( "directory" ), mock( CopiedStoreRecovery.class ),
+                new StoreFiles( mock( FileSystemAbstraction.class ) ), dataSourceManager,
+                singleton( mock( TransactionIdStore.class ) ), () -> mock( DatabaseHealth.class ) );
     }
 }

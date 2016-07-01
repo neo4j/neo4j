@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge;
 
+import org.apache.lucene.document.Field;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -46,6 +47,7 @@ import org.neo4j.logging.NullLogProvider;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -97,18 +99,17 @@ public class EdgeServerStartupProcessTest
     {
         // given
         StoreFetcher storeFetcher = mock( StoreFetcher.class );
-        when( storeFetcher.storeId( any( CoreMember.class ) ) ).thenReturn( new StoreId( 1, 2, 3, 4 ) );
-        LocalDatabase localDatabase = mock( LocalDatabase.class );
-        when( localDatabase.storeId() ).thenReturn( new StoreId( 5, 6, 7, 8 ) );
-
         CoreMember coreMember = new CoreMember( UUID.randomUUID() );
+        LocalDatabase localDatabase = mock( LocalDatabase.class );
+        when( localDatabase.isEmpty() ).thenReturn( false );
+        doThrow( IllegalStateException.class ).when( localDatabase ).ensureSameStoreId( coreMember, storeFetcher );
+
         TopologyService hazelcastTopology = mock( TopologyService.class );
 
         ClusterTopology clusterTopology = mock( ClusterTopology.class );
         when( hazelcastTopology.currentTopology() ).thenReturn( clusterTopology );
 
         when( clusterTopology.coreMembers() ).thenReturn( asSet( coreMember ) );
-        when( localDatabase.isEmpty() ).thenReturn( false );
 
         DataSourceManager dataSourceManager = mock( DataSourceManager.class );
         Lifecycle txPulling = mock( Lifecycle.class );
@@ -122,7 +123,7 @@ public class EdgeServerStartupProcessTest
         try
         {
             edgeServerStartupProcess.start();
-            fail( "shoud have thrown" );
+            fail( "should have thrown" );
         }
         catch ( IllegalStateException ex )
         {
@@ -131,10 +132,9 @@ public class EdgeServerStartupProcessTest
 
         // then
         verify( dataSourceManager ).start();
-        verify( storeFetcher ).storeId( any() );
         verify( localDatabase ).isEmpty();
-        verify( localDatabase ).storeId();
-        verifyNoMoreInteractions( localDatabase, dataSourceManager, storeFetcher );
+        verify( localDatabase ).ensureSameStoreId( coreMember, storeFetcher );
+        verifyNoMoreInteractions( localDatabase, dataSourceManager );
         verifyZeroInteractions( txPulling );
     }
 
@@ -170,11 +170,10 @@ public class EdgeServerStartupProcessTest
 
         // then
         verify( localDatabase ).isEmpty();
-        verify( localDatabase ).storeId();
+        verify( localDatabase ).ensureSameStoreId( coreMember, storeFetcher );
         verify( dataSourceManager ).start();
-        verify( storeFetcher ).storeId( any() );
         verify( txPulling ).start();
-        verifyNoMoreInteractions( localDatabase, dataSourceManager, txPulling, storeFetcher );
+        verifyNoMoreInteractions( localDatabase, dataSourceManager, txPulling );
     }
 
     @Test
