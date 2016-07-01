@@ -97,7 +97,7 @@ public class StateMachineErrorTest
     private SessionStateMachine newIdleMachine()
     {
         SessionStateMachine machine = new SessionStateMachine( "<idle>", new UsageData( scheduler ), db, txBridge,
-                runner, NullLogService.getInstance(), Authentication.NONE, () -> transactionIdStore, sessionTracker  );
+                runner, NullLogService.getInstance(), Authentication.NONE, () -> transactionIdStore, sessionTracker );
         machine.init( "FunClient", map(), -1, null, Session.Callback.noOp() );
         return machine;
     }

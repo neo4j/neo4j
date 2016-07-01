@@ -31,13 +31,13 @@ import org.neo4j.kernel.api.exceptions.Status;
 /**
  * A session implementation that delegates work to a worker thread.
  */
-public class SessionWorkerFacade implements Session
+class SessionWorkerFacade implements Session
 {
     private final String key;
     private final String connectionDescriptor;
     private final SessionWorker worker;
 
-    public SessionWorkerFacade( String key, String connectionDescriptor, SessionWorker worker )
+    SessionWorkerFacade( String key, String connectionDescriptor, SessionWorker worker )
     {
         this.key = key;
         this.connectionDescriptor = connectionDescriptor;
@@ -57,10 +57,10 @@ public class SessionWorkerFacade implements Session
     }
 
     @Override
-    public <A> void init( final String clientName, Map<String,Object> authToken, long baseDBVersion, A attachment,
-            Callback<Boolean,A> callback )
+    public <A> void init( final String clientName, Map<String,Object> authToken, long currentHighestTransactionId, A attachment,
+                          Callback<Boolean,A> callback )
     {
-        queue( session -> session.init( clientName, authToken, baseDBVersion, attachment, callback ) );
+        queue( session -> session.init( clientName, authToken, currentHighestTransactionId, attachment, callback ) );
     }
 
     @Override

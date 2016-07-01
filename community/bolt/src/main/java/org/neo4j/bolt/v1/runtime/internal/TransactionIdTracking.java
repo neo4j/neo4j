@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
-class TransactionIdTracking implements SessionStateMachine.SPI.VersionTracking
+class TransactionIdTracking implements SessionStateMachine.SPI.TransactionIdTracker
 {
     private final Supplier<TransactionIdStore> transactionIdStore;
     private final int timeout;
@@ -36,10 +36,11 @@ class TransactionIdTracking implements SessionStateMachine.SPI.VersionTracking
 
     private long txId;
 
-    TransactionIdTracking( Supplier<TransactionIdStore> transactionIdStore, long version, int timeout, TimeUnit unit )
+    TransactionIdTracking( Supplier<TransactionIdStore> transactionIdStore, long transactionId, int timeout,
+                           TimeUnit unit )
     {
         this.transactionIdStore = transactionIdStore;
-        this.txId = version;
+        this.txId = transactionId;
         this.timeout = timeout;
         this.timeoutUnit = unit;
     }

@@ -19,12 +19,12 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
-import org.junit.Test;
-
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Map;
+
+import org.junit.Test;
 
 import org.neo4j.bolt.v1.runtime.MonitoredSessions.MonitoredSession;
 import org.neo4j.bolt.v1.runtime.internal.Neo4jError;
@@ -39,6 +39,7 @@ import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.bolt.v1.runtime.Session.Callback.noOp;
 
 public class MonitoredSessionsTest
@@ -103,9 +104,9 @@ public class MonitoredSessionsTest
 
     private static class CountingSessionMonitor implements MonitoredSessions.SessionMonitor
     {
-        public long messagesRecieved = 0;
-        public long queueTime = 0;
-        public long processingTime = 0;
+       long messagesRecieved = 0;
+       long queueTime = 0;
+       long processingTime = 0;
 
         @Override
         public void messageReceived()
@@ -128,7 +129,7 @@ public class MonitoredSessionsTest
 
     private static class ControlledCompletionSession extends HaltableUserSession.Adapter implements Session
     {
-        public Callback callback;
+        Callback callback;
 
         @Override
         public String key()
@@ -142,7 +143,7 @@ public class MonitoredSessionsTest
         }
 
         @Override
-        public <A> void init( String clientName, Map<String,Object> authToken, long baseDBVersion,
+        public <A> void init( String clientName, Map<String,Object> authToken, long currentHighestTransactionId,
                 A attachment, Callback<Boolean,A> callback )
         {
             this.callback = callback;
@@ -223,7 +224,7 @@ public class MonitoredSessionsTest
             return Instant.ofEpochMilli( millis );
         }
 
-        public void forward( long delta )
+        void forward( long delta )
         {
             this.millis += delta;
         }

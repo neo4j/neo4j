@@ -177,7 +177,7 @@ public class ResetFuzzTest
         }
 
         @Override
-        public KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode mode, VersionTracking versionTracking )
+        public KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode mode, TransactionIdTracker transactionIdTracker )
         {
             liveTransactions.incrementAndGet();
             return new CloseTrackingKernelTransaction();
@@ -232,9 +232,9 @@ public class ResetFuzzTest
         }
 
         @Override
-        public VersionTracking versionTracking( long startingVersion )
+        public TransactionIdTracker versionTracking( long startingVersion )
         {
-            return new VersionTracking()
+            return new TransactionIdTracker()
             {
                 @Override
                 public void assertUpToDate() throws TransactionFailureException

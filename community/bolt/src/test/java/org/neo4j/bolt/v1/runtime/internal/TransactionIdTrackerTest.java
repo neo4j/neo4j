@@ -31,7 +31,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
-public class TransactionIdTrackingTest
+public class TransactionIdTrackerTest
 {
     private final TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
 
@@ -137,12 +137,13 @@ public class TransactionIdTrackingTest
     }
 
     @Test( timeout = 500 )
-    public void shouldNotUpdateVersionIfTheInitialVersionIsLessThanZero() throws Exception
+    public void shouldNotUpdateVersionIfNoPreviousTransactionsInTheDatabase() throws Exception
     {
         // given
         when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( 42L );
+        final int txIdForEmptyDatabase = -1;
         TransactionIdTracking transactionIdTracking =
-                new TransactionIdTracking( () -> transactionIdStore, -1, 5, SECONDS );
+                new TransactionIdTracking( () -> transactionIdStore, txIdForEmptyDatabase, 5, SECONDS );
         transactionIdTracking.assertUpToDate();
 
         // when

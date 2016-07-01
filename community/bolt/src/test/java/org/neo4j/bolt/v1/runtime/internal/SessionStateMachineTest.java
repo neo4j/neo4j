@@ -93,7 +93,7 @@ public class SessionStateMachineTest
         // Then
         assertThat( machine.state(), CoreMatchers.equalTo( SessionStateMachine.State.STOPPED ) );
         verify( spi ).beginTransaction( any( KernelTransaction.Type.class ), any( AccessMode.class ),
-                any( SessionStateMachine.SPI.VersionTracking.class ) );
+                any( SessionStateMachine.SPI.TransactionIdTracker.class ) );
         verify( ktx ).close();
     }
 

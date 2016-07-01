@@ -131,7 +131,7 @@ public interface Session extends AutoCloseable, HaltableUserSession
     /**
      * Initialize the session.
      */
-    <A> void init( String clientName, Map<String,Object> authToken, long baseDBVersion, A attachment, Callback<Boolean,A> callback );
+    <A> void init( String clientName, Map<String,Object> authToken, long currentHighestTransactionId, A attachment, Callback<Boolean,A> callback );
 
     /**
      * Run a statement, yielding a result stream which can be retrieved through pulling it in a subsequent call.
@@ -172,7 +172,7 @@ public interface Session extends AutoCloseable, HaltableUserSession
      * Reset the session to an IDLE state. This clears any outstanding failure condition, disposes
      * of any outstanding result records and rolls back the current transaction (if any).
      *
-     * This differs from {@link #reset(Object, Callback)} in that it is more "radical" - it does not
+     * This differs from {@link #ackFailure(Object, Callback)} in that it is more "radical" - it does not
      * matter what the state of the session is, as long as it is open, reset will move it back to IDLE.
      *
      * This is designed to cater to two use cases:

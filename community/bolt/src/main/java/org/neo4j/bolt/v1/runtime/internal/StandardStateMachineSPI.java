@@ -95,13 +95,13 @@ class StandardStateMachineSPI implements SessionStateMachine.SPI
     }
 
     @Override
-    public KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode mode, VersionTracking versionTracking )
+    public KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode mode, TransactionIdTracker transactionIdTracker )
             throws TransactionFailureException
     {
-        versionTracking.assertUpToDate();
+        transactionIdTracker.assertUpToDate();
         db.beginTransaction( type, mode );
         KernelTransaction kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( false );
-        kernelTransaction.registerCloseListener( versionTracking::updateVersion );
+        kernelTransaction.registerCloseListener( transactionIdTracker::updateVersion );
         return kernelTransaction;
     }
 
@@ -155,7 +155,7 @@ class StandardStateMachineSPI implements SessionStateMachine.SPI
         sessionTracker.sessionHalted( session );
     }
 
-    public VersionTracking versionTracking( long startingVersion )
+    public TransactionIdTracker versionTracking( long startingVersion )
     {
         return new TransactionIdTracking( transactionIdStore, startingVersion, 30, TimeUnit.SECONDS );
     }

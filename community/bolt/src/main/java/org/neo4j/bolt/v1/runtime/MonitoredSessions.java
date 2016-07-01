@@ -83,11 +83,11 @@ public class MonitoredSessions implements Sessions
         }
 
         @Override
-        public <A> void init( String clientName, Map<String,Object> authToken, long baseDBVersion,
+        public <A> void init( String clientName, Map<String,Object> authToken, long currentHighestTransactionId,
                 A attachment, Callback<Boolean,A> callback )
         {
             monitor.messageReceived();
-            delegate.init( clientName, authToken, baseDBVersion, attachment, withMonitor( callback ) );
+            delegate.init( clientName, authToken, currentHighestTransactionId, attachment, withMonitor( callback ) );
         }
 
         @Override
