@@ -46,8 +46,17 @@ public interface TransactionIdStore
     // Tx id counting starting from this value (this value means no transaction ever committed)
     long BASE_TX_ID = 1;
     long BASE_TX_CHECKSUM = 0;
-    long BASE_TX_COMMIT_TIMESTAMP = 0; // TODO: JAVADOCSA THIS
-    long UNKNOWN_TX_COMMIT_TIMESTAMP = 1; // TODO: JAVADOCSA THIS
+
+    /**
+     * Timestamp value used initially for an empty database.
+     */
+    long BASE_TX_COMMIT_TIMESTAMP = 0;
+
+    /**
+     * Timestamp value used when record in the metadata store is not present and there are no transactions in logs.
+     */
+    long UNKNOWN_TX_COMMIT_TIMESTAMP = 1;
+
     long BASE_TX_LOG_VERSION = 0;
     long BASE_TX_LOG_BYTE_OFFSET = LOG_HEADER_SIZE;
 
@@ -64,7 +73,7 @@ public interface TransactionIdStore
      * seen given to this method will be visible in {@link #getLastCommittedTransactionId()}.
      * @param transactionId the applied transaction id.
      * @param checksum checksum of the transaction.
-     * @param commitTimestamp
+     * @param commitTimestamp the timestamp of the transaction commit.
      */
     void transactionCommitted( long transactionId, long checksum, long commitTimestamp );
 
@@ -101,7 +110,7 @@ public interface TransactionIdStore
      * Perhaps this shouldn't be exposed like this?
      *  @param transactionId transaction id that will be the last closed/committed id.
      * @param checksum checksum of the transaction.
-     * @param commitTimestamp
+     * @param commitTimestamp the timestamp of the transaction commit.
      * @param byteOffset offset in the log file where the committed entry has been written.
      * @param logVersion version of log the committed entry has been written into.
      */

@@ -190,7 +190,7 @@ public class LegacyLogsTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void getTransactionInformation() throws IOException
+    public void transactionInformationRetrievedFromCommitEntries() throws IOException
     {
         FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
         File logFile = new File( LegacyLogFilenames.getLegacyLogFilename( 1 ) );
