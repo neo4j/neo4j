@@ -289,9 +289,11 @@ public class MetaDataStoreTest
     @Test
     public void lastTxCommitTimestampShouldBeBaseInNewStore() throws Exception
     {
-        MetaDataStore metaDataStore = newMetaDataStore();
-        long timestamp = metaDataStore.getLastCommittedTransaction().commitTimestamp();
-        assertThat( timestamp, equalTo( TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP ) );
+        try ( MetaDataStore metaDataStore = newMetaDataStore() )
+        {
+            long timestamp = metaDataStore.getLastCommittedTransaction().commitTimestamp();
+            assertThat( timestamp, equalTo( TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP ) );
+        }
     }
 
     private static MetaDataStore newMetaDataStore() throws IOException
