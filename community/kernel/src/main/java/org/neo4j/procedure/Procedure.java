@@ -48,7 +48,10 @@ import java.lang.annotation.Target;
  *     <li>{@link Double} or {@code double}</li>
  *     <li>{@link Number}</li>
  *     <li>{@link Boolean} or {@code boolean}</li>
- *     <li>{@link java.util.Map} with key {@link String} and value {@link Object}</li>
+ *     <li>{@link org.neo4j.graphdb.Node}</li>
+ *     <li>{@link org.neo4j.graphdb.Relationship}</li>
+ *     <li>{@link org.neo4j.graphdb.Path}</li>
+ *     <li>{@link java.util.Map} with key {@link String} and value of any type in this list, including {@link java.util.Map}</li>
  *     <li>{@link java.util.List} with element type of any type in this list, including {@link java.util.List}</li>
  *     <li>{@link Object}, meaning any valid input types</li>
  * </ul>
@@ -69,7 +72,7 @@ import java.lang.annotation.Target;
  *     <li>{@link org.neo4j.graphdb.Node}</li>
  *     <li>{@link org.neo4j.graphdb.Relationship}</li>
  *     <li>{@link org.neo4j.graphdb.Path}</li>
- *     <li>{@link java.util.Map} with key {@link String} and value {@link Object}</li>
+ *     <li>{@link java.util.Map} with key {@link String} and value of any type in this list, including {@link java.util.Map}</li>
  *     <li>{@link java.util.List} of elements of any valid field type, including {@link java.util.List}</li>
  *     <li>{@link Object}, meaning any of the valid field types</li>
  * </ul>
