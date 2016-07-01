@@ -32,6 +32,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.api.BatchTransactionApplier;
+import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
@@ -40,6 +42,7 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -61,6 +64,7 @@ public class RecordStorageEngineTest
     private final RecordStorageEngineRule storageEngineRule = new RecordStorageEngineRule();
     private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( fsRule )
@@ -70,20 +74,44 @@ public class RecordStorageEngineTest
     @Test( timeout = 30_000 )
     public void shutdownRecordStorageEngineAfterFailedTransaction() throws Throwable
     {
-        RecordStorageEngine engine =
-                storageEngineRule.getWith( fsRule.get(), pageCacheRule.getPageCache( fsRule.get() ) ).build();
+        RecordStorageEngine engine = buildRecordStorageEngine();
         Exception applicationError = executeFailingTransaction( engine );
         assertNotNull( applicationError );
     }
 
     @Test
+    public void panicOnExceptionDuringCommandsApply() throws Exception
+    {
+        IllegalStateException failure = new IllegalStateException( "Too many open files" );
+        RecordStorageEngine engine = storageEngineRule.getWith( fsRule.get(), pageCacheRule.getPageCache( fsRule.get() ) )
+                                                      .databaseHealth( databaseHealth )
+                                                      .transactionApplierTransformer( facade -> transactionApplierFacadeTransformer( facade, failure ) )
+                                                      .build();
+        CommandsToApply commandsToApply = mock( CommandsToApply.class );
+
+        try
+        {
+            engine.apply( commandsToApply, TransactionApplicationMode.INTERNAL );
+            fail( "Exception expected" );
+        }
+        catch ( Exception exception )
+        {
+            assertSame( failure, Exceptions.rootCause( exception ) );
+        }
+
+        verify( databaseHealth ).panic( any( Throwable.class ) );
+    }
+
+    private static BatchTransactionApplierFacade transactionApplierFacadeTransformer(
+            BatchTransactionApplierFacade facade, Exception failure )
+    {
+        return new FailingBatchTransactionApplierFacade( failure, facade );
+    }
+
+    @Test
     public void databasePanicIsRaisedWhenTxApplicationFails() throws Throwable
     {
-        DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
-        RecordStorageEngine engine =
-                storageEngineRule.getWith( fsRule.get(), pageCacheRule.getPageCache( fsRule.get() ) )
-                .databaseHealth( databaseHealth )
-                .build();
+        RecordStorageEngine engine = buildRecordStorageEngine();
         Exception applicationError = executeFailingTransaction( engine );
         verify( databaseHealth ).panic( applicationError );
     }
@@ -91,8 +119,7 @@ public class RecordStorageEngineTest
     @Test( timeout = 30_000 )
     public void obtainCountsStoreResetterAfterFailedTransaction() throws Throwable
     {
-        RecordStorageEngine engine =
-                storageEngineRule.getWith( fsRule.get(), pageCacheRule.getPageCache( fsRule.get() ) ).build();
+        RecordStorageEngine engine = buildRecordStorageEngine();
         Exception applicationError = executeFailingTransaction( engine );
         assertNotNull( applicationError );
 
@@ -126,6 +153,13 @@ public class RecordStorageEngineTest
         assertThat( observedLimiter.get(), sameInstance( limiter ) );
     }
 
+    private RecordStorageEngine buildRecordStorageEngine()
+    {
+        return storageEngineRule.getWith( fsRule.get(), pageCacheRule.getPageCache( fsRule.get() ) )
+                                .databaseHealth( databaseHealth )
+                                .build();
+    }
+
     private Exception executeFailingTransaction( RecordStorageEngine engine ) throws IOException
     {
         Exception applicationError = new UnderlyingStorageException( "No space left on device" );
@@ -156,4 +190,22 @@ public class RecordStorageEngineTest
         txToApply.commitment( commitment, txId );
         return txToApply;
     }
+
+    private static class FailingBatchTransactionApplierFacade extends BatchTransactionApplierFacade
+    {
+        private Exception failure;
+
+        FailingBatchTransactionApplierFacade( Exception failure, BatchTransactionApplier... appliers )
+        {
+            super( appliers );
+            this.failure = failure;
+        }
+
+        @Override
+        public void close() throws Exception
+        {
+            throw failure;
+        }
+    }
+
 }
