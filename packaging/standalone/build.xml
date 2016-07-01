@@ -1,0 +1,30 @@
+<project default="copy-shell">
+  <property name="shell.dist" location="../../in/cypher-shell"/>
+  <property name="shell.zip" location="${shell.dist}.zip"/>
+  <!-- Extract zip file -->
+
+  <target name="find-shell-zip" description="See if shell zip file exists">
+    <echo>Checking if ${shell.zip} exists</echo>
+    <available file="${shell.zip}" property="zip.present"/>
+  </target>
+  <target name="extract-shell-zip" depends="find-shell-zip"
+          if="zip.present">
+    <unzip src="${shell.zip}" dest="../../in"/>
+  </target>
+
+  <!-- Copy to source directory -->
+  <target name="find-shell" description="Check that cypher-shell is available"
+          depends="extract-shell-zip">
+    <echo>Checking if ${shell.dist} exists</echo>
+    <available file="${shell.dist}" type="dir"
+               property="shell.present"/>
+  </target>
+
+  <target name="copy-shell" description="Copy cypher-shell files"
+          depends="find-shell" if="shell.present">
+    <copy todir="src/main/distribution/cypher-shell">
+      <fileset dir="${shell.dist}"/>
+    </copy>
+  </target>
+
+</project>
