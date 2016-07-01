@@ -300,13 +300,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public void markForTermination( Status reason )
     {
-        terminationReleaseLock.lock();
         if ( !canBeTerminated() )
         {
             return;
         }
 
         int initialReuseCount = reuseCount;
+        terminationReleaseLock.lock();
         try
         {
             // this instance could have been reused, make sure we are trying to terminate the right transaction
