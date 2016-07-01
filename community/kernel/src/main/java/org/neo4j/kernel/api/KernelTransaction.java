@@ -125,6 +125,11 @@ public interface KernelTransaction extends AutoCloseable
     void markForTermination( Status reason );
 
     /**
+     * @return The timestamp of the last transaction that was committed to the store when this transaction started.
+     */
+    long lastTransactionTimestampWhenStarted();
+
+    /**
      * Register a {@link CloseListener} to be invoked after commit, but before transaction events "after" hooks
      * are invoked.
      * @param listener {@link CloseListener} to get these notifications.

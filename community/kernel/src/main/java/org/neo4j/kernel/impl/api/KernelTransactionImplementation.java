@@ -781,6 +781,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return terminationReason != null;
     }
 
+    @Override
     public long lastTransactionTimestampWhenStarted()
     {
         return lastTransactionTimestampWhenStarted;

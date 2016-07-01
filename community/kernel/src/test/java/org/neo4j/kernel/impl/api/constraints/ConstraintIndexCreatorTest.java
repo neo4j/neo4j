@@ -209,6 +209,12 @@ public class ConstraintIndexCreatorTest
                 }
 
                 @Override
+                public long lastTransactionTimestampWhenStarted()
+                {
+                    return 0;
+                }
+
+                @Override
                 public void registerCloseListener( CloseListener listener )
                 {
                 }

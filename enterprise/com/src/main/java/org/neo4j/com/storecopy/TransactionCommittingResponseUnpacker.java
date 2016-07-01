@@ -31,7 +31,6 @@ import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.BatchingTransactionRepresentationStoreApplier;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
@@ -401,8 +400,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
 
         for ( KernelTransaction tx : kernelTransactions.activeTransactions() )
         {
-            KernelTransactionImplementation kti = (KernelTransactionImplementation) tx;
-            long commitTimestamp = kti.lastTransactionTimestampWhenStarted();
+            long commitTimestamp = tx.lastTransactionTimestampWhenStarted();
 
             if ( commitTimestamp != TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP &&
                  commitTimestamp < earliestSafeTimestamp )
