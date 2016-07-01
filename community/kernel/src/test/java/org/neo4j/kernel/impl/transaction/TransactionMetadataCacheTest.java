@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import org.junit.Test;
+
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 
-import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
@@ -52,13 +53,15 @@ public class TransactionMetadataCacheTest
         final int masterId = 0;
         final int authorId = 1;
         final int checksum = 2;
+        final long timestamp = System.currentTimeMillis();
 
         // when
-        cache.cacheTransactionMetadata( txId, position, masterId, authorId, checksum );
+        cache.cacheTransactionMetadata( txId, position, masterId, authorId, checksum, timestamp );
         final TransactionMetadataCache.TransactionMetadata metadata = cache.getTransactionMetadata( txId );
 
         // then
-        assertEquals( new TransactionMetadataCache.TransactionMetadata( masterId, authorId, position, checksum ),
+        assertEquals(
+                new TransactionMetadataCache.TransactionMetadata( masterId, authorId, position, checksum, timestamp ),
                 metadata );
     }
 
@@ -72,11 +75,12 @@ public class TransactionMetadataCacheTest
         final int masterId = 0;
         final int authorId = 1;
         final int checksum = 2;
+        final long timestamp = System.currentTimeMillis();
 
         // when
         try
         {
-            cache.cacheTransactionMetadata( txId, position, masterId, authorId, checksum );
+            cache.cacheTransactionMetadata( txId, position, masterId, authorId, checksum, timestamp );
             fail();
         } catch (RuntimeException ex) {
             assertEquals( "StartEntry.position is " + position, ex.getMessage() );
@@ -120,9 +124,10 @@ public class TransactionMetadataCacheTest
         final int masterId = 0;
         final int authorId = 1;
         final int checksum = 2;
+        final long timestamp = System.currentTimeMillis();
 
         // when
-        cache.cacheTransactionMetadata( txId, position, masterId, authorId, checksum );
+        cache.cacheTransactionMetadata( txId, position, masterId, authorId, checksum, timestamp );
         cache.putHeader( 5, 3 );
         cache.clear();
         final long logHeader = cache.getLogHeader( 5 );

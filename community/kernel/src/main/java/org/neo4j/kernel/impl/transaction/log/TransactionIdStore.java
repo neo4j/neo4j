@@ -28,50 +28,21 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_S
  * {@code closed transaction id}. The committed transaction id is for writing into a log before making
  * the changes to be made. After that the application of those transactions might be asynchronous and
  * completion of those are marked using {@link #transactionClosed(long, long, long)}.
- *
+ * <p>
  * A transaction ID passes through a {@link TransactionIdStore} like this:
  * <ol>
- *   <li>{@link #nextCommittingTransactionId()} is called and an id is returned to a committer.
- *   At this point that id isn't visible from any getter.</li>
- *   <li>{@link #transactionCommitted(long, long, long)} is called with this id after the fact that the transaction
- *   has been committed, i.e. written forcefully to a log. After this call the id may be visible from
- *   {@link #getLastCommittedTransactionId()} if all ids before it have also been committed.</li>
- *   <li>{@link #transactionClosed(long, long, long)} is called with this id again, this time after all changes the
- *   transaction imposes have been applied to the store. At this point this id is regarded in
- *   {@link #closedTransactionIdIsOnParWithOpenedTransactionId()} as well.
+ * <li>{@link #nextCommittingTransactionId()} is called and an id is returned to a committer.
+ * At this point that id isn't visible from any getter.</li>
+ * <li>{@link #transactionCommitted(long, long, long)} is called with this id after the fact that the transaction
+ * has been committed, i.e. written forcefully to a log. After this call the id may be visible from
+ * {@link #getLastCommittedTransactionId()} if all ids before it have also been committed.</li>
+ * <li>{@link #transactionClosed(long, long, long)} is called with this id again, this time after all changes the
+ * transaction imposes have been applied to the store. At this point this id is regarded in
+ * {@link #closedTransactionIdIsOnParWithOpenedTransactionId()} as well.
  * </ol>
  */
 public interface TransactionIdStore
 {
-    // TODO: Document this somewhere.
-    /**
-     * Empty store
-     * TIMESTAMP BASE_TX_COMMIT_TIMESTAMP (0)
-     *      ==> FINE. NO KILL because no previous state can have been observed anyway
-     *
-     * Upgraded store w/ tx logs
-     * TIMESTAMP CARRIED OVER
-     *      ==> FINE
-     *
-     * Upgraded store w/o tx logs
-     * TIMESTAMP UNKNOWN_TX_COMMIT_TIMESTAMP (1)
-     *      ==> READS WILL TERMINATE WHEN FIRST PULL UPDATES HAPPENS
-     *
-     * TODO
-     * Store on 2.3.prev, w/ tx logs (no upgrade)
-     * TIMESTAMP CARRIED OVER
-     *      ==> FINE
-     *
-     * TODO
-     * Store on 2.3.prev w/o tx logs (no upgrade)
-     * TIMESTAMP UNKNOWN_TX_COMMIT_TIMESTAMP (1)
-     *      ==> READS WILL TERMINATE WHEN FIRST PULL UPDATES HAPPENS
-     *
-     * Store already on 2.3.next, w/ or w/o tx logs
-     * TIMESTAMP CORRECT
-     *      ==> FINE
-     */
-
     // Tx id counting starting from this value (this value means no transaction ever committed)
     long BASE_TX_ID = 1;
     long BASE_TX_CHECKSUM = 0;

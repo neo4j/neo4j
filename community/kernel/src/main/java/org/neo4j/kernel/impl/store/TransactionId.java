@@ -26,9 +26,9 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
  */
 public class TransactionId
 {
-    private long transactionId;
-    private long checksum;
-    private long commitTimestamp;
+    private final long transactionId;
+    private final long checksum;
+    private final long commitTimestamp;
 
     public TransactionId( long transactionId, long checksum, long commitTimestamp )
     {

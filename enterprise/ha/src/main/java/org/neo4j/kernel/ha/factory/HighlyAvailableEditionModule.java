@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha.factory;
 import org.jboss.netty.logging.InternalLoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicReference;
@@ -136,12 +137,15 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.storemigration.UpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByDatabaseModeException;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -157,6 +161,7 @@ import org.neo4j.udc.UsageDataKeys;
 
 import static java.lang.reflect.Proxy.newProxyInstance;
 import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 
 /**
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
@@ -789,6 +794,41 @@ public class HighlyAvailableEditionModule
         {
             new RemoveOrphanConstraintIndexesOnStartup( resolver.resolveDependency( KernelAPI.class ),
                     resolver.resolveDependency( LogService.class ).getInternalLogProvider() ).perform();
+        }
+
+        assureLastCommitTimestampInitialized( resolver );
+    }
+
+    private static void assureLastCommitTimestampInitialized( DependencyResolver resolver )
+    {
+        MetaDataStore metaDataStore = resolver.resolveDependency( MetaDataStore.class );
+        LogicalTransactionStore txStore = resolver.resolveDependency( LogicalTransactionStore.class );
+
+        TransactionId txInfo = metaDataStore.getLastCommittedTransaction();
+        long lastCommitTimestampFromStore = txInfo.commitTimestamp();
+        if ( txInfo.transactionId() == TransactionIdStore.BASE_TX_ID )
+        {
+            metaDataStore.setLastTransactionCommitTimestamp( TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP );
+            return;
+        }
+        if ( lastCommitTimestampFromStore == TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP ||
+             lastCommitTimestampFromStore == TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP )
+        {
+            long lastCommitTimestampFromLogs;
+            try
+            {
+                TransactionMetadata metadata = txStore.getMetadataFor( txInfo.transactionId() );
+                lastCommitTimestampFromLogs = metadata.getTimeWritten();
+            }
+            catch ( NoSuchTransactionException e )
+            {
+                lastCommitTimestampFromLogs = TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP;
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( "Unable to read transaction logs", e );
+            }
+            metaDataStore.setLastTransactionCommitTimestamp( lastCommitTimestampFromLogs );
         }
     }
 

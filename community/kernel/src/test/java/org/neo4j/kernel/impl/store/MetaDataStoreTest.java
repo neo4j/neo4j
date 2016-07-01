@@ -27,10 +27,12 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -282,6 +284,14 @@ public class MetaDataStoreTest
         {
             assertThat( e, instanceOf( IllegalStateException.class ) );
         }
+    }
+
+    @Test
+    public void lastTxCommitTimestampShouldBeBaseInNewStore() throws Exception
+    {
+        MetaDataStore metaDataStore = newMetaDataStore();
+        long timestamp = metaDataStore.getLastCommittedTransaction().commitTimestamp();
+        assertThat( timestamp, equalTo( TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP ) );
     }
 
     private static MetaDataStore newMetaDataStore() throws IOException

@@ -25,10 +25,13 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.logging.Level;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.Clusters;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -36,14 +39,22 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
+import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.TransactionId;
+import org.neo4j.kernel.impl.storemigration.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -55,6 +66,8 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.clusterWithAdditionalArbit
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.provided;
+import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_COMMIT_TIMESTAMP;
 
 public class ClusterTest
 {
@@ -403,5 +416,111 @@ public class ClusterTest
             clusterManager.stop();
         }
     }
-}
 
+    @Test
+    public void lastTxCommitTimestampShouldGetInitializedOnSlaveIfNotPresent() throws Throwable
+    {
+        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "lastTxTimestamp" ) )
+                .withProvider( ClusterManager.clusterOfSize( 3 ) ).build();
+
+        try
+        {
+            clusterManager.start();
+            ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
+            cluster.await( allSeesAllAsAvailable() );
+
+            runSomeTransactions( cluster.getMaster() );
+            cluster.sync();
+
+            HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+            File storeDir = new File( slave.getStoreDir() );
+            ClusterManager.RepairKit slaveRepairKit = cluster.shutdown( slave );
+
+            clearLastTransactionCommitTimestampField( storeDir );
+
+            HighlyAvailableGraphDatabase repairedSlave = slaveRepairKit.repair();
+            cluster.await( allSeesAllAsAvailable() );
+
+            assertEquals( lastCommittedTxTimestamp( cluster.getMaster() ), lastCommittedTxTimestamp( repairedSlave ) );
+
+        }
+        finally
+        {
+            clusterManager.stop();
+        }
+    }
+
+    @Test
+    public void lastTxCommitTimestampShouldBeUnknownAfterStartIfNoFiledOrLogsPresent() throws Throwable
+    {
+        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "lastTxTimestamp" ) )
+                .withProvider( ClusterManager.clusterOfSize( 3 ) ).build();
+
+        try
+        {
+            clusterManager.start();
+            ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
+            cluster.await( allSeesAllAsAvailable() );
+
+            runSomeTransactions( cluster.getMaster() );
+            cluster.sync();
+
+            HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+            File storeDir = new File( slave.getStoreDir() );
+            ClusterManager.RepairKit slaveRepairKit = cluster.shutdown( slave );
+
+            clearLastTransactionCommitTimestampField( storeDir );
+            deleteLogs( storeDir );
+
+            HighlyAvailableGraphDatabase repairedSlave = slaveRepairKit.repair();
+            cluster.await( allSeesAllAsAvailable() );
+
+            assertEquals( TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP, lastCommittedTxTimestamp( repairedSlave ) );
+        }
+        finally
+        {
+            clusterManager.stop();
+        }
+    }
+
+    private static void deleteLogs( File storeDir )
+    {
+        for ( File file : storeDir.listFiles( LogFiles.FILENAME_FILTER ) )
+        {
+            FileUtils.deleteFile( file );
+        }
+    }
+
+    private static void runSomeTransactions( HighlyAvailableGraphDatabase db )
+    {
+        for ( int i = 0; i < 10; i++ )
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                for ( int j = 0; j < 10; j++ )
+                {
+                    db.createNode();
+                }
+                tx.success();
+            }
+        }
+    }
+
+    private static void clearLastTransactionCommitTimestampField( File storeDir ) throws IOException
+    {
+        try ( PageCache pageCache = createPageCache( new DefaultFileSystemAbstraction() ) )
+        {
+            File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+            MetaDataStore.setRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP,
+                    MetaDataStore.BASE_TX_COMMIT_TIMESTAMP );
+        }
+    }
+
+    private static long lastCommittedTxTimestamp( HighlyAvailableGraphDatabase db )
+    {
+        DependencyResolver resolver = db.getDependencyResolver();
+        MetaDataStore metaDataStore = resolver.resolveDependency( MetaDataStore.class );
+        TransactionId txInfo = metaDataStore.getLastCommittedTransaction();
+        return txInfo.commitTimestamp();
+    }
+}

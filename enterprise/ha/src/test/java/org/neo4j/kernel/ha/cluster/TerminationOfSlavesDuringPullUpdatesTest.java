@@ -58,7 +58,7 @@ import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.kernel.ha.factory.HighlyAvailableEditionModule.id_reuse_safe_zone_time;
 
 @RunWith( Parameterized.class )
-public class SlavesCanReadCorruptedData
+public class TerminationOfSlavesDuringPullUpdatesTest
 {
     @Rule
     public ClusterRule clusterRule = new ClusterRule( getClass() )

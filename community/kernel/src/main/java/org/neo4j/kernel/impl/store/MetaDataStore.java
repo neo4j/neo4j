@@ -377,6 +377,13 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
         versionField = version;
     }
 
+    public void setLastTransactionCommitTimestamp( long timestamp )
+    {
+        setRecord( Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, timestamp );
+        TransactionId transactionId = highestCommittedTransaction.get();
+        highestCommittedTransaction.set( transactionId.transactionId(), transactionId.checksum(), timestamp );
+    }
+
     @Override
     public long incrementAndGetVersion()
     {
@@ -470,7 +477,7 @@ public class MetaDataStore extends AbstractStore implements TransactionIdStore, 
                     new long[]{lastClosedTransactionLogVersion, lastClosedTransactionLogByteOffset} );
             highestCommittedTransaction.set( lastCommittedTxId,
                     getRecordValue( cursor, Position.LAST_TRANSACTION_CHECKSUM ),
-                    getRecordValue( cursor, Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, BASE_TX_COMMIT_TIMESTAMP ) );
+                    getRecordValue( cursor, Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, UNKNOWN_TX_COMMIT_TIMESTAMP ) );
             upgradeTxChecksumField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_CHECKSUM );
             upgradeCommitTimestampField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP,
                     BASE_TX_COMMIT_TIMESTAMP );

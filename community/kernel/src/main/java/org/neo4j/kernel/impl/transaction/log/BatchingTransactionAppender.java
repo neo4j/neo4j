@@ -273,7 +273,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
                     transaction.additionalHeader(), transaction.getMasterId(), transaction.getAuthorId() );
             transactionMetadataCache.cacheTransactionMetadata(
                     transactionId, logPositionBeforeCommit, transaction.getMasterId(), transaction.getAuthorId(),
-                    transactionChecksum );
+                    transactionChecksum, transaction.getTimeCommitted() );
 
             boolean hasLegacyIndexChanges = indexCommandDetector.hasWrittenAnyLegacyIndexCommand();
             if ( hasLegacyIndexChanges )
