@@ -46,7 +46,7 @@ class ErrorReporter
 
     public void report( Neo4jError error )
     {
-        if ( error.status().code().classification().refersToLog() )
+        if ( error.status().code().classification().shouldLog() )
         {
             userLog.error( "Client triggered an unexpected error [%s]: %s. " +
                             "See debug.log for more details, reference %s.",
