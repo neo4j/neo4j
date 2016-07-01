@@ -47,7 +47,7 @@ public class UserSerializationTest
         byte[] serialized = serialization.serialize( users );
 
         // Then
-        assertThat( serialization.deserializeUsers( serialized ), equalTo( users ) );
+        assertThat( serialization.deserializeRecords( serialized ), equalTo( users ) );
     }
 
     /**
@@ -65,7 +65,7 @@ public class UserSerializationTest
         byte[] hash2 = new byte[] { (byte) 0x0e, (byte) 0x1f, (byte) 0xff, (byte) 0xc2, (byte) 0x3e };
 
         // When
-        List<User> deserialized = serialization.deserializeUsers( UTF8.encode(
+        List<User> deserialized = serialization.deserializeRecords( UTF8.encode(
                 ("Mike:SHA-256,FE0056C37E,A543:\n" +
                         "Steve:SHA-256,FE0056C37E,A543:nice_guy,password_change_required\n" +
                         "Bob:SHA-256,0E1FFFC23E,34A4:password_change_required\n") ) );

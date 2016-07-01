@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.security.auth.exception.FormatException;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -37,8 +38,6 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
  */
 public class FileRoleRepository extends AbstractRoleRepository
 {
-    // TODO: Extract shared code with FileUserRepository
-
     private final Path roleFile;
 
     private final Log log;
@@ -56,57 +55,30 @@ public class FileRoleRepository extends AbstractRoleRepository
     {
         if ( Files.exists( roleFile ) )
         {
-            loadRolesFromFile();
+            List<RoleRecord> loadedRoles;
+            try
+            {
+                loadedRoles = serialization.loadRecordsFromFile( roleFile );
+            }
+            catch ( FormatException e )
+            {
+                log.error( "Failed to read role file \"%s\" (%s)", roleFile.toAbsolutePath(), e.getMessage() );
+                throw new IllegalStateException( "Failed to read role file: " + roleFile );
+            }
+
+            roles = loadedRoles;
+            for ( RoleRecord role : roles )
+            {
+                rolesByName.put( role.name(), role );
+
+                populateUserMap( role );
+            }
         }
     }
 
     @Override
     protected void saveRoles() throws IOException
     {
-        saveRolesToFile();
-    }
-
-    private void saveRolesToFile() throws IOException
-    {
-        Path directory = roleFile.getParent();
-        if ( !Files.exists( directory ) )
-        {
-            Files.createDirectories( directory );
-        }
-
-        Path tempFile = Files.createTempFile( directory, roleFile.getFileName().toString() + "-", ".tmp" );
-        try
-        {
-            Files.write( tempFile, serialization.serialize( roles ) );
-            Files.move( tempFile, roleFile, ATOMIC_MOVE, REPLACE_EXISTING );
-        }
-        catch ( Throwable e )
-        {
-            Files.delete( tempFile );
-            throw e;
-        }
-    }
-
-    private void loadRolesFromFile() throws IOException
-    {
-        byte[] fileBytes = Files.readAllBytes( roleFile );
-        List<RoleRecord> loadedRoles;
-        try
-        {
-            loadedRoles = serialization.deserializeRoles( fileBytes );
-        }
-        catch ( RoleSerialization.FormatException e )
-        {
-            log.error( "Failed to read role file \"%s\" (%s)", roleFile.toAbsolutePath(), e.getMessage() );
-            throw new IllegalStateException( "Failed to read role file: " + roleFile );
-        }
-
-        roles = loadedRoles;
-        for ( RoleRecord role : roles )
-        {
-            rolesByName.put( role.name(), role );
-
-            populateUserMap( role );
-        }
+        serialization.saveRecordsToFile( roleFile, roles );
     }
 }

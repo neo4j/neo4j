@@ -64,7 +64,7 @@ public class RoleSerializationTest
         byte[] serialized = serialization.serialize( roles );
 
         // Then
-        assertThat( serialization.deserializeRoles( serialized ), equalTo( roles ) );
+        assertThat( serialization.deserializeRecords( serialized ), equalTo( roles ) );
     }
 
     /**
@@ -78,7 +78,7 @@ public class RoleSerializationTest
         RoleSerialization serialization = new RoleSerialization();
 
         // When
-        List<RoleRecord> deserialized = serialization.deserializeRoles( UTF8.encode(
+        List<RoleRecord> deserialized = serialization.deserializeRecords( UTF8.encode(
                 ("admin:Bob,Steve\n" +
                  "publisher:Kelly,Marie\n") ) );
 

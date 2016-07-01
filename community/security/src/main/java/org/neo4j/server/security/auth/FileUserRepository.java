@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.security.auth.exception.FormatException;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -55,53 +56,27 @@ public class FileUserRepository extends AbstractUserRepository
     {
         if ( Files.exists( authFile ) )
         {
-            loadUsersFromFile();
+            List<User> loadedUsers;
+            try
+            {
+                loadedUsers = serialization.loadRecordsFromFile( authFile );
+            } catch ( FormatException e )
+            {
+                log.error( "Failed to read authentication file \"%s\" (%s)", authFile.toAbsolutePath(), e.getMessage() );
+                throw new IllegalStateException( "Failed to read authentication file: " + authFile );
+            }
+
+            users = loadedUsers;
+            for ( User user : users )
+            {
+                usersByName.put( user.name(), user );
+            }
         }
     }
 
     @Override
     protected void saveUsers() throws IOException
     {
-        saveUsersToFile();
-    }
-
-    private void saveUsersToFile() throws IOException
-    {
-        Path directory = authFile.getParent();
-        if ( !Files.exists( directory ) )
-        {
-            Files.createDirectories( directory );
-        }
-
-        Path tempFile = Files.createTempFile( directory, authFile.getFileName().toString() + "-", ".tmp" );
-        try
-        {
-            Files.write( tempFile, serialization.serialize( users ) );
-            Files.move( tempFile, authFile, ATOMIC_MOVE, REPLACE_EXISTING );
-        } catch ( Throwable e )
-        {
-            Files.delete( tempFile );
-            throw e;
-        }
-    }
-
-    private void loadUsersFromFile() throws IOException
-    {
-        byte[] fileBytes = Files.readAllBytes( authFile );
-        List<User> loadedUsers;
-        try
-        {
-            loadedUsers = serialization.deserializeUsers( fileBytes );
-        } catch ( UserSerialization.FormatException e )
-        {
-            log.error( "Failed to read authentication file \"%s\" (%s)", authFile.toAbsolutePath(), e.getMessage() );
-            throw new IllegalStateException( "Failed to read authentication file: " + authFile );
-        }
-
-        users = loadedUsers;
-        for ( User user : users )
-        {
-            usersByName.put( user.name(), user );
-        }
+        serialization.saveRecordsToFile(authFile, users);
     }
 }
