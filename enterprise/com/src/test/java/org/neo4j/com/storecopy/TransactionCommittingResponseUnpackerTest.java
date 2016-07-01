@@ -21,9 +21,9 @@ package org.neo4j.com.storecopy;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import org.mockito.InOrder;
 
 import java.io.File;
 import java.io.IOException;
@@ -204,10 +204,11 @@ public class TransactionCommittingResponseUnpackerTest
     }
 
     /*
-         * Tests that shutting down the response unpacker while in the middle of committing a transaction will
-         * allow that transaction stream to complete committing. It also verifies that any subsequent transactions
-         * won't begin the commit process at all.
-         */
+     * Tests that shutting down the response unpacker while in the middle of committing a transaction will
+     * allow that transaction stream to complete committing. It also verifies that any subsequent transactions
+     * won't begin the commit process at all.
+     * @throws Throwable
+     */
     @Test
     public void testStopShouldAllowTransactionsToCompleteCommitAndApply() throws Throwable
     {
@@ -391,7 +392,6 @@ public class TransactionCommittingResponseUnpackerTest
                 .kernelHealth( kernelHealth );
         final TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
                 deps );
-//        final TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( deps );
         unpacker.start();
 
         // WHEN failing to append one or more transactions from a transaction stream response

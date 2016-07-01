@@ -67,87 +67,95 @@ import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
  *
  * SAFE ZONE EXPLAINED
  *
- *  PROBLEM
- *  A slave can read inconsistent or corrupted data (mixed state records) because of reuse of property ids.
- *  This happens when a record that has been read gets reused and then read again or possibly reused in
- *  middle of reading a property chain or dynamic record chain.
- *  This is guarded for in single instance with the delaying of id reuse. This does not cover the Slave
- *  case because the transactions that SET, REMOVE and REUSE the record are applied in batch and thus a
- *  slave transaction can see states from all of the transactions that touches the reused record during its
- *  lifetime.
+ * PROBLEM
+ * A slave can read inconsistent or corrupted data (mixed state records) because of reuse of property ids.
+ * This happens when a record that has been read gets reused and then read again or possibly reused in
+ * middle of reading a property chain or dynamic record chain.
+ * This is guarded for in single instance with the delaying of id reuse. This does not cover the Slave
+ * case because the transactions that SET, REMOVE and REUSE the record are applied in batch and thus a
+ * slave transaction can see states from all of the transactions that touches the reused record during its
+ * lifetime.
  *
- *  PROTOTYPED SOLUTION
- *  Master and Slave agree on quarantine snapshotTime.
- *  Let T = quarantine snapshotTime (more about quarantine snapshotTime further down)
+ * SOLUTION
+ * Master and Slave are configured with the same safeZone time.
+ * Let S = safeZone time (more about safeZone time further down)
  *
- *  -> Master promise to hold all deleted ids in quarantine before reusing them, (T duration).
- *       He thereby creates a safe zone of transactions that among themselves are guaranteed to be free of
- *       id reuse contamination.
- *  -> Slave promise to not let any transactions cross the safe zone boundary.
- *       Meaning all transactions that falls out of the safe zone, as updates gets applied,
- *       will need to be terminated, with a hint that they can simply be restarted
+ * -> Master promise to hold all deleted ids in quarantine before reusing them, (S duration).
+ *      He thereby creates a safe zone of transactions that among themselves are guaranteed to be free of
+ *      id reuse contamination.
+ * -> Slave promise to not let any transactions cross the safe zone boundary.
+ *      Meaning all transactions that falls out of the safe zone, as updates gets applied,
+ *      will need to be terminated, with a hint that they can simply be restarted
  *
- *  Safe zone is a snapshotTime frame in Masters domain. All transactions that started and finished within this
- *  snapshotTime frame are guarantied to not have read any mixed state records.
+ * Safe zone is a time frame in Masters domain. All transactions that started and finished within this
+ * time frame are guarantied to not have read any mixed state records.
  *
- *  LARGE ASCII EXAMPLE
+ * Example of a transaction running on slave that starts reading a dynamic property, then a batch is pulled from master
+ * that deletes the property and and reuses the record in the chain, making the transaction read inconsistent data.
  *
- *     x---------------------------------------------------------------------------------->| TIME
- *     |MASTER STATE
- *     |---------------------------------------------------------------------------------->|
- *     |                                                          Batch to apply to slave
- *     |                                                        |<------------------------>|
- *     |
- *     |                                                        A
- *     |SLAVE STATE 1 (before applying batch)         |<---T--->|
- *     |----------------------------------------------+-------->|
- *     |                                                        |
- *     |                                                        |
- *     |                                                        |      B
- *     |SLAVE STATE 2 (mid apply)                            |<-+-T--->|
- *     |-----------------------------------------------------+--+----->|
- *     |                                                        |      |
- *     |                                                        |      |
- *     |                                                        |      |  C
- *     |SLAVE STATE 3 (mid apply / after apply)                 |<---T-+->|
- *     |--------------------------------------------------------+------+->|
- *     |                                                        |      |  |
- *     |                                                        |      |  |
- *     |                                                        |      |  |                D
- *     |SLAVE STATE 4 (after apply)                             |      |  |      |<---T--->|
- *     |--------------------------------------------------------+------+--+------+-------->|
+ *         TX starts reading
+ *                    tx here
+ *                       v
+ *          |aaaa|->|aaaa|->|aaaa|->|aaaa|
+ *          1       2       3       4
  *
- *  * Tx start on slave when slave is in SLAVE STATE 1
- *       - Latest applied transaction has timestamp A and safe zone is A-T.
- *       - Tx.startTime = A
+ *         "a" string is deleted and replaced with "bbbbbbbbbbbbbbbb"
+ *                    tx here
+ *                       v
+ *          |bbbb|->|bbbb|->|bbbb|->|bbbb|
+ *          1       2       3       4
  *
- *  Scenario 1 - Tx finish when slave is in SLAVE STATE 2
- *       Latest applied transaction in store has timestamp B and safe zone is B-T.
- *       Tx did not cross the safe zone boundary as Tx.startTime = A > B-T
- *       We can safely assume that Tx did not read any mixed state records.
+ *         TX continues reading and does not know anything is wrong,
+ *         returning the inconsistent string "aaaaaaaabbbbbbbb".
+ *                                   tx here
+ *                                       v
+ *          |bbbb|->|bbbb|->|bbbb|->|bbbb|
+ *          1       2       3       4
  *
- *  Scenario 2 - Tx has not yet finished in SLAVE STATE 3
- *       Latest applied transaction in store has timestamp C and safe zone is C-T.
- *       We are just about to apply the next part of the batch and push the safe zone window forward.
- *       This will make Tx.startTime = A < C-T. This means Tx is now in risk of reading mixed state records.
- *       We will terminate Tx and let the user try again.
+ * Example of how the safe zone window moves while appying a batch
+ *          x---------------------------------------------------------------------------------->| TIME
+ *          |MASTER STATE
+ *          |---------------------------------------------------------------------------------->|
+ *          |                                                          Batch to apply to slave
+ *          |                                  safeZone with size S  |<------------------------>|
+ *          |                                                  |
+ *          |                                                  v     A
+ *          |SLAVE STATE 1 (before applying batch)         |<---S--->|
+ *          |----------------------------------------------+-------->|
+ *          |                                                        |
+ *          |                                                        |
+ *          |                                                        |      B
+ *          |SLAVE STATE 2 (mid apply)                            |<-+-S--->|
+ *          |-----------------------------------------------------+--+----->|
+ *          |                                                        |      |
+ *          |                                                        |      |
+ *          |                                                        |      |  C
+ *          |SLAVE STATE 3 (mid apply / after apply)                 |<---S-+->|
+ *          |--------------------------------------------------------+------+->|
+ *          |                                                        |      |  |
+ *          |                                                        |      |  |
+ *          |                                                        |      |  |                D
+ *          |SLAVE STATE 4 (after apply)                             |      |  |      |<---S--->|
+ *          |--------------------------------------------------------+------+--+------+-------->|
  *
+ * What we see in this diagram is a slave pulling updates from the master.
+ * While doing so, the safe zone window |<---S--->| is pushed forward. NOTE that we do not see any explicit transaction
+ * running on slave. Only the times (A, B, C, D) that we discuss.
  *
- *  small ASCII example
- *                               BATCH pulled by slave
- *                           _________________________
- *                          |                         |
- *  |-----------------------|------------------------>|  MASTER
+ * slaveTx start on slave when slave is in SLAVE STATE 1
+ *      - Latest applied transaction on slave has timestamp A and safe zone is A-S.
+ *      - slaveTx.startTime = A
  *
- *   Three slave states, S1, S2 and S3
- *                                ____________________
- *                       ________|_______S3 safe zone |
- *            __________|___S2 safe zone |            |
- *           | S1 safe zone |    |       |            |
- *  |--------|----------|-->| ---|------>|----------->|  SLAVE
+ * Scenario 1 - slaveTx finish when slave is in SLAVE STATE 2
+ *      Latest applied transaction in store has timestamp B and safe zone is B-S.
+ *      slaveTx did not cross the safe zone boundary as slaveTx.startTime = A > B-S
+ *      We can safely assume that slaveTx did not read any mixed state records.
  *
- *  tx started in S1 can finish in S2 but not in S3
- *  tx started in S2 can finish in S3.
+ * Scenario 2 - slaveTx has not yet finished in SLAVE STATE 3
+ *      Latest applied transaction in store has timestamp C and safe zone is C-S.
+ *      We are just about to apply the next part of the batch and push the safe zone window forward.
+ *      This will make slaveTx.startTime = A < C-S. This means Tx is now in risk of reading mixed state records.
+ *      We will terminate slaveTx and let the user try again.
  *
  * <b>NOTE ABOUT TX_COMMIT_TIMESTAMP</b>
  * commitTimestamp is used by {@link MetaDataStore} to keep track of the commit timestamp of the last committed
