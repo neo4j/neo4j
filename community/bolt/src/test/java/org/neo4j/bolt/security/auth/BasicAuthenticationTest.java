@@ -48,7 +48,6 @@ public class BasicAuthenticationTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-
     @Test
     public void shouldNotDoAnythingOnSuccess() throws Exception
     {

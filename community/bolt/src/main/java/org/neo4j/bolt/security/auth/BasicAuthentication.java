@@ -47,7 +47,6 @@ public class BasicAuthentication implements Authentication
 
     private AuthSubject authSubject;
 
-
     public BasicAuthentication( AuthManager authManager, LogProvider logProvider )
     {
         this.authManager = authManager;
