@@ -200,15 +200,16 @@ public class AuthProcedures
         DependencyResolver resolver = graph.getDependencyResolver();
         KernelTransactions kernelTransactions = resolver.resolveDependency( KernelTransactions.class );
         ArrayList<TransactionResult> killedTransactions = new ArrayList<>();
-        for ( KernelTransaction tx : kernelTransactions.activeTransactions() )
-        {
-            if (( (EnterpriseAuthSubject) tx.mode()).doesUsernameMatch( username ))
-            {
-                TransactionResult r = new TransactionResult( tx );
-                tx.markForTermination();
-                killedTransactions.add( r );
-            }
-        }
+        kernelTransactions.activeTransactions().forEach(
+                tx ->
+                {
+                    if ( tx.mode().name().equals( username ) )
+                    {
+                        TransactionResult r = new TransactionResult( tx );
+                        tx.markForTermination();
+                        killedTransactions.add( r );
+                    }
+                } );
         return killedTransactions.stream();
     }
 
@@ -267,15 +268,7 @@ public class AuthProcedures
 
         public TransactionResult( KernelTransaction tx )
         {
-            if ( tx.mode() instanceof AuthSubject )
-            {
-                AuthSubject authSubject = (AuthSubject) tx.mode();
-                username = authSubject.name();
-            }
-            else
-            {
-                username = "-";
-            }
+            username = tx.mode().name();
             transaction = tx.toString();
         }
     }

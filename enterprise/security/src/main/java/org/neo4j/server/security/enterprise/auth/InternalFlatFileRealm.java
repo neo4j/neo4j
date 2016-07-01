@@ -424,7 +424,9 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     {
         User u = getUser( username );
         if ( u == null )
+        {
             throw new IllegalArgumentException( "User " + username + " does not exist." );
+        }
         return u;
     }
 

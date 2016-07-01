@@ -151,7 +151,9 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     {
         User user = getUser( username );
         if ( user == null )
+        {
             throw new IllegalArgumentException( "User " + username + " does not exist!" );
+        }
         return user;
     }
 
