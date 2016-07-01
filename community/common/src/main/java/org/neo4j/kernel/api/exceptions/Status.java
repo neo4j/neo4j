@@ -579,7 +579,7 @@ public interface Status
                 "There are notifications about the request sent by the client." ),
 
         /** The database cannot service the request right now, retrying later might yield a successful outcome. */
-        TransientError( TransactionEffect.ROLLBACK, PublishingPolicy.REFERS_TO_LOG,
+        TransientError( TransactionEffect.ROLLBACK, PublishingPolicy.REPORTS_TO_CLIENT_AND_LOG,
                 "The database cannot service the request right now, retrying later might yield a successful outcome. "),
 
         // Implementation note: These are a sharp tool, database error signals
@@ -597,17 +597,32 @@ public interface Status
 
         private enum PublishingPolicy
         {
-            REPORTS_TO_CLIENT, REFERS_TO_LOG
+            REPORTS_TO_CLIENT( false ), REPORTS_TO_CLIENT_AND_LOG( true ), REFERS_TO_LOG( true );
+
+            private final boolean shouldLog;
+
+            PublishingPolicy( boolean shouldLog )
+            {
+                this.shouldLog = shouldLog;
+            }
+
+            boolean shouldLog()
+            {
+                return shouldLog;
+            }
+
         }
 
         private final boolean rollbackTransaction;
-        private final boolean refersToLog;
+        private final boolean shouldLog;
+        private final boolean respondToClient;
         private final String description;
 
         Classification( TransactionEffect transactionEffect, PublishingPolicy publishingPolicy, String description )
         {
             this.description = description;
-            this.refersToLog = publishingPolicy == PublishingPolicy.REFERS_TO_LOG;
+            this.shouldLog = publishingPolicy.shouldLog();
+            this.respondToClient = publishingPolicy != PublishingPolicy.REFERS_TO_LOG;
             this.rollbackTransaction = transactionEffect == TransactionEffect.ROLLBACK;
         }
 
@@ -616,9 +631,14 @@ public interface Status
             return rollbackTransaction;
         }
 
-        public boolean refersToLog()
+        public boolean shouldLog()
         {
-            return refersToLog;
+            return shouldLog;
+        }
+
+        public boolean shouldRespondToClient()
+        {
+            return respondToClient;
         }
 
         public String description()

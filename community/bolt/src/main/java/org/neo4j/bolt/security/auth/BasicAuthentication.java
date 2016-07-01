@@ -21,7 +21,6 @@ package org.neo4j.bolt.security.auth;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -36,7 +35,6 @@ import org.neo4j.logging.LogProvider;
 import static org.neo4j.kernel.api.security.AuthToken.NEW_CREDENTIALS;
 import static org.neo4j.kernel.api.security.AuthToken.PRINCIPAL;
 import static org.neo4j.kernel.api.security.AuthToken.SCHEME_KEY;
-import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 
 /**
  * Performs basic authentication with user name and password.
@@ -46,13 +44,14 @@ public class BasicAuthentication implements Authentication
     private final AuthManager authManager;
     private static final String SCHEME = "basic";
     private final Log log;
-    private final Supplier<String> identifier;
 
-    public BasicAuthentication( AuthManager authManager, LogProvider logProvider, Supplier<String> identifier )
+    private AuthSubject authSubject;
+
+
+    public BasicAuthentication( AuthManager authManager, LogProvider logProvider )
     {
         this.authManager = authManager;
         this.log = logProvider.getLog( getClass() );
-        this.identifier = identifier;
     }
 
     @Override
@@ -60,8 +59,8 @@ public class BasicAuthentication implements Authentication
     {
         if ( !SCHEME.equals( authToken.get( SCHEME_KEY ) ) )
         {
-            throw new AuthenticationException( Status.Security.Unauthorized, identifier.get(),
-                    "Authentication token must contain: '" + SCHEME_KEY + " : " + SCHEME + "'" );
+            throw new AuthenticationException( Status.Security.Unauthorized,
+                    "Missing username and password" );
         }
 
         if ( authToken.containsKey( NEW_CREDENTIALS ) )
@@ -89,17 +88,17 @@ public class BasicAuthentication implements Authentication
                 credentialsExpired = true;
                 break;
             case TOO_MANY_ATTEMPTS:
-                throw new AuthenticationException( Status.Security.AuthenticationRateLimit, identifier.get() );
+                throw new AuthenticationException( Status.Security.AuthenticationRateLimit );
             default:
                 log.warn( "Failed authentication attempt for '%s'", AuthToken.safeCast( PRINCIPAL, authToken ) );
-                throw new AuthenticationException( Status.Security.Unauthorized, identifier.get() );
+                throw new AuthenticationException( Status.Security.Unauthorized );
             }
 
             return new BasicAuthenticationResult( authSubject, credentialsExpired );
         }
         catch ( InvalidAuthTokenException e )
         {
-            throw new AuthenticationException( e.status(), identifier.get(), e.getMessage() );
+            throw new AuthenticationException( e.status(), e.getMessage() );
         }
     }
 
@@ -118,26 +117,18 @@ public class BasicAuthentication implements Authentication
                 authSubject.setPassword( newPassword );
                 break;
             default:
-                throw new AuthenticationException( Status.Security.Unauthorized, identifier.get() );
+                throw new AuthenticationException( Status.Security.Unauthorized );
             }
 
             return new BasicAuthenticationResult( authSubject, false );
         }
-        catch ( AuthorizationViolationException e )
+        catch ( AuthorizationViolationException | IllegalCredentialsException | InvalidAuthTokenException e )
         {
-            throw new AuthenticationException( e.status(), identifier.get(), e.getMessage(), e );
+            throw new AuthenticationException( e.status(), e.getMessage(), e );
         }
         catch ( IOException e )
         {
-            throw new AuthenticationException( Status.Security.Unauthorized, identifier.get(), e.getMessage(), e );
-        }
-        catch ( IllegalCredentialsException e )
-        {
-            throw new AuthenticationException( e.status(), identifier.get(), e.getMessage(), e );
-        }
-        catch ( InvalidAuthTokenException e )
-        {
-            throw new AuthenticationException( e.status(), identifier.get(), e.getMessage() );
+            throw new AuthenticationException( Status.Security.Unauthorized, e.getMessage(), e );
         }
     }
 }
