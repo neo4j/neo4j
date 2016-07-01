@@ -461,11 +461,11 @@ public class KernelTransactionImplementationTest
 
         KernelTransactionImplementation transaction = newInitializedTransaction( true, locks );
 
-        transaction.markForTermination( Status.General.UnknownFailure );
-        transaction.markForTermination( Status.General.UnknownFailure );
-        transaction.markForTermination( Status.General.UnknownFailure );
+        transaction.markForTermination( Status.Transaction.Terminated );
+        transaction.markForTermination( Status.Transaction.Outdated );
+        transaction.markForTermination( Status.Transaction.LockClientStopped );
 
-        assertEquals( Status.General.UnknownFailure, transaction.getReasonIfTerminated() );
+        assertEquals( Status.Transaction.Terminated, transaction.getReasonIfTerminated() );
         verify( client ).stop();
         verify( transactionMonitor ).transactionTerminated();
     }
