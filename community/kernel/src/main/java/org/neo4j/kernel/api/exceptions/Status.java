@@ -123,7 +123,7 @@ public interface Status
                 "committed" ),
         Outdated( TransientError, "Transaction has seen state which has been invalidated by applied updates while " +
                 "transaction was active. Transaction may succeed if retried." ),
-        LockClientStopped( TransientError, "Lock client is stopped, no more locks can be acquired." ),
+        LockClientStopped( TransientError, "Transaction terminated, no more locks can be acquired." ),
         Terminated( TransientError, "Explicitly terminated by the user." )
         ;
 
