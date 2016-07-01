@@ -116,8 +116,6 @@ public class BasicAuthentication implements Authentication
                 String username = AuthToken.safeCast( PRINCIPAL, authToken );
                 String newPassword = AuthToken.safeCast( NEW_CREDENTIALS, authToken );
                 authSubject.setPassword( newPassword );
-                //re-authenticate user
-                authSubject = authManager.login( newBasicAuthToken( username, newPassword ) );
                 break;
             default:
                 throw new AuthenticationException( Status.Security.Unauthorized, identifier.get() );

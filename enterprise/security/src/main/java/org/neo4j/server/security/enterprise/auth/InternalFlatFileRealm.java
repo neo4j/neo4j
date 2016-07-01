@@ -295,8 +295,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
 
         setUserPassword( username, password );
 
-        // This will invalidate the auth cache
-        authSubject.logout();
+        clearCacheForUser( username );
     }
 
     @Override

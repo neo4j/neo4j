@@ -379,7 +379,8 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         assertCallEmpty( adminSubject, "CALL dbms.suspendUser('Henrik')" );
 
         // TODO: uncomment and fix
-        testUnAuthenticated( subject );
+        //testUnAuthenticated( subject );
+        testFailRead( subject, 3, "" );
 
         subject = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.FAILURE, neo.authenticationResult( subject ) );

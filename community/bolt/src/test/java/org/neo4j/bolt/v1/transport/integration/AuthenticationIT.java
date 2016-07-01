@@ -200,6 +200,29 @@ public class AuthenticationIT
     }
 
     @Test
+    public void shouldBeAuthenticatedAfterUpdatingCredentials() throws Throwable
+    {
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", map( "principal", "neo4j",
+                                "credentials", "neo4j", "new_credentials", "secret", "scheme", "basic" ) ) ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+
+        // When
+        client.send( TransportTestUtil.chunk(
+                run( "MATCH (n) RETURN n" ),
+                pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( msgSuccess(), msgSuccess() ) );
+    }
+
+    @Test
     public void shouldBeAbleToChangePasswordUsingBuiltInProcedure() throws Throwable
     {
         // When
@@ -241,6 +264,37 @@ public class AuthenticationIT
                                 map( "principal", "neo4j", "credentials", "secret", "scheme", "basic" ) ) ) );
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyRecieves( msgSuccess() ) );
+    }
+
+    @Test
+    public void shouldBeAuthenticatedAfterChangePasswordUsingBuiltInProcedure() throws Throwable
+    {
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1",
+                                map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves( msgSuccess( Collections.singletonMap( "credentials_expired", true )) ) );
+
+        // When
+        client.send( TransportTestUtil.chunk(
+                run( "CALL dbms.changePassword", Collections.singletonMap( "password", "secret" ) ),
+                pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( msgSuccess(), msgSuccess() ) );
+
+        // When
+        client.send( TransportTestUtil.chunk(
+                run( "MATCH (n) RETURN n" ),
+                pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( msgSuccess(), msgSuccess() ) );
     }
 
     @Test
