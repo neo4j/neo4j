@@ -147,41 +147,6 @@ public abstract class Service
     }
 
     /**
-     * A base class for services, similar to {@link Service}, that compares keys
-     * using case insensitive comparison instead of exact comparison.
-     *
-     * @author Tobias Ivarsson
-     */
-    public abstract static class CaseInsensitiveService extends Service
-    {
-        /**
-         * Create a new instance of a service implementation identified with the
-         * specified key(s).
-         *
-         * @param key     the main key for identifying this service implementation
-         * @param altKeys alternative spellings of the identifier of this
-         *                service implementation
-         */
-        protected CaseInsensitiveService( String key, String... altKeys )
-        {
-            super( key, altKeys );
-        }
-
-        @Override
-        public final boolean matches( String key )
-        {
-            for ( String id : keys )
-            {
-                if ( id.equalsIgnoreCase( key ) )
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
-
-    /**
      * Load all implementations of a Service.
      *
      * @param <T>  the type of the Service

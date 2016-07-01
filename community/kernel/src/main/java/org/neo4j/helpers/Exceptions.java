@@ -274,22 +274,4 @@ public class Exceptions
         return cause;
     }
 
-    public static String briefOneLineStackTraceInformation( Predicate<StackTraceElement> toInclude )
-    {
-        StringBuilder builder = new StringBuilder();
-        for ( StackTraceElement element : Thread.currentThread().getStackTrace() )
-        {
-            if ( toInclude.test( element ) )
-            {
-                builder.append( builder.length() > 0 ? "," : "" )
-                        .append( simpleClassName( element.getClassName() ) + "#" + element.getMethodName() );
-            }
-        }
-        return builder.toString();
-    }
-
-    private static String simpleClassName( String className )
-    {
-        return className.substring( className.lastIndexOf( '.' ) );
-    }
 }

@@ -117,27 +117,6 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
         logger.log( state.doing );
     }
 
-    public static ResourceObject newResourceObject( String name )
-    {
-        return new ResourceObject( name );
-    }
-
-    public static class ResourceObject
-    {
-        private final String name;
-
-        ResourceObject( String name )
-        {
-            this.name = name;
-        }
-
-        @Override
-        public String toString()
-        {
-            return this.name;
-        }
-    }
-
     private abstract static class AcquireLockCommand implements WorkerCommand<LockWorkerState, Void>
     {
         @Override

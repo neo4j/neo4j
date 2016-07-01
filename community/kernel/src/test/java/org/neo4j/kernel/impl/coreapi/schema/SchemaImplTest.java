@@ -53,12 +53,6 @@ public class SchemaImplTest
         db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( new File( "mydb" ) );
     }
 
-    private void restartDb() throws Exception
-    {
-        shutdownDb();
-        createDb();
-    }
-
     @After
     public void shutdownDb() throws Exception
     {

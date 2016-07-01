@@ -237,12 +237,6 @@ public class InMemoryCountsStoreCountsSnapshotSerializerTest
         writeExpectedCountStoreSize( expectedBytes, 1 );
     }
 
-    private void writeSimpleHeader( InMemoryClosableChannel logChannel ) throws IOException
-    {
-        logChannel.putLong( 1 );
-        logChannel.putInt( 1 );
-    }
-
     private void writeExpectedTxID( ByteBuffer buffer, long txId )
     {
         buffer.putLong( txId );

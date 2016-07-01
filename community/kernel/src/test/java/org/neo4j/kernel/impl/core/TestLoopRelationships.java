@@ -25,7 +25,6 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -283,45 +282,28 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         }
     }
 
-    private String print( Relationship[] relationships )
-    {
-        StringBuilder b = new StringBuilder();
-        for ( Relationship rel : relationships )
-        {
-            b.append( rel.getStartNode() + "--" + rel + "->" + rel.getEndNode() );
-        }
-        return b.toString();
-    }
-
     private static Iterable<boolean[]> permutations( final int size )
     {
         final int max = 1 << size;
-        return new Iterable<boolean[]>()
+        return () -> new PrefetchingIterator<boolean[]>()
         {
-            @Override
-            public Iterator<boolean[]> iterator()
-            {
-                return new PrefetchingIterator<boolean[]>()
-                {
-                    int pos = 0;
+            int pos = 0;
 
-                    @Override
-                    protected boolean[] fetchNextOrNull()
+            @Override
+            protected boolean[] fetchNextOrNull()
+            {
+                if ( pos < max )
+                {
+                    int cur = pos++;
+                    boolean[] result = new boolean[size];
+                    for ( int i = 0; i < size; i++ )
                     {
-                        if ( pos < max )
-                        {
-                            int cur = pos++;
-                            boolean[] result = new boolean[size];
-                            for ( int i = 0; i < size; i++ )
-                            {
-                                result[i] = (cur & 1) == 1;
-                                cur >>= 1;
-                            }
-                            return result;
-                        }
-                        return null;
+                        result[i] = (cur & 1) == 1;
+                        cur >>= 1;
                     }
-                };
+                    return result;
+                }
+                return null;
             }
         };
     }

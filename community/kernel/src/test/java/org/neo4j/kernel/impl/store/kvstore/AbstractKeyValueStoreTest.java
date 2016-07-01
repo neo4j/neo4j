@@ -527,12 +527,6 @@ public class AbstractKeyValueStoreTest
             return 0;
         }
 
-        @SuppressWarnings( "unchecked" )
-        private <Value> void putField( Headers.Builder builder, HeaderField<Value> field, Object change )
-        {
-            builder.put( field, (Value) change );
-        }
-
         @Override
         protected void writeKey( String key, WritableBuffer buffer )
         {

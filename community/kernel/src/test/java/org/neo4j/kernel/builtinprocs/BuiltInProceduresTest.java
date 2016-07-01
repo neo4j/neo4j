@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -47,7 +46,6 @@ import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.Token;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -69,7 +67,6 @@ public class BuiltInProceduresTest
     private final Map<Integer, String> relTypes = new HashMap<>();
 
     private final ReadOperations read = mock(ReadOperations.class);
-    private final DbmsOperations dbms = mock(DbmsOperations.class);
     private final Statement statement = mock(Statement.class);
     private final KernelTransaction tx = mock(KernelTransaction.class);
 
