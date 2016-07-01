@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.catchup.storecopy;
+package org.neo4j.coreedge.catchup.storecopy.edge;
 
-public class StoreCopyFailedException extends Exception
+import org.neo4j.coreedge.catchup.RequestMessageType;
+import org.neo4j.coreedge.network.Message;
+
+public class GetStoreIdRequest implements Message
 {
-    public StoreCopyFailedException( Throwable cause )
-    {
-        super( cause );
-    }
+    public static final RequestMessageType MESSAGE_TYPE = RequestMessageType.STORE_ID;
 }

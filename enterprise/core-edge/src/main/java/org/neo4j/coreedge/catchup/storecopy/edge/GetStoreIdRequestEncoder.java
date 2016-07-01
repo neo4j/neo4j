@@ -17,12 +17,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.catchup.storecopy;
+package org.neo4j.coreedge.catchup.storecopy.edge;
 
-public class StoreCopyFailedException extends Exception
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToMessageEncoder;
+
+import java.util.List;
+
+public class GetStoreIdRequestEncoder extends MessageToMessageEncoder<GetStoreIdRequest>
 {
-    public StoreCopyFailedException( Throwable cause )
+    @Override
+    protected void encode( ChannelHandlerContext ctx, GetStoreIdRequest msg, List<Object> out ) throws Exception
     {
-        super( cause );
+        ByteBuf buffer = ctx.alloc().buffer();
+        buffer.writeByte( 0 );
+        out.add( buffer );
     }
 }

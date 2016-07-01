@@ -17,47 +17,52 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.catchup;
+package org.neo4j.coreedge.catchup.storecopy.edge;
 
-import org.neo4j.coreedge.network.Message;
+import java.util.Objects;
 
-import static java.lang.String.format;
+import org.neo4j.coreedge.server.StoreId;
 
-public enum RequestMessageType implements Message
+public class GetStoreIdResponse
 {
-    TX_PULL_REQUEST( (byte) 1 ),
-    STORE( (byte) 2 ),
-    RAFT_STATE( (byte) 3 ),
-    STORE_ID( (byte) 4 ),
-    UNKNOWN( (byte) 404 );
+    private StoreId storeId;
 
-    private byte messageType;
-
-    RequestMessageType( byte messageType )
+    public GetStoreIdResponse( StoreId storeId )
     {
-        this.messageType = messageType;
+        this.storeId = storeId;
     }
 
-    public static RequestMessageType from( byte b )
+    public StoreId storeId()
     {
-        for ( RequestMessageType responseMessageType : values() )
+        return storeId;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
         {
-            if ( responseMessageType.messageType == b )
-            {
-                return responseMessageType;
-            }
+            return true;
         }
-        return UNKNOWN;
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        GetStoreIdResponse that = (GetStoreIdResponse) o;
+        return Objects.equals( storeId, that.storeId );
     }
 
-    public byte messageType()
+    @Override
+    public int hashCode()
     {
-        return messageType;
+        return Objects.hash( storeId );
     }
 
     @Override
     public String toString()
     {
-        return format( "RequestMessageType{messageType=%s}", messageType );
+        return "GetStoreIdResponse{" +
+                "storeId=" + storeId +
+                '}';
     }
 }

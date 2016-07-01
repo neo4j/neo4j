@@ -147,7 +147,7 @@ public class CoreEdgeMetricsIT
                 () -> readLongValue( metricsCsv( coreServerMetricsDir, CoreMetrics.IS_LEADER ) ),
                 greaterThanOrEqualTo( 0L ), TIMEOUT, TimeUnit.SECONDS );
 
-        File edgeServerMetricsDir = new File( cluster.getEdgeServerById( 0 ).getStoreDir(), "metrics" );
+        File edgeServerMetricsDir = new File( cluster.getEdgeServerById( 0 ).storeDir(), "metrics" );
 
         assertEventually( "pull update request registered",
                 () -> readLongValue( metricsCsv( edgeServerMetricsDir, PULL_UPDATES ) ),

@@ -27,13 +27,14 @@ import org.neo4j.coreedge.discovery.CoreServerSelectionException;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.raft.replication.tx.RetryStrategy;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.String.format;
 import static org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule.extractBoltAddress;
 
 public class EdgeServerStartupProcess implements Lifecycle
@@ -80,16 +81,23 @@ public class EdgeServerStartupProcess implements Lifecycle
     {
         dataSourceManager.start();
 
+        CoreMember coreMember = findCoreMemberToCopyFrom();
         if ( localDatabase.isEmpty() )
         {
-            CoreMember transactionServer = findCoreMemberToCopyFrom();
             localDatabase.stop();
-            localDatabase.copyStoreFrom( transactionServer, storeFetcher );
+            localDatabase.copyStoreFrom( coreMember, storeFetcher );
             localDatabase.start();
         }
         else
         {
-            throw new IllegalStateException( "Local database is not empty cannot copy store" );
+            StoreId localStoreId = localDatabase.storeId();
+            StoreId remoteStoreId = storeFetcher.storeId( coreMember );
+            if ( !localStoreId.equals( remoteStoreId ) )
+            {
+                throw new IllegalStateException( format( "This edge machine cannot join the cluster. " +
+                                "The local database is not empty and has a mismatching storeId: expected %s actual %s.",
+                        remoteStoreId, localStoreId ) );
+            }
         }
 
         txPulling.start();

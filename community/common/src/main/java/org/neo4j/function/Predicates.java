@@ -155,6 +155,23 @@ public class Predicates
         await( condition, timeout, unit, defaultPollInterval, TimeUnit.MILLISECONDS );
     }
 
+    public static void awaitEx( ThrowingSupplier<Boolean, Exception> condition, long timeout, TimeUnit unit )
+            throws TimeoutException, InterruptedException
+    {
+        int defaultPollInterval = 20;
+        Supplier<Boolean> adapter = () -> {
+            try
+            {
+                return condition.get();
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+        };
+        await( adapter, timeout, unit, defaultPollInterval, TimeUnit.MILLISECONDS );
+    }
+
     public static void await( Supplier<Boolean> condition, long timeout, TimeUnit timeoutUnit, long pollInterval, TimeUnit pollUnit )
             throws TimeoutException, InterruptedException
     {

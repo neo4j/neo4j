@@ -24,7 +24,9 @@ import java.util.concurrent.ExecutionException;
 
 import org.neo4j.coreedge.catchup.storecopy.CoreClient;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
+import org.neo4j.coreedge.catchup.storecopy.StoreIdDownloadFailedException;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.StoreId;
 
 public class StoreCopyClient
 {
@@ -56,6 +58,21 @@ public class StoreCopyClient
         finally
         {
             coreClient.removeStoreFileStreamingCompleteListener( fileStreamingCompleteListener );
+        }
+    }
+
+    public StoreId fetchStoreId( CoreMember from ) throws StoreIdDownloadFailedException
+    {
+        CompletableFuture<StoreId> storeIdCompletableFuture = new CompletableFuture<>();
+        coreClient.setStoreIdConsumer( storeIdCompletableFuture::complete );
+        coreClient.requestStoreId( from );
+        try
+        {
+            return storeIdCompletableFuture.get();
+        }
+        catch ( InterruptedException | ExecutionException e )
+        {
+            throw new StoreIdDownloadFailedException( e );
         }
     }
 }

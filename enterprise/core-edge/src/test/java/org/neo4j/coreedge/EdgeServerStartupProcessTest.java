@@ -32,7 +32,9 @@ import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.discovery.TopologyService;
 import org.neo4j.coreedge.raft.replication.tx.ConstantTimeRetryStrategy;
+import org.neo4j.coreedge.raft.state.CoreStateMachines;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.coreedge.server.edge.AlwaysChooseFirstServer;
 import org.neo4j.coreedge.server.edge.EdgeServerStartupProcess;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -43,6 +45,7 @@ import org.neo4j.logging.NullLogProvider;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -94,7 +97,9 @@ public class EdgeServerStartupProcessTest
     {
         // given
         StoreFetcher storeFetcher = mock( StoreFetcher.class );
+        when( storeFetcher.storeId( any( CoreMember.class ) ) ).thenReturn( new StoreId( 1, 2, 3, 4 ) );
         LocalDatabase localDatabase = mock( LocalDatabase.class );
+        when( localDatabase.storeId() ).thenReturn( new StoreId( 5, 6, 7, 8 ) );
 
         CoreMember coreMember = new CoreMember( UUID.randomUUID() );
         TopologyService hazelcastTopology = mock( TopologyService.class );
@@ -125,10 +130,51 @@ public class EdgeServerStartupProcessTest
         }
 
         // then
-        verify( localDatabase ).isEmpty();
         verify( dataSourceManager ).start();
-        verifyNoMoreInteractions( localDatabase, dataSourceManager );
+        verify( storeFetcher ).storeId( any() );
+        verify( localDatabase ).isEmpty();
+        verify( localDatabase ).storeId();
+        verifyNoMoreInteractions( localDatabase, dataSourceManager, storeFetcher );
         verifyZeroInteractions( txPulling );
+    }
+
+    @Test
+    public void startShouldSimplyStartPollingOnNonEmptyDatabaseAndMatchingStoreId() throws Throwable
+    {
+        // given
+        StoreId storeId = new StoreId( 1, 2, 3, 4 );
+        StoreFetcher storeFetcher = mock( StoreFetcher.class );
+        when( storeFetcher.storeId( any( CoreMember.class ) ) ).thenReturn( storeId );
+        LocalDatabase localDatabase = mock( LocalDatabase.class );
+        when( localDatabase.storeId() ).thenReturn( storeId );
+
+        CoreMember coreMember = new CoreMember( UUID.randomUUID() );
+        TopologyService hazelcastTopology = mock( TopologyService.class );
+
+        ClusterTopology clusterTopology = mock( ClusterTopology.class );
+        when( hazelcastTopology.currentTopology() ).thenReturn( clusterTopology );
+
+        when( clusterTopology.coreMembers() ).thenReturn( asSet( coreMember ) );
+        when( localDatabase.isEmpty() ).thenReturn( false );
+
+        DataSourceManager dataSourceManager = mock( DataSourceManager.class );
+        Lifecycle txPulling = mock( Lifecycle.class );
+
+        EdgeServerStartupProcess edgeServerStartupProcess = new EdgeServerStartupProcess( storeFetcher, localDatabase,
+                txPulling, dataSourceManager, new AlwaysChooseFirstServer( hazelcastTopology ),
+                new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(),
+                mock( EdgeTopologyService.class ), new Config( Collections.emptyMap() ) );
+
+        // when
+        edgeServerStartupProcess.start();
+
+        // then
+        verify( localDatabase ).isEmpty();
+        verify( localDatabase ).storeId();
+        verify( dataSourceManager ).start();
+        verify( storeFetcher ).storeId( any() );
+        verify( txPulling ).start();
+        verifyNoMoreInteractions( localDatabase, dataSourceManager, txPulling, storeFetcher );
     }
 
     @Test

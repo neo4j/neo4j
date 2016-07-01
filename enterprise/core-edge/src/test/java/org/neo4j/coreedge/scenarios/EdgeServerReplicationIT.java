@@ -24,8 +24,12 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BinaryOperator;
 
@@ -45,18 +49,22 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.Log;
+import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.coreedge.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
@@ -67,6 +75,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
 import static org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
+import static org.neo4j.function.Predicates.awaitEx;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.TIME;
@@ -167,13 +176,7 @@ public class EdgeServerReplicationIT
     {
         Cluster cluster = clusterRule.withNumberOfEdgeServers( 0 ).startCluster();
 
-        executeOnLeaderWithRetry( db -> {
-            for ( int i = 0; i < 10; i++ )
-            {
-                Node node = db.createNode();
-                node.setProperty( "foobar", "baz_bat" );
-            }
-        }, cluster );
+        executeOnLeaderWithRetry( this::createData, cluster );
 
         EdgeServer edgeServer = cluster.addEdgeServerWithId( 4 );
         putSomeDataWithDifferentStoreId( edgeServer.storeDir(), cluster.getCoreServerById( 0 ).storeDir() );
@@ -183,14 +186,22 @@ public class EdgeServerReplicationIT
             edgeServer.start();
             fail( "Should have failed to start" );
         }
-        catch ( LifecycleException required )
+        catch ( RuntimeException required )
         {
             // Lifecycle should throw exception, server should not start.
             assertThat( required.getCause(), instanceOf( LifecycleException.class ) );
             assertThat( required.getCause().getCause(), instanceOf( IllegalStateException.class ) );
             assertThat( required.getCause().getCause().getMessage(),
-                    equalTo( "Local database is not empty cannot copy store" ) );
+                    containsString( "This edge machine cannot join the cluster. " +
+                            "The local database is not empty and has a mismatching storeId:" ) );
         }
+    }
+
+    private boolean edgesUpToDateAsTheLeader( CoreServer leader, Collection<EdgeServer> edgeServers )
+    {
+        long leaderTxId = lastClosedTransactionId( leader.database() );
+        return edgeServers.stream().map( EdgeServer::database ).map( this::lastClosedTransactionId )
+                .reduce( true, ( acc, txId ) -> acc && txId == leaderTxId, Boolean::logicalAnd );
     }
 
     private void putSomeDataWithDifferentStoreId( File storeDir, File coreStoreDir ) throws IOException
@@ -209,19 +220,50 @@ public class EdgeServerReplicationIT
     }
 
     @Test
+    public void anEdgeServerShouldBeAbleToRejoinTheCluster() throws Exception
+    {
+        int edgeServerId = 4;
+        Cluster cluster = clusterRule.withNumberOfEdgeServers( 0 ).startCluster();
+
+        executeOnLeaderWithRetry( this::createData, cluster );
+
+        cluster.addEdgeServerWithId( edgeServerId );
+
+        // let's spend some time by adding more data
+        executeOnLeaderWithRetry( this::createData, cluster );
+
+        cluster.removeEdgeServerWithServerId( edgeServerId );
+
+        // let's spend some time by adding more data
+        executeOnLeaderWithRetry( this::createData, cluster );
+
+        cluster.addEdgeServerWithId( edgeServerId ).start();
+
+        awaitEx( () -> edgesUpToDateAsTheLeader( cluster.awaitLeader(), cluster.edgeServers() ), 1, TimeUnit.MINUTES );
+
+        List<File> coreStoreDirs = cluster.coreServers().stream().map( CoreServer::storeDir ).collect( toList() );
+        List<File> edgeStoreDirs = cluster.edgeServers().stream().map( EdgeServer::storeDir ).collect( toList() );
+
+        cluster.shutdown();
+
+        Set<DbRepresentation> dbs = coreStoreDirs.stream().map( DbRepresentation::of ).collect( toSet() );
+        dbs.addAll( edgeStoreDirs.stream().map( DbRepresentation::of ).collect( toSet() ) );
+        assertEquals( 1, dbs.size() );
+    }
+
+    private long lastClosedTransactionId( GraphDatabaseFacade db )
+    {
+        return db.getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
+    }
+
+    @Test
     public void shouldThrowExceptionIfEdgeRecordFormatDiffersToCoreRecordFormat() throws Exception
     {
         // given
         Cluster cluster = clusterRule.withNumberOfEdgeServers( 0 ).withRecordFormat( HighLimit.NAME ).startCluster();
 
         // when
-        executeOnLeaderWithRetry( db -> {
-            for ( int i = 0; i < 10; i++ )
-            {
-                Node node = db.createNode();
-                node.setProperty( "foobar", "baz_bat" );
-            }
-        }, cluster );
+        executeOnLeaderWithRetry( this::createData, cluster );
 
         try
         {
@@ -316,5 +358,14 @@ public class EdgeServerReplicationIT
     private interface Workload
     {
         void doWork( GraphDatabaseService database );
+    }
+
+    private void createData( GraphDatabaseService db )
+    {
+        for ( int i = 0; i < 10; i++ )
+        {
+            Node node = db.createNode();
+            node.setProperty( "foobar", "baz_bat" );
+        }
     }
 }
