@@ -23,6 +23,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
@@ -35,6 +36,7 @@ import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionFactory;
+import org.neo4j.coreedge.raft.state.EndOfStreamException;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.store.id.IdType;
@@ -136,7 +138,7 @@ public class RaftContentByteBufferMarshalTest
 
     private void assertMarshalingEquality( CoreReplicatedContentMarshal marshal,
                                            ByteBuf buffer,
-                                           ReplicatedContent replicatedTx ) throws java.io.IOException
+                                           ReplicatedContent replicatedTx ) throws IOException, EndOfStreamException
     {
         marshal.marshal( replicatedTx, new NetworkFlushableByteBuf( buffer ) );
 

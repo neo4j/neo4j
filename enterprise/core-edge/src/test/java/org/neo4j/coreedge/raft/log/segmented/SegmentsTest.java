@@ -248,7 +248,7 @@ public class SegmentsTest
 
         segments.rotate( 10, 10, 2 ); // we will truncate this whole file away
         segments.last().closeWriter(); // need to close writer otherwise dispose will not be called
-        IOCursor<EntryRecord> reader = segments.last().getReader( 11 );
+        IOCursor<EntryRecord> reader = segments.last().getCursor( 11 );
 
         segments.rotate( 20, 20, 3 ); // we will truncate this whole file away
         segments.last().closeWriter();

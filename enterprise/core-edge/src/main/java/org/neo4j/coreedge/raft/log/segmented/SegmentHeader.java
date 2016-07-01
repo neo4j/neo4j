@@ -22,8 +22,8 @@ package org.neo4j.coreedge.raft.log.segmented;
 import java.io.IOException;
 import java.util.Objects;
 
-import org.neo4j.coreedge.raft.state.UnexpectedEndOfStreamException;
-import org.neo4j.storageengine.api.ReadPastEndException;
+import org.neo4j.coreedge.raft.state.EndOfStreamException;
+import org.neo4j.coreedge.raft.state.SafeChannelMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -98,8 +98,7 @@ class SegmentHeader
                '}';
     }
 
-    // TODO: Implement and use UnexpectedEndOfStreamException for all marshals.
-    static class Marshal //implements ChannelMarshal<SegmentHeader>
+    static class Marshal extends SafeChannelMarshal<SegmentHeader>
     {
         //@Override
         public void marshal( SegmentHeader header, WritableChannel channel ) throws IOException
@@ -111,20 +110,13 @@ class SegmentHeader
         }
 
         //@Override
-        public SegmentHeader unmarshal( ReadableChannel channel ) throws IOException, UnexpectedEndOfStreamException
+        public SegmentHeader unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
         {
-            try
-            {
-                long prevFileLastIndex = channel.getLong();
-                long version = channel.getLong();
-                long prevIndex = channel.getLong();
-                long prevTerm = channel.getLong();
-                return new SegmentHeader( prevFileLastIndex, version, prevIndex, prevTerm );
-            }
-            catch( ReadPastEndException e )
-            {
-                throw new UnexpectedEndOfStreamException();
-            }
+            long prevFileLastIndex = channel.getLong();
+            long version = channel.getLong();
+            long prevIndex = channel.getLong();
+            long prevTerm = channel.getLong();
+            return new SegmentHeader( prevFileLastIndex, version, prevIndex, prevTerm );
         }
     }
 }

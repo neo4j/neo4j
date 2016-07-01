@@ -28,17 +28,15 @@ import org.neo4j.coreedge.raft.log.LogPosition;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.coreedge.raft.state.EndOfStreamException;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.ReadPastEndException;
 
 import static java.lang.String.format;
-import static org.neo4j.coreedge.raft.log.EntryRecord.read;
 
 /**
  * Keeps track of a segment of the RAFT log, i.e. a consecutive set of entries.
@@ -111,7 +109,7 @@ class SegmentFile implements AutoCloseable
     /**
      * Channels must be closed when no longer used, so that they are released back to the pool of readers.
      */
-    IOCursor<EntryRecord> getReader( long logIndex ) throws IOException, DisposedException
+    IOCursor<EntryRecord> getCursor( long logIndex ) throws IOException, DisposedException
     {
         assert logIndex > header.prevIndex();
 
@@ -128,47 +126,18 @@ class SegmentFile implements AutoCloseable
 
         try
         {
-            ReadAheadChannel<StoreChannel> bufferedReader = new ReadAheadChannel<>( reader.channel() );
             long currentIndex = position.logIndex;
             if ( scanStats != null )
             {
                 scanStats.collect( offsetIndex - currentIndex );
             }
-
-            try
-            {
-                /* The cache lookup might have given us an earlier position, scan forward to the exact position. */
-                while ( currentIndex < offsetIndex )
-                {
-                    read( bufferedReader, contentMarshal );
-                    currentIndex++;
-                }
-            }
-            catch ( ReadPastEndException e )
-            {
-                bufferedReader.close();
-                return IOCursor.getEmpty();
-            }
-
-            return new EntryRecordCursor( bufferedReader, contentMarshal, currentIndex )
-            {
-                boolean closed = false; /* This is just a defensive measure, for catching user errors from messing up the refCount. */
-
-                @Override
-                public void close()
-                {
-                    if ( closed )
-                    {
-                        throw new IllegalStateException( "Already closed" );
-                    }
-
-                    /* The reader owns the channel and it is returned to the pool with it open. */
-                    closed = true;
-                    positionCache.put( this.position() );
-                    readerPool.release( reader );
-                    refCount.decrease();
-                }
-            };
+            return new EntryRecordCursor( reader, contentMarshal, currentIndex, offsetIndex, this );
+        }
+        catch ( EndOfStreamException e )
+        {
+            readerPool.release( reader );
+            refCount.decrease();
+            return IOCursor.getEmpty();
         }
         catch ( IOException e )
         {
@@ -285,5 +254,20 @@ class SegmentFile implements AutoCloseable
                "file=" + file.getName() +
                ", header=" + header +
                '}';
+    }
+
+    ReferenceCounter refCount()
+    {
+        return refCount;
+    }
+
+    PositionCache positionCache()
+    {
+        return positionCache;
+    }
+
+    public ReaderPool readerPool()
+    {
+        return readerPool;
     }
 }

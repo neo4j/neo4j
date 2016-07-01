@@ -22,9 +22,9 @@ package org.neo4j.coreedge.server.core.locks;
 import java.io.IOException;
 
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
-import org.neo4j.coreedge.raft.state.StateMarshal;
+import org.neo4j.coreedge.raft.state.EndOfStreamException;
+import org.neo4j.coreedge.raft.state.SafeStateMarshal;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -75,8 +75,7 @@ public class ReplicatedLockTokenState
         return new ReplicatedLockTokenState( ordinal, currentToken );
     }
 
-    public static class Marshal implements
-            StateMarshal<ReplicatedLockTokenState>
+    public static class Marshal extends SafeStateMarshal<ReplicatedLockTokenState>
     {
         private final ChannelMarshal<CoreMember> memberMarshal;
 
@@ -95,21 +94,13 @@ public class ReplicatedLockTokenState
         }
 
         @Override
-        public ReplicatedLockTokenState unmarshal( ReadableChannel source ) throws IOException
+        public ReplicatedLockTokenState unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
         {
-            try
-            {
-                long logIndex = source.getLong();
-                int candidateId = source.getInt();
+            long logIndex = channel.getLong();
+            int candidateId = channel.getInt();
+            CoreMember member = memberMarshal.unmarshal( channel );
 
-                final CoreMember member = memberMarshal.unmarshal( source );
-
-                return new ReplicatedLockTokenState( logIndex, new ReplicatedLockTokenRequest( member, candidateId ) );
-            }
-            catch ( ReadPastEndException ex )
-            {
-                return null;
-            }
+            return new ReplicatedLockTokenState( logIndex, new ReplicatedLockTokenRequest( member, candidateId ) );
         }
 
         @Override

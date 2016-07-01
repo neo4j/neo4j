@@ -193,11 +193,11 @@ public class DurableStateStorageTest
         }
 
         @Override
-        public AtomicInteger unmarshal( ReadableChannel source ) throws IOException
+        public AtomicInteger unmarshal( ReadableChannel channel ) throws IOException
         {
             try
             {
-                return new AtomicInteger( source.getInt() );
+                return new AtomicInteger( channel.getInt() );
             }
             catch ( ReadPastEndException e )
             {

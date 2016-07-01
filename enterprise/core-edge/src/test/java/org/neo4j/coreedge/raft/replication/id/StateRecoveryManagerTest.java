@@ -257,11 +257,11 @@ public class StateRecoveryManagerTest
         }
 
         @Override
-        public Long unmarshal( ReadableChannel source ) throws IOException
+        public Long unmarshal( ReadableChannel channel ) throws IOException
         {
             try
             {
-                return source.getLong();
+                return channel.getLong();
             }
             catch ( ReadPastEndException e )
             {

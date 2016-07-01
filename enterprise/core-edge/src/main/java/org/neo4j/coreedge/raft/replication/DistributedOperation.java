@@ -25,6 +25,7 @@ import java.util.UUID;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
+import org.neo4j.coreedge.raft.state.EndOfStreamException;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
@@ -72,7 +73,7 @@ public class  DistributedOperation implements ReplicatedContent
         new CoreReplicatedContentMarshal().marshal( content, channel );
     }
 
-    public static DistributedOperation deserialize( ReadableChannel channel ) throws IOException
+    public static DistributedOperation deserialize( ReadableChannel channel ) throws IOException, EndOfStreamException
     {
         long mostSigBits = channel.getLong();
         long leastSigBits = channel.getLong();

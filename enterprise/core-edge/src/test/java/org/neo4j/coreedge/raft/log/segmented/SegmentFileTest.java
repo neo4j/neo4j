@@ -24,11 +24,14 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.neo4j.coreedge.raft.log.DummyRaftableContentSerializer;
 import org.neo4j.coreedge.raft.log.EntryRecord;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.cursor.IOCursor;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.time.FakeClock;
@@ -37,6 +40,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.coreedge.raft.ReplicatedString.valueOf;
 import static org.neo4j.coreedge.raft.log.segmented.SegmentFile.create;
 
@@ -72,10 +81,10 @@ public class SegmentFileTest
         {
             assertEquals( 0, segment.header().version() );
 
-            IOCursor<EntryRecord> reader = segment.getReader( 0 );
-            assertFalse( reader.next() );
+            IOCursor<EntryRecord> cursor = segment.getCursor( 0 );
+            assertFalse( cursor.next() );
 
-            reader.close();
+            cursor.close();
         }
     }
 
@@ -89,13 +98,13 @@ public class SegmentFileTest
             segment.flush();
 
             // when
-            IOCursor<EntryRecord> reader = segment.getReader( 0 );
+            IOCursor<EntryRecord> cursor = segment.getCursor( 0 );
 
             // then
-            assertTrue( reader.next() );
-            assertEquals( entry1, reader.get().logEntry() );
+            assertTrue( cursor.next() );
+            assertEquals( entry1, cursor.get().logEntry() );
 
-            reader.close();
+            cursor.close();
         }
     }
 
@@ -112,13 +121,13 @@ public class SegmentFileTest
             segment.flush();
 
             // when
-            IOCursor<EntryRecord> reader = segment.getReader( 2 );
+            IOCursor<EntryRecord> cursor = segment.getCursor( 2 );
 
             // then
-            assertTrue( reader.next() );
-            assertEquals( entry3, reader.get().logEntry() );
+            assertTrue( cursor.next() );
+            assertEquals( entry3, cursor.get().logEntry() );
 
-            reader.close();
+            cursor.close();
         }
     }
 
@@ -136,18 +145,18 @@ public class SegmentFileTest
             for ( int i = 0; i < 3; i++ )
             {
                 // when
-                IOCursor<EntryRecord> reader = segment.getReader( 0 );
+                IOCursor<EntryRecord> cursor = segment.getCursor( 0 );
 
                 // then
-                assertTrue( reader.next() );
-                assertEquals( entry1, reader.get().logEntry() );
-                assertTrue( reader.next() );
-                assertEquals( entry2, reader.get().logEntry() );
-                assertTrue( reader.next() );
-                assertEquals( entry3, reader.get().logEntry() );
-                assertFalse( reader.next() );
+                assertTrue( cursor.next() );
+                assertEquals( entry1, cursor.get().logEntry() );
+                assertTrue( cursor.next() );
+                assertEquals( entry2, cursor.get().logEntry() );
+                assertTrue( cursor.next() );
+                assertEquals( entry3, cursor.get().logEntry() );
+                assertFalse( cursor.next() );
 
-                reader.close();
+                cursor.close();
             }
         }
     }
@@ -174,18 +183,42 @@ public class SegmentFileTest
         try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, segmentHeader ) )
         {
             // given
-            IOCursor<EntryRecord> reader0 = segment.getReader( 0 );
-            IOCursor<EntryRecord> reader1 = segment.getReader( 1 );
+            IOCursor<EntryRecord> cursor0 = segment.getCursor( 0 );
+            IOCursor<EntryRecord> cursor1 = segment.getCursor( 0 );
 
             // when
             segment.closeWriter();
-            reader0.close();
+            cursor0.close();
 
             // then
             assertFalse( segment.tryClose() );
 
             // when
-            reader1.close();
+            cursor1.close();
+
+            // then
+            assertTrue( segment.tryClose() );
+        }
+    }
+
+    @Test
+    public void shouldHandleReaderPastEndCorrectly() throws Exception
+    {
+        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, segmentHeader ) )
+        {
+            // given
+            segment.write( 0, entry1 );
+            segment.write( 1, entry2 );
+            segment.flush();
+            segment.closeWriter();
+
+            IOCursor<EntryRecord> cursor = segment.getCursor( 3 );
+
+            // then
+            assertFalse( cursor.next() );
+
+            // when
+            cursor.close();
 
             // then
             assertTrue( segment.tryClose() );
@@ -197,11 +230,11 @@ public class SegmentFileTest
     {
         // given
         SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, segmentHeader );
-        IOCursor<EntryRecord> reader = segment.getReader( 0 );
+        IOCursor<EntryRecord> cursor = segment.getCursor( 0 );
 
         // when
         segment.closeWriter();
-        reader.close();
+        cursor.close();
 
         // then
         assertTrue( segment.tryClose() );
@@ -216,15 +249,51 @@ public class SegmentFileTest
         try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, segmentHeader ) )
         {
             // given
-            IOCursor<EntryRecord> reader = segment.getReader( 0 );
+            IOCursor<EntryRecord> cursor = segment.getCursor( 0 );
 
-            reader.close();
-            reader.close();
+            cursor.close();
+            cursor.close();
             fail( "Should have caught double close error" );
         }
         catch ( IllegalStateException e )
         {
             // expected
+        }
+    }
+
+    @Test
+    public void shouldNotReturnReaderExperiencingErrorToPool() throws Exception
+    {
+        // given
+        StoreChannel channel = mock( StoreChannel.class );
+        Reader reader = mock( Reader.class );
+        ReaderPool readerPool = mock( ReaderPool.class );
+
+        when( channel.read( any( ByteBuffer.class ) ) ).thenThrow( new IOException() );
+        when( reader.channel() ).thenReturn( channel );
+        when( readerPool.acquire( anyLong(), anyLong() ) ).thenReturn( reader );
+
+        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, segmentHeader ) )
+        {
+            // given
+            IOCursor<EntryRecord> cursor = segment.getCursor( 0 );
+
+            try
+            {
+                cursor.next();
+                fail();
+            }
+            catch ( IOException e )
+            {
+                // expected from mocking
+            }
+
+            // when
+            cursor.close();
+
+            // then
+            verify( readerPool, never() ).release( reader );
+            verify( reader ).close();
         }
     }
 }

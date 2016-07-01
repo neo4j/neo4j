@@ -30,7 +30,7 @@ import org.neo4j.coreedge.helper.StatUtil.StatContext;
 import org.neo4j.coreedge.raft.log.EntryRecord;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
-import org.neo4j.coreedge.raft.state.UnexpectedEndOfStreamException;
+import org.neo4j.coreedge.raft.state.EndOfStreamException;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -103,7 +103,7 @@ class RecoveryProtocol
                 {
                     header = loadHeader( fileSystem, file );
                 }
-                catch ( UnexpectedEndOfStreamException e )
+                catch ( EndOfStreamException e )
                 {
                     if ( files.lastKey() != fileNameVersion )
                     {
@@ -143,11 +143,11 @@ class RecoveryProtocol
         state.currentTerm = last.header().prevTerm();
 
         long firstIndexInLastSegmentFile = last.header().prevIndex() + 1;
-        try ( IOCursor<EntryRecord> reader = last.getReader( firstIndexInLastSegmentFile ) )
+        try ( IOCursor<EntryRecord> cursor = last.getCursor( firstIndexInLastSegmentFile ) )
         {
-            while ( reader.next() )
+            while ( cursor.next() )
             {
-                EntryRecord entry = reader.get();
+                EntryRecord entry = cursor.get();
                 state.appendIndex = entry.logIndex();
                 state.currentTerm = entry.logEntry().term();
             }
@@ -158,7 +158,7 @@ class RecoveryProtocol
 
     private static SegmentHeader loadHeader(
             FileSystemAbstraction fileSystem,
-            File file ) throws IOException, UnexpectedEndOfStreamException
+            File file ) throws IOException, EndOfStreamException
     {
         try ( StoreChannel channel = fileSystem.open( file, "r" ) )
         {

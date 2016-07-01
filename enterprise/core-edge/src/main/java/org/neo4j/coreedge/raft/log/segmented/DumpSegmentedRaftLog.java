@@ -68,7 +68,7 @@ class DumpSegmentedRaftLog
 
                 out.println( header.toString() );
 
-                try ( IOCursor<EntryRecord> cursor = segment.getReader( header.prevIndex() + 1 ) )
+                try ( IOCursor<EntryRecord> cursor = segment.getCursor( header.prevIndex() + 1 ) )
                 {
                     while ( cursor.next() )
                     {

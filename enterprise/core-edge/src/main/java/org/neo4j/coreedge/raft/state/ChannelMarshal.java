@@ -25,8 +25,12 @@ import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
 /**
- * Implementations of this class perform marshalling (encoding/decoding) of instances of {@link STATE} into/from a
- * {@link WritableChannel}/{@link ReadableChannel} respectively.
+ * Implementations of this class perform marshalling (encoding/decoding) of {@link STATE}
+ * into/from a {@link WritableChannel} and a {@link ReadableChannel} respectively.
+ *
+ * N.B.: Implementations should prefer to extend {@link SafeChannelMarshal} to handle
+ * {@link org.neo4j.storageengine.api.ReadPastEndException} correctly.
+ *
  * @param <STATE> The class of objects supported by this marshal
  */
 public interface ChannelMarshal<STATE>
@@ -37,8 +41,15 @@ public interface ChannelMarshal<STATE>
     void marshal( STATE state, WritableChannel channel ) throws IOException;
 
     /**
-     * Unmarshals an instance of {@link STATE} from source. If the source does not have enough bytes to fully read an
-     * instance, null must be returned.
+     * Unmarshals an instance of {@link STATE} from channel. If the channel does not have enough bytes
+     * to fully read an instance then an {@link EndOfStreamException} must be thrown.
+     *
+     * N.B: The ReadableChannel is sort of broken in its implementation and throws
+     * {@link org.neo4j.storageengine.api.ReadPastEndException} which is a subclass of IOException
+     * and that is problematic since usually the case of reaching the end of a stream actually
+     * requires handling distinct from that of arbitrary IOExceptions. Although it was possible
+     * to catch that particular exception explicitly, you would not get compiler/IDE support
+     * for making that apparent.
      */
-    STATE unmarshal( ReadableChannel source ) throws IOException;
+    STATE unmarshal( ReadableChannel channel ) throws IOException, EndOfStreamException;
 }

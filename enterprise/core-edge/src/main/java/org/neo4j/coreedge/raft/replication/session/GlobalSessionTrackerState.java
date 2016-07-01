@@ -25,9 +25,9 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
-import org.neo4j.coreedge.raft.state.StateMarshal;
+import org.neo4j.coreedge.raft.state.EndOfStreamException;
+import org.neo4j.coreedge.raft.state.SafeStateMarshal;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -106,7 +106,7 @@ public class GlobalSessionTrackerState
         return copy;
     }
 
-    public static class Marshal implements StateMarshal<GlobalSessionTrackerState>
+    public static class Marshal extends SafeStateMarshal<GlobalSessionTrackerState>
     {
         private final ChannelMarshal<CoreMember> memberMarshal;
 
@@ -146,46 +146,39 @@ public class GlobalSessionTrackerState
         }
 
         @Override
-        public GlobalSessionTrackerState unmarshal( ReadableChannel source ) throws IOException
+        public GlobalSessionTrackerState unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
         {
-            try
-            {
-                final long logIndex = source.getLong();
-                final int sessionTrackerSize = source.getInt();
-                final Map<CoreMember, LocalSessionTracker> sessionTrackers = new HashMap<>();
+            final long logIndex = channel.getLong();
+            final int sessionTrackerSize = channel.getInt();
+            final Map<CoreMember, LocalSessionTracker> sessionTrackers = new HashMap<>();
 
-                for ( int i = 0; i < sessionTrackerSize; i++ )
+            for ( int i = 0; i < sessionTrackerSize; i++ )
+            {
+                final CoreMember member = memberMarshal.unmarshal( channel );
+                if ( member == null )
                 {
-                    final CoreMember unmarshal = memberMarshal.unmarshal( source );
-                    if ( unmarshal == null )
-                    {
-                        return null;
-                    }
-
-                    long mostSigBits = source.getLong();
-                    long leastSigBits = source.getLong();
-                    UUID globalSessionId = new UUID( mostSigBits, leastSigBits );
-
-                    final int localSessionTrackerSize = source.getInt();
-                    final Map<Long, Long> lastSequenceNumberPerSession = new HashMap<>();
-                    for ( int j = 0; j < localSessionTrackerSize; j++ )
-                    {
-                        long localSessionId = source.getLong();
-                        long sequenceNumber = source.getLong();
-                        lastSequenceNumberPerSession.put( localSessionId, sequenceNumber );
-                    }
-                    final LocalSessionTracker localSessionTracker = new LocalSessionTracker( globalSessionId, lastSequenceNumberPerSession );
-                    sessionTrackers.put( unmarshal, localSessionTracker );
+                    throw new IllegalStateException( "Null member" );
                 }
-                GlobalSessionTrackerState result = new GlobalSessionTrackerState();
-                result.sessionTrackers = sessionTrackers;
-                result.logIndex = logIndex;
-                return result;
+
+                long mostSigBits = channel.getLong();
+                long leastSigBits = channel.getLong();
+                UUID globalSessionId = new UUID( mostSigBits, leastSigBits );
+
+                final int localSessionTrackerSize = channel.getInt();
+                final Map<Long, Long> lastSequenceNumberPerSession = new HashMap<>();
+                for ( int j = 0; j < localSessionTrackerSize; j++ )
+                {
+                    long localSessionId = channel.getLong();
+                    long sequenceNumber = channel.getLong();
+                    lastSequenceNumberPerSession.put( localSessionId, sequenceNumber );
+                }
+                final LocalSessionTracker localSessionTracker = new LocalSessionTracker( globalSessionId, lastSequenceNumberPerSession );
+                sessionTrackers.put( member, localSessionTracker );
             }
-            catch ( ReadPastEndException notEnoughBytes )
-            {
-                return null;
-            }
+            GlobalSessionTrackerState result = new GlobalSessionTrackerState();
+            result.sessionTrackers = sessionTrackers;
+            result.logIndex = logIndex;
+            return result;
         }
 
         @Override

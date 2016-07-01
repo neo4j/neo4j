@@ -22,9 +22,9 @@ package org.neo4j.coreedge.raft.state.vote;
 import java.io.IOException;
 
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
-import org.neo4j.coreedge.raft.state.StateMarshal;
+import org.neo4j.coreedge.raft.state.EndOfStreamException;
+import org.neo4j.coreedge.raft.state.SafeStateMarshal;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -37,7 +37,7 @@ public class VoteState
     {
     }
 
-    public VoteState( CoreMember votedFor, long term )
+    private VoteState( CoreMember votedFor, long term )
     {
         this.term = term;
         this.votedFor = votedFor;
@@ -84,7 +84,7 @@ public class VoteState
         return term;
     }
 
-    public static class Marshal implements StateMarshal<VoteState>
+    public static class Marshal extends SafeStateMarshal<VoteState>
     {
         private final ChannelMarshal<CoreMember> memberMarshal;
 
@@ -101,24 +101,11 @@ public class VoteState
         }
 
         @Override
-        public VoteState unmarshal( ReadableChannel source ) throws IOException
+        public VoteState unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
         {
-            try
-            {
-                final long term = source.getLong();
-                final CoreMember member = memberMarshal.unmarshal( source );
-
-                if ( member == null )
-                {
-                    return null;
-                }
-
-                return new VoteState( member, term );
-            }
-            catch ( ReadPastEndException notEnoughBytes )
-            {
-                return null;
-            }
+            final long term = channel.getLong();
+            final CoreMember member = memberMarshal.unmarshal( channel );
+            return new VoteState( member, term );
         }
 
         @Override

@@ -25,9 +25,9 @@ import java.util.Set;
 
 import org.neo4j.coreedge.raft.membership.RaftMembership;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
-import org.neo4j.coreedge.raft.state.StateMarshal;
+import org.neo4j.coreedge.raft.state.EndOfStreamException;
+import org.neo4j.coreedge.raft.state.SafeStateMarshal;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -63,6 +63,12 @@ public class RaftMembershipState implements RaftMembership
         notifyListeners();
     }
 
+    /**
+     * Adds an additional member to replicate to. Members that are joining need to
+     * catch up sufficiently before they become part of the voting group.
+     *
+     * @param member The member which will be added to the replication group.
+     */
     public synchronized void addAdditionalReplicationMember( CoreMember member )
     {
         additionalReplicationMembers.add( member );
@@ -71,6 +77,14 @@ public class RaftMembershipState implements RaftMembership
         notifyListeners();
     }
 
+    /**
+     * Removes a member previously part of the additional replication member group.
+     *
+     * This either happens because they caught up sufficiently and became part of the
+     * voting group or because they failed to catch up in time.
+     *
+     * @param member The member to remove from the replication group.
+     */
     public synchronized void removeAdditionalReplicationMember( CoreMember member )
     {
         additionalReplicationMembers.remove( member );
@@ -127,7 +141,7 @@ public class RaftMembershipState implements RaftMembership
         listeners.forEach( Listener::onMembershipChanged );
     }
 
-    public static class Marshal implements StateMarshal<RaftMembershipState>
+    public static class Marshal extends SafeStateMarshal<RaftMembershipState>
     {
         private final ChannelMarshal<CoreMember> memberMarshal;
 
@@ -148,23 +162,16 @@ public class RaftMembershipState implements RaftMembership
         }
 
         @Override
-        public RaftMembershipState unmarshal( ReadableChannel source ) throws IOException
+        public RaftMembershipState unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
         {
-            try
+            long logIndex = channel.getLong();
+            int memberCount = channel.getInt();
+            Set<CoreMember> members = new HashSet<>();
+            for ( int i = 0; i < memberCount; i++ )
             {
-                long logIndex = source.getLong();
-                int memberCount = source.getInt();
-                Set<CoreMember> members = new HashSet<>();
-                for ( int i = 0; i < memberCount; i++ )
-                {
-                    members.add( memberMarshal.unmarshal( source ) );
-                }
-                return new RaftMembershipState( members, logIndex );
+                members.add( memberMarshal.unmarshal( channel ) );
             }
-            catch ( ReadPastEndException noMoreBytes )
-            {
-                return null;
-            }
+            return new RaftMembershipState( members, logIndex );
         }
 
         @Override

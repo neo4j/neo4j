@@ -208,9 +208,14 @@ public class EnterpriseCoreEditionModule extends EditionModule
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
         CoreMember myself;
+        StateStorage<IdAllocationState> idAllocationState;
+        StateStorage<Long> lastFlushedStorage;
+        StateStorage<GlobalSessionTrackerState> sessionTrackerStorage;
+        StateStorage<ReplicatedLockTokenState> lockTokenState;
+
         try
         {
-            DurableStateStorage<CoreMember> idStorage = life.add( new DurableStateStorage<>(
+            StateStorage<CoreMember> idStorage = life.add( new DurableStateStorage<>(
                     fileSystem, clusterStateDirectory, "raft-member-id", new CoreMemberMarshal(), 1,
                     databaseHealthSupplier, logProvider ) );
             CoreMember member = idStorage.getInitialState();
@@ -220,6 +225,29 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 idStorage.persistStoreData( member );
             }
             myself = member;
+
+            lastFlushedStorage = life.add(
+                    new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "last-flushed-state" ),
+                            "last-flushed", new LongIndexMarshal(), config.get( CoreEdgeClusterSettings.last_flushed_state_size ),
+                            databaseHealthSupplier, logProvider ) );
+
+            sessionTrackerStorage = life.add( new DurableStateStorage<>( fileSystem,
+                    new File( clusterStateDirectory, "session-tracker-state" ), "session-tracker",
+                    new GlobalSessionTrackerState.Marshal( new CoreMemberMarshal() ),
+                    config.get( CoreEdgeClusterSettings.global_session_tracker_state_size ), databaseHealthSupplier,
+                    logProvider ) );
+
+            lockTokenState = life.add(
+                    new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "lock-token-state" ),
+                            "lock-token", new ReplicatedLockTokenState.Marshal( new CoreMemberMarshal() ),
+                            config.get( CoreEdgeClusterSettings.replicated_lock_token_state_size ),
+                            databaseHealthSupplier, logProvider ) );
+
+            idAllocationState = life.add(
+                    new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "id-allocation-state" ),
+                            "id-allocation", new IdAllocationState.Marshal(),
+                            config.get( CoreEdgeClusterSettings.id_alloc_state_size ), databaseHealthSupplier,
+                            logProvider ) );
         }
         catch ( IOException e )
         {
@@ -289,90 +317,36 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         RaftServer raftServer;
         CoreState coreState;
-        try
-        {
-            DurableStateStorage<Long> lastFlushedStorage = life.add(
-                    new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "last-flushed-state" ),
-                            "last-flushed", new LongIndexMarshal(),
-                            config.get( CoreEdgeClusterSettings.last_flushed_state_size ), databaseHealthSupplier,
-                            logProvider ) );
 
-            StateStorage<GlobalSessionTrackerState> sessionTrackerStorage;
-            try
-            {
-                sessionTrackerStorage = life.add( new DurableStateStorage<>( fileSystem,
-                        new File( clusterStateDirectory, "session-tracker-state" ), "session-tracker",
-                        new GlobalSessionTrackerState.Marshal( new CoreMemberMarshal() ),
-                        config.get( CoreEdgeClusterSettings.global_session_tracker_state_size ), databaseHealthSupplier,
-                        logProvider ) );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
+        CoreStateApplier coreStateApplier = new CoreStateApplier( logProvider );
+        CoreStateDownloader downloader =
+                new CoreStateDownloader( localDatabase, storeFetcher, coreToCoreClient, logProvider );
 
-            CoreStateApplier applier = new CoreStateApplier( logProvider );
-            CoreStateDownloader downloader =
-                    new CoreStateDownloader( localDatabase, storeFetcher, coreToCoreClient, logProvider );
+        InFlightMap<Long,RaftLogEntry> inFlightMap = new InFlightMap<>();
 
-            InFlightMap<Long,RaftLogEntry> inFlightMap = new InFlightMap<>();
+        NotMyselfSelectionStrategy someoneElse = new NotMyselfSelectionStrategy( discoveryService, myself );
 
-            NotMyselfSelectionStrategy someoneElse = new NotMyselfSelectionStrategy( discoveryService, myself );
+        coreState = dependencies.satisfyDependency( new CoreState(
+                raftLog, config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
+                config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),
+                databaseHealthSupplier, logProvider, progressTracker, lastFlushedStorage,
+                sessionTrackerStorage, someoneElse, coreStateApplier, downloader, inFlightMap, platformModule.monitors ) );
 
-            coreState = dependencies.satisfyDependency( new CoreState(
-                    raftLog, config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
-                    config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),
-                    databaseHealthSupplier, logProvider, progressTracker, lastFlushedStorage,
-                    sessionTrackerStorage, someoneElse, applier, downloader, inFlightMap, platformModule.monitors ) );
+        raftServer = new RaftServer( marshal, raftListenAddress, localDatabase, logProvider, coreState );
 
-            raftServer = new RaftServer( marshal, raftListenAddress, localDatabase, logProvider, coreState );
+        raft = dependencies.satisfyDependency( createRaft( life, loggingOutbound, discoveryService, config,
+                messageLogger, raftLog, coreState, fileSystem, clusterStateDirectory, myself, logProvider,
+                raftServer, raftTimeoutService, databaseHealthSupplier, inFlightMap, platformModule.monitors,
+                platformModule.jobScheduler ) );
 
-            raft = dependencies.satisfyDependency( createRaft( life, loggingOutbound, discoveryService, config,
-                    messageLogger, raftLog, coreState, fileSystem, clusterStateDirectory, myself, logProvider,
-                    raftServer, raftTimeoutService, databaseHealthSupplier, inFlightMap, platformModule.monitors,
-                    platformModule.jobScheduler, localDatabase ) );
-
-            life.add( new PruningScheduler( coreState, platformModule.jobScheduler,
-                    config.get( CoreEdgeClusterSettings.raft_log_pruning_frequency ) ) );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        life.add( new PruningScheduler( coreState, platformModule.jobScheduler,
+                config.get( CoreEdgeClusterSettings.raft_log_pruning_frequency ) ) );
 
         RaftReplicator replicator =
                 new RaftReplicator( raft, myself,
                         loggingOutbound,
                         sessionPool, progressTracker,
                         new ExponentialBackoffStrategy( 10, SECONDS ) );
-
-        StateStorage<ReplicatedLockTokenState> lockTokenState;
-        try
-        {
-            lockTokenState = life.add(
-                    new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "lock-token-state" ),
-                            "lock-token", new ReplicatedLockTokenState.Marshal( new CoreMemberMarshal() ),
-                            config.get( CoreEdgeClusterSettings.replicated_lock_token_state_size ),
-                            databaseHealthSupplier, logProvider ) );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-
-        final StateStorage<IdAllocationState> idAllocationState;
-        try
-        {
-            idAllocationState = life.add(
-                    new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "id-allocation-state" ),
-                            "id-allocation", new IdAllocationState.Marshal(),
-                            config.get( CoreEdgeClusterSettings.id_alloc_state_size ), databaseHealthSupplier,
-                            logProvider ) );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
 
         ReplicatedIdAllocationStateMachine idAllocationStateMachine =
                 new ReplicatedIdAllocationStateMachine( idAllocationState );
@@ -545,9 +519,12 @@ public class EnterpriseCoreEditionModule extends EditionModule
             FileSystemAbstraction fileSystem, File clusterStateDirectory, CoreMember myself, LogProvider logProvider,
             RaftServer raftServer, DelayedRenewableTimeoutService raftTimeoutService,
             Supplier<DatabaseHealth> databaseHealthSupplier, InFlightMap<Long,RaftLogEntry> inFlightMap,
-            Monitors monitors, JobScheduler jobScheduler, LocalDatabase localDatabase )
+            Monitors monitors, JobScheduler jobScheduler )
     {
         StateStorage<TermState> termState;
+        StateStorage<VoteState> voteState;
+        StateStorage<RaftMembershipState> raftMembershipStorage;
+
         try
         {
             StateStorage<TermState> durableTermState = life.add(
@@ -555,30 +532,15 @@ public class EnterpriseCoreEditionModule extends EditionModule
                             "term-state", new TermState.Marshal(),
                             config.get( CoreEdgeClusterSettings.term_state_size ), databaseHealthSupplier,
                             logProvider ) );
-            termState = new MonitoredTermStateStorage( durableTermState, monitors );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
 
-        StateStorage<VoteState> voteState;
-        try
-        {
+            termState = new MonitoredTermStateStorage( durableTermState, monitors );
+
             voteState = life.add(
                     new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "vote-state" ),
                             "vote-state", new VoteState.Marshal( new CoreMemberMarshal() ),
                             config.get( CoreEdgeClusterSettings.vote_state_size ), databaseHealthSupplier,
                             logProvider ) );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
 
-        StateStorage<RaftMembershipState> raftMembershipStorage;
-        try
-        {
             raftMembershipStorage = life.add(
                     new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "membership-state" ),
                             "membership-state", new RaftMembershipState.Marshal( new CoreMemberMarshal() ),
@@ -606,8 +568,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         RaftMembershipManager raftMembershipManager =
                 new RaftMembershipManager( leaderOnlyReplicator, memberSetBuilder, raftLog, logProvider,
                         expectedClusterSize, electionTimeout, systemUTC(),
-                        config.get( CoreEdgeClusterSettings.join_catch_up_timeout ), raftMembershipStorage
-                );
+                        config.get( CoreEdgeClusterSettings.join_catch_up_timeout ), raftMembershipStorage );
 
         RaftLogShippingManager logShipping =
                 new RaftLogShippingManager( raftOutbound, logProvider, raftLog, systemUTC(),
@@ -660,8 +621,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
     private SchemaWriteGuard createSchemaWriteGuard()
     {
-        return () -> {
-        };
+        return () -> {};
     }
 
     private KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,

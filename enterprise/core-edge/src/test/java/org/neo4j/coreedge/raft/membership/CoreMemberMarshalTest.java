@@ -27,8 +27,8 @@ import java.util.UUID;
 
 import org.neo4j.coreedge.raft.net.NetworkFlushableChannelNetty4;
 import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
+import org.neo4j.coreedge.raft.state.EndOfStreamException;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.storageengine.api.ReadPastEndException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -72,7 +72,7 @@ public class CoreMemberMarshalTest
             marshal.unmarshal( new NetworkReadableClosableChannelNetty4( bufferWithMissingBytes ) );
             fail( "Should have thrown exception" );
         }
-        catch ( ReadPastEndException e )
+        catch ( EndOfStreamException e )
         {
             // expected
         }

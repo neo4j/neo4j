@@ -33,8 +33,8 @@ import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequestSerialize
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionSerializer;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.coreedge.raft.state.EndOfStreamException;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
-import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -92,43 +92,36 @@ public class CoreReplicatedContentMarshal implements ChannelMarshal<ReplicatedCo
     }
 
     @Override
-    public ReplicatedContent unmarshal( ReadableChannel channel ) throws IOException
+    public ReplicatedContent unmarshal( ReadableChannel channel ) throws IOException, EndOfStreamException
     {
-        try
+        byte type = channel.get();
+        final ReplicatedContent content;
+        switch ( type )
         {
-            byte type = channel.get();
-            final ReplicatedContent content;
-            switch ( type )
-            {
-                case TX_CONTENT_TYPE:
-                    content = ReplicatedTransactionSerializer.unmarshal( channel );
-                    break;
-                case RAFT_MEMBER_SET_TYPE:
-                    content = CoreMemberSetSerializer.unmarshal( channel );
-                    break;
-                case ID_RANGE_REQUEST_TYPE:
-                    content = ReplicatedIdAllocationRequestSerializer.unmarshal( channel );
-                    break;
-                case TOKEN_REQUEST_TYPE:
-                    content = ReplicatedTokenRequestSerializer.unmarshal( channel );
-                    break;
-                case NEW_LEADER_BARRIER_TYPE:
-                    content = new NewLeaderBarrier();
-                    break;
-                case LOCK_TOKEN_REQUEST:
-                    content = ReplicatedLockTokenSerializer.unmarshal( channel );
-                    break;
-                case DISTRIBUTED_OPERATION:
-                    content = DistributedOperation.deserialize( channel );
-                    break;
-                default:
-                    throw new IllegalArgumentException( String.format( "Unknown content type 0x%x", type ) );
-            }
-            return content;
+            case TX_CONTENT_TYPE:
+                content = ReplicatedTransactionSerializer.unmarshal( channel );
+                break;
+            case RAFT_MEMBER_SET_TYPE:
+                content = CoreMemberSetSerializer.unmarshal( channel );
+                break;
+            case ID_RANGE_REQUEST_TYPE:
+                content = ReplicatedIdAllocationRequestSerializer.unmarshal( channel );
+                break;
+            case TOKEN_REQUEST_TYPE:
+                content = ReplicatedTokenRequestSerializer.unmarshal( channel );
+                break;
+            case NEW_LEADER_BARRIER_TYPE:
+                content = new NewLeaderBarrier();
+                break;
+            case LOCK_TOKEN_REQUEST:
+                content = ReplicatedLockTokenSerializer.unmarshal( channel );
+                break;
+            case DISTRIBUTED_OPERATION:
+                content = DistributedOperation.deserialize( channel );
+                break;
+            default:
+                throw new IllegalArgumentException( String.format( "Unknown content type 0x%x", type ) );
         }
-        catch( ReadPastEndException notEnoughBytes )
-        {
-            return null;
-        }
+        return content;
     }
 }

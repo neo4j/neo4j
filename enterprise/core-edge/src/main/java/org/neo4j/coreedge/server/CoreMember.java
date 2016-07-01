@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.UUID;
 
-import org.neo4j.coreedge.raft.state.StateMarshal;
+import org.neo4j.coreedge.raft.state.SafeStateMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -74,7 +74,7 @@ public class CoreMember
         return Objects.hash( uuid );
     }
 
-    public static class CoreMemberMarshal implements StateMarshal<CoreMember>
+    public static class CoreMemberMarshal extends SafeStateMarshal<CoreMember>
     {
         @Override
         public void marshal( CoreMember member, WritableChannel channel ) throws IOException
@@ -92,17 +92,17 @@ public class CoreMember
         }
 
         @Override
-        public CoreMember unmarshal( ReadableChannel source ) throws IOException
+        public CoreMember unmarshal0( ReadableChannel channel ) throws IOException
         {
-            byte marker = source.get();
-            if ( marker == 0 )
+            byte nullMarker = channel.get();
+            if ( nullMarker == 0 )
             {
                 return null;
             }
             else
             {
-                long mostSigBits = source.getLong();
-                long leastSigBits = source.getLong();
+                long mostSigBits = channel.getLong();
+                long leastSigBits = channel.getLong();
                 return new CoreMember( new UUID( mostSigBits, leastSigBits ) );
             }
         }
