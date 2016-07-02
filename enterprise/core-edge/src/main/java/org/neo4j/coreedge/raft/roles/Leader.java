@@ -80,7 +80,7 @@ public class Leader implements RaftMessageHandler
                 outcome.setNextRole( FOLLOWER );
                 log.info( "Moving to FOLLOWER state after receiving heartbeat at term %d (my term is " +
                         "%d) from %s", req.leaderTerm(), ctx.term(), req.from() );
-                Heart.beat( ctx, outcome, (Heartbeat) message );
+                Heart.beat( ctx, outcome, (Heartbeat) message, log );
                 break;
             }
 
@@ -114,15 +114,14 @@ public class Leader implements RaftMessageHandler
                     outcome.setNextRole( FOLLOWER );
                     log.info( "Moving to FOLLOWER state after receiving append request at term %d (my term is " +
                             "%d) from %s", req.leaderTerm(), ctx.term(), req.from() );
-                    Appending.handleAppendEntriesRequest( ctx, outcome, req );
+                    Appending.handleAppendEntriesRequest( ctx, outcome, req, log );
                     break;
                 }
             }
 
             case APPEND_ENTRIES_RESPONSE:
             {
-                RaftMessages.AppendEntries.Response response =
-                        (RaftMessages.AppendEntries.Response) message;
+                RaftMessages.AppendEntries.Response response = (RaftMessages.AppendEntries.Response) message;
 
                 if ( response.term() < ctx.term() )
                 {

@@ -31,11 +31,13 @@ import org.neo4j.coreedge.raft.outcome.ShipCommand;
 import org.neo4j.coreedge.raft.outcome.TruncateLogCommand;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
+import org.neo4j.logging.Log;
 
 public class Appending
 {
     static void handleAppendEntriesRequest( ReadableRaftState state, Outcome outcome,
-            RaftMessages.AppendEntries.Request request ) throws IOException
+            RaftMessages.AppendEntries.Request request, Log log ) throws IOException
+
     {
         if ( request.leaderTerm() < state.term() )
         {
@@ -51,7 +53,7 @@ public class Appending
         outcome.setLeader( request.from() );
         outcome.setLeaderCommit( request.leaderCommit() );
 
-        if ( !Follower.logHistoryMatches( state, request.prevLogIndex(), request.prevLogTerm() ) )
+        if ( !Follower.logHistoryMatches( state, request.prevLogIndex(), request.prevLogTerm(), log ) )
         {
             assert request.prevLogIndex() > -1 && request.prevLogTerm() > -1;
             RaftMessages.AppendEntries.Response appendResponse = new RaftMessages.AppendEntries.Response(

@@ -53,8 +53,8 @@ public class ClusterFormationIT
     public void shouldBeAbleToAddAndRemoveCoreServers() throws Exception
     {
         // when
-        cluster.removeCoreServerWithServerId( 0 );
-        cluster.addCoreServerWithServerId( 0, 3 );
+        cluster.getCoreServerById( 0 ).shutdown();
+        cluster.getCoreServerById( 0 ).start();
 
         // then
         assertEquals( 3, cluster.numberOfCoreServers() );
@@ -66,7 +66,7 @@ public class ClusterFormationIT
         assertEquals( 2, cluster.numberOfCoreServers() );
 
         // when
-        cluster.addCoreServerWithServerId( 4, 3 );
+        cluster.addCoreServerWithServerId( 4, 3 ).start();
 
         // then
         assertEquals( 3, cluster.numberOfCoreServers() );
@@ -78,7 +78,7 @@ public class ClusterFormationIT
         // given
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.submit( () -> {
-            CoreGraphDatabase leader = cluster.getDbWithRole( Role.LEADER );
+            CoreGraphDatabase leader = cluster.getDbWithRole( Role.LEADER ).database();
             try ( Transaction tx = leader.beginTx() )
             {
                 leader.createNode();
@@ -87,20 +87,20 @@ public class ClusterFormationIT
         } );
 
         // when
-        cluster.removeCoreServerWithServerId( 0 );
-        cluster.addCoreServerWithServerId( 0, 3 );
+        cluster.getCoreServerById( 0 ).shutdown();
+        cluster.getCoreServerById( 0 ).start();
 
         // then
         assertEquals( 3, cluster.numberOfCoreServers() );
 
         // when
-        cluster.removeCoreServerWithServerId( 1 );
+        cluster.removeCoreServerWithServerId( 0 );
 
         // then
         assertEquals( 2, cluster.numberOfCoreServers() );
 
         // when
-        cluster.addCoreServerWithServerId( 4, 3 );
+        cluster.addCoreServerWithServerId( 4, 3 ).start();
 
         // then
         assertEquals( 3, cluster.numberOfCoreServers() );
@@ -123,7 +123,8 @@ public class ClusterFormationIT
 
         // when
         cluster.removeCoreServerWithServerId( 1 );
-        cluster.addCoreServerWithServerId( 3, 3 );
+
+        cluster.addCoreServerWithServerId( 3, 3 ).start();
         cluster.shutdown();
 
         cluster.start();

@@ -358,7 +358,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         long electionTimeout = config.get( CoreEdgeClusterSettings.leader_election_timeout );
         MembershipWaiter membershipWaiter =
-                new MembershipWaiter( myself, platformModule.jobScheduler, electionTimeout * 4, logProvider );
+                new MembershipWaiter( myself, platformModule.jobScheduler, electionTimeout * 4, raftServer, logProvider );
 
         ReplicatedIdGeneratorFactory replicatedIdGeneratorFactory =
                 createIdGeneratorFactory( fileSystem, idRangeAcquirer, logProvider );

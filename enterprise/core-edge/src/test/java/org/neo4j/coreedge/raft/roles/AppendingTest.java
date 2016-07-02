@@ -32,6 +32,8 @@ import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.outcome.TruncateLogCommand;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.logging.NullLog;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -71,7 +73,7 @@ public class AppendingTest
                         localTermForAllEntries,
                         new RaftLogEntry[]{
                                 new RaftLogEntry( localTermForAllEntries + 1, ReplicatedInteger.valueOf( 2 ) )},
-                        appendIndex + 3 ) );
+                        appendIndex + 3 ), NullLog.getInstance() );
 
         // then
         // we must produce a TruncateLogCommand at the earliest mismatching index
@@ -102,7 +104,7 @@ public class AppendingTest
                             localTermForAllEntries,
                             new RaftLogEntry[]{
                                     new RaftLogEntry( localTermForAllEntries + 1, ReplicatedInteger.valueOf( 2 ) )},
-                            commitIndex + 3 ) );
+                            commitIndex + 3 ), NullLog.getInstance() );
             fail( "Appending should not allow truncation at or before the commit index" );
         }
         catch ( IllegalStateException expected )
@@ -135,7 +137,7 @@ public class AppendingTest
                             localTermForAllEntries,
                             new RaftLogEntry[]{
                                     new RaftLogEntry( localTermForAllEntries + 1, ReplicatedInteger.valueOf( 2 ) )},
-                            commitIndex + 3 ) );
+                            commitIndex + 3 ), NullLog.getInstance() );
             fail( "Appending should not allow truncation at or before the commit index" );
         }
         catch ( IllegalStateException expected )
@@ -173,7 +175,7 @@ public class AppendingTest
                         prevTerm,
                         new RaftLogEntry[]{
                                 new RaftLogEntry( prevTerm, ReplicatedInteger.valueOf( 2 ) )},
-                        commitIndex + 3 ) );
+                        commitIndex + 3 ), NullLog.getInstance() );
 
         // then
         // there should be no truncate commands. Actually, the whole thing should be a no op

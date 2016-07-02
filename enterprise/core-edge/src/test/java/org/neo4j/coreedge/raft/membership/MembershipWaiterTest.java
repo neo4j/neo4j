@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.coreedge.raft.RaftServer;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.state.RaftState;
@@ -34,6 +35,8 @@ import org.neo4j.test.OnDemandJobScheduler;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+
 import static org.neo4j.coreedge.raft.ReplicatedInteger.valueOf;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
 
@@ -44,7 +47,7 @@ public class MembershipWaiterTest
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
         MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, 500,
-                NullLogProvider.getInstance() );
+                mock(RaftServer.class), NullLogProvider.getInstance() );
 
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
         raftLog.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
@@ -66,7 +69,7 @@ public class MembershipWaiterTest
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
         MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, 1,
-                NullLogProvider.getInstance());
+                mock(RaftServer.class), NullLogProvider.getInstance());
 
         RaftState raftState = RaftStateBuilder.raftState()
                 .votingMembers( member( 1 ) )
@@ -93,7 +96,7 @@ public class MembershipWaiterTest
     {
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
         MembershipWaiter waiter = new MembershipWaiter( member( 0 ), jobScheduler, 1,
-                NullLogProvider.getInstance() );
+                mock(RaftServer.class), NullLogProvider.getInstance() );
 
         RaftState raftState = RaftStateBuilder.raftState()
                 .votingMembers( member( 0 ), member( 1 ) )

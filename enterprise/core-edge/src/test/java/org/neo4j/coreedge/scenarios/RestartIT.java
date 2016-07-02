@@ -19,19 +19,17 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import java.io.File;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.server.core.CoreGraphDatabase;
-import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
+import org.neo4j.coreedge.discovery.CoreServer;
+import org.neo4j.coreedge.discovery.EdgeServer;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -88,7 +86,7 @@ public class RestartIT
         Cluster cluster = clusterRule.startCluster();
 
         // when
-        final GraphDatabaseService coreDB = cluster.getCoreServerById( 0 );
+        final GraphDatabaseService coreDB = cluster.getCoreServerById( 0 ).database();
 
         ExecutorService executor = Executors.newCachedThreadPool();
 
@@ -126,7 +124,7 @@ public class RestartIT
         Cluster cluster = clusterRule.withNumberOfCoreServers( 2 ).withNumberOfEdgeServers( 1 ).startCluster();
 
         // when
-        final GraphDatabaseService coreDB = cluster.awaitLeader( 5000 );
+        final GraphDatabaseService coreDB = cluster.awaitLeader( 5000 ).database();
 
         try ( Transaction tx = coreDB.beginTx() )
         {
@@ -135,21 +133,21 @@ public class RestartIT
             tx.success();
         }
 
-        cluster.addCoreServerWithServerId( 2, 3 );
+        cluster.addCoreServerWithServerId( 2, 3 ).start();
         cluster.shutdown();
 
-        for ( CoreGraphDatabase core : cluster.coreServers() )
+        for ( CoreServer core : cluster.coreServers() )
         {
             ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
-                    new File( core.getStoreDir() ),Config.defaults(), ProgressMonitorFactory.NONE,
+                    core.storeDir(), Config.defaults(), ProgressMonitorFactory.NONE,
                     FormattedLogProvider.toOutputStream( System.out ), new DefaultFileSystemAbstraction(), false );
             assertTrue( "Inconsistent: " + core, result.isSuccessful() );
         }
 
-        for ( EdgeGraphDatabase edge : cluster.edgeServers() )
+        for ( EdgeServer edge : cluster.edgeServers() )
         {
             ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
-                    new File( edge.getStoreDir() ), Config.defaults(), ProgressMonitorFactory.NONE,
+                    edge.storeDir(), Config.defaults(), ProgressMonitorFactory.NONE,
                     FormattedLogProvider.toOutputStream( System.out ), new DefaultFileSystemAbstraction(), false );
             assertTrue( "Inconsistent: " + edge, result.isSuccessful() );
         }

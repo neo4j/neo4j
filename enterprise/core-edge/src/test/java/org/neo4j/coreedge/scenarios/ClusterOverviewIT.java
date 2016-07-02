@@ -59,7 +59,7 @@ public class ClusterOverviewIT
         List<Object[]> overview;
         for ( int i = 0; i < 3; i++ )
         {
-            overview = clusterOverview( cluster.getCoreServerById( i ) );
+            overview = clusterOverview( cluster.getCoreServerById( i ).database() );
 
             assertThat( overview, containsRole( "leader", 1 ) );
             assertThat( overview, containsRole( "follower", 2 ) );

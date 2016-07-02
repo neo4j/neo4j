@@ -23,18 +23,14 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.server.core.CoreGraphDatabase;
+import org.neo4j.coreedge.discovery.CoreServer;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.coreedge.ClusterRule;
@@ -60,8 +56,7 @@ public class RecoveryIT
 
         fireSomeLoadAtTheCluster( cluster );
 
-        Set<File> storeDirs = cluster.coreServers().stream()
-                .map( CoreGraphDatabase::getStoreDir ).map( File::new ).collect( toSet() );
+        Set<File> storeDirs = cluster.coreServers().stream().map( CoreServer::storeDir ).collect( toSet() );
 
         // when
         cluster.shutdown();
@@ -79,15 +74,14 @@ public class RecoveryIT
 
         fireSomeLoadAtTheCluster( cluster );
 
-        Set<File> storeDirs = cluster.coreServers().stream()
-                .map( CoreGraphDatabase::getStoreDir ).map( File::new ).collect( toSet() );
+        Set<File> storeDirs = cluster.coreServers().stream().map( CoreServer::storeDir ).collect( toSet() );
 
         // when
         for ( int i = 0; i < clusterSize; i++ )
         {
             cluster.removeCoreServerWithServerId( i );
             fireSomeLoadAtTheCluster( cluster );
-            cluster.addCoreServerWithServerId( i, clusterSize );
+            cluster.addCoreServerWithServerId( i, clusterSize ).start();
         }
 
         cluster.shutdown();

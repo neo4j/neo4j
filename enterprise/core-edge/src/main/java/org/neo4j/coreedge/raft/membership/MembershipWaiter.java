@@ -22,8 +22,10 @@ package org.neo4j.coreedge.raft.membership;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
+import org.neo4j.coreedge.raft.RaftServer;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -51,13 +53,15 @@ public class MembershipWaiter
     private final CoreMember myself;
     private final JobScheduler jobScheduler;
     private final long maxCatchupLag;
+    private final RaftServer raftServer;
     private final Log log;
 
-    public MembershipWaiter( CoreMember myself, JobScheduler jobScheduler, long maxCatchupLag, LogProvider logProvider )
+    public MembershipWaiter( CoreMember myself, JobScheduler jobScheduler, long maxCatchupLag, RaftServer raftServer, LogProvider logProvider )
     {
         this.myself = myself;
         this.jobScheduler = jobScheduler;
         this.maxCatchupLag = maxCatchupLag;
+        this.raftServer = raftServer;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -65,16 +69,19 @@ public class MembershipWaiter
     {
         CompletableFuture<Boolean> catchUpFuture = new CompletableFuture<>();
 
+        Evaluator evaluator = new Evaluator( raftState, catchUpFuture );
+        raftServer.addMismatchedStoreListener( evaluator );
+
         JobScheduler.JobHandle jobHandle = jobScheduler.scheduleRecurring(
                 new JobScheduler.Group( getClass().toString(), POOLED ),
-                new Evaluator( raftState, catchUpFuture ), maxCatchupLag, MILLISECONDS );
+                evaluator, maxCatchupLag, MILLISECONDS );
 
         catchUpFuture.whenComplete( ( result, e ) -> jobHandle.cancel( true ) );
 
         return catchUpFuture;
     }
 
-    private class Evaluator implements Runnable
+    private class Evaluator implements Runnable, RaftServer.MismatchedStoreListener
     {
         private final ReadableRaftState raftState;
         private final CompletableFuture<Boolean> catchUpFuture;
@@ -119,10 +126,8 @@ public class MembershipWaiter
             lastLeaderCommit = raftState.leaderCommit();
             if ( lastLeaderCommit != -1 )
             {
-                log.info( "%s Catchup: %d => %d (%d behind)",
-                        myself,
-                        localCommit, lastLeaderCommit,
-                        lastLeaderCommit - localCommit );
+                long gap = lastLeaderCommit - localCommit;
+                log.info( "%s Catchup: %d => %d (%d behind)", myself, localCommit, lastLeaderCommit, gap );
             }
             else
             {
@@ -130,6 +135,12 @@ public class MembershipWaiter
             }
 
             return caughtUpWithLeader;
+        }
+
+        @Override
+        public void onMismatchedStore(RaftServer.MismatchedStoreIdException ex)
+        {
+            catchUpFuture.completeExceptionally( ex );
         }
     }
 }

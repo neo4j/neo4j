@@ -26,23 +26,20 @@ import org.junit.Test;
 import java.io.File;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.neo4j.coreedge.discovery.Cluster;
+import org.neo4j.coreedge.discovery.CoreServer;
+import org.neo4j.coreedge.discovery.EdgeServer;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
-import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Metrics;
 import org.neo4j.function.ThrowingSupplier;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.metrics.source.coreedge.CoreMetrics;
 import org.neo4j.test.coreedge.ClusterRule;
-import org.neo4j.test.rule.TargetDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -94,7 +91,7 @@ public class CoreEdgeMetricsIT
         cluster = clusterRule.startCluster();
 
         // when
-        CoreGraphDatabase coreDB = cluster.awaitLeader( 5000 );
+        CoreGraphDatabase coreDB = cluster.awaitLeader( 5000 ).database();
 
         try ( Transaction tx = coreDB.beginTx() )
         {
@@ -104,12 +101,17 @@ public class CoreEdgeMetricsIT
         }
 
         // then
-        for ( GraphDatabaseAPI db : concat( cluster.coreServers(), cluster.edgeServers() ) )
+        for ( CoreServer db : cluster.coreServers() )
         {
-            assertAllNodesVisible( db );
+            assertAllNodesVisible( db.database() );
         }
 
-        File coreServerMetricsDir = new File( cluster.getCoreServerById( 0 ).getStoreDir(), csvPath.getDefaultValue() );
+        for ( EdgeServer db : cluster.edgeServers() )
+        {
+            assertAllNodesVisible( db.database() );
+        }
+
+        File coreServerMetricsDir = new File( cluster.getCoreServerById( 0 ).storeDir(), csvPath.getDefaultValue() );
 
         assertEventually( "append index eventually accurate",
                 () -> readLongValue( metricsCsv( coreServerMetricsDir, CoreMetrics.APPEND_INDEX ) ),
@@ -129,7 +131,7 @@ public class CoreEdgeMetricsIT
 
         assertEventually( "tx pull requests received eventually accurate", () -> {
             long total = 0;
-            for ( final CoreGraphDatabase db : cluster.coreServers() )
+            for ( final CoreGraphDatabase db : cluster.coreServers().stream().map( CoreServer::database ).collect( Collectors.toList()) )
             {
                 File metricsDir = new File( db.getStoreDir(), "metrics" );
                 total += readLongValue( metricsCsv( metricsDir, CoreMetrics.TX_PULL_REQUESTS_RECEIVED ) );

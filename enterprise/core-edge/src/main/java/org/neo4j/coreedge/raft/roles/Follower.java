@@ -35,7 +35,7 @@ import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 
 class Follower implements RaftMessageHandler
 {
-    static boolean logHistoryMatches( ReadableRaftState ctx, long prevLogIndex, long prevLogTerm )
+    static boolean logHistoryMatches( ReadableRaftState ctx, long prevLogIndex, long prevLogTerm, Log log )
             throws IOException
     {
         // NOTE: A prevLogIndex before or at our log's prevIndex means that we
@@ -44,8 +44,18 @@ class Follower implements RaftMessageHandler
         // NOTE: The entry term for a non existing log index is defined as -1,
         //       so the history for a non existing log entry never matches.
 
-        return prevLogIndex <= ctx.entryLog().prevIndex() ||
-                ctx.entryLog().readEntryTerm( prevLogIndex ) == prevLogTerm;
+        long logPrevIndex = ctx.entryLog().prevIndex();
+        long logPrevTerm = ctx.entryLog().readEntryTerm( prevLogIndex );
+
+        boolean logHistoryMatches = prevLogIndex <= logPrevIndex || logPrevTerm == prevLogTerm;
+
+        if ( !logHistoryMatches )
+        {
+            log.info( "Log history mismatch: index:[%s, %s], term:[%s, %s]",
+                    logPrevIndex, prevLogIndex, logPrevTerm, prevLogTerm );
+        }
+
+        return logHistoryMatches;
     }
 
     static void commitToLogOnUpdate( ReadableRaftState ctx, long indexOfLastNewEntry, long leaderCommit, Outcome outcome )
@@ -80,13 +90,13 @@ class Follower implements RaftMessageHandler
         {
             case HEARTBEAT:
             {
-                Heart.beat( ctx, outcome, (Heartbeat) message );
+                Heart.beat( ctx, outcome, (Heartbeat) message, log );
                 break;
             }
 
             case APPEND_ENTRIES_REQUEST:
             {
-                Appending.handleAppendEntriesRequest( ctx, outcome, (AppendEntries.Request) message );
+                Appending.handleAppendEntriesRequest( ctx, outcome, (AppendEntries.Request) message, log );
                 break;
             }
 

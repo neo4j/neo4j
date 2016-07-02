@@ -101,13 +101,21 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
      */
     public Cluster startCluster() throws Exception
     {
+        createCluster();
+        cluster.start();
+        cluster.awaitLeader();
+        return cluster;
+    }
+
+    public Cluster createCluster() throws Exception
+    {
         if ( cluster == null )
         {
             cluster = new Cluster( clusterDirectory, noCoreServers, noEdgeServers, factory, coreParams,
                     instanceCoreParams, edgeParams, instanceEdgeParams, recordFormat );
-            cluster.start();
+
         }
-        cluster.awaitLeader();
+
         return cluster;
     }
 
