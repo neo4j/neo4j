@@ -182,7 +182,17 @@ Function Get-Java
         $ShellArgs += "-Xloggc:$($Neo4jServer.Home)/gc.log"
 
         $option = (Get-Neo4jSetting -Name 'dbms.logs.gc.options' -Neo4jServer $Neo4jServer)
-        if ($option -ne $null) { $ShellArgs += @('-XX:+PrintGCDetails','-XX:+PrintGCDateStamps','-XX:+PrintGCApplicationStoppedTime','-XX:+PrintPromotionFailure','-XX:+PrintTenuringDistribution','-XX:+UseGCLogFileRotation')}
+        if ($option -eq $null) {
+          $ShellArgs += @('-XX:+PrintGCDetails',
+                          '-XX:+PrintGCDateStamps',
+                          '-XX:+PrintGCApplicationStoppedTime',
+                          '-XX:+PrintPromotionFailure',
+                          '-XX:+PrintTenuringDistribution',
+                          '-XX:+UseGCLogFileRotation')
+        } else {
+          # The GC options _should_ be space delimited
+          $ShellArgs += ($option.Value -split ' ')
+        }
 
         $option = (Get-Neo4jSetting -Name 'dbms.logs.gc.rotation.size' -Neo4jServer $Neo4jServer)
         if ($option -ne $null) {

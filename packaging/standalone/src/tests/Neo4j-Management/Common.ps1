@@ -33,7 +33,14 @@ Function global:New-InvalidNeo4jInstall($ServerType = 'Enterprise', $ServerVersi
   return $serverObject
 }
 
-Function global:New-MockNeo4jInstall($IncludeFiles = $true, $ServerType = 'Community', $ServerVersion = '0.0', $DatabaseMode = '', $WindowsService = $global:mockServiceName) {
+Function global:New-MockNeo4jInstall(
+  $IncludeFiles = $true,
+  $ServerType = 'Community',
+  $ServerVersion = '0.0',
+  $DatabaseMode = '',
+  $WindowsService = $global:mockServiceName,
+  $NeoConfSettings = @()
+  ) {
   # Creates a skeleton directory and file structure of a Neo4j Installation
   $RootDir = $global:mockNeo4jHome
   New-Item $RootDir -ItemType Directory | Out-Null
@@ -55,9 +62,9 @@ Function global:New-MockNeo4jInstall($IncludeFiles = $true, $ServerType = 'Commu
     'TempFile' | Out-File -FilePath "$RootDir\bin\tools\prunsrv-i386.exe"
   
     # Create fake neo4j.conf
-    $neoConf = ''
+    $neoConf = $NeoConfSettings -join "`n`r"
     if ($DatabaseMode -ne '') {
-      $neoConf += "dbms.mode=$DatabaseMode`n`r"
+      $neoConf += "`n`rdbms.mode=$DatabaseMode"
     }    
     $neoConf | Out-File -FilePath "$RootDir\conf\neo4j.conf"
 
