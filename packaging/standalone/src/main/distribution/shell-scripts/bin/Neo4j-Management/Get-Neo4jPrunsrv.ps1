@@ -95,9 +95,15 @@ Function Get-Neo4jPrunsrv
       "ServerInstallInvoke"   {
         $PrunArgs += @("//IS//$($Name)")
 
-        $JvmOptions = @('-Dfile.encoding=UTF-8')
+        $JvmOptions = @()
+        Write-Verbose "Reading JVM settings from neo4j-wrapper.conf"
         $setting = (Get-Neo4jSetting -ConfigurationFile 'neo4j-wrapper.conf' -Name 'dbms.jvm.additional' -Neo4jServer $Neo4jServer)
-        if ($setting -ne $null) { $JvmOptions += $setting.Value }
+        if ($setting -ne $null) { $JvmOptions = [array](Merge-Neo4jJavaSettings -Source $JvmOptions -Add $setting.Value) }
+
+        # Pass through appropriate args from Java invocation to Prunsrv
+        # These options take priority over settings in the wrapper
+        Write-Verbose "Reading JVM settings from console java invocation"
+        $JvmOptions = [array](Merge-Neo4jJavaSettings -Source $JvmOptions -Add ($JavaCMD.args | Where-Object { $_ -match '(^-D|^-X)' }))
 
         $PrunArgs += @('--StartMode=jvm',
           '--StartMethod=start',
