@@ -38,16 +38,20 @@ object CardinalityCostModel extends CostModel {
 
   private def costPerRow(plan: LogicalPlan): CostPerRow = plan match {
 
-    case  _: AllNodesScan |
-         _: DirectedRelationshipByIdSeek |
-         _: UndirectedRelationshipByIdSeek |
+    case  _: NodeByLabelScan |
          _: ProjectEndpoints
     => FAST_STORE
 
-    case _: NodeByLabelScan => 1.6
+    case _: AllNodesScan => 1.2
 
     case _: Expand |
-         _: VarExpand  => 2.5
+         _: VarExpand  => 2.0
+
+    case _: NodeUniqueIndexSeek |
+         _: NodeIndexSeek |
+         _: NodeIndexContainsScan |
+         _: NodeIndexEndsWithScan |
+         _: NodeIndexScan => 3.0
 
     // Filtering on labels and properties
     case Selection(predicates, _) if predicates.exists {
@@ -55,6 +59,8 @@ object CardinalityCostModel extends CostModel {
       case _ => false
     }
     => FAST_STORE
+
+    case _: NodeByIdSeek  => 8.0
 
     case _: NodeHashJoin |
          _: Aggregation |
@@ -76,12 +82,8 @@ object CardinalityCostModel extends CostModel {
 
     case _: FindShortestPaths |
          _: LegacyIndexSeek |
-         _: NodeByIdSeek |
-         _: NodeUniqueIndexSeek |
-         _: NodeIndexSeek |
-         _: NodeIndexContainsScan |
-         _: NodeIndexEndsWithScan |
-         _: NodeIndexScan
+         _: DirectedRelationshipByIdSeek |
+         _: UndirectedRelationshipByIdSeek
     => SLOW_STORE
 
     case _

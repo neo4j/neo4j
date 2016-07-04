@@ -38,7 +38,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.coreapi.{PropertyContainerLocker, InternalTransaction}
+import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
 
 import scala.collection.mutable
@@ -72,10 +72,12 @@ class ActualCostCalculationTest extends CypherFunSuite {
       for (count <- 1 to STEPS) {
         setUpDb(graph, chunk)
 
-
         results.addAll("AllNodeScan", runSimulation(graph, allNodes))
         results.addAll("NodeByLabelScan", runSimulation(graph, labelScan))
+        results.addAll("NodeByID", runSimulation(graph, nodeById(42L)))
+        results.addAll("RelByID", runSimulation(graph, relById(42L)))
         results.addAll("NodeIndexSeek", runSimulation(graph, indexSeek(graph)))
+        results.addAll("NodeIndexScan", runSimulation(graph, indexSeek(graph)))
         results.addAll("Expand", expandResult(graph))
       }
 
@@ -233,9 +235,9 @@ class ActualCostCalculationTest extends CypherFunSuite {
       val state = QueryStateHelper.emptyWith(queryContext)
       for (x <- 0 to 25) {
         for (pipe <- pipes) {
-          val start = System.currentTimeMillis()
+          val start = System.nanoTime()
           val numberOfRows = pipe.createResults(state).size
-          val elapsed = System.currentTimeMillis() - start
+          val elapsed = System.nanoTime() - start
 
           //warmup
           if (x > 4) results.append(DataPoint(elapsed, numberOfRows))
@@ -285,6 +287,10 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   private def allNodes = new AllNodesScanPipe("x")()
 
+  private def nodeById(id: Long) = new NodeByIdSeekPipe("x", SingleSeekArg(Literal(id)))()
+
+  private def relById(id: Long) = new UndirectedRelationshipByIdSeekPipe("r", SingleSeekArg(Literal(id)), "to", "from")()
+
   private def eager(pipe: Pipe) = new EagerPipe(pipe)()
 
   private def indexSeek(graph: GraphDatabaseQueryService) = {
@@ -299,6 +305,21 @@ class ActualCostCalculationTest extends CypherFunSuite {
       val propertyKeyToken = ast.PropertyKeyToken(PROPERTY, PropertyKeyId(propKeyId))
 
       new NodeIndexSeekPipe(LABEL.name(), labelToken, propertyKeyToken, SingleQueryExpression(literal), IndexSeek)()
+    }
+  }
+
+  private def indexScan(graph: GraphDatabaseQueryService) = {
+    graph.withTx { tx =>
+      val transactionalContext = new TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, tx, graph.statement, new PropertyContainerLocker))
+      val ctx = new TransactionBoundPlanContext(transactionalContext)
+      val literal = Literal(42)
+
+      val labelId = ctx.getOptLabelId(LABEL.name()).get
+      val propKeyId = ctx.getOptPropertyKeyId(PROPERTY).get
+      val labelToken = ast.LabelToken(LABEL.name(), LabelId(labelId))
+      val propertyKeyToken = ast.PropertyKeyToken(PROPERTY, PropertyKeyId(propKeyId))
+
+      new NodeIndexScanPipe(LABEL.name(), labelToken, propertyKeyToken)()
     }
   }
 
