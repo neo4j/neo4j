@@ -67,6 +67,23 @@
       </includes>
 	  <filtered>true</filtered>
     </fileSet>
+    <!-- cypher-shell -->
+    <fileSet>
+      <directory>${project.parent.basedir}/src/main/distribution/cypher-shell/bin</directory>
+      <outputDirectory>bin</outputDirectory>
+      <lineEnding>dos</lineEnding>
+      <includes>
+        <include>*.exe</include>
+        <include>*.bat</include>
+      </includes>
+    </fileSet>
+    <fileSet>
+      <directory>${project.parent.basedir}/src/main/distribution/cypher-shell/lib</directory>
+      <outputDirectory>lib</outputDirectory>
+      <includes>
+        <include>*.jar</include>
+      </includes>
+    </fileSet>
   </fileSets>
 
   <dependencySets>
