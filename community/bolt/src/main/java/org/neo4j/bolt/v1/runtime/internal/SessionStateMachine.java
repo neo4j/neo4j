@@ -82,7 +82,7 @@ class SessionStateMachine implements Session, SessionState
                         try
                         {
                             AuthenticationResult authResult = ctx.spi.authenticate( authToken );
-                            ctx.transactionIdTracker = ctx.spi.versionTracking( currentHighestTransactionId );
+                            ctx.versionTracker = ctx.spi.versionTracker( currentHighestTransactionId );
                             ctx.authSubject = authResult.getAuthSubject();
                             ctx.credentialsExpired = authResult.credentialsExpired();
                             ctx.result( authResult.credentialsExpired() );
@@ -169,7 +169,7 @@ class SessionStateMachine implements Session, SessionState
                             // way, we need a different way to kill statements running in implicit
                             // transactions, because we do that by calling #terminate() on this tx.
                             ctx.currentTransaction =
-                                    ctx.spi.beginTransaction( type, ctx.authSubject, ctx.transactionIdTracker );
+                                    ctx.spi.beginTransaction( type, ctx.authSubject, ctx.versionTracker );
                             return IN_TRANSACTION;
                         }
                         catch ( TransactionFailureException e )
@@ -691,7 +691,7 @@ class SessionStateMachine implements Session, SessionState
     /** These are the "external" actions the state machine can take */
     private final SPI spi;
 
-    private SPI.TransactionIdTracker transactionIdTracker;
+    private VersionTracker versionTracker;
 
     /**
      * This SPI encapsulates the "external" actions the state machine can take.
@@ -712,8 +712,7 @@ class SessionStateMachine implements Session, SessionState
         String connectionDescriptor();
         void reportError( Neo4jError err );
         void reportError( String message, Throwable cause );
-        KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode mode,
-                                            TransactionIdTracker transactionIdTracker )
+        KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode mode, VersionTracker versionTracker )
                 throws TransactionFailureException;
         void bindTransactionToCurrentThread( KernelTransaction tx );
         void unbindTransactionFromCurrentThread();
@@ -724,14 +723,7 @@ class SessionStateMachine implements Session, SessionState
         Statement currentStatement();
         void sessionActivated( Session session );
         void sessionHalted( Session session );
-        TransactionIdTracker versionTracking( long startingVersion );
-
-        interface TransactionIdTracker
-        {
-            void assertUpToDate() throws TransactionFailureException;
-
-            void updateVersion( long version );
-        }
+        VersionTracker versionTracker( long startingVersion );
     }
 
     SessionStateMachine( String connectionDescriptor, UsageData usageData, GraphDatabaseAPI db,

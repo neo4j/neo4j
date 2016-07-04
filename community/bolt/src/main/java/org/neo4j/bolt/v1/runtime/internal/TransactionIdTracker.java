@@ -22,13 +22,14 @@ package org.neo4j.bolt.v1.runtime.internal;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import org.neo4j.function.Predicates;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
+import static org.neo4j.function.Predicates.tryAwait;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
-class TransactionIdTracking implements SessionStateMachine.SPI.TransactionIdTracker
+class TransactionIdTracker implements VersionTracker
 {
     private final Supplier<TransactionIdStore> transactionIdStore;
     private final int timeout;
@@ -36,8 +37,8 @@ class TransactionIdTracking implements SessionStateMachine.SPI.TransactionIdTrac
 
     private long txId;
 
-    TransactionIdTracking( Supplier<TransactionIdStore> transactionIdStore, long transactionId, int timeout,
-                           TimeUnit unit )
+    TransactionIdTracker( Supplier<TransactionIdStore> transactionIdStore, long transactionId, int timeout,
+            TimeUnit unit )
     {
         this.transactionIdStore = transactionIdStore;
         this.txId = transactionId;
@@ -55,13 +56,18 @@ class TransactionIdTracking implements SessionStateMachine.SPI.TransactionIdTrac
 
         try
         {
-            Predicates.await( () -> txId <= transactionIdStore.get().getLastClosedTransactionId(), timeout, timeoutUnit,
-                    25, TimeUnit.MILLISECONDS );
+            if ( !tryAwait( () -> txId <= transactionIdStore.get().getLastClosedTransactionId(), timeout, timeoutUnit,
+                    25, TimeUnit.MILLISECONDS ) )
+            {
+                throw new TransactionFailureException( Status.Transaction.InstanceStateChanged,
+                        "Database not up to the requested version: %d. Latest database version is %d", txId,
+                        transactionIdStore.get().getLastClosedTransactionId() );
+            }
         }
-        catch ( Throwable e )
+        catch ( InterruptedException e )
         {
-            throw new TransactionFailureException( "Database not up to the requested version: " + txId + ". " +
-                    "Latest database version is " + transactionIdStore.get().getLastClosedTransactionId(), e );
+            throw new TransactionFailureException( Status.Transaction.TransactionStartFailed, e,
+                    "Thread interrupted when starting transaction" );
         }
     }
 

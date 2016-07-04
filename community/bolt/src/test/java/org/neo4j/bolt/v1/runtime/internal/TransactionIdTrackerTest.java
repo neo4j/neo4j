@@ -40,11 +40,11 @@ public class TransactionIdTrackerTest
     {
         // given
         when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( -1L );
-        TransactionIdTracking transactionIdTracking =
-                new TransactionIdTracking( () -> transactionIdStore, BASE_TX_ID, 5, SECONDS );
+        TransactionIdTracker transactionIdTracker =
+                new TransactionIdTracker( () -> transactionIdStore, BASE_TX_ID, 5, SECONDS );
 
         // when
-        transactionIdTracking.assertUpToDate();
+        transactionIdTracker.assertUpToDate();
 
         // then all good!
     }
@@ -55,11 +55,11 @@ public class TransactionIdTrackerTest
         // given
         long version = 5L;
         when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( version );
-        TransactionIdTracking transactionIdTracking =
-                new TransactionIdTracking( () -> transactionIdStore, version, 5, SECONDS );
+        TransactionIdTracker transactionIdTracker =
+                new TransactionIdTracker( () -> transactionIdStore, version, 5, SECONDS );
 
         // when
-        transactionIdTracking.assertUpToDate();
+        transactionIdTracker.assertUpToDate();
 
         // then all good!
 
@@ -71,13 +71,13 @@ public class TransactionIdTrackerTest
         // given
         long version = 5L;
         when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( version );
-        TransactionIdTracking transactionIdTracking =
-                new TransactionIdTracking( () -> transactionIdStore, version + 1, 100, MILLISECONDS );
+        TransactionIdTracker transactionIdTracker =
+                new TransactionIdTracker( () -> transactionIdStore, version + 1, 100, MILLISECONDS );
 
         // when
         try
         {
-            transactionIdTracking.assertUpToDate();
+            transactionIdTracker.assertUpToDate();
             fail( "should have thrown" );
         }
         catch ( TransactionFailureException ex )
@@ -93,11 +93,11 @@ public class TransactionIdTrackerTest
         long version = 5L;
         when( transactionIdStore.getLastClosedTransactionId() )
                 .thenReturn( version, version, version, version, version + 1 );
-        TransactionIdTracking transactionIdTracking =
-                new TransactionIdTracking( () -> transactionIdStore, version + 1, 5, SECONDS );
+        TransactionIdTracker transactionIdTracker =
+                new TransactionIdTracker( () -> transactionIdStore, version + 1, 5, SECONDS );
 
         // when
-        transactionIdTracking.assertUpToDate();
+        transactionIdTracker.assertUpToDate();
 
         // then all good!
     }
@@ -108,11 +108,11 @@ public class TransactionIdTrackerTest
         // given
         when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( 42L );
         long newVersion = 45L;
-        TransactionIdTracking transactionIdTracking =
-                new TransactionIdTracking( () -> transactionIdStore, newVersion, 10, MILLISECONDS );
+        TransactionIdTracker transactionIdTracker =
+                new TransactionIdTracker( () -> transactionIdStore, newVersion, 10, MILLISECONDS );
         try
         {
-            transactionIdTracking.assertUpToDate();
+            transactionIdTracker.assertUpToDate();
             fail( "should have thrown" );
         }
         catch ( TransactionFailureException e )
@@ -123,11 +123,11 @@ public class TransactionIdTrackerTest
         when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( newVersion );
 
         // when
-        transactionIdTracking.updateVersion( 46L );
+        transactionIdTracker.updateVersion( 46L );
 
         try
         {
-            transactionIdTracking.assertUpToDate();
+            transactionIdTracker.assertUpToDate();
             fail( "should have thrown" );
         }
         catch ( TransactionFailureException e )
@@ -142,14 +142,14 @@ public class TransactionIdTrackerTest
         // given
         when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( 42L );
         final int txIdForEmptyDatabase = -1;
-        TransactionIdTracking transactionIdTracking =
-                new TransactionIdTracking( () -> transactionIdStore, txIdForEmptyDatabase, 5, SECONDS );
-        transactionIdTracking.assertUpToDate();
+        TransactionIdTracker transactionIdTracker =
+                new TransactionIdTracker( () -> transactionIdStore, txIdForEmptyDatabase, 5, SECONDS );
+        transactionIdTracker.assertUpToDate();
 
         // when
-        transactionIdTracking.updateVersion( 46L );
+        transactionIdTracker.updateVersion( 46L );
 
-        transactionIdTracking.assertUpToDate();
+        transactionIdTracker.assertUpToDate();
 
         // then all good!
     }
@@ -160,16 +160,16 @@ public class TransactionIdTrackerTest
         // given
         when( transactionIdStore.getLastClosedTransactionId() ).thenReturn(
                 42L, 44L, 43L /* this doesn't make any sense in real life but it helps asserting in this scenario */ );
-        TransactionIdTracking transactionIdTracking =
-                new TransactionIdTracking( () -> transactionIdStore, 42L, 10, MILLISECONDS );
-        transactionIdTracking.assertUpToDate();
+        TransactionIdTracker transactionIdTracker =
+                new TransactionIdTracker( () -> transactionIdStore, 42L, 10, MILLISECONDS );
+        transactionIdTracker.assertUpToDate();
 
         // when
-        transactionIdTracking.updateVersion( BASE_TX_ID );
+        transactionIdTracker.updateVersion( BASE_TX_ID );
 
         try
         {
-            transactionIdTracking.assertUpToDate();
+            transactionIdTracker.assertUpToDate();
             fail( "should have thrown" );
         }
         catch ( TransactionFailureException e )
