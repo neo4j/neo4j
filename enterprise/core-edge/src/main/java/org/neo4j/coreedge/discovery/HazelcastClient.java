@@ -19,6 +19,8 @@
  */
 package org.neo4j.coreedge.discovery;
 
+import java.util.function.Function;
+
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
 
@@ -29,27 +31,58 @@ import org.neo4j.logging.LogProvider;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
+
 import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.EDGE_SERVERS;
 
 class HazelcastClient extends LifecycleAdapter implements EdgeTopologyService
 {
     private final Log log;
-    private HazelcastConnector connector;
+    private final HazelcastConnector connector;
     private HazelcastInstance hazelcastInstance;
 
     HazelcastClient( HazelcastConnector connector, LogProvider logProvider )
     {
         this.connector = connector;
-        log = logProvider.getLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
     public ClusterTopology currentTopology()
     {
-        ClusterTopology clusterTopology = new ClusterTopology( false, emptyMap(), emptySet() );
-        boolean attemptedConnection = false;
+        try
+        {
+            return retry( ( hazelcastInstance ) ->
+                    HazelcastClusterTopology.fromHazelcastInstance( hazelcastInstance, log ) );
+        }
+        catch ( Exception e )
+        {
+            log.warn( "Failed to read cluster topology from Hazelcast. Continuing with empty (disconnected) topology. "
+                    + "Connection will be reattempted on next polling attempt.", e );
+            return new ClusterTopology( false, emptyMap(), emptySet() );
+        }
+    }
 
-        while ( clusterTopology.coreMembers().isEmpty() && !attemptedConnection )
+    @Override
+    public synchronized void stop() throws Throwable
+    {
+        if ( hazelcastInstance != null )
+        {
+            hazelcastInstance.shutdown();
+        }
+    }
+
+    @Override
+    public void registerEdgeServer( AdvertisedSocketAddress address )
+    {
+        retry( ( hazelcastInstance ) -> hazelcastInstance.getSet( EDGE_SERVERS ).add( address.toString() ) );
+    }
+
+    private synchronized <T> T retry( Function<HazelcastInstance, T> hazelcastAccessor )
+    {
+        boolean attemptedConnection = false;
+        RuntimeException exception = null;
+
+        while ( !attemptedConnection )
         {
             if ( hazelcastInstance == null )
             {
@@ -67,29 +100,14 @@ class HazelcastClient extends LifecycleAdapter implements EdgeTopologyService
 
             try
             {
-                clusterTopology = HazelcastClusterTopology.fromHazelcastInstance( hazelcastInstance, log );
+                return hazelcastAccessor.apply( hazelcastInstance );
             }
             catch ( HazelcastInstanceNotActiveException e )
             {
                 hazelcastInstance = null;
+                exception = e;
             }
         }
-
-        return clusterTopology;
-    }
-
-    @Override
-    public void stop() throws Throwable
-    {
-        if ( hazelcastInstance != null )
-        {
-            hazelcastInstance.shutdown();
-        }
-    }
-
-    @Override
-    public void registerEdgeServer( AdvertisedSocketAddress address )
-    {
-        hazelcastInstance.getSet( EDGE_SERVERS ).add( address.toString() );
+        throw exception;
     }
 }
