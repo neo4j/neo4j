@@ -156,14 +156,11 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         Authentication authentication = authentication( dependencies.config(), dependencies.authManager(), logService );
 
-        StandardSessions standardSessions =
+        StandardSessions standardSessions = life.add(
                 new StandardSessions( api, dependencies.usageData(), logService, dependencies.txBridge(),
-                        authentication, dependencies.dataSource(), dependencies.sessionTracker() );
-        Sessions sessions =
-                new MonitoredSessions( dependencies.monitors(),
-                        new ThreadedSessions(
-                                life.add( standardSessions ),
-                                scheduler, logService ), Clock.systemUTC() );
+                        authentication, dependencies.dataSource(), dependencies.sessionTracker() ) );
+        ThreadedSessions threadedSessions = new ThreadedSessions( standardSessions, scheduler, logService );
+        Sessions sessions = new MonitoredSessions( dependencies.monitors(), threadedSessions, Clock.systemUTC() );
 
         List<ProtocolInitializer> connectors = config
                 .view( enumerate( GraphDatabaseSettings.Connector.class ) )
@@ -191,9 +188,10 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                     }
 
                     return new SocketTransport( address, sslCtx, logService.getInternalLogProvider(),
-                            newVersions( logService,
-                                    requireEncryption ? new EncryptionRequiredSessions( sessions ) : sessions ) );
-                } ).collect( toList() );
+                            newVersions( logService, requireEncryption ?
+                                                  new EncryptionRequiredSessions( sessions ) : sessions ) );
+                } )
+                .collect( toList() );
 
         if ( connectors.size() > 0 && !config.get( GraphDatabaseSettings.disconnected ) )
         {
