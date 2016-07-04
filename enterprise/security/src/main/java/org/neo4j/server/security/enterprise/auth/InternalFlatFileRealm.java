@@ -430,10 +430,20 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         return u;
     }
 
+    public User assertCredentialsAndGetUser( String username ) throws IllegalCredentialsException
+    {
+        User u = getUser( username );
+        if ( u == null )
+        {
+            throw new IllegalCredentialsException( "User " + username + " does not exist." );
+        }
+        return u;
+    }
+
     @Override
     public void setUserPassword( String username, String password ) throws IOException, IllegalCredentialsException
     {
-        User existingUser = assertAndGetUser( username );
+        User existingUser = assertCredentialsAndGetUser( username );
 
         passwordPolicy.validatePassword( password );
 
