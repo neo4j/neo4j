@@ -171,44 +171,42 @@ class MethodByteCodeEmitter implements MethodEmitter
     }
 
     @Override
-    public void beginWhile( Expression test )
+    public void beginWhile( Expression...tests )
     {
         Label l0 = new Label();
         methodVisitor.visitLabel( l0 );
-        test.accept( expressionVisitor );
         Label l1 = new Label();
-        methodVisitor.visitJumpInsn( IFEQ, l1 );
+        for ( Expression test : tests )
+        {
+            test.accept( expressionVisitor );
+            methodVisitor.visitJumpInsn( IFEQ, l1 );
+        }
 
         stateStack.push( new While( methodVisitor, l0, l1  ) );
     }
 
     @Override
-    public void beginIf( Expression test )
+    public void beginIf( Expression... tests )
     {
-        test.accept( expressionVisitor );
-
-        beginConditional( IFEQ );
+        beginConditional( IFEQ, tests );
     }
 
     @Override
-    public void beginIfNot( Expression test )
+    public void beginIfNot( Expression... tests )
     {
-        test.accept( expressionVisitor );
-        beginConditional( IFNE );
+        beginConditional( IFNE, tests );
     }
 
     @Override
-    public void beginIfNull( Expression test )
+    public void beginIfNull( Expression...tests )
     {
-        test.accept( expressionVisitor );
-        beginConditional( IFNONNULL );
+        beginConditional( IFNONNULL, tests );
     }
 
     @Override
-    public void beginIfNonNull( Expression test )
+    public void beginIfNonNull( Expression...tests )
     {
-        test.accept( expressionVisitor );
-        beginConditional( IFNULL );
+        beginConditional( IFNULL, tests );
     }
 
     @Override
@@ -262,10 +260,14 @@ class MethodByteCodeEmitter implements MethodEmitter
         assign( local, value );
     }
 
-    private void beginConditional(int op)
+    private void beginConditional(int op, Expression[] tests)
     {
         Label l0 = new Label();
-        methodVisitor.visitJumpInsn( op, l0 );
+        for ( Expression test : tests )
+        {
+            test.accept( expressionVisitor );
+            methodVisitor.visitJumpInsn( op, l0 );
+        }
         stateStack.push(new If(methodVisitor, l0));
     }
 }

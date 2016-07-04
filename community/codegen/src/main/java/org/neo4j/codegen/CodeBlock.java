@@ -154,33 +154,33 @@ public class CodeBlock implements AutoCloseable
         return block;
     }
 
-    public CodeBlock whileLoop( Expression test )
+    public CodeBlock whileLoop( Expression...tests )
     {
-        emitter.beginWhile( test );
+        emitter.beginWhile( tests );
         return new CodeBlock( this );
     }
 
-    public CodeBlock ifStatement( Expression test )
+    public CodeBlock ifStatement( Expression...tests )
     {
-        emitter.beginIf( test );
+        emitter.beginIf( tests );
         return new CodeBlock( this );
     }
 
-    public CodeBlock ifNotStatement( Expression test )
+    public CodeBlock ifNotStatement( Expression...tests )
     {
-        emitter.beginIfNot( test );
+        emitter.beginIfNot( tests );
         return new CodeBlock( this );
     }
 
-    public CodeBlock ifNullStatement( Expression test )
+    public CodeBlock ifNullStatement( Expression...tests )
     {
-        emitter.beginIfNull( test );
+        emitter.beginIfNull( tests );
         return new CodeBlock( this );
     }
 
-    public CodeBlock ifNonNullStatement( Expression test )
+    public CodeBlock ifNonNullStatement( Expression...tests )
     {
-        emitter.beginIfNonNull( test );
+        emitter.beginIfNonNull( tests );
         return new CodeBlock( this );
     }
 

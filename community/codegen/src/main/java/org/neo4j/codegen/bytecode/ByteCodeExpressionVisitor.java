@@ -334,6 +334,36 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     }
 
     @Override
+    public void and( Expression lhs, Expression rhs )
+    {
+        /*
+         * something like:
+         *
+         * LOAD lhs
+         * IF FALSE GOTO 0
+         * LOAD rhs
+         * IF FALSE GOTO 0
+         * LOAD TRUE
+         * GOTO 1
+         * 0:
+         *  LOAD FALSE
+         * 1:
+         *  ...continue doing stuff
+         */
+        lhs.accept( this );
+        Label l0 = new Label();
+        methodVisitor.visitJumpInsn( IFEQ, l0 );
+        rhs.accept( this );
+        methodVisitor.visitJumpInsn( IFEQ, l0 );
+        methodVisitor.visitInsn( ICONST_1 );
+        Label l1 = new Label();
+        methodVisitor.visitJumpInsn( GOTO, l1 );
+        methodVisitor.visitLabel( l0 );
+        methodVisitor.visitInsn( ICONST_0 );
+        methodVisitor.visitLabel( l1 );
+    }
+
+    @Override
     public void addInts( Expression lhs, Expression rhs )
     {
         lhs.accept( this );

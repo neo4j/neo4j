@@ -37,10 +37,12 @@ import org.neo4j.cypher.internal.frontend.v3_1.symbols.{CTNode, CTRelationship}
 import org.neo4j.cypher.internal.frontend.v3_1.{ParameterNotFoundException, SemanticDirection, symbols}
 import org.neo4j.cypher.internal.spi.v3_1.codegen.Methods._
 import org.neo4j.cypher.internal.spi.v3_1.codegen.Templates.{createNewInstance, handleKernelExceptions, newRelationshipDataExtractor, tryCatch}
-import org.neo4j.graphdb.Direction
+import org.neo4j.graphdb.{Direction, NotFoundException}
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException
 import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
+import org.neo4j.storageengine.api.EntityType
 
 import scala.collection.mutable
 
@@ -694,9 +696,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
   override def nodeGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String) = {
     val local = locals(propValueVar)
     handleKernelExceptions(generator, fields.ro, fields.close) { body =>
-
       body.assign(local, invoke(readOperations, nodeGetProperty, body.load(nodeIdVar), body.load(propIdVar)))
-
     }
   }
 
@@ -704,6 +704,16 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
     val local = locals(propValueVar)
     handleKernelExceptions(generator, fields.ro, fields.close) { body =>
       body.assign(local, invoke(readOperations, nodeGetProperty, body.load(nodeIdVar), constant(propId)))
+    }
+  }
+
+  override def nodeIdSeek(nodeIdVar: String, expression: Expression)(block: MethodStructure[Expression] => Unit) = {
+    generator.assign(typeRef[Long], nodeIdVar, invoke(Methods.mathCastToLong, expression))
+    using(generator.ifStatement(
+      gt(generator.load(nodeIdVar), constant(-1L), typeRef[Long]),
+      invoke(readOperations, nodeExists, generator.load(nodeIdVar))
+    )) { ifBody =>
+      block(copy(generator = ifBody))
     }
   }
 
