@@ -246,7 +246,7 @@ class RebuildFromLogs
                 {
                     txId = cursor.get().getCommitEntry().getTxId();
                     TransactionRepresentation transaction = cursor.get().getTransactionRepresentation();
-                    queue.queue( new TransactionToApply( transaction, txId ) );
+                    queue.queueAndDrainIfBatchSizeReached( new TransactionToApply( transaction, txId ) );
                     if ( upToTxId != BASE_TX_ID && upToTxId == txId )
                     {
                         break;

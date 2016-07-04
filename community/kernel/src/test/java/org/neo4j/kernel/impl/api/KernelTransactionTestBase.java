@@ -45,6 +45,7 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 public class KernelTransactionTestBase
 {
@@ -94,7 +95,7 @@ public class KernelTransactionTestBase
             Locks.Client locks, boolean txTerminationAwareLocks )
     {
         KernelTransactionImplementation tx = newNotInitializedTransaction( txTerminationAwareLocks );
-        tx.initialize( lastTransactionIdWhenStarted, locks, Type.implicit, accessMode );
+        tx.initialize( lastTransactionIdWhenStarted, BASE_TX_COMMIT_TIMESTAMP,locks, Type.implicit, accessMode );
         return tx;
     }
 

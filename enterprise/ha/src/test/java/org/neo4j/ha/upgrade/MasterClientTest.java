@@ -126,7 +126,7 @@ public class MasterClientTest
         when( deps.logService() ).thenReturn( NullLogService.getInstance() );
 
         ResponseUnpacker unpacker = life.add(
-                new TransactionCommittingResponseUnpacker( deps, DEFAULT_BATCH_SIZE) );
+                new TransactionCommittingResponseUnpacker( deps, DEFAULT_BATCH_SIZE, 0 ) );
 
         MasterClient masterClient = newMasterClient214( StoreId.DEFAULT, unpacker );
 

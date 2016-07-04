@@ -24,16 +24,18 @@ class TransactionCommitment implements Commitment
     private final boolean hasLegacyIndexChanges;
     private final long transactionId;
     private final long transactionChecksum;
+    private final long transactionCommitTimestamp;
     private final LogPosition logPosition;
     private final TransactionIdStore transactionIdStore;
     private boolean markedAsCommitted;
 
     TransactionCommitment( boolean hasLegacyIndexChanges, long transactionId, long transactionChecksum,
-            LogPosition logPosition, TransactionIdStore transactionIdStore )
+            long transactionCommitTimestamp, LogPosition logPosition, TransactionIdStore transactionIdStore )
     {
         this.hasLegacyIndexChanges = hasLegacyIndexChanges;
         this.transactionId = transactionId;
         this.transactionChecksum = transactionChecksum;
+        this.transactionCommitTimestamp = transactionCommitTimestamp;
         this.logPosition = logPosition;
         this.transactionIdStore = transactionIdStore;
     }
@@ -42,7 +44,7 @@ class TransactionCommitment implements Commitment
     public void publishAsCommitted()
     {
         markedAsCommitted = true;
-        transactionIdStore.transactionCommitted( transactionId, transactionChecksum );
+        transactionIdStore.transactionCommitted( transactionId, transactionChecksum, transactionCommitTimestamp );
     }
 
     @Override

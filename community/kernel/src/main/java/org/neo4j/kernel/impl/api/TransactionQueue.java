@@ -43,22 +43,26 @@ public class TransactionQueue
         this.applier = applier;
     }
 
-    public void queue( TransactionToApply transacion ) throws Exception
+    public void queueAndDrainIfBatchSizeReached( TransactionToApply transaction ) throws Exception
     {
-        if ( size == 0 )
-        {
-            first = last = transacion;
-        }
-        else
-        {
-            last.next( transacion );
-            last = transacion;
-        }
-
-        if ( ++size == maxSize )
+        if ( queue( transaction ) )
         {
             empty();
         }
+    }
+
+    public boolean queue( TransactionToApply transaction ) throws Exception
+    {
+        if ( isEmpty() )
+        {
+            first = last = transaction;
+        }
+        else
+        {
+            last.next( transaction );
+            last = transaction;
+        }
+        return ++size == maxSize;
     }
 
     public void empty() throws Exception
@@ -69,5 +73,28 @@ public class TransactionQueue
             first = last = null;
             size = 0;
         }
+    }
+
+    public boolean isEmpty()
+    {
+        return size == 0;
+    }
+
+    public TransactionToApply first()
+    {
+        if ( isEmpty() )
+        {
+            throw new IllegalStateException( "Nothing in queue" );
+        }
+        return first;
+    }
+
+    public TransactionToApply last()
+    {
+        if ( isEmpty() )
+        {
+            throw new IllegalStateException( "Nothing in queue" );
+        }
+        return last;
     }
 }

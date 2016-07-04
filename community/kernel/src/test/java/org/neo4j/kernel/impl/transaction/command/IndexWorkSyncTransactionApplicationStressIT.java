@@ -176,7 +176,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
                 } );
                 for ( ; !end.get(); i++ )
                 {
-                    queue.queue( createNodeAndProperty( i ) );
+                    queue.queueAndDrainIfBatchSizeReached( createNodeAndProperty( i ) );
                 }
                 queue.empty();
             }

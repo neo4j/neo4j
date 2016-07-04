@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.LinkedQueuePool;
@@ -31,6 +32,7 @@ import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.configuration.Config;
@@ -40,6 +42,7 @@ import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionStateImpl;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -82,6 +85,8 @@ public class KernelTransactions extends LifecycleAdapter
     private final Procedures procedures;
     private final TransactionIdStore transactionIdStore;
     private final Supplier<LegacyIndexTransactionState> legacyIndexTxStateSupplier;
+    private final Clock clock;
+    private final ReentrantReadWriteLock newTransactionsLock = new ReentrantReadWriteLock();
 
     // End Tx Dependencies
 
@@ -113,7 +118,8 @@ public class KernelTransactions extends LifecycleAdapter
                                StorageEngine storageEngine,
                                Procedures procedures,
                                TransactionIdStore transactionIdStore,
-                               Config config )
+                               Config config,
+                               Clock clock )
     {
         this.locks = locks;
         this.txTerminationAwareLocks = config.get( tx_termination_aware_locks );
@@ -131,6 +137,7 @@ public class KernelTransactions extends LifecycleAdapter
         this.transactionIdStore = transactionIdStore;
         this.legacyIndexTxStateSupplier = () -> new CachingLegacyIndexTransactionState(
                 new LegacyIndexTransactionStateImpl( indexConfigStore, legacyIndexProviderLookup ) );
+        this.clock = clock;
     }
 
     /**
@@ -144,7 +151,7 @@ public class KernelTransactions extends LifecycleAdapter
             KernelTransactionImplementation tx = new KernelTransactionImplementation(
                     statementOperations, schemaWriteGuard, hooks, constraintIndexCreator, procedures,
                     transactionHeaderInformationFactory, transactionCommitProcess, transactionMonitor,
-                    legacyIndexTxStateSupplier, localTxPool, Clock.SYSTEM_CLOCK, tracers.transactionTracer,
+                    legacyIndexTxStateSupplier, localTxPool, clock, tracers.transactionTracer,
                     storageEngine, txTerminationAwareLocks );
 
             allTransactions.add( tx );
@@ -154,9 +161,21 @@ public class KernelTransactions extends LifecycleAdapter
 
     public KernelTransaction newInstance( KernelTransaction.Type type, AccessMode accessMode )
     {
-        assertDatabaseIsRunning();
-        return localTxPool.acquire()
-                .initialize( transactionIdStore.getLastCommittedTransactionId(), locks.newClient(), type, accessMode );
+        assertCurrentThreadIsNotBlockingNewTransactions();
+        newTransactionsLock.readLock().lock();
+        try
+        {
+            assertDatabaseIsRunning();
+            TransactionId lastCommittedTransaction = transactionIdStore.getLastCommittedTransaction();
+            KernelTransactionImplementation tx = localTxPool.acquire();
+            tx.initialize( lastCommittedTransaction.transactionId(),
+                    lastCommittedTransaction.commitTimestamp(), locks.newClient(), type, accessMode );
+            return tx;
+        }
+        finally
+        {
+            newTransactionsLock.readLock().unlock();
+        }
     }
 
     /**
@@ -210,7 +229,7 @@ public class KernelTransactions extends LifecycleAdapter
             // we mark all transactions for termination since we want to make sure these transactions
             // won't be reused, ever. Each transaction has, among other things, a Locks.Client and we
             // certainly want to keep that from being reused from this point.
-            tx.markForTermination();
+            tx.markForTermination( Status.General.DatabaseUnavailable );
         }
         localTxPool.disposeAll();
         globalTxPool.disposeAll();
@@ -237,6 +256,41 @@ public class KernelTransactions extends LifecycleAdapter
     @Override
     public KernelTransactionsSnapshot get()
     {
-        return new KernelTransactionsSnapshot( allTransactions );
+        return new KernelTransactionsSnapshot( allTransactions, clock.currentTimeMillis() );
+    }
+
+    /**
+     * Do not allow new transactions to start until {@link #unblockNewTransactions()} is called. Current thread have
+     * responsibility of doing so.
+     * <p>
+     * Blocking call.
+     */
+    public void blockNewTransactions()
+    {
+        newTransactionsLock.writeLock().lock();
+    }
+
+    /**
+     * Allow new transactions to be started again if current thread is the one who called
+     * {@link #blockNewTransactions()}.
+     *
+     * @throws IllegalStateException if current thread is not the one that called {@link #blockNewTransactions()}.
+     */
+    public void unblockNewTransactions()
+    {
+        if ( !newTransactionsLock.writeLock().isHeldByCurrentThread() )
+        {
+            throw new IllegalStateException( "This thread did not block transactions previously" );
+        }
+        newTransactionsLock.writeLock().unlock();
+    }
+
+    private void assertCurrentThreadIsNotBlockingNewTransactions()
+    {
+        if ( newTransactionsLock.isWriteLockedByCurrentThread() )
+        {
+            throw new IllegalStateException(
+                    "Thread that is blocking new transactions from starting can't start new transaction" );
+        }
     }
 }

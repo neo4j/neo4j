@@ -71,9 +71,10 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         {
             throw new BridgeNotInTransactionException();
         }
-        if ( transaction.shouldBeTerminated() )
+        Status terminationReason = transaction.getReasonIfTerminated();
+        if ( terminationReason != null )
         {
-            throw new BridgeTransactionTerminatedException();
+            throw new TransactionTerminatedException( terminationReason );
         }
     }
 
@@ -120,15 +121,6 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         public Status status()
         {
             return Status.Request.TransactionRequired;
-        }
-    }
-
-    private static class BridgeTransactionTerminatedException extends TransactionTerminatedException implements Status.HasStatus
-    {
-        @Override
-        public Status status()
-        {
-            return Status.Transaction.TransactionTerminated;
         }
     }
 

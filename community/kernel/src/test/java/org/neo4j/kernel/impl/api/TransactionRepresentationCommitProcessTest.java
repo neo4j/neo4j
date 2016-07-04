@@ -48,7 +48,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
@@ -120,6 +119,7 @@ public class TransactionRepresentationCommitProcessTest
     {
         // GIVEN
         long txId = 11;
+        long commitTimestamp = System.currentTimeMillis();
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionAppender appender = new TestableTransactionAppender( transactionIdStore );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
@@ -135,7 +135,7 @@ public class TransactionRepresentationCommitProcessTest
 
         commitProcess.commit( new TransactionToApply( noCommandTx ), commitEvent, INTERNAL );
 
-        verify( transactionIdStore ).transactionCommitted( txId, FakeCommitment.CHECKSUM );
+        verify( transactionIdStore ).transactionCommitted( txId, FakeCommitment.CHECKSUM, FakeCommitment.TIMESTAMP );
     }
 
     private TransactionToApply mockedTransaction()

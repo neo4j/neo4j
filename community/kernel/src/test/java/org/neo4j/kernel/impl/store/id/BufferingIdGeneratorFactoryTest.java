@@ -25,10 +25,12 @@ import org.junit.Test;
 import java.io.File;
 import java.util.function.Supplier;
 
-import org.neo4j.kernel.IdReuseEligibility;
+import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.test.EphemeralFileSystemRule;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -60,6 +62,42 @@ public class BufferingIdGeneratorFactoryTest
 
         // although after transactions have all closed
         boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
+        bufferingIdGeneratorFactory.maintenance();
+
+        // THEN
+        verify( actual.get( IdType.STRING_BLOCK ) ).freeId( 7 );
+    }
+
+    @Test
+    public void shouldDelayFreeingOfAggressivelyReusedIdsConsideringTimeAsWell() throws Exception
+    {
+        // GIVEN
+        MockedIdGeneratorFactory actual = new MockedIdGeneratorFactory();
+        final FakeClock clock = new FakeClock();
+        final long safeZone = MINUTES.toMillis( 1 );
+        ControllableSnapshotSupplier boundaries = new ControllableSnapshotSupplier();
+        BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual,
+                boundaries, t -> clock.currentTimeMillis() - t.snapshotTime() >= safeZone );
+
+        IdGenerator idGenerator = bufferingIdGeneratorFactory.open(
+                new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, 0, Integer.MAX_VALUE );
+
+        // WHEN
+        idGenerator.freeId( 7 );
+        verifyNoMoreInteractions( actual.get( IdType.STRING_BLOCK ) );
+
+        // after some maintenance and transaction still not closed
+        bufferingIdGeneratorFactory.maintenance();
+        verifyNoMoreInteractions( actual.get( IdType.STRING_BLOCK ) );
+
+        // although after transactions have all closed
+        boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
+        bufferingIdGeneratorFactory.maintenance();
+        // ... the clock would still say "nope" so no interaction
+        verifyNoMoreInteractions( actual.get( IdType.STRING_BLOCK ) );
+
+        // then finally after time has passed as well
+        clock.forward( 70, SECONDS );
         bufferingIdGeneratorFactory.maintenance();
 
         // THEN
