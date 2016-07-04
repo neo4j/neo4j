@@ -167,6 +167,20 @@ public class PackStream
         private PackOutput out;
         private UTF8Encoder utf8 = UTF8Encoder.fastestAvailableEncoder();
 
+        private static final String[] PACKED_CHARS = prePackChars();
+        private static final char PACKED_CHAR_START_CHAR = (char) 32;
+        private static final char PACKED_CHAR_END_CHAR = (char) 126;
+        private static String[] prePackChars()
+        {
+            int size = PACKED_CHAR_END_CHAR + 1 - PACKED_CHAR_START_CHAR;
+            String[] packedChars = new String[size];
+            for ( int i = 0; i < size; i++ )
+            {
+                packedChars[i] = ( String.valueOf( (char)(i + PACKED_CHAR_START_CHAR) ) );
+            }
+            return packedChars;
+        }
+
         public Packer( PackOutput out )
         {
             this.out = out;
@@ -218,12 +232,14 @@ public class PackStream
 
         public void pack( char character ) throws IOException
         {
-            pack( new String( new char[]{character} ) );
-        }
-
-        public void pack( Character character ) throws IOException
-        {
-            pack( new String( new char[]{character} ) );
+            if( character >= PACKED_CHAR_START_CHAR && character <= PACKED_CHAR_END_CHAR )
+            {
+                pack( PACKED_CHARS[character - PACKED_CHAR_START_CHAR] );
+            }
+            else
+            {
+                pack( String.valueOf( character ) );
+            }
         }
 
         public void pack( String value ) throws IOException

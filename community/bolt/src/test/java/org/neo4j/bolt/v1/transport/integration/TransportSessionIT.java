@@ -318,7 +318,7 @@ public class TransportSessionIT
                 msgSuccess(),
                 msgSuccess( map( "fields", singletonList( "n.binary") ) ),
                 msgRecord(eqRecord( nullValue() )),
-                msgFailure( Status.Request.Invalid, "Binary values is not yet supported in Bolt")) );
+                msgFailure( Status.Request.Invalid, "Byte array is not yet supported in Bolt")) );
     }
 
     @Before

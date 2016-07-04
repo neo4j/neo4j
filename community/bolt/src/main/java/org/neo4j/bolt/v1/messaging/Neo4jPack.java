@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.BiConsumer;
 
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueNode;
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueRelationship;
@@ -97,7 +96,7 @@ public class Neo4jPack
             }
             else if (obj instanceof Character )
             {
-                pack( (Character) obj );
+                pack( (char) obj );
             }
             else if ( obj instanceof Map )
             {
@@ -122,7 +121,7 @@ public class Neo4jPack
             else if ( obj instanceof byte[] )
             {
                 error = Optional.of(new Error( Status.Request.Invalid,
-                        "Binary values is not yet supported in Bolt"));
+                        "Byte array is not yet supported in Bolt"));
                 packNull();
             }
             else if ( obj instanceof char[] )
