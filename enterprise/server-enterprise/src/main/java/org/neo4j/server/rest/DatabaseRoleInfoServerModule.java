@@ -62,7 +62,11 @@ public class DatabaseRoleInfoServerModule implements ServerModule
 
     private List<String> getClassNames()
     {
-        return asList( MasterInfoService.class.getName(), CoreDatabaseAvailabilityService.class.getName() );
+        return asList(
+                MasterInfoService.class.getName(),
+                CoreDatabaseAvailabilityService.class.getName(),
+                EdgeDatabaseAvailabilityService.class.getName()
+        );
     }
 
     private URI managementApiUri()
