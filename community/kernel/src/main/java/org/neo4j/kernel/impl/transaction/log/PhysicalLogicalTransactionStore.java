@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_1P_COMMIT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
@@ -83,7 +84,8 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     }
 
     private static final TransactionMetadataCache.TransactionMetadata METADATA_FOR_EMPTY_STORE =
-            new TransactionMetadataCache.TransactionMetadata( -1, -1, LogPosition.start( 0 ), BASE_TX_CHECKSUM );
+            new TransactionMetadataCache.TransactionMetadata( -1, -1, LogPosition.start( 0 ), BASE_TX_CHECKSUM,
+                    BASE_TX_COMMIT_TIMESTAMP );
 
     @Override
     public TransactionMetadata getMetadataFor( long transactionId ) throws IOException
@@ -102,10 +104,13 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
                 while ( cursor.next() )
                 {
                     CommittedTransactionRepresentation tx = cursor.get();
-                    long committedTxId = tx.getCommitEntry().getTxId();
+                    LogEntryCommit commitEntry = tx.getCommitEntry();
+                    long committedTxId = commitEntry.getTxId();
+                    long timeWritten = commitEntry.getTimeWritten();
                     TransactionMetadata metadata = transactionMetadataCache.cacheTransactionMetadata( committedTxId,
                             tx.getStartEntry().getStartPosition(), tx.getStartEntry().getMasterId(),
-                            tx.getStartEntry().getLocalId(), LogEntryStart.checksum( tx.getStartEntry() ) );
+                            tx.getStartEntry().getLocalId(), LogEntryStart.checksum( tx.getStartEntry() ),
+                            timeWritten );
                     if ( committedTxId == transactionId )
                     {
                         transactionMetadata = metadata;
@@ -126,6 +131,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
         private final long startTransactionId;
         private final LogEntryReader<ReadableVersionableLogChannel> logEntryReader;
         private LogEntryStart startEntryForFoundTransaction;
+        private long commitTimestamp;
 
         public TransactionPositionLocator( long startTransactionId,
                 LogEntryReader<ReadableVersionableLogChannel> logEntryReader )
@@ -151,6 +157,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
                     if ( commit.getTxId() == startTransactionId )
                     {
                         startEntryForFoundTransaction = startEntry;
+                        commitTimestamp = commit.getTimeWritten();
                         return false;
                     }
                 default: // just skip commands
@@ -172,7 +179,8 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
                     startEntryForFoundTransaction.getStartPosition(),
                     startEntryForFoundTransaction.getMasterId(),
                     startEntryForFoundTransaction.getLocalId(),
-                    LogEntryStart.checksum( startEntryForFoundTransaction )
+                    LogEntryStart.checksum( startEntryForFoundTransaction ),
+                    commitTimestamp
             );
             return startEntryForFoundTransaction.getStartPosition();
         }

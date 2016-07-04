@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha.factory;
 import org.jboss.netty.logging.InternalLoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicReference;
@@ -52,6 +53,7 @@ import org.neo4j.function.Function;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -59,7 +61,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdReuseEligibility;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelAPI;
@@ -110,6 +111,7 @@ import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
 import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
+import org.neo4j.kernel.ha.id.HaIdReuseEligibility;
 import org.neo4j.kernel.ha.lock.LockManagerModeSwitcher;
 import org.neo4j.kernel.ha.management.ClusterDatabaseInfoProvider;
 import org.neo4j.kernel.ha.management.HighlyAvailableKernelData;
@@ -133,12 +135,15 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.storemigration.UpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByDatabaseModeException;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -153,6 +158,7 @@ import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
 import static java.lang.reflect.Proxy.newProxyInstance;
+import static org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 
 /**
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
@@ -196,9 +202,10 @@ public class HighlyAvailableEditionModule
                 serverId.toIntegerIndex(),
                 dependencies.provideDependency( TransactionIdStore.class ) ) );
 
+        final long idReuseSafeZone = config.get( HaSettings.id_reuse_safe_zone_time );
         TransactionCommittingResponseUnpacker responseUnpacker = dependencies.satisfyDependency(
-                new TransactionCommittingResponseUnpacker( new DefaultUnpackerDependencies( dependencies ),
-                        config.get( HaSettings.pull_apply_batch_size ) ) );
+                new TransactionCommittingResponseUnpacker( new DefaultUnpackerDependencies( dependencies,
+                        idReuseSafeZone ), config.get( HaSettings.pull_apply_batch_size ) ) );
 
         Supplier<KernelAPI> kernelProvider = dependencies.provideDependency( KernelAPI.class );
 
@@ -547,37 +554,7 @@ public class HighlyAvailableEditionModule
 
         constraintSemantics = new EnterpriseConstraintSemantics();
 
-        // Only buffer ids for reuse when we're the master. This is mostly an optimization since
-        // when in slave role the ids are thrown away anyway.
-        eligibleForIdReuse = new IdReuseEligibility()
-        {
-            @Override
-            public boolean isEligible()
-            {
-                switch ( members.getCurrentMemberRole() )
-                {
-                case HighAvailabilityModeSwitcher.SLAVE:
-                    // If we're slave right now then just release them because the id generators in slave mode
-                    // will throw them away anyway, no need to keep them in memory. The architecture around
-                    // how buffering is done isn't a 100% fit for HA since the wrapping if IdGeneratorFactory
-                    // where the buffering takes place is done in a place which is oblivious to HA and roles
-                    // which means that buffering will always take place. For now we'll have to live with
-                    // always buffering and only just release them as soon as possible when slave.
-                    return true;
-                case HighAvailabilityModeSwitcher.MASTER:
-                    // If we're master then we have to keep these ids around during the configured safe zone time
-                    // so that slaves have a chance to read consistently as well (slaves will know and compensate
-                    // for falling outside of safe zone). Let's keep this separate from SLAVE since they
-                    // have different reasons for doing what they do.
-                    return true;
-                default:
-                    // If we're anything other than slave, i.e. also pending then retain the ids since we're
-                    // not quite sure what state we're in at the moment and we clear the id buffers anyway
-                    // during state switch.
-                    return false;
-                }
-            }
-        };
+        eligibleForIdReuse = new HaIdReuseEligibility( members, Clock.SYSTEM_CLOCK, idReuseSafeZone );
 
         registerRecovery( config.get( GraphDatabaseFacadeFactory.Configuration.editionName ), dependencies, logging );
 
@@ -811,6 +788,41 @@ public class HighlyAvailableEditionModule
         {
             new RemoveOrphanConstraintIndexesOnStartup( resolver.resolveDependency( KernelAPI.class ),
                     resolver.resolveDependency( LogService.class ).getInternalLogProvider() ).perform();
+        }
+
+        assureLastCommitTimestampInitialized( resolver );
+    }
+
+    private static void assureLastCommitTimestampInitialized( DependencyResolver resolver )
+    {
+        MetaDataStore metaDataStore = resolver.resolveDependency( MetaDataStore.class );
+        LogicalTransactionStore txStore = resolver.resolveDependency( LogicalTransactionStore.class );
+
+        TransactionId txInfo = metaDataStore.getLastCommittedTransaction();
+        long lastCommitTimestampFromStore = txInfo.commitTimestamp();
+        if ( txInfo.transactionId() == TransactionIdStore.BASE_TX_ID )
+        {
+            metaDataStore.setLastTransactionCommitTimestamp( TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP );
+            return;
+        }
+        if ( lastCommitTimestampFromStore == TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP ||
+             lastCommitTimestampFromStore == TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP )
+        {
+            long lastCommitTimestampFromLogs;
+            try
+            {
+                TransactionMetadata metadata = txStore.getMetadataFor( txInfo.transactionId() );
+                lastCommitTimestampFromLogs = metadata.getTimeWritten();
+            }
+            catch ( NoSuchTransactionException e )
+            {
+                lastCommitTimestampFromLogs = TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP;
+            }
+            catch ( IOException e )
+            {
+                throw new IllegalStateException( "Unable to read transaction logs", e );
+            }
+            metaDataStore.setLastTransactionCommitTimestamp( lastCommitTimestampFromLogs );
         }
     }
 

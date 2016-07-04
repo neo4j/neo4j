@@ -29,9 +29,9 @@ public class HighestTransactionId
 {
     private final AtomicReference<TransactionId> highest = new AtomicReference<>();
 
-    public HighestTransactionId( long initialTransactionId, long initialChecksum )
+    public HighestTransactionId( long initialTransactionId, long initialChecksum, long commitTimestamp )
     {
-        set( initialTransactionId, initialChecksum );
+        set( initialTransactionId, initialChecksum, commitTimestamp );
     }
 
     /**
@@ -40,10 +40,11 @@ public class HighestTransactionId
      *
      * @param transactionId transaction id to compare for highest.
      * @param checksum checksum of the transaction.
+     * @param commitTimestamp commit time for transaction with {@code transactionId}.
      * @return {@code true} if the given transaction id was higher than the current highest,
      * {@code false}.
      */
-    public boolean offer( long transactionId, long checksum )
+    public boolean offer( long transactionId, long checksum, long commitTimestamp )
     {
         TransactionId high = highest.get();
         if ( transactionId < high.transactionId() )
@@ -51,7 +52,7 @@ public class HighestTransactionId
             return false;
         }
 
-        TransactionId update = new TransactionId( transactionId, checksum );
+        TransactionId update = new TransactionId( transactionId, checksum, commitTimestamp );
         while ( !highest.compareAndSet( high, update ) )
         {
             high = highest.get();
@@ -69,10 +70,11 @@ public class HighestTransactionId
      *
      * @param transactionId id of the transaction.
      * @param checksum checksum of the transaction.
+     * @param commitTimestamp commit time for transaction with {@code transactionId}.
      */
-    public void set( long transactionId, long checksum )
+    public void set( long transactionId, long checksum, long commitTimestamp )
     {
-        highest.set( new TransactionId( transactionId, checksum ) );
+        highest.set( new TransactionId( transactionId, checksum, commitTimestamp ) );
     }
 
     /**

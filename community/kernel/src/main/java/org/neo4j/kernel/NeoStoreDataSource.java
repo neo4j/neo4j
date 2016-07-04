@@ -108,6 +108,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
@@ -342,6 +343,11 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
 
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
 
+    private static final boolean takePropertyReadLocks = FeatureToggles.flag(
+            NeoStoreDataSource.class, "propertyReadLocks", false );
+    private static final boolean safeIdBuffering = FeatureToggles.flag(
+            NeoStoreDataSource.class, "safeIdBuffering", true );
+
     private final Monitors monitors;
     private final Tracers tracers;
 
@@ -377,6 +383,8 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     private final IndexConfigStore indexConfigStore;
     private final ConstraintSemantics constraintSemantics;
     private final IdGeneratorFactory idGeneratorFactory;
+    private BufferingIdGeneratorFactory bufferingIdGeneratorFactory;
+    private final IdReuseEligibility idReuseEligibility;
 
     private Dependencies dependencies;
     private LifeSupport life;
@@ -390,9 +398,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     private StoreLayerModule storeLayerModule;
     private TransactionLogModule transactionLogModule;
     private KernelModule kernelModule;
-    private BufferingIdGeneratorFactory bufferingIdGeneratorFactory;
-
-    private final IdReuseEligibility eligibleForReuse;
 
     /**
      * Creates a <CODE>NeoStoreXaDataSource</CODE> using configuration from
@@ -430,7 +435,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             Monitors monitors,
             Tracers tracers,
             IdGeneratorFactory idGeneratorFactory,
-            IdReuseEligibility eligibleForReuse )
+            IdReuseEligibility idReuseEligibility )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -459,7 +464,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         this.monitors = monitors;
         this.tracers = tracers;
         this.idGeneratorFactory = idGeneratorFactory;
-        this.eligibleForReuse = eligibleForReuse;
+        this.idReuseEligibility = idReuseEligibility;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = logProvider.getLog( getClass() );
@@ -534,7 +539,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             LegacyIndexApplierLookup legacyIndexApplierLookup =
                     dependencies.satisfyDependency( new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup ) );
 
-            boolean safeIdBuffering = FeatureToggles.flag( getClass(), "safeIdBuffering", false );
             if ( safeIdBuffering )
             {
                 // This buffering id generator factory will have properly buffering id generators injected into
@@ -583,7 +587,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             {
                 // Now that we've instantiated the component which can keep track of transaction boundaries
                 // we let the id generator know about it.
-                bufferingIdGeneratorFactory.initialize( kernelModule.kernelTransactions(), eligibleForReuse );
+                bufferingIdGeneratorFactory.initialize( kernelModule.kernelTransactions(), idReuseEligibility );
                 life.add( freeIdMaintenance( bufferingIdGeneratorFactory ) );
             }
 
@@ -851,8 +855,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
 
     private Factory<StoreStatement> storeStatementFactory( final NeoStores neoStores )
     {
-        final LockService lockService = FeatureToggles.flag( getClass(), "propertyReadLocks", true ) ?
-                this.lockService : NO_LOCK_SERVICE;
+        final LockService lockService = takePropertyReadLocks ? this.lockService : NO_LOCK_SERVICE;
         return new Factory<StoreStatement>()
         {
             @Override
@@ -1119,7 +1122,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                         statementOperations, updateableSchemaState, schemaWriteGuard, schemaIndexProviderMap,
                         transactionHeaderInformationFactory, storeLayer, transactionCommitProcess,
                         indexConfigStore, legacyIndexProviderLookup, hooks, constraintSemantics,
-                        transactionMonitor, life, procedureCache, config, tracers ) );
+                        transactionMonitor, life, procedureCache, config, tracers, Clock.SYSTEM_CLOCK ) );
 
         final Kernel kernel = new Kernel( kernelTransactions, hooks, kernelHealth, transactionMonitor );
 

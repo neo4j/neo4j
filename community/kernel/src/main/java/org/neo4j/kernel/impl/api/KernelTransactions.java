@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.MarshlandPool;
@@ -32,6 +33,7 @@ import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.configuration.Config;
@@ -46,6 +48,7 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
@@ -99,6 +102,8 @@ public class KernelTransactions extends LifecycleAdapter
     private final LifeSupport dataSourceLife;
     private final ProcedureCache procedureCache;
     private final Tracers tracers;
+    private final Clock clock;
+    private final ReentrantReadWriteLock newTransactionsLock = new ReentrantReadWriteLock();
 
     // End Tx Dependencies
 
@@ -132,7 +137,8 @@ public class KernelTransactions extends LifecycleAdapter
                                TransactionMonitor transactionMonitor,
                                LifeSupport dataSourceLife, ProcedureCache procedureCache,
                                Config config,
-                               Tracers tracers )
+                               Tracers tracers,
+                               Clock clock )
     {
         this.neoStoreTransactionContextFactory = neoStoreTransactionContextFactory;
         this.neoStores = neoStores;
@@ -157,6 +163,7 @@ public class KernelTransactions extends LifecycleAdapter
         this.dataSourceLife = dataSourceLife;
         this.procedureCache = procedureCache;
         this.tracers = tracers;
+        this.clock = clock;
     }
 
     /**
@@ -177,7 +184,7 @@ public class KernelTransactions extends LifecycleAdapter
                     labelScanStore, indexingService, updateableSchemaState, recordState, providerMap,
                     neoStores, locks, hooks, constraintIndexCreator, transactionHeaderInformationFactory,
                     transactionCommitProcess, transactionMonitor, storeLayer, legacyIndexTransactionState,
-                    localTxPool, constraintSemantics, Clock.SYSTEM_CLOCK, tracers.transactionTracer, procedureCache,
+                    localTxPool, constraintSemantics, clock, tracers.transactionTracer, procedureCache,
                     context, txTerminationAwareLocks );
             allTransactions.add( tx );
 
@@ -188,8 +195,19 @@ public class KernelTransactions extends LifecycleAdapter
     @Override
     public KernelTransaction newInstance()
     {
-        assertDatabaseIsRunning();
-        return localTxPool.acquire().initialize( neoStores.getMetaDataStore().getLastCommittedTransactionId() );
+        assertCurrentThreadIsNotBlockingNewTransactions();
+        newTransactionsLock.readLock().lock();
+        try
+        {
+            assertDatabaseIsRunning();
+            TransactionId lastCommittedTransaction = neoStores.getMetaDataStore().getLastCommittedTransaction();
+            return localTxPool.acquire().initialize( lastCommittedTransaction.transactionId(),
+                    lastCommittedTransaction.commitTimestamp() );
+        }
+        finally
+        {
+            newTransactionsLock.readLock().unlock();
+        }
     }
 
     /**
@@ -239,7 +257,7 @@ public class KernelTransactions extends LifecycleAdapter
         for ( KernelTransactionImplementation tx : allTransactions )
         {
             // We mark all transactions for termination since we want to be on the safe side here.
-            tx.markForTermination();
+            tx.markForTermination( Status.General.DatabaseUnavailable );
         }
         localTxPool.disposeAll();
         globalTxPool.disposeAll();
@@ -266,6 +284,41 @@ public class KernelTransactions extends LifecycleAdapter
     @Override
     public KernelTransactionsSnapshot get()
     {
-        return new KernelTransactionsSnapshot( allTransactions );
+        return new KernelTransactionsSnapshot( allTransactions, clock.currentTimeMillis() );
+    }
+
+    /**
+     * Do not allow new transactions to start until {@link #unblockNewTransactions()} is called. Current thread have
+     * responsibility of doing so.
+     * <p>
+     * Blocking call.
+     */
+    public void blockNewTransactions()
+    {
+        newTransactionsLock.writeLock().lock();
+    }
+
+    /**
+     * Allow new transactions to be started again if current thread is the one who called
+     * {@link #blockNewTransactions()}.
+     *
+     * @throws IllegalStateException if current thread is not the one that called {@link #blockNewTransactions()}.
+     */
+    public void unblockNewTransactions()
+    {
+        if ( !newTransactionsLock.writeLock().isHeldByCurrentThread() )
+        {
+            throw new IllegalStateException( "This thread did not block transactions previously" );
+        }
+        newTransactionsLock.writeLock().unlock();
+    }
+
+    private void assertCurrentThreadIsNotBlockingNewTransactions()
+    {
+        if ( newTransactionsLock.isWriteLockedByCurrentThread() )
+        {
+            throw new IllegalStateException(
+                    "Thread that is blocking new transactions from starting can't start new transaction" );
+        }
     }
 }

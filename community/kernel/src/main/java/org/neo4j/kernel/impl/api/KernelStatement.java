@@ -27,6 +27,7 @@ import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -126,9 +127,11 @@ public class KernelStatement implements TxStateHolder, Statement
         {
             throw new NotInTransactionException( "The statement has been closed." );
         }
-        if ( transaction.shouldBeTerminated() )
+
+        Status terminationReason = transaction.getReasonIfTerminated();
+        if ( terminationReason != null )
         {
-            throw new TransactionTerminatedException();
+            throw new TransactionTerminatedException( terminationReason );
         }
     }
 

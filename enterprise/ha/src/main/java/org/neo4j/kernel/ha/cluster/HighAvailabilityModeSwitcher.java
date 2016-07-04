@@ -85,8 +85,8 @@ public class HighAvailabilityModeSwitcher
     private SwitchToMaster switchToMaster;
     private final Election election;
     private final ClusterMemberAvailability clusterMemberAvailability;
-    private ClusterClient clusterClient;
-    private Supplier<StoreId> storeIdSupplier;
+    private final ClusterClient clusterClient;
+    private final Supplier<StoreId> storeIdSupplier;
     private final InstanceId instanceId;
 
     private final Log msgLog;

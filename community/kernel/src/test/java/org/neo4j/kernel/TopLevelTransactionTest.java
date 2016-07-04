@@ -109,11 +109,11 @@ public class TopLevelTransactionTest
     }
 
     @Test
-    public void shouldLetThroughTransactionTerminatedException() throws Exception
+    public void shouldShowTransactionTerminatedExceptionAsTransient() throws Exception
     {
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         doReturn( true ).when( kernelTransaction ).isOpen();
-        RuntimeException error = new TransactionTerminatedException();
+        RuntimeException error = new TransactionTerminatedException( Status.Transaction.Terminated );
         doThrow( error ).when( kernelTransaction ).close();
         ThreadToStatementContextBridge bridge = new ThreadToStatementContextBridge();
         TopLevelTransaction transaction = new TopLevelTransaction( kernelTransaction, bridge );
@@ -126,7 +126,7 @@ public class TopLevelTransactionTest
         }
         catch ( Exception e )
         {
-            assertThat( e, instanceOf( org.neo4j.graphdb.TransactionFailureException.class ) );
+            assertThat( e, instanceOf( TransientTransactionFailureException.class ) );
             assertSame( error, e.getCause() );
         }
     }

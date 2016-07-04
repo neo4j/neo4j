@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import java.util.Objects;
+
 import org.neo4j.kernel.impl.cache.LruCache;
 
 public class TransactionMetadataCache
@@ -55,14 +57,14 @@ public class TransactionMetadataCache
     }
 
     public TransactionMetadata cacheTransactionMetadata( long txId, LogPosition position, int masterId,
-                                                         int authorId, long checksum )
+                                                         int authorId, long checksum, long timeWritten )
     {
         if ( position.getByteOffset() == -1 )
         {
             throw new RuntimeException( "StartEntry.position is " + position );
         }
 
-        TransactionMetadata result = new TransactionMetadata( masterId, authorId, position, checksum );
+        TransactionMetadata result = new TransactionMetadata( masterId, authorId, position, checksum, timeWritten );
         txStartPositionCache.put( txId, result );
         return result;
     }
@@ -73,13 +75,16 @@ public class TransactionMetadataCache
         private final int authorId;
         private final LogPosition startPosition;
         private final long checksum;
+        private final long timeWritten;
 
-        public TransactionMetadata( int masterId, int authorId, LogPosition startPosition, long checksum )
+        public TransactionMetadata( int masterId, int authorId, LogPosition startPosition, long checksum,
+                long timeWritten )
         {
             this.masterId = masterId;
             this.authorId = authorId;
             this.startPosition = startPosition;
             this.checksum = checksum;
+            this.timeWritten = timeWritten;
         }
 
         public int getMasterId()
@@ -102,15 +107,21 @@ public class TransactionMetadataCache
             return checksum;
         }
 
+        public long getTimeWritten()
+        {
+            return timeWritten;
+        }
+
         @Override
         public String toString()
         {
-            return "TransactionMetadata[" +
-                    "masterId=" + masterId +
-                    ", authorId=" + authorId +
-                    ", startPosition=" + startPosition +
-                    ", checksum=" + checksum +
-                    ']';
+            return "TransactionMetadata{" +
+                   "masterId=" + masterId +
+                   ", authorId=" + authorId +
+                   ", startPosition=" + startPosition +
+                   ", checksum=" + checksum +
+                   ", timeWritten=" + timeWritten +
+                   '}';
         }
 
         @Override
@@ -124,27 +135,12 @@ public class TransactionMetadataCache
             {
                 return false;
             }
-
             TransactionMetadata that = (TransactionMetadata) o;
-
-            if ( authorId != that.authorId )
-            {
-                return false;
-            }
-            if ( checksum != that.checksum )
-            {
-                return false;
-            }
-            if ( masterId != that.masterId )
-            {
-                return false;
-            }
-            if ( !startPosition.equals( that.startPosition ) )
-            {
-                return false;
-            }
-
-            return true;
+            return masterId == that.masterId &&
+                   authorId == that.authorId &&
+                   checksum == that.checksum &&
+                   timeWritten == that.timeWritten &&
+                   Objects.equals( startPosition, that.startPosition );
         }
 
         @Override
@@ -154,6 +150,7 @@ public class TransactionMetadataCache
             result = 31 * result + authorId;
             result = 31 * result + startPosition.hashCode();
             result = 31 * result + (int) (checksum ^ (checksum >>> 32));
+            result = 31 * result + (int) (timeWritten ^ (timeWritten >>> 32));
             return result;
         }
     }

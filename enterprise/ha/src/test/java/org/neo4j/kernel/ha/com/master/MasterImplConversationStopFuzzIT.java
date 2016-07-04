@@ -144,7 +144,7 @@ public class MasterImplConversationStopFuzzIT
         private final int machineId;
 
         private State state = State.UNINITIALIZED;
-        private long lastTx = 0;
+        private final long lastTx = 0;
         private long epoch;
         private RequestContext requestContext;
 
@@ -288,7 +288,7 @@ public class MasterImplConversationStopFuzzIT
         public Void call() throws Exception
         {
             for ( int i = 0; i < numberOfOperations; i++ )
-            { 
+            {
                 state = state.next( this );
             }
             return null;

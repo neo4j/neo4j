@@ -19,21 +19,30 @@
  */
 package org.neo4j.graphdb;
 
-import static java.util.Objects.requireNonNull;
+import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * Signals that the transaction within which the failed operations ran
  * has been terminated with {@link Transaction#terminate()}.
  */
-public class TransactionTerminatedException extends TransactionFailureException
+public class TransactionTerminatedException extends TransactionFailureException implements Status.HasStatus
 {
-    public TransactionTerminatedException()
+    private final Status status;
+
+    public TransactionTerminatedException( Status status )
     {
-        this( "" );
+        this( status, "" );
     }
 
-    protected TransactionTerminatedException( String info )
+    protected TransactionTerminatedException( Status status, String additionalInfo )
     {
-        super( "The transaction has been terminated. " + requireNonNull( info ) );
+        super( "The transaction has been terminated. " + status.code().description() + " " + additionalInfo );
+        this.status = status;
+    }
+
+    @Override
+    public Status status()
+    {
+        return status;
     }
 }

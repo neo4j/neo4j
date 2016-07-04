@@ -22,9 +22,10 @@ package org.neo4j.kernel.ha;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
+import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.configuration.Migrator;
+import org.neo4j.kernel.configuration.Settings;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
@@ -95,6 +96,9 @@ public class HaSettings
 
     @Description( "Size of batches of transactions applied on slaves when pulling from master" )
     public static final Setting<Integer> pull_apply_batch_size = setting( "ha.pull_apply_batch_size", INTEGER, "100" );
+
+    @Internal
+    public static final Setting<Long> id_reuse_safe_zone_time = setting( "unsupported.dbms.id_reuse_safe_zone", Settings.DURATION, "1h" );
 
     public enum TxPushStrategy
     {

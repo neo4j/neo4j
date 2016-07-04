@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Test;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 
@@ -69,7 +70,7 @@ public class KernelStatementTest
     public void shouldThrowTerminateExceptionWhenTransactionTerminated() throws Exception
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        when( transaction.shouldBeTerminated() ).thenReturn( true );
+        when( transaction.getReasonIfTerminated() ).thenReturn( Status.General.UnknownFailure );
 
         KernelStatement statement = new KernelStatement(
             transaction, mock( IndexReaderFactory.class ),

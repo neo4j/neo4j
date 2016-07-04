@@ -33,6 +33,7 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.store.ProcedureCache;
@@ -58,6 +59,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -72,6 +74,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 public class KernelTransactionImplementationTest
 {
@@ -148,7 +151,7 @@ public class KernelTransactionImplementationTest
         // GIVEN
         KernelTransaction transaction = newInitializedTransaction();
         transaction.success();
-        transaction.markForTermination();
+        transaction.markForTermination( Status.General.UnknownFailure );
 
         try
         {
@@ -173,8 +176,8 @@ public class KernelTransactionImplementationTest
         try ( KernelTransaction transaction = newInitializedTransaction() )
         {
             // WHEN
-            transaction.markForTermination();
-            assertTrue( transaction.shouldBeTerminated() );
+            transaction.markForTermination( Status.General.UnknownFailure );
+            assertEquals( Status.General.UnknownFailure, transaction.getReasonIfTerminated() );
         }
 
         // THEN
@@ -188,10 +191,10 @@ public class KernelTransactionImplementationTest
     {
         // GIVEN
         KernelTransaction transaction = newInitializedTransaction();
-        transaction.markForTermination();
+        transaction.markForTermination( Status.General.UnknownFailure );
         transaction.success();
 
-        assertTrue( transaction.shouldBeTerminated() );
+        assertEquals( Status.General.UnknownFailure, transaction.getReasonIfTerminated() );
 
         try
         {
@@ -215,9 +218,9 @@ public class KernelTransactionImplementationTest
         try ( KernelTransaction transaction = newInitializedTransaction() )
         {
             // WHEN
-            transaction.markForTermination();
+            transaction.markForTermination( Status.General.UnknownFailure );
             transaction.failure();
-            assertTrue( transaction.shouldBeTerminated() );
+            assertEquals( Status.General.UnknownFailure, transaction.getReasonIfTerminated() );
         }
 
         // THEN
@@ -236,7 +239,7 @@ public class KernelTransactionImplementationTest
         KernelTransaction transaction = newInitializedTransaction( true, locks );
         transaction.success();
         transaction.close();
-        transaction.markForTermination();
+        transaction.markForTermination( Status.General.UnknownFailure );
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( true );
@@ -254,7 +257,7 @@ public class KernelTransactionImplementationTest
 
         KernelTransaction transaction = newInitializedTransaction( true, locks );
         transaction.close();
-        transaction.markForTermination();
+        transaction.markForTermination( Status.General.UnknownFailure );
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
@@ -268,7 +271,7 @@ public class KernelTransactionImplementationTest
     {
         KernelTransaction transaction = newInitializedTransaction();
         transaction.success();
-        transaction.markForTermination();
+        transaction.markForTermination( Status.General.UnknownFailure );
 
         transaction.close();
     }
@@ -277,7 +280,7 @@ public class KernelTransactionImplementationTest
     public void shouldIgnoreTerminationDuringRollback() throws Exception
     {
         KernelTransaction transaction = newInitializedTransaction();
-        transaction.markForTermination();
+        transaction.markForTermination( Status.General.UnknownFailure );
         transaction.close();
 
         // THEN
@@ -299,7 +302,7 @@ public class KernelTransactionImplementationTest
             public void run()
             {
                 latch.awaitStart();
-                transaction.markForTermination();
+                transaction.markForTermination( Status.General.UnknownFailure );
                 latch.finish();
             }
         } );
@@ -344,7 +347,7 @@ public class KernelTransactionImplementationTest
         } ).when( recordState ).extractCommands( anyListOf( Command.class ) );
         try ( KernelTransactionImplementation transaction = newInitializedTransaction() )
         {
-            transaction.initialize( 5L );
+            transaction.initialize( 5L, BASE_TX_COMMIT_TIMESTAMP );
 
             // WHEN committing it at a later point
             clock.forward( 5, MILLISECONDS );
@@ -366,7 +369,7 @@ public class KernelTransactionImplementationTest
         KernelTransactionImplementation transaction = newInitializedTransaction();
 
         // WHEN
-        transaction.markForTermination();
+        transaction.markForTermination( Status.General.UnknownFailure );
         transaction.close();
 
         // THEN
@@ -379,10 +382,10 @@ public class KernelTransactionImplementationTest
         // GIVEN
         KernelTransactionImplementation transaction = newInitializedTransaction();
         transaction.close();
-        transaction.markForTermination();
+        transaction.markForTermination( Status.General.UnknownFailure );
 
         // WHEN
-        transaction.initialize( 10L );
+        transaction.initialize( 10L, BASE_TX_COMMIT_TIMESTAMP );
         transaction.txState().nodeDoCreate( 11L );
         transaction.success();
         transaction.close();
@@ -402,7 +405,7 @@ public class KernelTransactionImplementationTest
         reset( locks );
 
         // WHEN
-        transaction.initialize( 10L );
+        transaction.initialize( 10L, BASE_TX_COMMIT_TIMESTAMP );
         transaction.close();
 
         // THEN
@@ -418,7 +421,7 @@ public class KernelTransactionImplementationTest
 
         // WHEN
         transaction.close();
-        transaction.initialize( 1 );
+        transaction.initialize( 1, BASE_TX_COMMIT_TIMESTAMP );
 
         // THEN
         assertEquals( reuseCount + 1, transaction.getReuseCount() );
@@ -429,9 +432,9 @@ public class KernelTransactionImplementationTest
     {
         KernelTransactionImplementation transaction = newTransaction( true, new NoOpLocks() );
 
-        transaction.markForTermination();
+        transaction.markForTermination( Status.General.UnknownFailure );
 
-        assertTrue( transaction.shouldBeTerminated() );
+        assertEquals( Status.General.UnknownFailure, transaction.getReasonIfTerminated() );
     }
 
     @Test
@@ -443,9 +446,9 @@ public class KernelTransactionImplementationTest
 
         KernelTransactionImplementation transaction = newInitializedTransaction( true, locks );
 
-        transaction.markForTermination();
+        transaction.markForTermination( Status.General.UnknownFailure );
 
-        assertTrue( transaction.shouldBeTerminated() );
+        assertEquals( Status.General.UnknownFailure, transaction.getReasonIfTerminated() );
         verify( client ).stop();
     }
 
@@ -458,11 +461,11 @@ public class KernelTransactionImplementationTest
 
         KernelTransactionImplementation transaction = newInitializedTransaction( true, locks );
 
-        transaction.markForTermination();
-        transaction.markForTermination();
-        transaction.markForTermination();
+        transaction.markForTermination( Status.Transaction.Terminated );
+        transaction.markForTermination( Status.Transaction.Outdated );
+        transaction.markForTermination( Status.Transaction.LockClientStopped );
 
-        assertTrue( transaction.shouldBeTerminated() );
+        assertEquals( Status.Transaction.Terminated, transaction.getReasonIfTerminated() );
         verify( client ).stop();
         verify( transactionMonitor ).transactionTerminated();
     }
@@ -475,7 +478,7 @@ public class KernelTransactionImplementationTest
         when( locks.newClient() ).thenReturn( client );
 
         KernelTransactionImplementation tx = newInitializedTransaction( true, locks );
-        tx.markForTermination();
+        tx.markForTermination( Status.General.UnknownFailure );
 
         tx.close();
 
@@ -492,7 +495,7 @@ public class KernelTransactionImplementationTest
 
         KernelTransactionImplementation tx = newInitializedTransaction( true, locks );
         tx.success();
-        tx.markForTermination();
+        tx.markForTermination( Status.General.UnknownFailure );
 
         try
         {
@@ -514,7 +517,7 @@ public class KernelTransactionImplementationTest
 
         KernelTransactionImplementation tx = newInitializedTransaction( true, locks );
         tx.failure();
-        tx.markForTermination();
+        tx.markForTermination( Status.General.UnknownFailure );
 
         tx.close();
 
@@ -532,7 +535,7 @@ public class KernelTransactionImplementationTest
         KernelTransactionImplementation tx = newInitializedTransaction( true, locks );
         tx.success();
         tx.failure();
-        tx.markForTermination();
+        tx.markForTermination( Status.General.UnknownFailure );
 
         try
         {
@@ -565,6 +568,31 @@ public class KernelTransactionImplementationTest
         }
     }
 
+    @Test
+    public void initializedTransactionShouldHaveNoTerminationReason() throws Exception
+    {
+        KernelTransactionImplementation tx = newInitializedTransaction();
+        assertNull( tx.getReasonIfTerminated() );
+    }
+
+    @Test
+    public void shouldReportCorrectTerminationReason() throws Exception
+    {
+        Status status = Status.Transaction.Terminated;
+        KernelTransactionImplementation tx = newInitializedTransaction();
+        tx.markForTermination( status );
+        assertSame( status, tx.getReasonIfTerminated() );
+    }
+
+    @Test
+    public void closedTransactionShouldHaveNoTerminationReason() throws Exception
+    {
+        KernelTransactionImplementation tx = newInitializedTransaction();
+        tx.markForTermination( Status.Transaction.Terminated );
+        tx.close();
+        assertNull( tx.getReasonIfTerminated() );
+    }
+
     private final NeoStores neoStores = mock( NeoStores.class );
     private final MetaDataStore metaDataStore = mock( MetaDataStore.class );
     private final TransactionHooks hooks = new TransactionHooks();
@@ -595,7 +623,7 @@ public class KernelTransactionImplementationTest
     private KernelTransactionImplementation newInitializedTransaction( boolean txTerminationAware, Locks locks )
     {
         KernelTransactionImplementation transaction = newTransaction( txTerminationAware, locks );
-        transaction.initialize( 0 );
+        transaction.initialize( 0, BASE_TX_COMMIT_TIMESTAMP );
         return transaction;
     }
 

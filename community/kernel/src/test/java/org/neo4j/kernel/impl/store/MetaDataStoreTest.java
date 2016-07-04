@@ -27,13 +27,16 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 public class MetaDataStoreTest
 {
@@ -99,6 +102,22 @@ public class MetaDataStoreTest
         try
         {
             metaDataStore.getLastClosedTransactionId();
+            fail( "Expected exception reading from MetaDataStore after being closed." );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( IllegalStateException.class ) );
+        }
+    }
+
+    @Test
+    public void getLastClosedTransactionShouldFailWhenStoreIsClosed() throws Exception
+    {
+        MetaDataStore metaDataStore = newMetaDataStore();
+        metaDataStore.close();
+        try
+        {
+            metaDataStore.getLastClosedTransaction();
             fail( "Expected exception reading from MetaDataStore after being closed." );
         }
         catch ( Exception e )
@@ -242,7 +261,7 @@ public class MetaDataStoreTest
         metaDataStore.close();
         try
         {
-            metaDataStore.setLastCommittedAndClosedTransactionId( 1, 1, 1, 1 );
+            metaDataStore.setLastCommittedAndClosedTransactionId( 1, 1, BASE_TX_COMMIT_TIMESTAMP, 1, 1 );
             fail( "Expected exception reading from MetaDataStore after being closed." );
         }
         catch ( Exception e )
@@ -258,12 +277,22 @@ public class MetaDataStoreTest
         metaDataStore.close();
         try
         {
-            metaDataStore.transactionCommitted( 1, 1 );
+            metaDataStore.transactionCommitted( 1, 1, BASE_TX_COMMIT_TIMESTAMP );
             fail( "Expected exception reading from MetaDataStore after being closed." );
         }
         catch ( Exception e )
         {
             assertThat( e, instanceOf( IllegalStateException.class ) );
+        }
+    }
+
+    @Test
+    public void lastTxCommitTimestampShouldBeBaseInNewStore() throws Exception
+    {
+        try ( MetaDataStore metaDataStore = newMetaDataStore() )
+        {
+            long timestamp = metaDataStore.getLastCommittedTransaction().commitTimestamp();
+            assertThat( timestamp, equalTo( TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP ) );
         }
     }
 

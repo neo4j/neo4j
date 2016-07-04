@@ -28,9 +28,6 @@ import org.mockito.stubbing.Answer;
 import java.io.IOException;
 import java.util.Random;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
@@ -55,6 +52,7 @@ import org.neo4j.kernel.ha.com.master.MasterImplTest;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.impl.api.BatchingTransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
@@ -161,6 +159,7 @@ public class MasterClientTest
                 mock( LogicalTransactionStore.class ),
                 mock( LogFile.class ),
                 mock( LogRotation.class),
+                mock( KernelTransactions.class ),
                 health,
                 txAppender,
                 txApplier,
@@ -169,7 +168,7 @@ public class MasterClientTest
                 NullLogService.getInstance()
         );
 
-        TransactionCommittingResponseUnpacker.Dependencies dependencies = new DefaultUnpackerDependencies( deps )
+        TransactionCommittingResponseUnpacker.Dependencies dependencies = new DefaultUnpackerDependencies( deps, 0 )
         {
             @Override
             public BatchingTransactionRepresentationStoreApplier transactionRepresentationStoreApplier()

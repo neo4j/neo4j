@@ -17,7 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl.store.id;
+
+import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 
 /**
  * Deciding whether or not ids are eligible for being released from buffering since being deleted.
@@ -27,11 +29,11 @@ public interface IdReuseEligibility
     IdReuseEligibility ALWAYS = new IdReuseEligibility()
     {
         @Override
-        public boolean isEligible()
+        public boolean isEligible( KernelTransactionsSnapshot snapshot )
         {
             return true;
         }
     };
 
-    boolean isEligible();
+    boolean isEligible( KernelTransactionsSnapshot snapshot );
 }

@@ -54,6 +54,7 @@ import static org.mockito.Mockito.when;
 
 import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.*;
 
 public class TransactionRepresentationCommitProcessTest
 {
@@ -85,7 +86,7 @@ public class TransactionRepresentationCommitProcessTest
             assertTrue( contains( e, rootCause.getMessage(), rootCause.getClass() ) );
         }
 
-        verify( transactionIdStore, times( 0 ) ).transactionCommitted( txId, 0 );
+        verify( transactionIdStore, times( 0 ) ).transactionCommitted( txId, 0, BASE_TX_COMMIT_TIMESTAMP );
     }
 
     @Test
