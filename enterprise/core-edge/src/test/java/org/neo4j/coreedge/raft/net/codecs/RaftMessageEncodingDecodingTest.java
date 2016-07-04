@@ -38,6 +38,7 @@ import org.neo4j.coreedge.raft.VoteResponseBuilder;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.coreedge.raft.state.SafeChannelMarshal;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.storageengine.api.ReadableChannel;
@@ -184,7 +185,7 @@ public class RaftMessageEncodingDecodingTest
      * assume that there is only a single entry in the stream, which allows for asserting no remaining bytes once the
      * first entry is read from the buffer.
      */
-    private static final ChannelMarshal<ReplicatedContent> marshal = new ChannelMarshal<ReplicatedContent>()
+    private static final ChannelMarshal<ReplicatedContent> marshal = new SafeChannelMarshal<ReplicatedContent>()
     {
         @Override
         public void marshal( ReplicatedContent content, WritableChannel channel ) throws IOException
@@ -201,7 +202,7 @@ public class RaftMessageEncodingDecodingTest
         }
 
         @Override
-        public ReplicatedContent unmarshal( ReadableChannel channel ) throws IOException
+        public ReplicatedContent unmarshal0( ReadableChannel channel ) throws IOException
         {
             byte type = channel.get();
             final ReplicatedContent content;

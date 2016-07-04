@@ -19,14 +19,13 @@
  */
 package org.neo4j.coreedge.server;
 
-import java.io.IOException;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.net.NetworkFlushableChannelNetty4;
 import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
+import org.neo4j.coreedge.raft.state.EndOfStreamException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
@@ -69,7 +68,7 @@ public class AdvertisedSocketAddressMarshallingTest
             marshal.unmarshal( new NetworkReadableClosableChannelNetty4( bufferWithMissingBytes ) );
             fail();
         }
-        catch ( IOException e )
+        catch ( EndOfStreamException e )
         {
             // expected.
         }

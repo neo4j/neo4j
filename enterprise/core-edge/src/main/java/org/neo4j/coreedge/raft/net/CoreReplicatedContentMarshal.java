@@ -34,11 +34,12 @@ import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionSerializer;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.raft.state.EndOfStreamException;
+import org.neo4j.coreedge.raft.state.SafeChannelMarshal;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
-public class CoreReplicatedContentMarshal implements ChannelMarshal<ReplicatedContent>
+public class CoreReplicatedContentMarshal extends SafeChannelMarshal<ReplicatedContent>
 {
     private static final byte TX_CONTENT_TYPE = 0;
     private static final byte RAFT_MEMBER_SET_TYPE = 1;
@@ -92,7 +93,7 @@ public class CoreReplicatedContentMarshal implements ChannelMarshal<ReplicatedCo
     }
 
     @Override
-    public ReplicatedContent unmarshal( ReadableChannel channel ) throws IOException, EndOfStreamException
+    public ReplicatedContent unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
     {
         byte type = channel.get();
         final ReplicatedContent content;

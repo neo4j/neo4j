@@ -26,6 +26,7 @@ import java.util.Objects;
 import org.neo4j.coreedge.raft.replication.StringMarshal;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.raft.state.EndOfStreamException;
+import org.neo4j.coreedge.raft.state.SafeChannelMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -74,14 +75,16 @@ public class AdvertisedSocketAddress
         return new InetSocketAddress( split[0], Integer.valueOf( split[1] ) );
     }
 
-    static class AdvertisedSocketAddressChannelMarshal implements ChannelMarshal<AdvertisedSocketAddress>
+    static class AdvertisedSocketAddressChannelMarshal extends SafeChannelMarshal<AdvertisedSocketAddress>
     {
+        @Override
         public void marshal( AdvertisedSocketAddress address, WritableChannel channel ) throws IOException
         {
             StringMarshal.marshal( channel, address.address );
         }
 
-        public AdvertisedSocketAddress unmarshal( ReadableChannel channel ) throws IOException, EndOfStreamException
+        @Override
+        public AdvertisedSocketAddress unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
         {
             String host = StringMarshal.unmarshal( channel );
             return new AdvertisedSocketAddress( host );
