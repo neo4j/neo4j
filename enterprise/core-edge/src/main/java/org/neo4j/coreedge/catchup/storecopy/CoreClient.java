@@ -62,8 +62,8 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
 {
     private final PullRequestMonitor pullRequestMonitor;
     private final SenderService senderService;
-    private StoreFileStreams storeFileStreams = null;
-    private Consumer<StoreId> storeIdConsumer = null;
+    private StoreFileStreams storeFileStreams;
+    private Consumer<StoreId> storeIdConsumer;
     private final Listeners<StoreFileStreamingCompleteListener> storeFileStreamingCompleteListeners = new Listeners<>();
     private final Listeners<TxStreamCompleteListener> txStreamCompleteListeners = new Listeners<>();
     private final Listeners<TxPullResponseListener> txPullResponseListeners = new Listeners<>();

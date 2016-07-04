@@ -70,7 +70,12 @@ public class StoreCopyClient
         {
             return storeIdCompletableFuture.get();
         }
-        catch ( InterruptedException | ExecutionException e )
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+            throw new StoreIdDownloadFailedException( e );
+        }
+        catch ( ExecutionException e )
         {
             throw new StoreIdDownloadFailedException( e );
         }

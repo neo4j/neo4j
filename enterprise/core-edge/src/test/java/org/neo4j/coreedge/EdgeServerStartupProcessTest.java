@@ -79,7 +79,7 @@ public class EdgeServerStartupProcessTest
         EdgeServerStartupProcess edgeServerStartupProcess = new EdgeServerStartupProcess( storeFetcher, localDatabase,
                 txPulling, dataSourceManager, new AlwaysChooseFirstServer( hazelcastTopology ),
                 new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(),
-                mock( EdgeTopologyService.class ), new Config( Collections.emptyMap() ) );
+                mock( EdgeTopologyService.class ), Config.empty() );
 
         // when
         edgeServerStartupProcess.start();
@@ -117,7 +117,7 @@ public class EdgeServerStartupProcessTest
         EdgeServerStartupProcess edgeServerStartupProcess = new EdgeServerStartupProcess( storeFetcher, localDatabase,
                 txPulling, dataSourceManager, new AlwaysChooseFirstServer( hazelcastTopology ),
                 new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(),
-                mock( EdgeTopologyService.class ), new Config( Collections.emptyMap() ) );
+                mock( EdgeTopologyService.class ), Config.empty() );
 
         // when
         try
@@ -163,7 +163,7 @@ public class EdgeServerStartupProcessTest
         EdgeServerStartupProcess edgeServerStartupProcess = new EdgeServerStartupProcess( storeFetcher, localDatabase,
                 txPulling, dataSourceManager, new AlwaysChooseFirstServer( hazelcastTopology ),
                 new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(),
-                mock( EdgeTopologyService.class ), new Config( Collections.emptyMap() ) );
+                mock( EdgeTopologyService.class ), Config.empty() );
 
         // when
         edgeServerStartupProcess.start();

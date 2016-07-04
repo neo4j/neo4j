@@ -25,7 +25,7 @@ import org.neo4j.coreedge.server.StoreId;
 
 public class GetStoreIdResponse
 {
-    private StoreId storeId;
+    private final StoreId storeId;
 
     public GetStoreIdResponse( StoreId storeId )
     {
