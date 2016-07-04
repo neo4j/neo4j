@@ -27,98 +27,98 @@ class SyntaxExceptionAcceptanceTest extends ExecutionEngineFunSuite {
 
   // Not TCK material; START, shortestPath
 
-  test("shouldRaiseErrorWhenMissingIndexValue") {
+  test("should raise error when missing index value") {
     test(
       "start s = node:index(key=) return s",
       "Invalid input ')': expected whitespace, \"...string...\" or a parameter (line 1, column 26)"
     )
   }
 
-  test("shouldGiveNiceErrorWhenMissingEqualsSign") {
+  test("should give nice error when missing equals sign") {
     test(
       "start n=node:customer(id : {id}) return n",
       "Invalid input ':': expected whitespace, comment or '=' (line 1, column 26)"
     )
   }
 
-  test("shouldRaiseErrorWhenMissingIndexKey") {
+  test("should raise error when missing index key") {
     test(
       "start s = node:index(=\"value\") return s",
       "Invalid input '=': expected whitespace, an identifier, \"...string...\" or a parameter (line 1, column 22)"
     )
   }
 
-  test("startWithoutNodeOrRel") {
+  test("start without node or rel") {
     test(
       "start s return s",
       "Invalid input 'r': expected whitespace, comment or '=' (line 1, column 9)"
     )
   }
 
-  test("shouldComplainAboutAStringBeingExpected") {
+  test("should complain about a string being expected") {
     test(
       "start s=node:index(key = value) return s",
       "Invalid input 'v': expected whitespace, comment, \"...string...\" or a parameter (line 1, column 26)"
     )
   }
 
-  test("shortestPathCanNotHaveMinimumDepthDifferentFromZeroOrOne") {
+  test("shortest path can not have minimum depth different from zero or one") {
     test(
       "match (a), (b) where id(a) = 0 and id(b) = 1 match p=shortestPath(a-[*2..3]->b) return p",
       "shortestPath(...) does not support a minimal length different from 0 or 1 (line 1, column 54)"
     )
   }
 
-  test("shortestPathCanNotHaveMultipleLinksInIt") {
+  test("shortest path can not have multiple links in it") {
     test(
       "match (a), (b) where id(a) = 0 and id(b) = 1 match p=shortestPath(a-->()-->b) return p",
       "shortestPath(...) requires a pattern containing a single relationship (line 1, column 54)"
     )
   }
 
-  test("oldNodeSyntaxGivesHelpfulError") {
+  test("old node syntax gives helpful error") {
     test(
       "start a=(0) return a",
       "Invalid input '(': expected whitespace, NODE or RELATIONSHIP (line 1, column 9)"
     )
   }
 
-  test("weirdSpelling") {
+  test("weird spelling") {
     test(
       "start a=ndoe(0) return a",
       "Invalid input 'd': expected 'o/O' (line 1, column 10)"
     )
   }
 
-  test("unclosedParenthesis") {
+  test("unclosed parenthesis") {
     test(
       "start a=node(0 return a",
       "Invalid input 'r': expected whitespace, comment, ',' or ')' (line 1, column 16)"
     )
   }
 
-  test("trailingComa") {
+  test("trailing comma") {
     test(
       "start a=node(0,1,) return a",
       "Invalid input ')': expected whitespace or an unsigned integer (line 1, column 18)"
     )
   }
 
-  test("unclosedCurly") {
+  test("unclosed curly") {
     test(
       "start a=node({0) return a",
       "Invalid input ')': expected whitespace or '}' (line 1, column 16)"
     )
   }
 
-  test("twoEqualSigns") {
+  test("two equal signs") {
     test(
       "start a==node(0) return a",
       "Invalid input '=' (line 1, column 9)"
     )
   }
 
-  test("handlesMultiLineQueries") {
+  test("handles multiline queries") {
     test(
       """start
          a=node(0),
@@ -133,7 +133,7 @@ class SyntaxExceptionAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("createNodeWithout") {
+  test("create node without") {
     test(
       """start
          a=node(0),
@@ -150,25 +150,33 @@ class SyntaxExceptionAcceptanceTest extends ExecutionEngineFunSuite {
 
   // pure syntax errors; are these TCK material?
 
-  test("shouldRaiseErrorWhenMissingReturnColumns") {
+  test("should raise error when missing return columns") {
     test(
       "match (s) return",
       "Unexpected end of input: expected whitespace, DISTINCT, '*' or an expression (line 1, column 17)"
     )
   }
 
-  test("shouldRaiseErrorWhenMissingReturn") {
+  test("should raise error when missing return") {
     test(
       "match (s) where s.id = 0",
       "Query cannot conclude with MATCH (must be RETURN or an update clause) (line 1, column 1)"
     )
   }
 
-  test("forgetByInOrderBy") {
+  test("forget by in order by") {
     test(
       "match (a) where id(a) = 0 return a order a.name",
       "Invalid input 'a': expected whitespace, comment or BY (line 1, column 42)"
     )
+  }
+
+  test("should handle empty string") {
+    test(" ", "Unexpected end of input: expected whitespace, comment, CYPHER options, EXPLAIN, PROFILE or Query (line 1, column 2 (offset: 1))")
+  }
+
+  test("should handle newline") {
+    test(System.lineSeparator(), "Unexpected end of input: expected whitespace, comment, CYPHER options, EXPLAIN, PROFILE or Query (line 2, column 1 (offset: 1))")
   }
 
   def test(query: String, message: String) {
