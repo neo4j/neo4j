@@ -146,7 +146,12 @@ public class TransactionMetadataCache
         @Override
         public int hashCode()
         {
-            return Objects.hash( masterId, authorId, startPosition, checksum, timeWritten );
+            int result = masterId;
+            result = 31 * result + authorId;
+            result = 31 * result + startPosition.hashCode();
+            result = 31 * result + (int) (checksum ^ (checksum >>> 32));
+            result = 31 * result + (int) (timeWritten ^ (timeWritten >>> 32));
+            return result;
         }
     }
 }
