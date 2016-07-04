@@ -34,8 +34,11 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.EnterpriseDatabaseRule;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -46,7 +49,15 @@ import static org.junit.Assert.assertThat;
 public class IdReuseTest
 {
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EnterpriseDatabaseRule();
+    public EmbeddedDatabaseRule dbRule = new EnterpriseDatabaseRule()
+    {
+        @Override
+        protected void configure(GraphDatabaseBuilder builder )
+        {
+            super.configure( builder );
+            builder.setConfig( EnterpriseEditionSettings.idTypesToReuse, IdType.RELATIONSHIP.name() );
+        }
+    };
 
     @Test
     public void shouldReuseNodeIdsFromRolledBackTransaction() throws Exception

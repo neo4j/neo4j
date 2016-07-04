@@ -24,7 +24,6 @@ import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
-import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Settings;
 
 /**
@@ -34,6 +33,6 @@ public class EnterpriseEditionSettings
 {
     @Description( "Specified names of id types that should be reused." )
     public static Setting<List<String>> idTypesToReuse =
-            Settings.setting( "dbms.ids.reuse.types.override", Settings.STRING_LIST, IdType.RELATIONSHIP.name() );
+            Settings.setting( "dbms.ids.reuse.types.override", Settings.STRING_LIST, "" );
 
 }

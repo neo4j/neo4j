@@ -40,14 +40,18 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.EnterpriseDatabaseRule;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
@@ -57,7 +61,15 @@ public class RelationshipIdReuseStressIT
 {
 
     @Rule
-    public EmbeddedDatabaseRule embeddedDatabase = new EnterpriseDatabaseRule();
+    public EmbeddedDatabaseRule embeddedDatabase = new EnterpriseDatabaseRule()
+    {
+        @Override
+        protected void configure(GraphDatabaseBuilder builder )
+        {
+            super.configure( builder );
+            builder.setConfig( EnterpriseEditionSettings.idTypesToReuse, IdType.RELATIONSHIP.name() );
+        }
+    };
 
     private ExecutorService executorService = Executors.newCachedThreadPool();
 
@@ -345,11 +357,6 @@ public class RelationshipIdReuseStressIT
                 LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( millisToWait ) );
             }
         }
-
-        public int getRelationshipSize()
-        {
-            return relationshipSize;
-        }
     }
 
     private class RelationshipRemover implements Runnable
@@ -384,7 +391,7 @@ public class RelationshipIdReuseStressIT
                     }
                     transaction.success();
                 }
-                catch ( DeadlockDetectedException ignored)
+                catch ( DeadlockDetectedException | NotFoundException ignored)
                 {
                     // ignore deadlocks
                 }

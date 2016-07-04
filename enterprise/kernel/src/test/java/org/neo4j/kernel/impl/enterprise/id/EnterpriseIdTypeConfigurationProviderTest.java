@@ -25,11 +25,14 @@ import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.IdTypeConfiguration;
 import org.neo4j.kernel.IdTypeConfigurationProvider;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -76,7 +79,10 @@ public class EnterpriseIdTypeConfigurationProviderTest
 
     private IdTypeConfigurationProvider createIdTypeProvider()
     {
-        return new EnterpriseIdTypeConfigurationProvider(new Config());
+        Map<String,String> params = MapUtil.stringMap( EnterpriseEditionSettings.idTypesToReuse.name(),
+                IdType.RELATIONSHIP.name() );
+        Config config = new Config( params );
+        return new EnterpriseIdTypeConfigurationProvider( config );
     }
 
 }
