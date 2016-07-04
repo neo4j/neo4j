@@ -44,6 +44,7 @@ import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.startsWith;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -138,7 +139,8 @@ public class HazelcastClientTest
         ClusterTopology topology = client.currentTopology();
 
         assertEquals( 0, topology.coreMembers().size() );
-        verify( log ).info( "Unable to connect to core cluster" );
+        verify( log ).info( startsWith( "Failed to read cluster topology from Hazelcast." ),
+                any( IllegalStateException.class ) );
     }
 
     @Test

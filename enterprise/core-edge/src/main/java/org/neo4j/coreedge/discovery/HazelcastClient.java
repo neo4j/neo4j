@@ -56,7 +56,7 @@ class HazelcastClient extends LifecycleAdapter implements EdgeTopologyService
         }
         catch ( Exception e )
         {
-            log.warn( "Failed to read cluster topology from Hazelcast. Continuing with empty (disconnected) topology. "
+            log.info( "Failed to read cluster topology from Hazelcast. Continuing with empty (disconnected) topology. "
                     + "Connection will be reattempted on next polling attempt.", e );
             return new ClusterTopology( false, emptyMap(), emptySet() );
         }
@@ -80,22 +80,14 @@ class HazelcastClient extends LifecycleAdapter implements EdgeTopologyService
     private synchronized <T> T retry( Function<HazelcastInstance, T> hazelcastAccessor )
     {
         boolean attemptedConnection = false;
-        RuntimeException exception = null;
+        HazelcastInstanceNotActiveException exception = null;
 
         while ( !attemptedConnection )
         {
             if ( hazelcastInstance == null )
             {
-                try
-                {
-                    attemptedConnection = true;
-                    hazelcastInstance = connector.connectToHazelcast();
-                }
-                catch ( IllegalStateException e )
-                {
-                    log.info( "Unable to connect to core cluster" );
-                    break;
-                }
+                attemptedConnection = true;
+                hazelcastInstance = connector.connectToHazelcast();
             }
 
             try
