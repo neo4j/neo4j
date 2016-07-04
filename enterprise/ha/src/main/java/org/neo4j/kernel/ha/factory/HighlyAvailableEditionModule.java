@@ -820,7 +820,7 @@ public class HighlyAvailableEditionModule
             }
             catch ( IOException e )
             {
-                throw new RuntimeException( "Unable to read transaction logs", e );
+                throw new IllegalStateException( "Unable to read transaction logs", e );
             }
             metaDataStore.setLastTransactionCommitTimestamp( lastCommitTimestampFromLogs );
         }
