@@ -197,7 +197,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 new LocalDatabase( platformModule.storeDir,
                         new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(), platformModule.pageCache ),
                         new StoreFiles( new DefaultFileSystemAbstraction() ),
-                        dependencies.provideDependency( NeoStoreDataSource.class ),
+                        platformModule.dataSourceManager,
                         dependencies.provideDependency( TransactionIdStore.class ),
                         databaseHealthSupplier),
                 txPulling, platformModule.dataSourceManager, new ConnectToRandomCoreServer( discoveryService ),
