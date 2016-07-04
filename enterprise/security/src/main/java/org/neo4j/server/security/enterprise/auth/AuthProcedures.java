@@ -21,11 +21,14 @@ package org.neo4j.server.security.enterprise.auth;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AuthSubject;
@@ -182,11 +185,11 @@ public class AuthProcedures
     {
         ensureAdminAuthSubject();
 
-        DependencyResolver resolver = graph.getDependencyResolver();
-        KernelTransactions kernelTransactions = resolver.resolveDependency( KernelTransactions.class );
-        return kernelTransactions.activeTransactions().stream()
-                .filter( tx -> !tx.shouldBeTerminated() )
-                .map( tx -> new TransactionResult( tx ) );
+        return countByUsername(
+                    getActiveTransactions().stream()
+                        .filter( tx -> !tx.shouldBeTerminated() )
+                        .map( tx -> tx.mode().name() )
+                );
     }
 
     @Procedure( name = "dbms.terminateTransactionsForUser", mode = DBMS )
@@ -194,26 +197,35 @@ public class AuthProcedures
             throws IllegalCredentialsException, IOException
     {
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
-
         adminSubject.getUserManager().assertAndGetUser( username );
 
-        DependencyResolver resolver = graph.getDependencyResolver();
-        KernelTransactions kernelTransactions = resolver.resolveDependency( KernelTransactions.class );
-        ArrayList<TransactionResult> killedTransactions = new ArrayList<>();
-        kernelTransactions.activeTransactions().forEach(
-                tx ->
-                {
-                    if ( tx.mode().name().equals( username ) )
-                    {
-                        TransactionResult r = new TransactionResult( tx );
-                        tx.markForTermination();
-                        killedTransactions.add( r );
-                    }
-                } );
-        return killedTransactions.stream();
+        Long killCount = 0L;
+        for ( KernelTransaction tx : getActiveTransactions() )
+        {
+            if ( tx.mode().name().equals( username ) )
+            {
+                tx.markForTermination();
+                killCount += 1;
+            }
+        }
+        return Stream.of( new TransactionResult( username, killCount ) );
     }
 
-    // --------------------------------------
+    // ----------------- helpers ---------------------
+
+    private Set<KernelTransaction> getActiveTransactions()
+    {
+        return graph.getDependencyResolver().resolveDependency( KernelTransactions.class ).activeTransactions();
+    }
+
+    private Stream<TransactionResult> countByUsername( Stream<String> usernames )
+    {
+        return usernames.collect(
+                    Collectors.groupingBy( Function.identity(), Collectors.counting() )
+                ).entrySet().stream().map(
+                    entry -> new TransactionResult( entry.getKey(), entry.getValue() )
+                );
+    }
 
     private EnterpriseAuthSubject ensureAdminAuthSubject()
     {
@@ -225,22 +237,22 @@ public class AuthProcedures
         return enterpriseAuthSubject;
     }
 
-    public class StringResult
+    public static class StringResult
     {
         public final String value;
 
-        public StringResult( String value )
+        StringResult( String value )
         {
             this.value = value;
         }
     }
 
-    public class UserResult
+    public static class UserResult
     {
         public final String username;
         public final List<String> roles;
 
-        public UserResult( String username, Set<String> roles )
+        UserResult( String username, Set<String> roles )
         {
             this.username = username;
             this.roles = new ArrayList<>();
@@ -248,12 +260,12 @@ public class AuthProcedures
         }
     }
 
-    public class RoleResult
+    public static class RoleResult
     {
         public final String role;
         public final List<String> users;
 
-        public RoleResult( String role, Set<String> users )
+        RoleResult( String role, Set<String> users )
         {
             this.role = role;
             this.users = new ArrayList<>();
@@ -261,15 +273,15 @@ public class AuthProcedures
         }
     }
 
-    public class TransactionResult
+    public static class TransactionResult
     {
         public final String username;
-        public final String transaction;
+        public final Long transactionCount;
 
-        public TransactionResult( KernelTransaction tx )
+        TransactionResult( String username, Long transactionCount )
         {
-            username = tx.mode().name();
-            transaction = tx.toString();
+            this.username = username;
+            this.transactionCount = transactionCount;
         }
     }
 }

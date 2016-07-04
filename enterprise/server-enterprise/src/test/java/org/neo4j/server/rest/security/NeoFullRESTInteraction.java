@@ -21,6 +21,7 @@ package org.neo4j.server.rest.security;
 
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.node.ArrayNode;
+import org.codehaus.jackson.node.IntNode;
 import org.codehaus.jackson.node.ObjectNode;
 import org.codehaus.jackson.node.TextNode;
 
@@ -236,10 +237,14 @@ public class NeoFullRESTInteraction extends CommunityServerTestBase implements N
                 {
                     map.put( key, value );
                 }
+                else if ( value instanceof IntNode )
+                {
+                    map.put( key, value.getIntValue() );
+                }
                 else
                 {
                     throw new RuntimeException( "Unhandled REST value type '" + value.getClass() +
-                            "'. Need String (TextNode) or List (ArrayNode)." );
+                            "'. Need String (TextNode), List (ArrayNode), Object (ObjectNode) or int (IntNode)." );
                 }
             }
 
