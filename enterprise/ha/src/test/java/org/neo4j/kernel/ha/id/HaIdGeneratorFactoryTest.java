@@ -29,6 +29,7 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.kernel.CommunityIdTypeConfigurationProvider;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
@@ -49,7 +50,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.ha.id.HaIdGeneratorFactory.VALUE_REPRESENTING_NULL;
 
 public class HaIdGeneratorFactoryTest
@@ -250,7 +250,7 @@ public class HaIdGeneratorFactoryTest
         masterDelegate = new DelegateInvocationHandler<>( Master.class );
         fs = new EphemeralFileSystemAbstraction();
         fac  = new HaIdGeneratorFactory( masterDelegate, NullLogProvider.getInstance(),
-                mock( RequestContextFactory.class ), fs );
+                mock( RequestContextFactory.class ), fs, new CommunityIdTypeConfigurationProvider() );
     }
 
     @SuppressWarnings( "unchecked" )

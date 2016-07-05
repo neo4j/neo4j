@@ -124,7 +124,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         File idFileName = new File( storageFileName.getPath() + ".id" );
         idGeneratorFactory.create( idFileName, 0, true );
         // TODO highestIdInUse = 0 works now, but not when slave can create store files.
-        IdGenerator idGenerator = idGeneratorFactory.open( idFileName, idType.getGrabSize(), idType, 0 );
+        IdGenerator idGenerator = idGeneratorFactory.open( idFileName, idType, 0 );
         idGenerator.nextId(); // reserve first for blockSize
         idGenerator.close();
     }

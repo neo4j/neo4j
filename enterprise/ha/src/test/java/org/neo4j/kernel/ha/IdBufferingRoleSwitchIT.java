@@ -28,8 +28,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.OtherThreadRule;
@@ -84,7 +84,9 @@ public class IdBufferingRoleSwitchIT
 
     private void triggerIdMaintenance( GraphDatabaseAPI db )
     {
-        db.getDependencyResolver().resolveDependency( DataSourceManager.class ).getDataSource().maintenance();
+        db.getDependencyResolver()
+                .resolveDependency( NeoStoreDataSource.BufferedIdMaintenanceController.class )
+                .maintenance();
     }
 
     private WorkerCommand<Void,Void> barrierControlledReadTransaction( final GraphDatabaseService slave,

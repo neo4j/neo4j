@@ -27,6 +27,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.CommunityIdTypeConfigurationProvider;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.KernelHealth;
@@ -74,14 +75,18 @@ public class NeoStoreDataSourceRule extends ExternalResource
             PageCache pageCache, Map<String,String> additionalConfig, KernelHealth kernelHealth )
     {
         Config config = new Config( stringMap( additionalConfig ), GraphDatabaseSettings.class );
-        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
+        CommunityIdTypeConfigurationProvider idTypeConfigurationProvider =
+                new CommunityIdTypeConfigurationProvider();
+        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, idTypeConfigurationProvider );
         LogProvider log = NullLogProvider.getInstance();
         StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, log );
-        return getDataSource( storeDir, fs, config, storeFactory, idGeneratorFactory, kernelHealth, log );
+        return getDataSource( storeDir, fs, config, storeFactory, idGeneratorFactory, idTypeConfigurationProvider,
+                kernelHealth, log );
     }
 
     public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs, Config config,
-            StoreFactory storeFactory, IdGeneratorFactory idGeneratorFactory, KernelHealth kernelHealth,
+            StoreFactory storeFactory, IdGeneratorFactory idGeneratorFactory,
+            CommunityIdTypeConfigurationProvider idTypeConfigurationProvider, KernelHealth kernelHealth,
             LogProvider logProvider )
     {
         if ( dataSource != null )
@@ -103,13 +108,13 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 new StartupStatisticsProvider(), mock( NodeManager.class ), null, null,
                 new CommunityCommitProcessFactory(), mock( PageCache.class ),
                 mock( ConstraintSemantics.class), new Monitors(), new Tracers( "null", NullLog.getInstance() ),
-                idGeneratorFactory, IdReuseEligibility.ALWAYS );
+                idGeneratorFactory, IdReuseEligibility.ALWAYS, idTypeConfigurationProvider );
 
         return dataSource;
     }
 
     public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
-                                             PageCache pageCache, Map<String, String> additionalConfig )
+            PageCache pageCache, Map<String,String> additionalConfig )
     {
         KernelHealth kernelHealth = new KernelHealth( mock( KernelPanicEventGenerator.class ),
                 NullLogProvider.getInstance().getLog( KernelHealth.class ) );

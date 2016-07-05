@@ -34,7 +34,6 @@ import org.neo4j.legacy.consistency.report.ConsistencyReport;
 import org.neo4j.legacy.consistency.report.ConsistencyReport.NodeConsistencyReport;
 
 import static java.lang.String.format;
-
 import static org.neo4j.legacy.consistency.checking.DynamicStore.ARRAY;
 import static org.neo4j.legacy.consistency.checking.DynamicStore.NODE_LABEL;
 import static org.neo4j.legacy.consistency.checking.DynamicStore.SCHEMA;

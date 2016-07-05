@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 import static java.lang.String.format;
-
 import static org.neo4j.consistency.checking.DynamicStore.ARRAY;
 import static org.neo4j.consistency.checking.DynamicStore.NODE_LABEL;
 import static org.neo4j.consistency.checking.DynamicStore.SCHEMA;

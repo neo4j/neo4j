@@ -129,6 +129,7 @@ import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
+import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -187,6 +188,8 @@ public class HighlyAvailableEditionModule
         final Dependencies dependencies = platformModule.dependencies;
         final LogService logging = platformModule.logging;
         final Monitors monitors = platformModule.monitors;
+
+        idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
 
         // Set Netty logger
         InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( logging.getInternalLogProvider() ) );
@@ -610,7 +613,7 @@ public class HighlyAvailableEditionModule
             FileSystemAbstraction fs )
     {
         idGeneratorFactory = new HaIdGeneratorFactory(
-                masterDelegateInvocationHandler, logging, requestContextFactory, fs );
+                masterDelegateInvocationHandler, logging, requestContextFactory, fs, idTypeConfigurationProvider );
 
         /*
          * We don't really switch to master here. We just need to initialize the idGenerator so the initial store

@@ -45,7 +45,6 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.impl.ha.ClusterManager;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.test.Race;
 import org.neo4j.test.ha.ClusterRule;
 
@@ -409,9 +408,9 @@ public class TerminationOfSlavesDuringPullUpdatesTest
 
     private void forceMaintenance( HighlyAvailableGraphDatabase master )
     {
-        NeoStoreDataSource dataSource =
-                master.getDependencyResolver().resolveDependency( DataSourceManager.class ).getDataSource();
-        dataSource.maintenance();
+        master.getDependencyResolver()
+                .resolveDependency( NeoStoreDataSource.BufferedIdMaintenanceController.class )
+                .maintenance();
     }
 
     private static void assertPropertyValue( Object property, Object... candidates )

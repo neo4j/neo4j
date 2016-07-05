@@ -39,6 +39,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.EditionModule;
@@ -90,7 +91,8 @@ public class BigJumpingStoreIT
                 return new CommunityEditionModule( platformModule )
                 {
                     @Override
-                    protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs )
+                    protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs,
+                            IdTypeConfigurationProvider idTypeConfigurationProvider )
                     {
                         return new JumpingIdGeneratorFactory( SIZE_PER_JUMP );
                     }

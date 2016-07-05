@@ -19,23 +19,30 @@
  */
 package org.neo4j.kernel;
 
-import java.io.File;
-
-import org.neo4j.kernel.impl.store.id.IdGenerator;
-
 /**
- * @deprecated This will be moved to internal packages in the next major release.
+ * Configuration for any specific id type
+ * @see IdType
+ * @see IdTypeConfigurationProvider
  */
-// TODO 3.0: Move to org.neo4j.kernel.impl.store.id package
-@Deprecated
-public interface IdGeneratorFactory
+public class IdTypeConfiguration
 {
-    IdGenerator open( File filename, IdType idType, long highId );
+    static final int DEFAULT_GRAB_SIZE = 1024;
+    static final int AGGRESIVE_GRAB_SIZE = 50000;
 
-    IdGenerator open( File filename, int grabSize, IdType idType, long highId );
+    private final boolean allowAggressiveReuse;
 
-    void create( File filename, long highId, boolean throwIfFileExists );
+    public IdTypeConfiguration( boolean allowAggressiveReuse )
+    {
+        this.allowAggressiveReuse = allowAggressiveReuse;
+    }
 
-    IdGenerator get( IdType idType );
+    public boolean allowAggressiveReuse()
+    {
+        return allowAggressiveReuse;
+    }
 
+    public int getGrabSize()
+    {
+        return allowAggressiveReuse ? AGGRESIVE_GRAB_SIZE : DEFAULT_GRAB_SIZE;
+    }
 }

@@ -25,48 +25,36 @@ package org.neo4j.kernel;
 @Deprecated
 public enum IdType
 {
-    NODE( 35, false ),
-    RELATIONSHIP( 35, false ),
-    PROPERTY( 36, true ),
-    STRING_BLOCK( 36, true ),
-    ARRAY_BLOCK( 36, true ),
-    PROPERTY_KEY_TOKEN( false ),
-    PROPERTY_KEY_TOKEN_NAME( false ),
-    RELATIONSHIP_TYPE_TOKEN( 16, false ),
-    RELATIONSHIP_TYPE_TOKEN_NAME( false ),
-    LABEL_TOKEN( false ),
-    LABEL_TOKEN_NAME( false ),
-    NEOSTORE_BLOCK( false ),
-    SCHEMA( 35, false ),
-    NODE_LABELS( 35, true ),
-    RELATIONSHIP_GROUP( 35, false );
+    NODE( 35 ),
+    RELATIONSHIP( 35 ),
+    PROPERTY( 36 ),
+    STRING_BLOCK( 36 ),
+    ARRAY_BLOCK( 36 ),
+    PROPERTY_KEY_TOKEN,
+    PROPERTY_KEY_TOKEN_NAME,
+    RELATIONSHIP_TYPE_TOKEN( 16 ),
+    RELATIONSHIP_TYPE_TOKEN_NAME,
+    LABEL_TOKEN,
+    LABEL_TOKEN_NAME,
+    NEOSTORE_BLOCK,
+    SCHEMA( 35 ),
+    NODE_LABELS( 35 ),
+    RELATIONSHIP_GROUP( 35 );
 
     private final long max;
-    private final boolean allowAggressiveReuse;
 
-    IdType( boolean allowAggressiveReuse )
+    IdType()
     {
-        this( 32, allowAggressiveReuse );
+        this( 32 );
     }
 
-    IdType( int bits, boolean allowAggressiveReuse )
+    IdType( int bits )
     {
-        this.allowAggressiveReuse = allowAggressiveReuse;
-        this.max = (long)Math.pow( 2, bits )-1;
+        this.max = (1L << bits) - 1;
     }
 
     public long getMaxValue()
     {
         return this.max;
-    }
-
-    public boolean allowAggressiveReuse()
-    {
-        return allowAggressiveReuse;
-    }
-
-    public int getGrabSize()
-    {
-        return allowAggressiveReuse ? 50000 : 1024;
     }
 }

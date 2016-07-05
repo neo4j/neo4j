@@ -36,16 +36,35 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 {
     private final Map<IdType, IdGenerator> generators = new HashMap<>();
     private final FileSystemAbstraction fs;
+    private final IdTypeConfigurationProvider idTypeConfigurationProvider;
 
     public DefaultIdGeneratorFactory( FileSystemAbstraction fs )
     {
+        this( fs, new CommunityIdTypeConfigurationProvider() );
+    }
+
+    public DefaultIdGeneratorFactory( FileSystemAbstraction fs, IdTypeConfigurationProvider idTypeConfigurationProvider)
+    {
         this.fs = fs;
+        this.idTypeConfigurationProvider = idTypeConfigurationProvider;
+    }
+
+    @Override
+    public IdGenerator open( File filename, IdType idType, long highId )
+    {
+        IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
+        return open( filename, idTypeConfiguration.getGrabSize(), idType, idTypeConfiguration.allowAggressiveReuse(), highId );
     }
 
     public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
     {
+        IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
+        return open( fileName, grabSize, idType, idTypeConfiguration.allowAggressiveReuse(), highId );
+    }
+
+    private IdGenerator open( File fileName, int grabSize, IdType idType, boolean aggressiveReuse, long highId )
+    {
         long maxValue = idType.getMaxValue();
-        boolean aggressiveReuse = idType.allowAggressiveReuse();
         IdGenerator generator = new IdGeneratorImpl( fs, fileName, grabSize, maxValue,
                 aggressiveReuse, highId );
         generators.put( idType, generator );
