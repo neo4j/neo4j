@@ -21,18 +21,15 @@ package org.neo4j.server.security.enterprise.auth;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.proc.CallableProcedure;
-import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.impl.enterprise.EnterpriseProceduresProvider;
+import org.neo4j.kernel.impl.factory.ProceduresProvider;
 import org.neo4j.kernel.impl.proc.Procedures;
 
-@Service.Implementation( EnterpriseProceduresProvider.class )
-public class ProceduresProvider extends Service implements EnterpriseProceduresProvider
+@Service.Implementation( ProceduresProvider.class )
+public class EnterpriseAuthProceduresProvider extends Service implements ProceduresProvider
 {
-    public ProceduresProvider()
+    public EnterpriseAuthProceduresProvider()
     {
-        super( "procedures-provider" );
+        super( "enterprise-auth-procedures-provider" );
     }
 
     @Override
@@ -40,8 +37,6 @@ public class ProceduresProvider extends Service implements EnterpriseProceduresP
     {
         try
         {
-            procedures.registerComponent( AccessMode.class, ctx -> ctx.get( CallableProcedure.Context.ACCESS_MODE ) );
-            procedures.registerComponent( AuthSubject.class, ctx -> ctx.get( CallableProcedure.Context.AUTH_SUBJECT ) );
             procedures.register( AuthProcedures.class );
         }
         catch ( KernelException e )

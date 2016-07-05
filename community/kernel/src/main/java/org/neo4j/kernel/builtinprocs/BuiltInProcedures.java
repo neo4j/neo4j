@@ -57,8 +57,5 @@ public class BuiltInProcedures implements ThrowingConsumer<Procedures, Procedure
         procs.register( new ListProceduresProcedure( procedureName( "dbms", "procedures" ) ) );
         procs.register( new ListComponentsProcedure( procedureName( "dbms", "components" ), neo4jVersion, neo4jEdition ) );
         procs.register( new JmxQueryProcedure( procedureName( "dbms", "queryJmx" ), ManagementFactory.getPlatformMBeanServer() ) );
-
-        // These are 'dbms'-namespaced procedures for dealing with authentication and authorization-oriented operations
-        procs.register( new AlterUserPasswordProcedure( procedureName( "dbms", "changePassword" ) ) );
     }
 }
