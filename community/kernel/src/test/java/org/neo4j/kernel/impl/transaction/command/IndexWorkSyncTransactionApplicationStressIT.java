@@ -57,10 +57,8 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
 
-import static org.junit.Assert.assertEquals;
-
 import static java.util.Arrays.asList;
-
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.TimeUtil.parseTimeMillis;
 import static org.neo4j.kernel.api.properties.Property.noNodeProperty;
 import static org.neo4j.kernel.api.properties.Property.property;
@@ -166,7 +164,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
         {
             try
             {
-                TransactionQueue queue = new TransactionQueue( batchSize, (tx) -> {
+                TransactionQueue queue = new TransactionQueue( batchSize, (tx, last) -> {
                     // Apply
                     storageEngine.apply( tx, TransactionApplicationMode.EXTERNAL );
 
@@ -176,7 +174,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
                 } );
                 for ( ; !end.get(); i++ )
                 {
-                    queue.queueAndDrainIfBatchSizeReached( createNodeAndProperty( i ) );
+                    queue.queue( createNodeAndProperty( i ) );
                 }
                 queue.empty();
             }

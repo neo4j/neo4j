@@ -45,24 +45,24 @@ public class TransactionQueueTest
         // WHEN
         for ( int i = 0; i < 9; i++ )
         {
-            queue.queueAndDrainIfBatchSizeReached( mock( TransactionToApply.class ) );
+            queue.queue( mock( TransactionToApply.class ) );
             verifyNoMoreInteractions( applier );
         }
-        queue.queueAndDrainIfBatchSizeReached( mock( TransactionToApply.class ) );
-        verify( applier, times( 1 ) ).apply( any() );
+        queue.queue( mock( TransactionToApply.class ) );
+        verify( applier, times( 1 ) ).apply( any(), any() );
         reset( applier );
 
         // THEN
-        queue.queueAndDrainIfBatchSizeReached( mock( TransactionToApply.class ) );
+        queue.queue( mock( TransactionToApply.class ) );
 
         // and WHEN emptying in the end
         for ( int i = 0; i < 2; i++ )
         {
-            queue.queueAndDrainIfBatchSizeReached( mock( TransactionToApply.class ) );
+            queue.queue( mock( TransactionToApply.class ) );
             verifyNoMoreInteractions( applier );
         }
         queue.empty();
-        verify( applier, times( 1 ) ).apply( any() );
+        verify( applier, times( 1 ) ).apply( any(), any() );
     }
 
     @Test
@@ -77,11 +77,11 @@ public class TransactionQueueTest
         TransactionToApply[] txs = new TransactionToApply[batchSize];
         for ( int i = 0; i < batchSize; i++ )
         {
-            queue.queueAndDrainIfBatchSizeReached( txs[i] = new TransactionToApply( mock( TransactionRepresentation.class ) ) );
+            queue.queue( txs[i] = new TransactionToApply( mock( TransactionRepresentation.class ) ) );
         }
 
         // THEN
-        verify( applier, times( 1 ) ).apply( any() );
+        verify( applier, times( 1 ) ).apply( any(), any() );
         for ( int i = 0; i < txs.length-1; i++ )
         {
             assertEquals( txs[i+1], txs[i].next() );

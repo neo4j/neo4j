@@ -237,7 +237,7 @@ class RebuildFromLogs
             ReadableLogChannel channel = new ReadAheadLogChannel( startingChannel, versionBridge );
             long txId = BASE_TX_ID;
             TransactionQueue queue = new TransactionQueue( 10_000,
-                    (tx) -> {commitProcess.commit( tx, NULL, EXTERNAL );} );
+                    (tx, last) -> {commitProcess.commit( tx, NULL, EXTERNAL );} );
             LogEntryReader<ReadableClosablePositionAwareChannel> entryReader = new VersionAwareLogEntryReader<>();
             try ( IOCursor<CommittedTransactionRepresentation> cursor =
                     new PhysicalTransactionCursor<>( channel, entryReader ) )
@@ -246,7 +246,7 @@ class RebuildFromLogs
                 {
                     txId = cursor.get().getCommitEntry().getTxId();
                     TransactionRepresentation transaction = cursor.get().getTransactionRepresentation();
-                    queue.queueAndDrainIfBatchSizeReached( new TransactionToApply( transaction, txId ) );
+                    queue.queue( new TransactionToApply( transaction, txId ) );
                     if ( upToTxId != BASE_TX_ID && upToTxId == txId )
                     {
                         break;

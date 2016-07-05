@@ -79,10 +79,10 @@ public class RecoveryVisitor implements CloseableVisitor<RecoverableTransaction,
         TransactionToApply tx = new TransactionToApply( txRepresentation, txId );
         tx.commitment( NO_COMMITMENT, txId );
 
-        queue.queueAndDrainIfBatchSizeReached( tx );
+        queue.queue( tx );
     }
 
-    private void applyQueue( TransactionToApply batch ) throws Exception
+    private void applyQueue( TransactionToApply batch, TransactionToApply last ) throws Exception
     {
         storageEngine.apply( batch, RECOVERY );
     }

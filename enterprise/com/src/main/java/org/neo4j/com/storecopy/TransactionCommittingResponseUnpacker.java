@@ -30,26 +30,22 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.StorageEngine;
-
-import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 
 /**
  * Receives and unpacks {@link Response responses}.
  * Transaction obligations are handled by {@link TransactionObligationFulfiller} and
  * {@link TransactionStream transaction streams} are {@link TransactionCommitProcess committed to the
  * store}, in batches.
- * <p/>
+ * <p>
  * It is assumed that any {@link TransactionStreamResponse response carrying transaction data} comes from the one
  * and same thread.
- *
- *
+ * <p>
  * SAFE ZONE EXPLAINED
- *
+ * <p>
  * PROBLEM
  * A slave can read inconsistent or corrupted data (mixed state records) because of reuse of property ids.
  * This happens when a record that has been read gets reused and then read again or possibly reused in
@@ -58,88 +54,93 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
  * case because the transactions that SET, REMOVE and REUSE the record are applied in batch and thus a
  * slave transaction can see states from all of the transactions that touches the reused record during its
  * lifetime.
- *
+ * <p>
  * SOLUTION
  * Master and Slave are configured with the same safeZone time.
  * Let S = safeZone time (more about safeZone time further down)
- *
+ * <p>
  * -> Master promise to hold all deleted ids in quarantine before reusing them, (S duration).
- *      He thereby creates a safe zone of transactions that among themselves are guaranteed to be free of
- *      id reuse contamination.
+ * He thereby creates a safe zone of transactions that among themselves are guaranteed to be free of
+ * id reuse contamination.
  * -> Slave promise to not let any transactions cross the safe zone boundary.
- *      Meaning all transactions that falls out of the safe zone, as updates gets applied,
- *      will need to be terminated, with a hint that they can simply be restarted
- *
+ * Meaning all transactions that falls out of the safe zone, as updates gets applied,
+ * will need to be terminated, with a hint that they can simply be restarted
+ * <p>
  * Safe zone is a time frame in Masters domain. All transactions that started and finished within this
  * time frame are guarantied to not have read any mixed state records.
- *
+ * <p>
  * Example of a transaction running on slave that starts reading a dynamic property, then a batch is pulled from master
  * that deletes the property and and reuses the record in the chain, making the transaction read inconsistent data.
- *
- *         TX starts reading
- *                    tx here
- *                       v
- *          |aaaa|->|aaaa|->|aaaa|->|aaaa|
- *          1       2       3       4
- *
- *         "a" string is deleted and replaced with "bbbbbbbbbbbbbbbb"
- *                    tx here
- *                       v
- *          |bbbb|->|bbbb|->|bbbb|->|bbbb|
- *          1       2       3       4
- *
- *         TX continues reading and does not know anything is wrong,
- *         returning the inconsistent string "aaaaaaaabbbbbbbb".
- *                                   tx here
- *                                       v
- *          |bbbb|->|bbbb|->|bbbb|->|bbbb|
- *          1       2       3       4
- *
+ * <p>
+ * TX starts reading
+ * tx here
+ * <pre>
+ * v
+ * |aaaa|->|aaaa|->|aaaa|->|aaaa|
+ * 1       2       3       4
+ * </pre>
+ * "a" string is deleted and replaced with "bbbbbbbbbbbbbbbb"
+ * <pre>
+ * tx here
+ * v
+ * |bbbb|->|bbbb|->|bbbb|->|bbbb|
+ * 1       2       3       4
+ * </pre>
+ * TX continues reading and does not know anything is wrong,
+ * returning the inconsistent string "aaaaaaaabbbbbbbb".
+ * <pre>
+ * tx here
+ * v
+ * |bbbb|->|bbbb|->|bbbb|->|bbbb|
+ * 1       2       3       4
+ * </pre>
  * Example of how the safe zone window moves while appying a batch
- *          x---------------------------------------------------------------------------------->| TIME
- *          |MASTER STATE
- *          |---------------------------------------------------------------------------------->|
- *          |                                                          Batch to apply to slave
- *          |                                  safeZone with size S  |<------------------------>|
- *          |                                                  |
- *          |                                                  v     A
- *          |SLAVE STATE 1 (before applying batch)         |<---S--->|
- *          |----------------------------------------------+-------->|
- *          |                                                        |
- *          |                                                        |
- *          |                                                        |      B
- *          |SLAVE STATE 2 (mid apply)                            |<-+-S--->|
- *          |-----------------------------------------------------+--+----->|
- *          |                                                        |      |
- *          |                                                        |      |
- *          |                                                        |      |  C
- *          |SLAVE STATE 3 (mid apply / after apply)                 |<---S-+->|
- *          |--------------------------------------------------------+------+->|
- *          |                                                        |      |  |
- *          |                                                        |      |  |
- *          |                                                        |      |  |                D
- *          |SLAVE STATE 4 (after apply)                             |      |  |      |<---S--->|
- *          |--------------------------------------------------------+------+--+------+-------->|
- *
+ * <pre>
+ * x---------------------------------------------------------------------------------->| TIME
+ * |MASTER STATE
+ * |---------------------------------------------------------------------------------->|
+ * |                                                          Batch to apply to slave
+ * |                                  safeZone with size S  |<------------------------>|
+ * |                                                  |
+ * |                                                  v     A
+ * |SLAVE STATE 1 (before applying batch)         |<---S--->|
+ * |----------------------------------------------+-------->|
+ * |                                                        |
+ * |                                                        |
+ * |                                                        |      B
+ * |SLAVE STATE 2 (mid apply)                            |<-+-S--->|
+ * |-----------------------------------------------------+--+----->|
+ * |                                                        |      |
+ * |                                                        |      |
+ * |                                                        |      |  C
+ * |SLAVE STATE 3 (mid apply / after apply)                 |<---S-+->|
+ * |--------------------------------------------------------+------+->|
+ * |                                                        |      |  |
+ * |                                                        |      |  |
+ * |                                                        |      |  |                D
+ * |SLAVE STATE 4 (after apply)                             |      |  |      |<---S--->|
+ * |--------------------------------------------------------+------+--+------+-------->|
+ * </pre>
+ * <p>
  * What we see in this diagram is a slave pulling updates from the master.
  * While doing so, the safe zone window |<---S--->| is pushed forward. NOTE that we do not see any explicit transaction
  * running on slave. Only the times (A, B, C, D) that we discuss.
- *
+ * <p>
  * slaveTx start on slave when slave is in SLAVE STATE 1
- *      - Latest applied transaction on slave has timestamp A and safe zone is A-S.
- *      - slaveTx.startTime = A
- *
+ * - Latest applied transaction on slave has timestamp A and safe zone is A-S.
+ * - slaveTx.startTime = A
+ * <p>
  * Scenario 1 - slaveTx finish when slave is in SLAVE STATE 2
- *      Latest applied transaction in store has timestamp B and safe zone is B-S.
- *      slaveTx did not cross the safe zone boundary as slaveTx.startTime = A > B-S
- *      We can safely assume that slaveTx did not read any mixed state records.
- *
+ * Latest applied transaction in store has timestamp B and safe zone is B-S.
+ * slaveTx did not cross the safe zone boundary as slaveTx.startTime = A > B-S
+ * We can safely assume that slaveTx did not read any mixed state records.
+ * <p>
  * Scenario 2 - slaveTx has not yet finished in SLAVE STATE 3
- *      Latest applied transaction in store has timestamp C and safe zone is C-S.
- *      We are just about to apply the next part of the batch and push the safe zone window forward.
- *      This will make slaveTx.startTime = A < C-S. This means Tx is now in risk of reading mixed state records.
- *      We will terminate slaveTx and let the user try again.
- *
+ * Latest applied transaction in store has timestamp C and safe zone is C-S.
+ * We are just about to apply the next part of the batch and push the safe zone window forward.
+ * This will make slaveTx.startTime = A < C-S. This means Tx is now in risk of reading mixed state records.
+ * We will terminate slaveTx and let the user try again.
+ * <p>
  * <b>NOTE ABOUT TX_COMMIT_TIMESTAMP</b>
  * commitTimestamp is used by {@link MetaDataStore} to keep track of the commit timestamp of the last committed
  * transaction. When starting up a db we can not always know what the the latest commit timestamp is but slave need it
@@ -172,6 +173,8 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
  * Store already on 2.3.next, w/ or w/o tx logs <br>
  * TIMESTAMP CORRECT <br>
  * ==> FINE
+ *
+ * @see TransactionBatchCommitter
  */
 public class TransactionCommittingResponseUnpacker extends LifecycleAdapter implements ResponseUnpacker
 {
@@ -259,13 +262,12 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
     // Assigned in constructor
     private final Dependencies dependencies;
     private final int maxBatchSize;
+    private final long idReuseSafeZoneTime;
 
     // Assigned in start()
-    private TransactionCommitProcess commitProcess;
     private TransactionObligationFulfiller obligationFulfiller;
-    private KernelTransactions kernelTransactions;
+    private TransactionBatchCommitter batchCommitter;
     private Log log;
-    private final long idReuseSafeZoneTime;
     // Assigned in stop()
     private volatile boolean stopped;
 
@@ -292,26 +294,24 @@ public class TransactionCommittingResponseUnpacker extends LifecycleAdapter impl
         }
 
         BatchingResponseHandler responseHandler = new BatchingResponseHandler( maxBatchSize,
-                (batch) -> {
-                    commitProcess.commit( batch, CommitEvent.NULL, EXTERNAL );
-                }, obligationFulfiller, txHandler, log, kernelTransactions, idReuseSafeZoneTime );
+                batchCommitter, obligationFulfiller, txHandler, log );
         try
         {
             response.accept( responseHandler );
         }
         finally
         {
-            responseHandler.applyQueuedTransactionsIfNeeded();
+            responseHandler.applyQueuedTransactions();
         }
     }
 
     @Override
     public void start()
     {
-        this.commitProcess = dependencies.commitProcess();
         this.obligationFulfiller = dependencies.obligationFulfiller();
+        this.batchCommitter = new TransactionBatchCommitter( dependencies.kernelTransactions(), idReuseSafeZoneTime,
+                dependencies.commitProcess() );
         this.log = dependencies.logService().getInternalLog( BatchingResponseHandler.class );
-        this.kernelTransactions = dependencies.kernelTransactions();
         this.stopped = false;
     }
 
