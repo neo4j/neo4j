@@ -1368,14 +1368,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         return parts;
     }
 
-    public void maintenance()
-    {
-        if ( bufferingIdGeneratorFactory != null )
-        {
-            bufferingIdGeneratorFactory.maintenance();
-        }
-    }
-
     @Override
     public void registerIndexProvider( String name, IndexImplementation index )
     {

@@ -26,6 +26,9 @@ package org.neo4j.kernel;
  */
 public class IdTypeConfiguration
 {
+    static final int DEFAULT_GRAB_SIZE = 1024;
+    static final int AGGRESIVE_GRAB_SIZE = 50000;
+
     private final boolean allowAggressiveReuse;
 
     public IdTypeConfiguration( boolean allowAggressiveReuse )
@@ -40,6 +43,6 @@ public class IdTypeConfiguration
 
     public int getGrabSize()
     {
-        return allowAggressiveReuse ? 50000 : 1024;
+        return allowAggressiveReuse ? AGGRESIVE_GRAB_SIZE : DEFAULT_GRAB_SIZE;
     }
 }

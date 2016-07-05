@@ -56,7 +56,7 @@ public class CommunityIdTypeConfigurationProviderTest
         IdTypeConfigurationProvider provider = createIdTypeProvider();
         IdTypeConfiguration typeConfiguration = provider.getIdTypeConfiguration( IdType.RELATIONSHIP );
         assertFalse( "Relationship ids are not reusable.", typeConfiguration.allowAggressiveReuse() );
-        assertEquals( "Relationship ids are not reusable.", 1024, typeConfiguration.getGrabSize() );
+        assertEquals( "Relationship ids are not reusable.", IdTypeConfiguration.DEFAULT_GRAB_SIZE, typeConfiguration.getGrabSize() );
     }
 
     @Test
@@ -65,7 +65,7 @@ public class CommunityIdTypeConfigurationProviderTest
         IdTypeConfigurationProvider provider = createIdTypeProvider();
         IdTypeConfiguration typeConfiguration = provider.getIdTypeConfiguration( reusableType );
         assertTrue( typeConfiguration.allowAggressiveReuse() );
-        assertEquals( 50000, typeConfiguration.getGrabSize() );
+        assertEquals( IdTypeConfiguration.AGGRESIVE_GRAB_SIZE, typeConfiguration.getGrabSize() );
     }
 
     private IdTypeConfigurationProvider createIdTypeProvider()

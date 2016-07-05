@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Map;
@@ -33,9 +34,11 @@ import java.util.Set;
 public class CommunityIdTypeConfigurationProvider implements IdTypeConfigurationProvider
 {
 
+    private static final Set<IdType> TYPES_TO_ALLOW_REUSE =
+            Collections.unmodifiableSet( EnumSet.of( IdType.PROPERTY, IdType.STRING_BLOCK,
+                    IdType.ARRAY_BLOCK, IdType.NODE_LABELS ) );
+
     private final Map<IdType,IdTypeConfiguration> typeConfigurations = new EnumMap<>(IdType.class);
-    private final Set<IdType> typesToAllowReuse = EnumSet.of( IdType.PROPERTY, IdType.STRING_BLOCK,
-            IdType.ARRAY_BLOCK, IdType.NODE_LABELS);
 
     @Override
     public IdTypeConfiguration getIdTypeConfiguration( IdType idType )
@@ -51,6 +54,6 @@ public class CommunityIdTypeConfigurationProvider implements IdTypeConfiguration
 
     protected Set<IdType> getTypesToReuse()
     {
-        return typesToAllowReuse;
+        return TYPES_TO_ALLOW_REUSE;
     }
 }

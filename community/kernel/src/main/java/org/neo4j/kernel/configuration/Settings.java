@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.configuration;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -327,8 +329,10 @@ public class Settings
             for( String item : list)
             {
                 item = item.trim();
-                if( !item.equals( "" ) )
+                if( StringUtils.isNotEmpty( item ) )
+                {
                     result.add( item );
+                }
             }
             return result;
         }

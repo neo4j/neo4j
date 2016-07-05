@@ -136,7 +136,11 @@ public class IdReuseTest
         assertEquals( "Ids should be sequential", relationship1 + 1, relationship2 );
         assertEquals( "Ids should be sequential", relationship2 + 1, relationship3 );
 
+        final NeoStoreDataSource.BufferedIdMaintenanceController idMaintenanceController = getIdMaintenanceController();
+
         deleteRelationshipByLabelAndRelationshipType( marker );
+
+        idMaintenanceController.maintenance();
 
         assertEquals( "Relationships have reused id", relationship1, createRelationship( marker ) );
         assertEquals( "Relationships have reused id", relationship2, createRelationship( marker ) );
@@ -148,6 +152,8 @@ public class IdReuseTest
     {
         Label testLabel = DynamicLabel.label( "testLabel" );
         long relationshipId = createRelationship( testLabel );
+
+        final NeoStoreDataSource.BufferedIdMaintenanceController idMaintenanceController = getIdMaintenanceController();
 
         try ( Transaction transaction = dbRule.beginTx();
               ResourceIterator<Node> nodes = dbRule.findNodes( testLabel ) )
@@ -161,6 +167,8 @@ public class IdReuseTest
                     relationship.delete();
                 }
             }
+
+            idMaintenanceController.maintenance();
 
             Node node1 = dbRule.createNode( testLabel );
             Node node2 = dbRule.createNode( testLabel );
