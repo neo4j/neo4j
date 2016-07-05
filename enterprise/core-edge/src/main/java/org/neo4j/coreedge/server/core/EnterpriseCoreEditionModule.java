@@ -660,9 +660,12 @@ public class EnterpriseCoreEditionModule extends EditionModule
     {
         super.doAfterRecoveryAndStartup( databaseInfo, dependencyResolver );
 
-        new RemoveOrphanConstraintIndexesOnStartup(
-                dependencyResolver.resolveDependency( NeoStoreDataSource.class ).getKernel(),
-                dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider() ).perform();
+        if ( dependencyResolver.resolveDependency( RaftInstance.class ).isLeader() )
+        {
+            new RemoveOrphanConstraintIndexesOnStartup(
+                    dependencyResolver.resolveDependency( NeoStoreDataSource.class ).getKernel(),
+                    dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider() ).perform();
+        }
     }
 
     private final class DefaultKernelData extends KernelData implements Lifecycle
