@@ -38,7 +38,8 @@ public abstract class ObjectRepresentation extends MappingRepresentation
         String value();
     }
 
-    private final static ConcurrentHashMap<Class<?>, Map<String, PropertyGetter>> serializations = new ConcurrentHashMap<Class<?>, Map<String, PropertyGetter>>();
+    private final static ConcurrentHashMap<Class<?>, Map<String, PropertyGetter>> serializations =
+            new ConcurrentHashMap<>();
 
     private final Map<String, PropertyGetter> serialization = serialization( getClass() );
 
@@ -54,25 +55,21 @@ public abstract class ObjectRepresentation extends MappingRepresentation
 
     private static Map<String, PropertyGetter> serialization( Class<? extends ObjectRepresentation> type )
     {
-        Map<String, PropertyGetter> serialization = serializations.get( type );
-        if ( serialization == null )
+        Map<String, PropertyGetter> serialization = serializations.computeIfAbsent(
+                type, ObjectRepresentation::buildSerialization );
+        return serialization;
+    }
+
+    private static Map<String,PropertyGetter> buildSerialization( Class<?> type )
+    {
+        Map<String,PropertyGetter> serialization;
+        serialization = new HashMap<>();
+        for ( Method method : type.getMethods() )
         {
-            synchronized ( type )
+            Mapping property = method.getAnnotation( Mapping.class );
+            if ( property != null )
             {
-                serialization = serializations.get( type );
-                if ( serialization == null )
-                {
-                    serialization = new HashMap<String, PropertyGetter>();
-                    for ( Method method : type.getMethods() )
-                    {
-                        Mapping property = method.getAnnotation( Mapping.class );
-                        if ( property != null )
-                        {
-                            serialization.put( property.value(), getter( method ) );
-                        }
-                    }
-                    serializations.put(type, serialization);
-                }
+                serialization.put( property.value(), getter( method ) );
             }
         }
         return serialization;

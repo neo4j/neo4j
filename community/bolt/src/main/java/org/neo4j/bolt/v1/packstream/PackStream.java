@@ -235,7 +235,7 @@ public class PackStream
             }
             else if ( size <= Byte.MAX_VALUE )
             {
-                out.writeShort( (short) (STRING_8 << 8 | (byte) size) );
+                out.writeShort( (short) (STRING_8 << 8 | size) );
             }
             else if ( size <= Short.MAX_VALUE )
             {
@@ -255,7 +255,7 @@ public class PackStream
             }
             else if ( size <= Byte.MAX_VALUE )
             {
-                out.writeShort( (short) (LIST_8 << 8 | (byte) size) );
+                out.writeShort( (short) (LIST_8 << 8 | size) );
             }
             else if ( size <= Short.MAX_VALUE )
             {
@@ -280,7 +280,7 @@ public class PackStream
             }
             else if ( size <= Byte.MAX_VALUE )
             {
-                out.writeShort( (short) (MAP_8 << 8 | (byte) size) );
+                out.writeShort( (short) (MAP_8 << 8 | size) );
             }
             else if ( size <= Short.MAX_VALUE )
             {
@@ -301,7 +301,7 @@ public class PackStream
         {
             if ( size < 0x10 )
             {
-                out.writeShort( (short) ((byte) (TINY_STRUCT | size) << 8 | signature) );
+                out.writeShort( (short) ((byte) (TINY_STRUCT | size) << 8 | (signature & 0xFF)) );
             }
             else if ( size <= Byte.MAX_VALUE )
             {

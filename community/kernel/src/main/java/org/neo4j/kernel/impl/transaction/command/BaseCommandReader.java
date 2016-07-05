@@ -39,16 +39,12 @@ public abstract class BaseCommandReader implements CommandReader
     @Override
     public final Command read( ReadableChannel channel ) throws IOException
     {
-        byte commandType = 0;
-        while ( commandType == 0 )
+        byte commandType;
+        do
         {
             commandType = channel.get();
         }
-
-        if ( commandType == NeoCommandType.NONE )
-        {
-            return null;
-        }
+        while ( commandType == NeoCommandType.NONE );
 
         return read( commandType, channel );
     }
