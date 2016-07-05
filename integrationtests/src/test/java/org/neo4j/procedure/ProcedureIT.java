@@ -52,14 +52,15 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 import org.neo4j.kernel.impl.proc.JarBuilder;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -75,8 +76,8 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
-import static org.neo4j.procedure.Procedure.Mode.WRITE;
 import static org.neo4j.procedure.Procedure.Mode.SCHEMA;
+import static org.neo4j.procedure.Procedure.Mode.WRITE;
 
 public class ProcedureIT
 {
@@ -362,6 +363,22 @@ public class ProcedureIT
     }
 
     @Test
+    public void shouldNotBeAbleToCallReadProcedureThroughWriteProcedureInWriteOnlyTransaction() throws Throwable
+    {
+        // Expect
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage( "Read operations are not allowed" );
+
+        GraphDatabaseAPI gdapi = (GraphDatabaseAPI) db;
+
+        // When
+        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE_ONLY ) )
+        {
+            db.execute( "CALL org.neo4j.procedure.writeProcedureCallingReadProcedure" ).next();
+        }
+    }
+
+    @Test
     public void shouldBeAbleToCallWriteProcedureThroughWriteProcedure() throws Throwable
     {
         // When
@@ -376,6 +393,22 @@ public class ProcedureIT
         {
             assertEquals( 1, db.getAllNodes().stream().count() );
             tx.success();
+        }
+    }
+
+    @Test
+    public void shouldNotBeAbleToCallSchemaProcedureThroughWriteProcedureInWriteTransaction() throws Throwable
+    {
+        // Expect
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage( "Schema operations are not allowed" );
+
+        GraphDatabaseAPI gdapi = (GraphDatabaseAPI) db;
+
+        // When
+        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE ) )
+        {
+            db.execute( "CALL org.neo4j.procedure.writeProcedureCallingSchemaProcedure" ).next();
         }
     }
 
@@ -399,7 +432,7 @@ public class ProcedureIT
     {
         // Expect
         exception.expect( QueryExecutionException.class );
-        exception.expectMessage( "Schema operations are not allowed" );
+        exception.expectMessage( "Cannot perform schema updates in a transaction that has performed data updates" );
 
         // Give
         try ( Transaction ignore = db.beginTx() )
@@ -778,6 +811,57 @@ public class ProcedureIT
         }
     }
 
+    @Test
+    public void shouldNotAllowReadProcedureInNoneTransaction() throws Throwable
+    {
+        // Expect
+        exception.expect( AuthorizationViolationException.class );
+        exception.expectMessage( "Read operations are not allowed" );
+
+        GraphDatabaseAPI gdapi = (GraphDatabaseAPI) db;
+
+        // When
+        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.NONE ) )
+        {
+            db.execute( "CALL org.neo4j.procedure.integrationTestMe()" );
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldNotAllowWriteProcedureInReadOnlyTransaction() throws Throwable
+    {
+        // Expect
+        exception.expect( AuthorizationViolationException.class );
+        exception.expectMessage( "Write operations are not allowed" );
+
+        GraphDatabaseAPI gdapi = (GraphDatabaseAPI) db;
+
+        // When
+        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.READ ) )
+        {
+            db.execute( "CALL org.neo4j.procedure.writingProcedure()" );
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldNotAllowSchemaWriteProcedureInWriteTransaction() throws Throwable
+    {
+        // Expect
+        exception.expect( AuthorizationViolationException.class );
+        exception.expectMessage( "Schema operations are not allowed" );
+
+        GraphDatabaseAPI gdapi = (GraphDatabaseAPI) db;
+
+        // When
+        try ( Transaction tx = gdapi.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE ) )
+        {
+            db.execute( "CALL org.neo4j.procedure.schemaProcedure()" );
+            tx.success();
+        }
+    }
+
     @Before
     public void setUp() throws IOException
     {
@@ -1049,6 +1133,22 @@ public class ProcedureIT
         }
 
         @Procedure( mode = WRITE )
+        public Stream<Output> writeProcedureCallingReadProcedure()
+        {
+            return db.execute( "CALL org.neo4j.procedure.integrationTestMe" )
+                    .stream()
+                    .map( ( row ) -> new Output( 0 ) );
+        }
+
+        @Procedure( mode = WRITE )
+        public Stream<Output> writeProcedureCallingSchemaProcedure()
+        {
+            return db.execute( "CALL org.neo4j.procedure.schemaProcedure" )
+                    .stream()
+                    .map( ( row ) -> new Output( 0 ) );
+        }
+
+        @Procedure( mode = WRITE )
         public void sideEffect( @Name( "value" ) String value )
         {
             db.createNode( Label.label( value ) );
@@ -1107,7 +1207,7 @@ public class ProcedureIT
             db.execute( "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" );
         }
 
-        @Procedure
+        @Procedure( mode = WRITE )
         public void readWriteTryingToWriteSchema()
         {
             db.execute( "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" );
