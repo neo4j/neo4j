@@ -24,13 +24,16 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.Buffer;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
+import org.neo4j.coreedge.raft.net.NetworkFlushableChannelNetty4;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.ReadPastEndException;
@@ -39,6 +42,7 @@ import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
 
 public class DurableStateStorageTest
@@ -123,7 +127,6 @@ public class DurableStateStorageTest
         fsa.mkdir( testDir.directory() );
 
         int rotationCount = 10;
-        AtomicIntegerMarshal atomicIntegerMarshal = new AtomicIntegerMarshal();
         DurableStateStorage<AtomicInteger> storage = new DurableStateStorage<>( fsa, testDir.directory(),
                 "state", new AtomicIntegerMarshal(), rotationCount,
                 health(), NullLogProvider.getInstance() );
@@ -155,37 +158,25 @@ public class DurableStateStorageTest
         forReadingBackIn.flip();
 
         AtomicInteger lastRead = null;
-        AtomicInteger current;
-        while ( (current = atomicIntegerMarshal.unmarshal( forReadingBackIn )) != null )
-        {
-            lastRead = current;
-        }
-
-        // then
-        assertEquals( largestValueWritten, lastRead.get() );
-    }
-
-    private static class AtomicIntegerMarshal implements ByteBufferMarshal<AtomicInteger>, StateMarshal<AtomicInteger>
-    {
-        @Override
-        public void marshal( AtomicInteger atomicInteger, ByteBuffer buffer )
-        {
-            buffer.putInt( atomicInteger.intValue() );
-        }
-
-        @Override
-        public AtomicInteger unmarshal( ByteBuffer source )
+        while ( true )
         {
             try
             {
-                return new AtomicInteger( source.getInt() );
+                lastRead = new AtomicInteger( forReadingBackIn.getInt() );
             }
-            catch ( BufferUnderflowException notEnoughBytes )
+            catch ( BufferUnderflowException e )
             {
-                return null;
+                break;
             }
         }
 
+        // then
+        assertNotNull( lastRead );
+        assertEquals( largestValueWritten, lastRead.get() );
+    }
+
+    private static class AtomicIntegerMarshal extends SafeStateMarshal<AtomicInteger>
+    {
         @Override
         public void marshal( AtomicInteger state, WritableChannel channel ) throws IOException
         {
@@ -193,16 +184,9 @@ public class DurableStateStorageTest
         }
 
         @Override
-        public AtomicInteger unmarshal( ReadableChannel channel ) throws IOException
+        public AtomicInteger unmarshal0( ReadableChannel channel ) throws IOException
         {
-            try
-            {
-                return new AtomicInteger( channel.getInt() );
-            }
-            catch ( ReadPastEndException e )
-            {
-                return null;
-            }
+            return new AtomicInteger( channel.getInt() );
         }
 
         @Override

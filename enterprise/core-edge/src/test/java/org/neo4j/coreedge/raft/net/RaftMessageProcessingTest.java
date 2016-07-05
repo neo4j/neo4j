@@ -35,6 +35,7 @@ import org.neo4j.coreedge.raft.net.codecs.RaftMessageDecoder;
 import org.neo4j.coreedge.raft.net.codecs.RaftMessageEncoder;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.coreedge.raft.state.SafeChannelMarshal;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
@@ -45,7 +46,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(MockitoJUnitRunner.class)
 public class RaftMessageProcessingTest
 {
-    private static ChannelMarshal<ReplicatedContent> serializer = new ChannelMarshal<ReplicatedContent>()
+    private static ChannelMarshal<ReplicatedContent> serializer = new SafeChannelMarshal<ReplicatedContent>()
     {
         @Override
         public void marshal( ReplicatedContent content, WritableChannel channel ) throws IOException
@@ -62,7 +63,7 @@ public class RaftMessageProcessingTest
         }
 
         @Override
-        public ReplicatedContent unmarshal( ReadableChannel channel ) throws IOException
+        public ReplicatedContent unmarshal0( ReadableChannel channel ) throws IOException
         {
             byte type = channel.get();
             final ReplicatedContent content;

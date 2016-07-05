@@ -27,6 +27,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.coreedge.raft.state.EndOfStreamException;
+import org.neo4j.coreedge.raft.state.SafeStateMarshal;
 import org.neo4j.coreedge.raft.state.StateMarshal;
 import org.neo4j.coreedge.raft.state.StateRecoveryManager;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -236,7 +238,7 @@ public class StateRecoveryManagerTest
         return buffer;
     }
 
-    private static class LongMarshal implements StateMarshal<Long>
+    private static class LongMarshal extends SafeStateMarshal<Long>
     {
         @Override
         public Long startState()
@@ -257,16 +259,9 @@ public class StateRecoveryManagerTest
         }
 
         @Override
-        public Long unmarshal( ReadableChannel channel ) throws IOException
+        protected Long unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
         {
-            try
-            {
-                return channel.getLong();
-            }
-            catch ( ReadPastEndException e )
-            {
-                return null;
-            }
+            return channel.getLong();
         }
     }
 }

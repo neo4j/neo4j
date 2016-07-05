@@ -21,17 +21,15 @@ package org.neo4j.coreedge.raft.log;
 
 import java.io.IOException;
 
-import io.netty.buffer.ByteBuf;
 import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.state.ChannelMarshal;
-import org.neo4j.coreedge.server.ByteBufMarshal;
-import org.neo4j.storageengine.api.ReadPastEndException;
+import org.neo4j.coreedge.raft.state.EndOfStreamException;
+import org.neo4j.coreedge.raft.state.SafeChannelMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
-public class DummyRaftableContentSerializer implements ChannelMarshal<ReplicatedContent>, ByteBufMarshal<ReplicatedContent>
+public class DummyRaftableContentSerializer extends SafeChannelMarshal<ReplicatedContent>
 {
     public static final int REPLICATED_INTEGER_TYPE = 0;
     public static final int REPLICATED_STRING_TYPE = 1;
@@ -59,74 +57,20 @@ public class DummyRaftableContentSerializer implements ChannelMarshal<Replicated
     }
 
     @Override
-    public ReplicatedContent unmarshal( ReadableChannel channel ) throws IOException
+    protected ReplicatedContent unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
     {
-        try
+        byte type = channel.get();
+        switch ( type )
         {
-            byte type = channel.get();
-            switch ( type )
-            {
-                case REPLICATED_INTEGER_TYPE:
-                    return ReplicatedInteger.valueOf( channel.getInt() );
-                case REPLICATED_STRING_TYPE:
-                    int length = channel.getInt();
-                    byte[] bytes = new byte[length];
-                    channel.get( bytes, length );
-                    return ReplicatedString.valueOf( new String( bytes ) );
-                default:
-                    throw new IllegalArgumentException( "Unknown content type: " + type );
-            }
-        }
-        catch( ReadPastEndException notEnoughBytes )
-        {
-            return null;
-        }
-    }
-
-    @Override
-    public void marshal( ReplicatedContent content, ByteBuf buffer )
-    {
-        if ( content instanceof ReplicatedInteger )
-        {
-            buffer.writeByte( (byte) REPLICATED_INTEGER_TYPE );
-            buffer.writeInt( ((ReplicatedInteger) content).get() );
-        }
-        else if ( content instanceof ReplicatedString )
-        {
-            String value = ((ReplicatedString) content).get();
-            byte[] stringBytes = value.getBytes();
-            buffer.writeByte( (byte) REPLICATED_STRING_TYPE );
-            buffer.writeInt( stringBytes.length );
-            buffer.writeBytes( stringBytes );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Unknown content type: " + content );
-        }
-    }
-
-    @Override
-    public ReplicatedContent unmarshal( ByteBuf buffer )
-    {
-        try
-        {
-            byte type = buffer.readByte();
-            switch ( type )
-            {
-                case REPLICATED_INTEGER_TYPE:
-                    return ReplicatedInteger.valueOf( buffer.readInt() );
-                case REPLICATED_STRING_TYPE:
-                    int length = buffer.readInt();
-                    byte[] bytes = new byte[length];
-                    buffer.readBytes( bytes );
-                    return ReplicatedString.valueOf( new String( bytes ) );
-                default:
-                    throw new IllegalArgumentException( "Unknown content type: " + type );
-            }
-        }
-        catch( IndexOutOfBoundsException notEnoughBytes )
-        {
-            return null;
+        case REPLICATED_INTEGER_TYPE:
+            return ReplicatedInteger.valueOf( channel.getInt() );
+        case REPLICATED_STRING_TYPE:
+            int length = channel.getInt();
+            byte[] bytes = new byte[length];
+            channel.get( bytes, length );
+            return ReplicatedString.valueOf( new String( bytes ) );
+        default:
+            throw new IllegalArgumentException( "Unknown content type: " + type );
         }
     }
 }

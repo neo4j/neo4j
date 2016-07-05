@@ -33,7 +33,7 @@ import org.neo4j.storageengine.api.ReadableChannel;
 public abstract class SafeChannelMarshal<STATE> implements ChannelMarshal<STATE>
 {
     @Override
-    public STATE unmarshal( ReadableChannel channel ) throws IOException, EndOfStreamException
+    public final STATE unmarshal( ReadableChannel channel ) throws IOException, EndOfStreamException
     {
         try
         {

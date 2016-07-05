@@ -28,7 +28,7 @@ import org.neo4j.storageengine.api.WritableChannel;
 /**
  * A marshal for an index that starts with -1 at the empty slot before the first real entry at 0.
  */
-public class LongIndexMarshal implements StateMarshal<Long>
+public class LongIndexMarshal extends SafeStateMarshal<Long>
 {
     @Override
     public Long startState()
@@ -49,15 +49,8 @@ public class LongIndexMarshal implements StateMarshal<Long>
     }
 
     @Override
-    public Long unmarshal( ReadableChannel channel ) throws IOException
+    protected Long unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
     {
-        try
-        {
-            return channel.getLong();
-        }
-        catch( ReadPastEndException e )
-        {
-            return null;
-        }
+        return channel.getLong();
     }
 }
