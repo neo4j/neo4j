@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.v1.transport.integration;
 
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -140,6 +141,37 @@ public class TransportSessionIT
                 msgRecord( eqRecord( equalTo( 2L ), equalTo( 4L ) ) ),
                 msgRecord( eqRecord( equalTo( 3L ), equalTo( 9L ) ) ),
                 msgSuccess() ) );
+    }
+
+    @Test
+    public void shouldRunProcedure() throws Throwable
+    {
+        // Given
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", emptyMap() ),
+                        run( "CREATE (n:Test {age: 2}) RETURN n.age AS age" ),
+                        pullAll() ) );
+
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves(
+                msgSuccess(),
+                msgSuccess( map( "fields", asList( "age" ) ) ),
+                msgRecord( eqRecord( equalTo( 2L ) ) ),
+                msgSuccess() ) );
+
+        // When
+        client.send( TransportTestUtil.chunk(
+                run( "CALL db.labels() YIELD label" ),
+                pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves(
+                msgSuccess( map( "fields", asList( "label" ) ) ),
+                msgRecord( eqRecord( Matchers.equalTo( "Test" ) ) ),
+                msgSuccess()
+        ) );
     }
 
     @Test
