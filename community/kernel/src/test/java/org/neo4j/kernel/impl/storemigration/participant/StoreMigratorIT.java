@@ -102,14 +102,9 @@ public class StoreMigratorIT
                 },
                 new Object[]{
                         StandardV2_3.STORE_VERSION, new LogPosition( 3, 169 ),
-                        txInfoAcceptanceOnIdAndTimestamp( 38, UNKNOWN_TX_COMMIT_TIMESTAMP )
+                        txInfoAcceptanceOnIdAndTimestamp( 39, UNKNOWN_TX_COMMIT_TIMESTAMP )
                 }
         );
-    }
-
-    private static Function<TransactionId,Boolean> txInfoAcceptanceWithEquals( TransactionId txInfo )
-    {
-        return other -> other.equals( txInfo );
     }
 
     private static Function<TransactionId,Boolean> txInfoAcceptanceOnIdAndTimestamp( long id, long timestamp )
