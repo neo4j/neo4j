@@ -26,7 +26,7 @@ package org.neo4j.kernel;
  */
 public class IdTypeConfiguration
 {
-    private boolean allowAggressiveReuse;
+    private final boolean allowAggressiveReuse;
 
     public IdTypeConfiguration( boolean allowAggressiveReuse )
     {

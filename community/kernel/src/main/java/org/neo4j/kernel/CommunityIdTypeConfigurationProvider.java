@@ -33,8 +33,8 @@ import java.util.Set;
 public class CommunityIdTypeConfigurationProvider implements IdTypeConfigurationProvider
 {
 
-    private Map<IdType,IdTypeConfiguration> typeConfigurations = new EnumMap<>(IdType.class);
-    private Set<IdType> typesToAllowReuse = EnumSet.of( IdType.PROPERTY, IdType.STRING_BLOCK,
+    private final Map<IdType,IdTypeConfiguration> typeConfigurations = new EnumMap<>(IdType.class);
+    private final Set<IdType> typesToAllowReuse = EnumSet.of( IdType.PROPERTY, IdType.STRING_BLOCK,
             IdType.ARRAY_BLOCK, IdType.NODE_LABELS);
 
     @Override

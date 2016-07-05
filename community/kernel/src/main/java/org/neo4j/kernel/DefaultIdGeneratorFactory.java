@@ -53,8 +53,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
     public IdGenerator open( File filename, IdType idType, long highId )
     {
         IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
-        return  open( filename, idTypeConfiguration.getGrabSize(), idType,
-                idTypeConfiguration.allowAggressiveReuse(), highId );
+        return open( filename, idTypeConfiguration.getGrabSize(), idType, idTypeConfiguration.allowAggressiveReuse(), highId );
     }
 
     public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )

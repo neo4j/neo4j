@@ -38,37 +38,4 @@ public interface IdGeneratorFactory
 
     IdGenerator get( IdType idType );
 
-    class Delegate implements IdGeneratorFactory
-    {
-        private final IdGeneratorFactory delegate;
-
-        public Delegate( IdGeneratorFactory delegate )
-        {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public IdGenerator open( File filename, IdType idType, long highId )
-        {
-            return delegate.open( filename, idType, highId );
-        }
-
-        @Override
-        public IdGenerator open( File filename, int grabSize, IdType idType, long highId )
-        {
-            return delegate.open( filename, grabSize, idType, highId );
-        }
-
-        @Override
-        public void create( File filename, long highId, boolean throwIfFileExists )
-        {
-            delegate.create( filename, highId, throwIfFileExists );
-        }
-
-        @Override
-        public IdGenerator get( IdType idType )
-        {
-            return delegate.get( idType );
-        }
-    }
 }
