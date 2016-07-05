@@ -39,7 +39,6 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.MAIN;
 public class CalculateDenseNodesStage extends Stage
 {
     private RelationshipTypeCheckerStep typer;
-    private final NodeRelationshipCache cache;
 
     public CalculateDenseNodesStage( Configuration config, InputIterable<InputRelationship> relationships,
             NodeRelationshipCache cache, IdMapper idMapper,
@@ -47,7 +46,6 @@ public class CalculateDenseNodesStage extends Stage
             BatchingNeoStores neoStores ) throws IOException
     {
         super( "Calculate dense nodes", config );
-        this.cache = cache;
         add( new InputIteratorBatcherStep<>( control(), config,
                 relationships.iterator(), InputRelationship.class ) );
         if ( !relationships.supportsMultiplePasses() )

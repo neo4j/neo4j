@@ -25,6 +25,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputCache;
@@ -43,20 +44,25 @@ import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTRE
  */
 public class NodeStage extends Stage
 {
+    private final NodeRelationshipCache cache;
+    private final NodeStore nodeStore;
+
     public NodeStage( Configuration config, IoMonitor writeMonitor,
             InputIterable<InputNode> nodes, IdMapper idMapper, IdGenerator idGenerator,
             BatchingNeoStores neoStore, InputCache inputCache, LabelScanStore labelScanStore,
             EntityStoreUpdaterStep.Monitor storeUpdateMonitor,
+            NodeRelationshipCache cache,
             StatsProvider memoryUsage ) throws IOException
     {
         super( "Nodes", config, ORDER_SEND_DOWNSTREAM );
+        this.cache = cache;
         add( new InputIteratorBatcherStep<>( control(), config, nodes.iterator(), InputNode.class ) );
         if ( !nodes.supportsMultiplePasses() )
         {
             add( new InputEntityCacherStep<>( control(), config, inputCache.cacheNodes( MAIN ) ) );
         }
 
-        NodeStore nodeStore = neoStore.getNodeStore();
+        nodeStore = neoStore.getNodeStore();
         PropertyStore propertyStore = neoStore.getPropertyStore();
         add( new PropertyEncoderStep<>( control(), config, neoStore.getPropertyKeyRepository(), propertyStore ) );
         add( new NodeEncoderStep( control(), config, idMapper, idGenerator,
@@ -64,5 +70,14 @@ public class NodeStage extends Stage
         add( new LabelScanStorePopulationStep( control(), config, labelScanStore ) );
         add( new EntityStoreUpdaterStep<>( control(), config, nodeStore, propertyStore,
                 writeMonitor, storeUpdateMonitor ) );
+    }
+
+    @Override
+    public void close()
+    {
+        // At this point we know how many nodes we have, so we tell the cache that instead of having the
+        // cache keeping track of that in a the face of concurrent updates.
+        cache.setHighNodeId( nodeStore.getHighId() );
+        super.close();
     }
 }

@@ -156,18 +156,10 @@ public class ParallelBatchImporter implements BatchImporter
             // Stage 1 -- nodes, properties, labels
             NodeStage nodeStage = new NodeStage( config, writeMonitor,
                     nodes, idMapper, idGenerator, neoStore, inputCache, neoStore.getLabelScanStore(),
-                    storeUpdateMonitor, memoryUsageStats );
-
-            // Stage 2 -- calculate dense node threshold
-            CalculateDenseNodesStage calculateDenseNodesStage = new CalculateDenseNodesStage( config,
-                    relationships, nodeRelationshipCache, idMapper, badCollector, inputCache, neoStore );
-
-            // Execute stages 1 and 2 in parallel or sequentially?
+                    storeUpdateMonitor, nodeRelationshipCache, memoryUsageStats );
+            executeStages( nodeStage );
             if ( idMapper.needsPreparation() )
-            {   // The id mapper of choice needs preparation in order to get ids from it,
-                // So we need to execute the node stage first as it fills the id mapper and prepares it in the end,
-                // before executing any stage that needs ids from the id mapper, for example calc dense node stage.
-                executeStages( nodeStage );
+            {
                 executeStages( new IdMapperPreparationStage( config, idMapper, cachedNodes,
                         badCollector, memoryUsageStats ) );
                 PrimitiveLongIterator duplicateNodeIds = badCollector.leftOverDuplicateNodesIds();
@@ -175,16 +167,12 @@ public class ParallelBatchImporter implements BatchImporter
                 {
                     executeStages( new DeleteDuplicateNodesStage( config, duplicateNodeIds, neoStore ) );
                 }
-                executeStages( calculateDenseNodesStage );
             }
-            else
-            {   // The id mapper of choice doesn't need any preparation, so we can go ahead and execute
-                // the node and calc dense node stages in parallel.
-                executeStages( nodeStage, calculateDenseNodesStage );
-            }
-            // At this point we know how many nodes we have, so we tell the cache that instead of having the
-            // cache keeping track of that in a the face of concurrent updates.
-            nodeRelationshipCache.setHighNodeId( neoStore.getNodeStore().getHighId() );
+
+            // Stage 2 -- calculate dense node threshold
+            CalculateDenseNodesStage calculateDenseNodesStage = new CalculateDenseNodesStage( config,
+                    relationships, nodeRelationshipCache, idMapper, badCollector, inputCache, neoStore );
+            executeStages( calculateDenseNodesStage );
 
             importRelationships( nodeRelationshipCache, storeUpdateMonitor, neoStore, writeMonitor,
                     idMapper, cachedRelationships, inputCache,
