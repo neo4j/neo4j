@@ -34,7 +34,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.Collections;
+import java.io.IOException;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -80,6 +80,12 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getTestGraphDatabaseFactory(), getSettingsFunction() );
 
+    private void restartNeo4jServerWithOverriddenSettings( Consumer<Map<Setting<?>, String>> overrideSettingsFunction )
+            throws IOException
+    {
+        server.restartDatabase( overrideSettingsFunction );
+    }
+
     protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
     {
         return new TestEnterpriseGraphDatabaseFactory();
@@ -93,11 +99,16 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
             settings.put( SecuritySettings.internal_authentication_enabled, "true" );
             settings.put( SecuritySettings.internal_authorization_enabled, "true" );
             settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
-            settings.put( SecuritySettings.ldap_authorization_enabled, "false" );
+            settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
             settings.put( SecuritySettings.ldap_server, "0.0.0.0:10389" );
             settings.put( SecuritySettings.ldap_user_dn_template, "cn={0},ou=users,dc=example,dc=com" );
             settings.put( SecuritySettings.ldap_system_username, "uid=admin,ou=system" );
             settings.put( SecuritySettings.ldap_system_password, "secret" );
+            settings.put( SecuritySettings.ldap_authorization_use_system_account, "true" );
+            settings.put( SecuritySettings.ldap_authorization_user_search_base, "dc=example,dc=com" );
+            settings.put( SecuritySettings.ldap_authorization_user_search_filter, "(&(objectClass=*)(uid={0}))" );
+            settings.put( SecuritySettings.ldap_authorization_group_membership_attribute_names, "gidnumber" );
+            settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, "500=reader;501=publisher;502=architect;503=admin" );
         };
     }
 
@@ -125,69 +136,111 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
 
     @Test
     @ApplyLdifFiles( "ldap_test_data.ldif" )
+    public void shouldBeAbleToLoginAndAuthorizeReaderWithLdapOnly() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings );
+
+        testAuthWithReaderUser();
+    }
+
+    @Test
+    @ApplyLdifFiles( "ldap_test_data.ldif" )
+    public void shouldBeAbleToLoginAndAuthorizePublisherWithLdapOnly() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings );
+
+        testAuthWithPublisherUser();
+    }
+
+    @Test
+    @ApplyLdifFiles( "ldap_test_data.ldif" )
+    public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithLdapOnly() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings );
+
+        testAuthWithNoPermissionUser( "smith" );
+    }
+
+    @Test
+    @ApplyLdifFiles( "ldap_test_data.ldif" )
+    public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithLdapOnlyAndNoGroupToRoleMapping() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+            settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, null );
+        } ) );
+
+        // User 'neo' has reader role by default, but since we are not passing a group-to-role mapping
+        // he should get no permissions
+        testAuthWithNoPermissionUser( "neo" );
+    }
+
+    @Test
+    @ApplyLdifFiles( "ldap_test_data.ldif" )
+    public void shouldBeAbleToLoginAndAuthorizeReaderWithUserLdapContext() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+            settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
+        } ) );
+
+        testAuthWithReaderUser();
+    }
+
+    @Test
+    @ApplyLdifFiles( "ldap_test_data.ldif" )
+    public void shouldBeAbleToLoginAndAuthorizePublisherWithUserLdapContext() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+            settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
+        } ) );
+
+        testAuthWithPublisherUser();
+    }
+
+    @Test
+    @ApplyLdifFiles( "ldap_test_data.ldif" )
+    public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithUserLdapContext() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+            settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
+        } ) );
+
+        testAuthWithNoPermissionUser( "smith" );
+    }
+
+    @Test
+    @ApplyLdifFiles( "ldap_test_data.ldif" )
+    public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithUserLdapContextAndNoGroupToRoleMapping() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+            settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
+            settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, null );
+        } ) );
+
+        // User 'neo' has reader role by default, but since we are not passing a group-to-role mapping
+        // he should get no permissions
+        testAuthWithNoPermissionUser( "neo" );
+    }
+
+    @Test
+    @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldBeAbleToLoginWithLdapAndAuthorizeInternally() throws Throwable
     {
+        restartNeo4jServerWithOverriddenSettings( settings -> {
+            settings.put( SecuritySettings.internal_authentication_enabled, "false" );
+            settings.put( SecuritySettings.internal_authorization_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authorization_enabled, "false" );
+        } );
+
         //--------------------------
-        // First login as admin and create the internal user 'neo' with role 'reader'
-
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1", map( "principal", "neo4j",
-                                "credentials", "neo4j", "scheme", "basic" ) ) ) );
-
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves( msgSuccess( Collections.singletonMap( "credentials_expired", true )) ) );
-
-        client.send( TransportTestUtil.chunk(
-                run( "CALL dbms.changePassword", Collections.singletonMap( "password", "secret" ) ),
-                pullAll() ) );
-
-        assertThat( client, eventuallyRecieves( msgSuccess() ) );
-
-        reconnect();
-
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1", map( "principal", "neo4j",
-                                "credentials", "secret", "scheme", "basic" ) ) ) );
-
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves( msgSuccess() ) );
-
-        client.send( TransportTestUtil.chunk(
-                run( "CALL dbms.createUser( 'neo', 'invalid', false ) CALL dbms.addUserToRole( 'neo', 'reader' ) RETURN 0" ),
-                pullAll() ) );
-
-        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+        // First login as the admin user 'neo4j' and create the internal user 'neo' with role 'reader'
+        testCreateReaderUser();
 
         //--------------------------
         // Then login user 'neo' with LDAP and test that internal authorization gives correct permission
         reconnect();
 
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1", map( "principal", "neo",
-                                "credentials", "abc123", "scheme", "basic" ) ) ) );
-
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves( msgSuccess() ) );
-
-        client.send( TransportTestUtil.chunk(
-                run( "MATCH (n) RETURN n" ),
-                pullAll() ) );
-
-        assertThat( client, eventuallyRecieves( msgSuccess(), msgSuccess() ) );
-
-        client.send( TransportTestUtil.chunk(
-                run( "CREATE ()" ),
-                pullAll() ) );
-
-        assertThat( client, eventuallyRecieves(
-                msgFailure( Status.Security.Forbidden,
-                        String.format( "Write operations are not allowed for `neo` transactions." ) ) ) );
+        testAuthWithReaderUser();
     }
 
     @Before
@@ -213,4 +266,110 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
         }
         this.client = cf.newInstance();
     }
+
+    private void testCreateReaderUser() throws Exception
+    {
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", map( "principal", "neo4j",
+                                "credentials", "abc123", "scheme", "basic" ) ) ) );
+
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+
+        // NOTE: The default user 'neo4j' has password change required, so we have to first change it
+        client.send( TransportTestUtil.chunk(
+                run( "CALL dbms.changeUserPassword('neo4j', '123') CALL dbms.createUser( 'neo', 'invalid', false ) " +
+                     "CALL dbms.addUserToRole( 'neo', 'reader' ) RETURN 0" ),
+                pullAll() ) );
+
+        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+    }
+
+    private void testAuthWithReaderUser() throws Exception
+    {
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", map( "principal", "neo",
+                                "credentials", "abc123", "scheme", "basic" ) ) ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+
+        // When
+        client.send( TransportTestUtil.chunk(
+                run( "MATCH (n) RETURN n" ),
+                pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( msgSuccess(), msgSuccess() ) );
+
+        // When
+        client.send( TransportTestUtil.chunk(
+                run( "CREATE ()" ),
+                pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves(
+                msgFailure( Status.Security.Forbidden,
+                        String.format( "Write operations are not allowed for `neo` transactions." ) ) ) );
+    }
+
+    private void testAuthWithPublisherUser() throws Exception
+    {
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", map( "principal", "tank",
+                                "credentials", "abc123", "scheme", "basic" ) ) ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+
+        // When
+        client.send( TransportTestUtil.chunk(
+                run( "CREATE ()" ),
+                pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( msgSuccess(), msgSuccess() ) );
+    }
+
+    private void testAuthWithNoPermissionUser( String username ) throws Exception
+    {
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", map( "principal", username,
+                                "credentials", "abc123", "scheme", "basic" ) ) ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+
+        // When
+        client.send( TransportTestUtil.chunk(
+                run( "MATCH (n) RETURN n" ),
+                pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves(
+                msgFailure( Status.Security.Forbidden,
+                        String.format( "Read operations are not allowed for `%s` transactions.", username ) ) ) );
+    }
+
+    private Consumer<Map<Setting<?>,String>> ldapOnlyAuthSettings = settings ->
+    {
+        settings.put( SecuritySettings.internal_authentication_enabled, "false" );
+        settings.put( SecuritySettings.internal_authorization_enabled, "false" );
+        settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
+        settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
+    };
 }

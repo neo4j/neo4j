@@ -71,7 +71,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
         if ( config.get( SecuritySettings.ldap_authentication_enabled ) ||
              config.get( SecuritySettings.ldap_authorization_enabled ) )
         {
-            realms.add( new LdapRealm( config ) );
+            realms.add( new LdapRealm( config, logProvider ) );
         }
 
         if ( config.get( SecuritySettings.plugin_authentication_enabled ) ||

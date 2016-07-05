@@ -111,7 +111,15 @@ public class EnterpriseAuthSubject implements AuthSubject
     @Override
     public String name()
     {
-        return shiroSubject.getPrincipal().toString();
+        Object principal = shiroSubject.getPrincipal();
+        if ( principal != null )
+        {
+            return principal.toString();
+        }
+        else
+        {
+            return "<missing_principal>";
+        }
     }
 
     ShiroSubject getShiroSubject()

@@ -45,6 +45,7 @@ public class Neo4jWithSocket implements TestRule
     private final Consumer<Map<Setting<?>,String>> configure;
     private StoreId storeId;
     TestGraphDatabaseFactory graphDatabaseFactory;
+    private GraphDatabaseService gdb;
 
     public Neo4jWithSocket()
     {
@@ -70,24 +71,45 @@ public class Neo4jWithSocket implements TestRule
             @Override
             public void evaluate() throws Throwable
             {
-                Map<Setting<?>, String> settings = new HashMap<>();
-                settings.put( boltConnector( "0" ).enabled, "true" );
-                settings.put( boltConnector( "0" ).encryption_level, OPTIONAL.name() );
-                settings.put( BoltKernelExtension.Settings.tls_key_file, tempPath( "key", ".key" ) );
-                settings.put( BoltKernelExtension.Settings.tls_certificate_file, tempPath( "cert", ".cert" ) );
-                configure.accept( settings );
-                final GraphDatabaseService gdb = graphDatabaseFactory.newImpermanentDatabase( settings );
-                storeId = ((GraphDatabaseFacade) gdb).storeId();
+                restartDatabase( settings -> {} );
                 try
                 {
                     statement.evaluate();
                 }
                 finally
                 {
-                    gdb.shutdown();
+                    shutdownDatabase();
                 }
             }
         };
+    }
+
+    private void shutdownDatabase()
+    {
+        gdb.shutdown();
+        gdb = null;
+    }
+
+    public void restartDatabase( Consumer<Map<Setting<?>, String>> overrideSettingsFunction ) throws IOException
+    {
+        if ( gdb != null )
+        {
+            gdb.shutdown();
+        }
+        Map<Setting<?>,String> settings = configure( overrideSettingsFunction );
+        gdb = graphDatabaseFactory.newImpermanentDatabase( settings );
+        storeId = ((GraphDatabaseFacade) gdb).storeId();
+    }
+
+    public Map<Setting<?>,String> configure(  Consumer<Map<Setting<?>, String>> overrideSettingsFunction ) throws IOException
+    {
+        Map<Setting<?>, String> settings = new HashMap<>();
+        settings.put( boltConnector( "0" ).enabled, "true" );
+        settings.put( boltConnector( "0" ).encryption_level, OPTIONAL.name() );
+        settings.put( BoltKernelExtension.Settings.tls_key_file, tempPath( "key", ".key" ) );
+        settings.put( BoltKernelExtension.Settings.tls_certificate_file, tempPath( "cert", ".cert" ) );
+        configure.andThen( overrideSettingsFunction ).accept( settings );
+        return settings;
     }
 
     private String tempPath(String prefix, String suffix ) throws IOException

@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import java.util.List;
+
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
@@ -27,6 +29,7 @@ import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.HOSTNAME_PORT;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.STRING;
+import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
@@ -65,23 +68,65 @@ public class SecuritySettings
     public static final Setting<HostnamePort> ldap_server =
             setting( "dbms.security.realms.ldap.host", HOSTNAME_PORT, "0.0.0.0:389" );
 
-    @Description( "Authentication mechanism." )
+    @Description( "LDAP authentication mechanism. This is one of `simple` or `sasl`, where `simple` is basic username" +
+                  " and password authentication and `sasl` is used for more advanced mechanisms. See RFC 2251 LDAPv3 " +
+                  "documentation for more details." )
     public static final Setting<String> ldap_auth_mechanism =
             setting( "dbms.security.realms.ldap.auth_mechanism", STRING, "simple" );
 
-    @Description( "Referral" )
+    @Description(
+            "The LDAP referral behavior when creating a connection. This is one of `follow`, `ignore` or `throw`.\n" +
+            "* `follow` automatically follows any referrals\n" +
+            "* `ignore` ignores any referrals\n" +
+            "* `throw` throws a `javax.naming.ReferralException` exception\n" )
     public static final Setting<String> ldap_referral =
             setting( "dbms.security.realms.ldap.referral", STRING, "follow" );
 
-    @Description( "User DN template." )
+    @Description(
+            "LDAP user DN template. An LDAP object is referenced by its distinguished name (DN), and a user DN is " +
+            "an LDAP fully-qualified unique user identifier. This setting is used to generate an LDAP DN that " +
+            "conforms with the LDAP directory's schema from the user principal that is submitted with the " +
+            "authentication token when logging in. The special token {0} is a " +
+            "placeholder where the user principal will be substituted into the DN string." )
     public static final Setting<String> ldap_user_dn_template =
             setting( "dbms.security.realms.ldap.user_dn_template", STRING, "uid={0},ou=users,dc=example,dc=com" );
 
-    @Description( "System username" )
+    @Description( "Perform LDAP search for authorization info using a system account." )
+    public static final Setting<Boolean> ldap_authorization_use_system_account =
+            setting( "dbms.security.realms.ldap.authorization.use_system_account", BOOLEAN, "false" );
+
+    @Description(
+            "An LDAP system account username to use for authorization searches when " +
+            "`dbms.security.realms.ldap.authorization.use_system_account` is `true`." )
     public static final Setting<String> ldap_system_username =
             setting( "dbms.security.realms.ldap.system_username", STRING, NO_DEFAULT );
 
-    @Description( "System password" )
+    @Description(
+            "An LDAP system account password to use for authorization searches when " +
+            "`dbms.security.realms.ldap.authorization.use_system_account` is `true`." )
     public static final Setting<String> ldap_system_password =
             setting( "dbms.security.realms.ldap.system_password", STRING, NO_DEFAULT );
+
+    @Description( "The name of the base object or named context to search for user objects when LDAP authorization is " +
+                  "enabled." )
+    public static Setting<String> ldap_authorization_user_search_base =
+            setting( "dbms.security.realms.ldap.authorization.user_search_base", STRING, NO_DEFAULT );
+
+    @Description( "The LDAP search filter to search for a user principal when LDAP authorization is " +
+                  "enabled. The filter should contain the placeholder token {0} which will be substituted for the " +
+                  "user principal." )
+    public static Setting<String> ldap_authorization_user_search_filter =
+            setting( "dbms.security.realms.ldap.authorization.user_search_filter", STRING, "(&(objectClass=*)(uid={0})" );
+
+    @Description( "A list of attribute names on a user object that contains groups to be used for mapping to roles " +
+                  "when LDAP authorization is enabled." )
+    public static Setting<List<String>> ldap_authorization_group_membership_attribute_names =
+            setting( "dbms.security.realms.ldap.authorization.group_membership_attributes", STRING_LIST, "memberOf" );
+
+    @Description( "An authorization mapping from LDAP group names to internal role names. " +
+                  "The map should be formatted as semicolon separated list of key-value pairs, where the " +
+                  "key is the LDAP group name and the value is a comma separated list of corresponding role names. " +
+                  "E.g. group1=role1;group2=role2;group3=role3,role4,role5" )
+    public static Setting<String> ldap_authorization_group_to_role_mapping =
+            setting( "dbms.security.realms.ldap.authorization.group_to_role_mapping", STRING, NO_DEFAULT );
 }

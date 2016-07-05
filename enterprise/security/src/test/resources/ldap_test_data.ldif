@@ -72,16 +72,16 @@ objectclass: organizationalUnit
 objectclass: top
 ou: users
 
-# Entry 10: cn=morpheus,ou=users,dc=example,dc=com
-dn: cn=morpheus,ou=users,dc=example,dc=com
-cn:  morpheus
+# Entry 10: cn=neo4j,ou=users,dc=example,dc=com
+dn: cn=neo4j,ou=users,dc=example,dc=com
+cn:  neo4j
 gidnumber: 503
-homedirectory: /home/users/morpheus
+homedirectory: /home/users/neo4j
 objectclass: inetOrgPerson
 objectclass: posixAccount
 objectclass: top
-sn: morpheus
-uid: morpheus
+sn: neo4j
+uid: neo4j
 uidnumber: 1003
 userpassword: {MD5}6ZoYxCjLONXyYIU2eJIuAw==
 
