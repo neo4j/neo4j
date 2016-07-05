@@ -23,14 +23,17 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 import org.neo4j.coreedge.catchup.RequestMessageType;
 import org.neo4j.coreedge.catchup.storecopy.core.CoreSnapshotListener;
 import org.neo4j.coreedge.catchup.storecopy.core.CoreSnapshotRequest;
+import org.neo4j.coreedge.catchup.storecopy.edge.GetStoreIdRequest;
 import org.neo4j.coreedge.catchup.storecopy.edge.GetStoreRequest;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFileReceiver;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFileStreamingCompleteListener;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFileStreams;
+import org.neo4j.coreedge.catchup.storecopy.edge.StoreIdReceiver;
 import org.neo4j.coreedge.catchup.tx.edge.PullRequestMonitor;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullRequest;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponse;
@@ -44,6 +47,7 @@ import org.neo4j.coreedge.raft.state.CoreSnapshot;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.NonBlockingChannels;
 import org.neo4j.coreedge.server.SenderService;
+import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -51,13 +55,15 @@ import org.neo4j.logging.LogProvider;
 
 import static java.util.Arrays.asList;
 
-public abstract class CoreClient extends LifecycleAdapter implements StoreFileReceiver,
+public abstract class CoreClient extends LifecycleAdapter implements StoreFileReceiver, StoreIdReceiver,
                                                                      StoreFileStreamingCompleteListener,
-                                                                     TxStreamCompleteListener, TxPullResponseListener, CoreSnapshotListener
+                                                                     TxStreamCompleteListener, TxPullResponseListener,
+                                                                     CoreSnapshotListener
 {
     private final PullRequestMonitor pullRequestMonitor;
     private final SenderService senderService;
-    private StoreFileStreams storeFileStreams = null;
+    private StoreFileStreams storeFileStreams;
+    private Consumer<StoreId> storeIdConsumer;
     private final Listeners<StoreFileStreamingCompleteListener> storeFileStreamingCompleteListeners = new Listeners<>();
     private final Listeners<TxStreamCompleteListener> txStreamCompleteListeners = new Listeners<>();
     private final Listeners<TxPullResponseListener> txPullResponseListeners = new Listeners<>();
@@ -79,6 +85,12 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
     {
         GetStoreRequest getStoreRequest = new GetStoreRequest();
         send( serverAddress, RequestMessageType.STORE, getStoreRequest );
+    }
+
+    public void requestStoreId( CoreMember serverAddress )
+    {
+        GetStoreIdRequest getStoreIdRequest = new GetStoreIdRequest();
+        send( serverAddress, RequestMessageType.STORE_ID, getStoreIdRequest );
     }
 
     public CompletableFuture<CoreSnapshot> requestCoreSnapshot( CoreMember serverAddress )
@@ -144,6 +156,11 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
         this.storeFileStreams = storeFileStreams;
     }
 
+    public void setStoreIdConsumer( Consumer<StoreId> storeIdConsumer )
+    {
+        this.storeIdConsumer = storeIdConsumer;
+    }
+
     @Override
     public void onFileStreamingComplete( long lastCommittedTxBeforeStoreCopy )
     {
@@ -161,6 +178,12 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
     public void onTxReceived( final TxPullResponse tx )
     {
         txPullResponseListeners.notify( listener -> listener.onTxReceived( tx ) );
+    }
+
+    @Override
+    public void onStoreIdReceived( final StoreId storeId )
+    {
+        storeIdConsumer.accept( storeId );
     }
 
     @Override

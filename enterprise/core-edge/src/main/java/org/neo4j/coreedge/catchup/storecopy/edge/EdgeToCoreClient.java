@@ -85,10 +85,14 @@ public class EdgeToCoreClient extends CoreClient
 
             pipeline.addLast( new TxPullRequestEncoder() );
             pipeline.addLast( new GetStoreRequestEncoder() );
+            pipeline.addLast( new GetStoreIdRequestEncoder() );
             pipeline.addLast( new ResponseMessageTypeEncoder() );
             pipeline.addLast( new RequestMessageTypeEncoder() );
 
             pipeline.addLast( new ClientMessageTypeHandler( protocol, logProvider ) );
+
+            pipeline.addLast( new GetStoreIdResponseDecoder( protocol ) );
+            pipeline.addLast( new GetStoreIdResponseHandler( protocol, owner ) );
 
             pipeline.addLast( new TxPullResponseDecoder( protocol ) );
             pipeline.addLast( new TxPullResponseHandler( protocol, owner ) );

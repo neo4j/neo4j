@@ -38,8 +38,10 @@ import org.neo4j.coreedge.catchup.storecopy.FileHeaderEncoder;
 import org.neo4j.coreedge.catchup.storecopy.core.CoreSnapshotEncoder;
 import org.neo4j.coreedge.catchup.storecopy.core.CoreSnapshotRequestDecoder;
 import org.neo4j.coreedge.catchup.storecopy.core.CoreSnapshotRequestHandler;
+import org.neo4j.coreedge.catchup.storecopy.core.GetStoreIdRequestHandler;
 import org.neo4j.coreedge.catchup.storecopy.core.GetStoreRequestHandler;
 import org.neo4j.coreedge.catchup.storecopy.core.StoreCopyFinishedResponseEncoder;
+import org.neo4j.coreedge.catchup.storecopy.edge.GetStoreIdRequestDecoder;
 import org.neo4j.coreedge.catchup.storecopy.edge.GetStoreRequestDecoder;
 import org.neo4j.coreedge.catchup.tx.core.TxPullRequestDecoder;
 import org.neo4j.coreedge.catchup.tx.core.TxPullRequestHandler;
@@ -143,6 +145,8 @@ public class CatchupServer extends LifecycleAdapter
                         pipeline.addLast( new GetStoreRequestDecoder( protocol ) );
                         pipeline.addLast( new GetStoreRequestHandler( protocol, dataSourceSupplier,
                                 checkPointerSupplier ) );
+                        pipeline.addLast( new GetStoreIdRequestDecoder( protocol ) );
+                        pipeline.addLast( new GetStoreIdRequestHandler( protocol, storeIdSupplier ) );
 
                         pipeline.addLast( new CoreSnapshotRequestDecoder( protocol ) );
                         pipeline.addLast( new CoreSnapshotRequestHandler( protocol, coreState ) );

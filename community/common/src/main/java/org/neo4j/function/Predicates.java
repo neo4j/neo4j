@@ -40,6 +40,7 @@ public class Predicates
     private static final Predicate FALSE = item -> false;
 
     private static final Predicate NOT_NULL = item -> item != null;
+    private static final int DEFAULT_POLL_INTERVAL = 20;
 
     @SuppressWarnings( "unchecked" )
     public static <T> Predicate<T> alwaysTrue()
@@ -151,8 +152,23 @@ public class Predicates
     public static void await( Supplier<Boolean> condition, long timeout, TimeUnit unit )
             throws TimeoutException, InterruptedException
     {
-        int defaultPollInterval = 20;
-        await( condition, timeout, unit, defaultPollInterval, TimeUnit.MILLISECONDS );
+        await( condition, timeout, unit, DEFAULT_POLL_INTERVAL, TimeUnit.MILLISECONDS );
+    }
+
+    public static void awaitEx( ThrowingSupplier<Boolean, Exception> condition, long timeout, TimeUnit unit )
+            throws TimeoutException, InterruptedException
+    {
+        Supplier<Boolean> adapter = () -> {
+            try
+            {
+                return condition.get();
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+        };
+        await( adapter, timeout, unit, DEFAULT_POLL_INTERVAL, TimeUnit.MILLISECONDS );
     }
 
     public static void await( Supplier<Boolean> condition, long timeout, TimeUnit timeoutUnit, long pollInterval, TimeUnit pollUnit )

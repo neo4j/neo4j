@@ -34,6 +34,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
+import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
 import org.neo4j.coreedge.raft.replication.tx.ConstantTimeRetryStrategy;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
@@ -80,8 +81,10 @@ public class HazelcastClusterTopologyTest
         final CoreServerSelectionStrategy connectionStrategy = mock( CoreServerSelectionStrategy.class );
         when( connectionStrategy.coreServer() ).thenReturn( new CoreMember( UUID.randomUUID() ) );
 
+        LocalDatabase localDatabase = mock( LocalDatabase.class );
+        when( localDatabase.isEmpty() ).thenReturn( true );
         final EdgeServerStartupProcess startupProcess = new EdgeServerStartupProcess( null,
-                mock( LocalDatabase.class ),
+                localDatabase,
                 mock( Lifecycle.class ),
                 mock( DataSourceManager.class ),
                 connectionStrategy,

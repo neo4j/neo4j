@@ -19,9 +19,9 @@
  */
 package org.neo4j.coreedge.catchup.storecopy;
 
-public class StoreCopyFailedException extends Exception
+public class StoreIdDownloadFailedException extends Exception
 {
-    public StoreCopyFailedException( Throwable cause )
+    public StoreIdDownloadFailedException( Throwable cause )
     {
         super( cause );
     }

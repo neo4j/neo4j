@@ -19,18 +19,22 @@
  */
 package org.neo4j.coreedge.server.edge;
 
+import java.util.concurrent.locks.LockSupport;
+
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.raft.replication.tx.RetryStrategy;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.String.format;
 import static org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule.extractBoltAddress;
 
 public class EdgeServerStartupProcess implements Lifecycle
@@ -75,30 +79,42 @@ public class EdgeServerStartupProcess implements Lifecycle
     @Override
     public void start() throws Throwable
     {
-        boolean copiedStore = false;
-        do
+        dataSourceManager.start();
+
+        CoreMember coreMember = findCoreMemberToCopyFrom();
+        if ( localDatabase.isEmpty() )
+        {
+            localDatabase.stop();
+            localDatabase.copyStoreFrom( coreMember, storeFetcher );
+            localDatabase.start();
+        }
+        else
+        {
+            localDatabase.ensureSameStoreId( coreMember, storeFetcher );
+        }
+
+        txPulling.start();
+    }
+
+    private CoreMember findCoreMemberToCopyFrom()
+    {
+        while ( true )
         {
             try
             {
-                CoreMember transactionServer = connectionStrategy.coreServer();
-                log.info( "Server starting, connecting to core server at %s", transactionServer.toString() );
+                CoreMember coreMember = connectionStrategy.coreServer();
+                log.info( "Server starting, connecting to core server at %s", coreMember.toString() );
 
                 discoveryService.registerEdgeServer( extractBoltAddress( config ) );
-
-                localDatabase.copyStoreFrom( transactionServer, storeFetcher );
-                copiedStore = true;
+                return coreMember;
             }
             catch ( CoreServerSelectionException ex )
             {
                 log.info( "Failed to connect to core server. Retrying in %d ms.", timeout.getMillis() );
-                Thread.sleep( timeout.getMillis() );
+                LockSupport.parkUntil( timeout.getMillis() + System.currentTimeMillis() );
                 timeout.increment();
             }
-
-        } while ( !copiedStore );
-
-        dataSourceManager.start();
-        txPulling.start();
+        }
     }
 
     @Override

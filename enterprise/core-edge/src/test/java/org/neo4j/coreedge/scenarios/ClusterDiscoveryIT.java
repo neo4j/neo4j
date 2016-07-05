@@ -97,7 +97,7 @@ public class ClusterDiscoveryIT
         try
         {
             // when
-            discoverClusterMembers( cluster.getEdgeServerById( 0 ) );
+            discoverClusterMembers( cluster.getEdgeServerById( 0 ).database() );
             fail( "Should not be able to discover members from edge members" );
         }
         catch ( ProcedureException ex )

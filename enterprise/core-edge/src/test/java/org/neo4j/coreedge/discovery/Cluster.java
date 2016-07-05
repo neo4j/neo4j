@@ -55,7 +55,6 @@ import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.neo4j.concurrent.Futures.combine;
 import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -111,9 +110,9 @@ public class Cluster
         return coreServers.get( serverId );
     }
 
-    public EdgeGraphDatabase getEdgeServerById( int serverId )
+    public EdgeServer getEdgeServerById( int serverId )
     {
-        return edgeServers.get( serverId ).database();
+        return edgeServers.get( serverId );
     }
 
     public CoreServer addCoreServerWithServerId( int serverId, int intendedClusterSize )
@@ -185,6 +184,26 @@ public class Cluster
     {
         serverToRemove.shutdown();
         coreServers.values().remove( serverToRemove );
+    }
+
+    public void removeEdgeServerWithServerId( int serverId )
+    {
+        EdgeServer serverToRemove = getEdgeServerById( serverId );
+
+        if ( serverToRemove != null )
+        {
+            removeEdgeServer( serverToRemove );
+        }
+        else
+        {
+            throw new RuntimeException( "Could not remove core server with server id " + serverId );
+        }
+    }
+
+    public void removeEdgeServer( EdgeServer serverToRemove )
+    {
+        serverToRemove.shutdown();
+        edgeServers.values().remove( serverToRemove );
     }
 
     public Collection<CoreServer> coreServers()
