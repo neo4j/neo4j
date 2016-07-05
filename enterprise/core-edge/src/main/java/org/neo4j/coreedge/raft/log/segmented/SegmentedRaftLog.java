@@ -85,7 +85,7 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
         this.contentMarshal = contentMarshal;
         this.logProvider = logProvider;
 
-        this.scanStats = StatUtil.create( "linear scans", logProvider.getLog( getClass() ), 10_000, true, false );
+        this.scanStats = null; // StatUtil.create( "linear scans", logProvider.getLog( getClass() ), 10_000, true );
         this.fileNames = new FileNames( directory );
         this.readerPool = new ReaderPool( readerPoolSize, logProvider, fileNames, fileSystem, clock );
         this.pruner = new SegmentedRaftLogPruner( pruningConfig, logProvider );
