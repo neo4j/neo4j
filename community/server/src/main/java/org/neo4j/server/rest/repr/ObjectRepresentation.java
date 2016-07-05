@@ -38,7 +38,7 @@ public abstract class ObjectRepresentation extends MappingRepresentation
         String value();
     }
 
-    private final static ConcurrentHashMap<Class<?>, Map<String, PropertyGetter>> serializations =
+    private static final ConcurrentHashMap<Class<?>, Map<String, PropertyGetter>> serializations =
             new ConcurrentHashMap<>();
 
     private final Map<String, PropertyGetter> serialization = serialization( getClass() );
