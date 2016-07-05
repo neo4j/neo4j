@@ -392,19 +392,20 @@ public enum LongerShortString
         @Override
         char decTranslate( byte codePoint )
         {
-            if ( codePoint < 0x40 )
+            int code = codePoint & 0xFF;
+            if ( code < 0x40 )
             {
-                if ( codePoint == 0x17 ) return '.';
-                if ( codePoint == 0x37 ) return '-';
-                return (char) ( codePoint + 0xC0 );
+                if ( code == 0x17 ) return '.';
+                if ( code == 0x37 ) return '-';
+                return (char) (code + 0xC0 );
             }
             else
             {
-                if ( codePoint == 0x40 ) return ' ';
-                if ( codePoint == 0x60 ) return '_';
-                if ( codePoint >= 0x5B && codePoint < 0x60 ) return (char) ( '0' + codePoint - 0x5B );
-                if ( codePoint >= 0x7B && codePoint < 0x80 ) return (char) ( '5' + codePoint - 0x7B );
-                return (char) codePoint;
+                if ( code == 0x40 ) return ' ';
+                if ( code == 0x60 ) return '_';
+                if ( code >= 0x5B && code < 0x60 ) return (char) ('0' + code - 0x5B );
+                if ( code >= 0x7B && code < 0x80 ) return (char) ('5' + code - 0x7B );
+                return (char) code;
             }
         }
 
