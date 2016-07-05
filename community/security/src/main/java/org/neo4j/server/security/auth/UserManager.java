@@ -32,5 +32,7 @@ public interface UserManager
 
     User getUser( String username );
 
+    User assertAndGetUser( String username ) throws IllegalArgumentException;
+
     void setUserPassword( String username, String password ) throws IOException, IllegalCredentialsException;
 }

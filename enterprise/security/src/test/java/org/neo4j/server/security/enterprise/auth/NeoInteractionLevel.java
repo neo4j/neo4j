@@ -24,10 +24,16 @@ import java.util.function.Consumer;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 public interface NeoInteractionLevel<S>
 {
     EnterpriseUserManager getManager();
+
+    GraphDatabaseFacade getGraph();
+
+    InternalTransaction startTransactionAsUser( S subject ) throws Throwable;
 
     /*
      * The returned String is empty if the query executed as expected, and contains an error msg otherwise
@@ -44,6 +50,8 @@ public interface NeoInteractionLevel<S>
     AuthenticationResult authenticationResult( S subject );
 
     void updateAuthToken( S subject, String username, String password );
+
+    String nameOf( S subject );
 
     void tearDown() throws Throwable;
 }

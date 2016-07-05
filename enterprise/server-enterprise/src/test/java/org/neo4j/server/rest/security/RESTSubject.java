@@ -25,10 +25,14 @@ public class RESTSubject
 {
     HTTP.Response response;
     String principalCredentials;
+    String username;
+    String password;
 
-    public RESTSubject( HTTP.Response response, String principalCredentials )
+    public RESTSubject( HTTP.Response response, String username, String password, String principalCredentials )
     {
         this.response = response;
+        this.username = username;
+        this.password = password;
         this.principalCredentials = principalCredentials;
     }
 }

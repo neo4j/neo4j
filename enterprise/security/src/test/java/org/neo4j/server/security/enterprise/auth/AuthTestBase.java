@@ -132,51 +132,51 @@ abstract class AuthTestBase<S>
     void testFailRead( S subject, int count ) { testFailRead( subject, count, READ_OPS_NOT_ALLOWED ); }
     void testFailRead( S subject, int count, String errMsg )
     {
-        assertCallFail( subject, "MATCH (n) RETURN n", errMsg );
+        assertFail( subject, "MATCH (n) RETURN n", errMsg );
     }
 
     void testSuccessfulWrite( S subject )
     {
-        assertCallEmpty( subject, "CREATE (:Node)" );
+        assertEmpty( subject, "CREATE (:Node)" );
     }
 
     void testFailWrite( S subject ) { testFailWrite( subject, WRITE_OPS_NOT_ALLOWED ); }
     void testFailWrite( S subject, String errMsg )
     {
-        assertCallFail( subject, "CREATE (:Node)", errMsg );
+        assertFail( subject, "CREATE (:Node)", errMsg );
     }
 
     void testSuccessfulSchema( S subject )
     {
-        assertCallEmpty( subject, "CREATE INDEX ON :Node(number)" );
+        assertEmpty( subject, "CREATE INDEX ON :Node(number)" );
     }
 
     void testFailSchema( S subject ) { testFailSchema( subject, SCHEMA_OPS_NOT_ALLOWED ); }
     void testFailSchema( S subject, String errMsg )
     {
-        assertCallFail( subject, "CREATE INDEX ON :Node(number)", errMsg );
+        assertFail( subject, "CREATE INDEX ON :Node(number)", errMsg );
     }
 
     void testFailCreateUser( S subject, String errMsg )
     {
-        assertCallFail( subject, "CALL dbms.createUser('Craig', 'foo', false)", errMsg );
-        assertCallFail( subject, "CALL dbms.createUser('Craig', '', false)", errMsg );
-        assertCallFail( subject, "CALL dbms.createUser('', 'foo', false)", errMsg );
+        assertFail( subject, "CALL dbms.createUser('Craig', 'foo', false)", errMsg );
+        assertFail( subject, "CALL dbms.createUser('Craig', '', false)", errMsg );
+        assertFail( subject, "CALL dbms.createUser('', 'foo', false)", errMsg );
     }
 
     void testFailAddUserToRole( S subject, String username, String role, String errMsg )
     {
-        assertCallFail( subject, "CALL dbms.addUserToRole('" + username + "', '" + role + "')", errMsg );
+        assertFail( subject, "CALL dbms.addUserToRole('" + username + "', '" + role + "')", errMsg );
     }
 
     void testFailRemoveUserFromRole( S subject, String username, String role, String errMsg )
     {
-        assertCallFail( subject, "CALL dbms.removeUserFromRole('" + username + "', '" + role + "')", errMsg );
+        assertFail( subject, "CALL dbms.removeUserFromRole('" + username + "', '" + role + "')", errMsg );
     }
 
     void testFailDeleteUser( S subject, String username, String errMsg )
     {
-        assertCallFail( subject, "CALL dbms.deleteUser('" + username + "')", errMsg );
+        assertFail( subject, "CALL dbms.deleteUser('" + username + "')", errMsg );
     }
 
     void testSuccessfulListUsers( S subject, String[] users )
@@ -187,7 +187,7 @@ abstract class AuthTestBase<S>
 
     void testFailListUsers( S subject, int count, String errMsg )
     {
-        assertCallFail( subject, "CALL dbms.listUsers() YIELD username", errMsg );
+        assertFail( subject, "CALL dbms.listUsers() YIELD username", errMsg );
     }
 
     void testSuccessfulListRoles( S subject, String[] roles )
@@ -198,42 +198,51 @@ abstract class AuthTestBase<S>
 
     void testFailListRoles( S subject, String errMsg )
     {
-        assertCallFail( subject, "CALL dbms.listRoles() YIELD role", errMsg );
+        assertFail( subject, "CALL dbms.listRoles() YIELD role", errMsg );
     }
 
     void testFailListUserRoles( S subject, String username, String errMsg )
     {
-        assertCallFail( subject,
+        assertFail( subject,
                 "CALL dbms.listRolesForUser('" + username + "') YIELD value AS roles RETURN count(roles)",
                 errMsg );
     }
 
     void testFailListRoleUsers( S subject, String roleName, String errMsg )
     {
-        assertCallFail( subject,
+        assertFail( subject,
                 "CALL dbms.listUsersForRole('" + roleName + "') YIELD value AS users RETURN count(users)",
                 errMsg );
     }
 
-    void assertCallFail( S subject, String call, String partOfErrorMsg )
+    void assertPasswordChangeWhenPasswordChangeRequired( S subject, String newPassword )
+    {
+        // TODO: REST doesn't allow changing your own password via procedure if you're in PASSWORD_CHANGE_REQUIRED mode
+        if ( IS_EMBEDDED ) assertEmpty( subject, "CALL dbms.changePassword( '" + newPassword + "' )" );
+        else assertEmpty( adminSubject, "CALL dbms.changeUserPassword( '" + neo.nameOf( subject ) + "', '" +
+                newPassword + "' )" );
+        // remove above if-else ASAP
+    }
+
+    void assertFail( S subject, String call, String partOfErrorMsg )
     {
         String err = assertCallEmpty( subject, call );
         assertThat( err, containsString( partOfErrorMsg ) );
     }
 
-    void assertCallSuccess( S subject, String call )
+    void assertEmpty( S subject, String call )
     {
         String err = assertCallEmpty( subject, call );
         assertThat( err, equalTo( "" ) );
     }
 
-    void assertCallSuccess( S subject, String call, Consumer<ResourceIterator<Map<String, Object>>> resultConsumer )
+    void assertSuccess( S subject, String call, Consumer<ResourceIterator<Map<String, Object>>> resultConsumer )
     {
         String err = neo.executeQuery( subject, call, null, resultConsumer );
         assertThat( err, equalTo( "" ) );
     }
 
-    String assertCallEmpty( S subject, String call )
+    private String assertCallEmpty( S subject, String call )
     {
         return neo.executeQuery( subject, call, null,
                 ( res ) -> assertFalse( "Expected no results", res.hasNext()
@@ -297,22 +306,41 @@ abstract class AuthTestBase<S>
     void assertKeyIsArray( ResourceIterator<Map<String, Object>> r, String key, String[] items )
     {
         List<Object> results = getObjectsAsList( r, key );
-        Assert.assertThat( results, containsInAnyOrder( items ) );
         assertEquals( Arrays.asList( items ).size(), results.size() );
+        Assert.assertThat( results, containsInAnyOrder( items ) );
     }
 
     protected void assertKeyIsMap( ResourceIterator<Map<String, Object>> r, String keyKey, String valueKey, Map<String,Object> expected )
     {
-        r.stream().forEach( s -> {
-            String key = (String) s.get( keyKey );
-            List<String> value = (List<String>) s.get( valueKey );
-            assertTrue( "Expected to find values for '" + key + "'", expected.containsKey( key ) );
-            List<String> expectedValues = (List<String>) expected.get( key );
-            assertEquals(
-                    "Results for '" + key + "' should have size " + expectedValues.size() + " but was " + value.size(),
-                    value.size(), expectedValues.size() );
-            assertThat( value, containsInAnyOrder( expectedValues.toArray() ) );
-        } );
+        List<Map<String, Object>> result = r.stream().collect( Collectors.toList() );
+
+        assertEquals( "Results for should have size " + expected.size() + " but was " + result.size(),
+                expected.size(), result.size() );
+
+        for ( Map<String, Object> row : result )
+        {
+            String key = (String) row.get( keyKey );
+            assertTrue( "Unexpected key '" + key + "'", expected.containsKey( key ) );
+
+            Object objectValue = row.get( valueKey );
+            if ( objectValue instanceof List )
+            {
+                List<String> value = (List<String>) objectValue;
+                List<String> expectedValues = (List<String>) expected.get( key );
+                assertEquals( "Results for '" + key + "' should have size " + expectedValues.size() + " but was " +
+                        value.size(), value.size(), expectedValues.size() );
+                assertThat( value, containsInAnyOrder( expectedValues.toArray() ) );
+            }
+            else
+            {
+                String value = objectValue.toString();
+                String expectedValue = expected.get( key ).toString();
+                assertTrue(
+                        String.format( "Wrong value for '%s', expected '%s', got '%s'", key, expectedValue, value),
+                        value.equals( expectedValue )
+                    );
+            }
+        }
     }
 
     void assertNoError( String errMsg )

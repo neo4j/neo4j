@@ -146,6 +146,17 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
         return users.getUserByName( username );
     }
 
+    @Override
+    public User assertAndGetUser( String username ) throws IllegalArgumentException
+    {
+        User user = getUser( username );
+        if ( user == null )
+        {
+            throw new IllegalArgumentException( "User " + username + " does not exist!" );
+        }
+        return user;
+    }
+
     public void setPassword( AuthSubject authSubject, String username, String password ) throws IOException,
             IllegalCredentialsException
     {
