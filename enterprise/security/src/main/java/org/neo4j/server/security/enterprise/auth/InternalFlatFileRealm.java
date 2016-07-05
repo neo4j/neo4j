@@ -50,7 +50,7 @@ import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
-import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.Credential;
@@ -135,7 +135,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         ensureDefaultUsersAndRoles();
     }
 
-    private void ensureDefaultUsersAndRoles() throws IOException, IllegalCredentialsException
+    private void ensureDefaultUsersAndRoles() throws IOException, InvalidArgumentsException
     {
         if ( authenticationEnabled || authorizationEnabled )
         {
@@ -261,7 +261,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         // For REST we may need to connect HttpSessionListener.sessionDestroyed with logout
         if ( user.hasFlag( InternalFlatFileRealm.IS_SUSPENDED ) )
         {
-            throw new DisabledAccountException( "User " + user.name() + " is suspended" );
+            throw new DisabledAccountException( "User '" + user.name() + "' is suspended" );
         }
 
         if ( user.passwordChangeRequired() )
@@ -284,7 +284,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
 
     @Override
     public void setPassword( AuthSubject authSubject, String username, String password ) throws IOException,
-            IllegalCredentialsException
+            InvalidArgumentsException
     {
         EnterpriseAuthSubject enterpriseAuthSubject = EnterpriseAuthSubject.castOrFail( authSubject );
 
@@ -300,7 +300,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
 
     @Override
     public User newUser( String username, String initialPassword, boolean requirePasswordChange )
-            throws IOException, IllegalCredentialsException
+            throws IOException, InvalidArgumentsException
     {
         assertValidUsername( username );
 
@@ -317,7 +317,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     }
 
     @Override
-    public RoleRecord newRole( String roleName, String... usernames ) throws IOException
+    public RoleRecord newRole( String roleName, String... usernames ) throws IOException, InvalidArgumentsException
     {
         assertValidRoleName( roleName );
         for ( String username : usernames )
@@ -339,13 +339,13 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         RoleRecord role = roleRepository.getRoleByName( roleName );
         if ( role == null )
         {
-            throw new IllegalArgumentException( "Role " + roleName + " does not exist." );
+            throw new IllegalArgumentException( "Role '" + roleName + "' does not exist." );
         }
         return role;
     }
 
     @Override
-    public void addUserToRole( String username, String roleName ) throws IOException
+    public void addUserToRole( String username, String roleName ) throws IOException, InvalidArgumentsException
     {
         checkValidityOfUsernameAndRoleName( username, roleName );
 
@@ -368,7 +368,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     }
 
     @Override
-    public void removeUserFromRole( String username, String roleName ) throws IOException
+    public void removeUserFromRole( String username, String roleName ) throws IOException, InvalidArgumentsException
     {
         checkValidityOfUsernameAndRoleName( username, roleName );
 
@@ -392,7 +392,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     }
 
     @Override
-    public boolean deleteUser( String username ) throws IOException
+    public boolean deleteUser( String username ) throws IOException, InvalidArgumentsException
     {
         boolean result = false;
         synchronized ( this )
@@ -420,28 +420,28 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     }
 
     @Override
-    public User assertAndGetUser( String username ) throws IllegalArgumentException
+    public User assertAndGetUser( String username ) throws InvalidArgumentsException
     {
         User u = getUser( username );
         if ( u == null )
         {
-            throw new IllegalArgumentException( "User " + username + " does not exist." );
+            throw new InvalidArgumentsException( "User '" + username + "' does not exist." );
         }
         return u;
     }
 
-    public User assertCredentialsAndGetUser( String username ) throws IllegalCredentialsException
+    public User assertCredentialsAndGetUser( String username ) throws InvalidArgumentsException
     {
         User u = getUser( username );
         if ( u == null )
         {
-            throw new IllegalCredentialsException( "User " + username + " does not exist." );
+            throw new InvalidArgumentsException( "User '" + username + "' does not exist." );
         }
         return u;
     }
 
     @Override
-    public void setUserPassword( String username, String password ) throws IOException, IllegalCredentialsException
+    public void setUserPassword( String username, String password ) throws IOException, InvalidArgumentsException
     {
         User existingUser = assertCredentialsAndGetUser( username );
 
@@ -449,7 +449,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
 
         if ( existingUser.credentials().matchesPassword( password ) )
         {
-            throw new IllegalCredentialsException( "Old password and new password cannot be the same." );
+            throw new InvalidArgumentsException( "Old password and new password cannot be the same." );
         }
 
         try
@@ -467,7 +467,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     }
 
     @Override
-    public void suspendUser( String username ) throws IOException
+    public void suspendUser( String username ) throws IOException, InvalidArgumentsException
     {
         // This method is not synchronized as it only modifies the UserRepository, which is synchronized in itself
         // If user is modified between getUserByName and update, we get ConcurrentModificationException and try again
@@ -489,7 +489,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     }
 
     @Override
-    public void activateUser( String username ) throws IOException
+    public void activateUser( String username ) throws IOException, InvalidArgumentsException
     {
         // This method is not synchronized as it only modifies the UserRepository, which is synchronized in itself
         // If user is modified between getUserByName and update, we get ConcurrentModificationException and try again
@@ -517,17 +517,17 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     }
 
     @Override
-    public Set<String> getRoleNamesForUser( String username )
+    public Set<String> getRoleNamesForUser( String username ) throws InvalidArgumentsException
     {
         if ( userRepository.getUserByName( username ) == null )
         {
-            throw new IllegalArgumentException( "User " + username + " does not exist." );
+            throw new InvalidArgumentsException( "User '" + username + "' does not exist." );
         }
         return roleRepository.getRoleNamesByUsername( username );
     }
 
     @Override
-    public Set<String> getUsernamesForRole( String roleName )
+    public Set<String> getUsernamesForRole( String roleName ) throws InvalidArgumentsException
     {
         RoleRecord role = assertAndGetRole( roleName );
         return role.users();
@@ -552,26 +552,26 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         }
     }
 
-    private void checkValidityOfUsernameAndRoleName( String username, String roleName ) throws IllegalArgumentException
+    private void checkValidityOfUsernameAndRoleName( String username, String roleName ) throws InvalidArgumentsException
     {
         assertValidUsername( username );
         assertValidRoleName( roleName );
     }
 
-    private void assertValidUsername( String name )
+    private void assertValidUsername( String name ) throws InvalidArgumentsException
     {
         if ( !userRepository.isValidUsername( name ) )
         {
-            throw new IllegalArgumentException(
+            throw new InvalidArgumentsException(
                     "User name contains illegal characters. Please use simple ascii characters and numbers." );
         }
     }
 
-    private void assertValidRoleName( String name )
+    private void assertValidRoleName( String name ) throws InvalidArgumentsException
     {
         if ( !roleRepository.isValidRoleName( name ) )
         {
-            throw new IllegalArgumentException(
+            throw new InvalidArgumentsException(
                     "Role name contains illegal characters. Please use simple ascii characters and numbers." );
         }
     }

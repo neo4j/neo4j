@@ -39,6 +39,7 @@ import java.util.Collection;
 
 import org.neo4j.io.fs.DelegatingFileSystem;
 import org.neo4j.io.fs.DelegatingFileSystemProvider;
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
@@ -204,7 +205,8 @@ public class FileUserRepositoryTest
         {
             users.update( user, updatedUser );
             fail( "expected exception not thrown" );
-        } catch ( IllegalArgumentException e )
+        }
+        catch ( InvalidArgumentsException e )
         {
             // Then continue
         }

@@ -33,7 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;
 
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
@@ -50,10 +50,8 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
@@ -80,13 +78,13 @@ public class UserServiceTest
     public ExpectedException exception = ExpectedException.none();
 
     @Before
-    public void setUp() throws IllegalCredentialsException, IOException
+    public void setUp() throws InvalidArgumentsException, IOException
     {
         userRepository.create( NEO4J_USER );
     }
 
     @After
-    public void tearDown() throws IllegalCredentialsException, IOException
+    public void tearDown() throws InvalidArgumentsException, IOException
     {
         userRepository.delete( NEO4J_USER );
     }
@@ -338,7 +336,7 @@ public class UserServiceTest
         assertThat( response.getStatus(), equalTo( 422 ) );
         String json = new String( (byte[]) response.getEntity() );
         assertNotNull( json );
-        assertThat( json, containsString( "\"code\" : \"Neo.ClientError.Request.Invalid\"" ) );
+        assertThat( json, containsString( "\"code\" : \"Neo.ClientError.Security.InvalidArguments\"" ) );
         assertThat( json, containsString( "\"message\" : \"Password cannot be empty.\"" ) );
     }
 
@@ -359,7 +357,7 @@ public class UserServiceTest
         assertThat( response.getStatus(), equalTo( 422 ) );
         String json = new String( (byte[]) response.getEntity() );
         assertNotNull( json );
-        assertThat( json, containsString( "\"code\" : \"Neo.ClientError.Request.Invalid\"" ) );
+        assertThat( json, containsString( "\"code\" : \"Neo.ClientError.Security.InvalidArguments\"" ) );
         assertThat( json, containsString( "\"message\" : \"Old password and new password cannot be the same.\"" ) );
     }
 

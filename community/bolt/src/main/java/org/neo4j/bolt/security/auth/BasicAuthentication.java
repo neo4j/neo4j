@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthToken;
-import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -121,7 +121,7 @@ public class BasicAuthentication implements Authentication
 
             return new BasicAuthenticationResult( authSubject, false );
         }
-        catch ( AuthorizationViolationException | IllegalCredentialsException | InvalidAuthTokenException e )
+        catch ( AuthorizationViolationException | InvalidArgumentsException | InvalidAuthTokenException e )
         {
             throw new AuthenticationException( e.status(), e.getMessage(), e );
         }

@@ -28,9 +28,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.exception.FormatException;
 
-import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-
 /**
  * Stores user auth data. In memory, but backed by persistent storage so changes to this repository will survive
  * JVM restarts and crashes.

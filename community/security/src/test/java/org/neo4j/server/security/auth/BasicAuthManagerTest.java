@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
-import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
@@ -223,7 +223,7 @@ public class BasicAuthManagerTest
             manager.setUserPassword( "unknown", "hello, world!" );
             fail( "exception expected" );
         }
-        catch ( IllegalCredentialsException e )
+        catch ( InvalidArgumentsException e )
         {
             // expected
         }

@@ -24,7 +24,7 @@ import java.io.IOException;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
-import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 
 public class EnterpriseAuthSubject implements AuthSubject
 {
@@ -63,7 +63,7 @@ public class EnterpriseAuthSubject implements AuthSubject
     }
 
     @Override
-    public void setPassword( String password ) throws IOException, IllegalCredentialsException
+    public void setPassword( String password ) throws IOException, InvalidArgumentsException
     {
         getUserManager().setPassword( this, (String) shiroSubject.getPrincipal(), password );
 

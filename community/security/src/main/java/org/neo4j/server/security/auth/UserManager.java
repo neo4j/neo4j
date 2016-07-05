@@ -21,18 +21,18 @@ package org.neo4j.server.security.auth;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 
 public interface UserManager
 {
     User newUser( String username, String initialPassword, boolean requirePasswordChange ) throws IOException,
-            IllegalCredentialsException;
+            InvalidArgumentsException;
 
-    boolean deleteUser( String username ) throws IOException;
+    boolean deleteUser( String username ) throws IOException, InvalidArgumentsException;
 
     User getUser( String username );
 
-    User assertAndGetUser( String username ) throws IllegalArgumentException;
+    User assertAndGetUser( String username ) throws InvalidArgumentsException;
 
-    void setUserPassword( String username, String password ) throws IOException, IllegalCredentialsException;
+    void setUserPassword( String username, String password ) throws IOException, InvalidArgumentsException;
 }

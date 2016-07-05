@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -287,7 +288,7 @@ abstract class AuthTestBase<S>
         neo.executeQuery( subject, call, null, resultConsumer );
     }
 
-    boolean userHasRole( String user, String role )
+    boolean userHasRole( String user, String role ) throws InvalidArgumentsException
     {
         return userManager.getRoleNamesForUser( user ).contains( role );
     }

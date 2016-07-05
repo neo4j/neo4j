@@ -20,13 +20,6 @@
 package org.neo4j.server.security.auth;
 
 import java.io.IOException;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-
-import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 /** A user repository implementation that just stores users in memory */
 public class InMemoryUserRepository extends AbstractUserRepository

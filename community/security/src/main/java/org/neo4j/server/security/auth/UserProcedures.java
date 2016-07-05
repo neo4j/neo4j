@@ -22,7 +22,7 @@ package org.neo4j.server.security.auth;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
@@ -35,7 +35,7 @@ public class UserProcedures
     public AuthSubject authSubject;
 
     @Procedure( name = "dbms.changePassword", mode = DBMS )
-    public void changePassword( @Name( "password" ) String password ) throws IllegalCredentialsException, IOException
+    public void changePassword( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
     {
         authSubject.setPassword( password );
     }

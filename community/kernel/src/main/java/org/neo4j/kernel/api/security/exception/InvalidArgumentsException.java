@@ -21,14 +21,14 @@ package org.neo4j.kernel.api.security.exception;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class IllegalCredentialsException extends Exception implements Status.HasStatus
+public class InvalidArgumentsException extends Exception implements Status.HasStatus
 {
     private final Status status;
 
-    public IllegalCredentialsException( String message )
+    public InvalidArgumentsException( String message )
     {
         super(message);
-        this.status = Status.Request.Invalid;
+        this.status = Status.Security.InvalidArguments;
     }
 
     @Override

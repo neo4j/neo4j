@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -42,7 +41,6 @@ import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.A
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.PUBLISHER;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.READER;
 
-// TODO: homogenize "'' does not exist" type error messages. In short, add quotes in the right places
 public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
 {
     @Rule
@@ -185,10 +183,8 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldNotTerminateTransactionsIfNonExistentUser() throws InterruptedException, ExecutionException
     {
-        assertFail( adminSubject, "CALL dbms.terminateTransactionsForUser( 'Petra' )",
-                "User Petra does not exist" );
-        assertFail( adminSubject, "CALL dbms.terminateTransactionsForUser( '' )",
-                "User  does not exist" );
+        assertFail( adminSubject, "CALL dbms.terminateTransactionsForUser( 'Petra' )", "User 'Petra' does not exist" );
+        assertFail( adminSubject, "CALL dbms.terminateTransactionsForUser( '' )", "User '' does not exist" );
     }
 
     @Test
@@ -266,7 +262,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldNotChangeUserPasswordIfNonExistentUser() throws Exception
     {
-        assertFail( adminSubject, "CALL dbms.changeUserPassword( 'jake', '321' )", "User jake does not exist" );
+        assertFail( adminSubject, "CALL dbms.changeUserPassword( 'jake', '321' )", "User 'jake' does not exist" );
     }
 
     // Should fail nicely to change password for admin subject and empty password
@@ -355,8 +351,8 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldNotAllowDeletingNonExistentUser() throws Exception
     {
-        testFailDeleteUser( adminSubject, "Craig", "User Craig does not exist" );
-        testFailDeleteUser( adminSubject, "", "User  does not exist" );
+        testFailDeleteUser( adminSubject, "Craig", "User 'Craig' does not exist" );
+        testFailDeleteUser( adminSubject, "", "User '' does not exist" );
     }
 
     @Test
@@ -385,7 +381,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldFailToSuspendNonExistentUser() throws Exception
     {
-        assertFail( adminSubject, "CALL dbms.suspendUser('Craig')", "User Craig does not exist" );
+        assertFail( adminSubject, "CALL dbms.suspendUser('Craig')", "User 'Craig' does not exist" );
     }
 
     @Test
@@ -424,7 +420,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldFailToActivateNonExistentUser() throws Exception
     {
-        assertFail( adminSubject, "CALL dbms.activateUser('Craig')", "User Craig does not exist" );
+        assertFail( adminSubject, "CALL dbms.activateUser('Craig')", "User 'Craig' does not exist" );
     }
 
     @Test
@@ -463,8 +459,8 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldFailToAddNonExistentUserToRole() throws Exception
     {
-        testFailAddUserToRole( adminSubject, "Olivia", PUBLISHER, "User Olivia does not exist" );
-        testFailAddUserToRole( adminSubject, "Olivia", "thisRoleDoesNotExist", "User Olivia does not exist" );
+        testFailAddUserToRole( adminSubject, "Olivia", PUBLISHER, "User 'Olivia' does not exist" );
+        testFailAddUserToRole( adminSubject, "Olivia", "thisRoleDoesNotExist", "User 'Olivia' does not exist" );
         testFailAddUserToRole( adminSubject, "Olivia", "", "Role name contains illegal characters" );
     }
 
@@ -472,7 +468,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     public void shouldFailToAddUserToNonExistentRole() throws Exception
     {
         testFailAddUserToRole( adminSubject, "readSubject", "thisRoleDoesNotExist",
-                "Role thisRoleDoesNotExist does not exist" );
+                "Role 'thisRoleDoesNotExist' does not exist" );
         testFailAddUserToRole( adminSubject, "readSubject", "", "Role name contains illegal characters" );
     }
 
@@ -508,8 +504,8 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldFailToRemoveNonExistentUserFromRole() throws Exception
     {
-        testFailRemoveUserFromRole( adminSubject, "Olivia", PUBLISHER, "User Olivia does not exist" );
-        testFailRemoveUserFromRole( adminSubject, "Olivia", "thisRoleDoesNotExist", "User Olivia does not exist" );
+        testFailRemoveUserFromRole( adminSubject, "Olivia", PUBLISHER, "User 'Olivia' does not exist" );
+        testFailRemoveUserFromRole( adminSubject, "Olivia", "thisRoleDoesNotExist", "User 'Olivia' does not exist" );
         testFailRemoveUserFromRole( adminSubject, "Olivia", "", "Role name contains illegal characters" );
         testFailRemoveUserFromRole( adminSubject, "", "", "User name contains illegal characters" );
     }
@@ -517,7 +513,8 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldFailToRemoveUserFromNonExistentRole() throws Exception
     {
-        testFailRemoveUserFromRole( adminSubject, "readSubject", "thisRoleDoesNotExist", "Role thisRoleDoesNotExist does not exist" );
+        testFailRemoveUserFromRole( adminSubject, "readSubject", "thisRoleDoesNotExist",
+                "Role 'thisRoleDoesNotExist' does not exist" );
         testFailRemoveUserFromRole( adminSubject, "readSubject", "", "Role name contains illegal characters" );
     }
 
@@ -663,9 +660,9 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     public void shouldNotListRolesForNonExistentUser() throws Exception
     {
         assertFail( adminSubject, "CALL dbms.listRolesForUser('Petra') YIELD value as roles RETURN roles",
-                "User Petra does not exist" );
+                "User 'Petra' does not exist" );
         assertFail( adminSubject, "CALL dbms.listRolesForUser('') YIELD value as roles RETURN roles",
-                "User  does not exist" );
+                "User '' does not exist" );
     }
 
     @Test
@@ -705,9 +702,9 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     public void shouldNotListUsersForNonExistentRole() throws Exception
     {
         assertFail( adminSubject, "CALL dbms.listUsersForRole('poodle') YIELD value as users RETURN users",
-                "Role poodle does not exist" );
+                "Role 'poodle' does not exist" );
         assertFail( adminSubject, "CALL dbms.listUsersForRole('') YIELD value as users RETURN users",
-                "Role  does not exist" );
+                "Role '' does not exist" );
     }
 
     @Test

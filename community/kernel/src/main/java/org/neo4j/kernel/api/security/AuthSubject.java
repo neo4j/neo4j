@@ -21,7 +21,8 @@ package org.neo4j.kernel.api.security;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 
 public interface AuthSubject extends AccessMode
 {
@@ -34,9 +35,9 @@ public interface AuthSubject extends AccessMode
      * Set the password for the AuthSubject
      * @param password The new password
      * @throws IOException If the new credentials cannot be serialized to disk.
-     * @throws IllegalCredentialsException If the new password is invalid.
+     * @throws InvalidArgumentsException If the new password is invalid.
      */
-    void setPassword( String password ) throws IOException, IllegalCredentialsException;
+    void setPassword( String password ) throws IOException, InvalidArgumentsException;
 
     /**
      * Implementation to use when authentication has not yet been performed. Allows nothing.
@@ -55,9 +56,9 @@ public interface AuthSubject extends AccessMode
         }
 
         @Override
-        public void setPassword( String password ) throws IOException, IllegalCredentialsException
+        public void setPassword( String password ) throws IOException, InvalidArgumentsException
         {
-            throw new IllegalCredentialsException( "Anonymous cannot change password" );
+            throw new AuthorizationViolationException( "Anonymous cannot change password" );
         }
 
         @Override
@@ -138,7 +139,7 @@ public interface AuthSubject extends AccessMode
         }
 
         @Override
-        public void setPassword( String password ) throws IOException, IllegalCredentialsException
+        public void setPassword( String password ) throws IOException, InvalidArgumentsException
         {
         }
     };
