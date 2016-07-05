@@ -19,17 +19,18 @@
  */
 package org.neo4j.coreedge.backup;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.net.InetSocketAddress;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.coreedge.TestStoreId;
@@ -53,12 +54,13 @@ import org.neo4j.test.coreedge.ClusterRule;
 import org.neo4j.test.rule.SuppressOutput;
 
 import static java.util.stream.Collectors.toList;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+
 import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.coreedge.TestStoreId.assertAllStoresHaveTheSameStoreId;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.restore.ArgsBuilder.args;
 import static org.neo4j.restore.ArgsBuilder.toArray;
 
@@ -142,11 +144,9 @@ public class BackupCoreIT
         TestStoreId storeId = TestStoreId.readStoreId( dbPaths.get( 0 ), fs );
 
         // when
-        StringBuilder output = RestoreClusterUtils.execute( () -> {
-            File homeDir = cluster.getCoreServerById( 0 ).homeDir();
-            RestoreNewClusterCli.main( toArray( args().homeDir( homeDir ).config( homeDir ).from( backupPath )
-                    .database( "graph.db" ).force().build() ) );
-        } );
+        Path homePath = cluster.getCoreServerById( 0 ).homeDir().toPath();
+        StringBuilder output = RestoreClusterUtils.execute( new RestoreNewClusterCli( homePath, homePath ),
+                toArray( args().from( backupPath ).database( "graph.db" ).force().build() ) );
 
         String seed = RestoreClusterCliTest.extractSeed( output );
 
