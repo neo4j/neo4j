@@ -334,6 +334,8 @@ public class HighlyAvailableEditionModule
                 platformModule.availabilityGuard, observedMembers, clusterEvents, clusterClient,
                 logging.getInternalLogProvider() );
 
+        dependencies.satisfyDependencies( stateMachine );
+
         members = dependencies.satisfyDependency( new ClusterMembers( observedMembers, stateMachine ) );
 
         memberStateMachine = paxosLife.add( stateMachine );

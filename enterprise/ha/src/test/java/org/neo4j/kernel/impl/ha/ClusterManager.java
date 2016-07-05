@@ -618,6 +618,31 @@ public class ClusterManager
         };
     }
 
+    public static Predicate<ClusterManager.ManagedCluster> instanceEvicted( final HighlyAvailableGraphDatabase instance )
+    {
+        return new Predicate<ClusterManager.ManagedCluster>()
+        {
+            @Override
+            public boolean test( ClusterManager.ManagedCluster managedCluster )
+            {
+                InstanceId instanceId = managedCluster.getServerId( instance );
+
+                Iterable<HighlyAvailableGraphDatabase> members = managedCluster.getAllMembers();
+                for ( HighlyAvailableGraphDatabase member : members )
+                {
+                    if ( instanceId.equals( managedCluster.getServerId( member ) ) )
+                    {
+                        if ( member.role().equals( "UNKNOWN" ) )
+                        {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+        };
+    }
+
     public static Predicate<ManagedCluster> memberSeesOtherMemberAsFailed(
             final HighlyAvailableGraphDatabase observer, final HighlyAvailableGraphDatabase observed )
     {
