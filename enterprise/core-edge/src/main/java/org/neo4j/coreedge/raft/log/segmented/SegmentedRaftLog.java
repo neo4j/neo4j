@@ -246,7 +246,6 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
     @Override
     public long readEntryTerm( long logIndex ) throws IOException
     {
-        log.info( "reading entry term at %d. prevIndex:%d, prevTerm:%d", logIndex, state.prevIndex, state.prevTerm );
         if ( logIndex == state.prevIndex )
         {
             return state.prevTerm;
