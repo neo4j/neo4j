@@ -19,9 +19,9 @@
  */
 package org.neo4j.coreedge.raft.log;
 
-import org.junit.Test;
-
 import java.io.IOException;
+
+import org.junit.Test;
 
 import org.neo4j.coreedge.raft.ReplicatedString;
 
@@ -32,6 +32,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.coreedge.raft.ReplicatedInteger.valueOf;
 import static org.neo4j.coreedge.raft.log.RaftLogHelper.hasNoContent;
 import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
@@ -357,6 +358,30 @@ public abstract class RaftLogContractTest
     }
 
     @Test
+    public void pruneShouldNotChangePrevIndexAfterSkipping() throws Exception
+    {
+        // given
+        RaftLog log = createRaftLog();
+
+
+        long term = 0;
+        for ( int i = 0; i < 2000; i++ )
+        {
+            log.append( new RaftLogEntry( term, valueOf( i ) ) );
+        }
+
+        long skipIndex = 3000;
+        log.skip( skipIndex, term );
+        assertEquals( skipIndex, log.prevIndex() );
+
+        // when
+        log.prune( skipIndex );
+
+        // then
+        assertEquals( skipIndex, log.prevIndex() );
+    }
+
+    @Test
     public void shouldProperlyReportExistenceOfIndexesAfterSkipping() throws Exception
     {
         // given
@@ -411,13 +436,14 @@ public abstract class RaftLogContractTest
         assertEquals( -1L, term );
     }
 
-    private ReplicatedString string(int numberOfCharacters) {
-        StringBuffer s = new StringBuffer(  );
+    private ReplicatedString string( int numberOfCharacters )
+    {
+        StringBuilder builder = new StringBuilder();
         for ( int i = 0; i < numberOfCharacters; i++ )
         {
-             s.append( String.valueOf( i ) );
+            builder.append( String.valueOf( i ) );
         }
-        return ReplicatedString.valueOf( s.toString() ) ;
+        return ReplicatedString.valueOf( builder.toString() );
     }
 
     // TODO: Test what happens when the log has rotated, *not* pruned and then skipping happens which causes
