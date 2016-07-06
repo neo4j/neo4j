@@ -284,7 +284,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir, copiedStoreRecovery,
                 new StoreFiles( new DefaultFileSystemAbstraction() ),
                 platformModule.dataSourceManager,
-                platformModule.dependencies.provideDependency( TransactionIdStore.class ), databaseHealthSupplier );
+                platformModule.dependencies.provideDependency( TransactionIdStore.class ), databaseHealthSupplier,
+                logProvider);
 
         final DelayedRenewableTimeoutService raftTimeoutService =
                 new DelayedRenewableTimeoutService( systemUTC(), logProvider );

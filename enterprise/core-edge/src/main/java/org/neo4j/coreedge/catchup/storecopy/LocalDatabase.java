@@ -30,6 +30,8 @@ import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 
@@ -45,10 +47,11 @@ public class LocalDatabase implements Supplier<StoreId>
 
     private volatile StoreId storeId;
     private volatile DatabaseHealth databaseHealth;
+    private final Log log;
 
     public LocalDatabase( File storeDir, CopiedStoreRecovery copiedStoreRecovery, StoreFiles storeFiles,
-            DataSourceManager dataSourceManager, Supplier<TransactionIdStore> transactionIdStoreSupplier,
-            Supplier<DatabaseHealth> databaseHealthSupplier )
+                          DataSourceManager dataSourceManager, Supplier<TransactionIdStore> transactionIdStoreSupplier,
+                          Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider )
     {
         this.storeDir = storeDir;
         this.copiedStoreRecovery = copiedStoreRecovery;
@@ -56,6 +59,7 @@ public class LocalDatabase implements Supplier<StoreId>
         this.dataSourceManager = dataSourceManager;
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
         this.databaseHealthSupplier = databaseHealthSupplier;
+        log = logProvider.getLog( getClass() );
     }
 
     public void start() throws IOException
@@ -76,6 +80,7 @@ public class LocalDatabase implements Supplier<StoreId>
             org.neo4j.kernel.impl.store.StoreId kernelStoreId = dataSourceManager.getDataSource().getStoreId();
             storeId = new StoreId( kernelStoreId.getCreationTime(), kernelStoreId.getRandomId(),
                     kernelStoreId.getUpgradeTime(), kernelStoreId.getUpgradeId() );
+            log.info( "My StoreId is: " + storeId );
         }
         return storeId;
     }
