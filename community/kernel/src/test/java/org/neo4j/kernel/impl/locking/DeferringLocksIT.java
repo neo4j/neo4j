@@ -198,46 +198,131 @@ public class DeferringLocksIT
     }
 
     @Test
-    public void createIndexCreateNode() throws Exception
+    public void nodeAddedToIndexOnCommit() throws Exception
     {
         // GIVEN
         final Label label = DynamicLabel.label( "label" );
+        final String key = "key";
 
         // WHEN
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( label );
-            node.setProperty( "key", true );
+            node.setProperty( key, true );
 
-            t2.execute( new WorkerCommand<Void,Void>()
-            {
-                @Override
-                public Void doWork( Void state ) throws Exception
-                {
-                    try ( Transaction tx = db.beginTx() )
-                    {
-                        db.schema().indexFor( label ).on( "key" ).create();
-                        tx.success();
-                    }
-                    try ( Transaction tx = db.beginTx() ) {
-                        db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-                    }
-                    return null;
-                }
-            } ).get();
+            t2.execute( createAndAwaitIndex( label, key ) ).get();
 
             tx.success();
         }
 
         // THEN
+        assertInTxNodeWith( label, key, true );
+    }
+
+    @Test
+    public void ownChangesAddedToOwnIndex() throws Exception
+    {
+        // GIVEN
+        final Label label = DynamicLabel.label( "label" );
+        final String key = "key";
+
+        // WHEN
         try ( Transaction tx = db.beginTx() )
         {
-            ResourceIterator<Node> nodes = db.findNodes( label, "key", true );
-            assertTrue( nodes.hasNext() );
-            Node node = nodes.next();
-            assertTrue( node.hasLabel( label ) );
-            assertTrue( (Boolean) node.getProperty( "key" ) );
+            Node node = db.createNode( label );
+            node.setProperty( key, true );
+
+            db.schema().indexFor( label ).on( key ).create();
+
+            assertNodeWith( label, key, true );
+
             tx.success();
         }
+
+        assertInTxNodeWith( label, key, true );
+    }
+
+    @Test
+    public void readOwnChangesFromRacingIndex() throws Exception
+    {
+        // GIVEN
+        final Label label = DynamicLabel.label( "label" );
+        final String key = "key";
+        final boolean value = true;
+
+        // WHEN
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label );
+            node.setProperty( key, value );
+
+            t2.execute( createAndAwaitIndex( label, key ) ).get();
+
+            assertNodeWith( label, key, value );
+
+            tx.success();
+        }
+
+        assertInTxNodeWith( label, key, value );
+    }
+
+    @Test
+    public void readOwnChangesWithoutIndex() throws Exception
+    {
+        // GIVEN
+        final Label label = DynamicLabel.label( "label" );
+        final String key = "key";
+        final boolean value = true;
+
+        // WHEN
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label );
+            node.setProperty( key, value );
+
+            assertNodeWith( label, key, value );
+
+            tx.success();
+        }
+
+        assertInTxNodeWith( label, key, value );
+    }
+
+    void assertInTxNodeWith( Label label, String key, boolean value )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertNodeWith( label, key, value );
+            tx.success();
+        }
+    }
+
+    void assertNodeWith( Label label, String key, boolean value )
+    {
+        ResourceIterator<Node> nodes = db.findNodes( label, key, value );
+        assertTrue( nodes.hasNext() );
+        Node foundNode = nodes.next();
+        assertTrue( foundNode.hasLabel( label ) );
+        assertTrue( (Boolean) foundNode.getProperty( key ) );
+    }
+
+    WorkerCommand<Void,Void> createAndAwaitIndex( final Label label, final String key )
+    {
+        return new WorkerCommand<Void,Void>()
+        {
+            @Override
+            public Void doWork( Void state ) throws Exception
+            {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    db.schema().indexFor( label ).on( key ).create();
+                    tx.success();
+                }
+                try ( Transaction tx = db.beginTx() ) {
+                    db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+                }
+                return null;
+            }
+        };
     }
 }
