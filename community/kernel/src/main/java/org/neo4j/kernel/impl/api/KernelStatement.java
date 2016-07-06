@@ -79,7 +79,7 @@ public class KernelStatement implements TxStateHolder, Statement
         if( !transaction.mode().allowsReads() )
         {
             throw new AuthorizationViolationException(
-                    String.format( "Read operations are not allowed for `%s` transactions.", transaction.mode().name() ) );
+                    String.format( "Read operations are not allowed for '%s'.", transaction.mode().name() ) );
         }
         return facade;
     }
@@ -97,7 +97,7 @@ public class KernelStatement implements TxStateHolder, Statement
         if( !transaction.mode().allowsWrites() )
         {
             throw new AuthorizationViolationException(
-                    String.format( "Write operations are not allowed for `%s` transactions.", transaction.mode().name() ) );
+                    String.format( "Write operations are not allowed for '%s'.", transaction.mode().name() ) );
         }
         transaction.upgradeToDataWrites();
         return facade;
@@ -110,7 +110,7 @@ public class KernelStatement implements TxStateHolder, Statement
         if( !transaction.mode().allowsSchemaWrites() )
         {
             throw new AuthorizationViolationException(
-                    String.format( "Schema operations are not allowed for `%s` transactions.", transaction.mode().name() ) );
+                    String.format( "Schema operations are not allowed for '%s'.", transaction.mode().name() ) );
         }
         transaction.upgradeToSchemaWrites();
         return facade;

@@ -316,7 +316,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
         // Then
         assertThat( client, eventuallyRecieves(
                 msgFailure( Status.Security.Forbidden,
-                        String.format( "Write operations are not allowed for `neo` transactions." ) ) ) );
+                        String.format( "Write operations are not allowed for 'neo'." ) ) ) );
     }
 
     private void testAuthWithPublisherUser() throws Exception
@@ -362,7 +362,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
         // Then
         assertThat( client, eventuallyRecieves(
                 msgFailure( Status.Security.Forbidden,
-                        String.format( "Read operations are not allowed for `%s` transactions.", username ) ) ) );
+                        String.format( "Read operations are not allowed for '%s'.", username ) ) ) );
     }
 
     private Consumer<Map<Setting<?>,String>> ldapOnlyAuthSettings = settings ->
