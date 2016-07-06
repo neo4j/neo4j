@@ -50,6 +50,7 @@ import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.recorded;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.streamContaining;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.success;
 
+@SuppressWarnings( "unchecked" )
 public class SessionIT
 {
     private static final Map<String,Object> EMPTY_PARAMS = emptyMap();

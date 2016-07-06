@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueNode;
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueRelationship;
@@ -35,6 +36,7 @@ import org.neo4j.bolt.v1.packstream.PackType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static org.neo4j.bolt.v1.packstream.PackStream.UNKNOWN_SIZE;
@@ -56,12 +58,14 @@ public class Neo4jPack
     public static class Packer extends PackStream.Packer
     {
         private PathPack.Packer pathPacker = new PathPack.Packer();
+        private Optional<Error> error = Optional.empty();
 
         public Packer( PackOutput output )
         {
             super( output );
         }
 
+        @SuppressWarnings( "unchecked" )
         public void pack( Object obj ) throws IOException
         {
             // Note: below uses instanceof for quick implementation, this should be swapped over
@@ -90,6 +94,10 @@ public class Neo4jPack
             {
                 pack( (String) obj );
             }
+            else if (obj instanceof Character )
+            {
+                pack( (char) obj );
+            }
             else if ( obj instanceof Map )
             {
                 Map<Object, Object> map = (Map<Object, Object>) obj;
@@ -112,8 +120,18 @@ public class Neo4jPack
             }
             else if ( obj instanceof byte[] )
             {
-                // Pending decision
-                throw new UnsupportedOperationException( "Binary values cannot be packed." );
+                error = Optional.of(new Error( Status.Request.Invalid,
+                        "Byte array is not yet supported in Bolt"));
+                packNull();
+            }
+            else if ( obj instanceof char[] )
+            {
+                char[] array = (char[]) obj;
+                packListHeader( array.length );
+                for ( char item : array )
+                {
+                    pack( item );
+                }
             }
             else if ( obj instanceof short[] )
             {
@@ -190,10 +208,18 @@ public class Neo4jPack
             {
                 pathPacker.pack( this, (Path) obj );
             }
+            else if ( obj instanceof Point)
+            {
+                error = Optional.of(new Error( Status.Request.Invalid,
+                        "Point is not yet supported as a return type in Bolt"));
+                packNull();
+
+            }
             else
             {
-                throw new BoltIOException( Status.General.UnknownError,
-                        "Unpackable value " + obj + " of type " + obj.getClass().getName() );
+                error = Optional.of(new Error( Status.Request.Invalid,
+                        "Unpackable value " + obj + " of type " + obj.getClass().getName() ));
+                packNull();
             }
         }
 
@@ -205,6 +231,21 @@ public class Neo4jPack
                 pack( entry.getKey() );
                 pack( entry.getValue() );
             }
+        }
+
+        public void consumeError( ) throws BoltIOException
+        {
+            if (error.isPresent())
+            {
+                Error e = error.get();
+                error = Optional.empty();
+                throw new BoltIOException( e.status(), e.msg() );
+            }
+        }
+
+        public boolean hasErrors()
+        {
+            return error.isPresent();
         }
     }
 
@@ -364,6 +405,28 @@ public class Neo4jPack
                 }
             }
             return map;
+        }
+    }
+
+    private static class Error
+    {
+        private final Status status;
+        private final String msg;
+
+        private Error( Status status, String msg )
+        {
+            this.status = status;
+            this.msg = msg;
+        }
+
+        Status status()
+        {
+            return status;
+        }
+
+        String msg()
+        {
+            return msg;
         }
     }
 }
