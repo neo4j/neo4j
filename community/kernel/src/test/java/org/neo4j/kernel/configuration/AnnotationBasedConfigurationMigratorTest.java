@@ -19,16 +19,14 @@
  */
 package org.neo4j.kernel.configuration;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.Test;
-import org.neo4j.logging.Log;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 public class AnnotationBasedConfigurationMigratorTest
 {
@@ -38,14 +36,10 @@ public class AnnotationBasedConfigurationMigratorTest
     static class SomeSettings
     {
         @Migrator
-        private static ConfigurationMigrator migrator = new ConfigurationMigrator()
+        private static ConfigurationMigrator migrator = ( rawConfiguration, log ) ->
         {
-            @Override
-            public Map<String, String> apply( Map<String, String> rawConfiguration, Log log )
-            {
-                wasCalled.set( true );
-                return rawConfiguration;
-            }
+            wasCalled.set( true );
+            return rawConfiguration;
         };
     }
 
@@ -57,7 +51,7 @@ public class AnnotationBasedConfigurationMigratorTest
         AnnotationBasedConfigurationMigrator migrator = new AnnotationBasedConfigurationMigrator( Arrays.asList( new Class<?>[]{SomeSettings.class} ) );
 
         // When
-        migrator.apply( new HashMap<String,String>(), null );
+        migrator.apply( new HashMap<>(), null );
 
         // Then
         assertThat(wasCalled.get(), is(true));

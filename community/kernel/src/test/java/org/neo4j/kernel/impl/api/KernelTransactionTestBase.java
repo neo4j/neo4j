@@ -61,7 +61,6 @@ public class KernelTransactionTestBase
     protected final TransactionHeaderInformationFactory headerInformationFactory =  mock( TransactionHeaderInformationFactory.class );
     protected final SchemaWriteGuard schemaWriteGuard = mock( SchemaWriteGuard.class );
     protected final FakeClock clock = new FakeClock();
-    protected final KernelTransactions kernelTransactions = mock( KernelTransactions.class );
     protected final Pool<KernelTransactionImplementation> txPool = mock( Pool.class );
 
     @Before

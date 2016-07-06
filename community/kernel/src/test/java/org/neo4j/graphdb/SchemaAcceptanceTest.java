@@ -66,12 +66,6 @@ public class SchemaAcceptanceTest
         MY_OTHER_LABEL
     }
 
-    private enum Types implements RelationshipType
-    {
-        MY_TYPE,
-        MY_OTHER_TYPE
-    }
-
     @Before
     public void init()
     {

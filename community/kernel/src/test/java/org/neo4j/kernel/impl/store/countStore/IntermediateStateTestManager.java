@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 
@@ -111,16 +110,6 @@ public class IntermediateStateTestManager
         return id;
     }
 
-    private ConcurrentHashMap<CountsKey,long[]> allZerosMap()
-    {
-        ConcurrentHashMap<CountsKey,long[]> pairs = new ConcurrentHashMap<>();
-        for ( int i = 0; i < LARGEST_KEY; i++ )
-        {
-            pairs.put( nodeKey( i ), new long[]{0L} );
-        }
-        return pairs;
-    }
-
     private ConcurrentHashMap<CountsKey,long[]> allOnesMap()
     {
         ConcurrentHashMap<CountsKey,long[]> pairs = new ConcurrentHashMap<>();
@@ -129,30 +118,5 @@ public class IntermediateStateTestManager
             pairs.put( nodeKey( i ), new long[]{1L} );
         }
         return pairs;
-    }
-
-    private ConcurrentHashMap<CountsKey,long[]> randomPositiveMap()
-    {
-        int largestDiff = 100;
-        ConcurrentHashMap<CountsKey,long[]> pairs = new ConcurrentHashMap<>();
-        for ( int i = 0; i < LARGEST_KEY; i++ )
-        {
-            pairs.put( nodeKey( ThreadLocalRandom.current().nextInt( 0, LARGEST_KEY ) ),
-                    new long[]{ThreadLocalRandom.current().nextLong( 1, largestDiff )} );
-        }
-        return pairs;
-    }
-
-    private ConcurrentHashMap<CountsKey,long[]> randomMap()
-    {
-        int largestDiff = 100;
-        ConcurrentHashMap<CountsKey,long[]> pairs = new ConcurrentHashMap<>();
-        for ( int i = 0; i < LARGEST_KEY; i++ )
-        {
-            pairs.put( nodeKey( ThreadLocalRandom.current().nextInt( 0, LARGEST_KEY ) ),
-                    new long[]{ThreadLocalRandom.current().nextLong( -1 * largestDiff, largestDiff )} );
-        }
-        return pairs;
-
     }
 }

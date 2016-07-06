@@ -45,7 +45,6 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingIdSequence;
 
 import static java.lang.System.currentTimeMillis;
 import static java.nio.file.StandardOpenOption.CREATE;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -60,7 +59,6 @@ public abstract class RecordFormatTest
     // Whoever is hit first
     private static final long TEST_ITERATIONS = 1_000_000;
     private static final long TEST_TIME = 1000;
-    private static final long PRINT_RESULTS_THRESHOLD = SECONDS.toMillis( 1 );
     private static final int DATA_SIZE = 100;
     protected static final long NULL = Record.NULL_REFERENCE.intValue();
 
@@ -151,16 +149,12 @@ public abstract class RecordFormatTest
         PageCache pageCache = pageCacheRule.getPageCache( fsRule.get() );
         try ( PagedFile storeFile = pageCache.map( new File( "store" ), PAGE_SIZE, CREATE ) )
         {
-            long totalUnusedBytesPrimary = 0;
-            long totalUnusedBytesSecondary = 0;
-            long totalRecordsRequiringSecondUnit = 0;
             RecordFormat<R> format = formatSupplier.get();
             RecordKey<R> key = keySupplier.get();
             Generator<R> generator = generatorSupplier.get();
             int recordSize = format.getRecordSize( new IntStoreHeader( DATA_SIZE ) );
             BatchingIdSequence idSequence = new BatchingIdSequence( random.nextBoolean() ?
                     idSureToBeOnTheNextPage( PAGE_SIZE, recordSize ) : 10 );
-            long smallestUnusedBytesPrimary = recordSize;
 
             // WHEN
             long time = currentTimeMillis();
@@ -183,21 +177,6 @@ public abstract class RecordFormatTest
                     throw t;
                 }
             }
-            time = currentTimeMillis() - time;
-            if ( time >= PRINT_RESULTS_THRESHOLD )
-            {
-                System.out.printf( "%s%n  %.2f write-read ops/ms%n  %.2f%% required secondary unit%n" +
-                        "  %.2f%% wasted primary record space%n" +
-                        "  %.2f%% wasted secondary record space%n" +
-                        "  %.2f%% wasted total record space%n" +
-                        "  %dB smallest primary waste%n" +
-                        "  %dB smallest secondary waste%n",
-                        format, ((double)i/time), percent( totalRecordsRequiringSecondUnit, i ),
-                        percent( totalUnusedBytesPrimary, i * recordSize ),
-                        percent( totalUnusedBytesSecondary, i * recordSize ),
-                        percent( totalUnusedBytesPrimary + totalUnusedBytesSecondary, i * recordSize ),
-                        smallestUnusedBytesPrimary, smallestUnusedBytesPrimary);
-            }
         }
     }
 
@@ -214,7 +193,6 @@ public abstract class RecordFormatTest
              Same retry is done on the store level in {@link org.neo4j.kernel.impl.store.CommonAbstractStore}
              */
             int offset = Math.toIntExact( written.getId() * recordSize );
-            String error;
             do
             {
                 cursor.setOffset( offset );
@@ -263,11 +241,6 @@ public abstract class RecordFormatTest
         {
             fail( "Out-of-bounds when " + operation + " record " + record );
         }
-    }
-
-    private double percent( long part, long total )
-    {
-        return 100.0D * part / total;
     }
 
     private void assertedNext( PageCursor cursor ) throws IOException

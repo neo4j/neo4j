@@ -52,7 +52,6 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
 {
     InMemoryClosableChannel logChannel;
     CountsSnapshot countsSnapshot;
-    ByteBuffer expectedBytes;
     ByteBuffer serializedBytes;
 
     @Before
@@ -194,27 +193,9 @@ public class InMemoryCountsStoreSnapshotDeserializerTest
         assertArrayEquals( new long[]{1, 1}, countsSnapshot.getMap().get( expectedNode ) );
     }
 
-    private void initializeBuffers( int serializedLength )
-    {
-        serializedBytes = ByteBuffer.allocate( serializedLength );
-        expectedBytes = ByteBuffer.allocate( serializedLength );
-        writeExpectedTxID( expectedBytes, 1 );
-        writeExpectedCountStoreSize( expectedBytes, 1 );
-    }
-
     private void writeSimpleHeader( InMemoryClosableChannel logChannel ) throws IOException
     {
         logChannel.putLong( 1 );
         logChannel.putInt( 1 );
-    }
-
-    private void writeExpectedTxID( ByteBuffer buffer, long txId )
-    {
-        buffer.putLong( txId );
-    }
-
-    private void writeExpectedCountStoreSize( ByteBuffer buffer, int size )
-    {
-        buffer.putInt( size );
     }
 }
