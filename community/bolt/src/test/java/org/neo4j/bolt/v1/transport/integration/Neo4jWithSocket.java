@@ -120,4 +120,9 @@ public class Neo4jWithSocket implements TestRule
         Files.delete( path );
         return path.toString();
     }
+
+    public GraphDatabaseService graphDatabaseService()
+    {
+        return gdb;
+    }
 }
