@@ -32,6 +32,7 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.logging.NullLogProvider;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.Matchers.containsString;
@@ -105,6 +106,6 @@ public class LocalDatabaseTest
         when( neoStoreDataSource.getStoreId() ).thenReturn( storeId );
         return new LocalDatabase( new File( "directory" ), mock( CopiedStoreRecovery.class ),
                 new StoreFiles( mock( FileSystemAbstraction.class ) ), dataSourceManager,
-                singleton( mock( TransactionIdStore.class ) ), () -> mock( DatabaseHealth.class ) );
+                singleton( mock( TransactionIdStore.class ) ), () -> mock( DatabaseHealth.class ), NullLogProvider.getInstance() );
     }
 }

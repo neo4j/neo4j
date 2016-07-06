@@ -50,7 +50,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
@@ -199,7 +198,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                         new StoreFiles( new DefaultFileSystemAbstraction() ),
                         platformModule.dataSourceManager,
                         dependencies.provideDependency( TransactionIdStore.class ),
-                        databaseHealthSupplier),
+                        databaseHealthSupplier, logProvider ),
                 txPulling, platformModule.dataSourceManager, new ConnectToRandomCoreServer( discoveryService ),
                 new ExponentialBackoffStrategy( 1, TimeUnit.SECONDS ), logProvider, discoveryService, config ) );
     }
