@@ -85,3 +85,4 @@ Failing when using non-constants in LIMIT
 SKIP with an expression that depends on variables should fail
 LIMIT with an expression that depends on variables should fail
 Using null in IN
+Fail when adding new label predicate on a node that is already bound
