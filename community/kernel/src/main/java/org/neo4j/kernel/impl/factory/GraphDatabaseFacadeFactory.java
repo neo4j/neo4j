@@ -24,13 +24,13 @@ import java.util.Map;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 
@@ -90,7 +90,7 @@ public abstract class GraphDatabaseFacadeFactory
         // Kept here to have it not be publicly documented. community none
         public static final Setting<String> lock_manager = setting( "lock_manager", Settings.STRING, "" );
         public static final Setting<Boolean> deferred_locking =
-                setting( "deferred_locking", Settings.BOOLEAN, Settings.TRUE );
+                setting( "deferred_locking", Settings.BOOLEAN, Settings.FALSE );
         public static final Setting<String> tracer =
                 setting( "dbms.tracer", Settings.STRING, (String) null ); // 'null' default.
 
