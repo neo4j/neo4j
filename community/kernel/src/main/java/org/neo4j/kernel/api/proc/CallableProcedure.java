@@ -26,7 +26,6 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
 
 public interface CallableProcedure
@@ -43,7 +42,6 @@ public interface CallableProcedure
     interface Context
     {
         Key<KernelTransaction> KERNEL_TRANSACTION = Key.key( "KernelTransaction", KernelTransaction.class );
-        Key<AccessMode> ACCESS_MODE = Key.key( "AccessMode", AccessMode.class );
         Key<AuthSubject> AUTH_SUBJECT = Key.key( "AuthSubject", AuthSubject.class );
         Key<Thread> THREAD = Key.key( "Thread", Thread.class );
 

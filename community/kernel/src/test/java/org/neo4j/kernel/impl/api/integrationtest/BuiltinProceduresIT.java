@@ -168,7 +168,6 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
                         "STRING?)"} ),
                 equalTo( new Object[]{"dbms.components", "dbms.components() :: (name :: STRING?, versions :: LIST? OF" +
                         " STRING?, edition :: STRING?)"} ),
-                equalTo( new Object[]{"dbms.changePassword", "dbms.changePassword(password :: STRING?) :: ()"} ),
                 equalTo( new Object[]{"dbms.queryJmx", "dbms.queryJmx(query :: STRING?) :: (name :: STRING?, " +
                         "description :: STRING?, attributes :: MAP?)"} )
         ) );
@@ -191,39 +190,18 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void callChangePasswordWithAccessModeInDbmsMode() throws Throwable
-    {
-        // Given
-        Object[] inputArray = new Object[1];
-        inputArray[0] = "newPassword";
-        AuthSubject authSubject = mock( AuthSubject.class );
-
-        // When
-        RawIterator<Object[], ProcedureException> stream = dbmsOperations()
-                .procedureCallDbms( procedureName( "dbms", "changePassword" ), inputArray, authSubject );
-
-        // Then
-        verify( authSubject ).setPassword( (String) inputArray[0] );
-        assertThat( asList( stream ), emptyIterable() );
-    }
-
-    @Test
-    public void shouldFailWhenChangePasswordWithStaticAccessModeInDbmsMode() throws Throwable
+    public void failWhenCallingNonExistingProcedures() throws Throwable
     {
         try
         {
-            // Given
-            Object[] inputArray = new Object[1];
-            inputArray[0] = "newPassword";
-
             // When
-            dbmsOperations().procedureCallDbms( procedureName( "dbms", "changePassword" ), inputArray, Static.NONE );
-            fail( "Should have failed." );
+            dbmsOperations().procedureCallDbms( procedureName( "dbms", "iDoNotExist" ), new Object[0], Static.NONE );
+            fail( "This should never get here" );
         }
         catch ( Exception e )
         {
             // Then
-            assertThat( e.getClass(), equalTo( AuthorizationViolationException.class ) );
+            assertThat( e.getClass(), equalTo( ProcedureException.class ) );
         }
     }
 

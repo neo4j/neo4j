@@ -43,7 +43,6 @@ public class NonTransactionalDbmsOperations implements DbmsOperations
             Object[] input, AccessMode accessMode ) throws ProcedureException
     {
         CallableProcedure.BasicContext ctx = new CallableProcedure.BasicContext();
-        ctx.put( CallableProcedure.Context.ACCESS_MODE, accessMode );
         if ( accessMode instanceof AuthSubject )
         {
             AuthSubject subject = (AuthSubject) accessMode;

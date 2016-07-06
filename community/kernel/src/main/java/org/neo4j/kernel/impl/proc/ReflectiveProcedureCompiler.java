@@ -243,14 +243,16 @@ public class ReflectiveProcedureCompiler
             }
             catch ( Throwable throwable )
             {
-                String message = throwable.getMessage();
-                if( message == null )
+                if ( throwable instanceof Status.HasStatus )
                 {
-                    message = String.format("`%s` was thrown when invoking the procedure.",
-                            throwable.getClass().getName());
+                    throw new ProcedureException( ((Status.HasStatus) throwable).status(), throwable,
+                            throwable.getMessage() );
                 }
-                throw new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
-                        "Failed to invoke procedure `%s`: %s", signature.name(), "Caused by: " + throwable );
+                else
+                {
+                    throw new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
+                            "Failed to invoke procedure `%s`: %s", signature.name(), "Caused by: " + throwable );
+                }
             }
         }
 

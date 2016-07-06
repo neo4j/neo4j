@@ -146,7 +146,6 @@ public class BuiltInProceduresTest
             record( "db.labels", "db.labels() :: (label :: STRING?)" ),
             record( "db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)" ),
             record( "db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)" ),
-            record( "dbms.changePassword", "dbms.changePassword(password :: STRING?) :: ()" ),
             record( "dbms.components", "dbms.components() :: (name :: STRING?, versions :: LIST? OF STRING?, edition :: STRING?)" ),
             record( "dbms.procedures", "dbms.procedures() :: (name :: STRING?, signature :: STRING?)" ),
             record( "dbms.queryJmx", "dbms.queryJmx(query :: STRING?) :: (name :: STRING?, description :: STRING?, attributes :: MAP?)")
