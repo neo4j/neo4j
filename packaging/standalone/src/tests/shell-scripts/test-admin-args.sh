@@ -20,15 +20,4 @@ test_expect_success "should delegate unknown commands to the Java tool" "
   test_expect_java_arg 'org.neo4j.commandline.admin.AdminTool'
 "
 
-test_expect_success "should delegate error reporting to the Java tool" "
-  neo4j-home/bin/neo4j-admin import --from=/foo --mode=database &&
-  test_expect_java_arg 'you must provide the --database option with an argument' &&
-
-  neo4j-home/bin/neo4j-admin import --database=foo --mode=database &&
-  test_expect_java_arg 'you must provide the --from option with an argument' &&
-
-  neo4j-home/bin/neo4j-admin import --database=foo --from=/foo &&
-  test_expect_java_arg 'you must provide the --mode option with an argument'
-"
-
 test_done
