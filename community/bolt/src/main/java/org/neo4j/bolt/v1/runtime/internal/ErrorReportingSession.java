@@ -25,6 +25,7 @@ import java.util.UUID;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
+import org.neo4j.kernel.api.security.AuthSubject;
 
 public class ErrorReportingSession implements Session
 {
@@ -104,6 +105,18 @@ public class ErrorReportingSession implements Session
 
     @Override
     public void interrupt()
+    {
+
+    }
+
+    @Override
+    public String username()
+    {
+        return AuthSubject.ANONYMOUS.name();
+    }
+
+    @Override
+    public void markForTermination()
     {
 
     }

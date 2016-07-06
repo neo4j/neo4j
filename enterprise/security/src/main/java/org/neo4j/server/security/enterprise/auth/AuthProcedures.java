@@ -30,6 +30,8 @@ import java.util.stream.Stream;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
+
+import org.neo4j.kernel.api.bolt.SessionManager;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.impl.api.KernelTransactions;
@@ -193,7 +195,7 @@ public class AuthProcedures
     {
         ensureAdminAuthSubject();
 
-        return countByUsername(
+        return countTransactionByUsername(
                     getActiveTransactions().stream()
                         .filter( tx -> tx.getReasonIfTerminated() == null )
                         .map( tx -> tx.mode().name() )
@@ -218,6 +220,19 @@ public class AuthProcedures
         return Stream.of( new TransactionTerminationResult( username, killCount ) );
     }
 
+    @Procedure( name = "dbms.listSessions", mode = DBMS )
+    public Stream<SessionResult> listSessions()
+    {
+        ensureAdminAuthSubject();
+
+        SessionManager sessionManager = getSessionManager();
+        return countSessionByUsername(
+                sessionManager.getActiveSessions().stream()
+                        .filter( session -> true ) //!session.shouldBeHalted() )
+                        .map( session -> session.username() )
+                );
+    }
+
     // ----------------- helpers ---------------------
 
     private Set<KernelTransaction> getActiveTransactions()
@@ -225,12 +240,26 @@ public class AuthProcedures
         return graph.getDependencyResolver().resolveDependency( KernelTransactions.class ).activeTransactions();
     }
 
-    private Stream<TransactionResult> countByUsername( Stream<String> usernames )
+    private SessionManager getSessionManager()
+    {
+        return graph.getDependencyResolver().resolveDependency( SessionManager.class );
+    }
+
+    private Stream<TransactionResult> countTransactionByUsername( Stream<String> usernames )
     {
         return usernames.collect(
                     Collectors.groupingBy( Function.identity(), Collectors.counting() )
                 ).entrySet().stream().map(
                     entry -> new TransactionResult( entry.getKey(), entry.getValue() )
+                );
+    }
+
+    private Stream<SessionResult> countSessionByUsername( Stream<String> usernames )
+    {
+        return usernames.collect(
+                    Collectors.groupingBy( Function.identity(), Collectors.counting() )
+                ).entrySet().stream().map(
+                    entry -> new SessionResult( entry.getKey(), entry.getValue() )
                 );
     }
 
@@ -313,6 +342,18 @@ public class AuthProcedures
         {
             this.username = username;
             this.transactionsTerminated = transactionsTerminated;
+        }
+    }
+
+    public static class SessionResult
+    {
+        public final String username;
+        public final Long sessionCount;
+
+        SessionResult( String username, Long sessionCount )
+        {
+            this.username = username;
+            this.sessionCount = sessionCount;
         }
     }
 }

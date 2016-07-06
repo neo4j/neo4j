@@ -126,4 +126,14 @@ public class SessionWorker implements Runnable
     {
         session.interrupt();
     }
+
+    public String username()
+    {
+        return session.username();
+    }
+
+    public void markForTermination()
+    {
+        session.markForTermination();
+    }
 }

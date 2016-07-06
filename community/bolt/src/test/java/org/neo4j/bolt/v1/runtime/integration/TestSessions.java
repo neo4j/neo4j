@@ -33,6 +33,7 @@ import java.util.Map;
 
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.Sessions;
+import org.neo4j.bolt.v1.runtime.internal.StandardSessionManager;
 import org.neo4j.bolt.v1.runtime.internal.StandardSessions;
 import org.neo4j.bolt.v1.runtime.internal.concurrent.ThreadedSessions;
 import org.neo4j.graphdb.DependencyResolver;
@@ -70,7 +71,8 @@ class TestSessions implements TestRule, Sessions
                 DependencyResolver resolver = gdb.getDependencyResolver();
                 StandardSessions sessions = life.add(
                         new StandardSessions( gdb, new UsageData( scheduler ), NullLogService.getInstance(),
-                                resolver.resolveDependency( ThreadToStatementContextBridge.class ))
+                                resolver.resolveDependency( ThreadToStatementContextBridge.class ),
+                                new StandardSessionManager() )
                 );
                 actual = new ThreadedSessions(
                         sessions,

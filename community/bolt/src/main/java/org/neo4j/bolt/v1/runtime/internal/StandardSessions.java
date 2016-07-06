@@ -25,6 +25,7 @@ import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.Sessions;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.api.bolt.SessionManager;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -46,12 +47,13 @@ public class StandardSessions extends LifecycleAdapter implements Sessions
     private final UsageData usageData;
     private final LogService logging;
     private final Authentication authentication;
+    private final SessionManager sessionManager;
 
     private CypherStatementRunner statementRunner;
     private ThreadToStatementContextBridge txBridge;
 
     public StandardSessions( GraphDatabaseFacade gds, UsageData usageData, LogService logging,
-            ThreadToStatementContextBridge txBridge)
+            ThreadToStatementContextBridge txBridge, SessionManager sessionManager )
     {
         this.gds = gds;
         this.usageData = usageData;
@@ -60,6 +62,7 @@ public class StandardSessions extends LifecycleAdapter implements Sessions
         DependencyResolver dependencyResolver = gds.getDependencyResolver();
         this.txBridge = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
         this.authentication = authentication( dependencyResolver );
+        this.sessionManager = sessionManager;
     }
 
     @Override
@@ -92,7 +95,8 @@ public class StandardSessions extends LifecycleAdapter implements Sessions
     @Override
     public Session newSession( String connectionDescriptor, boolean isEncrypted )
     {
-        return new SessionStateMachine( connectionDescriptor, usageData, gds, txBridge, statementRunner, logging, authentication );
+        return new SessionStateMachine( connectionDescriptor, usageData, gds, txBridge, statementRunner, logging,
+                authentication, sessionManager );
     }
 
     private Authentication authentication( DependencyResolver dependencyResolver )

@@ -220,6 +220,17 @@ public class ResetFuzzTest
             return null;
         }
 
+        @Override
+        public void sessionActivated( Session session )
+        {
+
+        }
+
+        @Override
+        public void sessionHalted( Session session )
+        {
+
+        }
     }
 
     /**

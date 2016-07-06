@@ -138,6 +138,18 @@ public class MonitoredSessions implements Sessions
         }
 
         @Override
+        public String username()
+        {
+            return delegate.username();
+        }
+
+        @Override
+        public void markForTermination()
+        {
+            delegate.markForTermination();
+        }
+
+        @Override
         public void close()
         {
             delegate.close();

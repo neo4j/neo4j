@@ -190,6 +190,18 @@ public class MonitoredSessionsTest
         }
 
         @Override
+        public String username()
+        {
+            return "<testUser>";
+        }
+
+        @Override
+        public void markForTermination()
+        {
+
+        }
+
+        @Override
         public void close()
         {
 
