@@ -19,9 +19,9 @@
  */
 package org.neo4j.coreedge.raft.log;
 
-import java.io.IOException;
-
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.coreedge.raft.ReplicatedString;
 
@@ -32,7 +32,6 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.coreedge.raft.ReplicatedInteger.valueOf;
 import static org.neo4j.coreedge.raft.log.RaftLogHelper.hasNoContent;
 import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
@@ -360,9 +359,19 @@ public abstract class RaftLogContractTest
     @Test
     public void pruneShouldNotChangePrevIndexAfterSkipping() throws Exception
     {
+        /**
+         * Given the situation where a skip happens followed by a prune, you may have the prune operation incorretly
+         * set the prevIndex to be the value of the last segment in the log, disreguarding the skip command.
+         * This test ensures that in this scenario, we will respect the current prevIndex value if it has been set to
+         * something in the future (i.e. skip) rather than modify it to be the value of the last segment.
+         *
+         * Initial Scenario:    [0][1][2][3][4][5][6][7][8][9]              prevIndex = 0
+         * Skip to 20 :         [0][1][2][3][4][5][6][7][8][9]...[20]               prevIndex = 20
+         * Prune segment 8:                                [9]...[20]               prevIndex = 20 //not 9
+         */
+
         // given
         RaftLog log = createRaftLog();
-
 
         long term = 0;
         for ( int i = 0; i < 2000; i++ )

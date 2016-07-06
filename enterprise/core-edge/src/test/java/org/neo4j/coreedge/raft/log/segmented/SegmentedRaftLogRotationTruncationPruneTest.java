@@ -1,8 +1,27 @@
+/*
+ * Copyright (c) 2002-2016 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.coreedge.raft.log.segmented;
 
-import java.io.File;
-
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.coreedge.raft.log.DummyRaftableContentSerializer;
 import org.neo4j.coreedge.raft.log.RaftLog;
@@ -13,7 +32,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.time.FakeClock;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.coreedge.raft.ReplicatedInteger.valueOf;
 import static org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
 
@@ -22,6 +40,11 @@ public class SegmentedRaftLogRotationTruncationPruneTest
     @Test
     public void shouldPruneAwaySingleEntriesIfRotationHappenedEveryEntry() throws Exception
     {
+        /**
+         * If you have a raft log which rotates after every append, therefore having a single entry in every segment,
+         * we assert that every sequential prune attempt will result in the prevIndex incrementing by one.
+         */
+
         // given
         RaftLog log = createRaftLog();
 
@@ -44,6 +67,26 @@ public class SegmentedRaftLogRotationTruncationPruneTest
     @Test
     public void shouldPruneAwaySingleEntriesAfterTruncationIfRotationHappenedEveryEntry() throws Exception
     {
+        /**
+         * Given a log with many single-entry segments, a series of truncations at decending values followed by
+         * pruning at more previous segments will maintain the correct prevIndex for the log.
+         *
+         * Initial Scenario:    [0][1][2][3][4][5][6][7][8][9]              prevIndex = 0
+         * Truncate segment 9 : [0][1][2][3][4][5][6][7][8]   (9)           prevIndex = 0
+         * Truncate segment 8 : [0][1][2][3][4][5][6][7]      (8)(9)        prevIndex = 0
+         * Truncate segment 7 : [0][1][2][3][4][5][6]         (7)(8)(9)     prevIndex = 0
+         * Prune segment 0    :    [1][2][3][4][5][6]         (7)(8)(9)     prevIndex = 1
+         * Prune segment 1    :       [2][3][4][5][6]         (7)(8)(9)     prevIndex = 2
+         * Prune segment 2    :          [3][4][5][6]         (7)(8)(9)     prevIndex = 3
+         * Prune segment 3    :             [4][5][6]         (7)(8)(9)     prevIndex = 4
+         * Prune segment 4    :                [5][6]         (7)(8)(9)     prevIndex = 5
+         * Prune segment 5    :                [5][6]         (7)(8)(9)     prevIndex = 5
+         * Prune segment 6    :                [5][6]         (7)(8)(9)     prevIndex = 5
+         * Etc...
+         *
+         * The prevIndex should not become corrupt and become greater than 5 in this example.
+         */
+
         // given
         RaftLog log = createRaftLog();
 
