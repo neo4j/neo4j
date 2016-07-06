@@ -30,19 +30,24 @@ import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.api.Kernel;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.NodeItem;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.equalTo;
@@ -516,6 +521,76 @@ public class KernelIT extends KernelIntegrationTest
         {
             // Success
         }
+    }
+
+    @Test
+    public void txReturnsCorrectIdWhenCommitted() throws Exception
+    {
+        executeDummyTxs( db, 42 );
+
+        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        try ( Statement statement = tx.acquireStatement() )
+        {
+            statement.dataWriteOperations().nodeCreate();
+        }
+        tx.success();
+
+        long previousCommittedTxId = lastCommittedTxId( db );
+
+        assertEquals( previousCommittedTxId + 1, tx.closeTransaction() );
+        assertFalse( tx.isOpen() );
+    }
+
+    @Test
+    public void txReturnsCorrectIdWhenRolledBack() throws Exception
+    {
+        executeDummyTxs( db, 42 );
+
+        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        try ( Statement statement = tx.acquireStatement() )
+        {
+            statement.dataWriteOperations().nodeCreate();
+        }
+        tx.failure();
+
+        assertEquals( KernelTransaction.NOT_COMMITTED, tx.closeTransaction() );
+        assertFalse( tx.isOpen() );
+    }
+
+    @Test
+    public void txReturnsCorrectIdWhenReadOnly() throws Exception
+    {
+        executeDummyTxs( db, 42 );
+
+        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        try ( Statement statement = tx.acquireStatement();
+              Cursor<NodeItem> cursor = statement.readOperations().nodeCursor( 1 ) )
+        {
+            assertTrue( cursor.next() );
+            cursor.close();
+        }
+        tx.success();
+
+        assertEquals( KernelTransaction.NOT_COMMITTED, tx.closeTransaction() );
+        assertFalse( tx.isOpen() );
+    }
+
+    private static void executeDummyTxs( GraphDatabaseService db, int count )
+    {
+        for ( int i = 0; i < count; i++ )
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.createNode();
+                tx.success();
+            }
+        }
+    }
+
+    private static long lastCommittedTxId( GraphDatabaseAPI db )
+    {
+        TransactionIdStore txIdStore = db.getDependencyResolver().resolveDependency( TransactionIdStore.class );
+        return txIdStore.getLastCommittedTransactionId();
     }
 
     private IndexDescriptor createIndex( SchemaWriteOperations schemaWriteOperations ) throws SchemaKernelException

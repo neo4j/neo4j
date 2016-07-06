@@ -353,7 +353,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return txState != null && txState.hasChanges();
     }
 
-    private void closeTransaction()
+    private void markAsClosed()
     {
         assertTransactionOpen();
         closed = true;
@@ -401,7 +401,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public void close() throws TransactionFailureException
+    public long closeTransaction() throws TransactionFailureException
     {
         assertTransactionOpen();
         assertTransactionNotClosing();
@@ -413,10 +413,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             {
                 rollback();
                 failOnNonExplicitRollbackIfNeeded();
+                return NOT_COMMITTED;
             }
             else
             {
-                commit();
+                return commit();
             }
         }
         finally
@@ -469,7 +470,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private void commit() throws TransactionFailureException
+    private long commit() throws TransactionFailureException
     {
         boolean success = false;
 
@@ -531,10 +532,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                             locks.getLockSessionId() );
 
                     // Commit the transaction
-                    commitProcess.commit( new TransactionToApply( transactionRepresentation ), commitEvent, INTERNAL );
+                    success = true;
+                    TransactionToApply batch = new TransactionToApply( transactionRepresentation );
+                    return commitProcess.commit( batch, commitEvent, INTERNAL );
                 }
             }
             success = true;
+            return NOT_COMMITTED;
         }
         catch ( ConstraintValidationKernelException | CreateConstraintFailureException e )
         {
@@ -605,7 +609,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         try
         {
-            closeTransaction();
+            markAsClosed();
             if ( beforeHookInvoked )
             {
                 hooks.afterCommit( txState, this, hooksState );
@@ -621,7 +625,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         try
         {
-            closeTransaction();
+            markAsClosed();
             if ( beforeHookInvoked )
             {
                 hooks.afterRollback( txState, this, hooksState );
