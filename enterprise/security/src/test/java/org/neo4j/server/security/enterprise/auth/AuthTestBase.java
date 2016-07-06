@@ -322,6 +322,7 @@ abstract class AuthTestBase<S>
             String key = (String) row.get( keyKey );
             assertTrue( "Unexpected key '" + key + "'", expected.containsKey( key ) );
 
+            assertTrue( "Value key '" + valueKey + "' not found in results", row.containsKey( valueKey ) );
             Object objectValue = row.get( valueKey );
             if ( objectValue instanceof List )
             {

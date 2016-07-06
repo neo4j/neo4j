@@ -39,7 +39,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     private final ThreadToStatementContextBridge txBridge;
     private final KernelTransaction.Type transactionType;
     private final AccessMode mode;
-    private final DbmsOperations dbmsOperations;
+    private final DbmsOperations.Factory dbmsOperationsFactory;
 
     private InternalTransaction transaction;
     private Statement statement;
@@ -57,7 +57,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         this.statement = initialStatement;
         this.locker = locker;
         this.txBridge = graph.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-        this.dbmsOperations = graph.getDependencyResolver().resolveDependency( DbmsOperations.class );
+        this.dbmsOperationsFactory = graph.getDependencyResolver().resolveDependency( DbmsOperations.Factory.class );
     }
 
     @Override
@@ -69,7 +69,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     @Override
     public DbmsOperations dbmsOperations()
     {
-        return dbmsOperations;
+        return dbmsOperationsFactory.newInstance( txBridge.getKernelTransactionBoundToThisThread( true ) );
     }
 
     @Override

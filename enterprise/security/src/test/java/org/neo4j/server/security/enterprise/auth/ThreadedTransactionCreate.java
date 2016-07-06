@@ -55,6 +55,7 @@ public class ThreadedTransactionCreate<S>
                         {
                             barrier.reached();
                             neo.getGraph().execute( "CREATE (:Test { name: '" + neo.nameOf( subject ) + "-node'})" );
+                            // We would like to put barrier.reached() here, but this seems to cause threading issues
                             tx.success();
                             return null;
                         }
