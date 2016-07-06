@@ -166,4 +166,11 @@ public class IdAllocationState implements UnallocatedIds
             return state.logIndex();
         }
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "IdAllocationState{firstUnallocated=%s, logIndex=%d}",
+                Arrays.toString( firstUnallocated ), logIndex );
+    }
 }

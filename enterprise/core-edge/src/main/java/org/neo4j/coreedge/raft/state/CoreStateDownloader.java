@@ -77,14 +77,18 @@ public class CoreStateDownloader
             }
 
             localDatabase.copyStoreFrom( source, storeFetcher ); // this deletes the current store
+            log.info( "Replaced store with one downloaded from %s", source );
 
             /* We install the snapshot after the store has been downloaded,
              * so that we are not left with a state ahead of the store. */
             coreState.installSnapshot( coreSnapshot );
+            log.info( "Core snapshot installed: " + coreSnapshot );
 
             /* Starting the database will invoke the commit process factory in
              * the EnterpriseCoreEditionModule, which has important side-effects. */
+            log.info( "Restarting local database", source );
             localDatabase.start();
+            log.info( "Restarted local database", source );
         }
         catch ( IOException | ExecutionException e )
         {

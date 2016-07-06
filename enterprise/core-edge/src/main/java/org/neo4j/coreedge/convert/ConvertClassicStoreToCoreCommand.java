@@ -133,8 +133,10 @@ public class ConvertClassicStoreToCoreCommand
 
             long lastTxId = MetaDataStore.getRecord( pageCache, metadataStore, LAST_TRANSACTION_ID );
 
-            Long upgradeTime = conversionId == null ? System.currentTimeMillis() : conversionId.after().getUpgradeTime();
+            long upgradeTime = conversionId.after().getUpgradeTime();
+            long upgradeId = conversionId.after().getUpgradeId();
             MetaDataStore.setRecord( pageCache, metadataStore, UPGRADE_TIME, upgradeTime );
+            MetaDataStore.setRecord( pageCache, metadataStore, UPGRADE_TRANSACTION_ID, upgradeId );
 
             StoreId after = readStoreId( metadataStore, pageCache );
             return new ClusterSeed( before, after, lastTxId );

@@ -106,6 +106,12 @@ public class GlobalSessionTrackerState
         return copy;
     }
 
+    @Override
+    public String toString()
+    {
+        return String.format( "GlobalSessionTrackerState{sessionTrackers=%s, logIndex=%d}", sessionTrackers, logIndex );
+    }
+
     public static class Marshal extends SafeStateMarshal<GlobalSessionTrackerState>
     {
         private final ChannelMarshal<CoreMember> memberMarshal;
@@ -241,6 +247,13 @@ public class GlobalSessionTrackerState
         public LocalSessionTracker newInstance()
         {
             return new LocalSessionTracker( globalSessionId, new HashMap<>( lastSequenceNumberPerSession ) );
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format( "LocalSessionTracker{globalSessionId=%s, lastSequenceNumberPerSession=%s}",
+                    globalSessionId, lastSequenceNumberPerSession );
         }
     }
 }

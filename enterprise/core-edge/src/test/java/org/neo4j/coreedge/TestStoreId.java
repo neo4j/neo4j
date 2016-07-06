@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -41,58 +42,10 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TRANSAC
 
 public class TestStoreId
 {
-    private final long creationTime;
-    private final long randomNumber;
-    private final long upgradeTime;
-    private final long upgradeId;
-
-    public TestStoreId( long creationTime, long randomNumber, long upgradeTime, long upgradeId )
-    {
-        this.creationTime = creationTime;
-        this.randomNumber = randomNumber;
-        this.upgradeTime = upgradeTime;
-        this.upgradeId = upgradeId;
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-        TestStoreId storeId = (TestStoreId) o;
-        return creationTime == storeId.creationTime &&
-                randomNumber == storeId.randomNumber &&
-                upgradeTime == storeId.upgradeTime &&
-                upgradeId == storeId.upgradeId;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash( creationTime, randomNumber, upgradeTime, upgradeId );
-    }
-
-    @Override
-    public String toString()
-    {
-        return "TestStoreId{" +
-                "creationTime=" + creationTime +
-                ", randomNumber=" + randomNumber +
-                ", upgradeTime=" + upgradeTime +
-                ", upgradeId=" + upgradeId +
-                '}';
-    }
-
     public static void assertAllStoresHaveTheSameStoreId( List<File> coreStoreDirs, FileSystemAbstraction fs )
             throws IOException
     {
-        Set<TestStoreId> storeIds = new HashSet<>();
+        Set<StoreId> storeIds = new HashSet<>();
         try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
         {
             for ( File coreStoreDir : coreStoreDirs )
@@ -103,7 +56,7 @@ public class TestStoreId
         assertEquals( "Store Ids " + storeIds, 1, storeIds.size() );
     }
 
-    public static TestStoreId readStoreId( File coreStoreDir, DefaultFileSystemAbstraction fs ) throws IOException
+    public static StoreId readStoreId( File coreStoreDir, DefaultFileSystemAbstraction fs ) throws IOException
     {
         try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
         {
@@ -111,7 +64,7 @@ public class TestStoreId
         }
     }
 
-    private static TestStoreId doReadStoreId( File coreStoreDir, PageCache pageCache ) throws IOException
+    private static StoreId doReadStoreId( File coreStoreDir, PageCache pageCache ) throws IOException
     {
         File metadataStore = new File( coreStoreDir, MetaDataStore.DEFAULT_NAME );
 
@@ -120,6 +73,6 @@ public class TestStoreId
         long upgradeTime = MetaDataStore.getRecord( pageCache, metadataStore, UPGRADE_TIME );
         long upgradeId = MetaDataStore.getRecord( pageCache, metadataStore, UPGRADE_TRANSACTION_ID );
 
-        return new TestStoreId( creationTime, randomNumber, upgradeTime, upgradeId );
+        return new StoreId( creationTime, randomNumber, upgradeTime, upgradeId );
     }
 }
