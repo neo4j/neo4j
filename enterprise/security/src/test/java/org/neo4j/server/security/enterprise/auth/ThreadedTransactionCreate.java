@@ -47,13 +47,11 @@ public class ThreadedTransactionCreate<S>
                     @Override
                     public Long apply( S subject )
                     {
-                        try
+                        try ( InternalTransaction tx = neo.startTransactionAsUser( subject ) )
                         {
-                            InternalTransaction tx = neo.startTransactionAsUser( subject );
                             barrier.reached();
                             neo.getGraph().execute( "CREATE (:Test { name: '" + neo.nameOf( subject ) + "-node'})" );
                             tx.success();
-                            tx.close();
                             return 0L;
                         }
                         catch (Throwable t)
