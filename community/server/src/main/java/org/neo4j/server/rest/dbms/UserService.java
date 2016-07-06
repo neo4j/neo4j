@@ -22,7 +22,6 @@ package org.neo4j.server.rest.dbms;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.Map;
-import java.util.function.Supplier;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -77,12 +76,15 @@ public class UserService
             return output.notFound();
         }
 
-        final User currentUser = userManager.getUser( username );
-        if ( currentUser == null )
+        try
+        {
+            User user = userManager.getUser( username );
+            return output.ok( new AuthorizationRepresentation( user ) );
+        }
+        catch ( InvalidArgumentsException e )
         {
             return output.notFound();
         }
-        return output.ok( new AuthorizationRepresentation( currentUser ) );
     }
 
     @POST

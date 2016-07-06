@@ -25,17 +25,18 @@ import org.junit.Test;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.api.security.AuthenticationResult.*;
-import static org.neo4j.server.security.enterprise.auth.AuthProcedures.*;
+import static org.neo4j.kernel.api.security.AuthenticationResult.FAILURE;
+import static org.neo4j.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
+import static org.neo4j.kernel.api.security.AuthenticationResult.SUCCESS;
+import static org.neo4j.server.security.enterprise.auth.AuthProcedures.PERMISSION_DENIED;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.PUBLISHER;
@@ -286,7 +287,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     public void shouldCreateUser() throws Exception
     {
         assertEmpty( adminSubject, "CALL dbms.createUser('craig', '1234', true)" );
-        assertNotNull( "User craig should exist", userManager.getUser( "craig" ) );
+        userManager.getUser( "craig" );
     }
 
     @Test
@@ -327,11 +328,29 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     public void shouldDeleteUser() throws Exception
     {
         assertEmpty( adminSubject, "CALL dbms.deleteUser('noneSubject')" );
-        assertNull( "User noneSubject should not exist", userManager.getUser( "noneSubject" ) );
+        try
+        {
+            userManager.getUser( "noneSubject" );
+            fail( "User noneSubject should not exist" );
+        }
+        catch ( InvalidArgumentsException e )
+        {
+            assertTrue( "User noneSubject should not exist",
+                    e.getMessage().contains( "User 'noneSubject' does not exist" ) );
+        }
 
         userManager.addUserToRole( "readSubject", PUBLISHER );
         assertEmpty( adminSubject, "CALL dbms.deleteUser('readSubject')" );
-        assertNull( "User readSubject should not exist", userManager.getUser( "readSubject" ) );
+        try
+        {
+            userManager.getUser( "readSubject" );
+            fail( "User readSubject should not exist" );
+        }
+        catch ( InvalidArgumentsException e )
+        {
+            assertTrue( "User readSubject should not exist",
+                    e.getMessage().contains( "User 'readSubject' does not exist" ) );
+        }
         assertFalse( userManager.getUsernamesForRole( READER ).contains( "readSubject" ) );
         assertFalse( userManager.getUsernamesForRole( PUBLISHER ).contains( "readSubject" ) );
     }

@@ -205,7 +205,8 @@ public class AuthProcedures
             throws InvalidArgumentsException, IOException
     {
         EnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
-        adminSubject.getUserManager().assertAndGetUser( username );
+        //check that the user exists
+        adminSubject.getUserManager().getUser( username );
 
         Long killCount = 0L;
         for ( KernelTransaction tx : getActiveTransactions() )

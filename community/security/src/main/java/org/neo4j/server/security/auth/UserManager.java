@@ -30,9 +30,7 @@ public interface UserManager
 
     boolean deleteUser( String username ) throws IOException, InvalidArgumentsException;
 
-    User getUser( String username );
-
-    User assertAndGetUser( String username ) throws InvalidArgumentsException;
+    User getUser( String username ) throws InvalidArgumentsException;
 
     void setUserPassword( String username, String password ) throws IOException, InvalidArgumentsException;
 }

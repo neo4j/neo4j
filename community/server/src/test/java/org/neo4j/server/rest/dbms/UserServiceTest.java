@@ -121,7 +121,7 @@ public class UserServiceTest
     {
         // Given
         HttpServletRequest req = mock( HttpServletRequest.class );
-        when( req.getUserPrincipal() ).thenReturn( NEO4J_PRINCIPLE );
+        when( req.getUserPrincipal() ).thenReturn( null );
 
         BasicAuthManager authManager = mock( BasicAuthManager.class );
         UserManager userManager = mock( UserManager.class );
@@ -164,7 +164,8 @@ public class UserServiceTest
         BasicAuthManager authManager = mock( BasicAuthManager.class );
         UserManager userManager = mock( UserManager.class );
         when( authManager.getUserManager() ).thenReturn( userManager );
-        when( userManager.getUser( "neo4j" ) ).thenReturn( null );
+        when( userManager.getUser( "neo4j" ) )
+                .thenThrow( new InvalidArgumentsException( "User 'neo4j' does not exist!" ) );
 
         OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
         UserService userService = new UserService( authManager, new JsonFormat(), outputFormat );

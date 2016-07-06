@@ -39,7 +39,7 @@ public interface EnterpriseUserManager extends UserManager
 
     RoleRecord newRole( String roleName, String... usernames ) throws IOException, InvalidArgumentsException;
 
-    RoleRecord assertAndGetRole( String roleName ) throws IllegalArgumentException;
+    RoleRecord getRole( String roleName ) throws InvalidArgumentsException;
 
     /**
      * Add a user to a role. The role has to exist.
