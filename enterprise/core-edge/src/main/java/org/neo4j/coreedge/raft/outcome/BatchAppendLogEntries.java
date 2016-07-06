@@ -29,7 +29,7 @@ import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 
 import static java.lang.String.format;
 
-public class BatchAppendLogEntries implements LogCommand
+public class BatchAppendLogEntries implements RaftLogCommand
 {
     public final long baseIndex;
     public final int offset;
@@ -40,6 +40,12 @@ public class BatchAppendLogEntries implements LogCommand
         this.baseIndex = baseIndex;
         this.offset = offset;
         this.entries = entries;
+    }
+
+    @Override
+    public void dispatch( Handler handler ) throws IOException
+    {
+        handler.append( baseIndex + offset, Arrays.copyOfRange( entries, offset, entries.length ) );
     }
 
     @Override

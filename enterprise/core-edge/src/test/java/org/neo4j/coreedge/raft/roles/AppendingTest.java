@@ -27,7 +27,7 @@ import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
-import org.neo4j.coreedge.raft.outcome.LogCommand;
+import org.neo4j.coreedge.raft.outcome.RaftLogCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.outcome.TruncateLogCommand;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
@@ -181,7 +181,7 @@ public class AppendingTest
         verify( outcome, times( 0 ) ).addLogCommand( any() );
     }
 
-    private static class LogCommandMatcher extends TypeSafeMatcher<LogCommand>
+    private static class LogCommandMatcher extends TypeSafeMatcher<RaftLogCommand>
     {
         private final long truncateIndex;
 
@@ -191,7 +191,7 @@ public class AppendingTest
         }
 
         @Override
-        protected boolean matchesSafely( LogCommand item )
+        protected boolean matchesSafely( RaftLogCommand item )
         {
             return item instanceof TruncateLogCommand && ((TruncateLogCommand) item).fromIndex == truncateIndex;
         }

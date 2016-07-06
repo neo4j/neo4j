@@ -89,7 +89,7 @@ public class CoreStateTest
 
     {
         when( coreStateMachines.commandDispatcher() ).thenReturn( commandDispatcher );
-        when( coreStateMachines.getApplyingIndex() ).thenReturn( -1L );
+        when( coreStateMachines.getLastAppliedIndex() ).thenReturn( -1L );
     }
 
     private int sequenceNumber = 0;

@@ -37,6 +37,7 @@ import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.coreedge.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.coreedge.discovery.Cluster.dataMatchesEventually;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 
@@ -156,17 +157,5 @@ public class CoreServerReplicationIT
             tx.success();
         }
         return count;
-    }
-
-    private void dataMatchesEventually( CoreServer server, Collection<CoreServer> targetDBs ) throws
-            TimeoutException, InterruptedException
-    {
-        CoreGraphDatabase sourceDB = server.database();
-        DbRepresentation sourceRepresentation = DbRepresentation.of( sourceDB );
-        for ( CoreServer targetDB : targetDBs )
-        {
-            Predicates.await( () -> sourceRepresentation.equals( DbRepresentation.of( targetDB.database() ) ),
-                    DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
-        }
     }
 }

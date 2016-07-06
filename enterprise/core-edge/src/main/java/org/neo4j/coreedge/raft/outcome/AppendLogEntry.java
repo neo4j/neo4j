@@ -26,7 +26,7 @@ import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 
-public class AppendLogEntry implements LogCommand
+public class AppendLogEntry implements RaftLogCommand
 {
     public final long index;
     public final RaftLogEntry entry;
@@ -51,6 +51,12 @@ public class AppendLogEntry implements LogCommand
     public void applyTo( InFlightMap<Long, RaftLogEntry> inFlightMap ) throws IOException
     {
         inFlightMap.register( index, entry );
+    }
+
+    @Override
+    public void dispatch( Handler handler ) throws IOException
+    {
+        handler.append( index, entry );
     }
 
     @Override

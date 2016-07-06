@@ -42,6 +42,7 @@ import org.neo4j.test.coreedge.ClusterRule;
 
 import static org.junit.Assert.assertTrue;
 
+import static org.neo4j.coreedge.discovery.Cluster.dataMatchesEventually;
 import static org.neo4j.graphdb.Label.label;
 
 public class RestartIT
@@ -115,6 +116,28 @@ public class RestartIT
         // then
         done.set( true );
         executor.shutdown();
+    }
+
+    @Test
+    public void shouldHaveWritableClusterAfterCompleteRestart() throws Exception
+    {
+        // given
+        Cluster cluster = clusterRule.startCluster();
+        cluster.shutdown();
+
+        // when
+        cluster.start();
+
+        CoreServer last = cluster.coreTx( ( db, tx ) ->
+        {
+            Node node = db.createNode( label( "boo" ) );
+            node.setProperty( "foobar", "baz_bat" );
+            tx.success();
+        } );
+
+        // then
+        dataMatchesEventually( last, cluster.coreServers() );
+        cluster.shutdown();
     }
 
     @Test

@@ -287,7 +287,12 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
         log.info( format( "Restoring last applied index to %d", lastApplied ) );
         sessionState = sessionStorage.getInitialState();
 
-        submitApplyJob( coreStateMachines.getApplyingIndex() );
+        /* Considering the order in which state is flushed, the state machines will
+         * always be furthest ahead and indicate the furthest possible state to
+         * which we must replay to reach a consistent state. */
+        long lastPossiblyApplying = coreStateMachines.getLastAppliedIndex();
+
+        submitApplyJob( lastPossiblyApplying );
         applier.sync( false );
     }
 

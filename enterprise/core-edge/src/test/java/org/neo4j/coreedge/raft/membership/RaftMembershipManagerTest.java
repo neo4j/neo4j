@@ -21,16 +21,14 @@ package org.neo4j.coreedge.raft.membership;
 
 import org.junit.Test;
 
-import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
-import org.neo4j.coreedge.raft.outcome.LogCommand;
+import org.neo4j.coreedge.raft.outcome.RaftLogCommand;
 import org.neo4j.coreedge.raft.outcome.TruncateLogCommand;
 import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
-import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
 import org.neo4j.logging.NullLogProvider;
@@ -39,12 +37,6 @@ import org.neo4j.time.FakeClock;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 public class RaftMembershipManagerTest
 {
@@ -58,7 +50,7 @@ public class RaftMembershipManagerTest
         RaftMembershipManager membershipManager = new RaftMembershipManager(
                 null, RaftTestMemberSetBuilder.INSTANCE, log,
                 NullLogProvider.getInstance(), 3, 1000, new FakeClock(),
-                1000, new InMemoryStateStorage<>( new RaftMembershipState() ) );
+                1000, new InMemoryStateStorage<>( new RaftMembershipState.Marshal().startState() ), 0 );
 
         // when
         membershipManager.processLog( 0, asList(
@@ -80,16 +72,16 @@ public class RaftMembershipManagerTest
         RaftMembershipManager membershipManager = new RaftMembershipManager(
                 null,
                 RaftTestMemberSetBuilder.INSTANCE, log, NullLogProvider.getInstance(), 3, 1000, new FakeClock(),
-                1000, new InMemoryStateStorage<>( new RaftMembershipState() ) );
+                1000, new InMemoryStateStorage<>( new RaftMembershipState.Marshal().startState() ), 0 );
 
         // when
-        List<LogCommand> logCommands = asList(
+        List<RaftLogCommand> logCommands = asList(
                 new AppendLogEntry( 0, new RaftLogEntry( 0, new RaftTestGroup( 1, 2, 3, 4 ) ) ),
                 new AppendLogEntry( 1, new RaftLogEntry( 0, new RaftTestGroup( 1, 2, 3, 5 ) ) ),
                 new TruncateLogCommand( 1 )
         );
 
-        for ( LogCommand logCommand : logCommands )
+        for ( RaftLogCommand logCommand : logCommands )
         {
             logCommand.applyTo( log );
         }
@@ -110,16 +102,16 @@ public class RaftMembershipManagerTest
         RaftMembershipManager membershipManager = new RaftMembershipManager(
                 null,
                 RaftTestMemberSetBuilder.INSTANCE, log, NullLogProvider.getInstance(), 3, 1000, new FakeClock(),
-                1000, new InMemoryStateStorage<>( new RaftMembershipState() ) );
+                1000, new InMemoryStateStorage<>( new RaftMembershipState.Marshal().startState() ), 0 );
 
         // when
-        List<LogCommand> logCommands = asList(
+        List<RaftLogCommand> logCommands = asList(
                 new AppendLogEntry( 0, new RaftLogEntry( 0, new RaftTestGroup( 1, 2, 3, 4 ) ) ),
                 new AppendLogEntry( 1, new RaftLogEntry( 0, new RaftTestGroup( 1, 2, 3, 5 ) ) ),
                 new AppendLogEntry( 2, new RaftLogEntry( 0, new RaftTestGroup( 1, 2, 3, 6 ) ) ),
                 new TruncateLogCommand( 2 )
         );
-        for ( LogCommand logCommand : logCommands )
+        for ( RaftLogCommand logCommand : logCommands )
         {
             logCommand.applyTo( log );
         }
@@ -127,31 +119,5 @@ public class RaftMembershipManagerTest
 
         // then
         assertEquals( new RaftTestGroup( 1, 2, 3, 5 ).getMembers(), membershipManager.votingMembers() );
-        assertTrue( membershipManager.uncommittedMemberChangeInLog() );
-    }
-
-    @Test
-    public void shouldNotOverwriteCurrentStateWithPreviousState() throws Exception
-    {
-        // given
-        final InMemoryRaftLog log = new InMemoryRaftLog();
-
-        RaftMembershipState state = new RaftMembershipState();
-        state.logIndex( 42L );
-
-        final StateStorage<RaftMembershipState> stateStorage = mock( StateStorage.class );
-        when( stateStorage.getInitialState() ).thenReturn( state );
-
-        RaftMembershipManager membershipManager = new RaftMembershipManager(
-                null,
-                RaftTestMemberSetBuilder.INSTANCE, log, NullLogProvider.getInstance(), 3, 1000, new FakeClock(),
-                1000, stateStorage );
-
-        // when
-        membershipManager.processLog( 0, Collections.singletonList( new AppendLogEntry( 0, new RaftLogEntry( 0, new
-                RaftTestGroup( 1, 2, 3, 4 ) ) ) ) );
-
-        // then
-        verify( stateStorage, times( 0 ) ).persistStoreData( any() );
     }
 }
