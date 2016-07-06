@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -43,6 +44,8 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
 
     /** Master list of roles */
     protected volatile List<RoleRecord> roles = new ArrayList<>();
+
+    private final Pattern roleNamePattern = Pattern.compile( "^[a-zA-Z0-9_]+$" );
 
     @Override
     public RoleRecord getRoleByName( String roleName )
@@ -131,36 +134,33 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     }
 
     @Override
-    public boolean delete( RoleRecord role ) throws IOException
+    public synchronized boolean delete( RoleRecord role ) throws IOException
     {
         boolean foundRole = false;
-        synchronized ( this )
+        // Copy-on-write for the roles list
+        List<RoleRecord> newRoles = new ArrayList<>();
+        for ( RoleRecord other : roles )
         {
-            // Copy-on-write for the roles list
-            List<RoleRecord> newRoles = new ArrayList<>();
-            for ( RoleRecord other : roles )
+            if ( other.name().equals( role.name() ) )
             {
-                if ( other.name().equals( role.name() ) )
-                {
-                    foundRole = true;
-                }
-                else
-                {
-                    newRoles.add( other );
-                }
+                foundRole = true;
             }
-
-            if ( foundRole )
+            else
             {
-                roles = newRoles;
-
-                saveRoles();
-
-                rolesByName.remove( role.name() );
+                newRoles.add( other );
             }
-
-            removeFromUserMap( role );
         }
+
+        if ( foundRole )
+        {
+            roles = newRoles;
+
+            saveRoles();
+
+            rolesByName.remove( role.name() );
+        }
+
+        removeFromUserMap( role );
         return foundRole;
     }
 
@@ -172,33 +172,36 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     protected abstract void saveRoles() throws IOException;
 
     @Override
-    public int numberOfRoles()
+    public synchronized int numberOfRoles()
     {
         return roles.size();
     }
 
     @Override
-    public void removeUserFromAllRoles( String username ) throws ConcurrentModificationException, IOException
+    public boolean isValidRoleName( String roleName )
     {
-        synchronized ( this )
+        return roleNamePattern.matcher( roleName ).matches();
+    }
+
+    @Override
+    public synchronized void removeUserFromAllRoles( String username ) throws ConcurrentModificationException, IOException
+    {
+        Set<String> roles = rolesByUsername.get( username );
+        if ( roles != null )
         {
-            Set<String> roles = rolesByUsername.get( username );
-            if ( roles != null )
+            // Since update() is modifying the set we create a copy for the iteration
+            List<String> rolesToRemoveFrom = new ArrayList<>( roles );
+            for ( String roleName : rolesToRemoveFrom )
             {
-                // Since update() is modifying the set we create a copy for the iteration
-                List<String> rolesToRemoveFrom = new ArrayList<>( roles );
-                for ( String roleName : rolesToRemoveFrom )
-                {
-                    RoleRecord role = rolesByName.get( roleName );
-                    RoleRecord newRole = role.augment().withoutUser( username ).build();
-                    update( role, newRole );
-                }
+                RoleRecord role = rolesByName.get( roleName );
+                RoleRecord newRole = role.augment().withoutUser( username ).build();
+                update( role, newRole );
             }
         }
     }
 
     @Override
-    public Set<String> getAllRoleNames()
+    public synchronized Set<String> getAllRoleNames()
     {
         return roles.stream().map( RoleRecord::name ).collect( Collectors.toSet() );
     }

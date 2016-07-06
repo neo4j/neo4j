@@ -93,19 +93,19 @@ public class EnterpriseAuthSubject implements AuthSubject
     @Override
     public boolean allowsReads()
     {
-        return getAccessMode().allowsReads();
+        return shiroSubject.isAuthenticated() && shiroSubject.isPermitted( READ );
     }
 
     @Override
     public boolean allowsWrites()
     {
-        return getAccessMode().allowsWrites();
+        return shiroSubject.isAuthenticated() && shiroSubject.isPermitted( READ_WRITE );
     }
 
     @Override
     public boolean allowsSchemaWrites()
     {
-        return getAccessMode().allowsSchemaWrites();
+        return shiroSubject.isAuthenticated() && shiroSubject.isPermitted( SCHEMA_READ_WRITE );
     }
 
     @Override
@@ -125,25 +125,5 @@ public class EnterpriseAuthSubject implements AuthSubject
     ShiroSubject getShiroSubject()
     {
         return shiroSubject;
-    }
-
-    private AccessMode.Static getAccessMode()
-    {
-        if ( shiroSubject.isAuthenticated() )
-        {
-            if ( shiroSubject.isPermitted( SCHEMA_READ_WRITE ) )
-            {
-                return AccessMode.Static.FULL;
-            }
-            else if ( shiroSubject.isPermitted( READ_WRITE ) )
-            {
-                return AccessMode.Static.WRITE;
-            }
-            else if ( shiroSubject.isPermitted( READ ) )
-            {
-                return AccessMode.Static.READ;
-            }
-        }
-        return AccessMode.Static.NONE;
     }
 }

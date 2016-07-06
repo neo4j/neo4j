@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.neo4j.server.security.auth.exception.FormatException;
 import org.neo4j.string.HexString;
 import org.neo4j.string.UTF8;
 
@@ -31,45 +32,13 @@ import static java.lang.String.format;
 /**
  * Serializes user authorization and authentication data to a format similar to unix passwd files.
  */
-public class UserSerialization
+public class UserSerialization extends FileRepositorySerializer<User>
 {
-    public class FormatException extends Exception
-    {
-        FormatException( String message )
-        {
-            super( message );
-        }
-    }
-
     private static final String userSeparator = ":";
     private static final String credentialSeparator = ",";
 
-    public byte[] serialize(Collection<User> users)
-    {
-        StringBuilder sb = new StringBuilder();
-        for ( User user : users )
-        {
-            sb.append( serialize(user) ).append( "\n" );
-        }
-        return UTF8.encode( sb.toString() );
-    }
-
-    public List<User> deserializeUsers( byte[] bytes ) throws FormatException
-    {
-        List<User> out = new ArrayList<>();
-        int lineNumber = 1;
-        for ( String line : UTF8.decode( bytes ).split( "\n" ) )
-        {
-            if (line.trim().length() > 0)
-            {
-                out.add( deserializeUser( line, lineNumber ) );
-            }
-            lineNumber++;
-        }
-        return out;
-    }
-
-    private String serialize( User user )
+    @Override
+    protected String serialize( User user )
     {
         return String.join( userSeparator,
                 user.name(),
@@ -78,7 +47,8 @@ public class UserSerialization
             );
     }
 
-    private User deserializeUser( String line, int lineNumber ) throws FormatException
+    @Override
+    protected User deserializeRecord( String line, int lineNumber ) throws FormatException
     {
         String[] parts = line.split( userSeparator, -1 );
         if ( parts.length != 3 )

@@ -17,23 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.auth;
+package org.neo4j.server.security.auth.exception;
 
-import java.io.IOException;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-
-import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
-
-/** A user repository implementation that just stores users in memory */
-public class InMemoryUserRepository extends AbstractUserRepository
+public class FormatException extends Exception
 {
-    @Override
-    protected void saveUsers() throws IOException
+    public FormatException( String message )
     {
-        // Nothing to do
+        super( message );
     }
 }

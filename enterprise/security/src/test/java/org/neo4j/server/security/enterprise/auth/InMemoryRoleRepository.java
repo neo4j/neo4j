@@ -25,13 +25,6 @@ import java.io.IOException;
 public class InMemoryRoleRepository extends AbstractRoleRepository
 {
     @Override
-    public boolean isValidRoleName( String roleName )
-    {
-        // This repo can store any name
-        return true;
-    }
-
-    @Override
     protected void saveRoles() throws IOException
     {
         // Nothing to do
