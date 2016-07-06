@@ -325,12 +325,6 @@ class SlaveLocksClient extends Locks.ClientAdapter
         }
     }
 
-    @Override
-    public Locks.Client delegate()
-    {
-        return client;
-    }
-
     private void acquireSharedOnMaster( Locks.ResourceType resourceType, long... resourceIds )
     {
         if ( resourceType == ResourceTypes.NODE
