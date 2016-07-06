@@ -29,7 +29,7 @@ import org.neo4j.procedure.Procedure;
 
 import static org.neo4j.procedure.Procedure.Mode.DBMS;
 
-public class UserProcedures
+public class AuthProcedures
 {
     @Context
     public AuthSubject authSubject;

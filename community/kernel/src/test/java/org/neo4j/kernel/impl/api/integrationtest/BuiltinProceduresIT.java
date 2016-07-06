@@ -190,7 +190,7 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void failWhenCallingNonExistingProcedures() throws Throwable
+    public void failWhenCallingNonExistentProcedures() throws Throwable
     {
         try
         {
