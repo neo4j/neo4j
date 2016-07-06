@@ -55,7 +55,10 @@ import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.kernel.impl.ha.ClusterManager.instanceEvicted;
+import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesMembers;
+import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
 import static org.neo4j.test.ha.ClusterRule.intBase;
 import static org.neo4j.test.ha.ClusterRule.stringWithIntBase;
 
@@ -131,19 +134,21 @@ public class HaBeanIT
     public void testAfterGentleMasterSwitchClusterInfoIsCorrect() throws Throwable
     {
         ManagedCluster cluster = clusterRule.startCluster();
-        RepairKit masterShutdown = cluster.shutdown( cluster.getMaster() );
-        try
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        RepairKit masterShutdown = cluster.shutdown( master );
+
+        cluster.await( masterAvailable( master ) );
+        cluster.await( masterSeesSlavesAsAvailable( 1 ) );
+
+        for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
-            for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
-            {
-                assertEquals( 2, ha( db ).getInstancesInCluster().length );
-            }
+            assertEquals( 2, ha( db ).getInstancesInCluster().length );
         }
-        finally
-        {
-            masterShutdown.repair();
-        }
+
+        masterShutdown.repair();
+
         cluster.await( ClusterManager.allSeesAllAsAvailable() );
+
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
             HighAvailability bean = ha( db );
@@ -178,25 +183,30 @@ public class HaBeanIT
     public void testAfterHardMasterSwitchClusterInfoIsCorrect() throws Throwable
     {
         ManagedCluster cluster = clusterRule.startCluster();
-        RepairKit masterShutdown = cluster.fail( cluster.getMaster() );
-        try
+
+        cluster.await( masterSeesSlavesAsAvailable( 2 ) );
+
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        RepairKit masterShutdown = cluster.fail( master );
+
+        cluster.await( instanceEvicted( master ) );
+
+        for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
-            for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
+            if ( db.getInstanceState() == HighAvailabilityMemberState.PENDING )
             {
-                if ( db.getInstanceState() == HighAvailabilityMemberState.PENDING )
-                {
-                    continue;
-                }
-                // Instance that was hard killed will still be in the cluster
-                assertEquals( 3, ha( db ).getInstancesInCluster().length );
+                continue;
             }
+            // Instance that was hard killed will still be in the cluster
+            assertEquals( 3, ha( db ).getInstancesInCluster().length );
         }
-        finally
-        {
-            masterShutdown.repair();
-        }
+
+        masterShutdown.repair();
+
         cluster.await( ClusterManager.masterAvailable() );
         cluster.await( ClusterManager.allSeesAllAsAvailable() );
+        cluster.await( ClusterManager.masterSeesSlavesAsAvailable( 2 ) );
+
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
             int mastersFound = 0;
@@ -209,7 +219,7 @@ public class HaBeanIT
                         info.isAvailable() );
                 for ( String role : info.getRoles() )
                 {
-                    if (role.equals( HighAvailabilityModeSwitcher.MASTER ))
+                    if ( role.equals( HighAvailabilityModeSwitcher.MASTER ) )
                     {
                         mastersFound++;
                     }
@@ -225,8 +235,6 @@ public class HaBeanIT
         ManagedCluster cluster = clusterRule.startCluster();
         BranchedStore bs = beans( cluster.getMaster() ).getBranchedStoreBean();
         assertNotNull( "could not get branched store bean", bs );
-        assertEquals( "no branched stores for new db", 0,
-                bs.getBranchedStores().length );
     }
 
     @Test
