@@ -28,7 +28,7 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.membership.RaftMembership;
-import org.neo4j.coreedge.raft.outcome.LogCommand;
+import org.neo4j.coreedge.raft.outcome.RaftLogCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.coreedge.raft.state.term.TermState;
@@ -157,7 +157,7 @@ public class RaftState implements ReadableRaftState
         lastLogIndexBeforeWeBecameLeader = outcome.getLastLogIndexBeforeWeBecameLeader();
         followerStates = outcome.getFollowerStates();
 
-        for ( LogCommand logCommand : outcome.getLogCommands() )
+        for ( RaftLogCommand logCommand : outcome.getLogCommands() )
         {
             logCommand.applyTo( entryLog );
             logCommand.applyTo( inFlightMap );

@@ -35,7 +35,7 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.membership.RaftMembership;
 import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
-import org.neo4j.coreedge.raft.outcome.LogCommand;
+import org.neo4j.coreedge.raft.outcome.RaftLogCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.outcome.TruncateLogCommand;
 import org.neo4j.coreedge.raft.state.follower.FollowerState;
@@ -65,7 +65,7 @@ public class RaftStateTest
                 new InMemoryStateStorage<>( new TermState() ), new FakeMembership(), new InMemoryRaftLog(),
                 new InMemoryStateStorage<>( new VoteState() ), cache );
 
-        List<LogCommand> logCommands = new LinkedList<LogCommand>()
+        List<RaftLogCommand> logCommands = new LinkedList<RaftLogCommand>()
         {{
             add( new AppendLogEntry( 1, new RaftLogEntry( 0L, valueOf( 0 ) ) ) );
             add( new AppendLogEntry( 2, new RaftLogEntry( 0L, valueOf( 1 ) ) ) );
@@ -121,7 +121,7 @@ public class RaftStateTest
         return new FollowerStates<>( new FollowerStates<>(), member( 1 ), new FollowerState() );
     }
 
-    private Collection<LogCommand> emptyLogCommands()
+    private Collection<RaftLogCommand> emptyLogCommands()
     {
         return Collections.emptyList();
     }
@@ -141,19 +141,7 @@ public class RaftStateTest
         }
 
         @Override
-        public long logIndex()
-        {
-            return -1;
-        }
-
-        @Override
         public void registerListener( Listener listener )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void deregisterListener( Listener listener )
         {
             throw new UnsupportedOperationException();
         }

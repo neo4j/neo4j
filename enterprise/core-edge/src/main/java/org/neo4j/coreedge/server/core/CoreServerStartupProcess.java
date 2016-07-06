@@ -55,7 +55,6 @@ public class CoreServerStartupProcess
         services.add( catchupServer );
         services.add( raftTimeoutService );
         services.add( new MembershipWaiterLifecycle( membershipWaiter, joinCatchupTimeout, raft, raftServer, logProvider ) );
-
         return services;
     }
 
@@ -68,7 +67,7 @@ public class CoreServerStartupProcess
         private final Log log;
 
         private MembershipWaiterLifecycle( MembershipWaiter membershipWaiter, Long joinCatchupTimeout,
-                                           RaftInstance raft, RaftServer raftServer, LogProvider logProvider )
+                RaftInstance raft, RaftServer raftServer, LogProvider logProvider )
         {
             this.membershipWaiter = membershipWaiter;
             this.joinCatchupTimeout = joinCatchupTimeout;
@@ -86,10 +85,10 @@ public class CoreServerStartupProcess
             {
                 caughtUp.get( joinCatchupTimeout, MILLISECONDS );
             }
-            catch(ExecutionException e)
+            catch ( ExecutionException e )
             {
                 log.error( "Server failed to join cluster", e.getCause() );
-                throw e.getCause() ;
+                throw e.getCause();
             }
             catch ( InterruptedException | TimeoutException e )
             {

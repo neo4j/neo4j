@@ -46,7 +46,6 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.coreedge.TestStoreId.assertAllStoresHaveTheSameStoreId;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
@@ -77,7 +76,8 @@ public class ClusterIdentityIT
     public void allServersShouldHaveTheSameStoreId() throws Throwable
     {
         // WHEN
-        cluster.coreTx( ( db, tx ) -> {
+        cluster.coreTx( ( db, tx ) ->
+        {
             Node node = db.createNode( label( "boo" ) );
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
@@ -95,20 +95,21 @@ public class ClusterIdentityIT
     public void whenWeRestartTheClusterAllServersShouldStillHaveTheSameStoreId() throws Throwable
     {
         // GIVEN
-        cluster.coreTx( ( db, tx ) -> {
+        cluster.coreTx( ( db, tx ) ->
+        {
             Node node = db.createNode( label( "boo" ) );
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
         } );
 
         cluster.shutdown();
-
         // WHEN
         cluster.start();
 
         List<File> coreStoreDirs = storeDirs( cluster.coreServers() );
 
-        cluster.coreTx( ( db, tx ) -> {
+        cluster.coreTx( ( db, tx ) ->
+        {
             Node node = db.createNode( label( "boo" ) );
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
@@ -124,7 +125,8 @@ public class ClusterIdentityIT
     public void shouldNotJoinClusterIfHasDataWithDifferentStoreId() throws Exception
     {
         // GIVEN
-        cluster.coreTx( ( db, tx ) -> {
+        cluster.coreTx( ( db, tx ) ->
+        {
             Node node = db.createNode( label( "boo" ) );
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
@@ -143,7 +145,7 @@ public class ClusterIdentityIT
         }
         catch ( RuntimeException e )
         {
-            assertThat(e.getCause(), instanceOf(LifecycleException.class));
+            assertThat( e.getCause(), instanceOf( LifecycleException.class ) );
         }
     }
 
@@ -151,7 +153,8 @@ public class ClusterIdentityIT
     public void laggingFollowerShouldDownloadSnapshot() throws Exception
     {
         // GIVEN
-        cluster.coreTx( ( db, tx ) -> {
+        cluster.coreTx( ( db, tx ) ->
+        {
             Node node = db.createNode( label( "boo" ) );
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
@@ -183,7 +186,8 @@ public class ClusterIdentityIT
     public void badFollowerShouldNotJoinCluster() throws Exception
     {
         // GIVEN
-        cluster.coreTx( ( db, tx ) -> {
+        cluster.coreTx( ( db, tx ) ->
+        {
             Node node = db.createNode( label( "boo" ) );
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
@@ -208,7 +212,7 @@ public class ClusterIdentityIT
         }
         catch ( RuntimeException e )
         {
-            assertThat(e.getCause(), instanceOf(LifecycleException.class));
+            assertThat( e.getCause(), instanceOf( LifecycleException.class ) );
         }
     }
 
@@ -216,7 +220,8 @@ public class ClusterIdentityIT
     public void aNewServerShouldJoinTheClusterByDownloadingASnapshot() throws Exception
     {
         // GIVEN
-        cluster.coreTx( ( db, tx ) -> {
+        cluster.coreTx( ( db, tx ) ->
+        {
             Node node = db.createNode( label( "boo" ) );
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
@@ -251,7 +256,8 @@ public class ClusterIdentityIT
     {
         for ( int i = 0; i < items; i++ )
         {
-            cluster.coreTx( ( db, tx ) -> {
+            cluster.coreTx( ( db, tx ) ->
+            {
                 Node node = db.createNode( label( "boo" ) );
                 node.setProperty( "foobar", "baz_bat" );
                 tx.success();

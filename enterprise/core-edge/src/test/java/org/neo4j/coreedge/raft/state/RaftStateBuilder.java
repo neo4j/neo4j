@@ -30,7 +30,7 @@ import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.membership.RaftMembership;
-import org.neo4j.coreedge.raft.outcome.LogCommand;
+import org.neo4j.coreedge.raft.outcome.RaftLogCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.coreedge.raft.state.term.TermState;
@@ -129,7 +129,7 @@ public class RaftStateBuilder
                 new RaftState( myself, termStore, membership, entryLog, voteStore, new InFlightMap<>() );
 
         Collection<RaftMessages.Directed> noMessages = Collections.emptyList();
-        List<LogCommand> noLogCommands = Collections.emptyList();
+        List<RaftLogCommand> noLogCommands = Collections.emptyList();
 
         state.update( new Outcome( null, term, leader, leaderCommit, votedFor, votesForMe, lastLogIndexBeforeWeBecameLeader,
                 followerStates, false, noLogCommands, noMessages, Collections.emptySet(), commitIndex ) );
@@ -162,19 +162,7 @@ public class RaftStateBuilder
         }
 
         @Override
-        public long logIndex()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public void registerListener( Listener listener )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void deregisterListener( Listener listener )
         {
             throw new UnsupportedOperationException();
         }

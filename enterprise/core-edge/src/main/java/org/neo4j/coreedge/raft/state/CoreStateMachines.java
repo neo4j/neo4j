@@ -200,7 +200,7 @@ public class CoreStateMachines
         }
     }
 
-    public long getApplyingIndex()
+    long getLastAppliedIndex()
     {
         long lastAppliedTxIndex = replicatedTxStateMachine.lastAppliedIndex();
         assert lastAppliedTxIndex == labelTokenStateMachine.lastAppliedIndex();

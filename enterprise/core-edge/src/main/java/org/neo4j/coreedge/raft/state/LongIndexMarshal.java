@@ -48,7 +48,7 @@ public class LongIndexMarshal extends SafeStateMarshal<Long>
     }
 
     @Override
-    protected Long unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
+    protected Long unmarshal0( ReadableChannel channel ) throws IOException
     {
         return channel.getLong();
     }

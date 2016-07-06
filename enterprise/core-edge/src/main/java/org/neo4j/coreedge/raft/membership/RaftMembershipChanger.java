@@ -26,7 +26,6 @@ import java.util.Set;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
-import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -59,7 +58,7 @@ import static java.lang.String.format;
  *
  * Only a single member change is handled at a time.
  */
-class RaftMembershipStateMachine
+class RaftMembershipChanger
 {
     private final Log log;
     public RaftMembershipStateMachineEventHandler state = new Inactive();
@@ -68,22 +67,19 @@ class RaftMembershipStateMachine
     private final Clock clock;
     private final long electionTimeout;
 
-    private final MembershipDriver membershipDriver;
+    private final RaftMembershipManager membershipManager;
     private long catchupTimeout;
-    private final RaftMembershipState membershipState;
 
     private CoreMember catchingUpMember;
 
-    RaftMembershipStateMachine( ReadableRaftLog raftLog, Clock clock, long electionTimeout,
-                                MembershipDriver membershipDriver, LogProvider logProvider,
-                                long catchupTimeout, RaftMembershipState membershipState )
+    RaftMembershipChanger( ReadableRaftLog raftLog, Clock clock, long electionTimeout,
+            LogProvider logProvider, long catchupTimeout, RaftMembershipManager membershipManager )
     {
         this.raftLog = raftLog;
         this.clock = clock;
         this.electionTimeout = electionTimeout;
-        this.membershipDriver = membershipDriver;
         this.catchupTimeout = catchupTimeout;
-        this.membershipState = membershipState;
+        this.membershipManager = membershipManager;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -98,7 +94,7 @@ class RaftMembershipStateMachine
             newState.onEntry();
 
             log.info( newState.toString() );
-            membershipDriver.stateChanged();
+            membershipManager.stateChanged();
         }
     }
 
@@ -139,7 +135,7 @@ class RaftMembershipStateMachine
         {
             if ( role == Role.LEADER )
             {
-                if ( membershipDriver.uncommittedMemberChangeInLog() )
+                if ( membershipManager.uncommittedMemberChangeInLog() )
                 {
                     return new ConsensusInProgress();
                 }
@@ -185,9 +181,9 @@ class RaftMembershipStateMachine
         @Override
         public RaftMembershipStateMachineEventHandler onSuperfluousMember( CoreMember member )
         {
-            Set<CoreMember> updatedVotingMembers = new HashSet<>( membershipState.votingMembers() );
+            Set<CoreMember> updatedVotingMembers = new HashSet<>( membershipManager.votingMembers() );
             updatedVotingMembers.remove( member );
-            membershipDriver.doConsensus( updatedVotingMembers );
+            membershipManager.doConsensus( updatedVotingMembers );
 
             return new ConsensusInProgress();
         }
@@ -213,16 +209,16 @@ class RaftMembershipStateMachine
         @Override
         public void onEntry()
         {
-            membershipState.addAdditionalReplicationMember( catchingUpMember );
+            membershipManager.addAdditionalReplicationMember( catchingUpMember );
             log.info( "Adding replication member: " + catchingUpMember );
         }
 
         @Override
         public void onExit()
         {
-            if( !movingToConsensus )
+            if ( !movingToConsensus )
             {
-                membershipState.removeAdditionalReplicationMember( catchingUpMember );
+                membershipManager.removeAdditionalReplicationMember( catchingUpMember );
                 log.info( "Removing replication member: " + catchingUpMember );
             }
         }
@@ -249,9 +245,9 @@ class RaftMembershipStateMachine
             {
                 if ( catchupGoalTracker.isGoalAchieved() )
                 {
-                    Set<CoreMember> updatedVotingMembers = new HashSet<>( membershipState.votingMembers() );
+                    Set<CoreMember> updatedVotingMembers = new HashSet<>( membershipManager.votingMembers() );
                     updatedVotingMembers.add( catchingUpMember );
-                    membershipDriver.doConsensus( updatedVotingMembers );
+                    membershipManager.doConsensus( updatedVotingMembers );
 
                     movingToConsensus = true;
                     return new ConsensusInProgress();
@@ -301,7 +297,7 @@ class RaftMembershipStateMachine
         @Override
         public void onExit()
         {
-            membershipState.removeAdditionalReplicationMember( catchingUpMember );
+            membershipManager.removeAdditionalReplicationMember( catchingUpMember );
             log.info( "Removing replication member: " + catchingUpMember );
         }
 

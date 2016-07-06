@@ -38,8 +38,8 @@ public class LastCommittedIndexFinder
     private final LogicalTransactionStore transactionStore;
     private final Log log;
 
-    public LastCommittedIndexFinder( TransactionIdStore transactionIdStore, LogicalTransactionStore transactionStore,
-                                     LogProvider logProvider )
+    public LastCommittedIndexFinder( TransactionIdStore transactionIdStore,
+            LogicalTransactionStore transactionStore, LogProvider logProvider )
     {
         this.transactionIdStore = transactionIdStore;
         this.transactionStore = transactionStore;

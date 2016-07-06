@@ -312,7 +312,6 @@ public class RaftInstance implements LeaderLocator,
             handleTimers( outcome );
             handleLogShipping( outcome );
 
-            membershipManager.processLog( outcome.getCommitIndex(), outcome.getLogCommands() );
             driveMembership( outcome );
 
             volatileLeader.set( outcome.getLeader() );
@@ -334,8 +333,10 @@ public class RaftInstance implements LeaderLocator,
         }
     }
 
-    private void driveMembership( Outcome outcome )
+    private void driveMembership( Outcome outcome ) throws IOException
     {
+        membershipManager.processLog( outcome.getCommitIndex(), outcome.getLogCommands() );
+
         currentRole = outcome.getRole();
         membershipManager.onRole( currentRole );
 

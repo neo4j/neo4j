@@ -49,7 +49,7 @@ public class Outcome implements Message
 
     private long leaderCommit;
 
-    private Collection<LogCommand> logCommands = new ArrayList<>();
+    private Collection<RaftLogCommand> logCommands = new ArrayList<>();
     private Collection<RaftMessages.Directed> outgoingMessages = new ArrayList<>();
 
     private long commitIndex;
@@ -77,7 +77,7 @@ public class Outcome implements Message
     public Outcome( Role nextRole, long term, CoreMember leader, long leaderCommit, CoreMember votedFor,
                     Set<CoreMember> votesForMe, long lastLogIndexBeforeWeBecameLeader,
                     FollowerStates<CoreMember> followerStates, boolean renewElectionTimeout,
-                    Collection<LogCommand> logCommands, Collection<RaftMessages.Directed> outgoingMessages,
+                    Collection<RaftLogCommand> logCommands, Collection<RaftMessages.Directed> outgoingMessages,
                     Collection<ShipCommand> shipCommands, long commitIndex )
     {
         this.nextRole = nextRole;
@@ -137,7 +137,7 @@ public class Outcome implements Message
         this.leaderCommit = leaderCommit;
     }
 
-    public void addLogCommand( LogCommand logCommand )
+    public void addLogCommand( RaftLogCommand logCommand )
     {
         this.logCommands.add( logCommand );
     }
@@ -236,7 +236,7 @@ public class Outcome implements Message
         return leaderCommit;
     }
 
-    public Collection<LogCommand> getLogCommands()
+    public Collection<RaftLogCommand> getLogCommands()
     {
         return logCommands;
     }

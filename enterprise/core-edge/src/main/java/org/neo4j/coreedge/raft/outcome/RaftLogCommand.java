@@ -25,8 +25,16 @@ import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 
-public interface LogCommand
+public interface RaftLogCommand
 {
+    interface Handler
+    {
+        void append( long baseIndex, RaftLogEntry... entries ) throws IOException;
+        void truncate( long fromIndex ) throws IOException;
+    }
+
+    void dispatch( Handler handler ) throws IOException;
+
     void applyTo( RaftLog raftLog ) throws IOException;
 
     void applyTo( InFlightMap<Long,RaftLogEntry> inFlightMap ) throws IOException;

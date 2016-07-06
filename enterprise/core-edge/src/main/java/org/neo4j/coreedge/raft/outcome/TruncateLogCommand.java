@@ -26,13 +26,19 @@ import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 
-public class TruncateLogCommand implements LogCommand
+public class TruncateLogCommand implements RaftLogCommand
 {
     public final long fromIndex;
 
     public TruncateLogCommand( long fromIndex )
     {
         this.fromIndex = fromIndex;
+    }
+
+    @Override
+    public void dispatch( Handler handler ) throws IOException
+    {
+        handler.truncate( fromIndex );
     }
 
     @Override
