@@ -108,8 +108,14 @@ import static org.neo4j.io.fs.FileUtils.copyRecursively;
 public class ClusterManager
         extends LifecycleAdapter
 {
-    private static final int CLUSTER_MIN_PORT = 30_000;
-    private static final int CLUSTER_MAX_PORT = 40_000;
+    /*
+     * The following ports are used by cluster instances to setup listening sockets. It is important that the range
+     * used remains below 30000, since that is where the ephemeral ports start in some linux kernels. If they are
+     * used, they can conflict with ephemeral sockets and result in address already in use errors, resulting in
+     * false failures.
+     */
+    private static final int CLUSTER_MIN_PORT = 11_000;
+    private static final int CLUSTER_MAX_PORT = 21_000;
     private static final int HA_MIN_PORT = CLUSTER_MAX_PORT + 1;
     private static final int HA_MAX_PORT = HA_MIN_PORT + 10_000;
 
