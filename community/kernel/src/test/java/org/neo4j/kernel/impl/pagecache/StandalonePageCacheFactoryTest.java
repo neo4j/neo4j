@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.pagecache;
 
 import com.google.common.jimfs.Jimfs;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -31,15 +30,11 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertTrue;
 
 public class StandalonePageCacheFactoryTest
 {
-    @Rule
-    public final TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
-
     @Test( timeout = 10000 )
     public void mustAutomaticallyStartEvictionThread() throws IOException
     {
