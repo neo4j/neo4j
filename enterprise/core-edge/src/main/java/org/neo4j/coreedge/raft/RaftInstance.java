@@ -263,11 +263,11 @@ public class RaftInstance implements LeaderLocator,
         LeaderContext leaderContext = new LeaderContext( outcome.getTerm(), outcome.getLeaderCommit() );
         if ( outcome.isElectedLeader() )
         {
-            logShipping.start( leaderContext );
+            logShipping.resume( leaderContext );
         }
         else if ( outcome.isSteppingDown() )
         {
-            logShipping.stop();
+            logShipping.pause();
         }
 
         if ( outcome.getRole() == LEADER )

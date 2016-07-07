@@ -575,6 +575,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
                         myself, raftMembershipManager, electionTimeout,
                         config.get( CoreEdgeClusterSettings.catchup_batch_size ),
                         config.get( CoreEdgeClusterSettings.log_shipping_max_lag ), inFlightMap );
+        life.add( logShipping );
 
         RaftInstance raftInstance =
                 new RaftInstance( myself, termState, voteState, raftLog, raftStateMachine, electionTimeout,
@@ -592,15 +593,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
         loggingRaftInbound.registerHandler( batchingMessageHandler );
 
         life.add( new RaftDiscoveryServiceConnector( discoveryService, raftInstance ) );
-
-        life.add( new LifecycleAdapter()
-        {
-            @Override
-            public void shutdown() throws Throwable
-            {
-                logShipping.destroy();
-            }
-        } );
 
         return raftInstance;
     }
