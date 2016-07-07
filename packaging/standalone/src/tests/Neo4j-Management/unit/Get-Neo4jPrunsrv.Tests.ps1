@@ -123,5 +123,29 @@ InModuleScope Neo4j-Management {
         $jvmArgs | Should Match ([regex]::Escape('-Xloggc:'))
       }
     }
+
+    Context "Server Invoke - JVM Memory Settings" {
+      $mockJvmMs = 130
+      $mockJvmMx = 140
+
+      # Create a mock configuration with JVM settings set
+      $serverObject = global:New-MockNeo4jInstall -ServerVersion '3.0' -ServerType 'Community' `
+        -NeoWrapperConfSettings "dbms.memory.heap.initial_size=$mockJvmMs","dbms.memory.heap.max_size=$mockJvmMx"
+
+      $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $serverObject -ForServerInstall
+      $prunArgs = ($prunsrv.args -join ' ')
+
+      # Reference
+      # http://commons.apache.org/proper/commons-daemon/procrun.html
+
+      It "should specify --JvmMs if dbms.memory.heap.initial_size is set" {
+        $prunArgs | Should Match ([regex]::Escape("--JvmMs $mockJvmMs"))
+      }
+
+      It "should specify --JvmMx if dbms.memory.heap.max_size is set" {
+        $prunArgs | Should Match ([regex]::Escape("--JvmMx $mockJvmMx"))
+      }
+    }
+
   }
 }

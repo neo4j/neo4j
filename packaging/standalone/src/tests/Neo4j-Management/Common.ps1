@@ -39,7 +39,8 @@ Function global:New-MockNeo4jInstall(
   $ServerVersion = '0.0',
   $DatabaseMode = '',
   $WindowsService = $global:mockServiceName,
-  $NeoConfSettings = @()
+  $NeoConfSettings = @(),
+  $NeoWrapperConfSettings = @()
   ) {
   # Creates a skeleton directory and file structure of a Neo4j Installation
   $RootDir = $global:mockNeo4jHome
@@ -69,8 +70,8 @@ Function global:New-MockNeo4jInstall(
     $neoConf | Out-File -FilePath "$RootDir\conf\neo4j.conf"
 
     # Create fake neo4j-wrapper.conf
-    $neoConf = ''
-    if ([string]$WindowsService -ne '') { $neoConf += "dbms.windows_service_name=$WindowsService`n`r" }
+    $neoConf = $NeoWrapperConfSettings -join "`n`r"
+    if ([string]$WindowsService -ne '') { $neoConf += "`n`rdbms.windows_service_name=$WindowsService" }
     $neoConf | Out-File -FilePath "$RootDir\conf\neo4j-wrapper.conf"
   }
   

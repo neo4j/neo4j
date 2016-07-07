@@ -125,6 +125,22 @@ Function Get-Neo4jPrunsrv
           '--Startup=auto'
         )
 
+        # Check if Java invocation includes Java memory sizing
+        $JvmMs = ''
+        $JvmMx = ''
+        $JavaCMD.args | ForEach-Object -Process {
+          if ($Matches -ne $null) { $Matches.Clear() }
+          if ($_ -match '^-Xms([\d]+)m$') {
+            $PrunArgs += "--JvmMs $($matches[1])"
+            Write-Verbose "Use JVM Start Memory of $($matches[1]) MB"
+          }
+          if ($Matches -ne $null) { $Matches.Clear() }
+          if ($_ -match '^-Xmx([\d]+)m$') {
+            $PrunArgs += "--JvmMx $($matches[1])"
+            Write-Verbose "Use JVM Max Memory of $($matches[1]) MB"
+          }
+        }
+
         if ($Neo4jServer.ServerType -eq 'Enterprise') { $serverMainClass = 'org.neo4j.server.enterprise.EnterpriseEntryPoint' }
         if ($Neo4jServer.ServerType -eq 'Community') { $serverMainClass = 'org.neo4j.server.CommunityEntryPoint' }
         if ($Neo4jServer.DatabaseMode.ToUpper() -eq 'ARBITER') { $serverMainClass = 'org.neo4j.server.enterprise.ArbiterEntryPoint' }
