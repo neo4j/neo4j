@@ -27,7 +27,6 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ServerSettings;
@@ -35,6 +34,7 @@ import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.server.HTTP;
 
+import static java.lang.System.lineSeparator;
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -186,8 +186,9 @@ public class FixturesTest
         }
         catch(RuntimeException e)
         {
-            assertThat(e.getMessage(), equalTo("Invalid input 't': expected <init> " +
-                    "(line 1, column 1 (offset: 0))\n\"this is not a valid cypher statement\"\n ^"));
+            assertThat( e.getMessage(), equalTo(
+                    "Invalid input 't': expected <init> (line 1, column 1 (offset: 0))" + lineSeparator() +
+                    "\"this is not a valid cypher statement\"" + lineSeparator() + " ^" ) );
         }
     }
 
