@@ -57,14 +57,19 @@ public class LegacyLogsTest
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final LegacyLogEntryReader reader = mock( LegacyLogEntryReader.class );
     private final LegacyLogEntryWriter writer = mock( LegacyLogEntryWriter.class );
-    private File storeDir;
-    private File migrationDir;
+    private final File storeDir = getRootFile( "/store" );
+    private final File migrationDir = getRootFile( "/migration" );
 
-    @Before
-    public void setupFiles() throws IOException
+    private static File getRootFile( String pathname )
     {
-        storeDir = new File( "/store" ).getCanonicalFile();
-        migrationDir = new File( "/migration" ).getCanonicalFile();
+        try
+        {
+            return new File( pathname ).getCanonicalFile();
+        }
+        catch ( IOException e )
+        {
+            throw new AssertionError( e );
+        }
     }
 
     @Test
