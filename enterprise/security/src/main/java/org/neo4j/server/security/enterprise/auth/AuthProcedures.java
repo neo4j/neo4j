@@ -29,9 +29,10 @@ import java.util.stream.Stream;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.Status;
 
+import org.neo4j.kernel.api.bolt.KillableUserSession;
 import org.neo4j.kernel.api.bolt.SessionManager;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.impl.api.KernelTransactions;
@@ -228,9 +229,34 @@ public class AuthProcedures
         SessionManager sessionManager = getSessionManager();
         return countSessionByUsername(
                 sessionManager.getActiveSessions().stream()
-                        .filter( session -> true ) //!session.shouldBeHalted() )
-                        .map( session -> session.username() )
+                        .filter( session -> !session.willBeTerminated() )
+                        .map( KillableUserSession::username )
                 );
+    }
+
+    @Procedure( name = "dbms.terminateSessionsForUser", mode = DBMS )
+    public Stream<SessionResult> terminateSessionsForUser( @Name( "username" ) String username )
+            throws InvalidArgumentsException
+    {
+        EnterpriseAuthSubject subject = EnterpriseAuthSubject.castOrFail( authSubject );
+        if ( !subject.isAdmin() && !subject.doesUsernameMatch( username ) )
+        {
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
+        }
+
+        subject.getUserManager().getUser( username );
+
+        Long killCount = 0L;
+        for ( KillableUserSession session : getSessionManager().getActiveSessions() )
+        {
+            if ( session.username().equals( username ) )
+            {
+                session.markForTermination( Status.Session.SessionTerminated,
+                        Status.Session.SessionTerminated.code().description() );
+                killCount += 1;
+            }
+        }
+        return Stream.of( new SessionResult( username, killCount ) );
     }
 
     // ----------------- helpers ---------------------

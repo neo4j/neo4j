@@ -425,7 +425,14 @@ public class SessionStateMachine implements Session, SessionState
                     @Override
                     protected State onNoImplementation( SessionStateMachine ctx, String command )
                     {
-                        ctx.ignored();
+                        if ( ctx.willBeTerminated() )
+                        {
+                            ctx.error( ctx.terminationMark.explanation() );
+                        }
+                        else
+                        {
+                            ctx.ignored();
+                        }
                         return STOPPED;
                     }
                 };
@@ -626,6 +633,12 @@ public class SessionStateMachine implements Session, SessionState
      */
     private final AtomicInteger interruptCounter = new AtomicInteger();
 
+    /**
+     * This is set when {@link #markForTermination(Status, String)} is called.
+     * When this is true, all messages will be ignored, and the session stopped.
+     */
+    protected final TerminationMark terminationMark = new TerminationMark();
+
     /** The current session state */
     private State state = State.UNINITIALIZED;
 
@@ -823,17 +836,35 @@ public class SessionStateMachine implements Session, SessionState
         }
     }
 
+    @Override
+    public void markForTermination( Status status, String message )
+    {
+        // NOTE: This is a side-channel method call. You *cannot*
+        //       mutate any of the regular state in the state machine
+        //       from inside this method, it WILL lead to race conditions.
+        //       Imagine this is always called from a separate thread, while
+        //       the main session worker thread is actively working on mutating
+        //       fields on the session.
+        terminationMark.setMark( new Neo4jError( status, message ) );
+
+        // If there is currently a transaction running, terminate it
+        KernelTransaction tx = this.currentTransaction;
+        if(tx != null)
+        {
+            tx.markForTermination();
+        }
+    }
+
+    @Override
+    public boolean willBeTerminated()
+    {
+        return terminationMark.get();
+    }
 
     @Override
     public String username()
     {
         return authSubject.name();
-    }
-
-    @Override
-    public void markForTermination()
-    {
-
     }
 
     @Override
@@ -911,7 +942,11 @@ public class SessionStateMachine implements Session, SessionState
             cb.started( attachment );
         }
 
-        if( interruptCounter.get() > 0 )
+        if ( terminationMark.get() )
+        {
+            state = state.halt( this );
+        }
+        else if ( interruptCounter.get() > 0 )
         {
             // Force into interrupted state. This is how we 'discover'
             // that `interrupt` has been called.

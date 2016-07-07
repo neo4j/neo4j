@@ -25,13 +25,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.neo4j.bolt.v1.runtime.Session;
+import org.neo4j.kernel.api.bolt.KillableUserSession;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 
 /**
  * Executes incoming session commands on a specified session.
  */
-public class SessionWorker implements Runnable
+public class SessionWorker implements Runnable, KillableUserSession
 {
     /** Poison pill for closing the session and shutting down the worker */
     public static final Consumer<Session> SHUTDOWN = session1 -> {};
@@ -132,8 +134,14 @@ public class SessionWorker implements Runnable
         return session.username();
     }
 
-    public void markForTermination()
+    public void markForTermination( Status status, String message )
     {
-        session.markForTermination();
+        session.markForTermination( status, message );
+    }
+
+    @Override
+    public boolean willBeTerminated()
+    {
+        return session.willBeTerminated();
     }
 }

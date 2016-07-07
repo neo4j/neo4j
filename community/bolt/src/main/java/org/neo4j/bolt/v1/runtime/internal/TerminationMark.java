@@ -17,36 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.bolt;
+package org.neo4j.bolt.v1.runtime.internal;
 
-import org.neo4j.kernel.api.exceptions.Status;
-
-public interface KillableUserSession
+public class TerminationMark
 {
-    String username();
+    private boolean mark = false;
+    private Neo4jError explanation;
 
-    void markForTermination( Status status, String message );
-
-    boolean willBeTerminated();
-
-    class Adapter implements KillableUserSession
+    public synchronized void setMark( Neo4jError explanation )
     {
-        @Override
-        public String username()
-        {
-            return "KillableUserSession.Adapter";
-        }
+        mark = true;
+        this.explanation = explanation;
+    }
 
-        @Override
-        public void markForTermination( Status status, String message )
-        {
+    public synchronized boolean get()
+    {
+        return mark;
+    }
 
-        }
-
-        @Override
-        public boolean willBeTerminated()
-        {
-            return false;
-        }
+    public synchronized Neo4jError explanation()
+    {
+        return explanation;
     }
 }

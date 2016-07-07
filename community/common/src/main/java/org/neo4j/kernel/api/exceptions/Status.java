@@ -417,6 +417,24 @@ public interface Status
         }
     }
 
+    enum Session implements Status
+    {
+        SessionTerminated( ClientError, "The session has been terminated by the server." );
+
+        private final Code code;
+
+        @Override
+        public Code code()
+        {
+            return code;
+        }
+
+        Session( Classification classification, String description )
+        {
+            this.code = new Code( classification, this, description );
+        }
+    }
+
     enum General implements Status
     {
         // client errors
