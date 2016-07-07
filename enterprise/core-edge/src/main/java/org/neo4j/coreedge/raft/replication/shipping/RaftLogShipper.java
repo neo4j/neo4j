@@ -169,7 +169,7 @@ public class RaftLogShipper
         }
         catch ( Throwable e )
         {
-            log.error( "Failed to start log shipper " + statusAsString(), e );
+            log.error( "Failed to stop log shipper " + statusAsString(), e );
         }
         abortTimeout();
     }

@@ -109,7 +109,7 @@ public class Fixture
         }
         for ( RaftInstance raft : rafts )
         {
-            raft.logShippingManager().destroy();
+            raft.logShippingManager().stop();
         }
     }
 }

@@ -25,8 +25,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.LeaderContext;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
@@ -36,11 +34,12 @@ import org.neo4j.coreedge.raft.membership.RaftMembership;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.outcome.ShipCommand;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 
-public class RaftLogShippingManager implements RaftMembership.Listener
+public class RaftLogShippingManager extends LifecycleAdapter implements RaftMembership.Listener
 {
     private final Outbound<CoreMember, RaftMessages.RaftMessage> outbound;
     private final LogProvider logProvider;
@@ -58,7 +57,7 @@ public class RaftLogShippingManager implements RaftMembership.Listener
     private LeaderContext lastLeaderContext;
 
     private boolean running;
-    private boolean destroyed = false;
+    private boolean stopped = false;
 
     public RaftLogShippingManager( Outbound<CoreMember,RaftMessages.RaftMessage> outbound, LogProvider logProvider,
                                    ReadableRaftLog raftLog,
@@ -79,9 +78,23 @@ public class RaftLogShippingManager implements RaftMembership.Listener
         membership.registerListener( this );
     }
 
-    public synchronized void start( LeaderContext initialLeaderContext )
+    /**
+     * Paused when stepping down from leader role.
+     */
+    public synchronized void pause()
     {
-        if( destroyed )
+        running = false;
+
+        logShippers.values().forEach( RaftLogShipper::stop );
+        logShippers.clear();
+    }
+
+    /**
+     * Resumed when becoming leader.
+     */
+    public synchronized void resume( LeaderContext initialLeaderContext )
+    {
+        if( stopped )
         {
             return;
         }
@@ -96,18 +109,11 @@ public class RaftLogShippingManager implements RaftMembership.Listener
         lastLeaderContext = initialLeaderContext;
     }
 
-    public synchronized void destroy()
-    {
-        stop();
-        destroyed = true;
-    }
-
+    @Override
     public synchronized void stop()
     {
-        running = false;
-
-        logShippers.values().forEach( RaftLogShipper::stop );
-        logShippers.clear();
+        pause();
+        stopped = true;
     }
 
     private RaftLogShipper ensureLogShipperRunning( CoreMember member, LeaderContext leaderContext )
