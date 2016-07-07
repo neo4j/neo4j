@@ -39,7 +39,7 @@ public class StandalonePageCacheFactoryTest
     public void mustAutomaticallyStartEvictionThread() throws IOException
     {
         FileSystemAbstraction fs = new DelegateFileSystemAbstraction( Jimfs.newFileSystem() );
-        File file = new File( "/a" );
+        File file = new File( "/a" ).getCanonicalFile();
         fs.create( file );
 
         try ( PageCache cache = StandalonePageCacheFactory.createPageCache( fs );
