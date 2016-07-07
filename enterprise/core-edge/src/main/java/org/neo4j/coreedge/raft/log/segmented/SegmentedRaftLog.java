@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Clock;
 
-import org.neo4j.coreedge.helper.StatUtil;
 import org.neo4j.coreedge.raft.log.EntryRecord;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogCursor;
@@ -73,8 +72,6 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
     private State state;
     private final ReaderPool readerPool;
 
-    private final StatUtil.StatContext scanStats; // this is temporary, for debugging purposes
-
     public SegmentedRaftLog( FileSystemAbstraction fileSystem, File directory, long rotateAtSize,
             ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider,
             String pruningConfig, int readerPoolSize, Clock clock )
@@ -85,7 +82,6 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
         this.contentMarshal = contentMarshal;
         this.logProvider = logProvider;
 
-        this.scanStats = null; // StatUtil.create( "linear scans", logProvider.getLog( getClass() ), 10_000, true );
         this.fileNames = new FileNames( directory );
         this.readerPool = new ReaderPool( readerPoolSize, logProvider, fileNames, fileSystem, clock );
         this.pruner = new SegmentedRaftLogPruner( pruningConfig, logProvider );
@@ -100,7 +96,7 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
             throw new IOException( "Could not create: " + directory );
         }
 
-        RecoveryProtocol recoveryProtocol = new RecoveryProtocol( fileSystem, fileNames, readerPool, contentMarshal, logProvider, scanStats );
+        RecoveryProtocol recoveryProtocol = new RecoveryProtocol( fileSystem, fileNames, readerPool, contentMarshal, logProvider );
         state = recoveryProtocol.run();
         log.info( "log started with recovered state %s", state );
     }

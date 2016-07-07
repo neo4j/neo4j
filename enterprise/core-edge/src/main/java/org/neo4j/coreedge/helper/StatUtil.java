@@ -22,41 +22,32 @@ package org.neo4j.coreedge.helper;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 
-import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.NullLogProvider;
 
 import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.neo4j.logging.FormattedLogProvider.toOutputStream;
 
 @SuppressWarnings( "unused" ) // for easy debugging, leave it
 public class StatUtil
 {
-    private static class StatPrinterService extends ScheduledThreadPoolExecutor
-    {
-        private static final StatPrinterService INSTANCE = new StatPrinterService();
-
-        private StatPrinterService()
-        {
-            super( 1, new NamedThreadFactory( "stat-printer" , Thread.NORM_PRIORITY, true ) );
-            super.setRemoveOnCancelPolicy( true );
-        }
-    }
-
     public static class StatContext
     {
         private static final int N_BUCKETS = 10; // values >= Math.pow( 10, N_BUCKETS-1 ) all go into the last bucket
 
-        private String name;
+        private final String name;
+        private final Log log;
+        private final long printEvery;
+        private final boolean clearAfterPrint;
         private BasicStats[] bucket = new BasicStats[N_BUCKETS];
         private long totalCount;
 
-        private StatContext( String name, Log log )
+        private StatContext( String name, Log log, long printEvery, boolean clearAfterPrint )
         {
             this.name = name;
+            this.log = log;
+            this.printEvery = printEvery;
+            this.clearAfterPrint = clearAfterPrint;
             clear();
         }
 
@@ -77,6 +68,11 @@ public class StatUtil
             {
                 totalCount++;
                 bucket[bucketIndex].collect( value );
+
+                if ( totalCount % printEvery == 0 )
+                {
+                    log.info( getText( clearAfterPrint ) );
+                }
             }
         }
 
@@ -134,48 +130,16 @@ public class StatUtil
         }
     }
 
-    public static StatContext create( String name )
-    {
-        return new StatContext( name, NullLogProvider.getInstance().getLog( name ) );
-    }
-
     private static Map<String,ScheduledFuture> printingJobs = new HashMap<>();
 
-    public static synchronized StatContext create( String name, long printEveryMs )
+    public static synchronized StatContext create( String name, long printEvery, boolean clearAfterPrint )
     {
-        return create( name, FormattedLogProvider.toOutputStream( System.out ).getLog( name ), printEveryMs, false, false );
+        return create( name, toOutputStream( System.out ).getLog( name ), printEvery, clearAfterPrint );
     }
 
-    public static synchronized StatContext create( String name, Log log, long printEveryMs, boolean clearAfterPrint, boolean ensureUnique )
+    public static synchronized StatContext create( String name, Log log, long printEvery, boolean clearAfterPrint )
     {
-        StatContext statContext = new StatContext( name, log );
-        ScheduledFuture job = null;
-
-        if ( ensureUnique )
-        {
-            job = printingJobs.remove( name );
-        }
-
-        if ( job != null )
-        {
-            job.cancel( true );
-            log.warn( "Replacing printer for: " + name );
-        }
-
-        job = StatPrinterService.INSTANCE.scheduleAtFixedRate( () -> {
-            if ( statContext.totalCount() > 0 )
-            {
-                String data = statContext.getText( clearAfterPrint );
-                log.info( "%s%s", name, data );
-            }
-        }, printEveryMs, printEveryMs, MILLISECONDS );
-
-        if ( ensureUnique )
-        {
-            printingJobs.put( name, job );
-        }
-
-        return statContext;
+        return new StatContext( name, log, printEvery, clearAfterPrint );
     }
 
     public static class TimingContext
