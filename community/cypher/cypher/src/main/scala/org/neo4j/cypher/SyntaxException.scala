@@ -32,7 +32,7 @@ class SyntaxException(message: String, val query:String,  val offset: Option[Int
   override def toString = offset match {
     case Some(idx) =>
       //split can be empty if query = '\n'
-      val split = query.split(lineSeparator()).toList
+      val split = query.split("\r?\n").toList
       message + lineSeparator() + findErrorLine(idx, if (split.nonEmpty) split else List(""))
     case None => message
   }
