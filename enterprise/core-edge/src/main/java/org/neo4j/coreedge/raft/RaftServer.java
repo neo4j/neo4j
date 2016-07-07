@@ -38,34 +38,30 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.raft.membership.MembershipWaiter;
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.net.codecs.RaftMessageDecoder;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.server.ListenSocketAddress;
-import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.coreedge.server.logging.ExceptionLoggingHandler;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
-import org.neo4j.kernel.impl.store.StoreFailureException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 
-public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages.RaftMessage>
+public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages.StoreIdAwareMessage>
 {
     private final ListenSocketAddress listenAddress;
     private final LocalDatabase localDatabase;
     private final RaftStateMachine raftStateMachine;
     private final Log log;
     private final ChannelMarshal<ReplicatedContent> marshal;
-    private MessageHandler<RaftMessages.RaftMessage> messageHandler;
+    private MessageHandler<RaftMessages.StoreIdAwareMessage> messageHandler;
     private EventLoopGroup workerGroup;
     private Channel channel;
-    private final List<MismatchedStoreListener> listeners = new ArrayList<>();
+    private final List<BatchingMessageHandler.MismatchedStoreListener> listeners = new ArrayList<>();
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "raft-server" );
 
@@ -134,14 +130,9 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
     }
 
     @Override
-    public void registerHandler( Inbound.MessageHandler<RaftMessages.RaftMessage> handler )
+    public void registerHandler( Inbound.MessageHandler<RaftMessages.StoreIdAwareMessage> handler )
     {
         this.messageHandler = handler;
-    }
-
-    public void addMismatchedStoreListener( MismatchedStoreListener listener )
-    {
-        listeners.add( listener );
     }
 
     private class RaftMessageHandler extends SimpleChannelInboundHandler<RaftMessages.StoreIdAwareMessage>
@@ -152,29 +143,7 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
         {
             try
             {
-                RaftMessages.RaftMessage message = storeIdAwareMessage.message();
-                StoreId storeId = storeIdAwareMessage.storeId();
-
-                if ( storeId.equals( localDatabase.storeId() ) )
-                {
-                    messageHandler.handle( message );
-                }
-                else
-                {
-                    if ( localDatabase.isEmpty() )
-                    {
-                        raftStateMachine.downloadSnapshot( message.from() );
-                    }
-                    else
-                    {
-                        log.info( "Discarding message owing to mismatched storeId and non-empty store. Expected: %s, " +
-                                "Encountered: %s", storeId, localDatabase.storeId() );
-                        listeners.forEach( l -> {
-                            MismatchedStoreIdException ex = new MismatchedStoreIdException( storeId, localDatabase.storeId() );
-                            l.onMismatchedStore( ex );
-                        } );
-                    }
-                }
+                messageHandler.handle( storeIdAwareMessage );
             }
             catch ( Exception e )
             {
@@ -183,16 +152,4 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
         }
     }
 
-    public interface MismatchedStoreListener
-    {
-        void onMismatchedStore(MismatchedStoreIdException ex);
-    }
-
-    public class MismatchedStoreIdException extends StoreFailureException
-    {
-        public MismatchedStoreIdException( StoreId expected, StoreId encountered )
-        {
-            super( "Expected:" + expected + ", encountered:" + encountered );
-        }
-    }
 }

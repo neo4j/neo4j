@@ -17,17 +17,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.net;
+package org.neo4j.coreedge.raft;
 
-import org.neo4j.coreedge.network.Message;
-import org.neo4j.coreedge.raft.BatchingMessageHandler;
+import org.neo4j.coreedge.server.StoreId;
+import org.neo4j.kernel.impl.store.StoreFailureException;
 
-public interface Inbound<M extends Message>
+public interface MismatchedStoreIdService
 {
-    void registerHandler( MessageHandler<M> handler );
+    void addMismatchedStoreListener( BatchingMessageHandler.MismatchedStoreListener listener );
 
-    interface MessageHandler<M extends Message>
+    interface MismatchedStoreListener
     {
-        void handle( M message );
+        void onMismatchedStore( BatchingMessageHandler.MismatchedStoreIdException ex );
+    }
+
+    class MismatchedStoreIdException extends StoreFailureException
+    {
+        public MismatchedStoreIdException( StoreId expected, StoreId encountered )
+        {
+            super( "Expected:" + expected + ", encountered:" + encountered );
+        }
     }
 }
