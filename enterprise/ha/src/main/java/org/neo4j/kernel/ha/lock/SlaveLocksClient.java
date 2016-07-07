@@ -156,14 +156,6 @@ class SlaveLocksClient implements Locks.Client
     {
         Map<Long, AtomicInteger> lockMap = getLockMap( exclusiveLocks, resourceType );
 
-//        for ( long resourceId : resourceIds )
-//        {
-//            AtomicInteger preExistingLock = lockMap.get( resourceId );
-//            if ( preExistingLock != null )
-//            {
-//                // We already hold this lock, just increment the local reference count
-//                preExistingLock.incrementAndGet();
-//            }
         long[] newResourceIds = onlyFirstTimeLocks( lockMap, resourceIds );
         if ( newResourceIds.length > 0 )
         {
@@ -230,28 +222,6 @@ class SlaveLocksClient implements Locks.Client
         {
             lockMap.remove( resourceId );
             client.releaseExclusive( resourceType, resourceId );
-        }
-    }
-
-    @Override
-    public void releaseAll()
-    {
-        sharedLocks.clear();
-        exclusiveLocks.clear();
-        client.releaseAll();
-        if ( initialized )
-        {
-            try ( Response<Void> ignored = master.endLockSession( newRequestContextFor( client ), true ) )
-            {
-                // Lock session is closed on master at this point
-            }
-            catch ( ComException e )
-            {
-                throw new DistributedLockFailureException(
-                        "Failed to end the lock session on the master (which implies releasing all held locks)",
-                        master, e );
-            }
-            initialized = false;
         }
     }
 

@@ -33,7 +33,7 @@ public class DeferringStatementLocks implements StatementLocks
     @Override
     public void prepareForCommit()
     {
-        implicit.grabDeferredLocks();
+        implicit.acquireDeferredLocks();
     }
 
     @Override

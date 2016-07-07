@@ -533,7 +533,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             finally
             {
                 release();
-                release();
             }
         }
     }

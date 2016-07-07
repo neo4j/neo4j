@@ -17,27 +17,74 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking;
+package org.neo4j.kernel.impl.locking.deferred;
 
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.Locks.ResourceType;
-import org.neo4j.kernel.impl.locking.deferred.DeferringLockClient;
-import org.neo4j.kernel.impl.locking.deferred.LockUnit;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.test.RandomRule;
 
 import static java.lang.Math.abs;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
-public class DeferringLocksTest
+public class DeferringLockClientTest
 {
     @Rule
     public final RandomRule random = new RandomRule();
+
+    @Test
+    public void releaseOfNotHeldSharedLockThrows() throws Exception
+    {
+        // GIVEN
+        TestLocks actualLocks = new TestLocks();
+        TestLocksClient actualClient = actualLocks.newClient();
+        DeferringLockClient client = new DeferringLockClient( actualClient );
+
+        try
+        {
+            // WHEN
+            client.releaseShared( ResourceTypes.NODE, 42 );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            // THEN
+            assertThat( e, instanceOf( IllegalStateException.class ) );
+        }
+    }
+
+    @Test
+    public void releaseOfNotHeldExclusiveLockThrows() throws Exception
+    {
+        // GIVEN
+        TestLocks actualLocks = new TestLocks();
+        TestLocksClient actualClient = actualLocks.newClient();
+        DeferringLockClient client = new DeferringLockClient( actualClient );
+
+        try
+        {
+            // WHEN
+            client.releaseExclusive( ResourceTypes.NODE, 42 );
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            // THEN
+            assertThat( e, instanceOf( IllegalStateException.class ) );
+        }
+    }
 
     @Test
     public void shouldDeferAllLocks() throws Exception
@@ -52,25 +99,55 @@ public class DeferringLocksTest
         ResourceType[] types = ResourceTypes.values();
         for ( int i = 0; i < 10_000; i++ )
         {
-            LockUnit lockUnit = new LockUnit( random.among( types ), abs( random.nextLong() ), true );
-            client.acquireExclusive( lockUnit.resourceType(), lockUnit.resourceId() );
+            boolean exclusive = random.nextBoolean();
+            LockUnit lockUnit = new LockUnit( random.among( types ), abs( random.nextLong() ), exclusive );
+
+            if ( exclusive )
+            {
+                client.acquireExclusive( lockUnit.resourceType(), lockUnit.resourceId() );
+            }
+            else
+            {
+                client.acquireShared( lockUnit.resourceType(), lockUnit.resourceId() );
+            }
             expected.add( lockUnit );
         }
-        actualClient.assertRegisteredLocks( new HashSet<LockUnit>() );
-        client.grabDeferredLocks();
+        actualClient.assertRegisteredLocks( Collections.<LockUnit>emptySet() );
+        client.acquireDeferredLocks();
 
         // THEN
         actualClient.assertRegisteredLocks( expected );
     }
 
+    @Test
+    public void shouldStopUnderlyingClient() throws Exception
+    {
+    }
+
+    @Test
+    public void shouldCloseUnderlyingClient() throws Exception
+    {
+    }
+
+    @Test
+    public void acquireReleasedLocksOnCommit() throws Exception
+    {
+        // TODO: Is this really what we want to do?
+    }
+
+    @Test
+    public void shouldKeepCounterOverLocks() throws Exception
+    {
+    }
+
+    // TODO: Not a complete list of tests
+
     private static class TestLocks extends LifecycleAdapter implements Locks
     {
-        private TestLocksClient client;
-
         @Override
         public TestLocksClient newClient()
         {
-            return client = new TestLocksClient();
+            return new TestLocksClient();
         }
 
         @Override
@@ -89,12 +166,12 @@ public class DeferringLocksTest
             register( resourceType, false, resourceIds );
         }
 
-       void assertRegisteredLocks( Set<LockUnit> expectedLocks )
-       {
-           assertEquals( expectedLocks, actualLockUnits );
-       }
+        void assertRegisteredLocks( Set<LockUnit> expectedLocks )
+        {
+            assertEquals( expectedLocks, actualLockUnits );
+        }
 
-       private boolean register( ResourceType resourceType, boolean exclusive, long... resourceIds )
+        private boolean register( ResourceType resourceType, boolean exclusive, long... resourceIds )
         {
             for ( long resourceId : resourceIds )
             {
@@ -129,11 +206,6 @@ public class DeferringLocksTest
 
         @Override
         public void releaseExclusive( ResourceType resourceType, long resourceId )
-        {
-        }
-
-        @Override
-        public void releaseAll()
         {
         }
 
