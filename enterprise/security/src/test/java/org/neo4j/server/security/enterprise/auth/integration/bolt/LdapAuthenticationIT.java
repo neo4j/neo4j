@@ -27,13 +27,11 @@ import org.apache.directory.server.core.annotations.ContextEntry;
 import org.apache.directory.server.core.annotations.CreateDS;
 import org.apache.directory.server.core.annotations.CreatePartition;
 import org.apache.directory.server.core.annotations.LoadSchema;
-import org.apache.directory.server.core.integ.AbstractLdapTestUnit;
 import org.apache.directory.server.core.integ.FrameworkRunner;
 import org.apache.directory.server.ldap.handlers.extended.StartTlsHandler;
 import org.apache.shiro.realm.ldap.JndiLdapContextFactory;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -48,18 +46,10 @@ import javax.naming.directory.DirContext;
 import javax.naming.directory.ModificationItem;
 import javax.naming.ldap.LdapContext;
 
-import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
-import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
-import org.neo4j.function.Factory;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.security.enterprise.auth.SecuritySettings;
-import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -106,31 +96,16 @@ import static org.neo4j.helpers.collection.MapUtil.map;
         certificatePassword = "secret"
 )
 @ApplyLdifFiles( "ldap_test_data.ldif" )
-public class LdapAuthenticationIT extends AbstractLdapTestUnit
+public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
 {
     private final String MD5_HASHED_abc123 = "{MD5}6ZoYxCjLONXyYIU2eJIuAw=="; // Hashed 'abc123' (see ldap_test_data.ldif)
 
-    @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(),
-            asSettings( getSettingsFunction() ) );
-
-    private void restartNeo4jServerWithOverriddenSettings( Consumer<Map<Setting<?>,String>> overrideSettingsFunction )
-            throws IOException
+    @Before
+    @Override
+    public void setup()
     {
-        server.shutdownDatabase();
-        server.ensureDatabase( asSettings(overrideSettingsFunction) );
-    }
-
-    private Consumer<Map<String,String>> asSettings( Consumer<Map<Setting<?>,String>> overrideSettingsFunction )
-    {
-        return settings -> {
-            Map<Setting<?>,String> o = new LinkedHashMap<>();
-            overrideSettingsFunction.accept( o );
-            for ( Setting key : o.keySet() )
-            {
-                settings.put( key.name(), o.get( key ) );
-            }
-        };
+        super.setup();
+        getLdapServer().setConfidentialityRequired( false );
     }
 
     private void restartNeo4jServerWithSaslDigestMd5() throws IOException
@@ -155,20 +130,10 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
         ) ) );
     }
 
-    protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
-    {
-        return new TestEnterpriseGraphDatabaseFactory();
-    }
-
+    @Override
     protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
     {
-        return settings -> {
-            settings.put( GraphDatabaseSettings.auth_enabled, "true" );
-            settings.put( GraphDatabaseSettings.auth_manager, "enterprise-auth-manager" );
-            settings.put( SecuritySettings.internal_authentication_enabled, "true" );
-            settings.put( SecuritySettings.internal_authorization_enabled, "true" );
-            settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
-            settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
+        return super.getSettingsFunction().andThen( ldapOnlyAuthSettings ).andThen( settings -> {
             settings.put( SecuritySettings.ldap_server, "0.0.0.0:10389" );
             settings.put( SecuritySettings.ldap_user_dn_template, "cn={0},ou=users,dc=example,dc=com" );
             settings.put( SecuritySettings.ldap_authentication_cache_enabled, "true" );
@@ -180,14 +145,8 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
             settings.put( SecuritySettings.ldap_authorization_group_membership_attribute_names, "gidnumber" );
             settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping,
                     "500=reader;501=publisher;502=architect;503=admin" );
-        };
+        } );
     }
-
-    public Factory<TransportConnection> cf = (Factory<TransportConnection>) SecureSocketConnection::new;
-
-    public HostnamePort address = new HostnamePort( "localhost:7687" );
-
-    protected TransportConnection client;
 
     @Test
     public void shouldLoginWithLdap() throws Throwable
@@ -266,30 +225,18 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     @Test
     public void shouldBeAbleToLoginAndAuthorizeReaderWithLdapOnly() throws Throwable
     {
-        // When
-        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings );
-
-        // Then
         testAuthWithReaderUser();
     }
 
     @Test
     public void shouldBeAbleToLoginAndAuthorizePublisherWithLdapOnly() throws Throwable
     {
-        // When
-        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings );
-
-        // Then
         testAuthWithPublisherUser();
     }
 
     @Test
     public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithLdapOnly() throws Throwable
     {
-        // When
-        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings );
-
-        // Then
         testAuthWithNoPermissionUser( "smith" );
     }
 
@@ -328,10 +275,9 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     @Test
     public void shouldBeAbleToLoginAndAuthorizeReaderWithUserLdapContext() throws Throwable
     {
-        // When
-        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+        restartNeo4jServerWithOverriddenSettings( settings -> {
             settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
-        } ) );
+        } );
 
         // Then
         testAuthWithReaderUser();
@@ -340,10 +286,9 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     @Test
     public void shouldBeAbleToLoginAndAuthorizePublisherWithUserLdapContext() throws Throwable
     {
-        // When
-        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+        restartNeo4jServerWithOverriddenSettings( settings -> {
             settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
-        } ) );
+        } );
 
         // Then
         testAuthWithPublisherUser();
@@ -352,10 +297,9 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     @Test
     public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithUserLdapContext() throws Throwable
     {
-        // When
-        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+        restartNeo4jServerWithOverriddenSettings( settings -> {
             settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
-        } ) );
+        } );
 
         // Then
         testAuthWithNoPermissionUser( "smith" );
@@ -364,11 +308,10 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     @Test
     public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithUserLdapContextAndNoGroupToRoleMapping() throws Throwable
     {
-        // When
-        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
+        restartNeo4jServerWithOverriddenSettings( settings -> {
             settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
             settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, null );
-        } ) );
+        } );
 
         // Then
         // User 'neo' has reader role by default, but since we are not passing a group-to-role mapping
@@ -693,152 +636,6 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
         }
     }
 
-    @Before
-    public void setup()
-    {
-        this.client = cf.newInstance();
-        getLdapServer().setConfidentialityRequired( false );
-    }
-
-    @After
-    public void teardown() throws Exception
-    {
-        if ( client != null )
-        {
-            client.disconnect();
-        }
-    }
-
-    private void reconnect() throws Exception
-    {
-        if ( client != null )
-        {
-            client.disconnect();
-        }
-        this.client = cf.newInstance();
-    }
-
-    private void testCreateReaderUser() throws Exception
-    {
-        testCreateReaderUser( "neo" );
-    }
-
-    private void testAuthWithReaderUser() throws Exception
-    {
-        testAuthWithReaderUser( "neo", null );
-    }
-    private void testAuthWithPublisherUser() throws Exception
-    {
-        testAuthWithPublisherUser( "tank", null );
-    }
-
-    private void testCreateReaderUser(String username) throws Exception
-    {
-        assertAuth( "neo4j", "abc123" );
-
-        // NOTE: The default user 'neo4j' has password change required, so we have to first change it
-        client.send( TransportTestUtil.chunk(
-                run( "CALL dbms.security.changeUserPassword('neo4j', '123', false) " +
-                     "CALL dbms.security.createUser( '" + username + "', 'abc123', false ) " +
-                     "CALL dbms.security.addRoleToUser( 'reader', '" + username + "' ) RETURN 0" ),
-                pullAll() ) );
-
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
-    }
-
-    private void testAuthWithReaderUser(String username, String realm) throws Exception
-    {
-        // When
-        assertAuth( username, "abc123", realm );
-
-        // When
-        client.send( TransportTestUtil.chunk(
-                run( "MATCH (n) RETURN n" ),
-                pullAll() ) );
-
-        // Then
-        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
-
-        // When
-        client.send( TransportTestUtil.chunk(
-                run( "CREATE ()" ),
-                pullAll() ) );
-
-        // Then
-        assertThat( client, eventuallyReceives(
-                msgFailure( Status.Security.Forbidden,
-                        String.format( "Write operations are not allowed for '" + username + "'." ) ) ) );
-    }
-
-    private void testAuthWithPublisherUser(String username, String realm) throws Exception
-    {
-        // When
-        assertAuth( username, "abc123", realm );
-
-        // When
-        client.send( TransportTestUtil.chunk(
-                run( "CREATE ()" ),
-                pullAll() ) );
-
-        // Then
-        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
-    }
-
-    private void testAuthWithNoPermissionUser( String username ) throws Exception
-    {
-        // When
-        assertAuth( username, "abc123" );
-
-        // When
-        client.send( TransportTestUtil.chunk(
-                run( "MATCH (n) RETURN n" ),
-                pullAll() ) );
-
-        // Then
-        assertThat( client, eventuallyReceives(
-                msgFailure( Status.Security.Forbidden,
-                        String.format( "Read operations are not allowed for '%s'.", username ) ) ) );
-    }
-
-    private void assertAuth( String username, String password ) throws Exception
-    {
-        assertAuth( username, password, null );
-    }
-
-    private void assertAuth( String username, String password, String realm ) throws Exception
-    {
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk( init( "TestClient/1.1", authToken( username, password, realm ) ) ) );
-
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
-    }
-
-    private Map<String,Object> authToken( String username, String password, String realm )
-    {
-        if ( realm != null && realm.length() > 0 )
-        {
-            return map( "principal", username, "credentials", password, "scheme", "basic", "realm", realm );
-        }
-        else
-        {
-            return map( "principal", username, "credentials", password, "scheme", "basic" );
-        }
-    }
-
-    private void assertAuthFail( String username, String password ) throws Exception
-    {
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1", map( "principal", username,
-                                "credentials", password, "scheme", "basic" ) ) ) );
-
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized, "The client is unauthorized due to authentication failure." ) ) );
-    }
-
     protected void assertReadSucceeds() throws Exception
     {
         // When
@@ -947,7 +744,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
         modifyLDAPAttribute( username, credentials, "gidnumber", gid );
     }
 
-    private Consumer<Map<Setting<?>,String>> ldapOnlyAuthSettings = settings ->
+    private static Consumer<Map<Setting<?>,String>> ldapOnlyAuthSettings = settings ->
     {
         settings.put( SecuritySettings.internal_authentication_enabled, "false" );
         settings.put( SecuritySettings.internal_authorization_enabled, "false" );
@@ -955,7 +752,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
         settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
     };
 
-    private Consumer<Map<Setting<?>,String>> activeDirectoryOnEc2Settings = settings -> {
+    private static Consumer<Map<Setting<?>,String>> activeDirectoryOnEc2Settings = settings -> {
         //settings.put( SecuritySettings.ldap_server, "ec2-176-34-79-113.eu-west-1.compute.amazonaws.com:389" );
         settings.put( SecuritySettings.ldap_server, "henrik.neohq.net:389" );
         settings.put( SecuritySettings.ldap_user_dn_template, "cn={0},cn=Users,dc=neo4j,dc=com" );
@@ -970,12 +767,12 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
         );
     };
 
-    private Consumer<Map<Setting<?>,String>> activeDirectoryOnEc2NotUsingSystemAccountSettings =
+    private static Consumer<Map<Setting<?>,String>> activeDirectoryOnEc2NotUsingSystemAccountSettings =
             activeDirectoryOnEc2Settings.andThen( settings -> {
                 settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
             } );
 
-    private Consumer<Map<Setting<?>,String>> activeDirectoryOnEc2UsingSystemAccountSettings =
+    private static Consumer<Map<Setting<?>,String>> activeDirectoryOnEc2UsingSystemAccountSettings =
             activeDirectoryOnEc2Settings.andThen( settings -> {
                 settings.put( SecuritySettings.ldap_authorization_use_system_account, "true" );
                 settings.put( SecuritySettings.ldap_system_username, "Petra Selmer" );

@@ -54,6 +54,7 @@ import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
+import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 
 import static java.lang.String.format;
 
@@ -194,11 +195,11 @@ class InternalFlatFileRealm extends AuthorizingRealm implements RealmLifecycle, 
                     newRole( role );
                 }
             }
-            if ( this.getUsernamesForRole( PredefinedRolesBuilder.ADMIN ).size() == 0 )
+            if ( this.getUsernamesForRole( PredefinedRoles.ADMIN ).size() == 0 )
             {
                 if ( getAllUsernames().contains( "neo4j" ) )
                 {
-                    addRoleToUser( PredefinedRolesBuilder.ADMIN, "neo4j" );
+                    addRoleToUser( PredefinedRoles.ADMIN, "neo4j" );
                 }
             }
         }

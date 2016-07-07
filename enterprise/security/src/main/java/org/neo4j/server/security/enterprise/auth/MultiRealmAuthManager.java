@@ -44,11 +44,10 @@ import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthSubject;
 import org.neo4j.kernel.impl.enterprise.SecurityLog;
-import org.neo4j.server.security.auth.UserManagerSupplier;
 
 import static org.neo4j.helpers.Strings.escape;
 
-class MultiRealmAuthManager implements EnterpriseAuthManager, UserManagerSupplier
+class MultiRealmAuthManager implements EnterpriseAuthManager
 {
     private final EnterpriseUserManager userManager;
     private final Collection<Realm> realms;

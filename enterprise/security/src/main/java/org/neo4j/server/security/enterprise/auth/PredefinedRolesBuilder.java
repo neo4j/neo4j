@@ -29,13 +29,10 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.*;
+
 public class PredefinedRolesBuilder implements RolesBuilder
 {
-    public static final String ADMIN = "admin";
-    public static final String ARCHITECT = "architect";
-    public static final String PUBLISHER = "publisher";
-    public static final String READER = "reader";
-
     public static final Map<String,SimpleRole> roles = staticBuildRoles();
 
     public static Map<String,SimpleRole> staticBuildRoles()

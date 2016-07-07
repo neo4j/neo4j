@@ -36,11 +36,12 @@ import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
-import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
-import org.neo4j.server.security.auth.UserRepository;
+import org.neo4j.server.security.enterprise.auth.plugin.PluginRealm;
+import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin;
+import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
+import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationPlugin;
 import org.neo4j.time.Clocks;
 
 import static org.neo4j.server.security.auth.BasicAuthManagerFactory.getUserRepository;
@@ -82,10 +83,43 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
             realms.add( new LdapRealm( config, securityLog ) );
         }
 
-        if ( config.get( SecuritySettings.plugin_authentication_enabled ) ||
-             config.get( SecuritySettings.plugin_authorization_enabled ) )
+        Boolean pluginAuthenticationEnabled = config.get( SecuritySettings.plugin_authentication_enabled );
+        Boolean pluginAuthorizationEnabled = config.get( SecuritySettings.plugin_authorization_enabled );
+
+        if ( pluginAuthenticationEnabled && pluginAuthorizationEnabled )
         {
-            // TODO: Load pluggable realms
+            // Combined authentication and authorization plugins
+            Iterable<AuthPlugin> authPlugins = Service.load( AuthPlugin.class );
+
+            for ( AuthPlugin plugin : authPlugins )
+            {
+                PluginRealm pluginRealm = new PluginRealm( plugin );
+                realms.add( pluginRealm );
+            }
+        }
+
+        if ( pluginAuthenticationEnabled )
+        {
+            // Authentication only plugins
+            Iterable<AuthenticationPlugin> authenticationPlugins = Service.load( AuthenticationPlugin.class );
+
+            for ( AuthenticationPlugin plugin : authenticationPlugins )
+            {
+                PluginRealm pluginRealm = new PluginRealm( plugin, null );
+                realms.add( pluginRealm );
+            }
+        }
+
+        if ( pluginAuthorizationEnabled )
+        {
+            // Authorization only plugins
+            Iterable<AuthorizationPlugin> authorizationPlugins = Service.load( AuthorizationPlugin.class );
+
+            for ( AuthorizationPlugin plugin : authorizationPlugins )
+            {
+                PluginRealm pluginRealm = new PluginRealm( null, plugin );
+                realms.add( pluginRealm );
+            }
         }
 
         long ttl = config.get( SecuritySettings.auth_cache_ttl );

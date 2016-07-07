@@ -40,6 +40,7 @@ import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static java.lang.String.format;
@@ -172,7 +173,7 @@ public class AuthProcedures
         try
         {
             StandardEnterpriseAuthSubject adminSubject = ensureAdminAuthSubject();
-            if ( adminSubject.hasUsername( username ) && roleName.equals( PredefinedRolesBuilder.ADMIN ) )
+            if ( adminSubject.hasUsername( username ) && roleName.equals( PredefinedRoles.ADMIN ) )
             {
                 throw new InvalidArgumentsException(
                         "Removing yourself (user '" + username + "') from the admin role is not allowed." );

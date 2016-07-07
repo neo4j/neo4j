@@ -17,15 +17,42 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.enterprise.auth;
+package org.neo4j.server.security.enterprise.auth.plugin;
 
-import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.server.security.auth.UserManagerSupplier;
+import java.util.Collection;
 
-public interface EnterpriseAuthManager extends AuthManager, UserManagerSupplier
+import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationInfo;
+import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationPlugin;
+
+public class TestAuthorizationPlugin implements AuthorizationPlugin
 {
     @Override
-    EnterpriseUserManager getUserManager();
+    public AuthorizationInfo getAuthorizationInfo( Collection<Object> principals )
+    {
+        return null;
+    }
 
-    void clearAuthCache();
+    @Override
+    public void initialize() throws Throwable
+    {
+
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+
+    }
 }

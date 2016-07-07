@@ -17,15 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.enterprise.auth;
+package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
-import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.server.security.auth.UserManagerSupplier;
+import java.util.Map;
 
-public interface EnterpriseAuthManager extends AuthManager, UserManagerSupplier
+import org.neo4j.server.security.enterprise.auth.RealmLifecycle;
+
+/**
+ * TODO
+ */
+public interface AuthPlugin extends RealmLifecycle
 {
-    @Override
-    EnterpriseUserManager getUserManager();
-
-    void clearAuthCache();
+    /**
+     * TODO
+     */
+    AuthInfo getAuthInfo( Map<String,Object> authToken );
 }
