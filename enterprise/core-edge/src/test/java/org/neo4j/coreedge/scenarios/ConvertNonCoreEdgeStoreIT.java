@@ -91,7 +91,7 @@ public class ConvertNonCoreEdgeStoreIT
 
         File homeDir = cluster.getCoreServerById( 0 ).homeDir();
 
-        StringBuilder output = RestoreClusterUtils.execute( () -> RestoreNewClusterCli.main( toArray( args()
+        String output = RestoreClusterUtils.execute( () -> RestoreNewClusterCli.main( toArray( args()
                 .homeDir( homeDir ).config( homeDir ).from( classicNeo4jStore )
                 .database( "graph.db" ).force().build() ) ) );
 

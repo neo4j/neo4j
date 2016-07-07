@@ -75,7 +75,7 @@ public class RestoreClusterCliTest
         LinkedList<String> args = ArgsBuilder.args().homeDir( homeDir ).config( homeDir )
                 .from( classicNeo4jStore ).database( "graph.db" ).build() ;
 
-        StringBuilder out = RestoreClusterUtils.execute( () -> RestoreNewClusterCli.main( args.toArray( new String[args.size()] ) ) );
+        String out = RestoreClusterUtils.execute( () -> RestoreNewClusterCli.main( args.toArray( new String[args.size()] ) ) );
 
         // then
         String seed = extractSeed( out );
@@ -118,9 +118,9 @@ public class RestoreClusterCliTest
         }
     }
 
-    public static String extractSeed( StringBuilder builder )
+    public static String extractSeed( String message )
     {
-        return builder.toString().replace( "Cluster Seed: ", "" ).replace( "\n", "" );
+        return message.replace( "Cluster Seed: ", "" ).trim();
     }
 
     private File createClassicNeo4jStore( File base, int nodesToCreate, String recordFormat )

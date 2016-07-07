@@ -25,14 +25,14 @@ import java.io.PrintStream;
 
 public class RestoreClusterUtils
 {
-    public static StringBuilder execute( Runnable function )
+    public static String execute(Runnable function )
     {
         StringBuilder builder = new StringBuilder();
         PrintStream theRealOut = System.out;
         System.setOut( new PrintStream( new MyOutputStream( builder ) ) );
         function.run();
         System.setOut( theRealOut );
-        return builder;
+        return builder.toString();
     }
 
     private static class MyOutputStream extends OutputStream

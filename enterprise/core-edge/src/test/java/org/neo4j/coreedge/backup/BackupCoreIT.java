@@ -142,7 +142,7 @@ public class BackupCoreIT
         TestStoreId storeId = TestStoreId.readStoreId( dbPaths.get( 0 ), fs );
 
         // when
-        StringBuilder output = RestoreClusterUtils.execute( () -> {
+        String output = RestoreClusterUtils.execute( () -> {
             File homeDir = cluster.getCoreServerById( 0 ).homeDir();
             RestoreNewClusterCli.main( toArray( args().homeDir( homeDir ).config( homeDir ).from( backupPath )
                     .database( "graph.db" ).force().build() ) );
