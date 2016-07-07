@@ -127,7 +127,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     private void submitApplyJob( long lastToApply )
     {
         applier.submit( ( status ) -> () -> {
-            try ( InFlightLogEntrySupplier logEntrySupplier = new InFlightLogEntrySupplier( raftLog, inFlightMap ) )
+            try ( InFlightLogEntryReader logEntrySupplier = new InFlightLogEntryReader( raftLog, inFlightMap, true ) )
             {
                 for ( long logIndex = lastApplied + 1; !status.isCancelled() && logIndex <= lastToApply; logIndex++ )
                 {

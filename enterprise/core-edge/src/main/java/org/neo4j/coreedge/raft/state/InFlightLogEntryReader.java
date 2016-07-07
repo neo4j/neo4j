@@ -26,18 +26,23 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 
-public class InFlightLogEntrySupplier implements AutoCloseable
+import static java.lang.String.format;
+
+public class InFlightLogEntryReader implements AutoCloseable
 {
     private final ReadableRaftLog raftLog;
     private final InFlightMap<Long, RaftLogEntry> inFlightMap;
+    private final boolean removeReadIndexFromMap;
 
     private RaftLogCursor cursor;
     private boolean useInFlightMap = true;
 
-    public InFlightLogEntrySupplier( ReadableRaftLog raftLog, InFlightMap<Long,RaftLogEntry> inFlightMap )
+    public InFlightLogEntryReader( ReadableRaftLog raftLog, InFlightMap<Long,RaftLogEntry> inFlightMap,
+            boolean removeReadIndexFromMap )
     {
         this.raftLog = raftLog;
         this.inFlightMap = inFlightMap;
+        this.removeReadIndexFromMap = removeReadIndexFromMap;
     }
 
     public RaftLogEntry get( long logIndex ) throws IOException
@@ -55,7 +60,10 @@ public class InFlightLogEntrySupplier implements AutoCloseable
             entry = getUsingCursor( logIndex );
         }
 
-        inFlightMap.unregister( logIndex );
+        if ( removeReadIndexFromMap )
+        {
+            inFlightMap.unregister( logIndex );
+        }
 
         return entry;
     }
@@ -69,7 +77,7 @@ public class InFlightLogEntrySupplier implements AutoCloseable
 
         if ( cursor.next() )
         {
-            assert cursor.index() == logIndex;
+            assert cursor.index() == logIndex : format( "expected index %d but was %s", logIndex, cursor.index() );
             return cursor.get();
         }
         else

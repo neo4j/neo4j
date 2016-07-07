@@ -45,7 +45,7 @@ public class TruncateLogCommand implements LogCommand
     public void applyTo( InFlightMap<Long,RaftLogEntry> inFlightMap ) throws IOException
     {
         long truncateIndex = fromIndex;
-        while( inFlightMap.unregister( truncateIndex ))
+        while ( inFlightMap.unregister( truncateIndex ) )
         {
             truncateIndex++;
         }
