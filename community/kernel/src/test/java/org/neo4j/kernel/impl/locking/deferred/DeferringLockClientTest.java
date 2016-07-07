@@ -38,6 +38,8 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public class DeferringLockClientTest
 {
@@ -122,25 +124,106 @@ public class DeferringLockClientTest
     @Test
     public void shouldStopUnderlyingClient() throws Exception
     {
+        // GIVEN
+        Locks.Client actualClient = mock( Locks.Client.class );
+        DeferringLockClient client = new DeferringLockClient( actualClient );
+
+        // WHEN
+        client.stop();
+
+        // THEN
+        verify( actualClient ).stop();
     }
 
     @Test
     public void shouldCloseUnderlyingClient() throws Exception
     {
+        // GIVEN
+        Locks.Client actualClient = mock( Locks.Client.class );
+        DeferringLockClient client = new DeferringLockClient( actualClient );
+
+        // WHEN
+        client.close();
+
+        // THEN
+        verify( actualClient ).close();
     }
 
     @Test
-    public void acquireReleasedLocksOnCommit() throws Exception
+    public void exclusiveLockAcquiredMultipleTimesCanNotBeReleasedAtOnce() throws Exception
     {
-        // TODO: Is this really what we want to do?
+        // GIVEN
+        TestLocks actualLocks = new TestLocks();
+        TestLocksClient actualClient = actualLocks.newClient();
+        DeferringLockClient client = new DeferringLockClient( actualClient );
+
+        client.acquireExclusive( ResourceTypes.NODE, 1 );
+        client.acquireExclusive( ResourceTypes.NODE, 1 );
+        client.releaseExclusive( ResourceTypes.NODE, 1 );
+
+        // WHEN
+        client.acquireDeferredLocks();
+
+        // THEN
+        actualClient.assertRegisteredLocks( Collections.singleton( new LockUnit( ResourceTypes.NODE, 1, true ) ) );
     }
 
     @Test
-    public void shouldKeepCounterOverLocks() throws Exception
+    public void sharedLockAcquiredMultipleTimesCanNotBeReleasedAtOnce() throws Exception
     {
+        // GIVEN
+        TestLocks actualLocks = new TestLocks();
+        TestLocksClient actualClient = actualLocks.newClient();
+        DeferringLockClient client = new DeferringLockClient( actualClient );
+
+        client.acquireShared( ResourceTypes.NODE, 1 );
+        client.acquireShared( ResourceTypes.NODE, 1 );
+        client.releaseShared( ResourceTypes.NODE, 1 );
+
+        // WHEN
+        client.acquireDeferredLocks();
+
+        // THEN
+        actualClient.assertRegisteredLocks( Collections.singleton( new LockUnit( ResourceTypes.NODE, 1, false ) ) );
     }
 
-    // TODO: Not a complete list of tests
+    @Test
+    public void acquireBothSharedAndExclusiveLockThenReleaseShared()
+    {
+        // GIVEN
+        TestLocks actualLocks = new TestLocks();
+        TestLocksClient actualClient = actualLocks.newClient();
+        DeferringLockClient client = new DeferringLockClient( actualClient );
+
+        client.acquireShared( ResourceTypes.NODE, 1 );
+        client.acquireExclusive( ResourceTypes.NODE, 1 );
+        client.releaseShared( ResourceTypes.NODE, 1 );
+
+        // WHEN
+        client.acquireDeferredLocks();
+
+        // THEN
+        actualClient.assertRegisteredLocks( Collections.singleton( new LockUnit( ResourceTypes.NODE, 1, true ) ) );
+    }
+
+    @Test
+    public void acquireBothSharedAndExclusiveLockThenReleaseExclusive()
+    {
+        // GIVEN
+        TestLocks actualLocks = new TestLocks();
+        TestLocksClient actualClient = actualLocks.newClient();
+        DeferringLockClient client = new DeferringLockClient( actualClient );
+
+        client.acquireShared( ResourceTypes.NODE, 1 );
+        client.acquireExclusive( ResourceTypes.NODE, 1 );
+        client.releaseExclusive( ResourceTypes.NODE, 1 );
+
+        // WHEN
+        client.acquireDeferredLocks();
+
+        // THEN
+        actualClient.assertRegisteredLocks( Collections.singleton( new LockUnit( ResourceTypes.NODE, 1, false ) ) );
+    }
 
     private static class TestLocks extends LifecycleAdapter implements Locks
     {

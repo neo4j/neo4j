@@ -1,8 +1,10 @@
 package org.neo4j.kernel.impl.locking.deferred;
 
+import org.apache.commons.lang3.mutable.MutableInt;
+
 import java.util.Arrays;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.Map;
+import java.util.TreeMap;
 
 import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
@@ -12,7 +14,7 @@ import org.neo4j.kernel.impl.locking.Locks;
 public class DeferringLockClient implements Locks.Client
 {
     private final Locks.Client clientDelegate;
-    private final Set<LockUnit> locks = new TreeSet<>();
+    private final Map<LockUnit,MutableInt> locks = new TreeMap<>();
     private volatile boolean stopped;
 
     public DeferringLockClient( Locks.Client clientDelegate )
@@ -25,14 +27,8 @@ public class DeferringLockClient implements Locks.Client
     {
         for ( long resourceId : resourceIds )
         {
-            queueLock( resourceType, resourceId, false );
+            addLock( resourceType, resourceId, false );
         }
-    }
-
-    private void queueLock( Locks.ResourceType resourceType, long resourceId, boolean exclusive )
-    {
-        assertNotStopped();
-        locks.add( new LockUnit( resourceType, resourceId, exclusive ) );
     }
 
     @Override
@@ -41,7 +37,7 @@ public class DeferringLockClient implements Locks.Client
     {
         for ( long resourceId : resourceIds )
         {
-            queueLock( resourceType, resourceId, true );
+            addLock( resourceType, resourceId, true );
         }
     }
 
@@ -60,23 +56,13 @@ public class DeferringLockClient implements Locks.Client
     @Override
     public void releaseShared( Locks.ResourceType resourceType, long resourceId )
     {
-        final LockUnit unit = new LockUnit( resourceType, resourceId, false );
-        if ( !locks.remove( unit ) )
-        {
-            throw new IllegalStateException( "Cannot release lock that it does not hold: " +
-                                             resourceType + "[" + resourceId + "]." );
-        }
+        removeLock( resourceType, resourceId, false );
     }
 
     @Override
     public void releaseExclusive( Locks.ResourceType resourceType, long resourceId )
     {
-        final LockUnit unit = new LockUnit( resourceType, resourceId, true );
-        if ( !locks.remove( unit ) )
-        {
-            throw new IllegalStateException( "Cannot release lock that it does not hold: " +
-                                             resourceType + "[" + resourceId + "]." );
-        }
+        removeLock( resourceType, resourceId, true );
     }
 
     void acquireDeferredLocks()
@@ -85,7 +71,7 @@ public class DeferringLockClient implements Locks.Client
         int cursor = 0;
         Locks.ResourceType currentType = null;
         boolean currentExclusive = false;
-        for ( LockUnit lockUnit : locks )
+        for ( LockUnit lockUnit : locks.keySet() )
         {
             // TODO perhaps also add a condition which sends batches over a certain size threshold
             if ( currentType == null ||
@@ -93,10 +79,7 @@ public class DeferringLockClient implements Locks.Client
                   currentExclusive != lockUnit.isExclusive()) )
             {
                 // New type, i.e. flush the current array down to delegate in one call
-                if ( !flushLocks( current, cursor, currentType, currentExclusive ) )
-                {
-                    break;
-                }
+                flushLocks( current, cursor, currentType, currentExclusive );
 
                 cursor = 0;
                 currentType = lockUnit.resourceType();
@@ -113,14 +96,14 @@ public class DeferringLockClient implements Locks.Client
         flushLocks( current, cursor, currentType, currentExclusive );
     }
 
-    private boolean flushLocks( long[] current, int cursor, Locks.ResourceType currentType, boolean currentExclusive )
+    private void flushLocks( long[] current, int cursor, Locks.ResourceType currentType, boolean exclusive )
     {
         assertNotStopped();
 
         if ( cursor > 0 )
         {
             long[] resourceIds = Arrays.copyOf( current, cursor );
-            if ( currentExclusive )
+            if ( exclusive )
             {
                 clientDelegate.acquireExclusive( currentType, resourceIds );
             }
@@ -129,7 +112,6 @@ public class DeferringLockClient implements Locks.Client
                 clientDelegate.acquireShared( currentType, resourceIds );
             }
         }
-        return true;
     }
 
     @Override
@@ -152,9 +134,46 @@ public class DeferringLockClient implements Locks.Client
         return clientDelegate.getLockSessionId();
     }
 
-    private void assertNotStopped() {
-        if( stopped ) {
+    private void assertNotStopped()
+    {
+        if ( stopped )
+        {
             throw new LockClientStoppedException( this );
+        }
+    }
+
+    private void addLock( Locks.ResourceType resourceType, long resourceId, boolean exclusive )
+    {
+        assertNotStopped();
+
+        LockUnit lockUnit = new LockUnit( resourceType, resourceId, exclusive );
+        MutableInt lockCount = locks.get( lockUnit );
+        if ( lockCount == null )
+        {
+            lockCount = new MutableInt();
+            locks.put( lockUnit, lockCount );
+        }
+        lockCount.increment();
+    }
+
+    private void removeLock( Locks.ResourceType resourceType, long resourceId, boolean exclusive )
+    {
+        assertNotStopped();
+
+        LockUnit lockUnit = new LockUnit( resourceType, resourceId, exclusive );
+        MutableInt lockCount = locks.get( lockUnit );
+        if ( lockCount == null )
+        {
+            throw new IllegalStateException(
+                    "Cannot release " + (exclusive ? "exclusive" : "shared") + " lock that it " +
+                    "does not hold: " + resourceType + "[" + resourceId + "]." );
+        }
+
+        lockCount.decrement();
+
+        if ( lockCount.intValue() == 0 )
+        {
+            locks.remove( lockUnit );
         }
     }
 }
