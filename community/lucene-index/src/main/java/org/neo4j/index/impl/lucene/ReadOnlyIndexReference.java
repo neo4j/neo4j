@@ -19,27 +19,42 @@
  */
 package org.neo4j.index.impl.lucene;
 
+
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.IndexSearcher;
+
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.cache.ClockCache;
-
-public class IndexClockCache extends ClockCache<IndexIdentifier, IndexReference>
+public class ReadOnlyIndexReference extends IndexReference
 {
-    public IndexClockCache( int maxSize )
+
+    ReadOnlyIndexReference( IndexIdentifier identifier, IndexSearcher searcher )
     {
-        super( "IndexSearcherCache", maxSize );
+        super(identifier, searcher);
     }
 
     @Override
-    public void elementCleaned( IndexReference searcher )
+    public IndexWriter getWriter()
     {
-        try
-        {
-            searcher.dispose();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        throw new UnsupportedOperationException( "Read only indexes do not have index writers." );
     }
+
+    @Override
+    public synchronized void dispose() throws IOException
+    {
+        disposeSearcher();
+    }
+
+    @Override
+    public boolean checkAndClearStale()
+    {
+        return false;
+    }
+
+    @Override
+    public void setStale()
+    {
+        throw new UnsupportedOperationException("Read only indexes can't be marked as stale.");
+    }
+
 }

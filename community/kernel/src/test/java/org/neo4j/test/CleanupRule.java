@@ -19,12 +19,12 @@
  */
 package org.neo4j.test;
 
+import org.junit.rules.ExternalResource;
+
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.LinkedList;
-
-import org.junit.rules.ExternalResource;
 
 /**
  * Simple means of cleaning up after a test. It has two purposes:
@@ -82,6 +82,7 @@ public class CleanupRule extends ExternalResource
             try
             {
                 Method method = cls.getMethod( methodName );
+                method.setAccessible( true );
                 add( closeable( method, toClose ) );
                 return toClose;
             }
