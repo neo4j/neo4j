@@ -361,8 +361,6 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapperv3_1)
       }
     }
 
-    override def detachDelete(obj: Relationship): Int = ??? // not supported for relationships
-
     override def propertyKeyIds(id: Long): Iterator[Int] = try {
       // use the following when bumping the cypher 2.3.x version
       //JavaConversionSupport.asScalaENFXSafe(statement.readOperations().relationshipGetPropertyKeys(id))
@@ -604,5 +602,14 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapperv3_1)
 
   def relationshipCountByCountStore(startLabelId: Int, typeId: Int, endLabelId: Int): Long = {
     tc.statement.readOperations().countsForRelationship(startLabelId, typeId, endLabelId)
+  }
+
+  override def detachDeleteNode(node: Node): Int = {
+    try {
+      tc.statement.dataWriteOperations().nodeDetachDelete(node.getId)
+    } catch {
+      case _: exceptions.EntityNotFoundException => // the node has been deleted by another transaction, oh well...
+        0
+    }
   }
 }

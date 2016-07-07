@@ -21,6 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
+// TODO: Move to openCypher
 class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("should aggregate using as grouping key expressions using variables in scope and nothing else") {
