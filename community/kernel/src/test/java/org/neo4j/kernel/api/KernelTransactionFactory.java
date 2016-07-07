@@ -65,6 +65,6 @@ public class KernelTransactionFactory
                 TransactionTracer.NULL,
                 new ProcedureCache(),
                 mock( NeoStoreTransactionContext.class ),
-                false );
+                false, false );
     }
 }

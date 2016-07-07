@@ -102,8 +102,6 @@ public interface Locks extends Lifecycle
         /** Release all locks. */
         void releaseAll();
 
-        void prepare();
-
         /**
          * Stop all active lock waiters and release them. All already held locks remains.
          * All new attempts to acquire any locks will cause exceptions.
@@ -117,12 +115,6 @@ public interface Locks extends Lifecycle
 
         /** For slave transactions, this tracks an identifier for the lock session running on the master */
         int getLockSessionId();
-
-        /**
-         * Get a potential delegate to this client.
-         * NOTE this is a hack to get {@link DeferringLocks} to work. Do no take seriously.
-         */
-        Client delegate();
     }
 
     /**
@@ -135,19 +127,4 @@ public interface Locks extends Lifecycle
 
     /** Visit all held locks. */
     void accept(Visitor visitor);
-
-    public abstract class ClientAdapter implements Client
-    {
-        @Override
-        public void prepare()
-        {
-            // Nothing to prepare
-        }
-
-        @Override
-        public Client delegate()
-        {
-            return this;
-        }
-    }
 }

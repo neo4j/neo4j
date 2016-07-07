@@ -52,7 +52,7 @@ import static org.neo4j.kernel.impl.locking.LockType.WRITE;
  * with the master for certain types of locks. If you grab a lock on a node, for instance, this class will grab a
  * cluster-global lock by talking to the master machine, and then grab that same lock locally before returning.
  */
-class SlaveLocksClient extends Locks.ClientAdapter
+class SlaveLocksClient implements Locks.Client
 {
     private final Master master;
     private final Locks.Client client;
@@ -253,12 +253,6 @@ class SlaveLocksClient extends Locks.ClientAdapter
             }
             initialized = false;
         }
-    }
-
-    @Override
-    public void prepare()
-    {
-        client.prepare();
     }
 
     @Override

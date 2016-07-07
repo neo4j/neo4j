@@ -41,7 +41,7 @@ public class DefaultConversationSPI implements ConversationSPI
     @Override
     public Locks.Client acquireClient()
     {
-        return locks.newClient().delegate();
+        return locks.newClient();
     }
 
     @Override

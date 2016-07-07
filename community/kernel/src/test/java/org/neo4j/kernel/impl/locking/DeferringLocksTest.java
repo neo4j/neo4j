@@ -25,13 +25,14 @@ import org.junit.Test;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.kernel.impl.locking.DeferringLocks.Resource;
 import org.neo4j.kernel.impl.locking.Locks.ResourceType;
+import org.neo4j.kernel.impl.locking.deferred.DeferringLockClient;
+import org.neo4j.kernel.impl.locking.deferred.LockUnit;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.test.RandomRule;
 
-import static org.junit.Assert.assertEquals;
 import static java.lang.Math.abs;
+import static org.junit.Assert.assertEquals;
 
 public class DeferringLocksTest
 {
@@ -43,21 +44,20 @@ public class DeferringLocksTest
     {
         // GIVEN
         TestLocks actualLocks = new TestLocks();
-        DeferringLocks locks = new DeferringLocks( actualLocks );
-        Locks.Client client = locks.newClient();
-        TestLocksClient actualClient = actualLocks.client;
+        TestLocksClient actualClient = actualLocks.newClient();
+        DeferringLockClient client = new DeferringLockClient( actualClient );
 
         // WHEN
-        Set<Resource> expected = new HashSet<>();
+        Set<LockUnit> expected = new HashSet<>();
         ResourceType[] types = ResourceTypes.values();
         for ( int i = 0; i < 10_000; i++ )
         {
-            Resource resource = new Resource( random.among( types ), abs( random.nextLong() ), true );
-            client.acquireExclusive( resource.resourceType, resource.resourceId );
-            expected.add( resource );
+            LockUnit lockUnit = new LockUnit( random.among( types ), abs( random.nextLong() ), true );
+            client.acquireExclusive( lockUnit.resourceType(), lockUnit.resourceId() );
+            expected.add( lockUnit );
         }
-        actualClient.assertRegisteredLocks( new HashSet<Resource>() );
-        client.prepare();
+        actualClient.assertRegisteredLocks( new HashSet<LockUnit>() );
+        client.grabDeferredLocks();
 
         // THEN
         actualClient.assertRegisteredLocks( expected );
@@ -68,7 +68,7 @@ public class DeferringLocksTest
         private TestLocksClient client;
 
         @Override
-        public Client newClient()
+        public TestLocksClient newClient()
         {
             return client = new TestLocksClient();
         }
@@ -79,9 +79,9 @@ public class DeferringLocksTest
         }
     }
 
-    private static class TestLocksClient extends Locks.ClientAdapter
+    private static class TestLocksClient implements Locks.Client
     {
-        private final Set<Resource> actualResources = new HashSet<>();
+        private final Set<LockUnit> actualLockUnits = new HashSet<>();
 
         @Override
         public void acquireShared( ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
@@ -89,16 +89,16 @@ public class DeferringLocksTest
             register( resourceType, false, resourceIds );
         }
 
-       void assertRegisteredLocks( Set<Resource> expectedLocks )
+       void assertRegisteredLocks( Set<LockUnit> expectedLocks )
        {
-           assertEquals( expectedLocks, actualResources );
+           assertEquals( expectedLocks, actualLockUnits );
        }
 
        private boolean register( ResourceType resourceType, boolean exclusive, long... resourceIds )
         {
             for ( long resourceId : resourceIds )
             {
-                actualResources.add( new Resource( resourceType, resourceId, exclusive ) );
+                actualLockUnits.add( new LockUnit( resourceType, resourceId, exclusive ) );
             }
             return true;
         }

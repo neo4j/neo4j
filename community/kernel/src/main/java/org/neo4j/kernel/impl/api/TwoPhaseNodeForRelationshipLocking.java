@@ -25,7 +25,6 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
@@ -106,7 +105,7 @@ class TwoPhaseNodeForRelationshipLocking
                 PrimitiveLongIterator iterator = nodeIds.iterator();
                 while ( iterator.hasNext() )
                 {
-                    state.locks().acquireExclusive( ResourceTypes.NODE, iterator.next() );
+                    state.locks().implicit().acquireExclusive( ResourceTypes.NODE, iterator.next() );
                 }
             }
 
@@ -122,7 +121,7 @@ class TwoPhaseNodeForRelationshipLocking
                         PrimitiveLongIterator iterator = nodeIds.iterator();
                         while ( iterator.hasNext() )
                         {
-                            state.locks().releaseExclusive( ResourceTypes.NODE, iterator.next() );
+                            state.locks().implicit().releaseExclusive( ResourceTypes.NODE, iterator.next() );
                         }
                         nodeIds.clear();
                         break;

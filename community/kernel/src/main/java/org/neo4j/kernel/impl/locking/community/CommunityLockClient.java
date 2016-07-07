@@ -38,7 +38,7 @@ import static java.lang.String.format;
 // Please note. Except separate test cases for particular classes related to community locking
 // see also org.neo4j.kernel.impl.locking.community.CommunityLocksCompatibility test suite
 
-public class CommunityLockClient extends Locks.ClientAdapter
+public class CommunityLockClient implements Locks.Client
 {
     private final LockManagerImpl manager;
     private final LockTransaction lockTransaction = new LockTransaction();

@@ -61,6 +61,7 @@ import org.neo4j.kernel.monitoring.tracing.Tracers;
 
 import static java.util.Collections.newSetFromMap;
 import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.deferred_locking;
 
 /**
  * Central source of transactions in the database.
@@ -83,6 +84,7 @@ public class KernelTransactions extends LifecycleAdapter
     private final NeoStores neoStores;
     private final Locks locks;
     private final boolean txTerminationAwareLocks;
+    private final boolean deferringLocks;
     private final IntegrityValidator integrityValidator;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final IndexingService indexingService;
@@ -144,6 +146,7 @@ public class KernelTransactions extends LifecycleAdapter
         this.neoStores = neoStores;
         this.locks = locks;
         this.txTerminationAwareLocks = config.get( tx_termination_aware_locks );
+        this.deferringLocks = config.get( deferred_locking );
         this.integrityValidator = integrityValidator;
         this.constraintIndexCreator = constraintIndexCreator;
         this.indexingService = indexingService;
@@ -185,7 +188,7 @@ public class KernelTransactions extends LifecycleAdapter
                     neoStores, locks, hooks, constraintIndexCreator, transactionHeaderInformationFactory,
                     transactionCommitProcess, transactionMonitor, storeLayer, legacyIndexTransactionState,
                     localTxPool, constraintSemantics, clock, tracers.transactionTracer, procedureCache,
-                    context, txTerminationAwareLocks );
+                    context, txTerminationAwareLocks, deferringLocks );
             allTransactions.add( tx );
 
             return tx;

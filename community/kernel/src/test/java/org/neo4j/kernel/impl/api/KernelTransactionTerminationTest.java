@@ -395,7 +395,7 @@ public class KernelTransactionTerminationTest
                     TransactionHeaderInformationFactory.DEFAULT, mock( TransactionCommitProcess.class ), monitor,
                     mock( StoreReadLayer.class, RETURNS_MOCKS ), mock( LegacyIndexTransactionState.class ),
                     mock( Pool.class ), new StandardConstraintSemantics(), new FakeClock(), TransactionTracer.NULL,
-                    new ProcedureCache(), mock( NeoStoreTransactionContext.class ), true );
+                    new ProcedureCache(), mock( NeoStoreTransactionContext.class ), true, false );
 
             this.monitor = monitor;
         }

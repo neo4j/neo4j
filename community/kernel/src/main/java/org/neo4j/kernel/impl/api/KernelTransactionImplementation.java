@@ -71,6 +71,10 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
+import org.neo4j.kernel.impl.locking.StatementLocks;
+import org.neo4j.kernel.impl.locking.deferred.DeferringLockClient;
+import org.neo4j.kernel.impl.locking.deferred.DeferringStatementLocks;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -163,12 +167,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final Collection<Command> extractedCommands = new ArrayCollection<>( 32 );
     private final Locks locksManager;
     private final boolean txTerminationAwareLocks;
+    private final boolean deferringLocks;
     private TransactionState txState;
     private LegacyIndexTransactionState legacyIndexTransactionState;
     private TransactionType transactionType = TransactionType.ANY;
     private TransactionHooks.TransactionHooksState hooksState;
     private boolean beforeHookInvoked;
-    private Locks.Client locks;
+    private StatementLocks statementLocks;
     private StoreStatement storeStatement;
     private boolean closing, closed;
     private boolean failure, success;
@@ -220,7 +225,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             TransactionTracer tracer,
                                             ProcedureCache procedureCache,
                                             NeoStoreTransactionContext context,
-                                            boolean txTerminationAwareLocks )
+                                            boolean txTerminationAwareLocks,
+                                            boolean deferringLocks )
     {
         this.operations = operations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -231,6 +237,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.schemaState = schemaState;
         this.locksManager = locks;
         this.txTerminationAwareLocks = txTerminationAwareLocks;
+        this.deferringLocks = deferringLocks;
         this.hooks = hooks;
         this.constraintIndexCreator = constraintIndexCreator;
         this.headerInformationFactory = headerInformationFactory;
@@ -252,7 +259,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp )
     {
-        this.locks = locksManager.newClient();
+        this.statementLocks = deferringLocks ? new DeferringStatementLocks( locksManager.newClient() )
+                                             : new SimpleStatementLocks( locksManager.newClient() );
         this.terminationReason = null;
         this.closing = closed = failure = success = false;
         this.transactionType = TransactionType.ANY;
@@ -317,9 +325,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             {
                 failure = true;
                 terminationReason = reason;
-                if ( txTerminationAwareLocks && locks != null )
+                if ( txTerminationAwareLocks && statementLocks != null )
                 {
-                    locks.stop();
+                    statementLocks.stop();
                 }
                 transactionMonitor.transactionTerminated();
             }
@@ -343,10 +351,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if ( currentStatement == null )
         {
             currentStatement = new KernelStatement( this, new IndexReaderFactory.Caching( indexService ),
-                    labelScanStore, this, locks, operations, storeStatement );
+                    labelScanStore, this, statementLocks, operations, storeStatement );
         }
         currentStatement.acquire();
         return currentStatement;
+    }
+
+    private Locks.Client deferringLocks( Locks.Client locks )
+    {
+        return new DeferringLockClient( locks );
     }
 
     public void releaseStatement( Statement statement )
@@ -520,6 +533,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             finally
             {
                 release();
+                release();
             }
         }
     }
@@ -557,12 +571,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     protected void dispose()
     {
-        if ( locks != null )
+        if ( statementLocks != null )
         {
-            locks.close();
+            statementLocks.close();
         }
 
-        this.locks = null;
+        this.statementLocks = null;
         this.transactionType = null;
         this.hooksState = null;
         this.txState = null;
@@ -600,8 +614,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     }
                 }
 
-                locks.prepare();
-                context.init( locks.delegate() );
+                statementLocks.prepareForCommit();
+                context.init( statementLocks.explicit() );
                 prepareRecordChangesFromTransactionState();
             }
 
@@ -635,7 +649,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                 headerInformation.getMasterId(),
                                 headerInformation.getAuthorId(),
                                 startTimeMillis, lastTransactionIdWhenStarted, clock.currentTimeMillis(),
-                                locks.getLockSessionId() );
+                                statementLocks.explicit().getLockSessionId() );
 
                         // Commit the transaction
                         commitProcess.commit( transactionRepresentation, lockGroup, commitEvent, INTERNAL );
@@ -751,8 +765,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         terminationReleaseLock.lock();
         try
         {
-            locks.close();
-            locks = null;
+            statementLocks.close();
+            statementLocks = null;
             terminationReason = null;
             pool.release( this );
             if ( storeStatement != null )
@@ -1235,6 +1249,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public String toString()
     {
-        return "KernelTransaction[" + this.locks.getLockSessionId() + "]";
+        return "KernelTransaction[" + this.statementLocks.explicit().getLockSessionId() + "]";
     }
 }

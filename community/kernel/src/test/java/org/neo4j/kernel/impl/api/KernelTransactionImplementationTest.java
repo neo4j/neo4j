@@ -634,7 +634,7 @@ public class KernelTransactionImplementationTest
         return new KernelTransactionImplementation( null, null, null, null, null, recordState, null, neoStores, locks,
                 hooks, null, headerInformationFactory, commitProcess, transactionMonitor, storeReadLayer,
                 legacyIndexState, pool, new StandardConstraintSemantics(), clock, TransactionTracer.NULL,
-                new ProcedureCache(), mock( NeoStoreTransactionContext.class ), txTerminationAware );
+                new ProcedureCache(), mock( NeoStoreTransactionContext.class ), txTerminationAware, false );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess
