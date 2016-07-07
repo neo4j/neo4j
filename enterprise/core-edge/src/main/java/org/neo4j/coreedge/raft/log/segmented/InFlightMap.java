@@ -22,6 +22,8 @@ package org.neo4j.coreedge.raft.log.segmented;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.kernel.impl.util.ArrayMap;
+
 import static java.lang.String.format;
 
 public class InFlightMap<K, V>
@@ -42,14 +44,14 @@ public class InFlightMap<K, V>
         if ( previousValue != null )
         {
             throw new IllegalArgumentException(
-                    format( "Attempted to register an already seen value to the log entry cache. Key: %s Value: %s",
-                            key, value ) );
+                    format( "Attempted to register an already seen value to the log entry cache. " +
+                            "Key: %s; New Value: %s; Previous Value: %s", key, value, previousValue ) );
         }
     }
 
     /**
      * Returns the mapped value for this key or null if the key has not been registered.
-     * @param key
+     * @param key The key to use for retrieving the value from the map
      * @return the value for this key, otherwise null.
      */
     public V retrieve( K key )
