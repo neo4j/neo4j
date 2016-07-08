@@ -240,6 +240,7 @@ class SegmentFile implements AutoCloseable
     public void close()
     {
         closeWriter();
+        readerPool.prune( version );
 
         if ( !refCount.tryDispose() )
         {

@@ -44,6 +44,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.coreedge.raft.ReplicatedString.valueOf;
@@ -66,7 +67,7 @@ public class SegmentFileTest
     private final RaftLogEntry entry4 = new RaftLogEntry( 33, valueOf( "contentD" ) );
     private final int version = 0;
 
-    private ReaderPool readerPool = new ReaderPool( 0, logProvider, fileNames, fsRule.get(), new FakeClock() );
+    private ReaderPool readerPool = spy( new ReaderPool( 0, logProvider, fileNames, fsRule.get(), new FakeClock() ) );
 
     @Before
     public void before()
@@ -295,5 +296,22 @@ public class SegmentFileTest
             verify( readerPool, never() ).release( reader );
             verify( reader ).close();
         }
+    }
+
+    @Test
+    public void shouldPruneReaderPoolOnClose() throws Exception
+    {
+        try ( SegmentFile segment = create( fsRule.get(), fileNames.getForVersion( 0 ), readerPool, 0, contentMarshal, logProvider, segmentHeader ) )
+        {
+            segment.write( 0, entry1 );
+            segment.flush();
+            segment.closeWriter();
+
+            IOCursor<EntryRecord> cursor = segment.getCursor( 0 );
+            cursor.next();
+            cursor.close();
+        }
+
+        verify( readerPool ).prune( 0 );
     }
 }

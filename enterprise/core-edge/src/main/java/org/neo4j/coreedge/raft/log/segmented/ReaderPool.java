@@ -132,4 +132,18 @@ class ReaderPool
             reader.close();
         }
     }
+
+    public synchronized void prune( long version )
+    {
+        Iterator<Reader> itr = pool.iterator();
+        while ( itr.hasNext() )
+        {
+            Reader reader = itr.next();
+            if ( reader.version() == version )
+            {
+                dispose( reader );
+                itr.remove();
+            }
+        }
+    }
 }
