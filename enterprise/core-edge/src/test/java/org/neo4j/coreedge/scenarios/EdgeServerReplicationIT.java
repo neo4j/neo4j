@@ -19,9 +19,6 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
@@ -30,8 +27,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.BinaryOperator;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.CoreServer;
@@ -58,6 +57,7 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.Log;
+import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.coreedge.ClusterRule;
 
@@ -65,6 +65,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
+
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
@@ -74,6 +75,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+
 import static org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
 import static org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME;
 import static org.neo4j.function.Predicates.awaitEx;
@@ -339,25 +341,26 @@ public class EdgeServerReplicationIT
         return logs.keySet().stream().reduce( operator ).orElseThrow( IllegalStateException::new );
     }
 
-    private GraphDatabaseService executeOnLeaderWithRetry( Workload workload, Cluster cluster ) throws TimeoutException
+    private void executeOnLeaderWithRetry( Workload workload, Cluster cluster ) throws Exception
     {
-        CoreGraphDatabase coreDB;
-        while ( true )
-        {
-            coreDB = cluster.awaitLeader( 5000 ).database();
-            try ( Transaction tx = coreDB.beginTx() )
+        assertEventually( "Executed on leader", () -> {
+            try
             {
-                workload.doWork( coreDB );
-                tx.success();
-                break;
+                CoreGraphDatabase coreDB = cluster.awaitLeader( 5000 ).database();
+                try ( Transaction tx = coreDB.beginTx() )
+                {
+                    workload.doWork( coreDB );
+                    tx.success();
+                    return true;
+                }
             }
-            catch ( TransactionFailureException e )
+            catch ( AcquireLockTimeoutException | TransactionFailureException e )
             {
                 // print the stack trace for diagnostic purposes, but retry as this is most likely a transient failure
                 e.printStackTrace();
+                return false;
             }
-        }
-        return coreDB;
+        }, is( true ), 30, SECONDS );
     }
 
     private interface Workload
