@@ -193,7 +193,7 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         assertEmpty( adminSubject, "CALL dbms.deleteUser('Henrik')" );
         assertFail( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')",
-                "User Henrik does not exist" );
+                "User 'Henrik' does not exist" );
     }
 
     /*
@@ -209,7 +209,7 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
         assertEmpty( adminSubject, "CALL dbms.deleteUser('Henrik')" );
         assertFail( adminSubject, "CALL dbms.removeUserFromRole('Henrik', '" + PUBLISHER + "')",
-                "User Henrik does not exist" );
+                "User 'Henrik' does not exist" );
     }
 
     /*

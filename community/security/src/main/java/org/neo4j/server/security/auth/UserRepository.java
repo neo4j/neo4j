@@ -22,7 +22,7 @@ package org.neo4j.server.security.auth;
 import java.io.IOException;
 import java.util.Set;
 
-import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
@@ -36,21 +36,26 @@ public interface UserRepository extends Lifecycle
     /**
      * Create a user, given that the users token is unique.
      * @param user the new user object
-     * @throws IllegalCredentialsException if the username is not valid
+     * @throws InvalidArgumentsException if the username is not valid
+     * @throws IOException if the underlying storage for users fails
      */
-    void create( User user ) throws IllegalCredentialsException, IOException;
+    void create( User user ) throws InvalidArgumentsException, IOException;
 
     /**
      * Update a user, given that the users token is unique.
      * @param existingUser the existing user object, which must match the current state in this repository
      * @param updatedUser the updated user object
      * @throws ConcurrentModificationException if the existingUser does not match the current state in the repository
+     * @throws IOException if the underlying storage for users fails
+     * @throws InvalidArgumentsException if the existing and updated users have different names
      */
-    void update( User existingUser, User updatedUser ) throws ConcurrentModificationException, IOException;
+    void update( User existingUser, User updatedUser )
+            throws ConcurrentModificationException, IOException, InvalidArgumentsException;
 
     /**
      * Deletes a user.
      * @param user the user to delete
+     * @throws IOException if the underlying storage for users fails
      * @return true if the user was found and deleted
      */
     boolean delete( User user ) throws IOException;

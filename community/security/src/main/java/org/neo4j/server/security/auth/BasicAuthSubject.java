@@ -22,9 +22,9 @@ package org.neo4j.server.security.auth;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 
 public class BasicAuthSubject implements AuthSubject
 {
@@ -76,10 +76,10 @@ public class BasicAuthSubject implements AuthSubject
      *
      * @param password The new password
      * @throws IOException If the new user credentials cannot be stored on disk.
-     * @throws IllegalCredentialsException If password is invalid, e.g. if the new password is the same as the current.
+     * @throws InvalidArgumentsException If password is invalid, e.g. if the new password is the same as the current.
      */
     @Override
-    public void setPassword( String password ) throws IOException, IllegalCredentialsException
+    public void setPassword( String password ) throws IOException, InvalidArgumentsException
     {
         authManager.setPassword( this, user.name(), password );
 

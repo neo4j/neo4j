@@ -23,47 +23,47 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.server.security.auth.UserManager;
 
 public interface EnterpriseUserManager extends UserManager
 {
     void setPassword( AuthSubject authSubject, String username, String password ) throws IOException,
-            IllegalCredentialsException;
+            InvalidArgumentsException;
 
-    void suspendUser( String username ) throws IOException;
+    void suspendUser( String username ) throws IOException, InvalidArgumentsException;
 
-    void activateUser( String username ) throws IOException;
+    void activateUser( String username ) throws IOException, InvalidArgumentsException;
 
     Set<String> getAllUsernames();
 
-    RoleRecord newRole( String roleName, String... usernames ) throws IOException;
+    RoleRecord newRole( String roleName, String... usernames ) throws IOException, InvalidArgumentsException;
 
-    RoleRecord assertAndGetRole( String roleName ) throws IllegalArgumentException;
+    RoleRecord getRole( String roleName ) throws InvalidArgumentsException;
 
     /**
      * Add a user to a role. The role has to exist.
      *
-     * @param username
-     * @param roleName
-     * @throws IllegalArgumentException if the role does not exist
+     * @param username name of user
+     * @param roleName name of role
+     * @throws InvalidArgumentsException if the role does not exist
      * @throws IOException
      */
-    void addUserToRole( String username, String roleName ) throws IOException;
+    void addUserToRole( String username, String roleName ) throws IOException, InvalidArgumentsException;
 
     /**
      * Remove a user from a role.
      *
-     * @param username
-     * @param roleName
-     * @throws IllegalArgumentException if the username or the role does not exist
+     * @param username name of user
+     * @param roleName name of role
+     * @throws InvalidArgumentsException if the username or the role does not exist
      * @throws IOException
      */
-    void removeUserFromRole( String username, String roleName ) throws IOException;
+    void removeUserFromRole( String username, String roleName ) throws IOException, InvalidArgumentsException;
 
     Set<String> getAllRoleNames();
 
-    Set<String> getRoleNamesForUser( String username );
+    Set<String> getRoleNamesForUser( String username ) throws InvalidArgumentsException;
 
-    Set<String> getUsernamesForRole( String roleName );
+    Set<String> getUsernamesForRole( String roleName ) throws InvalidArgumentsException;
 }

@@ -47,14 +47,4 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     {
         return new EnterpriseConstraintSemantics();
     }
-
-    @Override
-    public void registerProcedures( Procedures procedures )
-    {
-        super.registerProcedures( procedures );
-        for ( EnterpriseProceduresProvider candidate : Service.load( EnterpriseProceduresProvider.class ) )
-        {
-            candidate.registerProcedures( procedures );
-        }
-    }
 }

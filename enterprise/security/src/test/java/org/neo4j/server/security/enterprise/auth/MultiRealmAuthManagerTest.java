@@ -27,7 +27,7 @@ import java.util.Collections;
 
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
-import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.Credential;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
@@ -202,7 +202,7 @@ public class MultiRealmAuthManagerTest
             userManager.deleteUser( "unknown" );
             fail("Should throw exception on deleting unknown user");
         }
-        catch ( IllegalArgumentException e )
+        catch ( InvalidArgumentsException e )
         {
             e.getMessage().equals( "User 'unknown' does not exist" );
         }
@@ -294,10 +294,10 @@ public class MultiRealmAuthManagerTest
             userManager.suspendUser( "jake" );
             fail( "Should throw exception on suspending unknown user" );
         }
-        catch ( IllegalArgumentException e )
+        catch ( InvalidArgumentsException e )
         {
             // Then
-            assertThat(e.getMessage(), containsString("User jake does not exist"));
+            assertThat(e.getMessage(), containsString("User 'jake' does not exist"));
         }
     }
 
@@ -313,10 +313,10 @@ public class MultiRealmAuthManagerTest
             userManager.activateUser( "jake" );
             fail( "Should throw exception on activating unknown user" );
         }
-        catch ( IllegalArgumentException e )
+        catch ( InvalidArgumentsException e )
         {
             // Then
-            assertThat(e.getMessage(), containsString("User jake does not exist"));
+            assertThat(e.getMessage(), containsString("User 'jake' does not exist"));
         }
     }
 
@@ -390,7 +390,7 @@ public class MultiRealmAuthManagerTest
             userManager.setUserPassword( "unknown", "hello, world!" );
             fail( "exception expected" );
         }
-        catch ( IllegalCredentialsException e )
+        catch ( InvalidArgumentsException e )
         {
             // expected
         }

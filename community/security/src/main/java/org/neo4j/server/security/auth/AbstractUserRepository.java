@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
@@ -48,11 +49,11 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
     }
 
     @Override
-    public void create( User user ) throws IllegalArgumentException, IOException
+    public void create( User user ) throws InvalidArgumentsException, IOException
     {
         if ( !isValidUsername( user.name() ) )
         {
-            throw new IllegalArgumentException( "'" + user.name() + "' is not a valid user name." );
+            throw new InvalidArgumentsException( "'" + user.name() + "' is not a valid user name." );
         }
 
         synchronized (this)
@@ -62,7 +63,7 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
             {
                 if ( other.name().equals( user.name() ) )
                 {
-                    throw new IllegalArgumentException( "The specified user already exists" );
+                    throw new InvalidArgumentsException( "The specified user already exists" );
                 }
             }
 
@@ -82,12 +83,13 @@ public abstract class AbstractUserRepository extends LifecycleAdapter implements
     protected abstract void saveUsers() throws IOException;
 
     @Override
-    public void update( User existingUser, User updatedUser ) throws ConcurrentModificationException, IOException
+    public void update( User existingUser, User updatedUser )
+            throws ConcurrentModificationException, IOException, InvalidArgumentsException
     {
         // Assert input is ok
         if ( !existingUser.name().equals( updatedUser.name() ) )
         {
-            throw new IllegalArgumentException( "updated user has a different name" );
+            throw new InvalidArgumentsException( "updated user has a different name" );
         }
 
         synchronized (this)

@@ -317,7 +317,7 @@ public class AuthenticationIT
                 pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyRecieves( msgFailure(Status.Request.Invalid,
+        assertThat( client, eventuallyRecieves( msgFailure(Status.Security.InvalidArguments,
                 "Old password and new password cannot be the same.") ) );
     }
 
@@ -341,7 +341,7 @@ public class AuthenticationIT
                 pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyRecieves( msgFailure(Status.Request.Invalid,
+        assertThat( client, eventuallyRecieves( msgFailure(Status.Security.InvalidArguments,
                 "Password cannot be empty.") ) );
     }
 

@@ -17,23 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.security.exception;
+package org.neo4j.server.security.auth;
 
-import org.neo4j.kernel.api.exceptions.Status;
+import java.io.IOException;
 
-public class IllegalCredentialsException extends Exception implements Status.HasStatus
+import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
+import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Name;
+import org.neo4j.procedure.Procedure;
+
+import static org.neo4j.procedure.Procedure.Mode.DBMS;
+
+public class AuthProcedures
 {
-    private final Status status;
+    @Context
+    public AuthSubject authSubject;
 
-    public IllegalCredentialsException( String message )
+    @Procedure( name = "dbms.changePassword", mode = DBMS )
+    public void changePassword( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
     {
-        super(message);
-        this.status = Status.Request.Invalid;
-    }
-
-    @Override
-    public Status status()
-    {
-        return status;
+        authSubject.setPassword( password );
     }
 }

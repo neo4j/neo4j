@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.AuthenticationResult;
-import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
@@ -118,7 +118,7 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
 
     @Override
     public User newUser( String username, String initialPassword, boolean requirePasswordChange ) throws IOException,
-            IllegalCredentialsException
+            InvalidArgumentsException
     {
         assertAuthEnabled();
         assertValidName( username );
@@ -140,25 +140,19 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     }
 
     @Override
-    public User getUser( String username )
+    public User getUser( String username ) throws InvalidArgumentsException
     {
         assertAuthEnabled();
-        return users.getUserByName( username );
-    }
-
-    @Override
-    public User assertAndGetUser( String username ) throws IllegalArgumentException
-    {
-        User user = getUser( username );
+        User user = users.getUserByName( username );
         if ( user == null )
         {
-            throw new IllegalArgumentException( "User " + username + " does not exist!" );
+            throw new InvalidArgumentsException( "User '" + username + "' does not exist!" );
         }
         return user;
     }
 
     public void setPassword( AuthSubject authSubject, String username, String password ) throws IOException,
-            IllegalCredentialsException
+            InvalidArgumentsException
     {
         BasicAuthSubject basicAuthSubject = BasicAuthSubject.castOrFail( authSubject );
 
@@ -172,20 +166,20 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
 
     @Override
     public void setUserPassword( String username, String password ) throws IOException,
-            IllegalCredentialsException
+            InvalidArgumentsException
     {
         assertAuthEnabled();
         User existingUser = users.getUserByName( username );
         if ( existingUser == null )
         {
-            throw new IllegalCredentialsException( "User " + username + " does not exist" );
+            throw new InvalidArgumentsException( "User '" + username + "' does not exist" );
         }
 
         passwordPolicy.validatePassword( password );
 
         if ( existingUser.credentials().matchesPassword( password ) )
         {
-            throw new IllegalCredentialsException( "Old password and new password cannot be the same." );
+            throw new InvalidArgumentsException( "Old password and new password cannot be the same." );
         }
 
         try
@@ -210,11 +204,11 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
         }
     }
 
-    private void assertValidName( String name )
+    private void assertValidName( String name ) throws InvalidArgumentsException
     {
         if ( !users.isValidUsername( name ) )
         {
-            throw new IllegalArgumentException( "User name contains illegal characters. Please use simple ascii characters and numbers." );
+            throw new InvalidArgumentsException( "User name contains illegal characters. Please use simple ascii characters and numbers." );
         }
     }
 

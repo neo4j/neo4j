@@ -22,7 +22,6 @@ package org.neo4j.server.rest.dbms;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.Map;
-import java.util.function.Supplier;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -33,7 +32,7 @@ import javax.ws.rs.core.Response;
 
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.server.rest.repr.AuthorizationRepresentation;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ExceptionRepresentation;
@@ -77,12 +76,15 @@ public class UserService
             return output.notFound();
         }
 
-        final User currentUser = userManager.getUser( username );
-        if ( currentUser == null )
+        try
+        {
+            User user = userManager.getUser( username );
+            return output.ok( new AuthorizationRepresentation( user ) );
+        }
+        catch ( InvalidArgumentsException e )
         {
             return output.notFound();
         }
-        return output.ok( new AuthorizationRepresentation( currentUser ) );
     }
 
     @POST
@@ -126,7 +128,7 @@ public class UserService
         {
             return output.serverErrorWithoutLegacyStacktrace( e );
         }
-        catch ( IllegalCredentialsException e )
+        catch ( InvalidArgumentsException e )
         {
             return output.response( UNPROCESSABLE, new ExceptionRepresentation(
                     new Neo4jError( e.status(), e.getMessage() ) ) );
