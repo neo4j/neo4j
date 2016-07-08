@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
@@ -3313,23 +3314,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         // hasn't, then something must be keeping it alive, even though it has been closed.
         int maxChecks = 200;
         //noinspection unused -- we use old-gen heap pollution, as well as System.gc(), to cause old-gen GCs
-        byte[] randomHeapPollution;
+        LinkedList<SoftReference<byte[]>> heapPollution = new LinkedList<>();
         boolean passed;
         do
         {
-            System.gc();
-            Thread.sleep( 100 );
-            passed = true;
-            //noinspection UnusedAssignment -- dumping unused crap into the old-gen heap to provoke GCs
-            randomHeapPollution = new byte[(int) ByteUnit.mebiBytes( 2 )];
-
-            for ( WeakReference<PageCache> ref : refs )
-            {
-                if ( ref.get() != null )
-                {
-                    passed = false;
-                }
-            }
+            passed = causeGcAndCheckReferences( refs, heapPollution );
         }
         while ( !passed && maxChecks-- > 0 );
 
@@ -3350,6 +3339,27 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 fail( "PageCaches should not be held live after close: " + nonNullPageCaches );
             }
         }
+    }
+
+    private boolean causeGcAndCheckReferences(
+            List<WeakReference<PageCache>> refs,
+            LinkedList<SoftReference<byte[]>> heapPollution )
+            throws InterruptedException
+    {
+        System.gc();
+        Thread.sleep( 50 );
+        boolean passed = true;
+        //noinspection UnusedAssignment -- dumping unused crap into the old-gen heap to provoke GCs
+        heapPollution.add( new SoftReference<>( new byte[(int) ByteUnit.mebiBytes( 32 )] ) );
+
+        for ( WeakReference<PageCache> ref : refs )
+        {
+            if ( ref.get() != null )
+            {
+                passed = false;
+            }
+        }
+        return passed;
     }
 
     private void createAndDirtyAndShutDownPageCache( List<WeakReference<PageCache>> refs, int filePagesInTotal )
