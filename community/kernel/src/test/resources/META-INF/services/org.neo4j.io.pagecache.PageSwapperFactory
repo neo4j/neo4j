@@ -1,2 +1,2 @@
 org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory
-org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactoryTest$PageSwapperFactoryForTesting
+org.neo4j.kernel.impl.pagecache.PageSwapperFactoryForTesting
