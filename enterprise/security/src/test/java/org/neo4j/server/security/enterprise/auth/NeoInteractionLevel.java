@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -54,4 +57,11 @@ public interface NeoInteractionLevel<S>
     String nameOf( S subject );
 
     void tearDown() throws Throwable;
+
+    static String tempPath(String prefix, String suffix ) throws IOException
+    {
+        Path path = Files.createTempFile( prefix, suffix );
+        Files.delete( path );
+        return path.toString();
+    }
 }

@@ -52,6 +52,7 @@ abstract class AuthTestBase<S>
     protected String READ_OPS_NOT_ALLOWED = "Read operations are not allowed";
     protected String WRITE_OPS_NOT_ALLOWED = "Write operations are not allowed";
     protected String SCHEMA_OPS_NOT_ALLOWED = "Schema operations are not allowed";
+
     protected boolean IS_EMBEDDED = true;
 
     protected String pwdReqErrMsg( String errMsg )

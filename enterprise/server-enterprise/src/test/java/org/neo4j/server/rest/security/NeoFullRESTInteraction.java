@@ -33,6 +33,7 @@ import java.util.function.Consumer;
 
 import javax.ws.rs.core.HttpHeaders;
 
+import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -49,6 +50,8 @@ import org.neo4j.server.security.enterprise.auth.NeoInteractionLevel;
 import org.neo4j.test.server.HTTP;
 
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 
 public class NeoFullRESTInteraction extends CommunityServerTestBase implements NeoInteractionLevel<RESTSubject>
@@ -61,6 +64,12 @@ public class NeoFullRESTInteraction extends CommunityServerTestBase implements N
     public NeoFullRESTInteraction() throws IOException
     {
         server = EnterpriseServerBuilder.server()
+                .withProperty( boltConnector( "0" ).enabled.name(), "true" )
+                .withProperty( boltConnector( "0" ).encryption_level.name(), OPTIONAL.name() )
+                .withProperty( BoltKernelExtension.Settings.tls_key_file.name(),
+                                    NeoInteractionLevel.tempPath( "key", ".key" ) )
+                .withProperty( BoltKernelExtension.Settings.tls_certificate_file.name(),
+                                    NeoInteractionLevel.tempPath( "cert", ".cert" ) )
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( true ) )
                 .withProperty( GraphDatabaseSettings.auth_manager.name(), "enterprise-auth-manager" )
                 .build();
