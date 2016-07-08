@@ -24,11 +24,11 @@ import org.neo4j.kernel.impl.store.StoreFailureException;
 
 public interface MismatchedStoreIdService
 {
-    void addMismatchedStoreListener( BatchingMessageHandler.MismatchedStoreListener listener );
+    void addMismatchedStoreListener( MismatchedStoreListener listener );
 
     interface MismatchedStoreListener
     {
-        void onMismatchedStore( BatchingMessageHandler.MismatchedStoreIdException ex );
+        void onMismatchedStore( MismatchedStoreIdException ex );
     }
 
     class MismatchedStoreIdException extends StoreFailureException

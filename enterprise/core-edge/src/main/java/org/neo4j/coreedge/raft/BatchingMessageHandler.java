@@ -88,7 +88,6 @@ public class BatchingMessageHandler implements Runnable, MessageHandler<RaftMess
 
         if ( message != null )
         {
-            // do the check here
             RaftMessages.RaftMessage innerMessage = message.message();
             StoreId storeId = message.storeId();
 

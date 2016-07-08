@@ -82,7 +82,7 @@ public class MembershipWaiter
         return catchUpFuture;
     }
 
-    private class Evaluator implements Runnable, BatchingMessageHandler.MismatchedStoreListener
+    private class Evaluator implements Runnable, MismatchedStoreIdService.MismatchedStoreListener
     {
         private final ReadableRaftState raftState;
         private final CompletableFuture<Boolean> catchUpFuture;
