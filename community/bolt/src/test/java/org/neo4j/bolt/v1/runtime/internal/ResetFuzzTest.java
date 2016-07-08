@@ -143,7 +143,7 @@ public class ResetFuzzTest
         {
             Message message = messages.get( rand.nextInt( messages.size() ) );
             sent.add( message );
-            message.dispatch( session );
+            message.<RuntimeException>dispatch( session );
         }
     }
 

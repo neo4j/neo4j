@@ -215,7 +215,8 @@ class SyntaxExceptionTest extends ExecutionEngineFunSuite {
   }
 
   test("should handle newline") {
-    test(System.lineSeparator(), "Unexpected end of input: expected whitespace, comment, CYPHER options, EXPLAIN, PROFILE or Query (line 2, column 1 (offset: 1))")
+    val sep = System.lineSeparator()
+    test(sep, s"Unexpected end of input: expected whitespace, comment, CYPHER options, EXPLAIN, PROFILE or Query (line 2, column 1 (offset: ${sep.length}))")
   }
 
   def test(query: String, message: String) {

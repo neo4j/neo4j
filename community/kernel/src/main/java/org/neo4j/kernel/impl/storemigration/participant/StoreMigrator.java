@@ -249,18 +249,13 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         return new File( migrationDir, "lastxinformation" );
     }
 
-    private static File lastTxChecksumFile( File migrationDir )
-    {
-        return new File( migrationDir, "lastxchecksum" );
-    }
-
     private static File lastTxLogPositionFile( File migrationDir )
     {
         return new File( migrationDir, "lastxlogposition" );
     }
 
     // accessible for tests
-    protected TransactionId extractTransactionIdInformation( File neoStore, File storeDir, long txId )
+    TransactionId extractTransactionIdInformation( File neoStore, File storeDir, long txId )
             throws IOException
     {
         long checksum = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
@@ -321,7 +316,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             SchemaIndexProvider schemaIndexProvider, RecordFormats oldFormat )
             throws IOException
     {
-        StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, Iterables.<StoreFile,StoreFile>iterable(
+        StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, Iterables.iterable(
                 StoreFile.PROPERTY_STORE,
                 StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
                 StoreFile.PROPERTY_KEY_TOKEN_STORE,
@@ -332,7 +327,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 StoreFile.SCHEMA_STORE ), false, ExistingTargetStrategy.SKIP, StoreFileType.STORE );
 
         // copy ids only if present
-        StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, Iterables.<StoreFile,StoreFile>iterable(
+        StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, Iterables.iterable(
                 StoreFile.PROPERTY_STORE,
                 StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
                 StoreFile.PROPERTY_KEY_TOKEN_STORE,

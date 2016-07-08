@@ -70,8 +70,20 @@ public class LegacyLogsTest
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final LegacyLogEntryReader reader = mock( LegacyLogEntryReader.class );
     private final LegacyLogEntryWriter writer = mock( LegacyLogEntryWriter.class );
-    private final File storeDir = new File( "/store" );
-    private final File migrationDir = new File( "/migration" );
+    private final File storeDir = getRootFile( "/store" );
+    private final File migrationDir = getRootFile( "/migration" );
+
+    private static File getRootFile( String pathname )
+    {
+        try
+        {
+            return new File( pathname ).getCanonicalFile();
+        }
+        catch ( IOException e )
+        {
+            throw new AssertionError( e );
+        }
+    }
 
     @Test
     public void shouldRewriteLogFiles() throws IOException

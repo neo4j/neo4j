@@ -284,6 +284,49 @@ public class PackStreamTest
     }
 
     @Test
+    public void testCanPackCommonlyUsedCharAndUnpackAsString() throws Throwable
+    {
+        // Given
+        Machine machine = new Machine();
+
+        for ( int i = 32; i < 127; i++ )
+        {
+            char c = (char) i;
+
+            // When
+            machine.reset();
+            machine.packer().pack( c );
+            machine.packer().flush();
+
+            // Then
+            String value = newUnpacker( machine.output() ).unpackString();
+            assertThat( value, equalTo( String.valueOf( c ) ) );
+        }
+    }
+
+    @Test
+    public void testCanPackRandomCharAndUnpackAsString() throws Throwable
+    {
+        // Given
+        Machine machine = new Machine();
+        char[] chars = {'ø', 'å', '´', '†', 'œ', '≈'};
+
+        for ( int i = 0; i < chars.length; i++ )
+        {
+            char c = chars[i];
+
+            // When
+            machine.reset();
+            machine.packer().pack( c );
+            machine.packer().flush();
+
+            // Then
+            String value = newUnpacker( machine.output() ).unpackString();
+            assertThat( value, equalTo( String.valueOf( c ) ) );
+        }
+    }
+
+    @Test
     public void testCanPackAndUnpackStrings() throws Throwable
     {
         // Given

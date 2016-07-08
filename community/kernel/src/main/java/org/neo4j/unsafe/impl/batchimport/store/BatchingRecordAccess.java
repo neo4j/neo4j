@@ -99,7 +99,6 @@ public abstract class BatchingRecordAccess<KEY,RECORD,ADDITIONAL> implements Rec
         private final KEY key;
         private final RECORD record;
         private final ADDITIONAL additional;
-        private boolean changed;
 
         private BatchingRecordProxy( KEY key, RECORD record, ADDITIONAL additional )
         {

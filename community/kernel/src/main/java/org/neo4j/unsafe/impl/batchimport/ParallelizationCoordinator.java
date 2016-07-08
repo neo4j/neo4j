@@ -61,13 +61,6 @@ public class ParallelizationCoordinator
             lock.writeLock().unlock();
         }
 
-        return new Resource()
-        {
-            @Override
-            public void close()
-            {
-                readLock.unlock();
-            }
-        };
+        return readLock::unlock;
     }
 }

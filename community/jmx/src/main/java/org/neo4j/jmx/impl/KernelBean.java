@@ -43,7 +43,6 @@ public class KernelBean extends Neo4jMBean implements Kernel
     private boolean isReadOnly;
     private long storeCreationDate = -1;
     private long storeId = -1;
-    private String storePath = null;
     private String databaseName = null;
     private long storeLogVersion;
 
@@ -135,7 +134,6 @@ public class KernelBean extends Neo4jMBean implements Kernel
             }
 
             databaseName = storeDir.getName();
-            storePath = storeDir.getAbsolutePath();
         }
 
         @Override
@@ -145,7 +143,6 @@ public class KernelBean extends Neo4jMBean implements Kernel
             storeLogVersion = -1;
             isReadOnly = false;
             storeId = -1;
-            storePath = null;
         }
     }
 }

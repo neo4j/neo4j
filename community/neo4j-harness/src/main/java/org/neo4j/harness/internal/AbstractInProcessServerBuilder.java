@@ -19,16 +19,16 @@
  */
 package org.neo4j.harness.internal;
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
-
-import org.apache.commons.io.FileUtils;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
@@ -56,7 +56,6 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.Iterables.append;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
-import static org.neo4j.server.ServerTestUtils.getRelativePath;
 import static org.neo4j.server.configuration.ServerSettings.httpConnector;
 import static org.neo4j.test.Digests.md5Hex;
 
@@ -211,7 +210,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
 
     private String randomFolderName()
     {
-        return md5Hex( Long.toString( new Random().nextLong() ) );
+        return md5Hex( Long.toString( ThreadLocalRandom.current().nextLong() ) );
     }
 
     private int freePort(int startRange, int endRange)
