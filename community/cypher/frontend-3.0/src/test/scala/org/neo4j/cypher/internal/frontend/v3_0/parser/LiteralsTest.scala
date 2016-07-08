@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0.parser
 
+import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, ast}
 import org.parboiled.scala._
 
@@ -52,7 +53,7 @@ class LiteralsTest extends ParserTest[Any, Any] with Literals {
     assertFails("1bcd")
   }
 
-  test("can parse numbersz") {
+  test("can parse numbers") {
     implicit val parserToTest = NumberLiteral
 
     parsing("123") shouldGive ast.SignedDecimalIntegerLiteral("123")(t)
@@ -77,6 +78,22 @@ class LiteralsTest extends ParserTest[Any, Any] with Literals {
     parsing("1E23") shouldGive ast.DecimalDoubleLiteral("1E23")(t)
     parsing("1.34E99") shouldGive ast.DecimalDoubleLiteral("1.34E99")(t)
     parsing("9E-443") shouldGive ast.DecimalDoubleLiteral("9E-443")(t)
+  }
+
+  test("can parse legacy parameter syntax") {
+    implicit val parserToTest = Parameter
+
+    parsing("{p}") shouldGive ast.Parameter("p", CTAny)(t)
+    parsing("{`the funny horse`}") shouldGive ast.Parameter("the funny horse", CTAny)(t)
+    parsing("{0}") shouldGive ast.Parameter("0", CTAny)(t)
+  }
+
+  test("can parse new parameter syntax") {
+    implicit val parserToTest = Parameter
+
+    parsing("$p") shouldGive ast.Parameter("p", CTAny)(t)
+    parsing("$`the funny horse`") shouldGive ast.Parameter("the funny horse", CTAny)(t)
+    parsing("$0") shouldGive ast.Parameter("0", CTAny)(t)
   }
 
   def convert(result: Any): Any = result
