@@ -22,15 +22,19 @@ package org.neo4j.server.security.enterprise.auth;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.NamedFunction;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
+import static junit.framework.TestCase.fail;
+import static org.junit.Assert.assertTrue;
+
 public class ThreadedTransactionCreate<S>
 {
     final Barrier.Control barrier = new Barrier.Control();
-    private Future<Long> done;
+    private Future<Throwable> done;
 
     NeoInteractionLevel<S> neo;
 
@@ -41,24 +45,22 @@ public class ThreadedTransactionCreate<S>
 
     void execute( ThreadingRule threading, S subject )
     {
-        NamedFunction<S, Long> startTransaction =
-                new NamedFunction<S, Long>( "start-transaction" )
+        NamedFunction<S, Throwable> startTransaction =
+                new NamedFunction<S, Throwable>( "start-transaction" )
                 {
                     @Override
-                    public Long apply( S subject )
+                    public Throwable apply( S subject )
                     {
-                        try
+                        try ( InternalTransaction tx = neo.startTransactionAsUser( subject ) )
                         {
-                            InternalTransaction tx = neo.startTransactionAsUser( subject );
                             barrier.reached();
                             neo.getGraph().execute( "CREATE (:Test { name: '" + neo.nameOf( subject ) + "-node'})" );
                             tx.success();
-                            tx.close();
-                            return 0L;
+                            return null;
                         }
                         catch (Throwable t)
                         {
-                            return 1L;
+                            return t;
                         }
                     }
                 };
@@ -66,7 +68,27 @@ public class ThreadedTransactionCreate<S>
         done = threading.execute( startTransaction, subject );
     }
 
-    Long close() throws ExecutionException, InterruptedException
+    void closeAndAssertSuccess() throws Throwable
+    {
+        Throwable exceptionInOtherThread = join();
+        if ( exceptionInOtherThread != null )
+        {
+            fail( "Expected no exception in ThreadedCreate, got '"+exceptionInOtherThread.getMessage()+"'" );
+        }
+    }
+
+    void closeAndAssertTransactionTermination() throws Throwable
+    {
+        Throwable exceptionInOtherThread = join();
+        if ( exceptionInOtherThread == null )
+        {
+            fail( "Expected BridgeTransactionTerminatedException in ThreadedCreate, but no exception was raised" );
+        }
+        assertTrue( "Expected TransactionTerminatedException in ThreadedCreate, got '"+exceptionInOtherThread.getMessage()
+                +"'", exceptionInOtherThread instanceof TransactionTerminatedException );
+    }
+
+    private Throwable join() throws ExecutionException, InterruptedException
     {
         barrier.release();
         return done.get();
