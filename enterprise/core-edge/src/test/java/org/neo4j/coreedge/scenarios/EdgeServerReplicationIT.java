@@ -317,8 +317,8 @@ public class EdgeServerReplicationIT
         }
 
         File storeDir = coreGraphDatabase.storeDir();
-        assertEventually( "pruning happened", () -> versionBy( storeDir, Math::min ), greaterThan( baseVersion ), 1,
-                SECONDS );
+        assertEventually( "pruning happened", () -> versionBy( storeDir, Math::min ), greaterThan( baseVersion ),
+                5, SECONDS );
 
         // when
         cluster.addEdgeServerWithIdAndRecordFormat( 42, HighLimit.NAME ).start();

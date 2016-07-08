@@ -67,13 +67,12 @@ public class CorePruningIT
         File storeDir = coreGraphDatabase.storeDir();
         int expectedNumberOfLogFilesAfterPruning = 2;
         assertEventually( "raft logs eventually pruned", () -> numberOfFiles( storeDir ),
-                equalTo( expectedNumberOfLogFilesAfterPruning ), 1, TimeUnit.SECONDS );
+                equalTo( expectedNumberOfLogFilesAfterPruning ), 5, TimeUnit.SECONDS );
     }
 
     @Test
     public void shouldNotPruneUncommittedEntries() throws Exception
     {
-
         // given
         Cluster cluster = clusterRule.startCluster();
 
@@ -90,7 +89,7 @@ public class CorePruningIT
         File storeDir = coreGraphDatabase.storeDir();
         int expectedNumberOfLogFilesAfterPruning = 2;
         assertEventually( "raft logs eventually pruned", () -> numberOfFiles( storeDir ),
-                equalTo( expectedNumberOfLogFilesAfterPruning ), 1, TimeUnit.SECONDS );
+                equalTo( expectedNumberOfLogFilesAfterPruning ), 5, TimeUnit.SECONDS );
     }
 
     private int numberOfFiles( File storeDir ) throws RuntimeException
