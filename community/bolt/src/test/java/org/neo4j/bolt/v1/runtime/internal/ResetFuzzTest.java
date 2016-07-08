@@ -249,7 +249,7 @@ public class ResetFuzzTest
         public long closeTransaction() throws TransactionFailureException
         {
             liveTransactions.decrementAndGet();
-            return NOT_COMMITTED;
+            return ROLLBACK;
         }
 
         @Override

@@ -413,7 +413,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             {
                 rollback();
                 failOnNonExplicitRollbackIfNeeded();
-                return NOT_COMMITTED;
+                return ROLLBACK;
             }
             else
             {
@@ -538,7 +538,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 }
             }
             success = true;
-            return NOT_COMMITTED;
+            return READ_ONLY;
         }
         catch ( ConstraintValidationKernelException | CreateConstraintFailureException e )
         {

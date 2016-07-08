@@ -177,7 +177,7 @@ public class ConstraintIndexCreatorTest
                 @Override
                 public long closeTransaction() throws TransactionFailureException
                 {
-                    return NOT_COMMITTED;
+                    return ROLLBACK;
                 }
 
                 @Override

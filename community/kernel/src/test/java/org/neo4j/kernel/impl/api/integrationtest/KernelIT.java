@@ -553,7 +553,40 @@ public class KernelIT extends KernelIntegrationTest
         }
         tx.failure();
 
-        assertEquals( KernelTransaction.NOT_COMMITTED, tx.closeTransaction() );
+        assertEquals( KernelTransaction.ROLLBACK, tx.closeTransaction() );
+        assertFalse( tx.isOpen() );
+    }
+
+    @Test
+    public void txReturnsCorrectIdWhenMarkedForTermination() throws Exception
+    {
+        executeDummyTxs( db, 42 );
+
+        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        try ( Statement statement = tx.acquireStatement() )
+        {
+            statement.dataWriteOperations().nodeCreate();
+        }
+        tx.markForTermination();
+
+        assertEquals( KernelTransaction.ROLLBACK, tx.closeTransaction() );
+        assertFalse( tx.isOpen() );
+    }
+
+    @Test
+    public void txReturnsCorrectIdWhenFailedlAndMarkedForTermination() throws Exception
+    {
+        executeDummyTxs( db, 42 );
+
+        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+        try ( Statement statement = tx.acquireStatement() )
+        {
+            statement.dataWriteOperations().nodeCreate();
+        }
+        tx.failure();
+        tx.markForTermination();
+
+        assertEquals( KernelTransaction.ROLLBACK, tx.closeTransaction() );
         assertFalse( tx.isOpen() );
     }
 
@@ -571,7 +604,7 @@ public class KernelIT extends KernelIntegrationTest
         }
         tx.success();
 
-        assertEquals( KernelTransaction.NOT_COMMITTED, tx.closeTransaction() );
+        assertEquals( KernelTransaction.READ_ONLY, tx.closeTransaction() );
         assertFalse( tx.isOpen() );
     }
 

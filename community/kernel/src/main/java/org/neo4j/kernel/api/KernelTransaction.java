@@ -84,7 +84,8 @@ public interface KernelTransaction extends AutoCloseable
         void notify( boolean success );
     }
 
-    long NOT_COMMITTED = -1;
+    long ROLLBACK = -1;
+    long READ_ONLY = 0;
 
     /**
      * Acquires a new {@link Statement} for this transaction which allows for reading and writing data from and
@@ -108,16 +109,19 @@ public interface KernelTransaction extends AutoCloseable
     void failure();
 
     /**
-     * Closes this transaction, committing its changes iff {@link #success()} has been called and
-     * {@link #failure()} has NOT been called. Otherwise its changes will be rolled back.
+     * Closes this transaction, committing its changes if {@link #success()} has been called and neither
+     * {@link #failure()} nor {@link #markForTermination()} has been called.
+     * Otherwise its changes will be rolled back.
      *
-     * @return id of the committed transaction or {@link #NOT_COMMITTED} if transaction was rolled back or read-only.
+     * @return id of the committed transaction or {@link #ROLLBACK} if transaction was rolled back or
+     * {@link #READ_ONLY} if transaction was read-only.
      */
     long closeTransaction() throws TransactionFailureException;
 
     /**
-     * Closes this transaction, committing its changes iff {@link #success()} has been called and
-     * {@link #failure()} has NOT been called. Otherwise its changes will be rolled back.
+     * Closes this transaction, committing its changes if {@link #success()} has been called and neither
+     * {@link #failure()} nor {@link #markForTermination()} has been called.
+     * Otherwise its changes will be rolled back.
      */
     @Override
     default void close() throws TransactionFailureException
