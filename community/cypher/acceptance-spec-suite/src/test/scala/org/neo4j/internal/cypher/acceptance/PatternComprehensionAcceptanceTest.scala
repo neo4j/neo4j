@@ -19,9 +19,23 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.PathImpl
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
 class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+
+  test("with named path") {
+    val n1 = createLabeledNode("Start")
+    val n2 = createLabeledNode("End")
+    val r = relate(n1, n2)
+
+    val query = "MATCH (n:Start) RETURN [p = (n)-->() | p] AS list"
+
+    val result = executeWithCostPlannerOnly(query)
+
+    result.toList should equal(List(Map("list" -> List(PathImpl(n1, r, n2)))))
+  }
+
   test("one relationship out") {
     val n1 = createLabeledNode(Map("x" -> 1), "START")
     val n2 = createLabeledNode(Map("x" -> 2), "START")

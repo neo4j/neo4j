@@ -122,9 +122,11 @@ case object projectNamedPaths extends Rewriter {
   }
 
   def patternPartPathExpression(patternPart: AnonymousPatternPart): PathStep = patternPart match {
-    case EveryPath(element) => flip(element, NilPathStep)
+    case EveryPath(element) => patternPartPathExpression(element)
     case _                  => throw new CantHandleQueryException
   }
+
+  def patternPartPathExpression(element: PatternElement): PathStep = flip(element, NilPathStep)
 
   @tailrec
   private def flip(element: PatternElement, step: PathStep): PathStep  = {

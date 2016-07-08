@@ -157,16 +157,19 @@ object ListComprehension {
 
 }
 
-case class PatternComprehension(pattern: RelationshipsPattern, predicate: Option[Expression], projection: Expression)
+case class PatternComprehension(namedPath: Option[Variable], pattern: RelationshipsPattern, predicate: Option[Expression], projection: Expression)
                                (val position: InputPosition)
   extends ScopeExpression {
 
   override def semanticCheck(ctx: SemanticContext) =
     checkInnerExpression
 
+  private def checkNamedPath = namedPath.map(_.declare(CTPath): SemanticCheck).getOrElse(SemanticCheckResult.success)
+
   private def checkInnerExpression: SemanticCheck =
     withScopedState {
       pattern.semanticCheck(Pattern.SemanticContext.Match) chain
+      checkNamedPath chain
       projection.semanticCheck(SemanticContext.Simple) chain
       predicate.semanticCheck(SemanticContext.Simple)
     } chain {
@@ -174,7 +177,7 @@ case class PatternComprehension(pattern: RelationshipsPattern, predicate: Option
       this.specifyType(outerTypes)
     }
 
-  override def variables: Set[Variable] = pattern.element.allVariables
+  override def variables: Set[Variable] = pattern.element.allVariables ++ namedPath.toSet
 }
 
 sealed trait IterablePredicateExpression extends FilteringExpression {
