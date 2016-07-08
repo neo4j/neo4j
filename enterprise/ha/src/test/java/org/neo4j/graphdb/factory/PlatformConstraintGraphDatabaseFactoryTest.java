@@ -32,6 +32,7 @@ import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.pagecache.PageSwapperFactoryForTesting.TEST_PAGESWAPPER_NAME;
 
 public class PlatformConstraintGraphDatabaseFactoryTest
 {
@@ -63,7 +64,7 @@ public class PlatformConstraintGraphDatabaseFactoryTest
     private GraphDatabaseService createGraphDatabaseService()
     {
         return new TestHighlyAvailableGraphDatabaseFactory().newEmbeddedDatabaseBuilder( workingDir )
-                .setConfig( GraphDatabaseSettings.pagecache_swapper, "custom" )
+                .setConfig( GraphDatabaseSettings.pagecache_swapper, TEST_PAGESWAPPER_NAME )
                 .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
                 .setConfig( ClusterSettings.server_id, "1" ).newGraphDatabase();
     }
