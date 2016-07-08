@@ -122,7 +122,11 @@ public class Cluster
 
     public EdgeServer addEdgeServerWithIdAndRecordFormat( int serverId, String recordFormat )
     {
-        Config config = firstOrNull( coreServers.values() ).database().getDependencyResolver().resolveDependency( Config.class );
+        CoreServer coreServer = coreServers.values().stream().filter( ( server ) -> server.database() != null )
+                .findAny().orElseThrow( () -> new IllegalStateException(
+                        "No core servers are running to use as a template for the edge server" ) );
+        Config config = coreServer.database().getDependencyResolver().resolveDependency( Config.class );
+
         List<AdvertisedSocketAddress> advertisedAddresses =
                 config.get( CoreEdgeClusterSettings.initial_core_cluster_members );
 
