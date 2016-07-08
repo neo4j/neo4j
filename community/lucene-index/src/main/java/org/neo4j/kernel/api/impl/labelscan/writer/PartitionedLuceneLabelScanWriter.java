@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.locks.Lock;
 
 import org.neo4j.kernel.api.impl.index.collector.FirstHitCollector;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartition;

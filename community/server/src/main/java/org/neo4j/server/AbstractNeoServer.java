@@ -57,7 +57,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.configuration.ServerSettings.HttpConnector;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.CypherExecutorProvider;
 import org.neo4j.server.database.Database;

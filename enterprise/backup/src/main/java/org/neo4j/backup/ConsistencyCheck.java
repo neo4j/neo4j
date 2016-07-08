@@ -22,7 +22,6 @@ package org.neo4j.backup;
 import java.io.File;
 import java.util.Arrays;
 
-import org.neo4j.consistency.ConsistencyCheckTool;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;

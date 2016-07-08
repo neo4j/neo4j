@@ -26,8 +26,6 @@ import java.util.List;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.traversal.BranchState;
-import org.neo4j.graphdb.traversal.Paths;
 
 import static org.neo4j.graphdb.traversal.BranchState.NO_STATE;
 import static org.neo4j.graphdb.traversal.Paths.singleNodePath;

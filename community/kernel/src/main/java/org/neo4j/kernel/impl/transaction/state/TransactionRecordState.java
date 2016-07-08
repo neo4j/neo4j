@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;

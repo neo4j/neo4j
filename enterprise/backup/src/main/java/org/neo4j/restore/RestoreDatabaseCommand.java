@@ -22,14 +22,12 @@ package org.neo4j.restore;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 
 import static java.lang.String.format;
 
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class RestoreDatabaseCommand
 {

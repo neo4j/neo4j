@@ -37,7 +37,6 @@ import org.neo4j.kernel.impl.util.ReusableIteratorCostume;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.batchinsert.DirectRecordAccessSet;
-import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingIdSequence;

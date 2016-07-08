@@ -32,7 +32,6 @@ import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequest;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequestSerializer;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionSerializer;
-import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.raft.state.EndOfStreamException;
 import org.neo4j.coreedge.raft.state.SafeChannelMarshal;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;

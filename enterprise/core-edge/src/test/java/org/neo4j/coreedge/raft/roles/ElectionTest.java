@@ -24,25 +24,19 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.ControlledRenewableTimeoutService;
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftInstanceBuilder;
 import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
-import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.isA;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;

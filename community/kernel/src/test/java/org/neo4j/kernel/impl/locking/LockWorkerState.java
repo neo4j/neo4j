@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.locking;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.kernel.impl.locking.Locks;
-
 class LockWorkerState
 {
     final Locks grabber;

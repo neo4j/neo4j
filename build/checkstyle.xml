@@ -49,6 +49,7 @@
     <module name="SuperFinalize"/>
     <module name="EqualsHashCode"/>
     <module name="ModifierOrder"/>
+    <module name="RedundantImport"/>
     <module name="EmptyCatchBlock">
       <property name="exceptionVariableName" value="ignore|ignored"/>
     </module>

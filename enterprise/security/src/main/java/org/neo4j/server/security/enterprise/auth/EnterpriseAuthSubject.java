@@ -21,7 +21,6 @@ package org.neo4j.server.security.enterprise.auth;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;

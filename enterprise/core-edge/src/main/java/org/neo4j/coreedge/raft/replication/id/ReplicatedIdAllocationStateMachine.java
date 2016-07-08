@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.raft.replication.id;
 
 import java.io.IOException;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 import org.neo4j.coreedge.raft.state.Result;

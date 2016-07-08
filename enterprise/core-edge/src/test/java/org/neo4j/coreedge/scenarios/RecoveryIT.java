@@ -35,7 +35,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.coreedge.ClusterRule;
 
-import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

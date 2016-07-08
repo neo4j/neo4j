@@ -35,7 +35,6 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
-import org.neo4j.graphdb.impl.traversal.StandardBranchCollisionDetector;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 
 import static org.junit.Assert.assertEquals;

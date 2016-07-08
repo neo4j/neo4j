@@ -24,11 +24,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.security.AccessMode.Static;
-import org.neo4j.kernel.api.security.AuthSubject;
 
 import static java.util.Collections.singletonList;
 
@@ -36,10 +34,7 @@ import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;

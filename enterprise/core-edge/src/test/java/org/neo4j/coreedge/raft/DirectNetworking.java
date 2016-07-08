@@ -19,8 +19,6 @@
  */
 package org.neo4j.coreedge.raft;
 
-import org.neo4j.coreedge.network.Message;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;

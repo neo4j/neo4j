@@ -21,7 +21,6 @@ package org.neo4j.metrics.source.coreedge;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.coreedge.raft.LeaderNotFoundMonitor;
 import org.neo4j.coreedge.raft.log.monitoring.RaftLogCommitIndexMonitor;
 
 public class RaftLogCommitIndexMetric implements RaftLogCommitIndexMonitor

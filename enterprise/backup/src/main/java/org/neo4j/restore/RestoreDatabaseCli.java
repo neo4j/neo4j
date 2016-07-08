@@ -26,19 +26,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import org.neo4j.dbms.ConfigFactory;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.ArrayUtil;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.logging.NullLog;
 import org.neo4j.server.configuration.ConfigLoader;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class RestoreDatabaseCli
 {

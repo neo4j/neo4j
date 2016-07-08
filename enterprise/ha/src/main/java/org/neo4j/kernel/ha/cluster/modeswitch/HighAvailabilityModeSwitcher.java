@@ -34,7 +34,6 @@ import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.helpers.CancellationRequest;
-import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;

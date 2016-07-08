@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.net.Inbound;

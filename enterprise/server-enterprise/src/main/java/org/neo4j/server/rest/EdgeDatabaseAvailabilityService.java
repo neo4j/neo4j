@@ -24,16 +24,13 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
-import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.server.rest.management.AdvertisableService;
-import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.OutputFormat;
 
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.OK;
 import static javax.ws.rs.core.Response.status;
 

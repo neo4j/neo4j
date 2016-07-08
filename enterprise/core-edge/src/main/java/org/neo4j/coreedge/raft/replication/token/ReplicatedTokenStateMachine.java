@@ -21,14 +21,12 @@ package org.neo4j.coreedge.raft.replication.token;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 import org.neo4j.coreedge.raft.state.Result;
 import org.neo4j.coreedge.raft.state.StateMachine;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.record.TokenRecord;

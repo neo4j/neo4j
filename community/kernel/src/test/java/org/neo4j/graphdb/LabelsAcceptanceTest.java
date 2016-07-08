@@ -41,7 +41,6 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;

@@ -21,8 +21,6 @@ package org.neo4j.graphdb.index;
 
 import org.junit.Test;
 
-import org.neo4j.graphdb.index.IndexPopulationProgress;
-
 import static org.junit.Assert.*;
 
 public class IndexPopulationProgressTest

@@ -31,8 +31,6 @@ import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 
-import static org.mockito.Mockito.mock;
-
 public class ProcessMessage implements Action
 {
     private final CoreMember member;

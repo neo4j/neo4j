@@ -33,7 +33,6 @@ import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.com.master.InvalidEpochException;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeSupport;

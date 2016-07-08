@@ -23,8 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.concurrent.GuardedBy;
-
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 import org.neo4j.storageengine.api.Token;
 

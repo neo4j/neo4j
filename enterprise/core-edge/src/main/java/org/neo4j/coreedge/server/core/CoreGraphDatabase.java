@@ -28,7 +28,6 @@ import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;

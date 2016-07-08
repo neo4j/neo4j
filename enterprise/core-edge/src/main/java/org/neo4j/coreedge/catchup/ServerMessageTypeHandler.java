@@ -24,8 +24,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.ReferenceCountUtil;
 
-import org.neo4j.coreedge.catchup.CatchupServerProtocol;
-import org.neo4j.coreedge.catchup.RequestMessageType;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 

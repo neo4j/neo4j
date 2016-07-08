@@ -28,8 +28,6 @@ import org.neo4j.server.rest.dbms.UserService;
 import org.neo4j.server.rest.discovery.DiscoveryService;
 import org.neo4j.server.web.WebServer;
 
-import static java.util.Arrays.asList;
-
 /**
  * Mounts the DBMS REST API.
  */

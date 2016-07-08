@@ -20,7 +20,6 @@
 package cypher;
 
 import org.junit.runners.model.RunnerBuilder;
-import org.opencypher.tools.tck.TCKCucumberTemplate;
 
 public class CompatibilitySpecSuiteResources extends SpecSuiteResources
 {

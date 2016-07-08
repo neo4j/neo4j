@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store.record;
 
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
-import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
 
 public abstract class PropertyConstraintRule extends AbstractSchemaRule
 {
