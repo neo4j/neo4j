@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -146,8 +147,10 @@ public class ConsistencyPerformanceCheck
                 fileSystem,
                 DirectoryFactory.PERSISTENT,
                 storeDir );
-        return new DirectStoreAccess( new StoreAccess( neoStores ).initialize(),
-                new LuceneLabelScanStoreBuilder( storeDir, neoStores, fileSystem, NullLogProvider.getInstance() ).build(), indexes );
+        LuceneLabelScanStoreBuilder labelScanStoreBuilder = new LuceneLabelScanStoreBuilder( storeDir, neoStores,
+                fileSystem, tuningConfiguration, NullLogProvider.getInstance() );
+        LabelScanStore labelScanStore = labelScanStoreBuilder.build();
+        return new DirectStoreAccess( new StoreAccess( neoStores ).initialize(), labelScanStore, indexes );
     }
 
     private static Config buildTuningConfiguration( Configuration configuration )

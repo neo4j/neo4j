@@ -22,13 +22,14 @@ package org.neo4j.index.lucene;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.IndexWriterFactories;
 import org.neo4j.kernel.api.impl.index.LuceneLabelScanStore;
 import org.neo4j.kernel.api.impl.index.NodeRangeDocumentLabelScanStorageStrategy;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.kernel.impl.transaction.state.SimpleNeoStoresSupplier;
@@ -48,6 +49,7 @@ public class LuceneLabelScanStoreBuilder
     private final File storeDir;
     private final NeoStoresSupplier neoStoresSupplier;
     private final FileSystemAbstraction fileSystem;
+    private final Config config;
     private final LogProvider logProvider;
 
     private LuceneLabelScanStore labelScanStore = null;
@@ -55,11 +57,13 @@ public class LuceneLabelScanStoreBuilder
     public LuceneLabelScanStoreBuilder( File storeDir,
                                         NeoStores neoStores,
                                         FileSystemAbstraction fileSystem,
+                                        Config config,
                                         LogProvider logProvider )
     {
         this.storeDir = storeDir;
         this.neoStoresSupplier = new SimpleNeoStoresSupplier( neoStores );
         this.fileSystem = fileSystem;
+        this.config = config;
         this.logProvider = logProvider;
     }
 
@@ -75,7 +79,7 @@ public class LuceneLabelScanStoreBuilder
                     new File( new File( new File( storeDir, "schema" ), "label" ), "lucene" ),
                     fileSystem, IndexWriterFactories.tracking(),
                     fullStoreLabelUpdateStream( neoStoresSupplier ),
-                    LuceneLabelScanStore.loggerMonitor( logProvider ) );
+                    config, LuceneLabelScanStore.loggerMonitor( logProvider ) );
 
             try
             {

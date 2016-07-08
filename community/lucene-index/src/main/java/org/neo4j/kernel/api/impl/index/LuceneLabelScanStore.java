@@ -24,6 +24,7 @@ import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
@@ -36,12 +37,14 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.logging.Log;
@@ -63,6 +66,7 @@ public class LuceneLabelScanStore
     private boolean needsRebuild;
     private final File directoryLocation;
     private final FileSystemAbstraction fs;
+    private final boolean readOnly;
     private final Lock lock = new ReentrantLock( true );
 
     public interface Monitor
@@ -126,7 +130,7 @@ public class LuceneLabelScanStore
 
     public LuceneLabelScanStore( LabelScanStorageStrategy strategy, DirectoryFactory directoryFactory,
             File directoryLocation, FileSystemAbstraction fs, IndexWriterFactory<LuceneIndexWriter> writerFactory,
-            FullStoreChangeStream fullStoreStream, Monitor monitor )
+            FullStoreChangeStream fullStoreStream, Config config, Monitor monitor )
     {
         this.strategy = strategy;
         this.directoryFactory = directoryFactory;
@@ -134,12 +138,17 @@ public class LuceneLabelScanStore
         this.fs = fs;
         this.writerFactory = writerFactory;
         this.fullStoreStream = fullStoreStream;
+        this.readOnly = config.get( GraphDatabaseSettings.read_only );
         this.monitor = monitor;
     }
 
     @Override
     public void deleteDocuments( Term documentTerm ) throws IOException
     {
+        if ( readOnly )
+        {
+            throw new UnsupportedOperationException( "Deleting of documents is unsupported in read only mode." );
+        }
         writer.deleteDocuments( documentTerm );
     }
 
@@ -147,6 +156,10 @@ public class LuceneLabelScanStore
     public void updateDocument( Term documentTerm, Document document )
             throws IOException, IndexCapacityExceededException
     {
+        if ( readOnly )
+        {
+            throw new UnsupportedOperationException( "Updating of documents is unsupported in read only mode." );
+        }
         writer.updateDocument( documentTerm, document );
     }
 
@@ -159,6 +172,10 @@ public class LuceneLabelScanStore
     @Override
     public void refreshSearcher() throws IOException
     {
+        if ( readOnly )
+        {
+            return;
+        }
         searcherManager.maybeRefresh();
     }
 
@@ -177,6 +194,10 @@ public class LuceneLabelScanStore
     @Override
     public void force()
     {
+        if ( readOnly )
+        {
+            return;
+        }
         try
         {
             writer.commit();
@@ -223,7 +244,9 @@ public class LuceneLabelScanStore
     @Override
     public ResourceIterator<File> snapshotStoreFiles() throws IOException
     {
-        return new LuceneSnapshotter().snapshot( directoryLocation, writer );
+        LuceneSnapshotter snapshotter = new LuceneSnapshotter();
+        return readOnly ? snapshotter.snapshot( directoryLocation, directory )
+                        : snapshotter.snapshot( directoryLocation, writer );
     }
 
     @Override
@@ -232,35 +255,51 @@ public class LuceneLabelScanStore
         monitor.init();
         directory = directoryFactory.open( directoryLocation );
 
-        try
+        if ( readOnly )
         {
-            // Try to open it, this will throw exception if index is corrupt.
-            // Opening it directly using the writer may hide corruption problems.
-            IndexReader.open( directory ).close();
+            try
+            {
+                searcherManager = new SearcherManager( directory, new SearcherFactory() );
+            }
+            catch ( IOException e )
+            {
+                monitor.corruptIndex( e );
+                throw new IOException( "Label scan store could not be read. " +
+                                       "To trigger a rebuild please restart database in writable mode.", e );
+            }
+        }
+        else
+        {
+            try
+            {
+                // Try to open it, this will throw exception if index is corrupt.
+                // Opening it directly using the writer may hide corruption problems.
+                IndexReader.open( directory ).close();
 
-            writer = writerFactory.create( directory );
+                writer = writerFactory.create( directory );
+            }
+            catch ( IndexNotFoundException e )
+            {
+                // No index present, create one
+                monitor.noIndex();
+                prepareRebuildOfIndex();
+                writer = writerFactory.create( directory );
+            }
+            catch ( LockObtainFailedException e )
+            {
+                monitor.lockedIndex( e );
+                throw e;
+            }
+            catch ( IOException e )
+            {
+                // The index was somehow corrupted, fail
+                monitor.corruptIndex( e );
+                throw new IOException( "Label scan store could not be read, and needs to be rebuilt. " +
+                                       "To trigger a rebuild, ensure the database is stopped, delete the files in '" +
+                                       directoryLocation.getAbsolutePath() + "', and then start the database again." );
+            }
+            searcherManager = writer.createSearcherManager();
         }
-        catch ( IndexNotFoundException e )
-        {
-            // No index present, create one
-            monitor.noIndex();
-            prepareRebuildOfIndex();
-            writer = writerFactory.create( directory );
-        }
-        catch ( LockObtainFailedException e )
-        {
-            monitor.lockedIndex( e );
-            throw e;
-        }
-        catch( IOException e )
-        {
-            // The index was somehow corrupted, fail
-            monitor.corruptIndex( e );
-            throw new IOException( "Label scan store could not be read, and needs to be rebuilt. " +
-                    "To trigger a rebuild, ensure the database is stopped, delete the files in '" +
-                    directoryLocation.getAbsolutePath() + "', and then start the database again." );
-        }
-        searcherManager = writer.createSearcherManager();
     }
 
     @Override
@@ -276,17 +315,6 @@ public class LuceneLabelScanStore
         }
     }
 
-    private void write( Iterator<NodeLabelUpdate> updates ) throws IOException, IndexCapacityExceededException
-    {
-        try ( LabelScanWriter writer = newWriter() )
-        {
-            while ( updates.hasNext() )
-            {
-                writer.write( updates.next() );
-            }
-        }
-    }
-
     @Override
     public void stop()
     {   // Not needed
@@ -296,7 +324,10 @@ public class LuceneLabelScanStore
     public void shutdown() throws IOException
     {
         searcherManager.close();
-        writer.close();
+        if ( writer != null )
+        {
+            writer.close();
+        }
         directory.close();
         directory = null;
     }
@@ -304,10 +335,25 @@ public class LuceneLabelScanStore
     @Override
     public LabelScanWriter newWriter()
     {
+        if ( readOnly )
+        {
+            throw new UnsupportedOperationException( "Writes are unsupported in read only mode." );
+        }
         // Only a single writer is allowed at any point in time. For that this lock is used and passed
         // onto the writer to release in its close()
         lock.lock();
         return strategy.acquireWriter( this, lock );
+    }
+
+    private void write( Iterator<NodeLabelUpdate> updates ) throws IOException, IndexCapacityExceededException
+    {
+        try ( LabelScanWriter writer = newWriter() )
+        {
+            while ( updates.hasNext() )
+            {
+                writer.write( updates.next() );
+            }
+        }
     }
 
     private void prepareRebuildOfIndex() throws IOException

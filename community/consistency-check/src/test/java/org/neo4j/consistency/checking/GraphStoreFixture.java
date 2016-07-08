@@ -34,6 +34,7 @@ import org.neo4j.consistency.statistics.VerboseStatistics;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -45,6 +46,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
@@ -74,7 +76,6 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 
 public abstract class GraphStoreFixture extends PageCacheRule implements TestRule
@@ -126,6 +127,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
                             directory,
                             nativeStores.getRawNeoStores(),
                             fileSystem,
+                            new Config( MapUtil.stringMap() ),
                             FormattedLogProvider.toOutputStream( System.out )
                     ).build(),
                     createIndexes( fileSystem )
