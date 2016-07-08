@@ -44,6 +44,12 @@ public interface AccessMode
                     {
                         return false;
                     }
+
+                    @Override
+                    public boolean overrideOriginalMode()
+                    {
+                        return false;
+                    }
                 },
 
         /** Allows reading data and schema, but not writing. */
@@ -63,6 +69,12 @@ public interface AccessMode
 
                     @Override
                     public boolean allowsSchemaWrites()
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean overrideOriginalMode()
                     {
                         return false;
                     }
@@ -88,6 +100,12 @@ public interface AccessMode
                     {
                         return false;
                     }
+
+                    @Override
+                    public boolean overrideOriginalMode()
+                    {
+                        return false;
+                    }
                 },
 
         /** Allows reading and writing data, but not schema. */
@@ -107,6 +125,12 @@ public interface AccessMode
 
                     @Override
                     public boolean allowsSchemaWrites()
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean overrideOriginalMode()
                     {
                         return false;
                     }
@@ -132,11 +156,51 @@ public interface AccessMode
                     {
                         return true;
                     }
-                }
-    }
+
+                    @Override
+                    public boolean overrideOriginalMode()
+                    {
+                        return false;
+                    }
+                },
+
+        /** Allows reading data and schema, but not writing.
+         * NOTE: This is a special mode that will override the original access mode when put as a temporary restriction
+         * on a transaction, potentially elevating the access mode to give read access to a transaction that did not
+         * have read access before.
+         */
+        OVERRIDE_READ
+        {
+            @Override
+            public boolean allowsReads()
+            {
+                return true;
+            }
+
+            @Override
+            public boolean allowsWrites()
+            {
+                return false;
+            }
+
+            @Override
+            public boolean allowsSchemaWrites()
+            {
+                return false;
+            }
+
+            @Override
+            public boolean overrideOriginalMode()
+            {
+                return true;
+            }
+        },
+
+        }
 
     boolean allowsReads();
     boolean allowsWrites();
     boolean allowsSchemaWrites();
+    boolean overrideOriginalMode();
     String name();
 }

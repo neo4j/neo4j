@@ -79,6 +79,12 @@ public interface AuthSubject extends AccessMode
         }
 
         @Override
+        public boolean overrideOriginalMode()
+        {
+            return false;
+        }
+
+        @Override
         public String name()
         {
             return "<anonymous>";
@@ -109,6 +115,12 @@ public interface AuthSubject extends AccessMode
         }
 
         @Override
+        public boolean overrideOriginalMode()
+        {
+            return false;
+        }
+
+        @Override
         public String name()
         {
             return "<auth disabled>";
@@ -130,5 +142,4 @@ public interface AuthSubject extends AccessMode
         {
         }
     };
-
 }

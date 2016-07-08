@@ -109,6 +109,12 @@ public class EnterpriseAuthSubject implements AuthSubject
     }
 
     @Override
+    public boolean overrideOriginalMode()
+    {
+        return false;
+    }
+
+    @Override
     public String name()
     {
         Object principal = shiroSubject.getPrincipal();
