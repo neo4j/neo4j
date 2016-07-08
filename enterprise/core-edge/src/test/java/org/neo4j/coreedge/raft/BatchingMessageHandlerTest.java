@@ -19,23 +19,35 @@
  */
 package org.neo4j.coreedge.raft;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.net.Inbound;
+import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 public class BatchingMessageHandlerTest
 {
     private static final int MAX_BATCH = 16;
     private static final int QUEUE_SIZE = 64;
+    private LocalDatabase localDatabase = mock( LocalDatabase.class );
+    private RaftStateMachine raftStateMachine = mock( RaftStateMachine.class );
+
+    @Before
+    public void setup()
+    {
+        when(localDatabase.storeId()).thenReturn( new StoreId( 1,2,3,4 ) );
+    }
 
     @Test
     public void shouldInvokeInnerHandlerWhenRun() throws Exception
@@ -45,10 +57,10 @@ public class BatchingMessageHandlerTest
         Inbound.MessageHandler<RaftMessages.RaftMessage> innerHandler = mock( Inbound.MessageHandler.class );
 
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                innerHandler, NullLogProvider.getInstance(), QUEUE_SIZE, MAX_BATCH );
+                innerHandler, NullLogProvider.getInstance(), QUEUE_SIZE, MAX_BATCH, localDatabase, raftStateMachine );
         RaftMessages.NewEntry.Request message = new RaftMessages.NewEntry.Request( null, null );
 
-        batchHandler.handle( message );
+        batchHandler.handle(  new RaftMessages.StoreIdAwareMessage( new StoreId( 1,2,3,4 ), message )  );
         verifyZeroInteractions( innerHandler );
 
         // when
@@ -66,7 +78,7 @@ public class BatchingMessageHandlerTest
         Inbound.MessageHandler<RaftMessages.RaftMessage> innerHandler = mock( Inbound.MessageHandler.class );
 
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                innerHandler, NullLogProvider.getInstance(), QUEUE_SIZE, MAX_BATCH );
+                innerHandler, NullLogProvider.getInstance(), QUEUE_SIZE, MAX_BATCH, localDatabase, raftStateMachine );
         RaftMessages.NewEntry.Request message = new RaftMessages.NewEntry.Request( null, null );
 
         ExecutorService executor = Executors.newCachedThreadPool();
@@ -79,7 +91,7 @@ public class BatchingMessageHandlerTest
         Thread.sleep( 50 );
 
         // when
-        batchHandler.handle( message );
+        batchHandler.handle(  new RaftMessages.StoreIdAwareMessage( new StoreId( 1,2,3,4 ), message )  );
 
         // then
         future.get();
@@ -94,14 +106,14 @@ public class BatchingMessageHandlerTest
         Inbound.MessageHandler<RaftMessages.RaftMessage> innerHandler = mock( Inbound.MessageHandler.class );
 
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                innerHandler, NullLogProvider.getInstance(), QUEUE_SIZE, MAX_BATCH );
+                innerHandler, NullLogProvider.getInstance(), QUEUE_SIZE, MAX_BATCH, localDatabase, raftStateMachine );
         ReplicatedString contentA = new ReplicatedString( "A" );
         ReplicatedString contentB = new ReplicatedString( "B" );
         RaftMessages.NewEntry.Request messageA = new RaftMessages.NewEntry.Request( null, contentA );
         RaftMessages.NewEntry.Request messageB = new RaftMessages.NewEntry.Request( null, contentB );
 
-        batchHandler.handle( messageA );
-        batchHandler.handle( messageB );
+        batchHandler.handle(  new RaftMessages.StoreIdAwareMessage( new StoreId( 1,2,3,4 ), messageA )  );
+        batchHandler.handle(  new RaftMessages.StoreIdAwareMessage( new StoreId( 1,2,3,4 ), messageB )  );
         verifyZeroInteractions( innerHandler );
 
         // when
@@ -122,7 +134,7 @@ public class BatchingMessageHandlerTest
         Inbound.MessageHandler<RaftMessages.RaftMessage> innerHandler = mock( Inbound.MessageHandler.class );
 
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
-                innerHandler, NullLogProvider.getInstance(), QUEUE_SIZE, MAX_BATCH );
+                innerHandler, NullLogProvider.getInstance(), QUEUE_SIZE, MAX_BATCH, localDatabase, raftStateMachine );
         ReplicatedString contentA = new ReplicatedString( "A" );
         ReplicatedString contentC = new ReplicatedString( "C" );
 
@@ -131,10 +143,10 @@ public class BatchingMessageHandlerTest
         RaftMessages.NewEntry.Request messageC = new RaftMessages.NewEntry.Request( null, contentC );
         RaftMessages.Heartbeat messageD = new RaftMessages.Heartbeat( null, 1, 1, 1 );
 
-        batchHandler.handle( messageA );
-        batchHandler.handle( messageB );
-        batchHandler.handle( messageC );
-        batchHandler.handle( messageD );
+        batchHandler.handle( new RaftMessages.StoreIdAwareMessage( new StoreId( 1,2,3,4 ), messageA ) );
+        batchHandler.handle( new RaftMessages.StoreIdAwareMessage( new StoreId( 1,2,3,4 ), messageB ) );
+        batchHandler.handle( new RaftMessages.StoreIdAwareMessage( new StoreId( 1,2,3,4 ), messageC ) );
+        batchHandler.handle( new RaftMessages.StoreIdAwareMessage( new StoreId( 1,2,3,4 ), messageD ) );
         verifyZeroInteractions( innerHandler );
 
         // when

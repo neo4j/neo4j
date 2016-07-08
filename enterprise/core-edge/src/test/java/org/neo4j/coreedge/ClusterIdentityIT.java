@@ -53,6 +53,7 @@ import static org.junit.Assert.fail;
 
 import static org.neo4j.coreedge.TestStoreId.assertAllStoresHaveTheSameStoreId;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.TIME;
 import static org.neo4j.test.rule.SuppressOutput.suppress;
 
@@ -268,7 +269,7 @@ public class ClusterIdentityIT
         File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
         try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
         {
-            MetaDataStore.setRecord( pageCache, neoStoreFile, TIME, System.currentTimeMillis() );
+            MetaDataStore.setRecord( pageCache, neoStoreFile, RANDOM_NUMBER, System.currentTimeMillis() );
         }
     }
 
