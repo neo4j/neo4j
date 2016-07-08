@@ -154,4 +154,41 @@ public class ReaderPoolTest
         verify( readerB ).close();
         verify( readerC ).close();
     }
+
+    @Test
+    public void shouldPruneReadersOfVersion() throws Exception
+    {
+        // given
+        pool = new ReaderPool( 8, getInstance(), fileNames, fsa, clock );
+
+        Reader readerA = spy( pool.acquire( 0, 0 ) );
+        Reader readerB = spy( pool.acquire( 1, 0 ) );
+        Reader readerC = spy( pool.acquire( 1, 0 ) );
+        Reader readerD = spy( pool.acquire( 2, 0 ) );
+
+        pool.release( readerA );
+        pool.release( readerB );
+        pool.release( readerC );
+        pool.release( readerD );
+
+        // when
+        pool.prune( 1 );
+
+        // then
+        verify( readerA, never() ).close();
+        verify( readerB ).close();
+        verify( readerC ).close();
+        verify( readerD, never() ).close();
+
+        // when
+        pool.prune( 0 );
+        // then
+        verify( readerA ).close();
+        verify( readerD, never() ).close();
+
+        // when
+        pool.prune( 2 );
+        // then
+        verify( readerD ).close();
+    }
 }
