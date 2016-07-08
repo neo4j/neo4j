@@ -22,8 +22,6 @@ package org.neo4j.coreedge.raft.replication.shipping;
 import java.io.IOException;
 import java.time.Clock;
 
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.raft.LeaderContext;
 import org.neo4j.coreedge.raft.RaftMessages;
@@ -32,7 +30,7 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.net.Outbound;
-import org.neo4j.coreedge.raft.state.InFlightLogEntrySupplier;
+import org.neo4j.coreedge.raft.state.InFlightLogEntryReader;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -93,36 +91,29 @@ public class RaftLogShipper
         PIPELINE
     }
 
-    private final Outbound<CoreMember, RaftMessages.RaftMessage> outbound;
-    private final LogProvider logProvider;
-    private final Log log;
-    private final ReadableRaftLog raftLog;
-    private final Clock clock;
-
-    private final CoreMember follower;
-    private final CoreMember leader;
-
-    private DelayedRenewableTimeoutService timeoutService;
-
     public enum Timeouts implements RenewableTimeoutService.TimeoutName
     {
         RESEND
     }
 
+    private final Outbound<CoreMember, RaftMessages.RaftMessage> outbound;
+    private final LogProvider logProvider;
+    private final Log log;
+    private final ReadableRaftLog raftLog;
+    private final Clock clock;
+    private final CoreMember follower;
+    private final CoreMember leader;
     private final long retryTimeMillis;
     private final int catchupBatchSize;
     private final int maxAllowedShippingLag;
-    private RenewableTimeout timeout;
+    private final InFlightMap<Long, RaftLogEntry> inFlightMap;
 
+    private DelayedRenewableTimeoutService timeoutService;
+    private RenewableTimeout timeout;
     private long timeoutAbsoluteMillis;
     private long lastSentIndex;
-
     private long matchIndex = -1;
-
-    InFlightMap<Long, RaftLogEntry> inFlightMap;
-
     private LeaderContext lastLeaderContext;
-
     private Mode mode = Mode.MISMATCH;
 
     RaftLogShipper( Outbound<CoreMember, RaftMessages.RaftMessage> outbound, LogProvider logProvider,
@@ -443,7 +434,7 @@ public class RaftLogShipper
                     new RaftMessages.AppendEntries.Request( leader, leaderContext.term, prevLogIndex, prevLogTerm,
                             entries, leaderContext.commitIndex );
 
-            try ( InFlightLogEntrySupplier logEntrySupplier = new InFlightLogEntrySupplier( raftLog, inFlightMap ) )
+            try ( InFlightLogEntryReader logEntrySupplier = new InFlightLogEntryReader( raftLog, inFlightMap, false ) )
             {
                 for ( int offset = 0; offset < batchSize; offset++ )
                 {
