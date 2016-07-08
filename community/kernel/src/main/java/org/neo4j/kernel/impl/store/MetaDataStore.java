@@ -406,9 +406,13 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     public void setLastTransactionCommitTimestamp( long timestamp )
     {
-        setRecord( Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, timestamp );
-        TransactionId transactionId = highestCommittedTransaction.get();
-        highestCommittedTransaction.set( transactionId.transactionId(), transactionId.checksum(), timestamp );
+        // Preventing race with transactionCommitted() and assure record is consistent with highestCommittedTransaction
+        synchronized ( transactionCommittedLock )
+        {
+            setRecord( Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, timestamp );
+            TransactionId transactionId = highestCommittedTransaction.get();
+            highestCommittedTransaction.set( transactionId.transactionId(), transactionId.checksum(), timestamp );
+        }
     }
 
     @Override
@@ -692,8 +696,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         checkInitialized( lastCommittingTxField.get() );
         if ( highestCommittedTransaction.offer( transactionId, checksum, commitTimestamp ) )
         {
-            // We need to synchronize here in order to guarantee that the two field are written consistently
-            // together. Note that having a write lock on tha page is not enough for 3 reasons:
+            // We need to synchronize here in order to guarantee that the three fields are written consistently
+            // together. Note that having a write lock on the page is not enough for 3 reasons:
             // 1. page write locks are not exclusive
             // 2. the records might be in different pages
             // 3. some other thread might kick in while we have been written only one record
