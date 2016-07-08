@@ -2,18 +2,9 @@ Fail when comparing nodes to parameters
 Fail when comparing parameters to nodes
 Comparing nodes to properties
 Fail when comparing nodes to relationships
-Fail when comparing nodes to relationships
 Fail when comparing relationships to nodes
-`toInt()` handling Any type
-`toFloat()` handling Any type
-`type()` handling Any type
-`type()` failing on invalid arguments
-`toInt()` failing on invalid arguments
-`toFloat()` failing on invalid arguments
-Fail when adding new label predicate on already bound node 5
-Generate the movie graph correctly
+Fail when adding new label predicate on a node that is already bound
 Matching relationships into a list and matching variable length using the list
-Fail when using property access on primitive type
 Null-setting one property with ON CREATE
 Concatenating lists of different type
 Appending to a list of different type

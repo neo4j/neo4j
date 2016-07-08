@@ -163,8 +163,8 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
   Then(EXPECT_ERROR) { (typ: String, phase: String, detail: String) =>
     ifEnabled {
-      SpecSuiteErrorHandler(typ, phase, detail).check(result, tx)
-      tx.close()
+      try SpecSuiteErrorHandler(typ, phase, detail).check(result, tx)
+      finally tx.close()
     }
   }
 

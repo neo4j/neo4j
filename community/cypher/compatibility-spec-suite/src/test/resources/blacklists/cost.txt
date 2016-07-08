@@ -2,16 +2,7 @@ Fail when comparing nodes to parameters
 Fail when comparing parameters to nodes
 Comparing nodes to properties
 Fail when comparing nodes to relationships
-Fail when comparing nodes to relationships
 Fail when comparing relationships to nodes
-`toInt()` handling Any type
-`toFloat()` handling Any type
-`type()` handling Any type
-`type()` failing on invalid arguments
-`toInt()` failing on invalid arguments
-`toFloat()` failing on invalid arguments
-Generate the movie graph correctly
-Fail when using property access on primitive type
 Concatenating lists of different type
 Appending to a list of different type
 Handling property access on the Any type
