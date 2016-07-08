@@ -37,6 +37,7 @@ import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.CoreServer;
 import org.neo4j.coreedge.discovery.EdgeServer;
 import org.neo4j.coreedge.raft.log.segmented.FileNames;
+import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
@@ -178,8 +179,12 @@ public class EdgeServerReplicationIT
 
         executeOnLeaderWithRetry( this::createData, cluster );
 
+        CoreServer follower = cluster.awaitCoreGraphDatabaseWithRole( 2000, Role.FOLLOWER );
+        // Shutdown server before copying its data, because Windows can't copy open files.
+        follower.shutdown();
+
         EdgeServer edgeServer = cluster.addEdgeServerWithId( 4 );
-        putSomeDataWithDifferentStoreId( edgeServer.storeDir(), cluster.getCoreServerById( 0 ).storeDir() );
+        putSomeDataWithDifferentStoreId( edgeServer.storeDir(), follower.storeDir() );
 
         try
         {
