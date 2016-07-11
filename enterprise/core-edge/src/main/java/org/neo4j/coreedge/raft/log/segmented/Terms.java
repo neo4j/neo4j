@@ -21,6 +21,8 @@ package org.neo4j.coreedge.raft.log.segmented;
 
 import java.util.Arrays;
 
+import static java.lang.Math.max;
+
 /**
  * Keeps track of all the terms in memory for efficient lookup.
  * The implementation favours lookup of recent entries.
@@ -100,11 +102,11 @@ public class Terms
     /**
      * Prune up to specified index.
      *
-     * @param upToIndex The last index to prune (inclusive).
+     * @param upToIndex The last index to prune (exclusive).
      */
     synchronized void prune( long upToIndex )
     {
-        min = upToIndex + 1;
+        min = max( upToIndex, min );
         // could also prune out array
     }
 
@@ -134,5 +136,10 @@ public class Terms
         }
 
         throw new RuntimeException( "Should be possible to find index >= min" );
+    }
+
+    synchronized long latest()
+    {
+        return terms[size - 1];
     }
 }

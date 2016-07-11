@@ -64,7 +64,7 @@ public class RecoveryProtocolTest
 
         // then
         assertEquals( -1, state.appendIndex );
-        assertEquals( -1, state.currentTerm );
+        assertEquals( -1, state.terms.latest() );
         assertEquals( -1, state.prevIndex );
         assertEquals( -1, state.prevTerm );
         assertEquals( 0, state.segments.last().header().version() );
