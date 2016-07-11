@@ -36,6 +36,44 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
     result.toList should equal(List(Map("list" -> List(PathImpl(n1, r, n2)))))
   }
 
+  test("with named path and predicate") {
+    val n1 = createLabeledNode("Start")
+    val n2 = createLabeledNode("End")
+    val n3 = createLabeledNode("NotEnd")
+    val r = relate(n1, n2)
+    relate(n2, n3)
+
+    val query = "MATCH (n:Start) RETURN [p = (n)-->() WHERE last(nodes(p)):End | p] AS list"
+
+    val result = executeWithCostPlannerOnly(query)
+
+    result.toList should equal(List(Map("list" -> List(PathImpl(n1, r, n2)))))
+  }
+
+  test("with named path and shadowed variable in predicate") {
+    val n1 = createLabeledNode("Start")
+    val n2 = createLabeledNode("End")
+    val r = relate(n1, n2)
+
+    val query = "MATCH (n:Start) RETURN [p = (n)-->(b) WHERE head([p IN ['foo'] | true ]) | p] AS list"
+
+    val result = executeWithCostPlannerOnly(query)
+
+    result.toList should equal(List(Map("list" -> List(PathImpl(n1, r, n2)))))
+  }
+
+  test("with named path and shadowed variable in projection") {
+    val n1 = createLabeledNode("Start")
+    val n2 = createLabeledNode("End")
+    val r = relate(n1, n2)
+
+    val query = "MATCH (n:Start) RETURN [p = (n)-->() | {path: p, other: [p IN ['foo'] | true ]} ] AS list"
+
+    val result = executeWithCostPlannerOnly(query)
+
+    result.toList should equal(List(Map("list" -> List(Map("path" -> PathImpl(n1, r, n2), "other" -> List(true))))))
+  }
+
   test("one relationship out") {
     val n1 = createLabeledNode(Map("x" -> 1), "START")
     val n2 = createLabeledNode(Map("x" -> 2), "START")
@@ -49,7 +87,6 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
     relate(n2, n4)
     relate(n2, n5)
 
-//    val result = executeWithCostPlannerOnly("match (n:START) return n.x, [(n)-->() | n] as coll")
     val result = executeWithCostPlannerOnly("match (n:START) return n.x, [(n)-->(other) | other.x] as coll")
 
     result.toList should equal(List(
