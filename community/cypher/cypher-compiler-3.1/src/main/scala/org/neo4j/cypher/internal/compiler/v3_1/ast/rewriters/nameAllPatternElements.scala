@@ -19,23 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters
 
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.{Rewriter, bottomUp}
 
-case object nameMatchPatternElements extends Rewriter {
+case object nameAllPatternElements extends Rewriter {
 
-  def apply(that: AnyRef): AnyRef = instance(that)
+  override def apply(in: AnyRef): AnyRef = namingRewriter.apply(in)
 
-  private val rewriter = Rewriter.lift {
-    case m: Match =>
-      val rewrittenPattern = m.pattern.endoRewrite(nameAllPatternElements.namingRewriter)
-      m.copy(pattern = rewrittenPattern)(m.position)
-  }
+  val namingRewriter: Rewriter = bottomUp(Rewriter.lift {
+    case pattern: NodePattern if pattern.variable.isEmpty =>
+      val syntheticName = UnNamedNameGenerator.name(pattern.position.bumped())
+      pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
 
-  private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
+    case pattern: RelationshipPattern if pattern.variable.isEmpty  =>
+      val syntheticName = UnNamedNameGenerator.name(pattern.position.bumped())
+      pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
+  })
 }
-
-
-
-
-

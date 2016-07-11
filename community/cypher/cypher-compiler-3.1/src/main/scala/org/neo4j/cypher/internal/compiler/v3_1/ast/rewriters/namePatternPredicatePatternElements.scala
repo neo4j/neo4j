@@ -20,24 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.PatternExpressionPatternElementNamer
 import org.neo4j.cypher.internal.frontend.v3_1.{Rewriter, bottomUp}
-
-case object nameAllPatternElements extends Rewriter {
-
-  override def apply(in: AnyRef): AnyRef = namingRewriter.apply(in)
-
-  val namingRewriter: Rewriter = bottomUp(Rewriter.lift {
-    case pattern: NodePattern if pattern.variable.isEmpty =>
-      val syntheticName = UnNamedNameGenerator.name(pattern.position.bumped())
-      pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
-
-    case pattern: RelationshipPattern if pattern.variable.isEmpty  =>
-      val syntheticName = UnNamedNameGenerator.name(pattern.position.bumped())
-      pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
-  })
-}
 
 case object namePatternPredicatePatternElements extends Rewriter {
 
