@@ -34,15 +34,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.lang.ref.SoftReference;
-import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
@@ -65,7 +62,6 @@ import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
@@ -3546,116 +3542,6 @@ public abstract class PageCacheTest<T extends PageCache>
                 }
             }
         };
-    }
-
-    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
-    public void backgroundThreadsMustGracefullyShutDown() throws Exception
-    {
-        int iterations = 1000;
-        List<WeakReference<PageCache>> refs = new LinkedList<>();
-        final Queue<Throwable> caughtExceptions = new ConcurrentLinkedQueue<>();
-        final Thread.UncaughtExceptionHandler exceptionHandler = new Thread.UncaughtExceptionHandler()
-        {
-            @Override
-            public void uncaughtException( Thread t, Throwable e )
-            {
-                e.printStackTrace();
-                caughtExceptions.offer( e );
-            }
-        };
-        Thread.UncaughtExceptionHandler defaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
-        Thread.setDefaultUncaughtExceptionHandler( exceptionHandler );
-
-        try
-        {
-            generateFileWithRecords( file( "a" ), recordCount, recordSize );
-            int filePagesInTotal = recordCount / recordsPerFilePage;
-
-            for ( int i = 0; i < iterations; i++ )
-            {
-                createAndDirtyAndShutDownPageCache( refs, filePagesInTotal );
-
-                assertTrue( caughtExceptions.isEmpty() );
-            }
-        }
-        finally
-        {
-            Thread.setDefaultUncaughtExceptionHandler( defaultUncaughtExceptionHandler );
-        }
-
-        // Once the page caches has been closed and all references presumably set to null, then the only thing that
-        // could possibly strongly reference the cache is any lingering background thread. If we do a couple of
-        // GCs, then we should observe that the WeakReference has been cleared by the garbage collector. If it
-        // hasn't, then something must be keeping it alive, even though it has been closed.
-        int maxChecks = 200;
-        //noinspection unused -- we use old-gen heap pollution, as well as System.gc(), to cause old-gen GCs
-        LinkedList<SoftReference<byte[]>> heapPollution = new LinkedList<>();
-        boolean passed;
-        do
-        {
-            passed = causeGcAndCheckReferences( refs, heapPollution );
-        }
-        while ( !passed && maxChecks-- > 0 );
-
-        if ( !passed )
-        {
-            List<PageCache> nonNullPageCaches = new LinkedList<>();
-            for ( WeakReference<PageCache> ref : refs )
-            {
-                PageCache pageCache = ref.get();
-                if ( pageCache != null )
-                {
-                    nonNullPageCaches.add( pageCache );
-                }
-            }
-
-            if( !nonNullPageCaches.isEmpty() )
-            {
-                fail( "PageCaches should not be held live after close: " + nonNullPageCaches );
-            }
-        }
-    }
-
-    private boolean causeGcAndCheckReferences(
-            List<WeakReference<PageCache>> refs,
-            LinkedList<SoftReference<byte[]>> heapPollution )
-            throws InterruptedException
-    {
-        System.gc();
-        Thread.sleep( 50 );
-        boolean passed = true;
-        //noinspection UnusedAssignment -- dumping unused crap into the old-gen heap to provoke GCs
-        heapPollution.add( new SoftReference<>( new byte[(int) ByteUnit.mebiBytes( 32 )] ) );
-
-        for ( WeakReference<PageCache> ref : refs )
-        {
-            if ( ref.get() != null )
-            {
-                passed = false;
-            }
-        }
-        return passed;
-    }
-
-    private void createAndDirtyAndShutDownPageCache( List<WeakReference<PageCache>> refs, int filePagesInTotal )
-            throws IOException
-    {
-        PageCache cache = createPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
-
-        // Touch all the pages
-        PagedFile pagedFile = cache.map( file( "a" ), filePageSize );
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
-        {
-            for ( int j = 0; j < filePagesInTotal; j++ )
-            {
-                assertTrue( cursor.next() );
-            }
-        }
-
-        // We're now likely racing with the eviction thread
-        pagedFile.close();
-        cache.close();
-        refs.add( new WeakReference<>( cache ) );
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
