@@ -103,7 +103,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         write2.barrier.await();
 
         assertSuccess( adminSubject, "CALL dbms.listTransactions()",
-                r -> assertKeyIsMap( r, "username", "transactionCount",
+                r -> assertKeyIsMap( r, "username", "activeTransactions",
                         map( "adminSubject", "1", "writeSubject", "2" ) ) );
 
         write1.closeAndAssertSuccess();

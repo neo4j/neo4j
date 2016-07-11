@@ -247,7 +247,7 @@ public class AuthProcedures
     private EnterpriseAuthSubject ensureSelfOrAdminAuthSubject( String username ) throws InvalidArgumentsException
     {
         EnterpriseAuthSubject subject = EnterpriseAuthSubject.castOrFail( authSubject );
-        assert( subject.getUserManager().getUser( username ) != null );
+        subject.getUserManager().getUser( username );
 
         if ( subject.isAdmin() || subject.doesUsernameMatch( username ) )
         {
