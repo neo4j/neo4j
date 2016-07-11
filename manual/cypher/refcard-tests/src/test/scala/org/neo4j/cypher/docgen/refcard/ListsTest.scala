@@ -23,7 +23,7 @@ import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
-class CollectionsTest extends RefcardTest with QueryStatisticsTestSupport {
+class ListsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("A KNOWS B")
   val title = "Lists"
   val css = "general c2-2 c3-2 c4-3 c5-2 c6-6"
@@ -49,8 +49,8 @@ class CollectionsTest extends RefcardTest with QueryStatisticsTestSupport {
         Map("value" -> "Bob")
       case "parameters=names" =>
         Map("names" -> List("A", "B"))
-      case "parameters=coll" =>
-        Map("coll" -> List(1, 2, 3))
+      case "parameters=list" =>
+        Map("list" -> List(1, 2, 3))
       case "parameters=range" =>
         Map("firstNum" -> 1, "lastNum" -> 10, "step" -> 2)
       case "parameters=subscript" =>
@@ -60,23 +60,23 @@ class CollectionsTest extends RefcardTest with QueryStatisticsTestSupport {
     }
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("name" -> "Alice", "coll" -> Array(1, 2, 3), "age" -> 30),
-    "B" -> Map("name" -> "Bob", "coll" -> Array(1, 2, 3), "age" -> 40))
+    "A" -> Map("name" -> "Alice", "list" -> Array(1, 2, 3), "age" -> 30),
+    "B" -> Map("name" -> "Bob", "list" -> Array(1, 2, 3), "age" -> 40))
 
   def text = """
 ###assertion=returns-one
 RETURN
 
-["a", "b", "c"] AS coll
+["a", "b", "c"] AS list
 
 ###
 
 Literal lists are declared in square brackets.
 
-###assertion=returns-one parameters=coll
+###assertion=returns-one parameters=list
 RETURN
 
-size({coll}) AS len, {coll}[0] AS value
+size({list}) AS len, {list}[0] AS value
 
 ###
 
@@ -85,7 +85,7 @@ Lists can be passed in as parameters.
 ###assertion=returns-one parameters=range
 RETURN
 
-range({firstNum}, {lastNum}, {step}) AS coll
+range({firstNum}, {lastNum}, {step}) AS list
 
 ###
 
@@ -105,19 +105,19 @@ Relationship variables of a variable length path contain a list of relationships
 ###assertion=returns-two
 MATCH (matchedNode)
 
-RETURN matchedNode.coll[0] AS value,
-       size(matchedNode.coll) AS len
+RETURN matchedNode.list[0] AS value,
+       size(matchedNode.list) AS len
 
 ###
 
 Properties can be lists of strings, numbers or booleans.
 
 ###assertion=returns-one parameters=subscript
-WITH [1, 2, 3] AS coll
+WITH [1, 2, 3] AS list
 RETURN
 
-coll[{idx}] AS value,
-coll[{startIdx}..{endIdx}] AS slice
+list[{idx}] AS value,
+list[{startIdx}..{endIdx}] AS slice
 
 ###
 

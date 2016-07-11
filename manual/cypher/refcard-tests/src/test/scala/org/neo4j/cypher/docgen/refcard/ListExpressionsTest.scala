@@ -23,7 +23,7 @@ import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
-class CollectionExpressionsTest extends RefcardTest with QueryStatisticsTestSupport {
+class ListExpressionsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A", "A:Person KNOWS B:Person", "B KNOWS C:Person", "C KNOWS ROOT")
   val title = "List Expressions"
   val css = "general c3-2 c4-3 c5-3 c6-6"
@@ -48,8 +48,8 @@ class CollectionExpressionsTest extends RefcardTest with QueryStatisticsTestSupp
 
   override def parameters(name: String): Map[String, Any] =
     name match {
-      case "parameters=coll" =>
-        Map("coll" -> List(1,2,3))
+      case "parameters=list" =>
+        Map("list" -> List(1,2,3))
       case "parameters=value" =>
         Map("value" -> "Bob")
       case "" =>
@@ -62,18 +62,18 @@ class CollectionExpressionsTest extends RefcardTest with QueryStatisticsTestSupp
     "C" -> Map("prop" -> "Chris"))
 
   def text = """
-###assertion=returns-one parameters=coll
+###assertion=returns-one parameters=list
 RETURN
 
-size({coll})
+size({list})
 ###
 
 Number of elements in the list.
 
-###assertion=returns-one parameters=coll
+###assertion=returns-one parameters=list
 RETURN
 
-head({coll}), last({coll}), tail({coll})
+head({list}), last({list}), tail({list})
 ###
 
 +head+ returns the first, +last+ the last element
@@ -83,40 +83,40 @@ All return `NULL` for an empty list.
 ###assertion=returns-one parameters=value
 MATCH path = (n)-->(m)
 WHERE id(n) = %A% AND id(m) = %B%
-WITH nodes(path) AS coll
+WITH nodes(path) AS list
 RETURN
 
-[x IN coll WHERE x.prop <> {value} | x.prop]
+[x IN list WHERE x.prop <> {value} | x.prop]
 ###
 
 Combination of filter and extract in a concise notation.
 
 ###assertion=returns-one
 MATCH (n) WHERE id(n) = %A%
-WITH [n] AS coll
+WITH [n] AS list
 RETURN
 
-extract(x IN coll | x.prop)
+extract(x IN list | x.prop)
 ###
 
 A list of the value of the expression for each element in the original list.
 
 ###assertion=returns-one parameters=value
 MATCH (n) WHERE id(n) = %A%
-WITH [n] AS coll
+WITH [n] AS list
 RETURN
 
-filter(x IN coll WHERE x.prop <> {value})
+filter(x IN list WHERE x.prop <> {value})
 ###
 
 A filtered list of the elements where the predicate is `TRUE`.
 
 ###assertion=returns-one
 MATCH (n) WHERE id(n) = %A%
-WITH [n] AS coll
+WITH [n] AS list
 RETURN
 
-reduce(s = "", x IN coll | s + x.prop)
+reduce(s = "", x IN list | s + x.prop)
 ###
 
 Evaluate expression for each element in the list, accumulate the results.
