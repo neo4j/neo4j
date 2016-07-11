@@ -114,6 +114,9 @@ public enum ClusterState
                                                     1 ) ) );
                             return discovery;
                         }
+
+                        default:
+                            break;
                     }
                     return this;
                 }
@@ -321,6 +324,9 @@ public enum ClusterState
                             context.joinDenied( (ClusterMessage.ConfigurationResponseState) message.getPayload() );
                             return this;
                         }
+
+                        default:
+                            break;
                     }
 
                     return this;
@@ -389,6 +395,9 @@ public enum ClusterState
                             // This causes an exception from the join() method
                             return start;
                         }
+
+                        default:
+                            break;
                     }
 
                     return this;
@@ -499,6 +508,9 @@ public enum ClusterState
                                 return leaving;
                             }
                         }
+
+                        default:
+                            break;
                     }
 
                     return this;
@@ -541,6 +553,9 @@ public enum ClusterState
                             context.left();
                             return start;
                         }
+
+                        default:
+                            break;
                     }
 
                     return this;

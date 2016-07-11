@@ -210,6 +210,8 @@ public class TraversalDescriptionBuilder
             case DEPTH_FIRST:
                 result = result.depthFirst();
                 break;
+            default:
+                throw new IllegalArgumentException( "Unknown order: " + order );
             }
         }
         return result;

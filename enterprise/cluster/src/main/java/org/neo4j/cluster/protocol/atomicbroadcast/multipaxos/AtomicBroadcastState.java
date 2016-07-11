@@ -19,20 +19,19 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
-import static org.neo4j.cluster.com.message.Message.internal;
-import static org.neo4j.cluster.com.message.Message.timeout;
-import static org.neo4j.cluster.com.message.Message.to;
-
 import java.net.URI;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
-import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
 import org.neo4j.cluster.statemachine.State;
+
+import static org.neo4j.cluster.com.message.Message.internal;
+import static org.neo4j.cluster.com.message.Message.timeout;
+import static org.neo4j.cluster.com.message.Message.to;
 
 /**
  * State Machine for implementation of Atomic Broadcast client interface
@@ -64,7 +63,7 @@ public enum AtomicBroadcastState
 
                         default:
                         {
-                            defaultHandling( context, message, outgoing );
+                            defaultHandling( context, message );
                         }
                     }
 
@@ -110,7 +109,7 @@ public enum AtomicBroadcastState
 
                         default:
                         {
-                            defaultHandling( context, message, outgoing );
+                            defaultHandling( context, message );
                         }
                     }
 
@@ -204,7 +203,7 @@ public enum AtomicBroadcastState
 
                         default:
                         {
-                            defaultHandling( context, message, outgoing );
+                            defaultHandling( context, message );
                         }
                     }
 
@@ -212,22 +211,24 @@ public enum AtomicBroadcastState
                 }
             };
 
-    private static void defaultHandling( AtomicBroadcastContext context, Message<AtomicBroadcastMessage> message,
-                                         MessageHolder outgoing )
+    private static void defaultHandling( AtomicBroadcastContext context, Message<AtomicBroadcastMessage> message )
     {
         switch ( message.getMessageType() )
         {
             case addAtomicBroadcastListener:
             {
-                context.addAtomicBroadcastListener( (AtomicBroadcastListener) message.getPayload() );
+                context.addAtomicBroadcastListener( message.getPayload() );
                 break;
             }
 
             case removeAtomicBroadcastListener:
             {
-                context.removeAtomicBroadcastListener( (AtomicBroadcastListener) message.getPayload() );
+                context.removeAtomicBroadcastListener( message.getPayload() );
                 break;
             }
+
+            default:
+                break;
         }
     }
 }

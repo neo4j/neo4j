@@ -631,6 +631,8 @@ public class PackStream
             return PackType.MAP;
         case TINY_STRUCT:
             return PackType.STRUCT;
+        default:
+            break;
         }
 
         if ( markerByte >= MINUS_2_TO_THE_4 )

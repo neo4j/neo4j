@@ -213,6 +213,8 @@ public class RelationshipChangesForNode
             case BOTH:
                 totalLoops++;
                 break;
+            default:
+                throw new IllegalArgumentException( "Unknown direction: " + direction );
         }
     }
 
@@ -240,6 +242,8 @@ public class RelationshipChangesForNode
                     case BOTH:
                         totalLoops--;
                         break;
+                    default:
+                        throw new IllegalArgumentException( "Unknown direction: " + direction );
                 }
                 return true;
             }
@@ -288,6 +292,9 @@ public class RelationshipChangesForNode
                             relationshipHome );
                 }
                 break;
+
+            default:
+                throw new IllegalArgumentException( "Unknown direction: " + direction );
         }
 
         // Loops are always included
@@ -338,6 +345,9 @@ public class RelationshipChangesForNode
                     degree = diffStrategy.augmentDegree( degree, incoming.get( typeId ).size() );
                 }
                 break;
+
+            default:
+                throw new IllegalArgumentException( "Unknown direction: " + direction );
         }
 
         // Loops are always included
@@ -423,6 +433,8 @@ public class RelationshipChangesForNode
             case BOTH:
                 relTypeToRelsMap = loops();
                 break;
+            default:
+                throw new IllegalArgumentException( "Unknown direction: " + direction );
         }
         return relTypeToRelsMap;
     }
@@ -496,7 +508,7 @@ public class RelationshipChangesForNode
             return outgoing != null || incoming != null || loops != null ? diffStrategy.getPrimitiveIterator(
                     diffs( types, outgoing, incoming, loops ), relationshipHome ) : emptyIterator();
         default:
-            throw new IllegalArgumentException( direction.name() );
+            throw new IllegalArgumentException( "Unknown direction: " + direction );
         }
     }
 }

@@ -51,18 +51,14 @@ public enum ElectionState
                 )
                         throws Throwable
                 {
-                    switch ( message.getMessageType() )
+                    if ( message.getMessageType() == ElectionMessage.created )
                     {
-                        case created:
-                        {
-                            context.created();
-                            return election;
-                        }
-
-                        case join:
-                        {
-                            return election;
-                        }
+                        context.created();
+                        return election;
+                    }
+                    else if ( message.getMessageType() == ElectionMessage.join )
+                    {
+                        return election;
                     }
 
                     return this;
@@ -350,6 +346,9 @@ public enum ElectionState
                         {
                             return start;
                         }
+
+                        default:
+                            break;
                     }
 
                     return this;

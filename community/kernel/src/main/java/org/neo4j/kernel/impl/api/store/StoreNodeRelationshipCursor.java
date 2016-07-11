@@ -134,6 +134,9 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
                             }
                             break;
                         }
+
+                        default:
+                            throw new IllegalStateException( "Unknown direction: " + direction );
                         }
                     }
 

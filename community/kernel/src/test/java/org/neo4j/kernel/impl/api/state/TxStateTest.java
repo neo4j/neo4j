@@ -1494,6 +1494,8 @@ public class TxStateTest
                     continue;
                 }
                 break;
+            default:
+                throw new IllegalStateException( "Unknown direction: " + direction );
             }
 
             if ( relationshipTypes != null )

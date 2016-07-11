@@ -53,6 +53,8 @@ public class LifecycleException
             case SHUTDOWN:
                 return String.format( "Component '%s' failed to shut down. Please " +
                         "see attached cause exception.", instance.toString() );
+            default:
+                break;
         }
 
         return String.format( "Failed to transition component '%s' from %s to %s. Please see attached cause exception",

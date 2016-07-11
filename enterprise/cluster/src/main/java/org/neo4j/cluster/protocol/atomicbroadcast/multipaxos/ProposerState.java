@@ -44,12 +44,9 @@ public enum ProposerState
                 )
                         throws Throwable
                 {
-                    switch ( message.getMessageType() )
+                    if ( message.getMessageType() == ProposerMessage.join )
                     {
-                        case join:
-                        {
-                            return proposer;
-                        }
+                        return proposer;
                     }
 
                     return this;
@@ -393,6 +390,9 @@ public enum ProposerState
                             context.leave();
                             return start;
                         }
+
+                        default:
+                            break;
                     }
 
                     return this;

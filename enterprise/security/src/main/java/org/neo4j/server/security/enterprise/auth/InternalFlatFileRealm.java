@@ -248,12 +248,14 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
 
         AuthenticationResult result = authenticationStrategy.authenticate( user, password );
 
-        switch (result)
+        switch ( result )
         {
         case FAILURE:
             throw new IncorrectCredentialsException();
         case TOO_MANY_ATTEMPTS:
             throw new ExcessiveAttemptsException();
+        default:
+            break;
         }
 
         // TODO: This will not work if AuthenticationInfo is cached,

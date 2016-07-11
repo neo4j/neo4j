@@ -84,8 +84,11 @@ public class Utils
         case LT:
             return ((dataA < dataB) ^ ((dataA < 0) != (dataB < 0)));
         case NE:
+            return false;
+
+        default:
+            throw new IllegalArgumentException( "Unknown compare type: " + compareType );
         }
-        return false;
     }
 
     /**

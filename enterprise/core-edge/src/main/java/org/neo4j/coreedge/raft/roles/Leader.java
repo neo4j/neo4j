@@ -231,6 +231,9 @@ public class Leader implements RaftMessageHandler
                 Appending.appendNewEntries( ctx, outcome, contents );
                 break;
             }
+
+            default:
+                break;
         }
 
         return outcome;

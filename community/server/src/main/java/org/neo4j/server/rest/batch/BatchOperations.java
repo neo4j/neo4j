@@ -176,6 +176,8 @@ public abstract class BatchOperations
                     case BODY_KEY:
                         jobBody = readBody( jp );
                         break;
+                    default:
+                        break;
                     }
                 }
                 // Read one job description. Execute it.

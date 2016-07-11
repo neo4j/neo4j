@@ -77,6 +77,9 @@ public enum HeartbeatState
 
                             return heartbeat;
                         }
+
+                        default:
+                            break;
                     }
 
                     return this;
@@ -261,6 +264,9 @@ public enum HeartbeatState
                             context.removeHeartbeatListener( message.getPayload() );
                             break;
                         }
+
+                        default:
+                            break;
                     }
 
                     return this;

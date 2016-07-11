@@ -440,6 +440,8 @@ public class ImportToolTest
                         result = Arrays.toString( (double[]) things );
                         expected = fExpected;
                         break;
+                    default:
+                        break;
                     }
 
                     assertEquals( expected, result );
@@ -493,6 +495,8 @@ public class ImportToolTest
                         break;
                     case "d":
                         result = Arrays.toString( (double[]) things );
+                        break;
+                    default:
                         break;
                     }
 

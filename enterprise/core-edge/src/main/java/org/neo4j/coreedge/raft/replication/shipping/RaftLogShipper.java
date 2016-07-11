@@ -180,6 +180,9 @@ public class RaftLogShipper
                 mode = Mode.MISMATCH;
                 sendSingle( lastSentIndex, leaderContext );
                 break;
+
+            default:
+                throw new IllegalStateException( "Unknown mode: " + mode );
         }
 
         lastLeaderContext = leaderContext;
@@ -224,6 +227,9 @@ public class RaftLogShipper
                     scheduleTimeout( retryTimeMillis );
                 }
                 break;
+
+            default:
+                throw new IllegalStateException( "Unknown mode: " + mode );
         }
 
         lastLeaderContext = leaderContext;
@@ -232,29 +238,28 @@ public class RaftLogShipper
     public synchronized void onNewEntries( long prevLogIndex, long prevLogTerm, RaftLogEntry[] newLogEntries,
                                            LeaderContext leaderContext )
     {
-        switch ( mode )
+        if ( mode == Mode.PIPELINE )
         {
-            case PIPELINE:
-                while ( lastSentIndex <= prevLogIndex )
+            while ( lastSentIndex <= prevLogIndex )
+            {
+                if ( prevLogIndex - matchIndex <= maxAllowedShippingLag )
                 {
-                    if ( prevLogIndex - matchIndex <= maxAllowedShippingLag )
-                    {
-                        sendNewEntries( prevLogIndex, prevLogTerm, newLogEntries, leaderContext ); // all sending
-                        // functions update lastSentIndex
-                    }
-                    else
-                    {
+                    sendNewEntries( prevLogIndex, prevLogTerm, newLogEntries, leaderContext ); // all sending
+                    // functions update lastSentIndex
+                }
+                else
+                {
                     /* The timer is still set at this point. Either we will send the next batch
                      * as soon as the follower has caught up with the last pipelined entry,
                      * or when we timeout and resend. */
-                        log.info( "%s: follower has fallen behind (target prevLogIndex was %d, maxAllowedShippingLag " +
-                                "is %d), moving to CATCHUP mode", statusAsString(), prevLogIndex,
-                                maxAllowedShippingLag );
-                        mode = Mode.CATCHUP;
-                        break;
-                    }
+                    log.info( "%s: follower has fallen behind (target prevLogIndex was %d, maxAllowedShippingLag " +
+                              "is %d), moving to CATCHUP mode", statusAsString(), prevLogIndex,
+                            maxAllowedShippingLag );
+                    mode = Mode.CATCHUP;
+                    break;
                 }
-                break;
+            }
+
         }
 
         lastLeaderContext = leaderContext;
@@ -262,11 +267,9 @@ public class RaftLogShipper
 
     public synchronized void onCommitUpdate( LeaderContext leaderContext )
     {
-        switch ( mode )
+        if ( mode == Mode.PIPELINE )
         {
-            case PIPELINE:
-                sendCommitUpdate( leaderContext );
-                break;
+            sendCommitUpdate( leaderContext );
         }
 
         lastLeaderContext = leaderContext;

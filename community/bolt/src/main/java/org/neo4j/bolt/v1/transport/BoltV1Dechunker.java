@@ -113,10 +113,10 @@ public class BoltV1Dechunker
                 break;
             }
             case CLOSED:
-            {
-                // No-op
                 return;
-            }
+
+            default:
+                throw new IllegalStateException( "Unknown state: " + state );
             }
         }
     }

@@ -317,7 +317,7 @@ public class LifeSupport
             case STOPPED:
                 instance.init();
                 break;
-            case SHUTDOWN:
+            default:
                 break;
         }
     }

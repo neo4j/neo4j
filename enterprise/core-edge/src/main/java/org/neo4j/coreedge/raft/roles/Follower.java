@@ -121,6 +121,9 @@ class Follower implements RaftMessageHandler
                 }
                 break;
             }
+
+            default:
+                break;
         }
 
         return outcome;

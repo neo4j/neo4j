@@ -789,8 +789,9 @@ public abstract class StandardExpander implements PathExpander
                 return rel.getStartNode().equals( start );
             case BOTH:
                 return true;
+            default:
+                throw new IllegalArgumentException( "Unknown direction: " + dir );
         }
-        return true;
     }
 
     abstract Iterator<Relationship> doExpand( Path path, BranchState state );

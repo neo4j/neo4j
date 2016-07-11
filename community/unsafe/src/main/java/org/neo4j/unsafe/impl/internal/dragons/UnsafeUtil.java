@@ -130,7 +130,7 @@ public final class UnsafeUtil
         }
         else
         {
-            boolean unaligned = false;
+            boolean unaligned;
             String arch = System.getProperty( "os.arch", "?" );
             switch ( arch ) // list of architectures that support unaligned access to memory
             {
@@ -142,6 +142,10 @@ public final class UnsafeUtil
             case "ppc64le":
             case "ppc64be":
                 unaligned = true;
+                break;
+            default:
+                unaligned = false;
+                break;
             }
             allowUnalignedMemoryAccess = unaligned;
         }

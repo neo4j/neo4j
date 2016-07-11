@@ -33,6 +33,7 @@ import java.util.Set;
 
 import org.neo4j.helpers.Cancelable;
 import org.neo4j.shell.Console;
+import org.neo4j.shell.Continuation;
 import org.neo4j.shell.CtrlCHandler;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Response;
@@ -147,7 +148,8 @@ public abstract class AbstractClient implements ShellClient
         {
             String expandedLine = fullLine( line );
             Response response = getServer().interpretLine( id, expandedLine, out );
-            switch ( response.getContinuation() )
+            Continuation continuation = response.getContinuation();
+            switch ( continuation )
             {
             case INPUT_COMPLETE:
                 endMultiLine();
@@ -162,6 +164,8 @@ public abstract class AbstractClient implements ShellClient
             case EXCEPTION_CAUGHT:
                 endMultiLine();
                 break;
+            default:
+                throw new IllegalStateException( "Unknown continuation: " + continuation );
             }
             prompt = response.getPrompt();
             success = true;

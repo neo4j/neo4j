@@ -148,6 +148,9 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
 
                 case FINISHED:
                     return null;
+
+                default:
+                    break;
             }
             return null;
         }

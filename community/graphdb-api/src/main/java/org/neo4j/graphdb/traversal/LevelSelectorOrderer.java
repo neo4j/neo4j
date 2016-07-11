@@ -99,8 +99,14 @@ public class LevelSelectorOrderer extends AbstractSelectorOrderer<LevelSelectorO
         {
             switch ( side )
             {
-            case OUTGOING: out = depth; break;
-            case INCOMING: in = depth; break;
+            case OUTGOING:
+                out = depth;
+                break;
+            case INCOMING:
+                in = depth;
+                break;
+            default:
+                break;
             }
         }
 

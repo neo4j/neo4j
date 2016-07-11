@@ -187,6 +187,8 @@ public class BigJumpingStoreIT
                         node.setProperty( "string", "asjdkasdjkasjdkasjdkasdjkasdj" );
                         node.setProperty( "string", stringValue );
                     }
+                default:
+                    throw new AssertionError( "Illegal value: " + i );
             }
 
             if ( Iterables.count( node.getRelationships() ) > 50 )

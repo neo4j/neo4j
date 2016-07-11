@@ -256,6 +256,8 @@ public class IndexingService extends LifecycleAdapter
                 case FAILED:
                     // Don't do anything, the user needs to drop the index and re-create
                     break;
+                default:
+                    throw new IllegalStateException( "Unknown state: " + state );
             }
         } );
 
@@ -466,6 +468,9 @@ public class IndexingService extends LifecycleAdapter
                         }
                     }
                     break;
+
+                default:
+                    throw new IllegalStateException( "Unknown update mode: " + update.getUpdateMode() );
                 }
             }
         }

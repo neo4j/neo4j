@@ -243,17 +243,20 @@ class OwnerCheck implements CheckDecorator
 
     private RecordType recordType( PropertyType type )
     {
-        if ( type != null )
+        if ( type == null )
         {
-            switch ( type )
-            {
-            case STRING:
-                return STRING_PROPERTY;
-            case ARRAY:
-                return ARRAY_PROPERTY;
-            }
+            return null;
         }
-        return null;
+
+        switch ( type )
+        {
+        case STRING:
+            return STRING_PROPERTY;
+        case ARRAY:
+            return ARRAY_PROPERTY;
+        default:
+            return null;
+        }
     }
 
     @Override

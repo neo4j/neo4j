@@ -100,6 +100,8 @@ public final class Resources implements TestRule
             case FILE_IN_EXISTING_DIRECTORY:
                 this.testPath = fileInExistingDirectory( fs );
                 return;
+            default:
+                throw new IllegalArgumentException( "Unknown path: " + path );
             }
         }
         this.testPath = ResourceRule.testPath();

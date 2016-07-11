@@ -69,6 +69,8 @@ class UniqueInMemoryIndex extends InMemoryIndex
                         case CHANGED:
                         case REMOVED:
                             UniqueInMemoryIndex.this.remove( update.getNodeId(), update.getValueBefore() );
+                        default:
+                            break;
                     }
                 }
                 for ( NodePropertyUpdate update : updates )
@@ -78,6 +80,8 @@ class UniqueInMemoryIndex extends InMemoryIndex
                         case ADDED:
                         case CHANGED:
                             add( update.getNodeId(), update.getValueAfter(), IndexUpdateMode.ONLINE == mode );
+                        default:
+                            break;
                     }
                 }
             }

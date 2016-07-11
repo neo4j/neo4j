@@ -568,10 +568,10 @@ public class SessionStateMachine implements Session, SessionState
         State error( SessionStateMachine ctx, Neo4jError err )
         {
             ctx.spi.reportError( err );
-            State outcome = ERROR;
             if ( ctx.hasTransaction() )
             {
-                switch( ctx.currentTransaction.transactionType() )
+                KernelTransaction.Type txType = ctx.currentTransaction.transactionType();
+                switch( txType )
                 {
                 case explicit:
                     ctx.currentTransaction.failure();
@@ -592,10 +592,13 @@ public class SessionStateMachine implements Session, SessionState
                         ctx.currentTransaction = null;
                     }
                     break;
+
+                default:
+                    throw new IllegalStateException( "Unknown type: " + txType );
                 }
             }
             ctx.error( err );
-            return outcome;
+            return ERROR;
         }
     }
 

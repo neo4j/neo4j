@@ -21,6 +21,7 @@ package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
@@ -43,12 +44,9 @@ public enum LearnerState
                 )
                         throws Throwable
                 {
-                    switch ( message.getMessageType() )
+                    if ( message.getMessageType() == LearnerMessage.join )
                     {
-                        case join:
-                        {
-                            return learner;
-                        }
+                        return learner;
                     }
 
                     return this;
@@ -267,6 +265,9 @@ public enum LearnerState
                             context.leave();
                             return start;
                         }
+
+                        default:
+                            break;
                     }
 
                     return this;

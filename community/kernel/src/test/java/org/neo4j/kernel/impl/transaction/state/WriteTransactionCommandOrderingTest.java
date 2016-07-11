@@ -320,6 +320,8 @@ public class WriteTransactionCommandOrderingTest
             case DELETE:
                 deleted = true;
                 break;
+            default:
+                throw new IllegalStateException( "Unknown command mode: " + command.getMode() );
             }
             return false;
         }

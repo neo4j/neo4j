@@ -104,7 +104,8 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
 
     private void chooseProtocolVersion( ChannelHandlerContext ctx, ByteBuf buffer ) throws Exception
     {
-        switch ( protocolChooser.handleVersionHandshakeChunk( buffer, ctx.channel() ) )
+        HandshakeOutcome outcome = protocolChooser.handleVersionHandshakeChunk( buffer, ctx.channel() );
+        switch ( outcome )
         {
         case PROTOCOL_CHOSEN:
             protocol = protocolChooser.chosenProtocol();
@@ -135,6 +136,9 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
             ctx.close();
             return;
         case PARTIAL_HANDSHAKE:
+            return;
+        default:
+            throw new IllegalStateException( "Unknown handshake outcome: " + outcome );
         }
     }
 
