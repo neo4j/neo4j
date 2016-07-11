@@ -35,8 +35,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static java.lang.String.format;
-
 /**
  * The segmented RAFT log is an append only log supporting the operations required to support
  * the RAFT consensus algorithm.
@@ -118,7 +116,7 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
             for ( RaftLogEntry entry : entries )
             {
                 state.appendIndex++;
-                updateTerm( entry );
+                state.terms.append( state.appendIndex, entry.term() );
                 state.segments.last().write( state.appendIndex, entry );
             }
             state.segments.last().flush();
@@ -131,7 +129,7 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
 
         if ( state.segments.last().position() >= rotateAtSize )
         {
-            rotateSegment( state.appendIndex, state.appendIndex, state.currentTerm );
+            rotateSegment( state.appendIndex, state.appendIndex, state.terms.latest() );
         }
 
         return state.appendIndex;
@@ -142,20 +140,6 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
         if ( needsRecovery )
         {
             throw new IllegalStateException( "Raft log requires recovery" );
-        }
-    }
-
-    private void updateTerm( RaftLogEntry entry )
-    {
-        if ( entry.term() >= state.currentTerm )
-        {
-            state.currentTerm = entry.term();
-        }
-        else
-        {
-            throw new IllegalStateException(
-                    format( "Non-monotonic term %d for entry %s in term %d", entry.term(), entry.toString(),
-                            state.currentTerm ) );
         }
     }
 
@@ -173,7 +157,7 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
         truncateSegment( state.appendIndex, newAppendIndex, newTerm );
 
         state.appendIndex = newAppendIndex;
-        state.currentTerm = newTerm;
+        state.terms.truncate( fromIndex );
     }
 
     private void rotateSegment( long prevFileLastIndex, long prevIndex, long prevTerm ) throws IOException
@@ -216,15 +200,14 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
     @Override
     public synchronized long skip( long newIndex, long newTerm ) throws IOException
     {
-        log.info( "Skipping from {index: %d, term: %d} to {index: %d, term: %d}", state.appendIndex, state.currentTerm, newIndex, newTerm );
+        log.info( "Skipping from {index: %d, term: %d} to {index: %d, term: %d}", state.appendIndex, state.terms.latest(), newIndex, newTerm );
         if ( state.appendIndex < newIndex )
         {
             skipSegment( state.appendIndex, newIndex, newTerm );
-
-            state.prevTerm = newTerm;
-            state.currentTerm = newTerm;
+            state.terms.skip( newIndex, newTerm );
 
             state.prevIndex = newIndex;
+            state.prevTerm = newTerm;
             state.appendIndex = newIndex;
         }
 
@@ -242,17 +225,13 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
     @Override
     public long readEntryTerm( long logIndex ) throws IOException
     {
-        if ( logIndex == state.prevIndex )
+        long term = state.terms.get( logIndex );
+        if ( term == -1 && logIndex >= state.prevIndex )
         {
-            return state.prevTerm;
+            RaftLogEntry entry = readLogEntry( logIndex );
+            term = (entry != null) ? entry.term() : -1;
         }
-        else if ( logIndex < state.prevIndex || logIndex > state.appendIndex )
-        {
-            return -1;
-        }
-
-        RaftLogEntry entry = readLogEntry( logIndex );
-        return entry == null ? -1 : entry.term();
+        return term;
     }
 
     @Override
@@ -273,6 +252,8 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
         {
             state.prevTerm = newPrevTerm;
         }
+
+        state.terms.prune( state.prevIndex );
 
         return state.prevIndex;
     }
