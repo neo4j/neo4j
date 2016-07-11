@@ -97,7 +97,9 @@ public class StandardSessions extends LifecycleAdapter implements Sessions
     {
         Supplier<TransactionIdStore> transactionIdStore =
                 neoStoreDataSource.getDependencyResolver().provideDependency( TransactionIdStore.class );
-        return new SessionStateMachine( connectionDescriptor, usageData, gds, txBridge, statementRunner, logging,
-                authentication, transactionIdStore, sessionTracker );
+        SessionStateMachine.SPI spi =
+                new StandardStateMachineSPI( connectionDescriptor, usageData, gds, statementRunner, logging,
+                        authentication, txBridge, transactionIdStore, sessionTracker );
+        return new SessionStateMachine( spi );
     }
 }

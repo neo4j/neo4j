@@ -22,34 +22,25 @@ package org.neo4j.bolt.v1.runtime.internal;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 
-import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
-import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.bolt.SessionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext;
 import org.neo4j.kernel.impl.query.QuerySession;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.udc.UsageData;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
@@ -724,15 +715,6 @@ class SessionStateMachine implements Session, SessionState
         void sessionActivated( Session session );
         void sessionHalted( Session session );
         VersionTracker versionTracker( long startingVersion );
-    }
-
-    SessionStateMachine( String connectionDescriptor, UsageData usageData, GraphDatabaseAPI db,
-            ThreadToStatementContextBridge txBridge, StatementRunner engine, LogService logging,
-
-            Authentication authentication, Supplier<TransactionIdStore> transactionIdStore, SessionTracker sessionTracker )
-    {
-        this( new StandardStateMachineSPI( connectionDescriptor, usageData, db, engine, logging, authentication,
-                txBridge, transactionIdStore, sessionTracker ) );
     }
 
     SessionStateMachine( SPI spi )

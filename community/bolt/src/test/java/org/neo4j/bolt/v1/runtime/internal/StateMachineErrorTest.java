@@ -96,8 +96,9 @@ public class StateMachineErrorTest
 
     private SessionStateMachine newIdleMachine()
     {
-        SessionStateMachine machine = new SessionStateMachine( "<idle>", new UsageData( scheduler ), db, txBridge,
-                runner, NullLogService.getInstance(), Authentication.NONE, () -> transactionIdStore, sessionTracker );
+        SessionStateMachine.SPI spi = new StandardStateMachineSPI( "<idle>", new UsageData( scheduler ), db, runner,
+                NullLogService.getInstance(), Authentication.NONE, txBridge, () -> transactionIdStore, sessionTracker );
+        SessionStateMachine machine = new SessionStateMachine( spi );
         machine.init( "FunClient", map(), -1, null, Session.Callback.noOp() );
         return machine;
     }
@@ -226,8 +227,9 @@ public class StateMachineErrorTest
     {
         // Given
         RecordingCallback messages = new RecordingCallback();
-        SessionStateMachine machine = new SessionStateMachine( "<test>", new UsageData( scheduler ), db, txBridge,
-                runner, NullLogService.getInstance(), Authentication.NONE, () -> transactionIdStore, sessionTracker );
+        SessionStateMachine.SPI spi = new StandardStateMachineSPI( "<test>", new UsageData( scheduler ), db, runner,
+                NullLogService.getInstance(), Authentication.NONE, txBridge, () -> transactionIdStore, sessionTracker );
+        SessionStateMachine machine = new SessionStateMachine( spi );
 
         // When
         machine.run( "RETURN 1", null, null, messages );
