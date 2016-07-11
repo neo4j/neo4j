@@ -68,7 +68,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
         harness.run( SEMI_LONG_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS );
     }
 
-    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
+    @Test( timeout = LONG_TIMEOUT_MILLIS )
     public void concurrentPageFaultingMustNotPutInterleavedDataIntoPages() throws Exception
     {
         final int filePageCount = 11;
@@ -98,7 +98,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             }
         } );
 
-        harness.run( SEMI_LONG_TIMEOUT_MILLIS, MILLISECONDS );
+        harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
     }
 
     @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
@@ -119,10 +119,10 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
         harness.disableCommands( MapFile, UnmapFile, ReadRecord, ReadMulti );
         harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
 
-        harness.run( SEMI_LONG_TIMEOUT_MILLIS, MILLISECONDS );
+        harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
     }
 
-    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
+    @Test( timeout = LONG_TIMEOUT_MILLIS )
     public void concurrentFlushingWithMischiefMustNotPutInterleavedDataIntoFile() throws Exception
     {
         final RecordFormat recordFormat = new StandardRecordFormat();
@@ -143,10 +143,10 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
         harness.disableCommands( MapFile, UnmapFile, ReadRecord, ReadMulti );
         harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
 
-        harness.run( SEMI_LONG_TIMEOUT_MILLIS, MILLISECONDS );
+        harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
     }
 
-    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
+    @Test( timeout = LONG_TIMEOUT_MILLIS )
     public void concurrentFlushingWithFailuresMustNotPutInterleavedDataIntoFile() throws Exception
     {
         final RecordFormat recordFormat = new StandardRecordFormat();
@@ -167,7 +167,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
         harness.disableCommands( MapFile, UnmapFile, ReadRecord, ReadMulti );
         harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
 
-        harness.run( SEMI_LONG_TIMEOUT_MILLIS, MILLISECONDS );
+        harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
     }
 
     private Phase filesAreCorrectlyWrittenVerification( final RecordFormat recordFormat, final int filePageCount )
