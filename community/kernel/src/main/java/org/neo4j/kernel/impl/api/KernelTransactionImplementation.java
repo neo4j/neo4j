@@ -149,16 +149,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private boolean beforeHookInvoked;
     private boolean closing, closed;
     private boolean failure, success;
-    private volatile boolean terminated;
+    private volatile Status terminationReason;
     private long startTimeMillis;
     private long lastTransactionIdWhenStarted;
+    private long lastTransactionTimestampWhenStarted;
     private TransactionEvent transactionEvent;
     private Type type;
     private volatile int reuseCount;
 
     /**
-     * Lock prevents transaction {@link #markForTermination() transction termination} from interfering with {@link
-     * #close() transaction commit} and specifically with {@link #release()}.
+     * Lock prevents transaction {@link #markForTermination(Status)}  transaction termination} from interfering with
+     * {@link #close() transaction commit} and specifically with {@link #release()}.
      * Termination can run concurrently with commit and we need to make sure that it terminates the right lock client
      * and the right transaction (with the right {@link #reuseCount}) because {@link KernelTransactionImplementation}
      * instances are pooled.
@@ -202,14 +203,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * Reset this transaction to a vanilla state, turning it into a logically new transaction.
      */
     public KernelTransactionImplementation initialize(
-            long lastCommittedTx, Locks.Client locks, Type type, AccessMode accessMode )
+            long lastCommittedTx, long lastTimeStamp, Locks.Client locks, Type type, AccessMode accessMode )
     {
         this.type = type;
         this.locks = locks;
-        this.closing = closed = failure = success = terminated = beforeHookInvoked = false;
+        this.terminationReason = null;
+        this.closing = closed = failure = success = beforeHookInvoked = false;
         this.writeState = TransactionWriteState.NONE;
         this.startTimeMillis = clock.currentTimeMillis();
         this.lastTransactionIdWhenStarted = lastCommittedTx;
+        this.lastTransactionTimestampWhenStarted = lastTimeStamp;
         this.transactionEvent = tracer.beginTransaction();
         assert transactionEvent != null : "transactionEvent was null!";
         this.accessMode = accessMode;
@@ -235,9 +238,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public boolean shouldBeTerminated()
+    public Status getReasonIfTerminated()
     {
-        return terminated;
+        return terminationReason;
     }
 
     /**
@@ -247,7 +250,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * {@link #close()} and {@link #release()} calls.
      */
     @Override
-    public void markForTermination()
+    public void markForTermination( Status reason )
     {
         if ( !canBeTerminated() )
         {
@@ -265,7 +268,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             if ( stillSameTransaction && canBeTerminated() )
             {
                 failure = true;
-                terminated = true;
+                terminationReason = reason;
                 if ( txTerminationAwareLocks && locks != null )
                 {
                     locks.stop();
@@ -410,7 +413,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         closing = true;
         try
         {
-            if ( failure || !success || terminated )
+            if ( failure || !success || isTerminated() )
             {
                 rollback();
                 failOnNonExplicitRollbackIfNeeded();
@@ -456,9 +459,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private void failOnNonExplicitRollbackIfNeeded() throws TransactionFailureException
     {
-        if ( success && terminated )
+        if ( success && isTerminated() )
         {
-            throw new TransactionTerminatedException();
+            throw new TransactionTerminatedException( terminationReason );
         }
         if ( success )
         {
@@ -641,7 +644,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     /**
      * Release resources held up by this transaction & return it to the transaction pool.
      * This method is guarded by {@link #terminationReleaseLock} to coordinate concurrent
-     * {@link #markForTermination()} calls.
+     * {@link #markForTermination(Status)} calls.
      */
     private void release()
     {
@@ -650,7 +653,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             locks.close();
             locks = null;
-            terminated = false;
+            terminationReason = null;
             type = null;
             accessMode = null;
             transactionEvent = null;
@@ -673,7 +676,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private boolean canBeTerminated()
     {
-        return !closed && !terminated;
+        return !closed && !isTerminated();
+    }
+
+    private boolean isTerminated()
+    {
+        return terminationReason != null;
+    }
+
+    @Override
+    public long lastTransactionTimestampWhenStarted()
+    {
+        return lastTransactionTimestampWhenStarted;
     }
 
     @Override

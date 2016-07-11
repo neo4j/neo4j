@@ -21,6 +21,7 @@ package org.neo4j.com.storecopy;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.InOrder;
 
 import java.util.LinkedList;
 import java.util.Queue;
@@ -32,20 +33,25 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.Dependencies;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Commands;
+import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
+import static java.util.Collections.emptyList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -59,6 +65,40 @@ public class TransactionCommittingResponseUnpackerTest
     @Rule
     public final LifeRule life = new LifeRule( true );
 
+    /*
+      * Tests that we unfreeze active transactions after commit and after apply of batch if batch length (in time)
+      * is larger than safeZone time.
+      */
+    @Test
+    public void shouldUnfreezeKernelTransactionsAfterApplyIfBatchIsLarge() throws Throwable
+    {
+        // GIVEN
+        int maxBatchSize = 10;
+        long idReuseSafeZoneTime = 100;
+        Dependencies dependencies = mock( Dependencies.class );
+        TransactionObligationFulfiller fulfiller = mock( TransactionObligationFulfiller.class );
+        when( dependencies.obligationFulfiller() ).thenReturn( fulfiller );
+        when( dependencies.logService() ).thenReturn( NullLogService.getInstance() );
+        KernelTransactions kernelTransactions = mock( KernelTransactions.class );
+        when( dependencies.kernelTransactions() ).thenReturn( kernelTransactions );
+        TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
+        when( dependencies.commitProcess() ).thenReturn( commitProcess );
+        TransactionCommittingResponseUnpacker unpacker = life.add(
+                new TransactionCommittingResponseUnpacker( dependencies, maxBatchSize, idReuseSafeZoneTime ) );
+
+        // WHEN
+        int txCount = maxBatchSize;
+        int doesNotMatter = 1;
+        unpacker.unpackResponse(
+                new DummyTransactionResponse( doesNotMatter, txCount, idReuseSafeZoneTime + 1 ),
+                NO_OP_TX_HANDLER );
+
+        // THEN
+        InOrder inOrder = inOrder( commitProcess, kernelTransactions );
+        inOrder.verify( commitProcess, times( 1 ) ).commit( any(), any(), any() );
+        inOrder.verify( kernelTransactions, times( 1 ) ).unblockNewTransactions();
+    }
+
     @Test
     public void shouldAwaitTransactionObligationsToBeFulfilled() throws Throwable
     {
@@ -68,7 +108,7 @@ public class TransactionCommittingResponseUnpackerTest
         when( dependencies.obligationFulfiller() ).thenReturn( fulfiller );
         when( dependencies.logService() ).thenReturn( NullLogService.getInstance() );
         TransactionCommittingResponseUnpacker unpacker =
-                life.add( new TransactionCommittingResponseUnpacker( dependencies, 10 ) );
+                life.add( new TransactionCommittingResponseUnpacker( dependencies, 10, 0 ) );
 
         // WHEN
         unpacker.unpackResponse( new DummyObligationResponse( 4 ), NO_OP_TX_HANDLER );
@@ -85,8 +125,10 @@ public class TransactionCommittingResponseUnpackerTest
         TransactionCountingTransactionCommitProcess commitProcess = new TransactionCountingTransactionCommitProcess();
         when( dependencies.commitProcess() ).thenReturn( commitProcess );
         when( dependencies.logService() ).thenReturn( NullLogService.getInstance() );
+        KernelTransactions kernelTransactions = mock( KernelTransactions.class );
+        when( dependencies.kernelTransactions() ).thenReturn( kernelTransactions );
         TransactionCommittingResponseUnpacker unpacker =
-                life.add( new TransactionCommittingResponseUnpacker( dependencies, 5 ) );
+                life.add( new TransactionCommittingResponseUnpacker( dependencies, 5, 0 ) );
 
         // WHEN
         unpacker.unpackResponse( new DummyTransactionResponse( BASE_TX_ID + 1, 7 ), NO_OP_TX_HANDLER );
@@ -107,22 +149,43 @@ public class TransactionCommittingResponseUnpackerTest
 
     private static class DummyTransactionResponse extends TransactionStreamResponse<Object>
     {
+        private static final long UNDEFINED_BATCH_LENGTH = -1;
+
         private final long startingAtTxId;
         private final int txCount;
+        private final long batchLength;
 
         public DummyTransactionResponse( long startingAtTxId, int txCount )
+        {
+            this( startingAtTxId, txCount, UNDEFINED_BATCH_LENGTH );
+        }
+
+        public DummyTransactionResponse( long startingAtTxId, int txCount, long batchLength )
         {
             super( new Object(), StoreId.DEFAULT, mock( TransactionStream.class ), ResourceReleaser.NO_OP );
             this.startingAtTxId = startingAtTxId;
             this.txCount = txCount;
+            this.batchLength = batchLength;
         }
 
-        private CommittedTransactionRepresentation tx( long id )
+        private CommittedTransactionRepresentation tx( long id, long commitTimestamp )
         {
+            PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( emptyList() );
+            representation.setHeader( new byte[0], 0, 0, commitTimestamp - 10, id - 1, commitTimestamp, 0 );
+
             return new CommittedTransactionRepresentation(
                     new LogEntryStart( 0, 0, 0, 0, new byte[0], UNSPECIFIED ),
-                    Commands.transactionRepresentation(),
-                    new OnePhaseCommit( id, 0 ) );
+                    representation,
+                    new OnePhaseCommit( id, commitTimestamp ) );
+        }
+
+        private long timestamp( int txNbr, int txCount, long batchLength )
+        {
+            if ( txCount == 1 )
+            {
+                return 0;
+            }
+            return txNbr * batchLength / (txCount - 1);
         }
 
         @Override
@@ -130,7 +193,7 @@ public class TransactionCommittingResponseUnpackerTest
         {
             for ( int i = 0; i < txCount; i++ )
             {
-                handler.transactions().visit( tx( startingAtTxId + i ) );
+                handler.transactions().visit( tx( startingAtTxId + i, timestamp( i, txCount, batchLength ) ) );
             }
         }
     }

@@ -41,6 +41,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.security.AccessMode;
@@ -517,7 +518,7 @@ public class KernelIT extends KernelIntegrationTest
             tx.acquireStatement().readOperations().nodeExists( 0L );
             fail("Should have been terminated.");
         }
-        catch(TransactionTerminatedException e)
+        catch( TransactionTerminatedException e )
         {
             // Success
         }
@@ -567,7 +568,7 @@ public class KernelIT extends KernelIntegrationTest
         {
             statement.dataWriteOperations().nodeCreate();
         }
-        tx.markForTermination();
+        tx.markForTermination( Status.Transaction.Terminated );
 
         assertEquals( KernelTransaction.ROLLBACK, tx.closeTransaction() );
         assertFalse( tx.isOpen() );
@@ -584,7 +585,7 @@ public class KernelIT extends KernelIntegrationTest
             statement.dataWriteOperations().nodeCreate();
         }
         tx.failure();
-        tx.markForTermination();
+        tx.markForTermination( Status.Transaction.Terminated );
 
         assertEquals( KernelTransaction.ROLLBACK, tx.closeTransaction() );
         assertFalse( tx.isOpen() );

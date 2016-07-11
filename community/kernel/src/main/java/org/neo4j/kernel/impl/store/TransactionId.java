@@ -26,13 +26,15 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
  */
 public class TransactionId
 {
-    private long transactionId;
-    private long checksum;
+    private final long transactionId;
+    private final long checksum;
+    private final long commitTimestamp;
 
-    public TransactionId( long transactionId, long checksum )
+    public TransactionId( long transactionId, long checksum, long commitTimestamp )
     {
         this.transactionId = transactionId;
         this.checksum = checksum;
+        this.commitTimestamp = commitTimestamp;
     }
 
     /**
@@ -42,6 +44,14 @@ public class TransactionId
     public long transactionId()
     {
         return transactionId;
+    }
+
+    /**
+     * Commit timestamp. Timestamp when transaction with transactionId was committed.
+     */
+    public long commitTimestamp()
+    {
+        return commitTimestamp;
     }
 
     /**
@@ -65,7 +75,9 @@ public class TransactionId
         }
 
         TransactionId that = (TransactionId) o;
-        return transactionId == that.transactionId && checksum == that.checksum;
+        return transactionId == that.transactionId &&
+               checksum == that.checksum &&
+               commitTimestamp == that.commitTimestamp;
     }
 
     @Override
@@ -73,6 +85,7 @@ public class TransactionId
     {
         int result = (int) (transactionId ^ (transactionId >>> 32));
         result = 31 * result + (int) (checksum ^ (checksum >>> 32));
+        result = 31 * result + (int) (commitTimestamp ^ (commitTimestamp >>> 32));
         return result;
     }
 
@@ -82,6 +95,7 @@ public class TransactionId
         return getClass().getSimpleName() + "{" +
                 "transactionId=" + transactionId +
                 ", checksum=" + checksum +
+                ", commitTimestamp=" + commitTimestamp +
                 '}';
     }
 }

@@ -75,7 +75,7 @@ public class BatchingTxApplier extends LifecycleAdapter implements Runnable
     public void start() throws Throwable
     {
         TransactionCommitProcess commitProcess = commitProcessSupplier.get();
-        txBatcher = new TransactionQueue( maxBatchSize, ( batch ) -> commitProcess.commit( batch, NULL, EXTERNAL ) );
+        txBatcher = new TransactionQueue( maxBatchSize, ( first, last ) -> commitProcess.commit( first, NULL, EXTERNAL ) );
         lastQueuedTxId = lastAppliedTxId = txIdStoreSupplier.get().getLastCommittedTransactionId();
     }
 

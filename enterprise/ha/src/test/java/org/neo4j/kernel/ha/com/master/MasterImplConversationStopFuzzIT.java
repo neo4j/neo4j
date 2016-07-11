@@ -164,7 +164,7 @@ public class MasterImplConversationStopFuzzIT
         private final int machineId;
 
         private State state = State.UNINITIALIZED;
-        private long lastTx = 0;
+        private final long lastTx = 0;
         private long epoch;
         private RequestContext requestContext;
 

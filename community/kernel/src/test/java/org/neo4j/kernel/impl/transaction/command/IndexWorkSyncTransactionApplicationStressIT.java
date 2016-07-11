@@ -164,7 +164,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
         {
             try
             {
-                TransactionQueue queue = new TransactionQueue( batchSize, (tx) -> {
+                TransactionQueue queue = new TransactionQueue( batchSize, (tx, last) -> {
                     // Apply
                     storageEngine.apply( tx, TransactionApplicationMode.EXTERNAL );
 

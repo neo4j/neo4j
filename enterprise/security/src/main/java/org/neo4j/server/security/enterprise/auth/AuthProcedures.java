@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.kernel.impl.api.KernelTransactions;
@@ -195,7 +196,7 @@ public class AuthProcedures
 
         return countByUsername(
                     getActiveTransactions().stream()
-                        .filter( tx -> !tx.shouldBeTerminated() )
+                        .filter( tx -> tx.getReasonIfTerminated() == null )
                         .map( tx -> tx.mode().name() )
                 );
     }
@@ -213,7 +214,7 @@ public class AuthProcedures
         {
             if ( tx.mode().name().equals( username ) )
             {
-                tx.markForTermination();
+                tx.markForTermination( Status.Transaction.Terminated );
                 killCount += 1;
             }
         }

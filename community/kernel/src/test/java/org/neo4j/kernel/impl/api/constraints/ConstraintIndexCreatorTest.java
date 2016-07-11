@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TransactionHook;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
@@ -204,15 +205,20 @@ public class ConstraintIndexCreatorTest
                     throw new UnsupportedOperationException();
                 }
 
-                @Override
-                public boolean shouldBeTerminated()
+                public Status getReasonIfTerminated()
                 {
-                    return false;
+                    return null;
                 }
 
                 @Override
-                public void markForTermination()
+                public void markForTermination( Status reason )
                 {
+                }
+
+                @Override
+                public long lastTransactionTimestampWhenStarted()
+                {
+                    return 0;
                 }
 
                 @Override

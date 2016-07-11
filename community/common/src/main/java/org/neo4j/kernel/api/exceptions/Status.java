@@ -170,7 +170,15 @@ public interface Status
                 "assumptions the instance has made about how to execute the transaction " +
                 "to be violated - meaning the transaction must be rolled " +
                 "back. If you see this error, you should retry your operation in a new transaction."),
-        ConstraintsChanged( TransientError, "Database constraints changed since the start of this transaction" );
+        ConstraintsChanged( TransientError,
+                "Database constraints changed since the start of this transaction" ),
+        Outdated( TransientError,
+                "Transaction has seen state which has been invalidated by applied updates while " +
+                "transaction was active. Transaction may succeed if retried." ),
+        LockClientStopped( TransientError,
+                "Transaction terminated, no more locks can be acquired." ),
+        Terminated( TransientError,
+                "Explicitly terminated by the user." );
 
         private final Code code;
 

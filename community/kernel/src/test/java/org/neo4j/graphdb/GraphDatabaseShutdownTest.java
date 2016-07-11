@@ -33,7 +33,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -135,8 +134,7 @@ public class GraphDatabaseShutdownTest
         }
         catch ( Exception e )
         {
-            assertThat( rootCause( e ), anyOf( instanceOf( TransactionFailureException.class ),
-                    instanceOf( TransactionTerminatedException.class ) ) );
+            assertThat( rootCause( e ), instanceOf( TransactionTerminatedException.class ) );
         }
     }
 

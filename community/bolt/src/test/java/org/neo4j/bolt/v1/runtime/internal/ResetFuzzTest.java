@@ -45,6 +45,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -265,15 +266,21 @@ public class ResetFuzzTest
         }
 
         @Override
-        public boolean shouldBeTerminated()
+        public Status getReasonIfTerminated()
         {
-            return false;
+            return null;
         }
 
         @Override
-        public void markForTermination()
+        public void markForTermination( Status reason )
         {
 
+        }
+
+        @Override
+        public long lastTransactionTimestampWhenStarted()
+        {
+            return 0;
         }
 
         @Override

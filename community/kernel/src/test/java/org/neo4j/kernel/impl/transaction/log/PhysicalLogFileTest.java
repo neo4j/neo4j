@@ -40,6 +40,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
 public class PhysicalLogFileTest
@@ -48,7 +49,8 @@ public class PhysicalLogFileTest
     public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     private final LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 1L );
-    private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 5L, 0, 0, 0 );
+    private final TransactionIdStore transactionIdStore =
+            new DeadSimpleTransactionIdStore( 5L, 0, BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
 
     @Test
     public void shouldOpenInFreshDirectoryAndFinallyAddHeader() throws Exception

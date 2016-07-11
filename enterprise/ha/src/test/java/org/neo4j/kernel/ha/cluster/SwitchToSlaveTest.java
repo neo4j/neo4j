@@ -158,7 +158,7 @@ public class SwitchToSlaveTest
         StoreId storeId = newStoreIdForCurrentVersion( 1, 2, 3, 4 );
 
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-        when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new TransactionId( 42, 42 ) );
+        when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new TransactionId( 42, 42, 42 ) );
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( TransactionIdStore.BASE_TX_ID );
 
         // When
@@ -187,7 +187,7 @@ public class SwitchToSlaveTest
         when( masterClient.handshake( anyLong(), any( StoreId.class ) ) ).thenThrow( new BranchedDataException( "" ) );
 
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-        when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new TransactionId( 42, 42 ) );
+        when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new TransactionId( 42, 42, 42 ) );
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( TransactionIdStore.BASE_TX_ID );
 
         // When
@@ -305,7 +305,7 @@ public class SwitchToSlaveTest
 
         TransactionIdStore transactionIdStoreMock = mock( TransactionIdStore.class );
         // note that the checksum (the second member of the array) is the same as the one in the handshake mock above
-        when( transactionIdStoreMock.getLastCommittedTransaction() ).thenReturn( new TransactionId( 42, 42 ) );
+        when( transactionIdStoreMock.getLastCommittedTransaction() ).thenReturn( new TransactionId( 42, 42, 42 ) );
 
         MasterClientResolver masterClientResolver = mock( MasterClientResolver.class );
         when( masterClientResolver.instantiate( anyString(), anyInt(), anyString(), any( Monitors.class ),

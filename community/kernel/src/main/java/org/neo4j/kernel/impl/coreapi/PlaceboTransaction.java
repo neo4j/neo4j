@@ -25,6 +25,7 @@ import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AccessMode;
 
 public class PlaceboTransaction implements InternalTransaction
@@ -43,7 +44,7 @@ public class PlaceboTransaction implements InternalTransaction
     @Override
     public void terminate()
     {
-        currentTransaction.get().markForTermination();
+        currentTransaction.get().markForTermination( Status.Transaction.Terminated );
     }
 
     @Override

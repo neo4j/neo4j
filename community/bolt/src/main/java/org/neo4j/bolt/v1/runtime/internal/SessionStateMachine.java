@@ -810,7 +810,7 @@ public class SessionStateMachine implements Session, SessionState
         KernelTransaction tx = this.currentTransaction;
         if(tx != null)
         {
-            tx.markForTermination();
+            tx.markForTermination( Status.Transaction.Terminated );
         }
     }
 

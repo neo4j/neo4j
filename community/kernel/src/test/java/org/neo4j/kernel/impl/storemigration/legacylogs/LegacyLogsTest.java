@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -35,17 +36,27 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.store.TransactionId;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
+import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.log.ArrayIOCursor;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
+import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames.getLegacyLogFilename;
 import static org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames.versionedLegacyLogFilesFilter;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.DEFAULT_NAME;
@@ -54,6 +65,9 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LO
 
 public class LegacyLogsTest
 {
+    private static final long NO_NEXT_REL = Record.NO_NEXT_RELATIONSHIP.intValue();
+    private static final int NO_LABELS = Record.NO_LABELS_FIELD.intValue();
+
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final LegacyLogEntryReader reader = mock( LegacyLogEntryReader.class );
     private final LegacyLogEntryWriter writer = mock( LegacyLogEntryWriter.class );
@@ -189,8 +203,64 @@ public class LegacyLogsTest
         assertEquals( expected, new HashSet<>( Arrays.asList( fs.listFiles( storeDir ) ) ) );
     }
 
+    @Test
+    @SuppressWarnings( "unchecked" )
+    public void transactionInformationRetrievedFromCommitEntries() throws IOException
+    {
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
+        File logFile = new File( LegacyLogFilenames.getLegacyLogFilename( 1 ) );
+        when( fs.listFiles( any( File.class ), any( FilenameFilter.class ) ) )
+                .thenReturn( new File[]{logFile} );
+
+        LegacyLogEntryReader reader = mock( LegacyLogEntryReader.class );
+        LogEntry[] entries = new LogEntry[]{
+                start( 1 ), createNode( 1 ), createNode( 2 ), commit( 1 ),
+                start( 2 ), createNode( 3 ), createNode( 4 ), commit( 2 ),
+                start( 3 ), createNode( 5 ), commit( 3 )
+        };
+        when( reader.openReadableChannel( any( File.class ) ) )
+                .thenReturn( readableChannel( entries ), readableChannel( entries ), readableChannel( entries ) );
+
+        LegacyLogEntryWriter writer = new LegacyLogEntryWriter( fs );
+        LegacyLogs legacyLogs = new LegacyLogs( fs, reader, writer );
+
+        assertEquals( newTransactionId( 1 ), legacyLogs.getTransactionInformation( storeDir, 1 ) );
+        assertEquals( newTransactionId( 2 ), legacyLogs.getTransactionInformation( storeDir, 2 ) );
+        assertEquals( newTransactionId( 3 ), legacyLogs.getTransactionInformation( storeDir, 3 ) );
+    }
+
     private String getLogFilenameForVersion( int version )
     {
         return DEFAULT_NAME + DEFAULT_VERSION_SUFFIX + version;
+    }
+
+    private static TransactionId newTransactionId( int id )
+    {
+        return new TransactionId( id, LogEntryStart.checksum( new byte[]{(byte) id}, id, id ), id );
+    }
+
+    private static LogEntry start( int id )
+    {
+        return new LogEntryStart( id, id, 1, id - 1, new byte[]{(byte) id}, new LogPosition( 1, 1 ) );
+    }
+
+    private static LogEntry createNode( int id )
+    {
+        NodeRecord before = new NodeRecord( id ).initialize( false, NO_NEXT_REL, false, NO_NEXT_REL, NO_LABELS );
+        NodeRecord after = new NodeRecord( id ).initialize( true, NO_NEXT_REL, false, NO_NEXT_REL, NO_LABELS );
+        Command.NodeCommand command = new Command.NodeCommand( before, after );
+        return new LogEntryCommand( command );
+    }
+
+    private static LogEntry commit( int id )
+    {
+        return new OnePhaseCommit( id, id );
+    }
+
+    private Pair<LogHeader,IOCursor<LogEntry>> readableChannel( LogEntry[] entries )
+    {
+        IOCursor<LogEntry> cursor = new ArrayIOCursor<>( entries );
+        LogHeader logHeader = new LogHeader( (byte) 1, 1, 1 );
+        return Pair.of( logHeader, cursor );
     }
 }

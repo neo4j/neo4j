@@ -23,7 +23,6 @@ import java.io.File;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.neo4j.kernel.IdReuseEligibility;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 
 /**
@@ -48,7 +47,7 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
     private void initialize( Supplier<KernelTransactionsSnapshot> boundaries, IdReuseEligibility eligibleForReuse )
     {
         this.boundaries = boundaries;
-        this.safeThreshold = snapshot -> snapshot.allClosed() && eligibleForReuse.isEligible();
+        this.safeThreshold = snapshot -> snapshot.allClosed() && eligibleForReuse.isEligible( snapshot );
         for ( BufferingIdGenerator generator : overriddenIdGenerators )
         {
             if ( generator != null )
