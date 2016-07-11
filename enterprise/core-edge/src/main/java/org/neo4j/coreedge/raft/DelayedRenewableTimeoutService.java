@@ -37,7 +37,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.System.nanoTime;
-
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
 
 /**
@@ -149,7 +148,17 @@ public class DelayedRenewableTimeoutService extends LifecycleAdapter implements 
             }
         }
 
-        triggered.forEach( ScheduledRenewableTimeout::trigger );
+        for ( ScheduledRenewableTimeout timeout : triggered )
+        {
+            try
+            {
+                timeout.trigger();
+            }
+            catch ( Throwable e )
+            {
+                log.error( "Exception triggering timeout handler", e );
+            }
+        }
 
         synchronized ( timeouts )
         {
