@@ -3440,7 +3440,7 @@ public abstract class PageCacheTest<T extends PageCache>
         harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
     }
 
-    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
+    @Test( timeout = LONG_TIMEOUT_MILLIS )
     public void concurrentFlushingMustNotPutInterleavedDataIntoFile() throws Exception
     {
         final RecordFormat recordFormat = new StandardRecordFormat();
