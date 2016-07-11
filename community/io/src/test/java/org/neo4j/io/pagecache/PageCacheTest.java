@@ -3400,7 +3400,7 @@ public abstract class PageCacheTest<T extends PageCache>
         pagedFileB.close();
     }
 
-    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
+    @Test( timeout = LONG_TIMEOUT_MILLIS )
     public void concurrentPageFaultingMustNotPutInterleavedDataIntoPages() throws Exception
     {
         final int filePageCount = 11;
@@ -3437,7 +3437,7 @@ public abstract class PageCacheTest<T extends PageCache>
             }
         } );
 
-        harness.run( SEMI_LONG_TIMEOUT_MILLIS, MILLISECONDS );
+        harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
     }
 
     @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
@@ -3458,10 +3458,10 @@ public abstract class PageCacheTest<T extends PageCache>
         harness.disableCommands( Command.MapFile, Command.UnmapFile, Command.ReadRecord );
         harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
 
-        harness.run( SEMI_LONG_TIMEOUT_MILLIS, MILLISECONDS );
+        harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
     }
 
-    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
+    @Test( timeout = LONG_TIMEOUT_MILLIS )
     public void concurrentFlushingWithMischiefMustNotPutInterleavedDataIntoFile() throws Exception
     {
         final RecordFormat recordFormat = new StandardRecordFormat();
@@ -3482,10 +3482,10 @@ public abstract class PageCacheTest<T extends PageCache>
         harness.disableCommands( Command.MapFile, Command.UnmapFile, Command.ReadRecord );
         harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
 
-        harness.run( SEMI_LONG_TIMEOUT_MILLIS, MILLISECONDS );
+        harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
     }
 
-    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
+    @Test( timeout = LONG_TIMEOUT_MILLIS )
     public void concurrentFlushingWithFailuresMustNotPutInterleavedDataIntoFile() throws Exception
     {
         final RecordFormat recordFormat = new StandardRecordFormat();
@@ -3506,7 +3506,7 @@ public abstract class PageCacheTest<T extends PageCache>
         harness.disableCommands( Command.MapFile, Command.UnmapFile, Command.ReadRecord );
         harness.setVerification( filesAreCorrectlyWrittenVerification( recordFormat, filePageCount ) );
 
-        harness.run( SEMI_LONG_TIMEOUT_MILLIS, MILLISECONDS );
+        harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
     }
 
     private Phase filesAreCorrectlyWrittenVerification( final RecordFormat recordFormat, final int filePageCount )
