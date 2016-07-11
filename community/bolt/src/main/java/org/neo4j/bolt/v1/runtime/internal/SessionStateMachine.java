@@ -425,9 +425,9 @@ public class SessionStateMachine implements Session, SessionState
                     @Override
                     protected State onNoImplementation( SessionStateMachine ctx, String command )
                     {
-                        if ( ctx.willBeTerminated() )
+                        if ( ctx.willBeHalted() )
                         {
-                            ctx.error( ctx.terminationMark.explanation() );
+                            ctx.error( ctx.haltMark.explanation() );
                         }
                         else
                         {
@@ -634,10 +634,10 @@ public class SessionStateMachine implements Session, SessionState
     private final AtomicInteger interruptCounter = new AtomicInteger();
 
     /**
-     * This is set when {@link #markForTermination(Status, String)} is called.
+     * This is set when {@link #markForHalting(Status, String)} is called.
      * When this is true, all messages will be ignored, and the session stopped.
      */
-    protected final TerminationMark terminationMark = new TerminationMark();
+    protected final TerminationMark haltMark = new TerminationMark();
 
     /** The current session state */
     private State state = State.UNINITIALIZED;
@@ -837,7 +837,7 @@ public class SessionStateMachine implements Session, SessionState
     }
 
     @Override
-    public void markForTermination( Status status, String message )
+    public void markForHalting( Status status, String message )
     {
         // NOTE: This is a side-channel method call. You *cannot*
         //       mutate any of the regular state in the state machine
@@ -845,20 +845,20 @@ public class SessionStateMachine implements Session, SessionState
         //       Imagine this is always called from a separate thread, while
         //       the main session worker thread is actively working on mutating
         //       fields on the session.
-        terminationMark.setMark( new Neo4jError( status, message ) );
+        haltMark.setMark( new Neo4jError( status, message ) );
 
         // If there is currently a transaction running, terminate it
         KernelTransaction tx = this.currentTransaction;
         if(tx != null)
         {
-            tx.markForTermination();
+            tx.markForTermination( status );
         }
     }
 
     @Override
-    public boolean willBeTerminated()
+    public boolean willBeHalted()
     {
-        return terminationMark.get();
+        return haltMark.isMarked();
     }
 
     @Override
@@ -942,7 +942,7 @@ public class SessionStateMachine implements Session, SessionState
             cb.started( attachment );
         }
 
-        if ( terminationMark.get() )
+        if ( haltMark.isMarked() )
         {
             state = state.halt( this );
         }

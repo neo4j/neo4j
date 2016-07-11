@@ -25,9 +25,9 @@ import java.util.UUID;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
-import org.neo4j.kernel.api.bolt.KillableUserSession;
+import org.neo4j.kernel.api.bolt.HaltableUserSession;
 
-public class ErrorReportingSession extends KillableUserSession.Adapter implements Session
+public class ErrorReportingSession extends HaltableUserSession.Adapter implements Session
 {
     private final String connectionDescriptor;
     private final Neo4jError error;

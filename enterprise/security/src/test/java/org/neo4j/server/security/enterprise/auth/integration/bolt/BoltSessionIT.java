@@ -65,7 +65,7 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyRecieves;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.api.exceptions.Status.Session.SessionTerminated;
+import static org.neo4j.kernel.api.exceptions.Status.Session.InvalidSession;
 
 @RunWith( Parameterized.class )
 public class BoltSessionIT
@@ -121,7 +121,7 @@ public class BoltSessionIT
     protected Connection admin;
     protected Connection user;
 
-    private static String SESSION_TERMINATED_MSG = "The session has been terminated by the server.";
+    private static String SESSION_TERMINATED_MSG = "The session is no longer available, possibly due to termination.";
 
     @Parameterized.Parameters
     public static Collection<Object[]> transports()
@@ -191,7 +191,7 @@ public class BoltSessionIT
 
         // Then
         assertThat( user, eventuallyRecieves(
-                msgFailure( Status.General.UnknownError, AuthProcedures.PERMISSION_DENIED ) ) );
+                msgFailure( Status.Security.Forbidden, AuthProcedures.PERMISSION_DENIED ) ) );
     }
 
     // --------------- terminate sessions -------------------
@@ -220,7 +220,7 @@ public class BoltSessionIT
         user.send( TransportTestUtil.chunk(
                 run( "MATCH (n) RETURN n" ),
                 pullAll() ) );
-        assertThat( user, eventuallyRecieves( msgFailure( SessionTerminated, SESSION_TERMINATED_MSG ) ) );
+        assertThat( user, eventuallyRecieves( msgFailure( InvalidSession, SESSION_TERMINATED_MSG ) ) );
     }
 
     @Test
@@ -246,8 +246,8 @@ public class BoltSessionIT
                 pullAll() ) );
 
         // Then
-        assertThat( admin, eventuallyRecieves( msgFailure( Status.General.UnknownError,
-                "User NonExistentUser does not exist." ) ) );
+        assertThat( admin, eventuallyRecieves( msgFailure( Status.Security.InvalidArguments,
+                "User 'NonExistentUser' does not exist." ) ) );
     }
 
     @Test
@@ -304,14 +304,14 @@ public class BoltSessionIT
         // Then
         assertThat( conn, eventuallyRecieves(
                 msgSuccess(),
-                msgFailure( SessionTerminated, SESSION_TERMINATED_MSG )
+                msgFailure( InvalidSession, SESSION_TERMINATED_MSG )
         ) );
         conn.send( TransportTestUtil.chunk(
                 run( "MATCH (n) RETURN n" ),
                 pullAll() ) );
         assertThat( conn, eventuallyRecieves(
-                msgFailure( SessionTerminated, SESSION_TERMINATED_MSG ),
-                msgFailure( SessionTerminated, SESSION_TERMINATED_MSG )
+                msgFailure( InvalidSession, SESSION_TERMINATED_MSG ),
+                msgFailure( InvalidSession, SESSION_TERMINATED_MSG )
         ) );
     }
 
@@ -325,15 +325,15 @@ public class BoltSessionIT
         // Then
         assertThat( conn1, eventuallyRecieves(
                 msgSuccess(),
-                msgFailure( SessionTerminated, SESSION_TERMINATED_MSG )
+                msgFailure( InvalidSession, SESSION_TERMINATED_MSG )
         ) );
 
         conn2.send( TransportTestUtil.chunk(
                 run( "MATCH (n) RETURN n" ),
                 pullAll() ) );
         assertThat( conn2, eventuallyRecieves(
-                msgFailure( SessionTerminated, SESSION_TERMINATED_MSG ),
-                msgFailure( SessionTerminated, SESSION_TERMINATED_MSG )
+                msgFailure( InvalidSession, SESSION_TERMINATED_MSG ),
+                msgFailure( InvalidSession, SESSION_TERMINATED_MSG )
         ) );
     }
 
@@ -345,7 +345,7 @@ public class BoltSessionIT
 
         // Then
         assertThat( client, eventuallyRecieves(
-                msgFailure( Status.General.UnknownError, AuthProcedures.PERMISSION_DENIED ),
+                msgFailure( Status.Security.Forbidden, AuthProcedures.PERMISSION_DENIED ),
                 msgIgnored()
         ) );
 

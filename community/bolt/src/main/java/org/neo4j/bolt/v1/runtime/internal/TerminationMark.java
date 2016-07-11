@@ -19,24 +19,24 @@
  */
 package org.neo4j.bolt.v1.runtime.internal;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 public class TerminationMark
 {
-    private boolean mark = false;
-    private Neo4jError explanation;
+    private AtomicReference<Neo4jError> explanation = new AtomicReference<>();
 
-    public synchronized void setMark( Neo4jError explanation )
+    public void setMark( Neo4jError explanation )
     {
-        mark = true;
-        this.explanation = explanation;
+        this.explanation.set( explanation );
     }
 
-    public synchronized boolean get()
+    public boolean isMarked()
     {
-        return mark;
+        return explanation.get() != null;
     }
 
-    public synchronized Neo4jError explanation()
+    public Neo4jError explanation()
     {
-        return explanation;
+        return explanation.get();
     }
 }

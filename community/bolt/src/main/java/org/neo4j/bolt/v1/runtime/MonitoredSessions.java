@@ -145,15 +145,15 @@ public class MonitoredSessions implements Sessions
         }
 
         @Override
-        public void markForTermination( Status status, String message )
+        public void markForHalting( Status status, String message )
         {
-            delegate.markForTermination( status, message );
+            delegate.markForHalting( status, message );
         }
 
         @Override
-        public boolean willBeTerminated()
+        public boolean willBeHalted()
         {
-            return delegate.willBeTerminated();
+            return delegate.willBeHalted();
         }
 
         @Override

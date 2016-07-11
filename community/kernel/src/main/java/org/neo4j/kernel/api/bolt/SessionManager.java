@@ -23,9 +23,9 @@ import java.util.Set;
 
 public interface SessionManager
 {
-    void sessionActivated( KillableUserSession session );
+    void sessionActivated( HaltableUserSession session );
 
-    void sessionHalted( KillableUserSession session );
+    void sessionHalted( HaltableUserSession session );
 
-    Set<KillableUserSession> getActiveSessions();
+    Set<HaltableUserSession> getActiveSessions();
 }

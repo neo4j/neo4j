@@ -419,7 +419,7 @@ public interface Status
 
     enum Session implements Status
     {
-        SessionTerminated( ClientError, "The session has been terminated by the server." );
+        InvalidSession( ClientError, "The session is no longer available, possibly due to termination." );
 
         private final Code code;
 

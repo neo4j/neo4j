@@ -21,30 +21,30 @@ package org.neo4j.kernel.api.bolt;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public interface KillableUserSession
+public interface HaltableUserSession
 {
     String username();
 
-    void markForTermination( Status status, String message );
+    void markForHalting( Status status, String message );
 
-    boolean willBeTerminated();
+    boolean willBeHalted();
 
-    class Adapter implements KillableUserSession
+    class Adapter implements HaltableUserSession
     {
         @Override
         public String username()
         {
-            return "KillableUserSession.Adapter";
+            return "HaltableUserSession.Adapter";
         }
 
         @Override
-        public void markForTermination( Status status, String message )
+        public void markForHalting( Status status, String message )
         {
 
         }
 
         @Override
-        public boolean willBeTerminated()
+        public boolean willBeHalted()
         {
             return false;
         }

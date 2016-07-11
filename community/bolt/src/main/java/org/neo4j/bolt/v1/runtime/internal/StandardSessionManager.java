@@ -25,7 +25,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.api.bolt.KillableUserSession;
+import org.neo4j.kernel.api.bolt.HaltableUserSession;
 import org.neo4j.kernel.api.bolt.SessionManager;
 
 @Service.Implementation( SessionManager.class )
@@ -36,22 +36,22 @@ public class StandardSessionManager extends Service implements SessionManager
         super( "standard-session-tracker" );
     }
 
-    private Set<KillableUserSession> sessions = new ConcurrentSet<>();
+    private Set<HaltableUserSession> sessions = new ConcurrentSet<>();
 
     @Override
-    public void sessionActivated( KillableUserSession session )
+    public void sessionActivated( HaltableUserSession session )
     {
         sessions.add( session );
     }
 
     @Override
-    public void sessionHalted( KillableUserSession session )
+    public void sessionHalted( HaltableUserSession session )
     {
         sessions.remove( session );
     }
 
     @Override
-    public Set<KillableUserSession> getActiveSessions()
+    public Set<HaltableUserSession> getActiveSessions()
     {
         return sessions.stream().collect( Collectors.toSet() );
     }

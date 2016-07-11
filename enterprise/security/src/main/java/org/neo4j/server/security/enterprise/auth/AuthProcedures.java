@@ -30,7 +30,7 @@ import java.util.stream.Stream;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.KernelTransaction;
 
-import org.neo4j.kernel.api.bolt.KillableUserSession;
+import org.neo4j.kernel.api.bolt.HaltableUserSession;
 import org.neo4j.kernel.api.bolt.SessionManager;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthSubject;
@@ -229,8 +229,8 @@ public class AuthProcedures
         SessionManager sessionManager = getSessionManager();
         return countSessionByUsername(
                 sessionManager.getActiveSessions().stream()
-                        .filter( session -> !session.willBeTerminated() )
-                        .map( KillableUserSession::username )
+                        .filter( session -> !session.willBeHalted() )
+                        .map( HaltableUserSession::username )
                 );
     }
 
@@ -247,12 +247,12 @@ public class AuthProcedures
         subject.getUserManager().getUser( username );
 
         Long killCount = 0L;
-        for ( KillableUserSession session : getSessionManager().getActiveSessions() )
+        for ( HaltableUserSession session : getSessionManager().getActiveSessions() )
         {
             if ( session.username().equals( username ) )
             {
-                session.markForTermination( Status.Session.SessionTerminated,
-                        Status.Session.SessionTerminated.code().description() );
+                session.markForHalting( Status.Session.InvalidSession,
+                        Status.Session.InvalidSession.code().description() );
                 killCount += 1;
             }
         }

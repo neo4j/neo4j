@@ -27,7 +27,6 @@ import org.neo4j.bolt.v1.runtime.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.internal.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.AuthSubject;
 
 /**
  * A session implementation that delegates work to a worker thread.
@@ -134,14 +133,14 @@ public class SessionWorkerFacade implements Session
     }
 
     @Override
-    public void markForTermination( Status status, String message )
+    public void markForHalting( Status status, String message )
     {
-        worker.markForTermination( status, message );
+        worker.markForHalting( status, message );
     }
 
     @Override
-    public boolean willBeTerminated()
+    public boolean willBeHalted()
     {
-        return worker.willBeTerminated();
+        return worker.willBeHalted();
     }
 }
