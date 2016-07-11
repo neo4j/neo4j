@@ -147,7 +147,7 @@ public class ReaderPoolTest
         pool.release( readerC );
 
         // when
-        pool.disposeAll();
+        pool.close();
 
         // then
         verify( readerA ).close();

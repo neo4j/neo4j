@@ -36,7 +36,7 @@ import static java.util.Optional.of;
 // TODO: Prune stale readers with a recurring job.
 class ReaderPool
 {
-    private final ArrayList<Reader> pool;
+    private ArrayList<Reader> pool;
     private final int maxSize;
     private final Log log;
     private final FileNames fileNames;
@@ -125,16 +125,23 @@ class ReaderPool
         }
     }
 
-    synchronized void disposeAll() throws IOException
+    synchronized void close() throws IOException
     {
         for ( Reader reader : pool )
         {
             reader.close();
         }
+        pool.clear();
+        pool = null;
     }
 
     public synchronized void prune( long version )
     {
+        if ( pool == null )
+        {
+            return;
+        }
+
         Iterator<Reader> itr = pool.iterator();
         while ( itr.hasNext() )
         {
