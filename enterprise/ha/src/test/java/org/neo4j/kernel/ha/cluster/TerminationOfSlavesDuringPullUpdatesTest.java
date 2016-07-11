@@ -58,6 +58,10 @@ import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 @RunWith( Parameterized.class )
 public class TerminationOfSlavesDuringPullUpdatesTest
 {
+    private static final int READER_CONTESTANTS = 20;
+    private static final int STRING_LENGTH = 20000;
+    private static final int PROPERTY_KEY_CHAIN_LENGTH = 100;
+
     @Rule
     public ClusterRule clusterRule = new ClusterRule( getClass() )
             .withSharedSetting( HaSettings.pull_interval, "0" )
@@ -112,9 +116,8 @@ public class TerminationOfSlavesDuringPullUpdatesTest
 
         final HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
         Race race = new Race();
-        int nbrOfReaders = 100;
         final AtomicBoolean end = new AtomicBoolean( false );
-        for ( int i = 0; i < nbrOfReaders; i++ )
+        for ( int i = 0; i < READER_CONTESTANTS; i++ )
         {
             race.addContestant( readContestant( action, entityId, slave, end ) );
         }
@@ -146,9 +149,8 @@ public class TerminationOfSlavesDuringPullUpdatesTest
 
         final HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
         Race race = new Race();
-        int nbrOfReaders = 100;
         final AtomicBoolean end = new AtomicBoolean( false );
-        for ( int i = 0; i < nbrOfReaders; i++ )
+        for ( int i = 0; i < READER_CONTESTANTS; i++ )
         {
             race.addContestant( readContestant( action, entityId, slave, end ) );
         }
@@ -354,7 +356,7 @@ public class TerminationOfSlavesDuringPullUpdatesTest
 
         void createPropertyChain( PropertyContainer entity, char prefix )
         {
-            for ( int i = 0; i < 100; i++ )
+            for ( int i = 0; i < PROPERTY_KEY_CHAIN_LENGTH; i++ )
             {
                 entity.setProperty( "" + prefix + i, i );
             }
@@ -403,7 +405,7 @@ public class TerminationOfSlavesDuringPullUpdatesTest
 
     private static String longString( char ch )
     {
-        return StringUtils.repeat( ch, 1000 );
+        return StringUtils.repeat( ch, STRING_LENGTH );
     }
 
     private void forceMaintenance( HighlyAvailableGraphDatabase master )
