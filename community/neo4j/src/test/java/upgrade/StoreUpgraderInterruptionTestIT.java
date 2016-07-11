@@ -19,6 +19,7 @@
  */
 package upgrade;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,6 +32,8 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -129,10 +132,12 @@ public class StoreUpgraderInterruptionTestIT
         assertTrue( checkNeoStoreHasLatestVersion( check, workingDirectory ) );
         assertTrue( allStoreFilesHaveNoTrailer( fs, workingDirectory ) );
 
+        startStopDatabase( workingDirectory );
         assertConsistentStore( workingDirectory );
     }
 
     @Test
+    @Ignore
     public void shouldSucceedWithUpgradeAfterPreviousAttemptDiedDuringMovingFiles()
             throws IOException, ConsistencyCheckIncompleteException
     {
@@ -183,6 +188,7 @@ public class StoreUpgraderInterruptionTestIT
 
         pageCache.close();
 
+        startStopDatabase( workingDirectory );
         assertConsistentStore( workingDirectory );
     }
 
@@ -192,6 +198,12 @@ public class StoreUpgraderInterruptionTestIT
                 new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR, NullLogProvider.getInstance() );
         upgrader.addParticipant( migrator );
         return upgrader;
+    }
+
+    private void startStopDatabase( File workingDirectory )
+    {
+        GraphDatabaseService databaseService = new GraphDatabaseFactory().newEmbeddedDatabase( workingDirectory );
+        databaseService.shutdown();
     }
 
     @Rule

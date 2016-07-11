@@ -51,11 +51,12 @@ public class LuceneSchemaIndexProviderFactory extends
     @Override
     public LuceneSchemaIndexProvider newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
-        boolean ephemeral = dependencies.getConfig().get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
+        Config config = dependencies.getConfig();
+        boolean ephemeral = config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
 
         FileSystemAbstraction fileSystem = context.fileSystem();
         DirectoryFactory directoryFactory = directoryFactory( ephemeral, fileSystem );
 
-        return new LuceneSchemaIndexProvider( fileSystem, directoryFactory, context.storeDir() );
+        return new LuceneSchemaIndexProvider( fileSystem, directoryFactory, context.storeDir(), config );
     }
 }

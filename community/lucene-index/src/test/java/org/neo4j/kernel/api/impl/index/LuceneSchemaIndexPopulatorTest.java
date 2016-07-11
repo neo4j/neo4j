@@ -49,12 +49,10 @@ import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.test.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-
 import static java.lang.Long.parseLong;
 import static java.util.Arrays.asList;
-
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class LuceneSchemaIndexPopulatorTest
@@ -244,7 +242,7 @@ public class LuceneSchemaIndexPopulatorTest
         directory = new RAMDirectory();
         DirectoryFactory directoryFactory = new DirectoryFactory.Single(
                 new DirectoryFactory.UncloseableDirectory( directory ) );
-        provider = new LuceneSchemaIndexProvider( fs.get(), directoryFactory, new File( "target/whatever" ) );
+        provider = new LuceneSchemaIndexProvider( fs.get(), directoryFactory, new File( "target/whatever" ), new Config()  );
         indexDescriptor = new IndexDescriptor( 42, propertyKeyId );
         indexStoreView = mock( IndexStoreView.class );
         IndexConfiguration indexConfig = new IndexConfiguration( false );

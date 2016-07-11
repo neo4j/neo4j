@@ -146,7 +146,7 @@ public class ConsistencyPerformanceCheck
         SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
                 fileSystem,
                 DirectoryFactory.PERSISTENT,
-                storeDir );
+                storeDir, tuningConfiguration );
         LuceneLabelScanStoreBuilder labelScanStoreBuilder = new LuceneLabelScanStoreBuilder( storeDir, neoStores,
                 fileSystem, tuningConfiguration, NullLogProvider.getInstance() );
         LabelScanStore labelScanStore = labelScanStoreBuilder.build();

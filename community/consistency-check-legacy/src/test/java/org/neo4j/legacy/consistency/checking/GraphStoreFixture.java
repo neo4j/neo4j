@@ -29,7 +29,6 @@ import java.util.Collection;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -85,24 +84,25 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             PageCache pageCache = getPageCache( fileSystem );
             StoreAccess nativeStores = new StoreAccess( fileSystem, pageCache, directory ).initialize();
+            Config config = new Config();
             directStoreAccess = new DirectStoreAccess(
                     nativeStores,
                     new LuceneLabelScanStoreBuilder(
                             directory,
                             nativeStores.getRawNeoStores(),
                             fileSystem,
-                            new Config( MapUtil.stringMap() ),
+                            config,
                             FormattedLogProvider.toOutputStream( System.out )
                     ).build(),
-                    createIndexes( fileSystem )
+                    createIndexes( fileSystem, config )
             );
         }
         return directStoreAccess;
     }
 
-    private SchemaIndexProvider createIndexes( FileSystemAbstraction fileSystem )
+    private SchemaIndexProvider createIndexes( FileSystemAbstraction fileSystem, Config config )
     {
-        return new LuceneSchemaIndexProvider( fileSystem, DirectoryFactory.PERSISTENT, directory );
+        return new LuceneSchemaIndexProvider( fileSystem, DirectoryFactory.PERSISTENT, directory, config );
     }
 
     public File directory()

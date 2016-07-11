@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -39,6 +40,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.api.index.util.FolderLayout;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
@@ -50,22 +52,28 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     private final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
     private final FailureStorage failureStorage;
     private final FolderLayout folderLayout;
+    private final boolean readOnly;
     private final Map<Long, String> failures = new HashMap<>();
 
     public LuceneSchemaIndexProvider( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
-            File storeDir )
+            File storeDir, Config config )
     {
         super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 1 );
         this.directoryFactory = directoryFactory;
         File rootDirectory = getRootDirectory( storeDir, LuceneSchemaIndexProviderFactory.KEY );
         this.folderLayout = new FolderLayout( rootDirectory );
         this.failureStorage = new FailureStorage( fileSystem, folderLayout );
+        this.readOnly = config.get( GraphDatabaseSettings.read_only );
     }
 
     @Override
     public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor,
                                         IndexConfiguration config, IndexSamplingConfig samplingConfig )
     {
+        if ( readOnly )
+        {
+            throw new UnsupportedOperationException( "Index population is not supported in read only mode." );
+        }
         if ( config.isUnique() )
         {
             return new DeferredConstraintVerificationUniqueLuceneIndexPopulator(
@@ -87,12 +95,12 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     {
         if ( config.isUnique() )
         {
-            return new UniqueLuceneIndexAccessor( documentStructure, IndexWriterFactories.reserving(),
+            return new UniqueLuceneIndexAccessor( documentStructure, readOnly, IndexWriterFactories.reserving(),
                     directoryFactory, folderLayout.getFolder( indexId ) );
         }
         else
         {
-            return new NonUniqueLuceneIndexAccessor( documentStructure, IndexWriterFactories.reserving(),
+            return new NonUniqueLuceneIndexAccessor( documentStructure, readOnly, IndexWriterFactories.reserving(),
                     directoryFactory, folderLayout.getFolder( indexId ), samplingConfig.bufferSize() );
         }
     }

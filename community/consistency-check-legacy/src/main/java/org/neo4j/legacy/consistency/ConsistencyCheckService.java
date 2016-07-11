@@ -144,7 +144,7 @@ public class ConsistencyCheckService
                         storeDir, store.getRawNeoStores(), fileSystem, consistencyCheckerConfig, logProvider ).build();
                 SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
                         fileSystem, DirectoryFactory.PERSISTENT,
-                        storeDir );
+                        storeDir, tuningConfiguration );
                 DirectStoreAccess stores = new DirectStoreAccess( store, labelScanStore, indexes );
                 FullCheck check = new FullCheck( tuningConfiguration, progressFactory );
                 summary = check.execute( stores, new DuplicatingLog( log, reportLog ) );

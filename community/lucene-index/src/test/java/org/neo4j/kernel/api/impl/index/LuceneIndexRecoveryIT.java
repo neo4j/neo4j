@@ -51,7 +51,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 
@@ -342,7 +341,8 @@ public class LuceneIndexRecoveryIT
             public Lifecycle newInstance( KernelContext context, LuceneSchemaIndexProviderFactory.Dependencies dependencies )
                     throws Throwable
             {
-                return new LuceneSchemaIndexProvider( fs.get(), ignoreCloseDirectoryFactory, context.storeDir() )
+                return new LuceneSchemaIndexProvider( fs.get(), ignoreCloseDirectoryFactory, context.storeDir(),
+                        dependencies.getConfig() )
                 {
                     @Override
                     public InternalIndexState getInitialState( long indexId )
@@ -364,7 +364,8 @@ public class LuceneIndexRecoveryIT
             public Lifecycle newInstance( KernelContext context, LuceneSchemaIndexProviderFactory.Dependencies dependencies )
                     throws Throwable
             {
-                return new LuceneSchemaIndexProvider( fs.get(), ignoreCloseDirectoryFactory, context.storeDir() )
+                return new LuceneSchemaIndexProvider( fs.get(), ignoreCloseDirectoryFactory, context.storeDir(),
+                        dependencies.getConfig() )
                 {
                     @Override
                     public int compareTo( SchemaIndexProvider o )

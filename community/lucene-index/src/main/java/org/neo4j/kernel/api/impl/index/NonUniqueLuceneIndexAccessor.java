@@ -25,11 +25,11 @@ import java.io.IOException;
 class NonUniqueLuceneIndexAccessor extends LuceneIndexAccessor
 {
     NonUniqueLuceneIndexAccessor( LuceneDocumentStructure documentStructure,
-                                  IndexWriterFactory<ReservingLuceneIndexWriter> indexWriterFactory,
-                                  DirectoryFactory dirFactory, File dirFile,
-                                  int bufferSizeLimit ) throws IOException
+            boolean readOnly, IndexWriterFactory<ReservingLuceneIndexWriter> indexWriterFactory,
+            DirectoryFactory dirFactory, File indexFolder,
+            int bufferSizeLimit ) throws IOException
     {
-        super( documentStructure, indexWriterFactory, dirFactory, dirFile, bufferSizeLimit );
+        super( documentStructure, readOnly, indexWriterFactory, dirFactory, indexFolder, bufferSizeLimit );
     }
 
 }
