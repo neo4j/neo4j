@@ -57,7 +57,6 @@ import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -93,7 +92,8 @@ public class SlaveLocksClientTest
 
         whenMasterAcquireExclusive().thenReturn( responseOk );
 
-        client = newSlaveLocksClient( lockManager, true );
+        client = new SlaveLocksClient( master, local, lockManager, mock( RequestContextFactory.class ),
+                availabilityGuard, logProvider );
     }
 
     private OngoingStubbing<Response<LockResult>> whenMasterAcquireShared()
@@ -530,23 +530,6 @@ public class SlaveLocksClientTest
         logProvider.assertExactly( inLog( SlaveLocksClient.class )
                 .warn( equalTo( "Unable to stop lock session on master" ),
                         CoreMatchers.<Throwable>equalTo( error ) ) );
-    }
-
-    @Test
-    public void stopDoesNothingWhenLocksAreNotTxTerminationAware()
-    {
-        SlaveLocksClient client = newSlaveLocksClient( lockManager, false );
-
-        client.stop();
-
-        verify( local, never() ).stop();
-        verify( master, never() ).endLockSession( any( RequestContext.class ), anyBoolean() );
-    }
-
-    private SlaveLocksClient newSlaveLocksClient( Locks lockManager, boolean txTerminationAwareLocks )
-    {
-        return new SlaveLocksClient( master, local, lockManager, mock( RequestContextFactory.class ),
-                availabilityGuard, logProvider, txTerminationAwareLocks );
     }
 
     private SlaveLocksClient stoppedClient()

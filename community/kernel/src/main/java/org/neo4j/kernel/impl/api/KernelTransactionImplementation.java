@@ -127,7 +127,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionTracer tracer;
     private final Pool<KernelTransactionImplementation> pool;
     private final Supplier<LegacyIndexTransactionState> legacyIndexTxStateSupplier;
-    private final boolean txTerminationAwareLocks;
 
     // For committing
     private final TransactionHeaderInformationFactory headerInformationFactory;
@@ -179,8 +178,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             Pool<KernelTransactionImplementation> pool,
                                             Clock clock,
                                             TransactionTracer tracer,
-                                            StorageEngine storageEngine,
-                                            boolean txTerminationAwareLocks )
+                                            StorageEngine storageEngine )
     {
         this.operations = operations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -197,7 +195,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.tracer = tracer;
         this.storageStatement = storeLayer.newStatement();
         this.currentStatement = new KernelStatement( this, this, operations, storageStatement, procedures );
-        this.txTerminationAwareLocks = txTerminationAwareLocks;
     }
 
     /**
@@ -270,7 +267,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             {
                 failure = true;
                 terminationReason = reason;
-                if ( txTerminationAwareLocks && locks != null )
+                if ( locks != null )
                 {
                     locks.stop();
                 }

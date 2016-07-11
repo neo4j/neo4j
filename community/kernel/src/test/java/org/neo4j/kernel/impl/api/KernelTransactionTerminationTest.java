@@ -360,7 +360,7 @@ public class KernelTransactionTerminationTest
                     mock( ConstraintIndexCreator.class ), new Procedures(), TransactionHeaderInformationFactory.DEFAULT,
                     mock( TransactionCommitProcess.class ), monitor, () -> mock( LegacyIndexTransactionState.class ),
                     mock( Pool.class ), new FakeClock(), TransactionTracer.NULL,
-                    mock( StorageEngine.class, RETURNS_MOCKS ), true );
+                    mock( StorageEngine.class, RETURNS_MOCKS ) );
 
             this.monitor = monitor;
         }

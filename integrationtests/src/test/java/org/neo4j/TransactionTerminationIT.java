@@ -94,8 +94,7 @@ public class TransactionTerminationIT
             .withCluster( clusterOfSize( 3 ) )
             .withSharedSetting( HaSettings.ha_server, ":6001-6005" )
             .withSharedSetting( HaSettings.tx_push_factor, "2" )
-            .withSharedSetting( HaSettings.lock_read_timeout, "1m" )
-            .withSharedSetting( KernelTransactions.tx_termination_aware_locks, Settings.TRUE );
+            .withSharedSetting( HaSettings.lock_read_timeout, "1m" );
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() )
@@ -114,7 +113,6 @@ public class TransactionTerminationIT
         ServerControls server = cleanupRule.add( TestServerBuilders.newInProcessBuilder()
                 .withConfig( GraphDatabaseSettings.auth_enabled, Settings.FALSE )
                 .withConfig( GraphDatabaseFacadeFactory.Configuration.lock_manager, lockManagerName )
-                .withConfig( KernelTransactions.tx_termination_aware_locks, Settings.TRUE )
                 .newServer() );
 
         GraphDatabaseService db = server.graph();

@@ -54,7 +54,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.runners.Parameterized.Parameters;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.kernel.impl.api.KernelTransactions.tx_termination_aware_locks;
 
 @RunWith( Parameterized.class )
 public class TerminationOfSlavesDuringPullUpdatesTest
@@ -71,8 +70,6 @@ public class TerminationOfSlavesDuringPullUpdatesTest
     @Parameter
     public ReadContestantActions action;
     @Parameter( 1 )
-    public boolean txTerminationAwareLocks;
-    @Parameter( 2 )
     public String name;
 
     @Parameters( name = "{1}" )
@@ -81,34 +78,34 @@ public class TerminationOfSlavesDuringPullUpdatesTest
         return Arrays.<Object>asList( new Object[][]
                 {
                         {new PropertyValueActions( longString( 'a' ), longString( 'b' ), true ),
-                                true, "NodeStringProperty[txTerminationAwareLocks=yes]"},
+                                "NodeStringProperty[txTerminationAwareLocks=yes]"},
                         {new PropertyValueActions( longString( 'a' ), longString( 'b' ), true ),
-                                false, "NodeStringProperty[txTerminationAwareLocks=no]"},
+                                "NodeStringProperty[txTerminationAwareLocks=no]"},
 
                         {new PropertyValueActions( longString( 'a' ), longString( 'b' ), false ),
-                                true, "RelationshipStringProperty[txTerminationAwareLocks=yes]"},
+                                "RelationshipStringProperty[txTerminationAwareLocks=yes]"},
                         {new PropertyValueActions( longString( 'a' ), longString( 'b' ), false ),
-                                false, "RelationshipStringProperty[txTerminationAwareLocks=no]"},
+                                "RelationshipStringProperty[txTerminationAwareLocks=no]"},
 
                         {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), true ),
-                                true, "NodeArrayProperty[txTerminationAwareLocks=yes]"},
+                                "NodeArrayProperty[txTerminationAwareLocks=yes]"},
                         {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), true ),
-                                false, "NodeArrayProperty[txTerminationAwareLocks=no]"},
+                                "NodeArrayProperty[txTerminationAwareLocks=no]"},
 
                         {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), false ),
-                                true, "RelationshipArrayProperty[txTerminationAwareLocks=yes]"},
+                                "RelationshipArrayProperty[txTerminationAwareLocks=yes]"},
                         {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), false ),
-                                false, "RelationshipArrayProperty[txTerminationAwareLocks=no]"},
+                                "RelationshipArrayProperty[txTerminationAwareLocks=no]"},
 
                         {new PropertyKeyActions( 'a', 'b', true ),
-                                true, "NodePropertyKeys[txTerminationAwareLocks=yes]"},
+                                "NodePropertyKeys[txTerminationAwareLocks=yes]"},
                         {new PropertyKeyActions( 'a', 'b', true ),
-                                false, "NodePropertyKeys[txTerminationAwareLocks=no]"},
+                                "NodePropertyKeys[txTerminationAwareLocks=no]"},
 
                         {new PropertyKeyActions( 'a', 'b', false ),
-                                true, "RelationshipPropertyKeys[txTerminationAwareLocks=yes]"},
+                                "RelationshipPropertyKeys[txTerminationAwareLocks=yes]"},
                         {new PropertyKeyActions( 'a', 'b', false ),
-                                false, "RelationshipPropertyKeys[txTerminationAwareLocks=no]"}
+                                "RelationshipPropertyKeys[txTerminationAwareLocks=no]"}
                 }
         );
     }
@@ -119,7 +116,7 @@ public class TerminationOfSlavesDuringPullUpdatesTest
         long safeZone = TimeUnit.MILLISECONDS.toMillis( 0 );
         clusterRule.withSharedSetting( HaSettings.id_reuse_safe_zone_time, String.valueOf( safeZone ) );
         // given
-        final ClusterManager.ManagedCluster cluster = startCluster();
+        final ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
         HighlyAvailableGraphDatabase master = cluster.getMaster();
 
         // when
@@ -153,7 +150,7 @@ public class TerminationOfSlavesDuringPullUpdatesTest
         long safeZone = TimeUnit.MINUTES.toMillis( 1 );
         clusterRule.withSharedSetting( HaSettings.id_reuse_safe_zone_time, String.valueOf( safeZone ) );
         // given
-        final ClusterManager.ManagedCluster cluster = startCluster();
+        final ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
         HighlyAvailableGraphDatabase master = cluster.getMaster();
 
         // when
@@ -416,12 +413,6 @@ public class TerminationOfSlavesDuringPullUpdatesTest
         {
             return node ? db.getNodeById( id ) : db.getRelationshipById( id );
         }
-    }
-
-    private ClusterManager.ManagedCluster startCluster() throws Exception
-    {
-        return clusterRule.withSharedSetting( tx_termination_aware_locks, String.valueOf( txTerminationAwareLocks ) )
-                .startCluster();
     }
 
     private static Object longArray( char b )

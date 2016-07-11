@@ -442,7 +442,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     @Test
     public void markForTerminationNotInitializedTransaction()
     {
-        KernelTransactionImplementation tx = newNotInitializedTransaction( true );
+        KernelTransactionImplementation tx = newNotInitializedTransaction();
 
         tx.markForTermination( Status.General.UnknownError );
 
@@ -453,7 +453,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void markForTerminationInitializedTransaction()
     {
         Locks.Client locksClient = mock( Locks.Client.class );
-        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient, true );
+        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient );
 
         tx.markForTermination( Status.General.UnknownError );
 
@@ -465,7 +465,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void markForTerminationTerminatedTransaction()
     {
         Locks.Client locksClient = mock( Locks.Client.class );
-        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient, true );
+        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient );
         transactionInitializer.accept( tx );
 
         tx.markForTermination( Status.Transaction.Terminated );
@@ -481,7 +481,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void terminatedTxMarkedNeitherSuccessNorFailureClosesWithoutThrowing() throws TransactionFailureException
     {
         Locks.Client locksClient = mock( Locks.Client.class );
-        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient, true );
+        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient );
         transactionInitializer.accept( tx );
         tx.markForTermination( Status.General.UnknownError );
 
@@ -495,7 +495,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void terminatedTxMarkedForSuccessThrowsOnClose()
     {
         Locks.Client locksClient = mock( Locks.Client.class );
-        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient, true );
+        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient );
         transactionInitializer.accept( tx );
         tx.success();
         tx.markForTermination( Status.General.UnknownError );
@@ -515,7 +515,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void terminatedTxMarkedForFailureClosesWithoutThrowing() throws TransactionFailureException
     {
         Locks.Client locksClient = mock( Locks.Client.class );
-        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient, true );
+        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient );
         transactionInitializer.accept( tx );
         tx.failure();
         tx.markForTermination( Status.General.UnknownError );
@@ -530,7 +530,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void terminatedTxMarkedForBothSuccessAndFailureThrowsOnClose()
     {
         Locks.Client locksClient = mock( Locks.Client.class );
-        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient, true );
+        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient );
         transactionInitializer.accept( tx );
         tx.success();
         tx.failure();
@@ -550,7 +550,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     public void txMarkedForBothSuccessAndFailureThrowsOnClose()
     {
         Locks.Client locksClient = mock( Locks.Client.class );
-        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient, true );
+        KernelTransactionImplementation tx = newTransaction( accessMode(), locksClient );
         tx.success();
         tx.failure();
 
