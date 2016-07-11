@@ -111,6 +111,17 @@ RETURN [x IN range(0,10) WHERE x % 2 = 0 ] AS result###
 ###
 RETURN [x IN range(0,10) | x^3 ] AS result###
 
+== Pattern comprehension ==
+
+Pattern comprehension is a syntactic construct available in Cypher for creating a list based off of matchings of a pattern.
+A pattern comprehension will match the specified pattern just like a normal `MATCH` clause, with predicates just
+like a normal `WHERE` clause, but will yield a custom projection as specified.
+
+###
+MATCH (a:Person {name: 'Charlie Sheen'})
+RETURN [(a)-->(b) WHERE b:Movie | b.year] AS years###
+
+The whole predicate, including the `WHERE` keyword, is optional and may be omitted.
 
 == Literal maps ==
 
