@@ -280,22 +280,18 @@ public class RaftLogShipper
         if ( timedOut() )
         {
             onTimeout();
-            return;
         }
-
-        if ( timeoutAbsoluteMillis <= 0 )
+        else if ( timeoutAbsoluteMillis != 0 )
         {
-            return;
-        }
-
-        long timeLeft = timeoutAbsoluteMillis - clock.millis();
-        if ( timeLeft > 0 )
-        {
-            scheduleTimeout( timeLeft );
-        }
-        else
-        {
-            onTimeout();
+            long timeLeft = timeoutAbsoluteMillis - clock.millis();
+            if ( timeLeft > 0 )
+            {
+                scheduleTimeout( timeLeft );
+            }
+            else
+            {
+                onTimeout();
+            }
         }
     }
 
