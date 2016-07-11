@@ -50,6 +50,15 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
       assertions = (p) => assert(p.nonEmpty) )
   }
 
+  @Test def call_a_procedure_name_quoting() {
+    testQuery(
+      title = "Call a procedure using a quoted namespace and name",
+      text = "This invokes the built-in procedure 'db.labels', which lists all in-use labels in the database.",
+      queryText = "CALL `db`.`labels`",
+      optionalResultExplanation = "",
+      assertions = (p) => assert(p.nonEmpty) )
+  }
+
   @Test def call_a_procedure_within_a_complex_query() {
     testQuery(
       title = "Call a procedure within a complex query",

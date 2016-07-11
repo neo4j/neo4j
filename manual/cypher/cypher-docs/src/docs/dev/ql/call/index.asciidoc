@@ -25,6 +25,10 @@ include::call-a-procedure.asciidoc[]
 
 :leveloffset: 2
 
+include::call-a-procedure-using-a-quoted-namespace-and-name.asciidoc[]
+
+:leveloffset: 2
+
 include::call-a-procedure-with-literal-arguments.asciidoc[]
 
 :leveloffset: 2
