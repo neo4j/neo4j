@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.KernelDiagnostics;
@@ -58,6 +59,7 @@ import static java.util.Collections.singletonMap;
 public abstract class EditionModule
 {
     public IdGeneratorFactory idGeneratorFactory;
+    public IdTypeConfigurationProvider idTypeConfigurationProvider;
 
     public LabelTokenHolder labelTokenHolder;
 

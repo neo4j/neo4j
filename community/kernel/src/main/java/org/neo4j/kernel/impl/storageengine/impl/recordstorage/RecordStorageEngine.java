@@ -77,6 +77,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.command.CacheInvalidationBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.HighIdBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.IndexBatchTransactionApplier;
@@ -155,7 +156,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final Supplier<StorageStatement> storeStatementSupplier;
 
     private BufferingIdGeneratorFactory bufferingIdGeneratorFactory;
-    private JobScheduler.JobHandle idBufferMaintenance;
 
     // Immutable state for creating/applying commands
     private final Loaders loaders;
@@ -163,12 +163,14 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final RelationshipDeleter relationshipDeleter;
     private final PropertyCreator propertyCreator;
     private final PropertyDeleter propertyDeleter;
+    private BufferedIdMaintenanceController idMaintenanceController;
 
     public RecordStorageEngine(
             File storeDir,
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             IdReuseEligibility eligibleForReuse,
+            IdTypeConfigurationProvider idTypeConfigurationProvider,
             PageCache pageCache,
             FileSystemAbstraction fs,
             LogProvider logProvider,
@@ -207,7 +209,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             // the stores. The buffering depends on knowledge about active transactions,
             // so we'll initialize it below when all those components have been instantiated.
             bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory(
-                    idGeneratorFactory, transactionsSnapshotSupplier, eligibleForReuse );
+                    idGeneratorFactory, transactionsSnapshotSupplier, eligibleForReuse, idTypeConfigurationProvider );
+            idMaintenanceController = new BufferedIdMaintenanceController( bufferingIdGeneratorFactory );
 
             idGeneratorFactory = bufferingIdGeneratorFactory;
         }
@@ -399,6 +402,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         // providing TransactionIdStore, LogVersionRepository
         satisfier.satisfyDependency( neoStores.getMetaDataStore() );
         satisfier.satisfyDependency( indexStoreView );
+        if (idMaintenanceController != null)
+        {
+            satisfier.satisfyDependency( idMaintenanceController );
+        }
     }
 
     @Override
@@ -426,9 +433,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         labelScanStore.start();
         if ( safeIdBuffering )
         {
-            Runnable maintenance = bufferingIdGeneratorFactory::maintenance;
-            idBufferMaintenance = scheduler.scheduleRecurring(
-                    JobScheduler.Groups.storageMaintenance, maintenance, 1, TimeUnit.SECONDS );
+            idMaintenanceController.start();
         }
     }
 
@@ -449,22 +454,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public void maintenance()
-    {
-        if ( bufferingIdGeneratorFactory != null )
-        {
-            bufferingIdGeneratorFactory.maintenance();
-        }
-    }
-
-    @Override
     public void stop() throws Throwable
     {
         labelScanStore.stop();
         indexingService.stop();
         if ( safeIdBuffering )
         {
-            idBufferMaintenance.cancel( false );
+            idMaintenanceController.stop();
         }
     }
 
@@ -522,5 +518,31 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public NeoStores testAccessNeoStores()
     {
         return neoStores;
+    }
+
+    public class BufferedIdMaintenanceController
+    {
+        private final BufferingIdGeneratorFactory bufferingIdGeneratorFactory;
+        private JobScheduler.JobHandle jobHandle;
+
+        BufferedIdMaintenanceController( BufferingIdGeneratorFactory bufferingIdGeneratorFactory )
+        {
+            this.bufferingIdGeneratorFactory = bufferingIdGeneratorFactory;
+        }
+
+        public void start() throws Throwable
+        {
+            jobHandle = scheduler.scheduleRecurring( JobScheduler.Groups.storageMaintenance, this::maintenance, 1, TimeUnit.SECONDS );
+        }
+
+        public void stop() throws Throwable
+        {
+            jobHandle.cancel( false );
+        }
+
+        public void maintenance()
+        {
+            bufferingIdGeneratorFactory.maintenance();
+        }
     }
 }

@@ -50,6 +50,8 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
+import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -73,13 +75,17 @@ public class NeoStoreDataSourceRule extends ExternalResource
     public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
             PageCache pageCache, Map<String,String> additionalConfig, DatabaseHealth databaseHealth )
     {
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
+        CommunityIdTypeConfigurationProvider idTypeConfigurationProvider =
+                new CommunityIdTypeConfigurationProvider();
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, idTypeConfigurationProvider );
         NullLogService logService = NullLogService.getInstance();
-        return getDataSource( storeDir, fs, idGeneratorFactory, pageCache, additionalConfig, databaseHealth, logService );
+        return getDataSource( storeDir, fs, idGeneratorFactory, idTypeConfigurationProvider, pageCache,
+                additionalConfig, databaseHealth, logService );
     }
 
     public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs, IdGeneratorFactory
-            idGeneratorFactory, PageCache pageCache, Map<String,String> additionalConfig,
+            idGeneratorFactory, IdTypeConfigurationProvider idTypeConfigurationProvider, PageCache
+            pageCache, Map<String,String> additionalConfig,
             DatabaseHealth databaseHealth, LogService logService )
     {
         if ( dataSource != null )
@@ -95,6 +101,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
         JobScheduler jobScheduler = mock( JobScheduler.class, RETURNS_MOCKS );
         Monitors monitors = new Monitors();
         dataSource = new NeoStoreDataSource( storeDir, config, idGeneratorFactory, IdReuseEligibility.ALWAYS,
+                idTypeConfigurationProvider,
                 logService, mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ),
                 dependencyResolverForNoIndexProvider(), mock( PropertyKeyTokenHolder.class ),
                 mock( LabelTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ), locks,

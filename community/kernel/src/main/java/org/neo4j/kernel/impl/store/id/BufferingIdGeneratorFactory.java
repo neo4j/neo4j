@@ -24,23 +24,28 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfiguration;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 
 /**
  * Wraps {@link IdGenerator} for those that have {@link IdType#allowAggressiveReuse() aggressive id reuse}
  * so that ids can be {@link IdGenerator#freeId(long) freed} at safe points in time, after all transactions
  * which were active at the time of freeing, have been closed.
  */
-public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
+public class BufferingIdGeneratorFactory implements IdGeneratorFactory
 {
     private final BufferingIdGenerator[/*IdType#ordinal as key*/] overriddenIdGenerators =
             new BufferingIdGenerator[IdType.values().length];
     private Supplier<KernelTransactionsSnapshot> boundaries;
     private Predicate<KernelTransactionsSnapshot> safeThreshold;
+    private final IdGeneratorFactory delegate;
+    private final IdTypeConfigurationProvider idTypeConfigurationProvider;
 
     public BufferingIdGeneratorFactory( IdGeneratorFactory delegate, Supplier<KernelTransactionsSnapshot> boundaries,
-            IdReuseEligibility eligibleForReuse )
+            IdReuseEligibility eligibleForReuse, IdTypeConfigurationProvider idTypeConfigurationProvider )
     {
-        super( delegate );
+        this.delegate = delegate;
+        this.idTypeConfigurationProvider = idTypeConfigurationProvider;
         initialize( boundaries, eligibleForReuse );
     }
 
@@ -58,10 +63,18 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
     }
 
     @Override
+    public IdGenerator open( File filename, IdType idType, long highId, long maxId )
+    {
+        IdTypeConfiguration typeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
+        return open( filename, typeConfiguration.getGrabSize(), idType, highId, maxId);
+    }
+
+    @Override
     public IdGenerator open( File filename, int grabSize, IdType idType, long highId, long maxId )
     {
-        IdGenerator generator = super.open( filename, grabSize, idType, highId, maxId );
-        if ( idType.allowAggressiveReuse() )
+        IdGenerator generator = delegate.open( filename, grabSize, idType, highId, maxId );
+        IdTypeConfiguration typeConfiguration = getIdTypeConfiguration(idType);
+        if ( typeConfiguration.allowAggressiveReuse() )
         {
             BufferingIdGenerator bufferingGenerator = new BufferingIdGenerator( generator );
 
@@ -92,10 +105,16 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
     }
 
     @Override
+    public void create( File filename, long highId, boolean throwIfFileExists )
+    {
+        delegate.create( filename, highId, throwIfFileExists );
+    }
+
+    @Override
     public IdGenerator get( IdType idType )
     {
         IdGenerator generator = overriddenIdGenerators[idType.ordinal()];
-        return generator != null ? generator : super.get( idType );
+        return generator != null ? generator : delegate.get( idType );
     }
 
     public void maintenance()
@@ -118,5 +137,10 @@ public class BufferingIdGeneratorFactory extends IdGeneratorFactory.Delegate
                 generator.clear();
             }
         }
+    }
+
+    private IdTypeConfiguration getIdTypeConfiguration( IdType idType )
+    {
+        return idTypeConfigurationProvider.getIdTypeConfiguration( idType );
     }
 }

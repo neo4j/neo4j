@@ -410,7 +410,9 @@ public class TerminationOfSlavesDuringPullUpdatesTest
 
     private void forceMaintenance( HighlyAvailableGraphDatabase master )
     {
-        master.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).maintenance();
+        master.getDependencyResolver()
+                .resolveDependency( RecordStorageEngine.BufferedIdMaintenanceController.class )
+                .maintenance();
     }
 
     private static void assertPropertyValue( Object property, Object... candidates )

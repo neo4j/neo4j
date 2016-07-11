@@ -17,18 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.id;
+package org.neo4j.kernel.impl.store.id.configuration;
 
-import java.io.File;
+import org.neo4j.kernel.impl.store.id.IdType;
 
-public interface IdGeneratorFactory
+/**
+ * Configuration for any specific id type
+ * @see IdType
+ * @see IdTypeConfigurationProvider
+ */
+public class IdTypeConfiguration
 {
-    IdGenerator open( File filename, IdType idType, long highId, long maxId );
+    static final int DEFAULT_GRAB_SIZE = 1024;
+    static final int AGGRESIVE_GRAB_SIZE = 50000;
 
-    IdGenerator open( File filename, int grabSize, IdType idType, long highId, long maxId );
+    private final boolean allowAggressiveReuse;
 
-    void create( File filename, long highId, boolean throwIfFileExists );
+    public IdTypeConfiguration( boolean allowAggressiveReuse )
+    {
+        this.allowAggressiveReuse = allowAggressiveReuse;
+    }
 
-    IdGenerator get( IdType idType );
+    public boolean allowAggressiveReuse()
+    {
+        return allowAggressiveReuse;
+    }
 
+    public int getGrabSize()
+    {
+        return allowAggressiveReuse ? AGGRESIVE_GRAB_SIZE : DEFAULT_GRAB_SIZE;
+    }
 }
