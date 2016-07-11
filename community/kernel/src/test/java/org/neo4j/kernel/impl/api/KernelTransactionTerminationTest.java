@@ -35,6 +35,7 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
@@ -47,6 +48,7 @@ import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.storageengine.api.StorageEngine;
 
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -63,10 +65,11 @@ public class KernelTransactionTerminationTest
     public void transactionCantBeTerminatedAfterItIsClosed() throws Exception
     {
         runTwoThreads(
-                KernelTransactionImplementation::markForTermination,
-                tx -> {
+                tx -> tx.markForTermination( Status.Transaction.TransactionMarkedAsFailed ),
+                tx ->
+                {
                     close( tx );
-                    assertFalse( tx.shouldBeTerminated() );
+                    assertNull( tx.getReasonIfTerminated() );
                     tx.initialize();
                 }
         );
@@ -79,7 +82,8 @@ public class KernelTransactionTerminationTest
         BlockingQueue<TerminatorAction> terminatorToCommitter = new LinkedBlockingQueue<>( 1 );
 
         runTwoThreads(
-                tx -> {
+                tx ->
+                {
                     Boolean terminatorShouldAct = committerToTerminator.poll();
                     if ( terminatorShouldAct != null && terminatorShouldAct )
                     {
@@ -88,7 +92,8 @@ public class KernelTransactionTerminationTest
                         assertTrue( terminatorToCommitter.add( action ) );
                     }
                 },
-                tx -> {
+                tx ->
+                {
                     tx.initialize();
                     CommitterAction committerAction = CommitterAction.random();
                     committerAction.executeOn( tx );
@@ -119,7 +124,8 @@ public class KernelTransactionTerminationTest
         CountDownLatch start = new CountDownLatch( 1 );
         AtomicBoolean stop = new AtomicBoolean();
 
-        Future<?> action1 = Executors.newSingleThreadExecutor().submit( () -> {
+        Future<?> action1 = Executors.newSingleThreadExecutor().submit( () ->
+        {
             await( start );
             while ( !stop.get() )
             {
@@ -127,7 +133,8 @@ public class KernelTransactionTerminationTest
             }
         } );
 
-        Future<?> action2 = Executors.newSingleThreadExecutor().submit( () -> {
+        Future<?> action2 = Executors.newSingleThreadExecutor().submit( () ->
+        {
             await( start );
             while ( !stop.get() )
             {
@@ -205,7 +212,7 @@ public class KernelTransactionTerminationTest
                     @Override
                     void executeOn( KernelTransaction tx )
                     {
-                        tx.markForTermination();
+                        tx.markForTermination( Status.Transaction.TransactionMarkedAsFailed );
                     }
                 };
 
@@ -363,7 +370,7 @@ public class KernelTransactionTerminationTest
 
         TestKernelTransaction initialize()
         {
-            initialize( 42, new NoOpClient(), Type.implicit, AccessMode.Static.FULL );
+            initialize( 42, 42, new NoOpClient(), Type.implicit, AccessMode.Static.FULL );
             monitor.reset();
             return this;
         }
@@ -380,13 +387,13 @@ public class KernelTransactionTerminationTest
 
         void assertTerminated()
         {
-            assertTrue( shouldBeTerminated() );
+            assertEquals( Status.Transaction.TransactionMarkedAsFailed, getReasonIfTerminated() );
             assertTrue( monitor.terminated );
         }
 
         void assertNotTerminated()
         {
-            assertFalse( shouldBeTerminated() );
+            assertNull( getReasonIfTerminated() );
             assertFalse( monitor.terminated );
         }
     }

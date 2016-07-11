@@ -30,6 +30,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.shell.Output;
@@ -115,7 +116,7 @@ public class GraphDatabaseShellServer extends AbstractAppServer
         KernelTransaction tx = clients.get( clientId );
         if ( tx != null )
         {
-            tx.markForTermination();
+            tx.markForTermination( Status.Transaction.Terminated );
         }
     }
 

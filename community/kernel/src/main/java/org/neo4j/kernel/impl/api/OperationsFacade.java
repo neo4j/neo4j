@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -63,6 +64,7 @@ import org.neo4j.kernel.api.exceptions.schema.DuplicateIndexSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexSchemaRuleNotFoundException;
+import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -332,6 +334,10 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         {
             return node.get().getProperty( propertyKeyId );
         }
+        finally
+        {
+            statement.assertOpen();
+        }
     }
 
     @Override
@@ -434,6 +440,10 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         {
             return relationship.get().getProperty( propertyKeyId );
         }
+        finally
+        {
+            statement.assertOpen();
+        }
     }
 
     @Override
@@ -464,7 +474,12 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         statement.assertOpen();
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-            return node.get().getPropertyKeys();
+            PrimitiveIntCollection propertyKeys = node.get().getPropertyKeys();
+            return propertyKeys.iterator();
+        }
+        finally
+        {
+            statement.assertOpen();
         }
     }
 
@@ -474,7 +489,12 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         statement.assertOpen();
         try ( Cursor<RelationshipItem> relationship = dataRead().relationshipCursorById( statement, relationshipId ) )
         {
-            return relationship.get().getPropertyKeys();
+            PrimitiveIntCollection propertyKeys = relationship.get().getPropertyKeys();
+            return propertyKeys.iterator();
+        }
+        finally
+        {
+            statement.assertOpen();
         }
     }
 

@@ -25,14 +25,17 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.Status.Classification;
+import org.neo4j.kernel.api.exceptions.Status.Code;
+import org.neo4j.kernel.api.security.AccessMode;
 
 public class TopLevelTransaction implements InternalTransaction
 {
@@ -63,7 +66,7 @@ public class TopLevelTransaction implements InternalTransaction
     @Override
     public final void terminate()
     {
-        this.transaction.markForTermination();
+        this.transaction.markForTermination( Status.Transaction.Terminated );
     }
 
     @Override
@@ -87,18 +90,27 @@ public class TopLevelTransaction implements InternalTransaction
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
+        catch ( KernelException | TransactionTerminatedException e )
+        {
+            Code statusCode = e.status().code();
+            if ( statusCode.classification() == Classification.TransientError )
+            {
+                throw new TransientTransactionFailureException(
+                        closeFailureMessage() + ": " + statusCode.description(), e );
+            }
+            throw new TransactionFailureException( closeFailureMessage(), e );
+        }
         catch ( Exception e )
         {
-            String userMessage = successCalled
-                    ? "Transaction was marked as successful, but unable to commit transaction so rolled back."
-                    : "Unable to rollback transaction";
-            if ( e instanceof KernelException &&
-                    ((KernelException)e).status().code().classification() == Classification.TransientError )
-            {
-                throw new TransientTransactionFailureException( userMessage, e );
-            }
-            throw new TransactionFailureException( userMessage, e );
+            throw new TransactionFailureException( closeFailureMessage(), e );
         }
+    }
+
+    private String closeFailureMessage()
+    {
+        return successCalled
+                        ? "Transaction was marked as successful, but unable to commit transaction so rolled back."
+                        : "Unable to rollback transaction";
     }
 
     @Override

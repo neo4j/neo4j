@@ -45,6 +45,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 public class ResponsePackerIT
 {
@@ -64,16 +65,16 @@ public class ResponsePackerIT
         try ( NeoStores neoStore = createNeoStore( fs, pageCache ) )
         {
             MetaDataStore store = neoStore.getMetaDataStore();
-            store.transactionCommitted( 2, 111 );
-            store.transactionCommitted( 3, 222 );
-            store.transactionCommitted( 4, 333 );
-            store.transactionCommitted( 5, 444 );
-            store.transactionCommitted( 6, 555 );
+            store.transactionCommitted( 2, 111, BASE_TX_COMMIT_TIMESTAMP );
+            store.transactionCommitted( 3, 222, BASE_TX_COMMIT_TIMESTAMP );
+            store.transactionCommitted( 4, 333, BASE_TX_COMMIT_TIMESTAMP );
+            store.transactionCommitted( 5, 444, BASE_TX_COMMIT_TIMESTAMP );
+            store.transactionCommitted( 6, 555, BASE_TX_COMMIT_TIMESTAMP );
 
             // skip 7 to emulate the fact we have an hole in the committed tx ids list
 
             final long expectedTxId = 8L;
-            store.transactionCommitted( expectedTxId, 777 );
+            store.transactionCommitted( expectedTxId, 777, BASE_TX_COMMIT_TIMESTAMP );
 
             ResponsePacker packer =
                     new ResponsePacker( transactionStore, store, Suppliers.singleton( newStoreIdForCurrentVersion() ) );

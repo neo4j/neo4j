@@ -43,6 +43,7 @@ public class RecoveryVisitor implements CloseableVisitor<RecoverableTransaction,
     private final StorageEngine storageEngine;
     private final Monitor monitor;
     private long lastTransactionIdApplied = -1;
+    private long lastTransactionCommitTimestamp;
     private long lastTransactionChecksum;
     private LogPosition lastTransactionLogPosition;
     private final TransactionQueue queue = new TransactionQueue( 10_000, this::applyQueue );
@@ -66,6 +67,7 @@ public class RecoveryVisitor implements CloseableVisitor<RecoverableTransaction,
         queue( txRepresentation, txId );
 
         lastTransactionIdApplied = txId;
+        lastTransactionCommitTimestamp = transaction.representation().getCommitEntry().getTimeWritten();
         lastTransactionChecksum = LogEntryStart.checksum( representation.getStartEntry() );
         lastTransactionLogPosition = transaction.positionAfterTx();
         monitor.transactionRecovered( txId );
@@ -80,7 +82,7 @@ public class RecoveryVisitor implements CloseableVisitor<RecoverableTransaction,
         queue.queue( tx );
     }
 
-    private void applyQueue( TransactionToApply batch ) throws Exception
+    private void applyQueue( TransactionToApply batch, TransactionToApply last ) throws Exception
     {
         storageEngine.apply( batch, RECOVERY );
     }
@@ -92,7 +94,8 @@ public class RecoveryVisitor implements CloseableVisitor<RecoverableTransaction,
         if ( lastTransactionIdApplied != -1 )
         {
             store.setLastCommittedAndClosedTransactionId( lastTransactionIdApplied, lastTransactionChecksum,
-                    lastTransactionLogPosition.getLogVersion(), lastTransactionLogPosition.getByteOffset() );
+                    lastTransactionCommitTimestamp, lastTransactionLogPosition.getByteOffset(),
+                    lastTransactionLogPosition.getLogVersion() );
         }
     }
 }

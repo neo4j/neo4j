@@ -19,7 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.cursor.Cursor;
 
 /**
@@ -61,5 +61,5 @@ public interface EntityItem
     /**
      * @return property key token ids of all properties on this entity.
      */
-    PrimitiveIntIterator getPropertyKeys();
+    PrimitiveIntCollection getPropertyKeys();
 }

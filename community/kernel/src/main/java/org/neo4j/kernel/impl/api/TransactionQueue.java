@@ -29,7 +29,7 @@ public class TransactionQueue
     @FunctionalInterface
     public interface Applier
     {
-        void apply( TransactionToApply batch ) throws Exception;
+        void apply( TransactionToApply first, TransactionToApply last ) throws Exception;
     }
 
     private final int maxSize;
@@ -43,18 +43,17 @@ public class TransactionQueue
         this.applier = applier;
     }
 
-    public void queue( TransactionToApply transacion ) throws Exception
+    public void queue( TransactionToApply transaction ) throws Exception
     {
-        if ( size == 0 )
+        if ( isEmpty() )
         {
-            first = last = transacion;
+            first = last = transaction;
         }
         else
         {
-            last.next( transacion );
-            last = transacion;
+            last.next( transaction );
+            last = transaction;
         }
-
         if ( ++size == maxSize )
         {
             empty();
@@ -65,9 +64,32 @@ public class TransactionQueue
     {
         if ( size > 0 )
         {
-            applier.apply( first );
+            applier.apply( first, last );
             first = last = null;
             size = 0;
         }
+    }
+
+    public boolean isEmpty()
+    {
+        return size == 0;
+    }
+
+    public TransactionToApply first()
+    {
+        if ( isEmpty() )
+        {
+            throw new IllegalStateException( "Nothing in queue" );
+        }
+        return first;
+    }
+
+    public TransactionToApply last()
+    {
+        if ( isEmpty() )
+        {
+            throw new IllegalStateException( "Nothing in queue" );
+        }
+        return last;
     }
 }

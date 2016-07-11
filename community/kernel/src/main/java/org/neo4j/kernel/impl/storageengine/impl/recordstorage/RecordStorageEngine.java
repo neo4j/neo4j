@@ -33,7 +33,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.IdReuseEligibility;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
@@ -76,6 +76,7 @@ import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.transaction.command.CacheInvalidationBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.HighIdBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.IndexBatchTransactionApplier;
@@ -117,11 +118,13 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
 
 public class RecordStorageEngine implements StorageEngine, Lifecycle
 {
-    private static final boolean safeIdBuffering = flag( RecordStorageEngine.class, "safeIdBuffering", false );
+    private static final boolean takePropertyReadLocks = FeatureToggles.flag(
+            NeoStoreDataSource.class, "propertyReadLocks", false );
+    private static final boolean safeIdBuffering = FeatureToggles.flag(
+            NeoStoreDataSource.class, "safeIdBuffering", true );
 
     private final StoreReadLayer storeLayer;
     private final IndexingService indexingService;
@@ -264,8 +267,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private Supplier<StorageStatement> storeStatementSupplier( NeoStores neoStores )
     {
         Supplier<IndexReaderFactory> indexReaderFactory = () -> new IndexReaderFactory.Caching( indexingService );
-        LockService lockService =
-                FeatureToggles.flag( getClass(), "propertyReadLocks", true ) ? this.lockService : NO_LOCK_SERVICE;
+        LockService lockService = takePropertyReadLocks ? this.lockService : NO_LOCK_SERVICE;
 
         return () -> new StoreStatement( neoStores, indexReaderFactory, labelScanStore::newReader, lockService );
     }

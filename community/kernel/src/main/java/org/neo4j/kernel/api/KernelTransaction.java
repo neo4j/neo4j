@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
 
@@ -123,16 +124,21 @@ public interface KernelTransaction extends AutoCloseable
     AccessMode mode();
 
     /**
-     * @return {@code true} if {@link #markForTermination()} has been invoked, otherwise {@code false}.
+     * @return {@code true} if {@link #markForTermination(Status)} has been invoked, otherwise {@code false}.
      */
-    boolean shouldBeTerminated();
+    Status getReasonIfTerminated();
 
     /**
      * Marks this transaction for termination, such that it cannot commit successfully and will try to be
      * terminated by having other methods throw a specific termination exception, as to sooner reach the assumed
      * point where {@link #close()} will be invoked.
      */
-    void markForTermination();
+    void markForTermination( Status reason );
+
+    /**
+     * @return The timestamp of the last transaction that was committed to the store when this transaction started.
+     */
+    long lastTransactionTimestampWhenStarted();
 
     /**
      * Register a {@link CloseListener} to be invoked after commit, but before transaction events "after" hooks
