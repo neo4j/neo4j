@@ -24,7 +24,6 @@ import java.util.List;
 
 import org.junit.Test;
 
-import org.neo4j.coreedge.server.core.RecoverTransactionLogState;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
@@ -34,7 +33,6 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -45,7 +43,6 @@ import static java.util.Collections.singletonList;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import static org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequestSerializer.commandBytes;
 import static org.neo4j.coreedge.raft.replication.token.TokenType.LABEL;

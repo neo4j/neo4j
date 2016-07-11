@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.RaftTestNetwork;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 import org.neo4j.function.Predicates;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;

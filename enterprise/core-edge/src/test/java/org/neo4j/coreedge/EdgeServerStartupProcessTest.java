@@ -19,12 +19,8 @@
  */
 package org.neo4j.coreedge;
 
-import org.apache.lucene.document.Field;
 import org.junit.Test;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
@@ -33,12 +29,10 @@ import org.neo4j.coreedge.discovery.ClusterTopology;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.discovery.TopologyService;
 import org.neo4j.coreedge.raft.replication.tx.ConstantTimeRetryStrategy;
-import org.neo4j.coreedge.raft.state.CoreStateMachines;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.coreedge.server.edge.AlwaysChooseFirstServer;
 import org.neo4j.coreedge.server.edge.EdgeServerStartupProcess;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;

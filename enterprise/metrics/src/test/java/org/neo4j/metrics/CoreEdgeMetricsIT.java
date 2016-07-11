@@ -48,7 +48,6 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_advertised_address;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.metrics.MetricsSettings.csvPath;
 import static org.neo4j.metrics.MetricsTestHelper.metricsCsv;

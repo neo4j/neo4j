@@ -25,8 +25,6 @@ import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 
-import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
-
 public class BufferedChannelOutputTest
 {
     @Rule

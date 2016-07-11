@@ -78,8 +78,6 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 import static org.neo4j.server.rest.transactional.Neo4jJsonCodecTest.*;
-import static org.neo4j.server.rest.transactional.Neo4jJsonCodecTest.mockCartesian;
-import static org.neo4j.server.rest.transactional.Neo4jJsonCodecTest.mockWGS84;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.mockito.mock.GraphMock.link;
 import static org.neo4j.test.mockito.mock.GraphMock.node;

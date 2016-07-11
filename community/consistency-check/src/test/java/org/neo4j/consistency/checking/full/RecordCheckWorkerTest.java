@@ -22,7 +22,6 @@ package org.neo4j.consistency.checking.full;
 import org.junit.Test;
 
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.test.Race;
 

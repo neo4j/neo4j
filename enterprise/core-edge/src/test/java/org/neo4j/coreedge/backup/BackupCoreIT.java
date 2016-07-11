@@ -58,7 +58,6 @@ import static org.junit.Assert.assertNotEquals;
 import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.coreedge.TestStoreId.assertAllStoresHaveTheSameStoreId;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.restore.ArgsBuilder.args;
 import static org.neo4j.restore.ArgsBuilder.toArray;
 

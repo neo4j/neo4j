@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.command;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.LockGroup;

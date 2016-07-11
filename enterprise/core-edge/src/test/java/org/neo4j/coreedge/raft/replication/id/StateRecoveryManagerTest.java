@@ -29,11 +29,9 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.coreedge.raft.state.EndOfStreamException;
 import org.neo4j.coreedge.raft.state.SafeStateMarshal;
-import org.neo4j.coreedge.raft.state.StateMarshal;
 import org.neo4j.coreedge.raft.state.StateRecoveryManager;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.test.rule.TargetDirectory;

@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 

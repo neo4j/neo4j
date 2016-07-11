@@ -42,7 +42,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
-import org.neo4j.test.rule.system.SystemExitRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;

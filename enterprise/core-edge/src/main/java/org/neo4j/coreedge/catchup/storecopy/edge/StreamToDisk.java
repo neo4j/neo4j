@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import org.neo4j.coreedge.catchup.storecopy.edge.StoreFileStreams;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 public class StreamToDisk implements StoreFileStreams

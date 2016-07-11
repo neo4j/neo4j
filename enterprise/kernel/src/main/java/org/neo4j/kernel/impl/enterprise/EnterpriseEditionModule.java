@@ -20,13 +20,11 @@
 package org.neo4j.kernel.impl.enterprise;
 
 
-import org.neo4j.helpers.Service;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.PlatformModule;
-import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 
 /**

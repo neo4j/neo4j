@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyFinishedResponseDecoder;
-import org.neo4j.coreedge.catchup.storecopy.StoreCopyFinishedResponse;
 import org.neo4j.coreedge.catchup.storecopy.core.StoreCopyFinishedResponseEncoder;
 
 import static org.junit.Assert.assertEquals;

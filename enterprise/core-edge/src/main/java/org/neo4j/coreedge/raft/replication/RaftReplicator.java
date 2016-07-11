@@ -22,8 +22,6 @@ package org.neo4j.coreedge.raft.replication;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
 import org.neo4j.coreedge.raft.RaftMessages;

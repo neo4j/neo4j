@@ -22,8 +22,6 @@ package org.neo4j.coreedge.raft.log.segmented;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.kernel.impl.util.ArrayMap;
-
 import static java.lang.String.format;
 
 public class InFlightMap<K, V>

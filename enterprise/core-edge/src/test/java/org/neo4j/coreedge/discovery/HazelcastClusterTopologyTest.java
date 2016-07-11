@@ -34,7 +34,6 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
-import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
 import org.neo4j.coreedge.raft.replication.tx.ConstantTimeRetryStrategy;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;

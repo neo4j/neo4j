@@ -21,7 +21,6 @@ package org.neo4j.shell.kernel.apps;
 
 import java.rmi.RemoteException;
 
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;

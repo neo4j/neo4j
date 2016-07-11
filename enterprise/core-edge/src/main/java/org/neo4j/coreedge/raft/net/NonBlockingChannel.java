@@ -22,19 +22,16 @@ package org.neo4j.coreedge.raft.net;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandler;
 import io.netty.util.concurrent.FutureListener;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.coreedge.raft.net.monitoring.MessageQueueMonitor;
 import org.neo4j.coreedge.server.Disposable;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.logging.Log;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;

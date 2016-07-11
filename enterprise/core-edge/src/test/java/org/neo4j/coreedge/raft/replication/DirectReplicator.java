@@ -21,7 +21,6 @@ package org.neo4j.coreedge.raft.replication;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.coreedge.raft.state.StateMachine;

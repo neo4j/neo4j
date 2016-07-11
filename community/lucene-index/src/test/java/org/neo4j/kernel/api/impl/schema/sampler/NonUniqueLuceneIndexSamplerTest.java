@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.schema.sampler;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;

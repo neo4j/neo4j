@@ -27,14 +27,12 @@ import org.neo4j.coreedge.discovery.CoreServerSelectionException;
 import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.raft.replication.tx.RetryStrategy;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static java.lang.String.format;
 import static org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule.extractBoltAddress;
 
 public class EdgeServerStartupProcess implements Lifecycle

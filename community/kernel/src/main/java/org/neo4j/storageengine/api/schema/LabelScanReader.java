@@ -19,8 +19,6 @@
  */
 package org.neo4j.storageengine.api.schema;
 
-import java.util.Iterator;
-
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
 

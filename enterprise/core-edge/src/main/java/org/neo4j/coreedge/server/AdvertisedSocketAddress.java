@@ -24,7 +24,6 @@ import java.net.InetSocketAddress;
 import java.util.Objects;
 
 import org.neo4j.coreedge.raft.replication.StringMarshal;
-import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.raft.state.EndOfStreamException;
 import org.neo4j.coreedge.raft.state.SafeChannelMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;

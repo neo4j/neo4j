@@ -27,20 +27,17 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.CoreServer;
-import org.neo4j.coreedge.raft.RaftServer;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.test.coreedge.ClusterRule;
 import org.neo4j.test.rule.SuppressOutput;
@@ -48,13 +45,11 @@ import org.neo4j.test.rule.SuppressOutput;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import static org.neo4j.coreedge.TestStoreId.assertAllStoresHaveTheSameStoreId;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.TIME;
 import static org.neo4j.test.rule.SuppressOutput.suppress;
 
 public class ClusterIdentityIT

@@ -19,16 +19,11 @@
  */
 package org.neo4j.consistency;
 
-import java.io.File;
-
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
-import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
-import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.setting;
 

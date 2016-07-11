@@ -19,13 +19,8 @@
  */
 package org.neo4j.server.security.auth;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 import org.neo4j.server.security.auth.exception.FormatException;
 import org.neo4j.string.HexString;
-import org.neo4j.string.UTF8;
 
 import static java.lang.String.format;
 

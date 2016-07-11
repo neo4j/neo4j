@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import java.io.IOException;
 import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;

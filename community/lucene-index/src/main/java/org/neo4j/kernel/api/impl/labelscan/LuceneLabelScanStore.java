@@ -23,8 +23,6 @@ import org.apache.lucene.store.LockObtainFailedException;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;

@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.raft.state;
 
 import java.io.IOException;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 public interface StateMachine<Command>
