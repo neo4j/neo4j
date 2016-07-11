@@ -58,6 +58,8 @@ class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer, shouldEx
       isolateAggregation,
       enableCondition(aggregationsAreIsolated),
       replaceLiteralDynamicPropertyLookups,
+      namePatternComprehensionPatternElements,
+      enableCondition(noUnnamedPatternElementsInPatternComprehension),
       inlineNamedPathsInPatternComprehensions
     )
 

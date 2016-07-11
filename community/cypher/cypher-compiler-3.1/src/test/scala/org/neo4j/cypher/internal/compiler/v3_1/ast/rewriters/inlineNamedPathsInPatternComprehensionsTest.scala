@@ -58,7 +58,10 @@ class inlineNamedPathsInPatternComprehensionsTest extends CypherFunSuite with As
                                                                            None, SemanticDirection.OUTGOING) _,
                                                        NodePattern(Some(varFor("b")), Seq.empty, None) _) _
     val input: PatternComprehension = PatternComprehension(Some(varFor("p")), RelationshipsPattern(element)_, Some(varFor("p")), StringLiteral("foo")_)_
-    val output = input.copy(namedPath = None, predicate = Some(PathExpression(projectNamedPaths.patternPartPathExpression(element))_))(pos)
+    val output = input.copy(
+      namedPath = None,
+      predicate = Some(PathExpression(projectNamedPaths.patternPartPathExpression(element))_)
+    )(pos)
 
     inlineNamedPathsInPatternComprehensions(input) should equal(output)
   }
@@ -71,12 +74,12 @@ class inlineNamedPathsInPatternComprehensionsTest extends CypherFunSuite with As
                                                                            None, SemanticDirection.OUTGOING) _,
                                                        NodePattern(Some(varFor("b")), Seq.empty, None) _) _
     val input: PatternComprehension = PatternComprehension(Some(varFor("p")), RelationshipsPattern(element)_, Some(varFor("p")), Variable("p")_)_
-    val output = input.copy(namedPath = None, predicate = Some(PathExpression(projectNamedPaths.patternPartPathExpression(element))_),
-                            projection = PathExpression(projectNamedPaths.patternPartPathExpression(element))_)(pos)
+    val output = input.copy(
+      namedPath = None,
+      predicate = Some(PathExpression(projectNamedPaths.patternPartPathExpression(element))_),
+      projection = PathExpression(projectNamedPaths.patternPartPathExpression(element))_
+    )(pos)
 
     inlineNamedPathsInPatternComprehensions(input) should equal(output)
   }
-
-
-
 }

@@ -125,6 +125,7 @@ object ExtractExpression {
 
 case class ListComprehension(scope: ExtractScope, expression: Expression)(val position: InputPosition)
   extends FilteringExpression {
+
   val name = "[...]"
 
   def variable = scope.variable
@@ -144,7 +145,8 @@ case class ListComprehension(scope: ExtractScope, expression: Expression)(val po
         val outerTypes: TypeGenerator = e.types(_).wrapInList
         this.specifyType(outerTypes)
       }
-    case None    => this.specifyType(expression.types)
+    case None =>
+      this.specifyType(expression.types)
   }
 }
 
@@ -154,27 +156,23 @@ object ListComprehension {
             innerPredicate: Option[Expression],
             extractExpression: Option[Expression])(position: InputPosition): ListComprehension =
     ListComprehension(ExtractScope(variable, innerPredicate, extractExpression)(position), expression)(position)
-
 }
 
-case class PatternComprehension(namedPath: Option[Variable], pattern: RelationshipsPattern, predicate: Option[Expression], projection: Expression)
-                               (val position: InputPosition)
+case class PatternComprehension(namedPath: Option[Variable], pattern: RelationshipsPattern,
+                                predicate: Option[Expression], projection: Expression)(val position: InputPosition)
   extends ScopeExpression {
 
+  self =>
+
   override def semanticCheck(ctx: SemanticContext) =
-    checkInnerExpression
-
-  private def checkNamedPath = namedPath.map(_.declare(CTPath): SemanticCheck).getOrElse(SemanticCheckResult.success)
-
-  private def checkInnerExpression: SemanticCheck =
     withScopedState {
       pattern.semanticCheck(Pattern.SemanticContext.Match) chain
-      checkNamedPath chain
-      projection.semanticCheck(SemanticContext.Simple) chain
-      predicate.semanticCheck(SemanticContext.Simple)
+      namedPath.map(_.declare(CTPath): SemanticCheck).getOrElse(SemanticCheckResult.success) chain
+      predicate.semanticCheck(SemanticContext.Simple) chain
+      projection.semanticCheck(SemanticContext.Simple)
     } chain {
       val outerTypes: TypeGenerator = projection.types(_).wrapInList
-      this.specifyType(outerTypes)
+      self.specifyType(outerTypes)
     }
 
   override def variables: Set[Variable] = pattern.element.allVariables ++ namedPath.toSet

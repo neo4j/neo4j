@@ -132,14 +132,14 @@ case object projectNamedPaths extends Rewriter {
   private def flip(element: PatternElement, step: PathStep): PathStep  = {
     element match {
       case NodePattern(node, _, _) =>
-        NodePathStep(node.get, step)
+        NodePathStep(node.get.copyId, step)
 
       case RelationshipChain(relChain, RelationshipPattern(rel, _, _, length, _, direction), _) => length match {
         case None =>
-          flip(relChain, SingleRelationshipPathStep(rel.get, direction, step))
+          flip(relChain, SingleRelationshipPathStep(rel.get.copyId, direction, step))
 
         case Some(_) =>
-          flip(relChain, MultiRelationshipPathStep(rel.get, direction, step))
+          flip(relChain, MultiRelationshipPathStep(rel.get.copyId, direction, step))
       }
     }
   }
