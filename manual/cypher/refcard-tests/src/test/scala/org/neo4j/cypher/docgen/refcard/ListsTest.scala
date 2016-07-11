@@ -137,5 +137,15 @@ RETURN avg(n.age)
 
 With `UNWIND`, you can transform any list back into individual rows.
 The example matches all names from a list of names.
+
+###assertion=returns-two parameters=names
+//
+
+MATCH (a)
+RETURN [(a)-->(b) WHERE b.name = 'Bob' | b.age]
+
+###
+
+Pattern comprehensions may be used to do a custom projection from a match directly into a list.
 """
 }
