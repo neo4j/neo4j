@@ -286,7 +286,7 @@ with QueryStatisticsTestSupport with CreateTempFileTestSupport with NewPlannerTe
   }
 
   test("parameterTypeErrorShouldBeNicelyExplained") {
-    for (i <- 1 to 10) createNode()
+    createNode()
     val query = "match (pA) where id(pA) = {a} return pA"
 
     executeWithAllPlannersAndRuntimesAndCompatibilityMode(query, "a" -> "Andres") should be (empty)

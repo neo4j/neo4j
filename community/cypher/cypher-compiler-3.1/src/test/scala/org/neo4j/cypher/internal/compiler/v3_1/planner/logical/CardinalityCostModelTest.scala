@@ -39,7 +39,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
           )(solvedWithEstimation(10.0)), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1")(solvedWithEstimation(100.0))
       )(solvedWithEstimation(10.0))
 
-    CardinalityCostModel(plan, QueryGraphSolverInput.empty) should equal(Cost(251))
+    CardinalityCostModel(plan, QueryGraphSolverInput.empty) should equal(Cost(241))
   }
 
   test("should introduce increase cost when estimating an eager operator and lazyness is preferred") {
