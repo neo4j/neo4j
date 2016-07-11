@@ -21,21 +21,10 @@ package org.neo4j.restore;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.PrintStream;
 
 public class RestoreClusterUtils
 {
-    public static String execute(Runnable function )
-    {
-        StringBuilder builder = new StringBuilder();
-        PrintStream theRealOut = System.out;
-        System.setOut( new PrintStream( new MyOutputStream( builder ) ) );
-        function.run();
-        System.setOut( theRealOut );
-        return builder.toString();
-    }
-
-    private static class MyOutputStream extends OutputStream
+    public static class MyOutputStream extends OutputStream
     {
         private final StringBuilder stringBuilder;
 

@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.scenarios;
 
 import java.io.File;
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -91,17 +92,20 @@ public class ConvertNonCoreEdgeStoreIT
 
         File homeDir = cluster.getCoreServerById( 0 ).homeDir();
 
-        String output = RestoreClusterUtils.execute( () -> RestoreNewClusterCli.main( toArray( args()
-                .homeDir( homeDir ).config( homeDir ).from( classicNeo4jStore )
-                .database( "graph.db" ).force().build() ) ) );
+        StringBuilder output = new StringBuilder();
+        PrintStream sysout = new PrintStream( new RestoreClusterUtils.MyOutputStream( output ) );
 
-        String seed = RestoreClusterCliTest.extractSeed( output );
+        new RestoreNewClusterCli( sysout ).run(  toArray( args().homeDir( homeDir ).config( homeDir )
+                .from( classicNeo4jStore ).database( "graph.db" ).force().build() )  );
+
+        String seed = RestoreClusterCliTest.extractSeed( output.toString() );
 
         for ( int serverId = 1; serverId < CLUSTER_SIZE; serverId++ )
         {
             File destination = cluster.getCoreServerById( serverId ).homeDir();
-            RestoreClusterUtils.execute( () -> RestoreExistingClusterCli.main( toArray( args().homeDir( destination )
-                    .config( destination ).from( classicNeo4jStore ).database( "graph.db" ).seed( seed ).force().build() ) ) );
+
+            new RestoreExistingClusterCli(  ).run(  toArray( args().homeDir( destination ).config( destination )
+                    .from( classicNeo4jStore ).database( "graph.db" ).seed( seed ).force().build() )  );
         }
 
         cluster.start();

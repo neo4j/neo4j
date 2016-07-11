@@ -47,12 +47,29 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class RestoreNewClusterCli
 {
+    private final PrintStream out;
+
+    public RestoreNewClusterCli( PrintStream out )
+    {
+        this.out = out;
+    }
+
+    public RestoreNewClusterCli()
+    {
+        this( System.out );
+    }
+
     public static void main( String[] incomingArguments )
+    {
+        new RestoreNewClusterCli().run( incomingArguments );
+    }
+
+    public void run( String[] incomingArguments )
     {
         Args args = Args.parse( incomingArguments );
         if ( ArrayUtil.isEmpty( incomingArguments ) )
         {
-            printUsage( System.out );
+            printUsage( out );
             System.exit( 1 );
         }
 
@@ -68,7 +85,7 @@ public class RestoreNewClusterCli
             restoreDatabase( databaseName, fromPath, forceOverwrite, config );
             String seed = generateSeed( config );
             convertStore( config, seed );
-            System.out.println( "Cluster Seed: " + seed );
+            out.println( "Cluster Seed: " + seed );
         }
         catch ( IOException | TransactionFailureException e )
         {
