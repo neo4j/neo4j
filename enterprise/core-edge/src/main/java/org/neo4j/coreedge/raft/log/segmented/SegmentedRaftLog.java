@@ -104,7 +104,7 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
     @Override
     public synchronized void stop() throws DisposedException, IOException
     {
-        readerPool.disposeAll();
+        readerPool.close();
         state.segments.close();
     }
 
