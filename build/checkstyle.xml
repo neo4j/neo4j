@@ -51,6 +51,7 @@
     <module name="ModifierOrder"/>
     <module name="RedundantImport"/>
     <module name="MissingSwitchDefault"/>
+    <module name="DefaultComesLast"/>
     <module name="EmptyCatchBlock">
       <property name="exceptionVariableName" value="ignore|ignored"/>
     </module>
