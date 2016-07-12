@@ -30,6 +30,3 @@ Apache Software License, Version 2.0
   Lucene Memory
   Netty
 
-BSD License
-  JLine
-
