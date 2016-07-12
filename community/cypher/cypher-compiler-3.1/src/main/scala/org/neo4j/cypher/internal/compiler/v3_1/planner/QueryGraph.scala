@@ -30,7 +30,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                       patternNodes: Set[IdName] = Set.empty,
                       argumentIds: Set[IdName] = Set.empty,
                       selections: Selections = Selections(),
-                      optionalMatches: Seq[QueryGraph] = Seq.empty,
+                      optionalMatches: Vector[QueryGraph] = Vector.empty,
                       hints: Set[Hint] = Set.empty,
                       shortestPathPatterns: Set[ShortestPathPattern] = Set.empty,
                       mutatingPatterns: Seq[MutatingPattern] = Seq.empty)
@@ -104,7 +104,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     copy(optionalMatches = optionalMatches :+ optionalMatch.addArgumentIds(argumentIds.toSeq))
   }
 
-  def withOptionalMatches(optionalMatches: Seq[QueryGraph]): QueryGraph = {
+  def withOptionalMatches(optionalMatches: Vector[QueryGraph]): QueryGraph = {
     copy(optionalMatches = optionalMatches)
   }
 
@@ -295,7 +295,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                    patternNodes: Set[IdName] = patternNodes,
                    argumentIds: Set[IdName] = argumentIds,
                    selections: Selections = selections,
-                   optionalMatches: Seq[QueryGraph] = optionalMatches,
+                   optionalMatches: Vector[QueryGraph] = optionalMatches,
                    hints: Set[Hint] = hints,
                    shortestPathPatterns: Set[ShortestPathPattern] = shortestPathPatterns,
                    mutatingPatterns: Seq[MutatingPattern] = mutatingPatterns) =
