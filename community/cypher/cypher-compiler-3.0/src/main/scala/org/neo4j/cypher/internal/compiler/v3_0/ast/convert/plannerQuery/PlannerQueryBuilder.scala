@@ -78,7 +78,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
         (args ++ qg.allCoveredIds, qg.withArgumentIds(args intersect qg.allCoveredIds))
       }
       plannerQuery
-        .amendQueryGraph(_.withOptionalMatches(newOptionalMatches))
+        .amendQueryGraph(_.withOptionalMatches(newOptionalMatches.toVector))
         .updateTail(fixArgumentIdsOnOptionalMatch)
     }
 
