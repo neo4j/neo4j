@@ -90,7 +90,7 @@ class TypedId
         {
             return false;
         }
-        TypedId other = ( TypedId ) o;
+        TypedId other = (TypedId) o;
         return this.type.equals( other.type ) &&
             this.id == other.id;
     }

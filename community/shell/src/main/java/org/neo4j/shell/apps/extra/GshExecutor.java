@@ -55,8 +55,7 @@ public class GshExecutor extends ScriptExecutor
         String scriptName, Map<String, Object> properties, String[] paths )
         throws Exception
     {
-        properties.put( "out",
-            new GshOutput( ( Output ) properties.get( "out" ) ) );
+        properties.put( "out", new GshOutput( (Output) properties.get( "out" ) ) );
         Object binding = this.newGroovyBinding( properties );
         Method runMethod = groovyScriptEngine.getClass().getMethod(
             "run", String.class, binding.getClass() );

@@ -95,8 +95,7 @@ public class JLineConsole implements Console
                     consoleReader );
             Class.forName( "jline.console.history.FileHistory" ).getMethod( "flush" ).invoke(
                     history );
-            return ( String ) consoleReader.getClass().getMethod( "readLine" ).
-                invoke( consoleReader );
+            return (String) consoleReader.getClass().getMethod( "readLine" ).invoke( consoleReader );
         }
         catch ( RuntimeException e )
         {

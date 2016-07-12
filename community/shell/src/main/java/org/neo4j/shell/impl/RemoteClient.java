@@ -66,7 +66,7 @@ public class RemoteClient extends AbstractClient
     {
         try
         {
-            ShellServer result = ( ShellServer ) this.serverLocation.getBoundObject();
+            ShellServer result = (ShellServer) this.serverLocation.getBoundObject();
             sayHi( result );
             updateTimeForMostRecentConnection();
             return result;

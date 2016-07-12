@@ -158,7 +158,7 @@ public class Session
 
     public String getCurrent()
     {
-        return ( String ) getInternal( Variables.CURRENT_KEY );
+        return (String) getInternal( Variables.CURRENT_KEY );
     }
 
     public Integer getCommitCount()
@@ -173,11 +173,11 @@ public class Session
 
     public String getTitleKeys() throws ShellException
     {
-        return ( String ) get( Variables.TITLE_KEYS_KEY );
+        return (String) get( Variables.TITLE_KEYS_KEY );
     }
 
     public String getMaxTitleLength() throws ShellException
     {
-        return ( String ) get( Variables.TITLE_MAX_LENGTH );
+        return (String) get( Variables.TITLE_MAX_LENGTH );
     }
 }

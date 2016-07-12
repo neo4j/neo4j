@@ -53,6 +53,7 @@
     <module name="MissingSwitchDefault"/>
     <module name="DefaultComesLast"/>
     <module name="MethodParamPad"/>
+    <module name="TypecastParenPad"/>
     <module name="EmptyCatchBlock">
       <property name="exceptionVariableName" value="ignore|ignored"/>
     </module>

@@ -188,8 +188,7 @@ public class Man extends AbstractApp
         {
             Collection<String> list = new ArrayList<>();
             // TODO Shouldn't trust the server to be an AbstractAppServer
-            for ( String name : ( ( AbstractAppServer ) server )
-                .getAllAvailableCommands() )
+            for ( String name : ((AbstractAppServer) server).getAllAvailableCommands() )
             {
                 list.add( name );
             }

@@ -166,7 +166,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
     @Override
     public GraphDatabaseShellServer getServer()
     {
-        return ( GraphDatabaseShellServer ) super.getServer();
+        return (GraphDatabaseShellServer) super.getServer();
     }
 
     protected static RelationshipType getRelationshipType( String name )

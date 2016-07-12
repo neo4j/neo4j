@@ -84,8 +84,7 @@ public class PatternMatcher
     public Iterable<PatternMatch> match( PatternNode start,
         Node startNode, Map<String, PatternNode> objectVariables )
     {
-        return match( start, startNode, objectVariables,
-            ( Collection<PatternNode> ) null );
+        return match( start, startNode, objectVariables, (Collection<PatternNode>) null );
     }
 
     /**
@@ -212,16 +211,14 @@ public class PatternMatcher
         {
             if ( expression instanceof FilterBinaryNode )
             {
-                FilterBinaryNode node = ( FilterBinaryNode ) expression;
+                FilterBinaryNode node = (FilterBinaryNode) expression;
                 mapFromExpression( node.getLeftExpression() );
                 mapFromExpression( node.getRightExpression() );
             }
             else
             {
-                AbstractFilterExpression pattern =
-                    ( AbstractFilterExpression ) expression;
-                labelToProperty.put( pattern.getLabel(),
-                    pattern.getProperty() );
+                AbstractFilterExpression pattern = (AbstractFilterExpression) expression;
+                labelToProperty.put( pattern.getLabel(), pattern.getProperty() );
             }
         }
 
@@ -254,7 +251,7 @@ public class PatternMatcher
             int counter = 0;
             for ( Object value : values )
             {
-                result[ counter++ ] = ( String ) value;
+                result[counter++] = (String) value;
             }
             return result;
         }

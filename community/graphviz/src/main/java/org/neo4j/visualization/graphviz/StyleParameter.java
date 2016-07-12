@@ -380,7 +380,7 @@ public interface StyleParameter
 
         public String getTitle( Node node )
         {
-            return ( String ) node.getProperty( key );
+            return (String) node.getProperty( key );
         }
     }
     /** Get relationship title from a property. */
@@ -400,7 +400,7 @@ public interface StyleParameter
 
         public String getTitle( Relationship relationship )
         {
-            return ( String ) relationship.getProperty( key );
+            return (String) relationship.getProperty( key );
         }
     }
     /** Add custom generic parameters to nodes. */

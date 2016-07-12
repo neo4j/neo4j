@@ -137,24 +137,24 @@ public interface ValueFormatter<T>
         {
             switch ( type )
             {
-                case INT:
-                    return Arrays.toString( ( int[] ) array );
-                case LONG:
-                    return Arrays.toString( ( long[] ) array );
-                case BOOLEAN:
-                    return Arrays.toString( ( boolean[] ) array );
-                case SHORT:
-                    return Arrays.toString( ( short[] ) array );
-                case CHAR:
-                    return Arrays.toString( ( char[] ) array );
-                case BYTE:
-                    return Arrays.toString( ( byte[] ) array );
-                case FLOAT:
-                    return Arrays.toString( ( float[] ) array );
-                case DOUBLE:
-                    return Arrays.toString( ( double[] ) array );
-                default:
-                    throw new IllegalArgumentException();
+            case INT:
+                return Arrays.toString( (int[]) array );
+            case LONG:
+                return Arrays.toString( (long[]) array );
+            case BOOLEAN:
+                return Arrays.toString( (boolean[]) array );
+            case SHORT:
+                return Arrays.toString( (short[]) array );
+            case CHAR:
+                return Arrays.toString( (char[]) array );
+            case BYTE:
+                return Arrays.toString( (byte[]) array );
+            case FLOAT:
+                return Arrays.toString( (float[]) array );
+            case DOUBLE:
+                return Arrays.toString( (double[]) array );
+            default:
+                throw new IllegalArgumentException();
             }
         }
 

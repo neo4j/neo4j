@@ -53,8 +53,7 @@ public class CompareExpression extends AbstractFilterExpression
             int comparison = 0;
             try
             {
-                comparison = ( ( Comparable<Object> ) value ).compareTo(
-                    ( ( Comparable<Object> ) this.compareValue ) );
+                comparison = ((Comparable<Object>) value).compareTo( this.compareValue );
             }
             catch ( Exception e )
             {

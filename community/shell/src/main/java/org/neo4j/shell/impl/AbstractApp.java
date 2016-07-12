@@ -167,8 +167,7 @@ public abstract class AbstractApp implements App
         for ( String name : JSONObject.getNames( object ) )
         {
             Object value = object.get( name );
-            if ( value != null && value instanceof String &&
-                ( ( String ) value ).length() == 0 )
+            if ( value != null && value instanceof String && ((String) value).length() == 0 )
             {
                 value = null;
             }

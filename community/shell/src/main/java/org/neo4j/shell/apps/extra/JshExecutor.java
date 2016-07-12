@@ -104,7 +104,7 @@ public class JshExecutor extends ScriptExecutor
         Map<String, Object> properties, String[] paths ) throws Exception
     {
         File scriptFile = findScriptFile( scriptName, paths );
-        Output out = ( Output ) properties.remove( "out" );
+        Output out = (Output) properties.remove( "out" );
         interpreter.getClass().getMethod( "setOut", Writer.class ).invoke(
             interpreter, new OutputWriter( out ) );
         Method setMethod = interpreter.getClass().getMethod( "set",

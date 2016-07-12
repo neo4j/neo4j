@@ -33,7 +33,7 @@ public enum PropertyType
         @Override
         <T> T apply( ValueFormatter<T> formatter, Object value )
         {
-            return formatter.formatString( ( String ) value );
+            return formatter.formatString( (String) value );
         }
     },
     /**
@@ -77,7 +77,7 @@ public enum PropertyType
         @Override
         <T> T apply( ValueFormatter<T> formatter, Object value )
         {
-            return formatter.formatStringArray( ( String[] ) value );
+            return formatter.formatStringArray( (String[]) value );
         }
     },
     /**
@@ -154,8 +154,7 @@ public enum PropertyType
             PropertyType type = getTypeFor( scalarType );
             if ( value instanceof Object[] )
             {
-                return formatter.formatBoxedPrimitiveArray( type,
-                    ( Object[] ) value );
+                return formatter.formatBoxedPrimitiveArray( type, (Object[]) value );
             }
             else
             {

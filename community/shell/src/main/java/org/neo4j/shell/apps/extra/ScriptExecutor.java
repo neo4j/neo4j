@@ -121,7 +121,7 @@ public abstract class ScriptExecutor
         throws ShellException
     {
         List<String> list = new ArrayList<>();
-        collectPaths( list, ( String ) session.get( getPathKey() ) );
+        collectPaths( list, (String) session.get( getPathKey() ) );
         collectPaths( list, getDefaultPaths() );
         return list;
     }

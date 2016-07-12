@@ -83,8 +83,8 @@ public enum ClusterState
                         {
                             // Send configuration request to all instances
                             Object[] args = message.<Object[]>getPayload();
-                            String name = ( String ) args[0];
-                            URI[] clusterInstanceUris = ( URI[] ) args[1];
+                            String name = (String) args[0];
+                            URI[] clusterInstanceUris = (URI[]) args[1];
                             context.joining( name, Iterables.<URI,URI>iterable( clusterInstanceUris ) );
 
                             for ( URI potentialClusterInstanceUri : clusterInstanceUris )

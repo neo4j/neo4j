@@ -83,8 +83,7 @@ public final class GraphvizWriter
     {
         if ( outputStream instanceof PrintStream )
         {
-            emit( walker, new GraphvizRenderer( style,
-                ( PrintStream ) outputStream ) );
+            emit( walker, new GraphvizRenderer( style, (PrintStream) outputStream ) );
         }
         else
         {

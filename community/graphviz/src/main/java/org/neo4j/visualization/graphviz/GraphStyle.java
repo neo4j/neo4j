@@ -157,18 +157,18 @@ public class GraphStyle
             {
                 try
                 {
-                    String property = ( String ) obj;
+                    String property = (String) obj;
                     if ( property.startsWith( nodePrefix ) )
                     {
                         nodeHeader.put( property
                             .substring( nodePrefix.length() ),
-                            ( String ) properties.get( property ) );
+                            (String) properties.get( property ) );
                     }
                     else if ( property.startsWith( relPrefix ) )
                     {
                         edgeHeader.put(
                             property.substring( relPrefix.length() ),
-                            ( String ) properties.get( property ) );
+                            (String) properties.get( property ) );
                     }
                 }
                 catch ( ClassCastException cce )
