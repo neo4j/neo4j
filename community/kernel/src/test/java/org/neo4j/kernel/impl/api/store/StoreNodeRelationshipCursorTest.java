@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -36,7 +35,6 @@ import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -57,7 +55,6 @@ import static org.neo4j.storageengine.api.Direction.BOTH;
 import static org.neo4j.storageengine.api.Direction.INCOMING;
 import static org.neo4j.storageengine.api.Direction.OUTGOING;
 
-@Ignore
 @RunWith( Parameterized.class )
 public class StoreNodeRelationshipCursorTest
 {
@@ -82,12 +79,12 @@ public class StoreNodeRelationshipCursorTest
     public static Iterable<Object[]> parameters()
     {
         return Arrays.asList( new Object[][]{
-                {org.neo4j.graphdb.Direction.BOTH, false},
-                {org.neo4j.graphdb.Direction.BOTH, true},
-                {org.neo4j.graphdb.Direction.OUTGOING, false},
-                {org.neo4j.graphdb.Direction.OUTGOING, true},
-                {org.neo4j.graphdb.Direction.INCOMING, false},
-                {org.neo4j.graphdb.Direction.INCOMING, true}
+                {Direction.BOTH, false},
+                {Direction.BOTH, true},
+                {Direction.OUTGOING, false},
+                {Direction.OUTGOING, true},
+                {Direction.INCOMING, false},
+                {Direction.INCOMING, true}
         } );
     }
 
@@ -106,8 +103,7 @@ public class StoreNodeRelationshipCursorTest
         StoreFactory storeFactory = new StoreFactory( testDirectory.directory(),
                 pageCacheRule.getPageCache( fileSystemRule.get() ), fileSystemRule.get(),
                 NullLogProvider.getInstance() );
-        neoStores = storeFactory.openNeoStores( true, StoreType.NODE, StoreType.RELATIONSHIP_GROUP,
-                StoreType.RELATIONSHIP );
+        neoStores = storeFactory.openAllNeoStores( true );
     }
 
     @Test
@@ -146,6 +142,7 @@ public class StoreNodeRelationshipCursorTest
     @Test
     public void retrieveRelationshipChainWithUnusedLink()
     {
+        neoStores.getRelationshipStore().setHighId( 10 );
         createRelationshipChain( 4 );
         unUseRecord( 3 );
         int[] expectedRelationshipIds = new int[]{1, 2, 4};
@@ -197,7 +194,7 @@ public class StoreNodeRelationshipCursorTest
     private void unUseRecord( long recordId )
     {
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-        RelationshipRecord relationshipRecord = relationshipStore.getRecord( recordId, new RelationshipRecord(-1),
+        RelationshipRecord relationshipRecord = relationshipStore.getRecord( recordId, new RelationshipRecord( -1 ),
                 RecordLoad.FORCE );
         relationshipRecord.setInUse( false );
         relationshipStore.updateRecord( relationshipRecord );

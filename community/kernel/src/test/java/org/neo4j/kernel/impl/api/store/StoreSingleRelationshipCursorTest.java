@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -32,7 +31,6 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.logging.NullLogProvider;
@@ -44,20 +42,19 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-@Ignore
 public class StoreSingleRelationshipCursorTest
 {
 
     private static final long RELATIONSHIP_ID = 1L;
 
+    private NeoStores neoStores;
     private final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
     private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( pageCacheRule )
             .around( fileSystemRule );
-
-    private NeoStores neoStores;
 
     @After
     public void tearDown()
@@ -72,15 +69,14 @@ public class StoreSingleRelationshipCursorTest
     public void setUp()
     {
         StoreFactory storeFactory = getStoreFactory();
-        neoStores = storeFactory.openNeoStores( true, StoreType.RELATIONSHIP_GROUP,
-                StoreType.RELATIONSHIP );
+        neoStores = storeFactory.openAllNeoStores( true );
     }
 
     @Test
     public void retrieveUsedRelationship() throws Exception
     {
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-        createRelationshipRecrod( relationshipStore, true );
+        createRelationshipRecord( relationshipStore, true );
 
         try ( StoreSingleRelationshipCursor cursor = createRelationshipCursor() )
         {
@@ -91,10 +87,11 @@ public class StoreSingleRelationshipCursorTest
     }
 
     @Test
-    public void impossibleToRetrieveUnusedRelationship()
+    public void retrieveUnusedRelationship()
     {
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-        createRelationshipRecrod( relationshipStore, false );
+        relationshipStore.setHighId( 10 );
+        createRelationshipRecord( relationshipStore, false );
 
         try ( StoreSingleRelationshipCursor cursor = createRelationshipCursor() )
         {
@@ -103,9 +100,9 @@ public class StoreSingleRelationshipCursorTest
         }
     }
 
-    private void createRelationshipRecrod( RelationshipStore relationshipStore, boolean used )
+    private void createRelationshipRecord( RelationshipStore relationshipStore, boolean used )
     {
-        relationshipStore.updateRecord(
+       relationshipStore.updateRecord(
                 new RelationshipRecord( RELATIONSHIP_ID, used, 1, 2, 1, -1, -1, -1, -1, true, true ) );
     }
 
