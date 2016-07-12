@@ -106,7 +106,7 @@ public class RestoreClusterCliTest
     private File extractDatabaseDir( File rootNewDatabaseDir )
     {
         Config config = new ConfigLoader( settings() ).loadConfig( Optional.of( rootNewDatabaseDir ),
-                Optional.of( new File( rootNewDatabaseDir, "neo4j.conf" ) ), NullLog.getInstance() );
+                Optional.of( new File( rootNewDatabaseDir, "neo4j.conf" ) ) );
         return config.get( DatabaseManagementSystemSettings.database_path );
     }
 

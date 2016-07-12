@@ -126,8 +126,7 @@ public class RestoreNewClusterCli implements AdminCommand
         ConfigLoader configLoader = new ConfigLoader( settings() );
         Config config = configLoader.loadConfig(
                 Optional.of( homeDir.toFile() ),
-                Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ),
-                NullLog.getInstance() );
+                Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ));
 
         return config.with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) );
     }

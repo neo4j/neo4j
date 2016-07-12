@@ -63,7 +63,7 @@ public class ConvertNonCoreEdgeStoreCli
     private static Config createConfig( File homeDir, String databaseName, String configPath )
     {
         return new ConfigLoader( settings() ).loadConfig( Optional.of( homeDir ),
-                Optional.of( new File( configPath, "neo4j.conf" ) ), NullLog.getInstance() )
+                Optional.of( new File( configPath, "neo4j.conf" ) ) )
                 .with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) );
     }
 
