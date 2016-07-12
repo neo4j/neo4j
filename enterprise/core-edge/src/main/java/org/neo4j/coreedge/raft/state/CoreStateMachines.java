@@ -210,6 +210,6 @@ public class CoreStateMachines
         long lastAppliedLockTokenIndex = replicatedLockTokenStateMachine.lastAppliedIndex();
         long lastAppliedIdAllocationIndex = idAllocationStateMachine.lastAppliedIndex();
 
-        return max( max( lastAppliedLockTokenIndex, lastAppliedIdAllocationIndex ), lastAppliedIdAllocationIndex );
+        return max( max( lastAppliedLockTokenIndex, lastAppliedIdAllocationIndex ), lastAppliedTxIndex );
     }
 }

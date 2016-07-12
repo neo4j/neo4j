@@ -45,6 +45,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.Math.max;
 import static java.lang.String.format;
 
 public class CoreState extends LifecycleAdapter implements RaftStateMachine, LogPruner
@@ -290,7 +291,14 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
         /* Considering the order in which state is flushed, the state machines will
          * always be furthest ahead and indicate the furthest possible state to
          * which we must replay to reach a consistent state. */
-        long lastPossiblyApplying = coreStateMachines.getLastAppliedIndex();
+        long lastPossiblyApplying = max( coreStateMachines.getLastAppliedIndex(), sessionState.logIndex() );
+
+        /* The session state and last flushed must be strictly less */
+        if ( lastApplied > lastPossiblyApplying )
+        {
+            throw new IllegalStateException( format( "lastApplied: %d, lastPossiblyApplying: %d, sessionIndex:%d",
+                    lastApplied, lastPossiblyApplying, sessionState.logIndex() ) );
+        }
 
         submitApplyJob( lastPossiblyApplying );
         applier.sync( false );
