@@ -49,16 +49,18 @@ abstract class AuthTestBase<S>
 {
     protected boolean PWD_CHANGE_CHECK_FIRST = false;
     protected String CHANGE_PWD_ERR_MSG = AuthProcedures.PERMISSION_DENIED;
+    protected String BOLT_PWD_ERR_MSG =
+            "The credentials you provided were valid, but must be changed before you can use this instance.";
     protected String READ_OPS_NOT_ALLOWED = "Read operations are not allowed";
     protected String WRITE_OPS_NOT_ALLOWED = "Write operations are not allowed";
     protected String SCHEMA_OPS_NOT_ALLOWED = "Schema operations are not allowed";
 
     protected boolean IS_EMBEDDED = true;
+    protected boolean IS_BOLT = false;
 
     protected String pwdReqErrMsg( String errMsg )
     {
-        return PWD_CHANGE_CHECK_FIRST ?
-               CHANGE_PWD_ERR_MSG : errMsg;
+        return PWD_CHANGE_CHECK_FIRST ? CHANGE_PWD_ERR_MSG : IS_EMBEDDED ? errMsg : BOLT_PWD_ERR_MSG;
     }
 
     final String EMPTY_ROLE = "empty";
@@ -127,13 +129,17 @@ abstract class AuthTestBase<S>
 
     void testSuccessfulRead( S subject, int count )
     {
-        testCallCount( subject, "MATCH (n) RETURN n", null, count );
+        executeQuery( subject, "MATCH (n) RETURN count(n) as count", r -> {
+            List<Object> result = r.stream().map( s -> s.get( "count" ) ).collect( Collectors.toList() );
+            assertTrue( result.size() == 1 );
+            assertTrue( count == (int) result.get( 0 ) );
+        } );
     }
 
     void testFailRead( S subject, int count ) { testFailRead( subject, count, READ_OPS_NOT_ALLOWED ); }
     void testFailRead( S subject, int count, String errMsg )
     {
-        assertFail( subject, "MATCH (n) RETURN n", errMsg );
+        assertFail( subject, "MATCH (n) RETURN count(n)", errMsg );
     }
 
     void testSuccessfulWrite( S subject )
@@ -214,6 +220,20 @@ abstract class AuthTestBase<S>
         assertFail( subject,
                 "CALL dbms.listUsersForRole('" + roleName + "') YIELD value AS users RETURN count(users)",
                 errMsg );
+    }
+
+    void testSessionKilled( S subject )
+    {
+        String errorMessage = "Invalid username or password";
+        if ( IS_BOLT )
+        {
+            errorMessage = "The session is no longer available, possibly due to termination.";
+        }
+        else if ( IS_EMBEDDED )
+        {
+            errorMessage = "Read operations are not allowed";
+        }
+        assertFail( subject, "MATCH (n:Node) RETURN count(n)", errorMessage );
     }
 
     void assertPasswordChangeWhenPasswordChangeRequired( S subject, String newPassword )

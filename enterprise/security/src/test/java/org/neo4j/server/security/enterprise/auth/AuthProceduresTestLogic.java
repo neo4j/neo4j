@@ -335,7 +335,16 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldTerminateSessionsOnChangeUserPassword() throws Exception
     {
-        shouldTerminateSessionsForUser( "writeSubject", "abc", "dbms.changeUserPassword( '%s', 'newPassword' )" );
+        Connection conn = startBoltSession( "writeSubject", "abc" );
+        assertSuccess( adminSubject, "CALL dbms.listSessions() YIELD username, sessionCount " +
+                        "WITH username, sessionCount WHERE username = 'writeSubject' RETURN username, sessionCount",
+                r -> assertKeyIsMap( r, "username", "sessionCount", map( "writeSubject", IS_BOLT ? "2" : "1" ) ) );
+
+        assertEmpty( adminSubject, "CALL dbms.changeUserPassword( 'writeSubject', 'newPassword' )" );
+
+        assertEmpty( adminSubject, "CALL dbms.listSessions() YIELD username, sessionCount " +
+                        "WITH username, sessionCount WHERE username = 'writeSubject' RETURN username, sessionCount");
+        conn.disconnect();
     }
 
     //---------- create user -----------
@@ -446,7 +455,16 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldTerminateSessionsOnUserDeletion() throws Exception
     {
-        shouldTerminateSessionsForUser( "writeSubject", "abc", "dbms.deleteUser( '%s' )" );
+        Connection conn = startBoltSession( "writeSubject", "abc" );
+        assertSuccess( adminSubject, "CALL dbms.listSessions() YIELD username, sessionCount " +
+                        "WITH username, sessionCount WHERE username = 'writeSubject' RETURN username, sessionCount",
+                r -> assertKeyIsMap( r, "username", "sessionCount", map( "writeSubject", IS_BOLT ? "2" : "1" ) ) );
+
+        assertEmpty( adminSubject, "CALL dbms.deleteUser( 'writeSubject' )" );
+
+        assertEmpty( adminSubject, "CALL dbms.listSessions() YIELD username, sessionCount " +
+                "WITH username, sessionCount WHERE username = 'writeSubject' RETURN username, sessionCount");
+        conn.disconnect();
     }
 
     //---------- suspend user -----------
@@ -495,7 +513,16 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldTerminateSessionsOnUserSuspension() throws Exception
     {
-        shouldTerminateSessionsForUser( "writeSubject", "abc", "dbms.suspendUser( '%s' )" );
+        Connection conn = startBoltSession( "writeSubject", "abc" );
+        assertSuccess( adminSubject, "CALL dbms.listSessions() YIELD username, sessionCount " +
+                        "WITH username, sessionCount WHERE username = 'writeSubject' RETURN username, sessionCount",
+                r -> assertKeyIsMap( r, "username", "sessionCount", map( "writeSubject", IS_BOLT ? "2" : "1" ) ) );
+
+        assertEmpty( adminSubject, "CALL dbms.suspendUser( 'writeSubject' )" );
+
+        assertEmpty( adminSubject, "CALL dbms.listSessions() YIELD username, sessionCount " +
+                "WITH username, sessionCount WHERE username = 'writeSubject' RETURN username, sessionCount");
+        conn.disconnect();
     }
 
     //---------- activate user -----------
@@ -940,30 +967,18 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         assertEmpty( adminSubject, "MATCH (n:Test) RETURN n.name AS name" );
     }
 
-    private void shouldTerminateSessionsForUser( String username, String password, String procedure ) throws Exception
+    private Connection startBoltSession( String username, String password ) throws Exception
     {
         Connection boltConnection = new SocketConnection();
-        HostnamePort boltAddress = new HostnamePort( "localhost:7687" );
-        authenticate( boltConnection, boltAddress, username, password );
+        HostnamePort address = new HostnamePort( "localhost:7687" );
+        Map<String,Object> authToken = map( "principal", username, "credentials", password, "scheme", "basic" );
 
-        assertEmpty( adminSubject,  "CALL " + String.format(procedure, username ) );
+        boltConnection.connect( address ).send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk( init( "TestClient/1.1", authToken ) ) );
 
-        assertEmpty( adminSubject, "CALL dbms.listSessions()" );
-    }
-
-    private void authenticate( Connection client, HostnamePort address, String username, String password )
-            throws Exception
-    {
-        Map<String, Object> authToken =
-                map( "principal", username, "credentials", password, "scheme", "basic" );
-
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1", authToken ) ) );
-
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+        assertThat( boltConnection, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( boltConnection, eventuallyRecieves( msgSuccess() ) );
+        return boltConnection;
     }
 
 }

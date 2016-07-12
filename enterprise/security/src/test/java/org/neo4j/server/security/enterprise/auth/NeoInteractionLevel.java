@@ -46,7 +46,7 @@ public interface NeoInteractionLevel<S>
 
     S login( String username, String password ) throws Throwable;
 
-    void logout( S subject );
+    void logout( S subject ) throws Exception;
 
     boolean isAuthenticated( S subject );
 

@@ -227,8 +227,7 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         S subject = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( subject ) );
         assertEmpty( adminSubject, "CALL dbms.deleteUser('Henrik')" );
-        assertFail( subject, "MATCH (n:Node) RETURN n",
-                IS_EMBEDDED ? "Read operations are not allowed" : "Invalid username or password");
+        testSessionKilled( subject );
     }
 
     //---------- Role management -----------
@@ -372,9 +371,7 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         testSuccessfulRead( subject, 3 );
         assertEmpty( adminSubject, "CALL dbms.suspendUser('Henrik')" );
 
-        // TODO: uncomment and fix
-        //testUnAuthenticated( subject );
-        testFailRead( subject, 3, "" );
+        testSessionKilled( subject );
 
         subject = neo.login( "Henrik", "bar" );
         assertEquals( AuthenticationResult.FAILURE, neo.authenticationResult( subject ) );
