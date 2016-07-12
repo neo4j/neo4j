@@ -308,22 +308,6 @@ public class RaftLogShipperTest
     public void shouldSendLogCompactionInfoToFollowerOnMatchIfEntryHasBeenPrunedAway() throws Exception
     {
         //given
-        AtomicBoolean afterInit = new AtomicBoolean();
-        final DoubleLatch latch = new DoubleLatch();
-        raftLog = new DelegatingRaftLog( raftLog )
-        {
-            @Override
-            public long readEntryTerm( long logIndex ) throws IOException
-            {
-                if ( afterInit.get() )
-                {
-                    latch.start();
-                    latch.awaitFinish();
-                }
-                return super.readEntryTerm( logIndex );
-            }
-        };
-
         raftLog.append( entry0 );
         raftLog.append( entry1 );
         raftLog.append( entry2 );
@@ -331,37 +315,15 @@ public class RaftLogShipperTest
 
         startLogShipper();
 
-        afterInit.set( true );
-
         //when
         outbound.clear();
-        Thread pruningThread = new Thread( "Pruning" )
-        {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    latch.awaitStart();
-                    raftLog.prune( 2 );
-                    latch.finish();
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
-            }
-        };
+        raftLog.prune( 2 );
 
-        pruningThread.start();
         logShipper.onMatch( 1, new LeaderContext( 0, 0 ) );
 
         //then
         assertTrue( outbound.hasAnyEntriesTo( follower ) );
         assertThat( outbound.sentTo( follower ),
-                hasMessage( new RaftMessages.LogCompactionInfo( leader, 0, 1 ) ) );
-
-        pruningThread.join();
+                hasMessage( new RaftMessages.LogCompactionInfo( leader, 0, 2 ) ) );
     }
-
 }

@@ -39,7 +39,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class RaftMembershipStateTest
 {
-    private RaftMembershipState state = RaftMembershipState.startState();
+    private RaftMembershipState state = new RaftMembershipState();
 
     private Set<CoreMember> membersA = asSet( member( 0 ), member( 1 ), member( 2 ) );
     private Set<CoreMember> membersB = asSet( member( 0 ), member( 1 ), member( 2 ), member( 3 ) );

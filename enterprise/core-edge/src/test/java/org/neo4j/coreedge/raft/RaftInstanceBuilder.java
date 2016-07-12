@@ -83,7 +83,7 @@ public class RaftInstanceBuilder
     private int maxAllowedShippingLag = 256;
     private Supplier<DatabaseHealth> databaseHealthSupplier;
     private StateStorage<RaftMembershipState> raftMembership =
-            new InMemoryStateStorage<>( RaftMembershipState.startState() );
+            new InMemoryStateStorage<>( new RaftMembershipState() );
     private Monitors monitors = new Monitors();
     private RaftStateMachine raftStateMachine = new EmptyStateMachine();
     private final InFlightMap<Long,RaftLogEntry> inFlightMap;
