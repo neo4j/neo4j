@@ -123,7 +123,6 @@ public class RestoreDatabaseCli implements AdminCommand
         }
     }
 
-
     private static List<Class<?>> settings()
     {
         List<Class<?>> settings = new ArrayList<>();
