@@ -21,34 +21,27 @@ package org.neo4j.kernel.impl.storageengine.impl.recordstorage.id;
 
 
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
- * Default implementation of {@link RecordStorageIdController}.
- * Do not add any additional possibilities or functionality. Wraps provided {@link IdGeneratorFactory}.
+ * Represent abstraction that responsible for any id related operations on a storage engine level: buffering,
+ * maintenance, clearing, resetting, generation.
  */
-public class DefaultRecordStorageIdController extends LifecycleAdapter implements RecordStorageIdController
+public interface IdController extends Lifecycle
 {
+    /**
+     * Retrieve id generation factory for current storage engine
+     * @return id generation factory
+     */
+    IdGeneratorFactory getIdGeneratorFactory();
 
-    private IdGeneratorFactory idGeneratorFactory;
+    /**
+     * Clear underlying id generation infrastructure (clear buffer of ids to reuse, reset buffers, etc.)
+     */
+    void clear();
 
-    public DefaultRecordStorageIdController( IdGeneratorFactory idGeneratorFactory )
-    {
-        this.idGeneratorFactory = idGeneratorFactory;
-    }
-
-    public IdGeneratorFactory getIdGeneratorFactory()
-    {
-        return idGeneratorFactory;
-    }
-
-    @Override
-    public void clear()
-    {
-    }
-
-    @Override
-    public void maintenance()
-    {
-    }
+    /**
+     * Perform ids related maintenance.
+     */
+    void maintenance();
 }

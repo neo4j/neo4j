@@ -41,6 +41,7 @@ import org.neo4j.test.TargetDirectory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 public class StoreSingleRelationshipCursorTest
 {
@@ -114,17 +115,8 @@ public class StoreSingleRelationshipCursorTest
 
     private StoreSingleRelationshipCursor createRelationshipCursor()
     {
-        InstanceCache<StoreSingleRelationshipCursor> instanceCache = new TestCursorCache();
+        InstanceCache<StoreSingleRelationshipCursor> instanceCache = mock(InstanceCache.class);
         return new StoreSingleRelationshipCursor( new RelationshipRecord( -1 ), instanceCache,
                 new RecordCursors( neoStores ), LockService.NO_LOCK_SERVICE );
-    }
-
-    private class TestCursorCache extends InstanceCache<StoreSingleRelationshipCursor>
-    {
-        @Override
-        protected StoreSingleRelationshipCursor create()
-        {
-            return null;
-        }
     }
 }

@@ -35,7 +35,7 @@ import org.neo4j.graphdb.factory.EnterpriseDatabaseRule;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.RecordStorageIdController;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
@@ -134,7 +134,7 @@ public class IdReuseTest
         assertEquals( "Ids should be sequential", relationship1 + 1, relationship2 );
         assertEquals( "Ids should be sequential", relationship2 + 1, relationship3 );
 
-        final RecordStorageIdController idMaintenanceController = getIdMaintenanceController();
+        final IdController idMaintenanceController = getIdMaintenanceController();
 
         deleteRelationshipByLabelAndRelationshipType( marker );
 
@@ -151,7 +151,7 @@ public class IdReuseTest
         Label testLabel = Label.label( "testLabel" );
         long relationshipId = createRelationship( testLabel );
 
-        final RecordStorageIdController idMaintenanceController = getIdMaintenanceController();
+        final IdController idMaintenanceController = getIdMaintenanceController();
 
         try ( Transaction transaction = dbRule.beginTx();
               ResourceIterator<Node> nodes = dbRule.findNodes( testLabel ) )
@@ -196,9 +196,9 @@ public class IdReuseTest
         }
     }
 
-    private RecordStorageIdController getIdMaintenanceController()
+    private IdController getIdMaintenanceController()
     {
-        return dbRule.getDependencyResolver().resolveDependency( RecordStorageIdController.class );
+        return dbRule.getDependencyResolver().resolveDependency( IdController.class );
     }
 
     private long createRelationship( Label label )

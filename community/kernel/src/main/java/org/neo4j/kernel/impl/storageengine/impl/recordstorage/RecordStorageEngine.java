@@ -69,9 +69,9 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedRecordStorageIdController;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.DefaultRecordStorageIdController;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.RecordStorageIdController;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedIdController;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.DefaultIdController;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -154,7 +154,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final LegacyIndexProviderLookup legacyIndexProviderLookup;
     private final PropertyPhysicalToLogicalConverter indexUpdatesConverter;
     private final Supplier<StorageStatement> storeStatementSupplier;
-    private final RecordStorageIdController recordStorageIdController;
+    private final IdController idController;
 
     // Immutable state for creating/applying commands
     private final Loaders loaders;
@@ -201,9 +201,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.constraintSemantics = constraintSemantics;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
 
-        this.recordStorageIdController = createStorageIdController( idGeneratorFactory, eligibleForReuse,
+        this.idController = createStorageIdController( idGeneratorFactory, eligibleForReuse,
             idTypeConfigurationProvider, transactionsSnapshotSupplier );
-        StoreFactory factory = new StoreFactory( storeDir, config, recordStorageIdController.getIdGeneratorFactory(), pageCache, fs, logProvider );
+        StoreFactory factory = new StoreFactory( storeDir, config, idController.getIdGeneratorFactory(), pageCache, fs, logProvider );
         neoStores = factory.openAllNeoStores( true );
 
         try
@@ -256,15 +256,15 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         }
     }
 
-    private RecordStorageIdController createStorageIdController( IdGeneratorFactory idGeneratorFactory,
+    private IdController createStorageIdController( IdGeneratorFactory idGeneratorFactory,
             IdReuseEligibility eligibleForReuse,
             IdTypeConfigurationProvider idTypeConfigurationProvider,
             Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier )
     {
         return safeIdBuffering ?
-               new BufferedRecordStorageIdController( idGeneratorFactory, transactionsSnapshotSupplier,
+               new BufferedIdController( idGeneratorFactory, transactionsSnapshotSupplier,
                        eligibleForReuse, idTypeConfigurationProvider, scheduler ) :
-               new DefaultRecordStorageIdController( idGeneratorFactory );
+               new DefaultIdController( idGeneratorFactory );
     }
 
     private Supplier<StorageStatement> storeStatementSupplier( NeoStores neoStores )
@@ -402,7 +402,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         // providing TransactionIdStore, LogVersionRepository
         satisfier.satisfyDependency( neoStores.getMetaDataStore() );
         satisfier.satisfyDependency( indexStoreView );
-        satisfier.satisfyDependency( recordStorageIdController );
+        satisfier.satisfyDependency( idController );
     }
 
     @Override
@@ -428,7 +428,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         loadSchemaCache();
         indexingService.start();
         labelScanStore.start();
-        recordStorageIdController.start();
+        idController.start();
     }
 
     @Override
@@ -441,7 +441,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void clearBufferedIds()
     {
-        recordStorageIdController.clear();
+        idController.clear();
     }
 
     @Override
@@ -449,7 +449,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         labelScanStore.stop();
         indexingService.stop();
-        recordStorageIdController.stop();
+        idController.stop();
     }
 
     @Override

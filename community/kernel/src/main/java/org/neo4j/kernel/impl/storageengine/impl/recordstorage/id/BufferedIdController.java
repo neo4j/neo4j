@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage.id;
 
-
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -36,19 +35,20 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * Allows perform clear and maintenance operations over currently buffered set of ids.
  * @see BufferingIdGeneratorFactory
  */
-public class BufferedRecordStorageIdController extends LifecycleAdapter implements RecordStorageIdController
+public class BufferedIdController extends LifecycleAdapter implements IdController
 {
 
     private final BufferingIdGeneratorFactory bufferingIdGeneratorFactory;
-    private final BufferedIdMaintenanceController idMaintenanceController;
+    private final JobScheduler scheduler;
+    private JobScheduler.JobHandle jobHandle;
 
-    public BufferedRecordStorageIdController( IdGeneratorFactory idGeneratorFactory,
+    public BufferedIdController( IdGeneratorFactory idGeneratorFactory,
             Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier, IdReuseEligibility eligibleForReuse,
             IdTypeConfigurationProvider idTypeConfigurationProvider, JobScheduler scheduler )
     {
+        this.scheduler = scheduler;
         bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory(
                 idGeneratorFactory, transactionsSnapshotSupplier, eligibleForReuse, idTypeConfigurationProvider );
-        idMaintenanceController = new BufferedIdMaintenanceController( bufferingIdGeneratorFactory, scheduler );
     }
 
     public IdGeneratorFactory getIdGeneratorFactory()
@@ -59,13 +59,14 @@ public class BufferedRecordStorageIdController extends LifecycleAdapter implemen
     @Override
     public void start() throws Throwable
     {
-        idMaintenanceController.start();
+        jobHandle = scheduler.scheduleRecurring( JobScheduler.Groups.storageMaintenance, this::maintenance, 1,
+                TimeUnit.SECONDS );
     }
 
     @Override
     public void stop() throws Throwable
     {
-        idMaintenanceController.stop();
+        jobHandle.cancel( false );
     }
 
     @Override
@@ -77,36 +78,6 @@ public class BufferedRecordStorageIdController extends LifecycleAdapter implemen
     @Override
     public void maintenance()
     {
-        idMaintenanceController.maintenance();
-    }
-
-    private static class BufferedIdMaintenanceController
-    {
-        private final BufferingIdGeneratorFactory bufferingIdGeneratorFactory;
-        private final JobScheduler scheduler;
-        private JobScheduler.JobHandle jobHandle;
-
-        BufferedIdMaintenanceController( BufferingIdGeneratorFactory bufferingIdGeneratorFactory,
-                JobScheduler scheduler )
-        {
-            this.bufferingIdGeneratorFactory = bufferingIdGeneratorFactory;
-            this.scheduler = scheduler;
-        }
-
-        public void start() throws Throwable
-        {
-            jobHandle = scheduler.scheduleRecurring( JobScheduler.Groups.storageMaintenance, this::maintenance, 1,
-                    TimeUnit.SECONDS );
-        }
-
-        public void stop() throws Throwable
-        {
-            jobHandle.cancel( false );
-        }
-
-        public void maintenance()
-        {
-            bufferingIdGeneratorFactory.maintenance();
-        }
+        bufferingIdGeneratorFactory.maintenance();
     }
 }

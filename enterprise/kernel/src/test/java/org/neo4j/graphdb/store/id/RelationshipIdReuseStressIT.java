@@ -37,7 +37,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -51,7 +50,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.RecordStorageIdController;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
@@ -86,8 +85,8 @@ public class RelationshipIdReuseStressIT
     @Test
     public void relationshipIdReused() throws Exception
     {
-        Label cityLabel = DynamicLabel.label( "city" );
-        final Label bandLabel = DynamicLabel.label( "band" );
+        Label cityLabel = Label.label( "city" );
+        final Label bandLabel = Label.label( "band" );
         createBands( bandLabel );
         createCities( cityLabel );
 
@@ -100,7 +99,7 @@ public class RelationshipIdReuseStressIT
         futures.add( startRelationshipTypesCalculator( bandLabel, stopFlag ) );
         futures.add( startRelationshipCalculator( bandLabel, stopFlag ) );
 
-        Thread.sleep( TimeUnit.SECONDS.toMillis( 5 ) );
+        TimeUnit.SECONDS.sleep( 5 );
         stopFlag.set( true );
         executorService.shutdown();
         executorService.awaitTermination( 5, TimeUnit.SECONDS );
@@ -115,7 +114,7 @@ public class RelationshipIdReuseStressIT
 
     private long getHighestUsedIdForRelationships()
     {
-        RecordStorageIdController idController = embeddedDatabase.getDependencyResolver().resolveDependency( RecordStorageIdController.class );
+        IdController idController = embeddedDatabase.getDependencyResolver().resolveDependency( IdController.class );
         return idController.getIdGeneratorFactory().get( IdType.RELATIONSHIP ).getHighestPossibleIdInUse();
     }
 
