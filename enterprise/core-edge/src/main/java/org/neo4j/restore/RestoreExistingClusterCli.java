@@ -46,12 +46,29 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class RestoreExistingClusterCli
 {
+    private final PrintStream out;
+
+    public RestoreExistingClusterCli()
+    {
+        this( System.out );
+    }
+
+    public RestoreExistingClusterCli( PrintStream out )
+    {
+        this.out = out;
+    }
+
     public static void main( String[] incomingArguments )
+    {
+        new RestoreExistingClusterCli().run( incomingArguments );
+    }
+
+    public void run( String[] incomingArguments )
     {
         Args args = Args.parse( incomingArguments );
         if ( ArrayUtil.isEmpty( incomingArguments ) )
         {
-            printUsage( System.out );
+            printUsage( out );
             System.exit( 1 );
         }
 
@@ -115,11 +132,11 @@ public class RestoreExistingClusterCli
         }
 
         out.println( "Usage:" );
-        out.println("--home-dir <path-to-neo4j>");
-        out.println("--from <path-to-backup-directory>");
-        out.println("--database <database-name>");
-        out.println("--config <path-to-config-directory>");
-        out.println("--seed <generated seed>");
-        out.println("--force");
+        out.println( "--home-dir <path-to-neo4j>" );
+        out.println( "--from <path-to-backup-directory>" );
+        out.println( "--database <database-name>" );
+        out.println( "--config <path-to-config-directory>" );
+        out.println( "--seed <generated seed>" );
+        out.println( "--force" );
     }
 }

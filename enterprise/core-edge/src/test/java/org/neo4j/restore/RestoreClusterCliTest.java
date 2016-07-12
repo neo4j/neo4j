@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.LinkedList;
 import java.util.Optional;
 
@@ -75,10 +76,13 @@ public class RestoreClusterCliTest
         LinkedList<String> args = ArgsBuilder.args().homeDir( homeDir ).config( homeDir )
                 .from( classicNeo4jStore ).database( "graph.db" ).build() ;
 
-        String out = RestoreClusterUtils.execute( () -> RestoreNewClusterCli.main( args.toArray( new String[args.size()] ) ) );
+        StringBuilder output = new StringBuilder();
+        PrintStream sysout = new PrintStream( new RestoreClusterUtils.MyOutputStream( output ) );
+
+        new RestoreNewClusterCli( sysout ).run(  args.toArray( new String[args.size()] ));
 
         // then
-        String seed = extractSeed( out );
+        String seed = extractSeed( output.toString() );
         ClusterSeed clusterSeed = ClusterSeed.create( seed );
 
         assertTrue( storeMetadata.storeId().equals( clusterSeed.before() ) );
@@ -90,7 +94,7 @@ public class RestoreClusterCliTest
         LinkedList<String> newArgs = ArgsBuilder.args().homeDir( rootNewDatabaseDir ).config( rootNewDatabaseDir )
                 .from( classicNeo4jStore ).database( "graph.db" ).seed( seed ).build() ;
 
-        RestoreClusterUtils.execute( () -> RestoreExistingClusterCli.main( newArgs.toArray( new String[newArgs.size()] ) ) );
+        new RestoreExistingClusterCli(  ).run( newArgs.toArray( new String[newArgs.size()] ) );
 
         // then
         StoreMetadata newMetadata = metadataFor( extractDatabaseDir( rootNewDatabaseDir ) );

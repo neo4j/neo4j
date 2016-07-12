@@ -24,6 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -141,19 +142,21 @@ public class BackupCoreIT
         TestStoreId storeId = TestStoreId.readStoreId( dbPaths.get( 0 ), fs );
 
         // when
-        String output = RestoreClusterUtils.execute( () -> {
-            File homeDir = cluster.getCoreServerById( 0 ).homeDir();
-            RestoreNewClusterCli.main( toArray( args().homeDir( homeDir ).config( homeDir ).from( backupPath )
-                    .database( "graph.db" ).force().build() ) );
-        } );
 
-        String seed = RestoreClusterCliTest.extractSeed( output );
+        StringBuilder output = new StringBuilder();
+        PrintStream sysout = new PrintStream( new RestoreClusterUtils.MyOutputStream( output ) );
+
+        File homeDir = cluster.getCoreServerById( 0 ).homeDir();
+        new RestoreNewClusterCli( sysout ).run(toArray( args().homeDir( homeDir ).config( homeDir ).from( backupPath )
+                .database( "graph.db" ).force().build() ));
+
+        String seed = RestoreClusterCliTest.extractSeed( output.toString() );
 
         for ( int i = 1; i < numberOfCoreServers; i++ )
         {
-            File homeDir = cluster.getCoreServerById( i ).homeDir();
-            RestoreClusterUtils.execute( () -> RestoreExistingClusterCli.main( toArray( args().homeDir( homeDir )
-                    .config( homeDir ).from( backupPath ).database( "graph.db" ).seed( seed ).force().build() ) ) );
+            homeDir = cluster.getCoreServerById( i ).homeDir();
+            new RestoreExistingClusterCli(  ).run( toArray( args().homeDir( homeDir )
+                    .config( homeDir ).from( backupPath ).database( "graph.db" ).seed( seed ).force().build() ) );
         }
 
         cluster.start();
