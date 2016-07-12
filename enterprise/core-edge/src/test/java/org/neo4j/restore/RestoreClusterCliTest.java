@@ -58,6 +58,7 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.coreedge.convert.GenerateClusterSeedCommand.storeId;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TIME;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TRANSACTION_ID;
 import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 import static org.neo4j.restore.RestoreExistingClusterCli.settings;
 
@@ -117,10 +118,11 @@ public class RestoreClusterCliTest
 
         try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
         {
-            StoreId classicStoreId = storeId( metadataStore, pageCache, getRecord( pageCache, metadataStore,
-                    UPGRADE_TIME ) );
-            long lastTransactionId = getRecord( pageCache, metadataStore, LAST_TRANSACTION_ID );
-            return new StoreMetadata( classicStoreId, lastTransactionId );
+            long lastTxId = getRecord( pageCache, metadataStore, LAST_TRANSACTION_ID );
+            long upgradeTime = getRecord( pageCache, metadataStore, UPGRADE_TIME );
+            long upgradeId = getRecord( pageCache, metadataStore, UPGRADE_TRANSACTION_ID );
+            StoreId classicStoreId = storeId( metadataStore, pageCache, upgradeTime, upgradeId );
+            return new StoreMetadata( classicStoreId, lastTxId );
         }
     }
 

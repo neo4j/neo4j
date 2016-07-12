@@ -39,6 +39,7 @@ import org.neo4j.coreedge.TestStoreId;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.CoreServer;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
+import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -141,7 +142,7 @@ public class BackupCoreIT
 
         cluster.shutdown();
         assertAllStoresHaveTheSameStoreId( dbPaths, fs );
-        TestStoreId storeId = TestStoreId.readStoreId( dbPaths.get( 0 ), fs );
+        StoreId storeId = TestStoreId.readStoreId( dbPaths.get( 0 ), fs );
 
         // when
 
@@ -172,7 +173,7 @@ public class BackupCoreIT
         cluster.shutdown();
 
         assertAllStoresHaveTheSameStoreId( afterRestoreDbPaths, fs );
-        TestStoreId afterRestoreStoreId = TestStoreId.readStoreId( afterRestoreDbPaths.get( 0 ), fs );
+        StoreId afterRestoreStoreId = TestStoreId.readStoreId( afterRestoreDbPaths.get( 0 ), fs );
         assertNotEquals( storeId, afterRestoreStoreId );
     }
 

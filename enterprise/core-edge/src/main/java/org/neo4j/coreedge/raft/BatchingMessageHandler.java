@@ -109,12 +109,14 @@ public class BatchingMessageHandler implements Runnable, MessageHandler<RaftMess
             {
                 if ( localDatabase.isEmpty() )
                 {
+                    log.info( "StoreId mismatch but store was empty so downloading new store from %s. Expected: " +
+                            "%s, Encountered: %s. ", innerMessage.from(), storeId, localDatabase.storeId() );
                     raftStateMachine.downloadSnapshot( innerMessage.from() );
                 }
                 else
                 {
-                    log.info( "Discarding message owing to mismatched storeId and non-empty store. " +
-                            "Expected: %s, Encountered: %s", storeId, localDatabase.storeId() );
+                    log.info( "Discarding message[%s] owing to mismatched storeId and non-empty store. " +
+                            "Expected: %s, Encountered: %s", innerMessage,  storeId, localDatabase.storeId() );
                     listeners.forEach( l -> {
                         MismatchedStoreIdException ex = new MismatchedStoreIdException( storeId, localDatabase.storeId() );
                         l.onMismatchedStore( ex );

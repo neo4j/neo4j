@@ -27,6 +27,8 @@ import org.neo4j.coreedge.catchup.storecopy.core.CoreStateType;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
+import static java.lang.String.format;
+
 public class CoreSnapshot
 {
     private final long prevIndex;
@@ -104,5 +106,11 @@ public class CoreSnapshot
 
             return coreSnapshot;
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "CoreSnapshot{prevIndex=%d, prevTerm=%d, snapshotCollection=%s}", prevIndex, prevTerm, snapshotCollection );
     }
 }

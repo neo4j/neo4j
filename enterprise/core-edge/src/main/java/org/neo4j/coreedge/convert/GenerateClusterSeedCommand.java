@@ -49,19 +49,19 @@ public class GenerateClusterSeedCommand
         File metadataStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
         try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
         {
-            StoreId before = storeId( metadataStore, pageCache, getRecord( pageCache, metadataStore, UPGRADE_TIME ) );
-            StoreId after = storeId( metadataStore, pageCache, System.currentTimeMillis() );
             long lastTxId = getRecord( pageCache, metadataStore, LAST_TRANSACTION_ID );
+            StoreId before = storeId( metadataStore, pageCache, getRecord( pageCache, metadataStore, UPGRADE_TIME ),
+                    getRecord( pageCache, metadataStore, UPGRADE_TRANSACTION_ID ) );
+            StoreId after = storeId( metadataStore, pageCache, System.currentTimeMillis(), lastTxId );
 
             return new ClusterSeed( before, after, lastTxId );
         }
     }
 
-    public static StoreId storeId( File metadataStore, PageCache pageCache, long upgradeTime ) throws IOException
+    public static StoreId storeId( File metadataStore, PageCache pageCache, long upgradeTime, long upgradeId ) throws IOException
     {
         long creationTime = getRecord( pageCache, metadataStore, TIME );
         long randomNumber = getRecord( pageCache, metadataStore, RANDOM_NUMBER );
-        long upgradeId = getRecord( pageCache, metadataStore, UPGRADE_TRANSACTION_ID );
         return new StoreId( creationTime, randomNumber, upgradeTime, upgradeId );
     }
 
