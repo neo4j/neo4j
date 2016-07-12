@@ -46,6 +46,7 @@ public class ScrollableOptionPane
     {
         JTextArea view = new JTextArea( message, 10, 80 );
         view.setLineWrap( true );
+        view.setEditable( false );
         view.setWrapStyleWord( true );
         return new JScrollPane( view );
     }
