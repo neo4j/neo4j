@@ -25,12 +25,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.Log;
 import org.neo4j.shell.ShellSettings;
 
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
@@ -40,11 +39,11 @@ public class ConfigLoader
 {
     public static final String DEFAULT_CONFIG_FILE_NAME = "neo4j.conf";
 
-    private final SettingsClasses settingsClasses;
+    private final Function<Map<String, String> ,Iterable<Class<?>>> settingsClassesSupplier;
 
-    public ConfigLoader( SettingsClasses settingsClasses )
+    public ConfigLoader( Function<Map<String, String> ,Iterable<Class<?>>> settingsClassesSupplier )
     {
-        this.settingsClasses = settingsClasses;
+        this.settingsClassesSupplier = settingsClassesSupplier;
     }
 
     public ConfigLoader( List<Class<?>> settingsClasses )
@@ -52,36 +51,26 @@ public class ConfigLoader
         this( settings -> settingsClasses );
     }
 
-    public Config loadConfig( Optional<File> configFile, Log log, Pair<String, String>... configOverrides )
+    public Config loadConfig( Optional<File> configFile, Pair<String,String>... configOverrides ) throws IOException
     {
-        return loadConfig( Optional.empty(), configFile, log, configOverrides );
+        return loadConfig( Optional.empty(), configFile, configOverrides );
     }
 
     public Config loadConfig( Optional<File> homeDir, Optional<File> configFile,
-            Log log, Pair<String, String>... configOverrides )
+            Pair<String,String>... configOverrides )
     {
-        if ( log == null )
-        {
-            throw new IllegalArgumentException( "log cannot be null" );
-        }
-
-        Map<String, String> settings = calculateSettings( homeDir, configFile, log, configOverrides );
-        Config config = new Config( settings, settingsClasses.calculate( settings ) );
-        config.setLogger( log );
-        return config;
+        Map<String,String> overriddenSettings = calculateSettings( homeDir, configOverrides );
+        return new Config( configFile, overriddenSettings, ConfigLoader::overrideEmbeddedDefaults,
+                settingsClassesSupplier );
     }
 
-    private Map<String, String> calculateSettings( Optional<File> homeDir, Optional<File> config, Log log,
+    private Map<String, String> calculateSettings( Optional<File> homeDir,
                                                    Pair<String, String>[] configOverrides )
     {
         HashMap<String, String> settings = new HashMap<>();
-
-        config.ifPresent( ( c ) -> settings.putAll( loadFromFile( log, c ) ) );
         settings.putAll( toMap( configOverrides ) );
-        overrideEmbeddedDefaults( settings );
         settings.put( GraphDatabaseSettings.neo4j_home.name(),
                 homeDir.map( File::getAbsolutePath ).orElse( System.getProperty( "user.dir" ) ) );
-
         return settings;
     }
 
@@ -107,29 +96,5 @@ public class ConfigLoader
         String dataDirectory = config.getOrDefault( data_directory.name(), data_directory.getDefaultValue() );
         config.putIfAbsent( GraphDatabaseSettings.auth_store.name(),
                 new File( dataDirectory, "dbms/auth" ).toString() );
-    }
-
-    private static Map<String, String> loadFromFile( Log log, File file )
-    {
-        if ( !file.exists() )
-        {
-            log.warn( "Config file [%s] does not exist.", file );
-            return new HashMap<>();
-        }
-
-        try
-        {
-            return MapUtil.load( file );
-        }
-        catch ( IOException e )
-        {
-            log.error( "Unable to load config file [%s]: %s", file, e.getMessage() );
-            return new HashMap<>();
-        }
-    }
-
-    public interface SettingsClasses
-    {
-        Iterable<Class<?>> calculate( Map<String, String> settings );
     }
 }

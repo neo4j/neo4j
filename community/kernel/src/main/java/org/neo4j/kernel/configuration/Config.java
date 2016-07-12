@@ -19,17 +19,22 @@
  */
 package org.neo4j.kernel.configuration;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
 import org.neo4j.logging.BufferingLog;
@@ -86,10 +91,18 @@ public class Config implements DiagnosticsProvider, Configuration
 
     public Config( Map<String, String> params, Iterable<Class<?>> settingsClasses )
     {
-        this.settingsClasses = settingsClasses;
+        this( Optional.empty(), params, settings -> {}, ( classes ) -> settingsClasses );
+    }
+
+    public Config( Optional<File> configFile, Map<String, String> overriddenSettings,
+            Consumer<Map<String, String>> settingsPostProcessor,
+            Function<Map<String, String> ,Iterable<Class<?>>> settingClassesProvider)
+    {
+        Map<String,String> settings = initSettings( configFile, settingsPostProcessor, overriddenSettings );
+        this.settingsClasses = settingClassesProvider.apply( settings );
         migrator = new AnnotationBasedConfigurationMigrator( settingsClasses );
         validator = new ConfigurationValidator( settingsClasses );
-        replaceSettings( params );
+        replaceSettings( settings );
     }
 
     /**
@@ -205,5 +218,33 @@ public class Config implements DiagnosticsProvider, Configuration
         params.clear();
         params.putAll( migratedSettings );
         settingsFunction = new ConfigValues( params );
+    }
+
+    private Map<String,String> initSettings( Optional<File> configFile,
+            Consumer<Map<String,String>> settingsPostProcessor, Map<String,String> overriddenSettings )
+    {
+        Map<String,String> settings = new HashMap<>();
+        configFile.ifPresent( file -> settings.putAll( loadFromFile( file) ) );
+        settingsPostProcessor.accept( settings );
+        settings.putAll( overriddenSettings );
+        return settings;
+    }
+
+    private Map<String, String> loadFromFile( File file )
+    {
+        if ( !file.exists() )
+        {
+            log.warn( "Config file [%s] does not exist.", file );
+            return new HashMap<>();
+        }
+        try
+        {
+            return MapUtil.load( file );
+        }
+        catch ( IOException e )
+        {
+            log.error( "Unable to load config file [%s]: %s", file, e.getMessage() );
+            return new HashMap<>();
+        }
     }
 }
