@@ -39,12 +39,9 @@ public class CommunityIdTypeConfigurationProviderTest
     private IdType reusableType;
 
     @Parameterized.Parameters
-    public static List<Object[]> data()
+    public static List<IdType> data()
     {
-        return Arrays.asList( new Object[]{IdType.PROPERTY},
-                new Object[]{IdType.STRING_BLOCK},
-                new Object[]{IdType.ARRAY_BLOCK},
-                new Object[]{IdType.NODE_LABELS} );
+        return Arrays.asList(IdType.PROPERTY, IdType.STRING_BLOCK, IdType.ARRAY_BLOCK, IdType.NODE_LABELS );
     }
 
     public CommunityIdTypeConfigurationProviderTest( IdType reusableType )

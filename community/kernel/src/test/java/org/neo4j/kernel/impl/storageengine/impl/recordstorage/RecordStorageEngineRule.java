@@ -111,8 +111,8 @@ public class RecordStorageEngineRule extends ExternalResource
         Supplier<KernelTransactionsSnapshot> txSnapshotSupplier =
                 () -> new KernelTransactionsSnapshot( Collections.emptySet(), 0 );
         return life.add( new ExtendedRecordStorageEngine( storeDirectory, config, idGeneratorFactory,
-                IdReuseEligibility.ALWAYS, new CommunityIdTypeConfigurationProvider(), pageCache, fs, NullLogProvider
-                .getInstance(),
+                IdReuseEligibility.ALWAYS, new CommunityIdTypeConfigurationProvider(), pageCache, fs,
+                NullLogProvider.getInstance(),
                 mock( PropertyKeyTokenHolder.class ), mock( LabelTokenHolder.class ),
                 mock( RelationshipTypeTokenHolder.class ), () -> {},
                 new StandardConstraintSemantics(),

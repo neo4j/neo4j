@@ -45,13 +45,12 @@ public class CommunityIdTypeConfigurationProvider implements IdTypeConfiguration
     @Override
     public IdTypeConfiguration getIdTypeConfiguration( IdType idType )
     {
-        IdTypeConfiguration typeConfiguration = typeConfigurations.get( idType );
-        if ( typeConfiguration == null )
-        {
-            typeConfiguration = new IdTypeConfiguration( getTypesToReuse().contains( idType ) );
-            typeConfigurations.put( idType, typeConfiguration );
-        }
-        return typeConfiguration;
+        return typeConfigurations.computeIfAbsent( idType, this::createIdTypeConfiguration );
+    }
+
+    private IdTypeConfiguration createIdTypeConfiguration(IdType idType)
+    {
+        return new IdTypeConfiguration( getTypesToReuse().contains( idType ) );
     }
 
     protected Set<IdType> getTypesToReuse()

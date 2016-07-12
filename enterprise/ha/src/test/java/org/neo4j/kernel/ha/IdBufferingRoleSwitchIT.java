@@ -84,8 +84,7 @@ public class IdBufferingRoleSwitchIT
 
     private void triggerIdMaintenance( GraphDatabaseAPI db )
     {
-        db.getDependencyResolver()
-                .resolveDependency( RecordStorageEngine.BufferedIdMaintenanceController.class )
+        db.getDependencyResolver().resolveDependency( RecordStorageEngine.BufferedIdMaintenanceController.class )
                 .maintenance();
     }
 
