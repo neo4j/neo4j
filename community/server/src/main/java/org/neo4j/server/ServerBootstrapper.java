@@ -27,6 +27,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
@@ -70,13 +71,15 @@ public abstract class ServerBootstrapper implements Bootstrapper
     @SafeVarargs
     public final int start( File homeDir, Optional<File> configFile, Pair<String, String>... configOverrides )
     {
-        LogProvider userLogProvider = setupLogging();
-        dependencies = dependencies.userLogProvider( userLogProvider );
-        log = userLogProvider.getLog( getClass() );
-
         try
         {
-            Config config = createConfig( log, homeDir, configFile, configOverrides );
+            Config config = createConfig( homeDir, configFile, configOverrides );
+
+            LogProvider userLogProvider = setupLogging( config );
+            dependencies = dependencies.userLogProvider( userLogProvider );
+            log = userLogProvider.getLog( getClass() );
+            config.setLogger( log );
+
             serverAddress = ServerSettings.httpConnector( config, ServerSettings.HttpConnector.Encryption.NONE )
                     .map( ( connector ) -> connector.address.toString() )
                     .orElse( serverAddress );
@@ -146,9 +149,11 @@ public abstract class ServerBootstrapper implements Bootstrapper
 
     protected abstract Iterable<Class<?>> settingsClasses( Map<String, String> settings );
 
-    private static LogProvider setupLogging()
+    private static LogProvider setupLogging( Config config )
     {
-        LogProvider userLogProvider = FormattedLogProvider.withoutRenderingContext().toOutputStream( System.out );
+        LogProvider userLogProvider = FormattedLogProvider.withoutRenderingContext()
+                            .withDefaultLogLevel( config.get( GraphDatabaseSettings.store_internal_log_level ) )
+                            .toOutputStream( System.out );
         JULBridge.resetJUL();
         Logger.getLogger( "" ).setLevel( Level.WARNING );
         JULBridge.forwardTo( userLogProvider );
@@ -156,11 +161,10 @@ public abstract class ServerBootstrapper implements Bootstrapper
         return userLogProvider;
     }
 
-    private Config createConfig( Log log, File homeDir, Optional<File> file, Pair<String, String>[] configOverrides )
+    private Config createConfig( File homeDir, Optional<File> file, Pair<String, String>[] configOverrides )
             throws IOException
     {
-        return new ConfigLoader( this::settingsClasses ).loadConfig( Optional.of( homeDir ), file, log,
-                configOverrides );
+        return new ConfigLoader( this::settingsClasses ).loadConfig( Optional.of( homeDir ), file, configOverrides );
     }
 
     private void addShutdownHook()
