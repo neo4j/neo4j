@@ -22,11 +22,14 @@ package org.neo4j.restore;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.neo4j.commandline.admin.AdminCommand;
+import org.neo4j.commandline.admin.CommandFailed;
+import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.coreedge.convert.ConversionVerifier;
 import org.neo4j.coreedge.convert.ConvertClassicStoreToCoreCommand;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
@@ -44,44 +47,62 @@ import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.record_format;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class RestoreExistingClusterCli
+public class RestoreExistingClusterCli implements AdminCommand
 {
-    private final PrintStream out;
-
-    public RestoreExistingClusterCli()
+    public static class Provider extends AdminCommand.Provider
     {
-        this( System.out );
+        public Provider()
+        {
+            super( "restore-existing-cluster" );
+        }
+
+        @Override
+        public Optional<String> arguments()
+        {
+            return Optional.of( "--from=<backup-directory> --database=<database-name> --cluster-seed=<cluster-seed> " +
+                    "[--force]" );
+        }
+
+        @Override
+        public String description()
+        {
+            return "Restores a database backed up using the neo4j-backup tool to be used as an instance of a " +
+                    "new cluster. Takes the seed output from `restore-new-cluster` as an argument. ";
+        }
+
+        @Override
+        public AdminCommand create( Path homeDir, Path configDir )
+        {
+            return new RestoreExistingClusterCli( homeDir, configDir );
+        }
     }
 
-    public RestoreExistingClusterCli( PrintStream out )
+    private final Path homeDir;
+    private final Path configDir;
+
+    public RestoreExistingClusterCli( Path homeDir, Path configDir )
     {
-        this.out = out;
+        this.homeDir = homeDir;
+        this.configDir = configDir;
     }
 
-    public static void main( String[] incomingArguments )
-    {
-        new RestoreExistingClusterCli().run( incomingArguments );
-    }
-
-    public void run( String[] incomingArguments )
+    @Override
+    public void execute( String[] incomingArguments ) throws IncorrectUsage, CommandFailed
     {
         Args args = Args.parse( incomingArguments );
         if ( ArrayUtil.isEmpty( incomingArguments ) )
         {
-            printUsage( out );
-            System.exit( 1 );
+            throw new IncorrectUsage( "mandatory arguments missing" );
         }
 
-        File homeDir = args.interpretOption( "home-dir", Converters.<File>mandatory(), File::new );
         String databaseName = args.interpretOption( "database", Converters.<String>mandatory(), s -> s );
-        String configPath = args.interpretOption( "config", Converters.<String>mandatory(), s -> s );
         String fromPath = args.interpretOption( "from", Converters.<String>mandatory(), s -> s );
         String clusterSeed = args.interpretOption( "cluster-seed", Converters.<String>mandatory(), s -> s );
         boolean forceOverwrite = args.getBoolean( "force", Boolean.FALSE, true );
 
         try
         {
-            Config config = loadNeo4jConfig( homeDir, configPath, databaseName );
+            Config config = loadNeo4jConfig( homeDir, configDir, databaseName );
             restoreDatabase( databaseName, fromPath, forceOverwrite, config );
             convertStore( config, clusterSeed );
         }
@@ -91,12 +112,12 @@ public class RestoreExistingClusterCli
         }
     }
 
-    private static Config loadNeo4jConfig( File homeDir, String configPath, String databaseName )
+    private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName )
     {
         ConfigLoader configLoader = new ConfigLoader( settings() );
         Config config = configLoader.loadConfig(
-                Optional.of( homeDir ),
-                Optional.of( new File( configPath, "neo4j.conf" ) ),
+                Optional.of( homeDir.toFile() ),
+                Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ),
                 NullLog.getInstance() );
 
         return config.with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) );
@@ -121,22 +142,5 @@ public class RestoreExistingClusterCli
         settings.add( GraphDatabaseSettings.class );
         settings.add( DatabaseManagementSystemSettings.class );
         return settings;
-    }
-
-    private static void printUsage( PrintStream out )
-    {
-        out.println( "Neo4j Restore Existing Cluster Tool" );
-        for ( String line : Args.splitLongLine( "The restore tool is used to restore a backed up core database", 80 ) )
-        {
-            out.println( "\t" + line );
-        }
-
-        out.println( "Usage:" );
-        out.println( "--home-dir <path-to-neo4j>" );
-        out.println( "--from <path-to-backup-directory>" );
-        out.println( "--database <database-name>" );
-        out.println( "--config <path-to-config-directory>" );
-        out.println( "--seed <generated seed>" );
-        out.println( "--force" );
     }
 }

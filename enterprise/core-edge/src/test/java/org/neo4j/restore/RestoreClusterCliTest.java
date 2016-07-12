@@ -25,6 +25,8 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.Optional;
 
@@ -72,14 +74,13 @@ public class RestoreClusterCliTest
         StoreMetadata storeMetadata = metadataFor( classicNeo4jStore );
 
         // when
-        File homeDir = testDirectory.cleanDirectory( "new-db-1" );
-        LinkedList<String> args = ArgsBuilder.args().homeDir( homeDir ).config( homeDir )
-                .from( classicNeo4jStore ).database( "graph.db" ).build() ;
+        Path homeDir = Paths.get(testDirectory.cleanDirectory( "new-db-1" ).getPath());
+        LinkedList<String> args = ArgsBuilder.args().from( classicNeo4jStore ).database( "graph.db" ).build() ;
 
         StringBuilder output = new StringBuilder();
         PrintStream sysout = new PrintStream( new RestoreClusterUtils.MyOutputStream( output ) );
 
-        new RestoreNewClusterCli( sysout ).run(  args.toArray( new String[args.size()] ));
+        new RestoreNewClusterCli( homeDir, homeDir, sysout ).execute(  args.toArray( new String[args.size()] ));
 
         // then
         String seed = extractSeed( output.toString() );
@@ -90,14 +91,15 @@ public class RestoreClusterCliTest
         assertFalse( storeMetadata.storeId().equals( clusterSeed.after() ) );
 
         // when restore to another place
-        File rootNewDatabaseDir = testDirectory.cleanDirectory( "new-db-2" );
-        LinkedList<String> newArgs = ArgsBuilder.args().homeDir( rootNewDatabaseDir ).config( rootNewDatabaseDir )
+        Path rootNewDatabaseDir = Paths.get(testDirectory.cleanDirectory( "new-db-2" ).getPath());
+        LinkedList<String> newArgs = ArgsBuilder.args()
                 .from( classicNeo4jStore ).database( "graph.db" ).seed( seed ).build() ;
 
-        new RestoreExistingClusterCli(  ).run( newArgs.toArray( new String[newArgs.size()] ) );
+        new RestoreExistingClusterCli( rootNewDatabaseDir, rootNewDatabaseDir ).execute(
+                newArgs.toArray( new String[newArgs.size()] ) );
 
         // then
-        StoreMetadata newMetadata = metadataFor( extractDatabaseDir( rootNewDatabaseDir ) );
+        StoreMetadata newMetadata = metadataFor( extractDatabaseDir( rootNewDatabaseDir.toFile() ) );
         assertTrue( clusterSeed.after().equals( newMetadata.storeId() ) );
     }
 
