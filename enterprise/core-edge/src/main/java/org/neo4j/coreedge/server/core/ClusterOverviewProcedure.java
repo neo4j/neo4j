@@ -19,7 +19,11 @@
  */
 package org.neo4j.coreedge.server.core;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -64,7 +68,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
     @Override
     public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
-        Set<ReadWriteEndPoint> endpoints = new HashSet<>();
+        List<ReadWriteEndPoint> endpoints = new ArrayList<>();
         ClusterTopology clusterTopology = discoveryService.currentTopology();
         Set<CoreMember> coreMembers = clusterTopology.coreMembers();
         CoreMember leader = null;
@@ -95,6 +99,9 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
         {
             endpoints.add( new ReadWriteEndPoint( edgeAddresses.getBoltAddress(), Type.READ_REPLICA, null ) );
         }
+
+        Collections.sort( endpoints, ( o1, o2 ) -> o1.address().compareTo( o2.address() ) );
+
         return map( ( l ) -> new Object[]{l.identifier(), l.address(), l.type()},
                 asRawIterator( endpoints.iterator() ) );
     }
