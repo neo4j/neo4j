@@ -21,6 +21,10 @@ package org.neo4j.helpers;
 
 import java.lang.reflect.Array;
 
+/**
+ * @deprecated This class will be removed in the next major release.
+ */
+@Deprecated
 public class ObjectUtil
 {
     public static String toString( Object obj )

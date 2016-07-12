@@ -110,12 +110,15 @@ public class StepStats implements StatsProvider
             builder.append( " DONE" );
         }
 
+        int i = 0;
         for ( Key key : keys() )
         {
             Stat stat = stat( key );
             if ( detailLevel.ordinal() >= stat.detailLevel().ordinal() )
             {
-                builder.append( key.shortName() != null ? key.shortName() + ":" : "" ).append( stat );
+                builder.append( i++ > 0 ? " " : "" )
+                       .append( key.shortName() != null ? key.shortName() + ":" : "" )
+                       .append( stat );
             }
         }
         return name + (builder.length() > 0 ? ":" + builder : "");

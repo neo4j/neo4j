@@ -30,12 +30,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.ArrayUtil;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.ObjectUtil;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -57,9 +57,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 @RunWith(value = Parameterized.class)
 public abstract class SchemaIndexProviderApprovalTest
 {
-    /*
-    These are the values that will be checked. Searching
-     */
+    // These are the values that will be checked.
     public enum TestValue
     {
         BOOLEAN_TRUE( true ),
@@ -102,7 +100,7 @@ public abstract class SchemaIndexProviderApprovalTest
 
         private final Object value;
 
-        private TestValue( Object value )
+        TestValue( Object value )
         {
             this.value = value;
         }

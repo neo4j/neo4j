@@ -19,32 +19,37 @@
  */
 package org.neo4j.kernel.ha.management;
 
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.Iterables.toArray;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.helpers.Functions;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.Version;
-import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.management.ClusterDatabaseInfo;
 import org.neo4j.management.ClusterMemberInfo;
 
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.Iterables.toArray;
+
 public class HighlyAvailableKernelData extends KernelData implements Lifecycle
 {
-    private final HighlyAvailableGraphDatabase db;
+    private final GraphDatabaseAPI db;
     private final ClusterMembers memberInfo;
     private final ClusterDatabaseInfoProvider memberInfoProvider;
 
-    public HighlyAvailableKernelData( HighlyAvailableGraphDatabase db, ClusterMembers memberInfo,
-            ClusterDatabaseInfoProvider databaseInfo )
+    public HighlyAvailableKernelData( GraphDatabaseAPI db, ClusterMembers memberInfo,
+            ClusterDatabaseInfoProvider databaseInfo, FileSystemAbstraction fileSystem, PageCache pageCache,
+            File storeDir, Config config )
     {
-        super( db.getConfig() );
+        super( fileSystem, pageCache, storeDir, config );
         this.db = db;
         this.memberInfo = memberInfo;
         this.memberInfoProvider = databaseInfo;

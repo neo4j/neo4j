@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.extension;
 
-import java.util.Map;
-
+import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Service;
@@ -43,16 +44,17 @@ public abstract class KernelExtensionFactoryContractTest
 {
     protected final Class<? extends KernelExtensionFactory<?>> extClass;
     private final String key;
-    private final TargetDirectory target;
+
+    @Rule
+    public TargetDirectory.TestDirectory target = TargetDirectory.testDirForTest( getClass() );
 
     public KernelExtensionFactoryContractTest( String key, Class<? extends KernelExtensionFactory<?>> extClass )
     {
-        this.target = TargetDirectory.forTest( getClass() );
         this.extClass = extClass;
         this.key = key;
     }
 
-    public GraphDatabaseAPI graphdb( String name, int instance )
+    public GraphDatabaseAPI graphdb( int instance )
     {
         Map<String, String> config = configuration( true, instance );
         return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( config ).newGraphDatabase();
@@ -137,7 +139,7 @@ public abstract class KernelExtensionFactoryContractTest
     @Test
     public void canLoadKernelExtension() throws Exception
     {
-        GraphDatabaseService graphdb = graphdb( "graphdb", 0 );
+        GraphDatabaseService graphdb = graphdb( 0 );
         try
         {
             assertTrue( "Failed to load extension", getExtensions( graphdb ).isRegistered( extClass ) );

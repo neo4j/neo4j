@@ -43,7 +43,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class ManageNodeDocIT extends AbstractRestFunctionalTestBase
+public class ManageNodeDocIT extends AbstractRestFunctionalDocTestBase
 {
     private static final long NON_EXISTENT_NODE_ID = 999999;
     private static String NODE_URI_PATTERN = "^.*/node/[0-9]+$";
@@ -133,13 +133,9 @@ public class ManageNodeDocIT extends AbstractRestFunctionalTestBase
         assertThat( response, containsString( "[ 1, 2, 3 ]" ) );
     }
 
-    /**
-     * Property values can not be null.
-     *
-     * This example shows the response you get when trying to set a property to
-     * +null+.
-     */
-    @Documented
+    @Documented( "Property values can not be null.\n" +
+                 "\n" +
+                 "This example shows the response you get when trying to set a property to +null+." )
     @Test
     public void shouldGet400WhenSupplyingNullValueForAProperty() throws Exception
     {
@@ -214,16 +210,14 @@ public class ManageNodeDocIT extends AbstractRestFunctionalTestBase
 
     }
 
-    /**
-     * Delete node.
-     */
-    @Documented
+    @Documented( "Delete node." )
     @Test
     public void shouldRespondWith204WhenNodeDeleted() throws Exception
     {
-        gen.get()
+        long node = helper.createNode();
+        gen.get().description( startGraph( "delete node" ) )
                 .expectedStatus( 204 )
-                .delete( functionalTestHelper.dataUri() + "node/" + helper.createNode() );
+                .delete( functionalTestHelper.dataUri() + "node/" + node );
     }
 
     @Test
@@ -237,13 +231,12 @@ public class ManageNodeDocIT extends AbstractRestFunctionalTestBase
         assertNotNull( jsonMap.get( "message" ) );
     }
 
-    /**
-     * Nodes with relationships cannot be deleted.
-     *
-     * The relationships on a node has to be deleted before the node can be
-     * deleted.
-     */
-    @Documented
+    @Documented( "Nodes with relationships cannot be deleted.\n" +
+                 "\n" +
+                 "The relationships on a node has to be deleted before the node can be\n" +
+                 "deleted.\n" +
+                 " \n" +
+                 "TIP: You can use `DETACH DELETE` in Cypher to delete nodes and their relationships in one go." )
     @Test
     public void shouldRespondWith409AndSensibleEntityBodyWhenNodeCannotBeDeleted() throws Exception
     {
@@ -255,7 +248,7 @@ public class ManageNodeDocIT extends AbstractRestFunctionalTestBase
         assertThat( jsonMap, hasKey( "message" ) );
         assertNotNull( jsonMap.get( "message" ) );
 
-        gen.get()
+        gen.get().description( startGraph( "nodes with rels can not be deleted" ) ).noGraph()
                 .expectedStatus( 409 )
                 .delete( functionalTestHelper.dataUri() + "node/" + id );
     }

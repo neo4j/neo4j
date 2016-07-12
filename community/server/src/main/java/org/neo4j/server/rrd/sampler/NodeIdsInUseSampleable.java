@@ -20,12 +20,12 @@
 package org.neo4j.server.rrd.sampler;
 
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 
 public class NodeIdsInUseSampleable extends DatabasePrimitivesSampleableBase
 {
-    public NodeIdsInUseSampleable( NeoStoreProvider neoStore, AvailabilityGuard guard )
+    public NodeIdsInUseSampleable( NeoStoresSupplier neoStore, AvailabilityGuard guard )
     {
         super( neoStore, guard );
     }
@@ -37,7 +37,7 @@ public class NodeIdsInUseSampleable extends DatabasePrimitivesSampleableBase
     }
 
     @Override
-    protected double readValue( NeoStore neoStore )
+    protected double readValue( NeoStores neoStore )
     {
         return neoStore.getNodeStore().getNumberOfIdsInUse();
     }

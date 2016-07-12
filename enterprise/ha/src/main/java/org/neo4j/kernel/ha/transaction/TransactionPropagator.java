@@ -34,9 +34,9 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.ComException;
+import org.neo4j.function.Predicate;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
@@ -45,8 +45,8 @@ import org.neo4j.kernel.ha.com.master.SlavePriorities;
 import org.neo4j.kernel.ha.com.master.SlavePriority;
 import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.impl.util.CappedLogger;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.logging.Log;
 
 /**
  * Pushes transactions committed on master to one or more slaves. Number of slaves receiving each transactions
@@ -102,8 +102,11 @@ public class TransactionPropagator implements Lifecycle
             {
                 switch ( config.get( HaSettings.tx_push_strategy ) )
                 {
-                    case fixed:
-                        return SlavePriorities.fixed();
+                    case fixed_descending:
+                        return SlavePriorities.fixedDescending();
+
+                    case fixed_ascending:
+                        return SlavePriorities.fixedAscending();
 
                     case round_robin:
                         return SlavePriorities.roundRobin();
@@ -142,14 +145,14 @@ public class TransactionPropagator implements Lifecycle
     private int desiredReplicationFactor;
     private SlavePriority replicationStrategy;
     private ExecutorService slaveCommitters;
-    private final StringLogger log;
+    private final Log log;
     private final Configuration config;
     private final Slaves slaves;
     private final CommitPusher pusher;
     private final CappedLogger slaveCommitFailureLogger;
     private final CappedLogger pushedToTooFewSlaveLogger;
 
-    public TransactionPropagator( Configuration config, StringLogger log, Slaves slaves, CommitPusher pusher )
+    public TransactionPropagator( Configuration config, Log log, Slaves slaves, CommitPusher pusher )
     {
         this.config = config;
         this.log = log;
@@ -268,7 +271,7 @@ public class TransactionPropagator implements Lifecycle
             if ( !(successfulReplications >= replicationFactor) )
             {
                 pushedToTooFewSlaveLogger.info( "Transaction " + txId + " couldn't commit on enough slaves, desired " +
-                        replicationFactor + ", but could only commit at " + successfulReplications, null );
+                        replicationFactor + ", but could only commit at " + successfulReplications );
             }
         }
         catch ( Throwable t )
@@ -290,7 +293,7 @@ public class TransactionPropagator implements Lifecycle
         return externalAuthorServerId == null ? slaves : new FilteringIterator<>( slaves, new Predicate<Slave>()
         {
             @Override
-            public boolean accept( Slave item )
+            public boolean test( Slave item )
             {
                 return item.getServerId() != externalAuthorServerId;
             }

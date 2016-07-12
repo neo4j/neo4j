@@ -21,10 +21,6 @@ package org.neo4j.kernel.api.properties;
 
 import java.util.Arrays;
 
-import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
-import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
-import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
-
 class StringArrayProperty extends DefinedProperty
 {
     final String[] value;
@@ -105,11 +101,5 @@ class StringArrayProperty extends DefinedProperty
             return CharArrayProperty.eq( this.value, that.value );
         }
         return false;
-    }
-
-    @Override
-    public int sizeOfObjectInBytesIncludingOverhead()
-    {
-        return withObjectOverhead( withReference( sizeOfArray( value ) ) );
     }
 }

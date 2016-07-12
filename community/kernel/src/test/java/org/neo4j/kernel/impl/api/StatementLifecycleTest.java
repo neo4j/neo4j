@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
+
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -31,7 +32,7 @@ public class StatementLifecycleTest
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         KernelStatement statement = new KernelStatement( transaction, mock( IndexReaderFactory.class ), null,
-                null, null, null );
+                null, null, null, null );
         statement.acquire();
 
         // when
@@ -47,7 +48,7 @@ public class StatementLifecycleTest
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         KernelStatement statement = new KernelStatement( transaction, mock( IndexReaderFactory.class ), null,
-                null, null, null );
+                null, null, null, null );
         statement.acquire();
         statement.acquire();
 

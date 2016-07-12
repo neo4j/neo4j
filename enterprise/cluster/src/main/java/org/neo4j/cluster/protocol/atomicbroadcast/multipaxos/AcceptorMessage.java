@@ -157,7 +157,7 @@ public enum AcceptorMessage
                 }
                 catch ( Throwable e )
                 {
-                    // Ignore
+                    e.printStackTrace();
                 }
             }
 

@@ -24,68 +24,36 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.logging.Log;
 import org.neo4j.server.web.ServerInternalSettings;
 
-import static java.util.Arrays.asList;
 
-//TODO put the server and db configuration file into one file per database.
-// the configuration for each db could either be passed from the server or created locally
-// if no server (server config) is specified.
+/**
+ * @deprecated this will be removed in the next major version of Neo4j
+ */
 public class PropertyFileConfigurator implements ConfigurationBuilder
 {
     private final Config serverConfig;
     private Map<String,String> databaseTuningProperties;
     private Map<String,String> serverProperties;
 
-    // TODO two following constructors should be removed
-
-    public PropertyFileConfigurator()
-    {
-        // rely on the default server configuration file location
-        this( null, ConsoleLogger.DEV_NULL );
-    }
-
-    public PropertyFileConfigurator( ConsoleLogger log )
-    {
-        // rely on the default server configuration file location
-        this( null, log );
-    }
-
-    public PropertyFileConfigurator( File propertiesFile )
-    {
-        this( propertiesFile, ConsoleLogger.DEV_NULL );
-    }
-
-    public PropertyFileConfigurator( File propertiesFile, ConsoleLogger log )
+    public PropertyFileConfigurator( File propertiesFile, Log log )
     {
         if ( propertiesFile == null )
         {
-            propertiesFile = new File( System.getProperty(
-                    ServerInternalSettings.SERVER_CONFIG_FILE_KEY, Configurator.DEFAULT_CONFIG_DIR ) );
+            throw new IllegalArgumentException( "propertiesFile cannot be null ");
         }
         if ( log == null )
         {
-            log = new ConsoleLogger( StringLogger.SYSTEM );
+            throw new IllegalArgumentException( "log cannot be null ");
         }
 
         loadServerProperties( propertiesFile, log );
         loadDatabaseTuningProperties( propertiesFile, log );
 
-        serverConfig = new Config( serverProperties );
-        setServerSettingsClasses( serverConfig );
-
-        overrideStoreDirPropertyFromServerToDatabase();
-    }
-
-    public static void setServerSettingsClasses( Config config )
-    {
-        config.registerSettingsClasses( asList( ServerSettings.class,
-                ServerInternalSettings.class, GraphDatabaseSettings.class ) );
+        serverConfig = new Config( serverProperties, BaseServerConfigLoader.getDefaultSettingsClasses() );
     }
 
     @Override
@@ -100,7 +68,7 @@ public class PropertyFileConfigurator implements ConfigurationBuilder
         return databaseTuningProperties == null ? new HashMap<String,String>() : databaseTuningProperties;
     }
 
-    private void loadDatabaseTuningProperties( File configFile, ConsoleLogger log )
+    private void loadDatabaseTuningProperties( File configFile, Log log )
     {
         String databaseTuningPropertyPath = serverProperties.get( ServerInternalSettings.legacy_db_config.name() );
         if ( databaseTuningPropertyPath == null )
@@ -109,8 +77,7 @@ public class PropertyFileConfigurator implements ConfigurationBuilder
             databaseTuningPropertyPath =
                     configFile.getParent() + File.separator + ServerInternalSettings.DB_TUNING_CONFIG_FILE_NAME;
             serverProperties.put( ServerInternalSettings.legacy_db_config.name(), databaseTuningPropertyPath );
-            log.warn( String.format( "No database tuning file explicitly set, defaulting to [%s]",
-                    databaseTuningPropertyPath ) );
+            log.warn( "No database tuning file explicitly set, defaulting to [%s]", databaseTuningPropertyPath );
         }
 
         File databaseTuningPropertyFile = new File( databaseTuningPropertyPath );
@@ -137,7 +104,7 @@ public class PropertyFileConfigurator implements ConfigurationBuilder
         }
     }
 
-    private void loadServerProperties( File serverConfigFile, ConsoleLogger log )
+    private void loadServerProperties( File serverConfigFile, Log log )
     {
         if ( serverConfigFile == null )
         {
@@ -169,17 +136,4 @@ public class PropertyFileConfigurator implements ConfigurationBuilder
             serverProperties = new HashMap<>();
         }
     }
-
-    private void overrideStoreDirPropertyFromServerToDatabase()
-    {
-        // Always override the store dir property
-        // use the user defined or rely on the default value
-
-        // TODO Should use the same key if they represent the same thing.
-        // warning: db_location key used by GraphDatabaseSettings and store_dir key used by NeoServerSettings are
-        // different.
-        String db_location = serverConfig.get( ServerInternalSettings.legacy_db_location ).getAbsolutePath();
-        databaseTuningProperties.put( GraphDatabaseSettings.store_dir.name(), db_location );
-    }
-
 }

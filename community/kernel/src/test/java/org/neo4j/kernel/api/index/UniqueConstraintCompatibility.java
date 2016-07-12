@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
+import java.io.File;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -35,6 +36,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DynamicLabel;
@@ -42,7 +44,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -619,7 +620,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
                 {
                     for ( Action action : actions )
                     {
-                        action.apply( tx );
+                        action.accept( tx );
                     }
                     tx.success();
                     createNodeReadyLatch.countDown();
@@ -811,7 +812,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         {
             for ( Action action : actions )
             {
-                action.apply( tx );
+                action.accept( tx );
                 progress++;
             }
         }
@@ -828,7 +829,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         }
     }
 
-    private abstract class Action implements Function<Transaction,Void>
+    private abstract class Action implements Consumer<Transaction>
     {
         private final String name;
 
@@ -847,12 +848,11 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     private final Action success = new Action( "tx.success();" )
     {
         @Override
-        public Void apply( Transaction transaction )
+        public void accept( Transaction transaction )
         {
             transaction.success();
             // We also call close() here, because some validations and checks don't run until commit
             transaction.close();
-            return null;
         }
     };
 
@@ -862,11 +862,10 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
                 "node.setProperty( property, " + reprValue( propertyValue ) + " );" )
         {
             @Override
-            public Void apply( Transaction transaction )
+            public void accept( Transaction transaction )
             {
                 Node node = db.createNode( label );
                 node.setProperty( property, propertyValue );
-                return null;
             }
         };
     }
@@ -876,10 +875,9 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         return new Action( reprNode( node ) + ".setProperty( property, " + reprValue( value ) + " );")
         {
             @Override
-            public Void apply( Transaction transaction )
+            public void accept( Transaction transaction )
             {
                 node.setProperty( property, value );
-                return null;
             }
         };
     }
@@ -889,10 +887,9 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         return new Action( reprNode( node ) + ".removeProperty( property );")
         {
             @Override
-            public Void apply( Transaction transaction )
+            public void accept( Transaction transaction )
             {
                 node.removeProperty( property );
-                return null;
             }
         };
     }
@@ -902,10 +899,9 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         return new Action( reprNode( node ) + ".addLabel( " + label + " );" )
         {
             @Override
-            public Void apply( Transaction transaction )
+            public void accept( Transaction transaction )
             {
                 node.addLabel( label );
-                return null;
             }
         };
     }
@@ -915,10 +911,9 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         return new Action( "fail( \"" + message + "\" );")
         {
             @Override
-            public Void apply( Transaction transaction )
+            public void accept( Transaction transaction )
             {
                 Assert.fail( message );
-                return null;
             }
         };
     }
@@ -928,10 +923,9 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         return new Action( "assertThat( lookUpNode( " + reprValue( propertyValue ) + " ), " + matcher + " );" )
         {
             @Override
-            public Void apply( Transaction transaction )
+            public void accept( Transaction transaction )
             {
                 assertThat( lookUpNode( propertyValue ), matcher );
-                return null;
             }
         };
     }
@@ -1009,7 +1003,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     @Before
     public void setUp() {
-        String storeDir = testDirectory.absolutePath();
+        File storeDir = testDirectory.graphDbDir();
         TestGraphDatabaseFactory dbfactory = new TestGraphDatabaseFactory();
         dbfactory.addKernelExtension( new PredefinedSchemaIndexProviderFactory( indexProvider ) );
         db = dbfactory.newImpermanentDatabase( storeDir );

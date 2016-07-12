@@ -19,8 +19,7 @@
  */
 package org.neo4j.register;
 
-import org.neo4j.function.Function2;
-
+import org.neo4j.function.BiFunction;
 /**
  * Collection of common register types.
  */
@@ -40,7 +39,7 @@ public interface Register
         {
             void copyTo( DoubleLong.Out target );
             boolean hasValues( long first, long second );
-            boolean satisfies( Function2<java.lang.Long, java.lang.Long, Boolean> condition );
+            boolean satisfies( BiFunction<java.lang.Long, java.lang.Long, Boolean> condition );
         }
 
         interface Out

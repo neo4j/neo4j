@@ -19,7 +19,6 @@
  */
 package org.neo4j.jmx.impl;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 
@@ -124,11 +123,11 @@ public class KernelBean extends Neo4jMBean implements Kernel
 
             try
             {
-                storeDir = new File( ds.getStoreDir() ).getCanonicalFile().getAbsolutePath();
+                storeDir = ds.getStoreDir().getCanonicalFile().getAbsolutePath();
             }
             catch ( IOException e )
             {
-                storeDir = new File( ds.getStoreDir() ).getAbsolutePath();
+                storeDir = ds.getStoreDir().getAbsolutePath();
             }
         }
 

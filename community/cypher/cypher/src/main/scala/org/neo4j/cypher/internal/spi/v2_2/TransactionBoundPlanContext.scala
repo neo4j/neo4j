@@ -26,7 +26,7 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
-import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 
 class TransactionBoundPlanContext(someStatement: Statement, val gdb: GraphDatabaseService)
@@ -48,7 +48,7 @@ class TransactionBoundPlanContext(someStatement: Statement, val gdb: GraphDataba
   }
 
   private def evalOrNone[T](f: => Option[T]): Option[T] =
-    try { f } catch { case _: SchemaRuleNotFoundException => None }
+    try { f } catch { case _: SchemaKernelException => None }
 
   private def getOnlineIndex(descriptor: IndexDescriptor): Option[IndexDescriptor] =
     statement.readOperations().indexGetState(descriptor) match {
@@ -60,8 +60,10 @@ class TransactionBoundPlanContext(someStatement: Statement, val gdb: GraphDataba
     val labelId = statement.readOperations().labelGetForName(labelName)
     val propertyKeyId = statement.readOperations().propertyKeyGetForName(propertyKey)
 
-    val matchingConstraints = statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId)
-    if ( matchingConstraints.hasNext ) Some(matchingConstraints.next()) else None
+    import scala.collection.JavaConverters._
+    statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId).asScala.collectFirst {
+      case unique: UniquenessConstraint => unique
+    }
   } catch {
     case _: KernelException => None
   }
@@ -79,7 +81,7 @@ class TransactionBoundPlanContext(someStatement: Statement, val gdb: GraphDataba
   }
 
   def getOrCreateFromSchemaState[T](key: Any, f: => T): T = {
-    val javaCreator = new org.neo4j.helpers.Function[Any, T]() {
+    val javaCreator = new org.neo4j.function.Function[Any, T]() {
       def apply(key: Any) = f
     }
     statement.readOperations().schemaStateGetOrCreate(key, javaCreator)

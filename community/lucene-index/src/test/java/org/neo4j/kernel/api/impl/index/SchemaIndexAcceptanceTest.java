@@ -54,12 +54,16 @@ public class SchemaIndexAcceptanceTest
     @Test
     public void creatingIndexOnExistingDataBuildsIndexWhichWillBeOnlineNextStartup() throws Exception
     {
-        Transaction tx = db.beginTx();
-        Node node1 = createNode( label, "name", "One" );
-        Node node2 = createNode( label, "name", "Two" );
-        Node node3 = createNode( label, "name", "Three" );
-        tx.success();
-        tx.finish();
+        Node node1;
+        Node node2;
+        Node node3;
+        try ( Transaction tx = db.beginTx() )
+        {
+            node1 = createNode( label, "name", "One" );
+            node2 = createNode( label, "name", "Two" );
+            node3 = createNode( label, "name", "Three" );
+            tx.success();
+        }
 
         createIndex( db, label, propertyKey );
 
@@ -75,10 +79,12 @@ public class SchemaIndexAcceptanceTest
     {
         long[] arrayPropertyValue = {42, 23, 87};
         createIndex( db, label, propertyKey );
-        Transaction tx = db.beginTx();
-        Node node1 = createNode( label, propertyKey, arrayPropertyValue );
-        tx.success();
-        tx.finish();
+        Node node1;
+        try ( Transaction tx = db.beginTx() )
+        {
+            node1 = createNode( label, propertyKey, arrayPropertyValue );
+            tx.success();
+        }
 
         restart();
 
@@ -93,10 +99,12 @@ public class SchemaIndexAcceptanceTest
     {
         String[] arrayPropertyValue = {"A, B", "C"};
         createIndex( db, label, propertyKey );
-        Transaction tx = db.beginTx();
-        Node node1 = createNode( label, propertyKey, arrayPropertyValue );
-        tx.success();
-        tx.finish();
+        Node node1;
+        try ( Transaction tx = db.beginTx() )
+        {
+            node1 = createNode( label, propertyKey, arrayPropertyValue );
+            tx.success();
+        }
 
         restart();
 
@@ -111,10 +119,12 @@ public class SchemaIndexAcceptanceTest
     public void shouldIndexArraysPostPopulation() throws Exception
     {
         long[] arrayPropertyValue = {42, 23, 87};
-        Transaction tx = db.beginTx();
-        Node node1 = createNode( label, propertyKey, arrayPropertyValue );
-        tx.success();
-        tx.finish();
+        Node node1;
+        try ( Transaction tx = db.beginTx() )
+        {
+            node1 = createNode( label, propertyKey, arrayPropertyValue );
+            tx.success();
+        }
 
         createIndex( db, label, propertyKey );
 
@@ -192,40 +202,31 @@ public class SchemaIndexAcceptanceTest
 
     private void dropIndex( IndexDefinition indexDefinition )
     {
-        Transaction tx = db.beginTx();
-        indexDefinition.drop();
-        tx.success();
-        tx.finish();
+        try ( Transaction tx = db.beginTx() )
+        {
+            indexDefinition.drop();
+            tx.success();
+        }
     }
 
     private static void doStuff( GraphDatabaseService db, Label label, String propertyKey )
     {
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             for ( Node node : loop( db.findNodes( label, propertyKey, 3323 ) ) )
             {
                 count( node.getLabels() );
             }
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     private void createSomeData( Label label, String propertyKey )
     {
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( label );
             node.setProperty( propertyKey, "yeah" );
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 }

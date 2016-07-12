@@ -42,7 +42,7 @@ public class SpecificDepthTraversalTest extends TraversalTestBase
     @After
     public void tearDown()
     {
-        tx.finish();
+        tx.close();
     }
 
     @Test

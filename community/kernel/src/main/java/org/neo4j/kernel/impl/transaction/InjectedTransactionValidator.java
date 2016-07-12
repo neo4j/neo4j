@@ -27,15 +27,5 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
  */
 public interface InjectedTransactionValidator
 {
-    // This is used by the lucene data source, and some tests for convenience.
-    InjectedTransactionValidator ALLOW_ALL = new InjectedTransactionValidator(){
-
-        @Override
-        public void assertInjectionAllowed( long lastCommittedTxWhenTransactionStarted )
-        {
-            // Always ok.
-        }
-    };
-
     void assertInjectionAllowed( long lastCommittedTxWhenTransactionStarted ) throws TransactionFailureException;
 }

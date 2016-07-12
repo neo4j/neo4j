@@ -55,7 +55,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
         final int NON_DEFAULT_PORT = 4321;
 
         server = server().onPort( NON_DEFAULT_PORT )
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
 
@@ -74,7 +74,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
         String webAdminManagementUri = "/a/different/webadmin/management/uri/";
 
         server = server().withRelativeWebDataAdminUriPath( webAdminDataUri )
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .withRelativeWebAdminUriPath( webAdminManagementUri )
                 .build();
         server.start();
@@ -92,7 +92,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     public void shouldGenerateWADLWhenExplicitlyEnabledInConfig() throws IOException
     {
         server = server().withProperty( Configurator.WADL_ENABLED, "true" )
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         JaxRsResponse response = new RestRequest().get( "http://localhost:7474/application.wadl",
@@ -108,7 +108,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     public void shouldNotGenerateWADLWhenNotExplicitlyEnabledInConfig() throws IOException
     {
         server = server()
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         JaxRsResponse response = new RestRequest().get( "http://localhost:7474/application.wadl",
@@ -121,7 +121,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     public void shouldNotGenerateWADLWhenExplicitlyDisabledInConfig() throws IOException
     {
         server = server().withProperty( Configurator.WADL_ENABLED, "false" )
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         JaxRsResponse response = new RestRequest().get( "http://localhost:7474/application.wadl",
@@ -131,17 +131,53 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     }
 
     @Test
+    public void shouldEnableWebadminByDefault() throws IOException
+    {
+        // Given
+        server = server().usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() ).build();
+        server.start();
+
+        // When & then
+        assertEquals( 200, new RestRequest().get( "http://localhost:7474/webadmin" ).getStatus() );
+        assertEquals( 200, new RestRequest().get( "http://localhost:7474/db/manage/server/console" ).getStatus() );
+    }
+
+    @Test
     public void shouldDisableWebadminWhenAskedTo() throws IOException
     {
         // Given
         server = server().withProperty( ServerInternalSettings.webadmin_enabled.name(), "false" )
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
 
         // When & then
         assertEquals( 404, new RestRequest().get( "http://localhost:7474/webadmin" ).getStatus() );
-        assertEquals( 404, new RestRequest().get( "http://localhost:7474/db/manage/monitor" ).getStatus() );
+        assertEquals( 404, new RestRequest().get( "http://localhost:7474/db/manage/server/console" ).getStatus() );
+    }
+
+    @Test
+    public void shouldEnableRRDbWhenAskedTo() throws IOException
+    {
+        // Given
+        server = server().withProperty( ServerInternalSettings.rrdb_enabled.name(), "true" )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .build();
+        server.start();
+
+        // When & then
+        assertEquals( 200, new RestRequest().get( "http://localhost:7474/db/manage/server/monitor" ).getStatus() );
+    }
+
+    @Test
+    public void shouldDisableRRDBByDefault() throws IOException
+    {
+        // Given
+        server = server().usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() ).build();
+        server.start();
+
+        // When & then
+        assertEquals( 404, new RestRequest().get( "http://localhost:7474/db/manage/server/monitor" ).getStatus() );
     }
 
     @Test
@@ -149,7 +185,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     {
         // Given
         server = server()
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
         String node = POST( server.baseUri().toASCIIString() + "db/data/node" ).location();
@@ -195,7 +231,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
         GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
 
         server = server().withProperty( Configurator.SCRIPT_SANDBOXING_ENABLED_KEY, "false" )
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
 
         // When

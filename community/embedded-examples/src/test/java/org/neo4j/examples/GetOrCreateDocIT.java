@@ -19,6 +19,7 @@
 package org.neo4j.examples;
 
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -44,12 +45,14 @@ import static org.junit.Assert.assertNotNull;
 
 public class GetOrCreateDocIT extends AbstractJavaDocTestBase
 {
+    @ClassRule
+    public static TargetDirectory.TestDirectory testDirectory =
+            TargetDirectory.testDirForTest( GetOrCreateDocIT.class );
+
     @BeforeClass
     public static void init()
     {
-        db = new TestGraphDatabaseFactory().newEmbeddedDatabase(
-                TargetDirectory.forTest( GetOrCreateDocIT.class ).makeGraphDbDir().getAbsolutePath()
-             );
+        db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
     }
 
     abstract class GetOrCreate<D>

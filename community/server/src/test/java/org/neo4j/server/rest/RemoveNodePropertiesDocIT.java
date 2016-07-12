@@ -32,7 +32,7 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 
 import static org.junit.Assert.assertEquals;
 
-public class RemoveNodePropertiesDocIT extends AbstractRestFunctionalTestBase
+public class RemoveNodePropertiesDocIT extends AbstractRestFunctionalDocTestBase
 {
     private static FunctionalTestHelper functionalTestHelper;
     private static GraphDbHelper helper;
@@ -61,10 +61,7 @@ public class RemoveNodePropertiesDocIT extends AbstractRestFunctionalTestBase
         response.close();
     }
 
-    /**
-     * Delete all properties from node.
-     */
-    @Documented
+    @Documented( "Delete all properties from node." )
     @Test
     public void shouldReturn204WhenAllPropertiesAreRemoved()
     {
@@ -72,7 +69,7 @@ public class RemoveNodePropertiesDocIT extends AbstractRestFunctionalTestBase
         Map<String, Object> map = new HashMap<String, Object>();
         map.put( "jim", "tobias" );
         helper.setNodeProperties( nodeId, map );
-        gen.get()
+        gen.get().description( startGraph( "delete all prps from node" ) )
                 .expectedStatus( 204 )
                 .delete( functionalTestHelper.nodePropertiesUri( nodeId ) );
     }
@@ -89,11 +86,8 @@ public class RemoveNodePropertiesDocIT extends AbstractRestFunctionalTestBase
         return RestRequest.req().delete(getPropertiesUri(nodeId));
     }
 
-    /**
-    * To delete a single property
-    * from a node, see the example below.
-    */
-    @Documented
+    @Documented( "To delete a single property\n" +
+                 "from a node, see the example below" )
     @Test
     public void delete_a_named_property_from_a_node()
     {

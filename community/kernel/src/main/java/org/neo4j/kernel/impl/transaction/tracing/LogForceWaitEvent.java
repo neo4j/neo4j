@@ -38,5 +38,5 @@ public interface LogForceWaitEvent extends AutoCloseable
      * Mark the end of forcing the transaction log.
      */
     @Override
-    public void close();
+    void close();
 }

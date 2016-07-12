@@ -64,7 +64,7 @@ public class StoreFileChannel implements StoreChannel
         int bytesWritten;
         while((filePosition += (bytesWritten = write( src, filePosition ))) < expectedEndPosition)
         {
-            if( bytesWritten <= 0 )
+            if( bytesWritten < 0 )
             {
                 throw new IOException( "Unable to write to disk, reported bytes written was " + bytesWritten );
             }
@@ -78,7 +78,7 @@ public class StoreFileChannel implements StoreChannel
         int bytesWritten;
         while((bytesToWrite -= (bytesWritten = write( src ))) > 0)
         {
-            if( bytesWritten <= 0 )
+            if( bytesWritten < 0 )
             {
                 throw new IOException( "Unable to write to disk, reported bytes written was " + bytesWritten );
             }
@@ -163,5 +163,17 @@ public class StoreFileChannel implements StoreChannel
     public long size() throws IOException
     {
         return channel.size();
+    }
+
+    @Override
+    public void flush() throws IOException
+    {
+        force( false );
+    }
+
+    static FileChannel unwrap( StoreChannel channel )
+    {
+        StoreFileChannel sfc = (StoreFileChannel) channel;
+        return sfc.channel;
     }
 }

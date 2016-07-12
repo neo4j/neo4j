@@ -28,7 +28,7 @@ import java.util.concurrent.Future;
 
 import org.neo4j.function.Function;
 import org.neo4j.function.IOFunction;
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Predicate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
@@ -55,18 +55,20 @@ import static org.neo4j.kernel.impl.store.kvstore.Resources.TestPath.FILE_IN_EXI
 
 public class CountsTrackerTest
 {
-    public final @Rule Resources the = new Resources( FILE_IN_EXISTING_DIRECTORY );
-    public final @Rule ThreadingRule threading = new ThreadingRule();
+    @Rule
+    public final Resources resourceManager = new Resources( FILE_IN_EXISTING_DIRECTORY );
+    @Rule
+    public final ThreadingRule threading = new ThreadingRule();
 
     @Test
     public void shouldBeAbleToStartAndStopTheStore() throws Exception
     {
         // given
-        the.managed( newTracker() );
+        resourceManager.managed( newTracker() );
 
         // when
-        the.lifeStarts();
-        the.lifeShutsDown();
+        resourceManager.lifeStarts();
+        resourceManager.lifeShutsDown();
     }
 
     @Test
@@ -74,7 +76,7 @@ public class CountsTrackerTest
     public void shouldBeAbleToWriteDataToCountsTracker() throws Exception
     {
         // given
-        CountsTracker tracker = the.managed( newTracker() );
+        CountsTracker tracker = resourceManager.managed( newTracker() );
         CountsOracle oracle = new CountsOracle();
         {
             CountsOracle.Node a = oracle.node( 1 );
@@ -200,7 +202,8 @@ public class CountsTrackerTest
         {
             final Barrier.Control barrier = new Barrier.Control();
             CountsTracker tracker = life.add( new CountsTracker(
-                    the.logger(), the.fileSystem(), the.pageCache(), new Config(), the.testPath() )
+                    resourceManager.logProvider(), resourceManager.fileSystem(), resourceManager.pageCache(),
+                    new Config(), resourceManager.testPath() )
             {
                 @Override
                 protected boolean include( CountsKey countsKey, ReadableBuffer value )
@@ -255,7 +258,7 @@ public class CountsTrackerTest
     public void shouldNotRotateIfNoDataChanges() throws Exception
     {
         // given
-        CountsTracker tracker = the.managed( newTracker() );
+        CountsTracker tracker = resourceManager.managed( newTracker() );
         File before = tracker.currentFile();
 
         // when
@@ -270,7 +273,7 @@ public class CountsTrackerTest
     public void shouldRotateOnDataChangesEvenIfTransactionIsUnchanged() throws Exception
     {
         // given
-        CountsTracker tracker = the.managed( newTracker() );
+        CountsTracker tracker = resourceManager.managed( newTracker() );
         File before = tracker.currentFile();
         try ( CountsAccessor.IndexStatsUpdater updater = tracker.updateIndexCounts() )
         {
@@ -289,7 +292,7 @@ public class CountsTrackerTest
     public void shouldSupportTransactionsAppliedOutOfOrderOnRotation() throws Exception
     {
         // given
-        final CountsTracker tracker = the.managed( newTracker() );
+        final CountsTracker tracker = resourceManager.managed( newTracker() );
         try ( CountsAccessor.Updater tx = tracker.apply( 2 ).get() )
         {
             tx.incrementNodeCount( 1, 1 );
@@ -303,7 +306,7 @@ public class CountsTrackerTest
         Future<Long> rotated = threading.executeAndAwait( new Rotation( 2 ), tracker, new Predicate<Thread>()
         {
             @Override
-            public boolean accept( Thread thread )
+            public boolean test( Thread thread )
             {
                 switch ( thread.getState() )
                 {
@@ -344,9 +347,9 @@ public class CountsTrackerTest
 
     private CountsTracker newTracker()
     {
-        return new CountsTracker( the.logger(), the.fileSystem(), the.pageCache(), new Config(), the.testPath() )
-                       .setInitializer(
-                new DataInitializer<CountsAccessor.Updater>()
+        return new CountsTracker( resourceManager.logProvider(), resourceManager.fileSystem(),
+                resourceManager.pageCache(), new Config(), resourceManager.testPath() )
+                .setInitializer( new DataInitializer<CountsAccessor.Updater>()
                 {
                     @Override
                     public void initialize( CountsAccessor.Updater updater )

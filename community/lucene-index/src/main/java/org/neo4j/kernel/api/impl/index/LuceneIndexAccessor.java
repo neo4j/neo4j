@@ -55,7 +55,6 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     protected final LuceneReferenceManager<IndexSearcher> searcherManager;
     protected final ReservingLuceneIndexWriter writer;
 
-    private final IndexWriterStatus writerStatus;
     private final Directory dir;
     private final File dirFile;
     private final int bufferSizeLimit;
@@ -118,7 +117,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
 
     LuceneIndexAccessor( LuceneDocumentStructure documentStructure,
             IndexWriterFactory<ReservingLuceneIndexWriter> indexWriterFactory,
-            IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile,
+            DirectoryFactory dirFactory, File dirFile,
             int bufferSizeLimit ) throws IOException
     {
         this.documentStructure = documentStructure;
@@ -126,19 +125,17 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         this.bufferSizeLimit = bufferSizeLimit;
         this.dir = dirFactory.open( dirFile );
         this.writer = indexWriterFactory.create( dir );
-        this.writerStatus = writerStatus;
         this.searcherManager = new LuceneReferenceManager.Wrap<>( writer.createSearcherManager() );
     }
 
     // test only
     LuceneIndexAccessor( LuceneDocumentStructure documentStructure, ReservingLuceneIndexWriter writer,
-            LuceneReferenceManager<IndexSearcher> searcherManager, IndexWriterStatus writerStatus,
+            LuceneReferenceManager<IndexSearcher> searcherManager,
             Directory dir, File dirFile, int bufferSizeLimit )
     {
         this.documentStructure = documentStructure;
         this.writer = writer;
         this.searcherManager = searcherManager;
-        this.writerStatus = writerStatus;
         this.dir = dir;
         this.dirFile = dirFile;
         this.bufferSizeLimit = bufferSizeLimit;
@@ -179,7 +176,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     @Override
     public void force() throws IOException
     {
-        writerStatus.commitAsOnline( writer );
+        writer.commitAsOnline();
         refreshSearcherManager();
     }
 
@@ -198,7 +195,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
 
     private void closeIndexResources() throws IOException
     {
-        writerStatus.close( writer );
+        writer.close();
         searcherManager.close();
     }
 
@@ -240,7 +237,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     private void addRecovered( long nodeId, Object value ) throws IOException, IndexCapacityExceededException
     {
         Fieldable encodedValue = documentStructure.encodeAsFieldable( value );
-        writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
+        writer.updateDocument( documentStructure.newTermForChangeOrRemove( nodeId ),
                 documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
     }
 
@@ -253,13 +250,13 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     protected void change( long nodeId, Object value ) throws IOException, IndexCapacityExceededException
     {
         Fieldable encodedValue = documentStructure.encodeAsFieldable( value );
-        writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
+        writer.updateDocument( documentStructure.newTermForChangeOrRemove( nodeId ),
                 documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
     }
 
     protected void remove( long nodeId ) throws IOException
     {
-        writer.deleteDocuments( documentStructure.newQueryForChangeOrRemove( nodeId ) );
+        writer.deleteDocuments( documentStructure.newTermForChangeOrRemove( nodeId ) );
     }
 
     // This method should be synchronized because we need every thread to perform actual refresh

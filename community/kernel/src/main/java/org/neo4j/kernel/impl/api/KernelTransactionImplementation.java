@@ -23,24 +23,38 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.cursor.Cursor;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.cursor.DegreeItem;
+import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -50,15 +64,18 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.api.store.PersistenceCache;
+import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
-import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -131,16 +148,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final UpdateableSchemaState schemaState;
     private final StatementOperationParts operations;
     private final Pool<KernelTransactionImplementation> pool;
+    private final ConstraintSemantics constraintSemantics;
     // State
     private final TransactionRecordState recordState;
     private final CountsRecordState counts = new CountsRecordState();
-    private final RecordStateForCacheAccessor recordStateForCache;
     // For committing
     private final TransactionHeaderInformationFactory headerInformationFactory;
     private final TransactionCommitProcess commitProcess;
     private final TransactionMonitor transactionMonitor;
-    private final PersistenceCache persistenceCache;
     private final StoreReadLayer storeLayer;
+    private final ProcedureCache procedureCache;
     private final Clock clock;
     private final TransactionToRecordStateVisitor txStateToRecordStateVisitor = new TransactionToRecordStateVisitor();
     private final Collection<Command> extractedCommands = new ArrayCollection<>( 32 );
@@ -152,38 +169,56 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private TransactionHooks.TransactionHooksState hooksState;
     private boolean beforeHookInvoked;
     private Locks.Client locks;
+    private StoreStatement storeStatement;
     private boolean closing, closed;
     private boolean failure, success;
-    private volatile boolean terminated;
+    private volatile Status terminationReason;
     // Some header information
     private long startTimeMillis;
     private long lastTransactionIdWhenStarted;
-    /** Implements reusing the same underlying {@link KernelStatement} for overlapping statements. */
+    private long lastTransactionTimestampWhenStarted;
+
+    /**
+     * Implements reusing the same underlying {@link KernelStatement} for overlapping statements.
+     */
     private KernelStatement currentStatement;
     // Event tracing
     private final TransactionTracer tracer;
     private TransactionEvent transactionEvent;
     private CloseListener closeListener;
     private final NeoStoreTransactionContext context;
+    private volatile int reuseCount;
+
+    /**
+     * Lock prevents transaction {@link #markForTermination(Status)}  transction termination} from interfering with {@link
+     * #close() transaction commit} and specifically with {@link #release()}.
+     * Termination can run concurrently with commit and we need to make sure that it terminates the right lock client
+     * and the right transaction (with the right {@link #reuseCount}) because {@link KernelTransactionImplementation}
+     * instances are pooled.
+     */
+    private final Lock terminationReleaseLock = new ReentrantLock();
 
     public KernelTransactionImplementation( StatementOperationParts operations,
-                                            SchemaWriteGuard schemaWriteGuard, LabelScanStore labelScanStore,
+                                            SchemaWriteGuard schemaWriteGuard,
+                                            LabelScanStore labelScanStore,
                                             IndexingService indexService,
                                             UpdateableSchemaState schemaState,
                                             TransactionRecordState recordState,
-                                            RecordStateForCacheAccessor recordStateForCache,
-                                            SchemaIndexProviderMap providerMap, NeoStore neoStore,
-                                            Locks locks, TransactionHooks hooks,
+                                            SchemaIndexProviderMap providerMap,
+                                            NeoStores neoStores,
+                                            Locks locks,
+                                            TransactionHooks hooks,
                                             ConstraintIndexCreator constraintIndexCreator,
                                             TransactionHeaderInformationFactory headerInformationFactory,
                                             TransactionCommitProcess commitProcess,
                                             TransactionMonitor transactionMonitor,
-                                            PersistenceCache persistenceCache,
                                             StoreReadLayer storeLayer,
                                             LegacyIndexTransactionState legacyIndexTransactionState,
                                             Pool<KernelTransactionImplementation> pool,
+                                            ConstraintSemantics constraintSemantics,
                                             Clock clock,
                                             TransactionTracer tracer,
+                                            ProcedureCache procedureCache,
                                             NeoStoreTransactionContext context,
                                             boolean txTerminationAwareLocks )
     {
@@ -192,7 +227,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.labelScanStore = labelScanStore;
         this.indexService = indexService;
         this.recordState = recordState;
-        this.recordStateForCache = recordStateForCache;
         this.providerMap = providerMap;
         this.schemaState = schemaState;
         this.locksManager = locks;
@@ -202,30 +236,41 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.headerInformationFactory = headerInformationFactory;
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
-        this.persistenceCache = persistenceCache;
         this.storeLayer = storeLayer;
+        this.procedureCache = procedureCache;
         this.context = context;
         this.legacyIndexTransactionState = new CachingLegacyIndexTransactionState( legacyIndexTransactionState );
         this.pool = pool;
+        this.constraintSemantics = constraintSemantics;
         this.clock = clock;
-        this.schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
+        this.schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
         this.tracer = tracer;
     }
 
-    /** Reset this transaction to a vanilla state, turning it into a logically new transaction. */
-    public KernelTransactionImplementation initialize( long lastCommittedTx )
+    /**
+     * Reset this transaction to a vanilla state, turning it into a logically new transaction.
+     */
+    public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp )
     {
         this.locks = locksManager.newClient();
-        this.context.bind( locks );
-        this.closing = closed = failure = success = terminated = false;
+        this.terminationReason = null;
+        this.closing = closed = failure = success = false;
         this.transactionType = TransactionType.ANY;
         this.beforeHookInvoked = false;
         this.recordState.initialize( lastCommittedTx );
         this.startTimeMillis = clock.currentTimeMillis();
         this.lastTransactionIdWhenStarted = lastCommittedTx;
+        this.lastTransactionTimestampWhenStarted = lastTimeStamp;
         this.transactionEvent = tracer.beginTransaction();
-        assert transactionEvent != null: "transactionEvent was null!";
+        assert transactionEvent != null : "transactionEvent was null!";
+        this.storeStatement = storeLayer.acquireStatement();
+        this.closeListener = null;
         return this;
+    }
+
+    int getReuseCount()
+    {
+        return reuseCount;
     }
 
     @Override
@@ -241,23 +286,47 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public boolean shouldBeTerminated()
+    public Status getReasonIfTerminated()
     {
-        return terminated;
+        return terminationReason;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * This method is guarded by {@link #terminationReleaseLock} to coordinate concurrent
+     * {@link #close()} and {@link #release()} calls.
+     */
     @Override
-    public void markForTermination()
+    public void markForTermination( Status reason )
     {
-        if ( !terminated )
+        if ( !canBeTerminated() )
         {
-            failure = true;
-            terminated = true;
-            if ( txTerminationAwareLocks && locks != null )
+            return;
+        }
+
+        int initialReuseCount = reuseCount;
+        terminationReleaseLock.lock();
+        try
+        {
+            // this instance could have been reused, make sure we are trying to terminate the right transaction
+            // without this check there exists a possibility to terminate lock client that has just been returned to
+            // the pool or a transaction that was reused and represents a completely different logical transaction
+            boolean stillSameTransaction = initialReuseCount == reuseCount;
+            if ( stillSameTransaction && canBeTerminated() )
             {
-                locks.markForTermination();
+                failure = true;
+                terminationReason = reason;
+                if ( txTerminationAwareLocks && locks != null )
+                {
+                    locks.stop();
+                }
+                transactionMonitor.transactionTerminated();
             }
-            transactionMonitor.transactionTerminated();
+        }
+        finally
+        {
+            terminationReleaseLock.unlock();
         }
     }
 
@@ -274,7 +343,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if ( currentStatement == null )
         {
             currentStatement = new KernelStatement( this, new IndexReaderFactory.Caching( indexService ),
-                    labelScanStore, this, locks, operations );
+                    labelScanStore, this, locks, operations, storeStatement );
         }
         currentStatement.acquire();
         return currentStatement;
@@ -316,7 +385,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 catch ( DropIndexFailureException e )
                 {
                     throw new IllegalStateException( "Constraint index that was created in a transaction should be " +
-                                                     "possible to drop during rollback of that transaction.", e );
+                            "possible to drop during rollback of that transaction.", e );
                 }
             }
         }
@@ -373,12 +442,19 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     private void prepareRecordChangesFromTransactionState()
+            throws ConstraintValidationKernelException, CreateConstraintFailureException
     {
         if ( hasTxStateWithChanges() )
         {
-            txState().accept( txStateToRecordStateVisitor );
+            txState().accept( txStateVisitor() );
             txStateToRecordStateVisitor.done();
         }
+    }
+
+    private TxStateVisitor txStateVisitor()
+    {
+        return constraintSemantics
+                .decorateTxStateVisitor( operations, storeStatement, storeLayer, this, txStateToRecordStateVisitor );
     }
 
     private void assertTransactionOpen()
@@ -392,16 +468,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private boolean hasChanges()
     {
         return hasTxStateWithChanges() ||
-               recordState.hasChanges() ||
-               legacyIndexTransactionState.hasChanges() ||
-               counts.hasChanges();
+                recordState.hasChanges() ||
+                legacyIndexTransactionState.hasChanges() ||
+                counts.hasChanges();
     }
 
-    private boolean hasDataChanges()
-    {
-        return hasTxStateWithChanges() ? txState.hasDataChanges() : false;
-    }
-
+    // Only for test-access
     public TransactionRecordState getTransactionRecordState()
     {
         return recordState;
@@ -416,18 +488,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         closing = true;
         try
         {
-            if ( failure || !success )
+            if ( failure || !success || isTerminated() )
             {
                 rollback();
-                if ( success )
-                {
-                    // Success was called, but also failure which means that the client code using this
-                    // transaction passed through a happy path, but the transaction was still marked as
-                    // failed for one or more reasons. Tell the user that although it looked happy it
-                    // wasn't committed, but was instead rolled back.
-                    throw new TransactionFailureException( Status.Transaction.MarkedAsFailed,
-                            "Transaction rolled back even if marked as successful" );
-                }
+                failOnNonExplicitRollbackIfNeeded();
             }
             else
             {
@@ -460,6 +524,37 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
+    /**
+     * Throws exception if this transaction was marked as successful but failure flag has also been set to true.
+     * <p>
+     * This could happen when:
+     * <ul>
+     * <li>caller explicitly calls both {@link #success()} and {@link #failure()}</li>
+     * <li>caller explicitly calls {@link #success()} but transaction execution fails</li>
+     * <li>caller explicitly calls {@link #success()} but transaction is terminated</li>
+     * </ul>
+     * <p>
+     *
+     * @throws TransactionFailureException when execution failed
+     * @throws TransactionTerminatedException when transaction was terminated
+     */
+    private void failOnNonExplicitRollbackIfNeeded() throws TransactionFailureException
+    {
+        if ( success && isTerminated() )
+        {
+            throw new TransactionTerminatedException( terminationReason );
+        }
+        if ( success )
+        {
+            // Success was called, but also failure which means that the client code using this
+            // transaction passed through a happy path, but the transaction was still marked as
+            // failed for one or more reasons. Tell the user that although it looked happy it
+            // wasn't committed, but was instead rolled back.
+            throw new TransactionFailureException( Status.Transaction.MarkedAsFailed,
+                    "Transaction rolled back even if marked as successful" );
+        }
+    }
+
     protected void dispose()
     {
         if ( locks != null )
@@ -472,6 +567,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.hooksState = null;
         this.txState = null;
         this.legacyIndexTransactionState = null;
+
+        if ( storeStatement != null )
+        {
+            this.storeStatement.close();
+            this.storeStatement = null;
+        }
     }
 
     private void commit() throws TransactionFailureException
@@ -481,22 +582,27 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         try ( CommitEvent commitEvent = transactionEvent.beginCommitEvent() )
         {
             // Trigger transaction "before" hooks.
-            if ( hasDataChanges() )
+            if ( hasTxStateWithChanges() )
             {
-                try
+                if ( txState.hasDataChanges() )
                 {
-                    if ( (hooksState = hooks.beforeCommit( txState, this, storeLayer )) != null && hooksState.failed() )
+                    try
                     {
-                        throw new TransactionFailureException( Status.Transaction.HookFailed, hooksState.failure(), "" );
+                        if ( (hooksState = hooks.beforeCommit( txState, this, storeLayer )) != null && hooksState.failed() )
+                        {
+                            throw new TransactionFailureException( Status.Transaction.HookFailed, hooksState.failure(),
+                                    "" );
+                        }
+                    }
+                    finally
+                    {
+                        beforeHookInvoked = true;
                     }
                 }
-                finally
-                {
-                    beforeHookInvoked = true;
-                }
-            }
 
-            prepareRecordChangesFromTransactionState();
+                context.init( locks );
+                prepareRecordChangesFromTransactionState();
+            }
 
             // Convert changes into commands and commit
             if ( hasChanges() )
@@ -533,14 +639,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         // Commit the transaction
                         commitProcess.commit( transactionRepresentation, lockGroup, commitEvent, INTERNAL );
                     }
-
-                    if ( hasTxStateWithChanges() )
-                    {
-                        persistenceCache.apply( txState, recordStateForCache );
-                    }
                 }
             }
             success = true;
+        }
+        catch ( ConstraintValidationKernelException | CreateConstraintFailureException e )
+        {
+            throw new ConstraintViolationTransactionFailureException(
+                    e.getUserMessage( new KeyReadTokenNameLookup( operations.keyReadOperations() ) ), e );
         }
         finally
         {
@@ -572,25 +678,28 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             // Free any acquired id's
             if ( txState != null )
             {
-                txState.accept( new TxStateVisitor.Adapter()
+                try
                 {
-                    @Override
-                    public void visitCreatedNode( long id )
+                    txState.accept( new TxStateVisitor.Adapter()
                     {
-                        storeLayer.releaseNode( id );
-                    }
+                        @Override
+                        public void visitCreatedNode( long id )
+                        {
+                            storeLayer.releaseNode( id );
+                        }
 
-                    @Override
-                    public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
-                    {
-                        storeLayer.releaseRelationship( id );
-                    }
-                } );
-            }
-
-            if ( hasTxStateWithChanges() )
-            {
-                persistenceCache.invalidate( txState );
+                        @Override
+                        public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
+                        {
+                            storeLayer.releaseRelationship( id );
+                        }
+                    } );
+                }
+                catch ( ConstraintValidationKernelException | CreateConstraintFailureException e )
+                {
+                    throw new IllegalStateException(
+                            "Releasing locks during rollback should perform no constraints checking.", e );
+                }
             }
         }
         finally
@@ -631,12 +740,51 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    /** Release resources held up by this transaction & return it to the transaction pool. */
+    /**
+     * Release resources held up by this transaction & return it to the transaction pool.
+     * This method is guarded by {@link #terminationReleaseLock} to coordinate concurrent
+     * {@link #markForTermination(Status)} calls.
+     */
     private void release()
     {
-        locks.close();
-        locks = null;
-        pool.release( this );
+        terminationReleaseLock.lock();
+        try
+        {
+            locks.close();
+            locks = null;
+            terminationReason = null;
+            pool.release( this );
+            if ( storeStatement != null )
+            {
+                storeStatement.close();
+                storeStatement = null;
+            }
+        }
+        finally
+        {
+            reuseCount++;
+            terminationReleaseLock.unlock();
+        }
+    }
+
+    /**
+     * Transaction can be terminated only when it is not closed and not already terminated.
+     * Otherwise termination does not make sense.
+     */
+    private boolean canBeTerminated()
+    {
+        return !closed && !isTerminated();
+    }
+
+    private boolean isTerminated()
+    {
+        return terminationReason != null;
+    }
+
+    @Override
+    public long lastTransactionTimestampWhenStarted()
+    {
+        return lastTransactionTimestampWhenStarted;
     }
 
     private class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
@@ -669,33 +817,38 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         @Override
         public void visitDeletedNode( long id )
         {
-            try
+            try ( StoreStatement statement = storeLayer.acquireStatement() )
             {
                 counts.incrementNodeCount( ANY_LABEL, -1 );
-                PrimitiveIntIterator labels = storeLayer.nodeGetLabels( id );
-                if ( labels.hasNext() )
+                try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( id ) )
                 {
-                    final int[] removed = PrimitiveIntCollections.asArray( labels );
-                    for ( int label : removed )
+                    if ( node.next() )
                     {
-                        counts.incrementNodeCount( label, -1 );
-                    }
-                    storeLayer.nodeVisitDegrees( id, new DegreeVisitor()
-                    {
-                        @Override
-                        public void visitDegree( int type, int outgoing, int incoming )
+                        // TODO Rewrite this to use cursors directly instead of iterator
+                        PrimitiveIntIterator labels = node.get().getLabels();
+                        if ( labels.hasNext() )
                         {
+                            final int[] removed = PrimitiveIntCollections.asArray( labels );
                             for ( int label : removed )
                             {
-                                updateRelationshipsCountsFromDegrees( type, label, -outgoing, -incoming );
+                                counts.incrementNodeCount( label, -1 );
+                            }
+
+                            try ( Cursor<DegreeItem> degrees = node.get().degrees() )
+                            {
+                                while ( degrees.next() )
+                                {
+                                    DegreeItem degree = degrees.get();
+                                    for ( int label : removed )
+                                    {
+                                        updateRelationshipsCountsFromDegrees( degree.type(), label, -degree.outgoing(),
+                                                -degree.incoming() );
+                                    }
+                                }
                             }
                         }
-                    } );
+                    }
                 }
-            }
-            catch ( EntityNotFoundException e )
-            {
-                // this should not happen, but I guess it means the node we deleted did not exist...?
             }
             recordState.nodeDelete( id );
         }
@@ -736,7 +889,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
         @Override
         public void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added,
-                                              Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+                Iterator<DefinedProperty> changed, Iterator<Integer> removed )
         {
             while ( removed.hasNext() )
             {
@@ -756,7 +909,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
         @Override
         public void visitRelPropertyChanges( long id, Iterator<DefinedProperty> added,
-                                             Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+                Iterator<DefinedProperty> changed, Iterator<Integer> removed )
         {
             while ( removed.hasNext() )
             {
@@ -776,7 +929,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
         @Override
         public void visitGraphPropertyChanges( Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
-                                               Iterator<Integer> removed )
+                Iterator<Integer> removed )
         {
             while ( removed.hasNext() )
             {
@@ -797,34 +950,46 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         @Override
         public void visitNodeLabelChanges( long id, final Set<Integer> added, final Set<Integer> removed )
         {
-            // update counts
-            if ( !(added.isEmpty() && removed.isEmpty()) )
+            try ( StoreStatement statement = storeLayer.acquireStatement() )
             {
-                for ( Integer label : added )
+                // update counts
+                if ( !(added.isEmpty() && removed.isEmpty()) )
                 {
-                    counts.incrementNodeCount( label, 1 );
-                }
-                for ( Integer label : removed )
-                {
-                    counts.incrementNodeCount( label, -1 );
-                }
-                // get the relationship counts from *before* this transaction,
-                // the relationship changes will compensate for what happens during the transaction
-                storeLayer.nodeVisitDegrees( id, new DegreeVisitor()
-                {
-                    @Override
-                    public void visitDegree( int type, int outgoing, int incoming )
+                    for ( Integer label : added )
                     {
-                        for ( Integer label : added )
+                        counts.incrementNodeCount( label, 1 );
+                    }
+                    for ( Integer label : removed )
+                    {
+                        counts.incrementNodeCount( label, -1 );
+                    }
+                    // get the relationship counts from *before* this transaction,
+                    // the relationship changes will compensate for what happens during the transaction
+                    try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( id ) )
+                    {
+                        if ( node.next() )
                         {
-                            updateRelationshipsCountsFromDegrees( type, label, outgoing, incoming );
-                        }
-                        for ( Integer label : removed )
-                        {
-                            updateRelationshipsCountsFromDegrees( type, label, -outgoing, -incoming );
+                            try ( Cursor<DegreeItem> degrees = node.get().degrees() )
+                            {
+                                while ( degrees.next() )
+                                {
+                                    DegreeItem degree = degrees.get();
+
+                                    for ( Integer label : added )
+                                    {
+                                        updateRelationshipsCountsFromDegrees( degree.type(), label, degree.outgoing(),
+                                                degree.incoming() );
+                                    }
+                                    for ( Integer label : removed )
+                                    {
+                                        updateRelationshipsCountsFromDegrees( degree.type(), label, -degree.outgoing(),
+                                                -degree.incoming() );
+                                    }
+                                }
+                            }
                         }
                     }
-                } );
+                }
             }
 
             // record the state changes to be made to the store
@@ -842,7 +1007,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         public void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex )
         {
             SchemaIndexProvider.Descriptor providerDescriptor = providerMap.getDefaultProvider()
-                                                                           .getProviderDescriptor();
+                    .getProviderDescriptor();
             IndexRule rule;
             if ( isConstraintIndex )
             {
@@ -862,34 +1027,35 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         public void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex )
         {
             SchemaStorage.IndexRuleKind kind = isConstraintIndex ?
-                                               SchemaStorage.IndexRuleKind.CONSTRAINT
-                                                                 : SchemaStorage.IndexRuleKind.INDEX;
+                    SchemaStorage.IndexRuleKind.CONSTRAINT
+                    : SchemaStorage.IndexRuleKind.INDEX;
             IndexRule rule = schemaStorage.indexRule( element.getLabelId(), element.getPropertyKeyId(), kind );
             recordState.dropSchemaRule( rule );
         }
 
         @Override
-        public void visitAddedConstraint( UniquenessConstraint element )
+        public void visitAddedUniquePropertyConstraint( UniquenessConstraint element )
         {
             clearState = true;
             long constraintId = schemaStorage.newRuleId();
             IndexRule indexRule = schemaStorage.indexRule(
                     element.label(),
-                    element.propertyKeyId(),
+                    element.propertyKey(),
                     SchemaStorage.IndexRuleKind.CONSTRAINT );
-            recordState.createSchemaRule( UniquenessConstraintRule.uniquenessConstraintRule(
-                    constraintId, element.label(), element.propertyKeyId(), indexRule.getId() ) );
+            recordState.createSchemaRule( constraintSemantics
+                    .writeUniquePropertyConstraint( constraintId, element.label(), element.propertyKey(),
+                            indexRule.getId() ) );
             recordState.setConstraintIndexOwner( indexRule, constraintId );
         }
 
         @Override
-        public void visitRemovedConstraint( UniquenessConstraint element )
+        public void visitRemovedUniquePropertyConstraint( UniquenessConstraint element )
         {
             try
             {
                 clearState = true;
-                UniquenessConstraintRule rule = schemaStorage
-                        .uniquenessConstraint( element.label(), element.propertyKeyId() );
+                UniquePropertyConstraintRule rule = schemaStorage
+                        .uniquenessConstraint( element.label(), element.propertyKey() );
                 recordState.dropSchemaRule( rule );
             }
             catch ( SchemaRuleNotFoundException e )
@@ -897,10 +1063,77 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 throw new ThisShouldNotHappenError(
                         "Tobias Lindaaker",
                         "Constraint to be removed should exist, since its existence should " +
-                        "have been validated earlier and the schema should have been locked." );
+                                "have been validated earlier and the schema should have been locked." );
+            }
+            catch ( DuplicateSchemaRuleException de )
+            {
+                throw new IllegalStateException( "Multiple constraints found for specified label and property." );
             }
             // Remove the index for the constraint as well
-            visitRemovedIndex( new IndexDescriptor( element.label(), element.propertyKeyId() ), true );
+            visitRemovedIndex( new IndexDescriptor( element.label(), element.propertyKey() ), true );
+        }
+
+        @Override
+        public void visitAddedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element )
+                throws CreateConstraintFailureException
+        {
+            clearState = true;
+            recordState.createSchemaRule( constraintSemantics.writeNodePropertyExistenceConstraint(
+                    schemaStorage.newRuleId(), element.label(), element.propertyKey() ) );
+        }
+
+        @Override
+        public void visitRemovedNodePropertyExistenceConstraint( NodePropertyExistenceConstraint element )
+        {
+            try
+            {
+                clearState = true;
+                recordState.dropSchemaRule(
+                        schemaStorage.nodePropertyExistenceConstraint( element.label(), element.propertyKey() ) );
+            }
+            catch ( SchemaRuleNotFoundException e )
+            {
+                throw new IllegalStateException(
+                        "Node property existence constraint to be removed should exist, since its existence should " +
+                        "have been validated earlier and the schema should have been locked." );
+            }
+            catch ( DuplicateSchemaRuleException de )
+            {
+                throw new IllegalStateException( "Multiple node property constraints found for specified label and " +
+                                                 "property." );
+            }
+        }
+
+        @Override
+        public void visitAddedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element )
+                throws CreateConstraintFailureException
+        {
+            clearState = true;
+            recordState.createSchemaRule( constraintSemantics.writeRelationshipPropertyExistenceConstraint(
+                    schemaStorage.newRuleId(), element.relationshipType(), element.propertyKey() ) );
+        }
+
+        @Override
+        public void visitRemovedRelationshipPropertyExistenceConstraint( RelationshipPropertyExistenceConstraint element )
+        {
+            try
+            {
+                clearState = true;
+                SchemaRule rule = schemaStorage.relationshipPropertyExistenceConstraint( element.relationshipType(),
+                        element.propertyKey() );
+                recordState.dropSchemaRule( rule );
+            }
+            catch ( SchemaRuleNotFoundException e )
+            {
+                throw new IllegalStateException(
+                        "Relationship property existence constraint to be removed should exist, since its existence " +
+                        "should have been validated earlier and the schema should have been locked." );
+            }
+            catch ( DuplicateSchemaRuleException re )
+            {
+                throw new IllegalStateException( "Multiple relationship property constraints found for specified " +
+                                                 "property and relationship type." );
+            }
         }
 
         @Override
@@ -922,19 +1155,33 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
 
         @Override
-        public void visitCreatedNodeLegacyIndex( String name, Map<String,String> config )
+        public void visitCreatedNodeLegacyIndex( String name, Map<String, String> config )
         {
             legacyIndexTransactionState.createIndex( IndexEntityType.Node, name, config );
         }
 
         @Override
-        public void visitCreatedRelationshipLegacyIndex( String name, Map<String,String> config )
+        public void visitCreatedRelationshipLegacyIndex( String name, Map<String, String> config )
         {
             legacyIndexTransactionState.createIndex( IndexEntityType.Relationship, name, config );
         }
+
+        @Override
+        public void visitCreatedProcedure( ProcedureDescriptor procedureDescriptor )
+        {
+            // TODO: This is a temporary measure to allow trialing procedures without changing the store format. Clearly, this is not safe or useful for
+            // production. This will need to be changed before we release a useful 3.x series release.
+            procedureCache.createProcedure( procedureDescriptor );
+        }
+
+        @Override
+        public void visitDroppedProcedure( ProcedureDescriptor procedureDescriptor )
+        {
+            procedureCache.dropProcedure( procedureDescriptor );
+        }
     }
 
-    private void updateRelationshipsCountsFromDegrees( int type, int label, int outgoing, int incoming )
+    private void updateRelationshipsCountsFromDegrees( int type, int label, long outgoing, long incoming )
     {
         // untyped
         counts.incrementRelationshipCount( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL, outgoing );
@@ -958,9 +1205,23 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private PrimitiveIntIterator labelsOf( long nodeId ) throws EntityNotFoundException
+    private PrimitiveIntIterator labelsOf( long nodeId )
     {
-        return StateHandlingStatementOperations.nodeGetLabels( storeLayer, txState, nodeId );
+        try ( StoreStatement statement = storeLayer.acquireStatement() )
+        {
+            try ( Cursor<NodeItem> node = operations.entityReadOperations().nodeCursor( this, statement, nodeId ) )
+            {
+                if ( node.next() )
+                {
+                    return node.get().getLabels();
+                }
+                else
+                {
+                    return PrimitiveIntCollections.emptyIterator();
+
+                }
+            }
+        }
     }
 
     @Override

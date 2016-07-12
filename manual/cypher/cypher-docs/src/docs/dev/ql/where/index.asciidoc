@@ -1,0 +1,119 @@
+[[query-where]]
+= Where
+
+[abstract]
+`WHERE` adds constraints to the patterns in a `MATCH` or `OPTIONAL MATCH` clause or filters the results of a `WITH` clause.
+
+`WHERE` is not a clause in it's own right -- rather, it's part of `MATCH`, `OPTIONAL MATCH`, `START` and `WITH`.
+
+In the case of `WITH` and `START`, `WHERE` simply filters the results.
+
+For `MATCH` and `OPTIONAL MATCH` on the other hand, `WHERE` adds constraints to the patterns described.
+_It should not be seen as a filter after the matching is finished._
+
+[IMPORTANT]
+In the case of multiple `MATCH` / `OPTIONAL MATCH` clauses, the predicate in `WHERE` is always a part of the patterns in the directly preceding `MATCH` / `OPTIONAL MATCH`.
+Both results and performance may be impacted if the `WHERE` is put inside the wrong `MATCH` clause.
+
+.Graph
+include::includes/cypher-where-graph.asciidoc[]
+
+== Basic usage ==
+
+:leveloffset: 3
+
+include::boolean-operations.asciidoc[]
+
+include::filter-on-node-label.asciidoc[]
+
+include::filter-on-node-property.asciidoc[]
+
+include::filter-on-dynamic-node-property.asciidoc[]
+
+include::property-exists.asciidoc[]
+
+:leveloffset: 2
+
+[[query-where-string]]
+== String matching ==
+
+The start and end of strings can be matched using `STARTS WITH` and `ENDS WITH`.
+To match regardless of location in a string, use `CONTAINS`.
+The matching is _case-sensitive_.
+
+:leveloffset: 3
+
+include::match-the-start-of-a-string.asciidoc[]
+
+include::match-the-end-of-a-string.asciidoc[]
+
+include::match-anywhere-in-a-string.asciidoc[]
+
+include::string-matching-negation.asciidoc[]
+
+:leveloffset: 2
+
+[[query-where-regex]]
+== Regular expressions ==
+
+Cypher supports filtering using regular expressions.
+The regular expression syntax is inherited from https://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html[the Java regular expressions].
+This includes support for flags that change how strings are matched, including case-insensitive `(?i)`, multiline `(?m)` and dotall `(?s)`.
+Flags are given at the start of the regular expression, for example `MATCH (n) WHERE n.name =~ '(?i)Lon.*' RETURN n` will return nodes with name `London` or with name `LonDoN`.
+
+:leveloffset: 3
+
+include::regular-expressions.asciidoc[]
+
+include::escaping-in-regular-expressions.asciidoc[]
+
+include::case-insensitive-regular-expressions.asciidoc[]
+
+
+
+:leveloffset: 2
+
+[[query-where-patterns]]
+== Using path patterns in WHERE ==
+
+:leveloffset: 3
+
+include::filter-on-patterns.asciidoc[]
+
+include::filter-on-patterns-using-not.asciidoc[]
+
+include::filter-on-patterns-with-properties.asciidoc[]
+
+include::filtering-on-relationship-type.asciidoc[]
+
+:leveloffset: 2
+
+== Collections ==
+
+:leveloffset: 3
+
+include::in-operator.asciidoc[]
+
+:leveloffset: 2
+
+== Missing properties and values ==
+
+:leveloffset: 3
+
+include::default-to-false-if-property-is-missing.asciidoc[]
+
+include::default-to-true-if-property-is-missing.asciidoc[]
+
+include::filter-on-null.asciidoc[]
+
+:leveloffset: 2
+
+== Using ranges ==
+
+:leveloffset: 3
+
+include::simple-range.asciidoc[]
+
+include::composite-range.asciidoc[]
+
+

@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import java.io.IOException;
-
-import org.neo4j.kernel.impl.transaction.command.LogHandler;
-
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_1P_COMMIT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.CURRENT;
 
@@ -36,12 +32,6 @@ public class OnePhaseCommit extends LogEntryCommit
     public OnePhaseCommit( LogEntryVersion version, long txId, long timeWritten )
     {
         super( version, TX_1P_COMMIT, txId, timeWritten, "Commit" );
-    }
-
-    @Override
-    public void accept( LogHandler handler ) throws IOException
-    {
-        handler.onePhaseCommitEntry( this );
     }
 
     @Override

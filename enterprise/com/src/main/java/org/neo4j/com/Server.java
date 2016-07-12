@@ -23,7 +23,6 @@ import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelException;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
@@ -41,28 +40,25 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.InetSocketAddress;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.Executors.newScheduledThreadPool;
@@ -89,8 +85,13 @@ import static org.neo4j.helpers.NamedThreadFactory.named;
  *
  * @see Client
  */
-public abstract class Server<T, R> extends SimpleChannelHandler implements ChannelPipelineFactory, Lifecycle
+public abstract class Server<T, R> extends SimpleChannelHandler implements ChannelPipelineFactory, Lifecycle,
+        ChannelCloser
 {
+
+    private final LogProvider logProvider;
+    private ScheduledExecutorService silentChannelExecutor;
+
     public interface Configuration
     {
         long getOldChannelThreshold();
@@ -107,17 +108,14 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     // actual work. So this is more like a core Netty I/O pool worker size.
     public final static int DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS = 200;
     static final byte INTERNAL_PROTOCOL_VERSION = 2;
-    private static final String INADDR_ANY = "0.0.0.0";
     private final T requestTarget;
-    private final Map<Channel,Pair<RequestContext,AtomicLong /*time last heard of*/>> connectedSlaveChannels =
-            new ConcurrentHashMap<>();
-    private final StringLogger msgLog;
+    private IdleChannelReaper connectedSlaveChannels;
+    private final Log msgLog;
     private final Map<Channel,PartialRequest> partialRequests = new ConcurrentHashMap<>();
     private final Configuration config;
     private final int frameLength;
     private final ByteCounterMonitor byteCounterMonitor;
     private final RequestMonitor requestMonitor;
-    private final Clock clock;
     private final byte applicationProtocolVersion;
     private final TxChecksumVerifier txVerifier;
     private ServerBootstrap bootstrap;
@@ -128,14 +126,9 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     // Executor for channels that we know should be finished, but can't due to being
     // active at the moment.
     private ExecutorService unfinishedTransactionExecutor;
-    // This is because there's a bug in Netty causing some channelClosed/channelDisconnected
-    // events to not be sent. This is merely a safety net to catch the remained of the closed
-    // channels that netty doesn't tell us about.
-    private ScheduledExecutorService silentChannelExecutor;
-    private long oldChannelThresholdMillis;
     private int chunkSize;
 
-    public Server( T requestTarget, Configuration config, Logging logging, int frameLength,
+    public Server( T requestTarget, Configuration config, LogProvider logProvider, int frameLength,
                    ProtocolVersion protocolVersion, TxChecksumVerifier txVerifier, Clock clock, ByteCounterMonitor
             byteCounterMonitor, RequestMonitor requestMonitor )
     {
@@ -143,12 +136,12 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         this.config = config;
         this.frameLength = frameLength;
         this.applicationProtocolVersion = protocolVersion.getApplicationProtocol();
-        this.msgLog = logging.getMessagesLog( getClass() );
+        this.logProvider = logProvider;
+        this.msgLog = this.logProvider.getLog( getClass() );
         this.txVerifier = txVerifier;
-        this.clock = clock;
         this.byteCounterMonitor = byteCounterMonitor;
         this.requestMonitor = requestMonitor;
-        this.oldChannelThresholdMillis = config.getOldChannelThreshold();
+        this.connectedSlaveChannels = new IdleChannelReaper( this, logProvider, clock, config.getOldChannelThreshold() );
         this.chunkSize = config.getChunkSize();
         assertChunkSizeIsWithinFrameSize( chunkSize, frameLength );
     }
@@ -165,11 +158,15 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     @Override
     public void init() throws Throwable
     {
-        targetCallExecutor = newCachedThreadPool(
-                named( getClass().getSimpleName() + ":" + config.getServerAddress().getPort() ) );
+        chunkSize = config.getChunkSize();
+        assertChunkSizeIsWithinFrameSize( chunkSize, frameLength );
+
+        String className = getClass().getSimpleName();
+
+        targetCallExecutor = newCachedThreadPool( named( className + ":" + config.getServerAddress().getPort() ) );
         unfinishedTransactionExecutor = newScheduledThreadPool( 2, named( "Unfinished transactions" ) );
         silentChannelExecutor = newSingleThreadScheduledExecutor( named( "Silent channel reaper" ) );
-        silentChannelExecutor.scheduleWithFixedDelay( silentChannelFinisher(), 5, 5, TimeUnit.SECONDS );
+        silentChannelExecutor.scheduleWithFixedDelay( connectedSlaveChannels, 5, 5, TimeUnit.SECONDS );
     }
 
     @Override
@@ -182,38 +179,18 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
                 bossExecutor, workerExecutor, config.getMaxConcurrentTransactions() ) );
         bootstrap.setPipelineFactory( this );
 
-        Channel channel = null;
-        socketAddress = null;
-
-        // Try binding to any port in the port range
-        int[] ports = config.getServerAddress().getPorts();
-
-        ChannelException ex = null;
-
-        for ( int port = ports[0]; port <= ports[1]; port++ )
+        PortRangeSocketBinder portRangeSocketBinder = new PortRangeSocketBinder( bootstrap );
+        try
         {
-            if ( config.getServerAddress().getHost() == null ||
-                 config.getServerAddress().getHost().equals( INADDR_ANY ) )
-            {
-                socketAddress = new InetSocketAddress( port );
-            }
-            else
-            {
-                socketAddress = new InetSocketAddress( config.getServerAddress().getHost(), port );
-            }
-            try
-            {
-                channel = bootstrap.bind( socketAddress );
-                ex = null;
-                break;
-            }
-            catch ( ChannelException e )
-            {
-                ex = e;
-            }
-        }
+            Connection connection = portRangeSocketBinder.bindToFirstAvailablePortInRange( config.getServerAddress() );
+            Channel channel = connection.getChannel();
+            socketAddress = connection.getSocketAddress();
 
-        if ( ex != null )
+            channelGroup = new DefaultChannelGroup();
+            channelGroup.add( channel );
+            msgLog.info( className + " communication server started and bound to " + socketAddress );
+        }
+        catch ( Exception ex )
         {
             msgLog.error( "Failed to bind server to " + socketAddress, ex );
             bootstrap.releaseExternalResources();
@@ -222,10 +199,6 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
             silentChannelExecutor.shutdownNow();
             throw new IOException( ex );
         }
-
-        channelGroup = new DefaultChannelGroup();
-        channelGroup.add( channel );
-        msgLog.info( className + " communication server started and bound to " + socketAddress );
     }
 
     @Override
@@ -253,46 +226,6 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     public InetSocketAddress getSocketAddress()
     {
         return socketAddress;
-    }
-
-    private Runnable silentChannelFinisher()
-    {
-        // This poller is here because sometimes Netty doesn't tell us when channels are
-        // closed or disconnected. Most of the time it does, but this acts as a safety
-        // net for those we don't get notifications for. When the bug is fixed remove this.
-        return new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                Map<Channel,Boolean/*starting to get old?*/> channels = new HashMap<>();
-                synchronized ( connectedSlaveChannels )
-                {
-                    for ( Map.Entry<Channel,Pair<RequestContext,AtomicLong>> channel : connectedSlaveChannels
-                            .entrySet() )
-                    {   // Has this channel been silent for a while?
-                        long age = System.currentTimeMillis() - channel.getValue().other().get();
-                        if ( age > oldChannelThresholdMillis )
-                        {
-                            msgLog.info( "Found a silent channel " + channel + ", " + age );
-                            channels.put( channel.getKey(), Boolean.TRUE );
-                        }
-                        else if ( age > oldChannelThresholdMillis / 2 )
-                        {   // Then add it to a list to check
-                            channels.put( channel.getKey(), Boolean.FALSE );
-                        }
-                    }
-                }
-                for ( Map.Entry<Channel,Boolean> channel : channels.entrySet() )
-                {
-                    if ( channel.getValue() || !channel.getKey().isOpen() || !channel.getKey().isConnected() ||
-                         !channel.getKey().isBound() )
-                    {
-                        tryToFinishOffChannel( channel.getKey() );
-                    }
-                }
-            }
-        };
     }
 
     /**
@@ -338,7 +271,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
             writeFailureResponse( e, buffer );
 
             ctx.getChannel().close();
-            tryToFinishOffChannel( ctx.getChannel() );
+            tryToCloseChannel( ctx.getChannel() );
             throw Exceptions.launderedException( e );
         }
     }
@@ -353,10 +286,8 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
          * but it is more sanitary and leaves less exceptions in the logs
          * Each time a write completes, simply update the corresponding channel's timestamp.
          */
-        Pair<RequestContext,AtomicLong> slave = connectedSlaveChannels.get( ctx.getChannel() );
-        if ( slave != null )
+        if ( connectedSlaveChannels.update( ctx.getChannel() ) )
         {
-            slave.other().set( clock.currentTimeMillis() );
             super.writeComplete( ctx, e );
         }
     }
@@ -369,7 +300,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
         if ( !ctx.getChannel().isOpen() )
         {
-            tryToFinishOffChannel( ctx.getChannel() );
+            tryToCloseChannel( ctx.getChannel() );
         }
 
         channelGroup.remove( e.getChannel() );
@@ -383,7 +314,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
         if ( !ctx.getChannel().isConnected() )
         {
-            tryToFinishOffChannel( ctx.getChannel() );
+            tryToCloseChannel( ctx.getChannel() );
         }
     }
 
@@ -393,28 +324,28 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         msgLog.warn( "Exception from Netty", e.getCause() );
     }
 
-    protected void tryToFinishOffChannel( Channel channel )
+    @Override
+    public void tryToCloseChannel( Channel channel )
     {
-        Pair<RequestContext,AtomicLong> slave;
-        slave = unmapSlave( channel );
-        if ( slave == null )
+        IdleChannelReaper.Request request = unmapSlave( channel );
+        if ( request == null )
         {
             return;
         }
-        tryToFinishOffChannel( channel, slave.first() );
+        tryToFinishOffChannel( channel, request.getRequestContext());
     }
 
     protected void tryToFinishOffChannel( Channel channel, RequestContext slave )
     {
         try
         {
-            finishOffChannel( channel, slave );
+            stopConversation( slave );
             unmapSlave( channel );
         }
         catch ( Throwable failure ) // Unknown error trying to finish off the tx
         {
             submitSilent( unfinishedTransactionExecutor, newTransactionFinisher( slave ) );
-            msgLog.error( "Could not finish off dead channel", failure );
+            msgLog.warn( "Could not finish off dead channel", failure );
         }
     }
 
@@ -443,7 +374,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
             {
                 try
                 {
-                    finishOffChannel( null, slave );
+                    stopConversation( slave );
                 }
                 catch ( Throwable e )
                 {
@@ -560,7 +491,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         }
         catch ( IOException e )
         {
-            msgLog.error( "Couldn't send cause of error to client", exception );
+            msgLog.warn( "Couldn't send cause of error to client", exception );
         }
     }
 
@@ -591,33 +522,18 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
     protected ChannelBuffer mapSlave( Channel channel, RequestContext slave )
     {
-        synchronized ( connectedSlaveChannels )
+        // Checking for machineId -1 excludes the "empty" slave contexts
+        // which some communication points pass in as context.
+        if ( slave != null && slave.machineId() != RequestContext.EMPTY.machineId() )
         {
-            // Checking for machineId -1 excludes the "empty" slave contexts
-            // which some communication points pass in as context.
-            if ( slave != null && slave.machineId() != RequestContext.EMPTY.machineId() )
-            {
-                Pair<RequestContext,AtomicLong> previous = connectedSlaveChannels.get( channel );
-                if ( previous != null )
-                {
-                    previous.other().set( System.currentTimeMillis() );
-                }
-                else
-                {
-                    connectedSlaveChannels.put( channel,
-                            Pair.of( slave, new AtomicLong( System.currentTimeMillis() ) ) );
-                }
-            }
+            connectedSlaveChannels.add( channel, slave );
         }
         return ChannelBuffers.dynamicBuffer();
     }
 
-    protected Pair<RequestContext,AtomicLong> unmapSlave( Channel channel )
+    protected IdleChannelReaper.Request unmapSlave( Channel channel )
     {
-        synchronized ( connectedSlaveChannels )
-        {
-            return connectedSlaveChannels.remove( channel );
-        }
+        return connectedSlaveChannels.remove( channel );
     }
 
     protected T getRequestTarget()
@@ -625,20 +541,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         return requestTarget;
     }
 
-    protected abstract void finishOffChannel( Channel channel, RequestContext context );
-
-    public Map<Channel,RequestContext> getConnectedSlaveChannels()
-    {
-        Map<Channel,RequestContext> result = new HashMap<>();
-        synchronized ( connectedSlaveChannels )
-        {
-            for ( Map.Entry<Channel,Pair<RequestContext,AtomicLong>> entry : connectedSlaveChannels.entrySet() )
-            {
-                result.put( entry.getKey(), entry.getValue().first() );
-            }
-        }
-        return result;
-    }
+    protected abstract void stopConversation( RequestContext context );
 
     private ChunkingChannelBuffer newChunkingBuffer( Channel channel )
     {

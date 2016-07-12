@@ -29,7 +29,12 @@ import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 
 /**
- * When a message is received, create an I Am Alive message as well, since we know that the sending instance is up
+ * When a message is received, create an I Am Alive message as well, since we know that the sending instance is up.
+ * The exceptions to this rule are:
+ * - when the message is of type "I Am Alive", since this would lead to a feedback loop of more and more "I Am Alive"
+ *   messages being sent.
+ * - when the message is of type "Suspicions", since these should be ignored for failed instances and generating an
+ *   "I Am Alive" message for it would mark the instance as alive before ignoring its suspicions.
  */
 public class HeartbeatIAmAliveProcessor implements MessageProcessor
 {
@@ -46,7 +51,8 @@ public class HeartbeatIAmAliveProcessor implements MessageProcessor
     public boolean process( Message<? extends MessageType> message )
     {
         if ( !message.isInternal() &&
-                !message.getMessageType().equals( HeartbeatMessage.i_am_alive ) )
+                !message.getMessageType().equals( HeartbeatMessage.i_am_alive ) &&
+                !message.getMessageType().equals( HeartbeatMessage.suspicions ) )
         {
             // We assume the FROM header always exists.
             String from =  message.getHeader( Message.FROM );

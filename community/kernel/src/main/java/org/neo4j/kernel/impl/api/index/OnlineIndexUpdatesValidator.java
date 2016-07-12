@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -46,7 +46,7 @@ public class OnlineIndexUpdatesValidator implements IndexUpdatesValidator
     private final KernelHealth kernelHealth;
     private final IndexUpdateMode updateMode;
 
-    public OnlineIndexUpdatesValidator( NeoStore neoStore, KernelHealth kernelHealth, PropertyLoader propertyLoader,
+    public OnlineIndexUpdatesValidator( NeoStores neoStore, KernelHealth kernelHealth, PropertyLoader propertyLoader,
             IndexingService indexing, IndexUpdateMode updateMode )
     {
         this.kernelHealth = kernelHealth;

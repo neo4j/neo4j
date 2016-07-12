@@ -29,14 +29,12 @@ import org.neo4j.graphdb.DependencyResolver.SelectionStrategy;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
-import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.kernel.extension.KernelExtensionUtil.servicesClassPathEntryInformation;
 
@@ -127,8 +125,7 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
                 }
 
                 @Override
-                public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs,
-                                                                            UpgradableDatabase upgradableDatabase )
+                public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache )
                 {
                     return StoreMigrationParticipant.NOT_PARTICIPATING;
                 }
@@ -236,18 +233,12 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
         return result;
     }
 
-    protected File getRootDirectory( Config config, String key )
-    {
-        return getRootDirectory( config.get( store_dir ), key );
-    }
-
     public static File getRootDirectory( File storeDir, String key )
     {
         return new File( new File( new File( storeDir, "schema" ), "index" ), key );
     }
 
-    public abstract StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs,
-                                                                         UpgradableDatabase upgradableDatabase );
+    public abstract StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache );
 
     /**
      * Provides a snapshot of meta files about this index provider, not the indexes themselves.

@@ -277,7 +277,7 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
     @Override
     public IndexHits<T> get( String key, Object value )
     {
-        try ( Statement statement = statementContextBridge.instance() )
+        try ( Statement statement = statementContextBridge.get() )
         {
             return wrapIndexHits( internalGet( key, value, statement ) );
         }
@@ -323,7 +323,7 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
                     catch ( NotFoundException e )
                     {   // By contract this is OK. So just skip it.
                         // But first, let's try to repair the index so this doesn't happen again.
-                        try ( Statement statement = statementContextBridge.instance() )
+                        try ( Statement statement = statementContextBridge.get() )
                         {
                             internalRemove( statement, id );
                         }
@@ -347,7 +347,7 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
     @Override
     public IndexHits<T> query( String key, Object queryOrQueryObject )
     {
-        try ( Statement statement = statementContextBridge.instance() )
+        try ( Statement statement = statementContextBridge.get() )
         {
             return wrapIndexHits( type.query( statement.readOperations(), name, key, queryOrQueryObject ) );
         }
@@ -360,7 +360,7 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
     @Override
     public IndexHits<T> query( Object queryOrQueryObject )
     {
-        try ( Statement statement = statementContextBridge.instance() )
+        try ( Statement statement = statementContextBridge.get() )
         {
             return wrapIndexHits( type.query( statement.readOperations(), name, queryOrQueryObject ) );
         }
@@ -385,7 +385,7 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
     @Override
     public void add( T entity, String key, Object value )
     {
-        try ( Statement statement = statementContextBridge.instance() )
+        try ( Statement statement = statementContextBridge.get() )
         {
             internalAdd( entity, key, value, statement );
         }
@@ -406,7 +406,7 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
     @Override
     public void remove( T entity, String key, Object value )
     {
-        try ( Statement statement = statementContextBridge.instance() )
+        try ( Statement statement = statementContextBridge.get() )
         {
             type.remove( statement.dataWriteOperations(), name, type.id( entity ), key, value );
         }
@@ -427,7 +427,7 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
     @Override
     public void remove( T entity, String key )
     {
-        try ( Statement statement = statementContextBridge.instance() )
+        try ( Statement statement = statementContextBridge.get() )
         {
             type.remove( statement.dataWriteOperations(), name, type.id( entity ), key );
         }
@@ -448,7 +448,7 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
     @Override
     public void remove( T entity )
     {
-        try ( Statement statement = statementContextBridge.instance() )
+        try ( Statement statement = statementContextBridge.get() )
         {
             internalRemove( statement, type.id( entity ) );
         }
@@ -475,7 +475,7 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
     @Override
     public void delete()
     {
-        try ( Statement statement = statementContextBridge.instance() )
+        try ( Statement statement = statementContextBridge.get() )
         {
             type.drop( statement.dataWriteOperations(), name );
         }
@@ -492,7 +492,7 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
     @Override
     public T putIfAbsent( T entity, String key, Object value )
     {
-        try ( Statement statement = statementContextBridge.instance() )
+        try ( Statement statement = statementContextBridge.get() )
         {
             // Does it already exist?
             long existing = single( internalGet( key, value, statement ), -1L );

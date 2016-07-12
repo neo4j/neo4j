@@ -21,6 +21,7 @@ package org.neo4j.server.rest.management.console;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.webadmin.console.ConsoleSessionCreator;
@@ -37,7 +38,7 @@ public class ShellSessionCreator implements ConsoleSessionCreator
     }
 
     @Override
-    public ScriptSession newSession( Database database, CypherExecutor cypherExecutor, HttpServletRequest request )
+    public ScriptSession newSession( Database database, CypherExecutor cypherExecutor, HttpServletRequest request, LogProvider logProvider )
     {
         return new ShellSession( database.getGraph() );
     }

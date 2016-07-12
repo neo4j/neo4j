@@ -4,7 +4,7 @@ Neo4j Shell
 ===========
 
 Neo4j shell is a command-line shell for running Cypher queries.
-There's also commands to get information about the database.
+There are also commands to get information about the database.
 In addition, you can browse the graph, much like how the Unix shell along with commands like +cd+, +ls+ and +pwd+ can be used to browse your local file system.
 
 It's a nice tool for development and debugging.
@@ -20,7 +20,7 @@ When used together with a Neo4j server, simply issue the following at the comman
 ./bin/neo4j-shell
 ----
 
-Under windows, the command is named `Neo4jShell.bat`.
+For help with running shell using Windows PowerShell, see <<powershell>>.
 
 For the full list of options, see the reference in the <<shell-manpage,Shell manual page>>.
 
@@ -43,7 +43,7 @@ There are two ways to start the shell, either by connecting to a remote shell se
 To start the shell and connect to a running server, run:
 [source,plain]
 ----
-neo4j-shell 
+neo4j-shell
 ----
 
 Alternatively supply +-port+ and +-name+ options depending on how the remote shell server was enabled.
@@ -133,7 +133,7 @@ So, it can infer the right values for the rights options.
 [[shell-options-enum]]
 == Enum options ==
 
-Some options expects a value which is one of the values in an enum, f.ex. direction part of relationship type filtering where there's +INCOMING+, +OUTGOING+ and +BOTH+.
+Some options expect a value which is one of the values in an enum, f.ex. direction part of relationship type filtering where there's +INCOMING+, +OUTGOING+ and +BOTH+.
 All such values can be supplied in an easier way.
 It's enough that you write the start of the value and the interpreter will find what you really meant.
 F.ex. +out+, +in+, +i+ or even +INCOMING+.
@@ -141,7 +141,7 @@ F.ex. +out+, +in+, +i+ or even +INCOMING+.
 [[shell-filters]]
 == Filters ==
 
-Some commands makes use of filters for varying purposes.
+Some commands make use of filters for varying purposes.
 F.ex. +-f+ in +ls+ and in +trav+.
 A filter is supplied as a http://www.json.org/[json] object (w/ or w/o the surrounding +{}+ brackets.
 Both keys and values can contain regular expressions for a more flexible matching.
@@ -380,13 +380,6 @@ include::shell/sample-session.asciidoc[]
 This example is creating a graph of the characters in the Matrix via the shell and then executing Cypher queries against it:
 
 include::shell/shell-matrix-example-graph.asciidoc[]
-
-Neo4j is configured for autoindexing, in this case with the following in the Neo4j configuration file:
-
-[source]
-----
-include::../autoindex.properties[]
-----
 
 The following is a sample shell session creating the Matrix graph and querying it.
 

@@ -19,19 +19,20 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Before;
+import org.junit.Rule;
+
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
-
 import javax.ws.rs.core.Response.Status;
 
-import org.junit.Before;
-import org.junit.Rule;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription;
@@ -51,6 +52,7 @@ import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIPS;
 import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIP_INDEX;
 import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_CONSTRAINT;
 import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_INDEX;
+import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_RELATIONSHIP_CONSTRAINT;
 
 public class AbstractRestFunctionalTestBase extends SharedServerTestBase implements GraphHolder
 {
@@ -85,7 +87,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         String script = createScript( scriptTemplate );
         String queryString = "{\"query\": \"" + script + "\",\"params\":{" + parameterString + "}}";
 
-        String snippet = org.neo4j.cypher.internal.compiler.v2_0.prettifier.Prettifier$.MODULE$.apply(script);
+        String snippet = org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier$.MODULE$.apply( script );
         gen().expectedStatus( status.getStatusCode() )
                 .payload( queryString )
                 .description( AsciidocHelper.createAsciiDocSnippet( "cypher", snippet ) );
@@ -128,6 +130,11 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     public GraphDatabaseService graphdb()
     {
         return server().getDatabase().getGraph();
+    }
+
+    public <T> T resolveDependency( Class<T> cls )
+    {
+        return ((GraphDatabaseAPI)graphdb()).getDependencyResolver().resolveDependency( cls );
     }
 
     protected static String getDataUri()
@@ -200,7 +207,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         {
             result.add( getNode( name ) );
         }
-        return result.toArray(nodes);
+        return result.toArray( nodes );
     }
 
     public void assertSize( int expectedSize, String entity )
@@ -223,7 +230,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     }
     public String getPropertiesUri( Node node )
     {
-        return getNodeUri(node)+  "/properties";
+        return getNodeUri( node )+  "/properties";
     }
 
     public RESTDocsGenerator gen() {
@@ -290,8 +297,28 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return getDataUri() + PATH_SCHEMA_CONSTRAINT + "/" + label + "/uniqueness/";
     }
 
+    public String getSchemaConstraintLabelExistenceUri( String label )
+    {
+        return getDataUri() + PATH_SCHEMA_CONSTRAINT + "/" + label + "/existence/";
+    }
+
+    public String getSchemaRelationshipConstraintTypeExistenceUri( String type )
+    {
+        return getDataUri() + PATH_SCHEMA_RELATIONSHIP_CONSTRAINT + "/" + type + "/existence/";
+    }
+
     public String getSchemaConstraintLabelUniquenessPropertyUri( String label, String property )
     {
         return getDataUri() + PATH_SCHEMA_CONSTRAINT + "/" + label + "/uniqueness/" + property;
+    }
+
+    public String getSchemaConstraintLabelExistencePropertyUri( String label, String property )
+    {
+        return getDataUri() + PATH_SCHEMA_CONSTRAINT + "/" + label + "/existence/" + property;
+    }
+
+    public String getSchemaRelationshipConstraintTypeExistencePropertyUri( String type, String property )
+    {
+        return getDataUri() + PATH_SCHEMA_RELATIONSHIP_CONSTRAINT + "/" + type + "/existence/" + property;
     }
 }

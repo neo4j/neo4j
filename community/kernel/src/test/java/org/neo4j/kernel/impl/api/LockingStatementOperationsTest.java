@@ -24,23 +24,34 @@ import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.neo4j.helpers.Function;
+import java.util.Collections;
+import java.util.Iterator;
+
+import org.neo4j.function.Function;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.api.operations.*;
+import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
+import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
+import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
+import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
+import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 
-import java.util.Collections;
-import java.util.Iterator;
-
 import static org.junit.Assert.assertSame;
-import static org.mockito.Mockito.*;
-
-import static org.neo4j.helpers.Functions.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.when;
+import static org.neo4j.function.Functions.constant;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 
 public class LockingStatementOperationsTest
@@ -53,7 +64,7 @@ public class LockingStatementOperationsTest
     private final Locks.Client locks = mock( Locks.Client.class );
     private final InOrder order;
     private final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-    private final KernelStatement state = new KernelStatement( transaction, null, null, null, locks, null );
+    private final KernelStatement state = new KernelStatement( transaction, null, null, null, locks, null, null );
     private final SchemaStateOperations schemaStateOps;
 
     public LockingStatementOperationsTest()
@@ -65,7 +76,7 @@ public class LockingStatementOperationsTest
         schemaStateOps = mock( SchemaStateOperations.class );
         order = inOrder( locks, entityWriteOps, schemaReadOps, schemaWriteOps, schemaStateOps );
         lockingOps = new LockingStatementOperations(
-            entityReadOps, entityWriteOps, schemaReadOps, schemaWriteOps, schemaStateOps
+                entityReadOps, entityWriteOps, schemaReadOps, schemaWriteOps, schemaStateOps
         );
     }
 
@@ -193,15 +204,15 @@ public class LockingStatementOperationsTest
     {
         // given
         UniquenessConstraint constraint = new UniquenessConstraint( 0, 0 );
-        when( schemaWriteOps.uniquenessConstraintCreate( state, 123, 456 ) ).thenReturn( constraint );
+        when( schemaWriteOps.uniquePropertyConstraintCreate( state, 123, 456 ) ).thenReturn( constraint );
 
         // when
-        UniquenessConstraint result = lockingOps.uniquenessConstraintCreate( state, 123, 456 );
+        PropertyConstraint result = lockingOps.uniquePropertyConstraintCreate( state, 123, 456 );
 
         // then
         assertSame( constraint, result );
         order.verify( locks ).acquireExclusive( ResourceTypes.SCHEMA, schemaResource() );
-        order.verify( schemaWriteOps ).uniquenessConstraintCreate( state, 123, 456 );
+        order.verify( schemaWriteOps ).uniquePropertyConstraintCreate( state, 123, 456 );
     }
 
     @Test
@@ -222,11 +233,11 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabelAndProperty() throws Exception
     {
         // given
-        Iterator<UniquenessConstraint> constraints = Collections.emptyIterator();
+        Iterator<NodePropertyConstraint> constraints = Collections.emptyIterator();
         when( schemaReadOps.constraintsGetForLabelAndPropertyKey( state, 123, 456 ) ).thenReturn( constraints );
 
         // when
-        Iterator<UniquenessConstraint> result = lockingOps.constraintsGetForLabelAndPropertyKey( state, 123, 456 );
+        Iterator<NodePropertyConstraint> result = lockingOps.constraintsGetForLabelAndPropertyKey( state, 123, 456 );
 
         // then
         assertSame( constraints, result );
@@ -238,11 +249,11 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabel() throws Exception
     {
         // given
-        Iterator<UniquenessConstraint> constraints = Collections.emptyIterator();
+        Iterator<NodePropertyConstraint> constraints = Collections.emptyIterator();
         when( schemaReadOps.constraintsGetForLabel( state, 123 ) ).thenReturn( constraints );
 
         // when
-        Iterator<UniquenessConstraint> result = lockingOps.constraintsGetForLabel( state, 123 );
+        Iterator<NodePropertyConstraint> result = lockingOps.constraintsGetForLabel( state, 123 );
 
         // then
         assertSame( constraints, result );
@@ -254,11 +265,11 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaReadLockBeforeGettingAllConstraints() throws Exception
     {
         // given
-        Iterator<UniquenessConstraint> constraints = Collections.emptyIterator();
+        Iterator<PropertyConstraint> constraints = Collections.emptyIterator();
         when( schemaReadOps.constraintsGetAll( state ) ).thenReturn( constraints );
 
         // when
-        Iterator<UniquenessConstraint> result = lockingOps.constraintsGetAll( state );
+        Iterator<PropertyConstraint> result = lockingOps.constraintsGetAll( state );
 
         // then
         assertSame( constraints, result );
@@ -270,7 +281,7 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaReadLockBeforeUpdatingSchemaState() throws Exception
     {
         // given
-        Function<Object, Object> creator = constant( null );
+        Function<Object,Object> creator = constant( null );
 
         // when
         lockingOps.schemaStateGetOrCreate( state, null, creator );
@@ -315,8 +326,8 @@ public class LockingStatementOperationsTest
 
             // THEN
             InOrder lockingOrder = inOrder( locks );
-            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, new long[] {lowId} );
-            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, new long[] {highId} );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, lowId );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, highId );
             lockingOrder.verifyNoMoreInteractions();
             reset( locks );
         }
@@ -327,8 +338,8 @@ public class LockingStatementOperationsTest
 
             // THEN
             InOrder lockingOrder = inOrder( locks );
-            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, new long[] {lowId} );
-            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, new long[] {highId} );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, lowId );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, highId );
             lockingOrder.verifyNoMoreInteractions();
         }
     }
@@ -362,9 +373,9 @@ public class LockingStatementOperationsTest
 
             // THEN
             InOrder lockingOrder = inOrder( locks );
-            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, new long[] {lowId} );
-            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, new long[] {highId} );
-            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.RELATIONSHIP, new long[] {relationshipId} );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, lowId );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, highId );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
             lockingOrder.verifyNoMoreInteractions();
             reset( locks );
         }
@@ -389,9 +400,9 @@ public class LockingStatementOperationsTest
 
             // THEN
             InOrder lockingOrder = inOrder( locks );
-            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, new long[] {lowId} );
-            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, new long[] {highId} );
-            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.RELATIONSHIP, new long[] {relationshipId} );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, lowId );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, highId );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
             lockingOrder.verifyNoMoreInteractions();
         }
     }

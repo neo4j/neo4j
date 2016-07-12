@@ -21,9 +21,13 @@ package org.neo4j.io.pagecache.randomharness;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.StubPageCursor;
 
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.junit.Assert.assertThat;
 
@@ -43,6 +47,14 @@ public abstract class RecordFormat
     {
         int recordsPerPage = cursor.getCurrentPageSize() / getRecordSize();
         writeRecordToPage( cursor, cursor.getCurrentPageId(), recordsPerPage );
+    }
+
+    public final void writeRecord( Record record, StoreChannel channel ) throws IOException
+    {
+        ByteBuffer buffer = ByteBuffer.allocateDirect( getRecordSize() );
+        StubPageCursor cursor = new StubPageCursor( 0, buffer );
+        write( record, cursor );
+        channel.writeAll( buffer );
     }
 
     public final void fillWithRecords( PageCursor cursor )
@@ -65,19 +77,34 @@ public abstract class RecordFormat
 
     public final void assertRecordsWrittenCorrectly( PageCursor cursor ) throws IOException
     {
-        int recordsPerPage = cursor.getCurrentPageSize() / getRecordSize();
+        int currentPageSize = cursor.getCurrentPageSize();
+        int recordSize = getRecordSize();
+        int recordsPerPage = currentPageSize / recordSize;
         for ( int pageRecordId = 0; pageRecordId < recordsPerPage; pageRecordId++ )
         {
-            int recordId = (int) (cursor.getCurrentPageId() * recordsPerPage + pageRecordId);
+            long currentPageId = cursor.getCurrentPageId();
+            int recordId = (int) (currentPageId * recordsPerPage + pageRecordId);
             Record expectedRecord = createRecord( cursor.getCurrentFile(), recordId );
             Record actualRecord;
-            int offset = cursor.getOffset();
-            do
-            {
-                cursor.setOffset( offset );
-                actualRecord = readRecord( cursor );
-            }
-            while ( cursor.shouldRetry() );
+            actualRecord = readRecord( cursor );
+            assertThat( actualRecord, isOneOf( expectedRecord, zeroRecord() ) );
+        }
+    }
+
+    public final void assertRecordsWrittenCorrectly( File file, StoreChannel channel ) throws IOException
+    {
+        int recordSize = getRecordSize();
+        long recordsInFile = channel.size() / recordSize;
+        ByteBuffer buffer = ByteBuffer.allocateDirect( recordSize );
+        StubPageCursor cursor = new StubPageCursor( 0, buffer );
+        for ( int i = 0; i < recordsInFile; i++ )
+        {
+            assertThat( "reading record id " + i, channel.read( buffer ), is( recordSize ) );
+            buffer.flip();
+            Record expectedRecord = createRecord( file, i );
+            cursor.setOffset( 0 );
+            Record actualRecord = readRecord( cursor );
+            buffer.clear();
             assertThat( actualRecord, isOneOf( expectedRecord, zeroRecord() ) );
         }
     }

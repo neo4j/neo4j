@@ -35,6 +35,14 @@ public class IntegerEvaluator implements CostEvaluator<Integer>
 
     public Integer getCost( Relationship relationship, Direction direction )
     {
-        return ( (Number) relationship.getProperty(costPropertyName) ).intValue();
+        Object costProp = relationship.getProperty( costPropertyName );
+        if ( costProp instanceof Number )
+        {
+            return ((Number) costProp).intValue();
+        }
+        else
+        {
+            return Integer.parseInt( costProp.toString() );
+        }
     }
 }

@@ -29,8 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.Predicates;
+import org.neo4j.function.Predicate;
+import org.neo4j.function.Predicates;
 import org.neo4j.helpers.collection.Iterables;
 
 import static org.neo4j.helpers.collection.Iterables.append;
@@ -199,7 +199,7 @@ public class Monitors
         List<MonitorListenerInvocationHandler> listeners = new ArrayList<>();
         for ( Map.Entry<Predicate<Method>, MonitorListenerInvocationHandler> handlerEntry : monitorListeners.entrySet() )
         {
-            if ( handlerEntry.getKey().accept( method ) )
+            if ( handlerEntry.getKey().test( method ) )
             {
                 listeners.add( handlerEntry.getValue() );
             }

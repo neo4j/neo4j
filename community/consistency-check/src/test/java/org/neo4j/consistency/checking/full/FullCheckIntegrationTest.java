@@ -19,42 +19,54 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.model.Statement;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.StringWriter;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.GraphStoreFixture;
+import org.neo4j.consistency.checking.GraphStoreFixture.IdGenerator;
+import org.neo4j.consistency.checking.GraphStoreFixture.TransactionDataBuilder;
+import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
+import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -65,20 +77,24 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.PreAllocatedRecords;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
+import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
-import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
+import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -88,12 +104,17 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.util.Bits;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.util.MutableInteger;
+import org.neo4j.logging.FormattedLog;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static java.lang.String.format;
+import static java.util.Arrays.asList;
+import static java.util.Collections.singleton;
+
+import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
 import static org.neo4j.consistency.checking.full.ExecutionOrderIntegrationTest.config;
@@ -103,8 +124,8 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
-import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
-import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.kernel.api.CountsRead.ANY_LABEL;
+import static org.neo4j.kernel.api.CountsRead.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
@@ -112,26 +133,135 @@ import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.LabelIdArray.prependNodeId;
 import static org.neo4j.kernel.impl.store.PropertyType.ARRAY;
+import static org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule.nodePropertyExistenceConstraintRule;
+import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.record.Record.NO_PREV_RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule.relPropertyExistenceConstraintRule;
 import static org.neo4j.kernel.impl.util.Bits.bits;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
 
-@RunWith( Parameterized.class )
 public class FullCheckIntegrationTest
 {
-    @Parameter
-    public TaskExecutionOrder taskExecutionOrder;
+    private static final SchemaIndexProvider.Descriptor DESCRIPTOR = new SchemaIndexProvider.Descriptor( "lucene", "1.0" );
 
-    @Parameters( name = "execution_order={0}" )
-    public static Iterable<Object[]> taskExecutions()
+    private int label1, label2, label3, label4, draconian;
+    private int key, mandatory;
+    private int C, T, M;
+
+    private final ByteArrayOutputStream out = new ByteArrayOutputStream();
+    private final List<Long> indexedNodes = new ArrayList<>();
+
+    private static final Map<Class<?>,Set<String>> allReports = new HashMap<>();
+
+    @BeforeClass
+    public static void collectAllDifferentInconsistencyTypes()
     {
-        return Arrays.asList( new Object[][]{
-                {TaskExecutionOrder.SINGLE_THREADED},
-                {TaskExecutionOrder.MULTI_PASS}
-        } );
+        Class<?> reportClass = ConsistencyReport.class;
+        for ( Class<?> cls : reportClass.getDeclaredClasses() )
+        {
+            for ( Method method : cls.getDeclaredMethods() )
+            {
+                if ( method.getAnnotation( Documented.class ) != null )
+                {
+                    Set<String> types = allReports.get( cls );
+                    if ( types == null )
+                    {
+                        allReports.put( cls, types = new HashSet<>() );
+                    }
+                    types.add( method.getName() );
+                }
+            }
+        }
     }
+
+    @AfterClass
+    public static void verifyThatWeHaveExercisedAllTypesOfInconsistenciesThatWeHave()
+    {
+        if ( !allReports.isEmpty() )
+        {
+            StringBuilder builder = new StringBuilder( "There are types of inconsistencies not covered by "
+                    + "this integration test, please add tests that tests for:" );
+            for ( Map.Entry<Class<?>,Set<String>> reporter : allReports.entrySet() )
+            {
+                builder.append( format( "%n%s:", reporter.getKey().getSimpleName() ) );
+                for ( String type : reporter.getValue() )
+                {
+                    builder.append( format( "%n  %s", type ) );
+                }
+            }
+            System.err.println( builder.toString() );
+        }
+    }
+
+    @Rule
+    public final GraphStoreFixture fixture = new GraphStoreFixture()
+    {
+        @Override
+        protected void generateInitialData( GraphDatabaseService db )
+        {
+            try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+            {
+                db.schema().indexFor( label( "label3" ) ).on( "key" ).create();
+                db.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( "key" ).create();
+                tx.success();
+            }
+
+            try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+            {
+                Node node1 = set( db.createNode( label( "label1" ) ) );
+                Node node2 = set( db.createNode( label( "label2" ) ), property( "key", "value" ) );
+                node1.createRelationshipTo( node2, withName( "C" ) );
+                // Just to create one more rel type
+                db.createNode().createRelationshipTo( db.createNode(), withName( "T" ) );
+                indexedNodes.add( set( db.createNode( label( "label3" ) ), property( "key", "value" ) ).getId() );
+                set( db.createNode( label( "label4" ) ), property( "key", "value" ) );
+                tx.success();
+
+                label1 = readOperationsOn( db ).labelGetForName( "label1" );
+                label2 = readOperationsOn( db ).labelGetForName( "label2" );
+                label3 = readOperationsOn( db ).labelGetForName( "label3" );
+                label4 = readOperationsOn( db ).labelGetForName( "label4" );
+                draconian = tokenWriteOperationsOn( db ).labelGetOrCreateForName( "draconian" );
+                key = readOperationsOn( db ).propertyKeyGetForName( "key" );
+                mandatory = tokenWriteOperationsOn( db ).propertyKeyGetOrCreateForName( "mandatory" );
+                C = readOperationsOn( db ).relationshipTypeGetForName( "C" );
+                T = readOperationsOn( db ).relationshipTypeGetForName( "T" );
+                M = tokenWriteOperationsOn( db ).relationshipTypeGetOrCreateForName( "M" );
+            }
+            catch ( IllegalTokenNameException | TooManyLabelsException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
+    };
+
+    @Rule
+    public final TestRule printLogOnFailure = new TestRule()
+    {
+        @Override
+        public Statement apply( final Statement base, Description description )
+        {
+            return new Statement()
+            {
+                @Override
+                public void evaluate() throws Throwable
+                {
+                    try
+                    {
+                        base.evaluate();
+                    }
+                    catch ( Throwable t )
+                    {
+                        System.out.write( out.toByteArray() );
+                        throw t;
+                    }
+                }
+            };
+        }
+    };
 
     @Test
     public void shouldCheckConsistencyOfAConsistentStore() throws Exception
@@ -144,7 +274,7 @@ public class FullCheckIntegrationTest
     }
 
     @Test
-    @Ignore("Support for checking NeoStore needs to be added")
+    @Ignore("Support for checking MetaDataStore needs to be added")
     public void shouldReportNeoStoreInconsistencies() throws Exception
     {
         // given
@@ -451,12 +581,12 @@ public class FullCheckIntegrationTest
             {
                 NodeRecord node = new NodeRecord( 42, false, -1, -1 );
                 node.setInUse( true );
-                node.setLabelField( inlinedLabelsLongRepresentation( 1, 2 ), Collections.<DynamicRecord>emptySet() );
+                node.setLabelField( inlinedLabelsLongRepresentation( label1, label2 ), Collections.<DynamicRecord>emptySet() );
                 tx.create( node );
             }
         } );
 
-        write( fixture.directStoreAccess().labelScanStore(), asList( labelChanges( 42, new long[]{1L, 2L}, new long[]{1L} ) ) );
+        write( fixture.directStoreAccess().labelScanStore(), asList( labelChanges( 42, new long[]{label1, label2}, new long[]{label1} ) ) );
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -513,6 +643,92 @@ public class FullCheckIntegrationTest
         on( stats ).verify( RecordType.NODE, 1 )
                    .verify( RecordType.INDEX, 2 )
                    .andThatsAllFolks();
+    }
+
+    @Test
+    public void shouldReportMissingMandatoryNodeProperty() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                    GraphStoreFixture.IdGenerator next )
+            {
+                // structurally correct, but does not have the 'mandatory' property with the 'draconian' label
+                NodeRecord node = new NodeRecord( next.node(), false, -1, next.property() );
+                node.setInUse( true );
+                node.setLabelField( inlinedLabelsLongRepresentation( draconian ),
+                        Collections.<DynamicRecord>emptySet() );
+                PropertyRecord property = new PropertyRecord( node.getNextProp(), node );
+                property.setInUse( true );
+                PropertyBlock block = new PropertyBlock();
+                block.setSingleBlock( key | (((long) PropertyType.INT.intValue()) << 24) | (1337L << 28) );
+                property.addPropertyBlock( block );
+                tx.create( node );
+                tx.create( property );
+            }
+        } );
+
+        createNodePropertyExistenceConstraint( draconian, mandatory );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on( stats ).verify( RecordType.NODE, 1 )
+                .andThatsAllFolks();
+    }
+
+    @Test
+    public void shouldReportMissingMandatoryRelationshipProperty() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                    GraphStoreFixture.IdGenerator next )
+            {
+                long nodeId1 = next.node();
+                long nodeId2 = next.node();
+                long relId = next.relationship();
+                long propId = next.property();
+
+                NodeRecord node1 = new NodeRecord( nodeId1, true, false, relId, NO_NEXT_PROPERTY.intValue(),
+                        NO_LABELS_FIELD.intValue() );
+                NodeRecord node2 = new NodeRecord( nodeId2, true, false, relId, NO_NEXT_PROPERTY.intValue(),
+                        NO_LABELS_FIELD.intValue() );
+
+                // structurally correct, but does not have the 'mandatory' property with the 'M' rel type
+                RelationshipRecord relationship = new RelationshipRecord( relId, true, nodeId1, nodeId2, M,
+                        NO_PREV_RELATIONSHIP.intValue(), NO_NEXT_RELATIONSHIP.intValue(),
+                        NO_PREV_RELATIONSHIP.intValue(), NO_NEXT_RELATIONSHIP.intValue(), true, true );
+                relationship.setNextProp( propId );
+
+                PropertyRecord property = new PropertyRecord( propId, relationship );
+                property.setInUse( true );
+                PropertyBlock block = new PropertyBlock();
+                block.setSingleBlock( key | (((long) PropertyType.INT.intValue()) << 24) | (1337L << 28) );
+                property.addPropertyBlock( block );
+
+                tx.create( node1 );
+                tx.create( node2 );
+                tx.create( relationship );
+                tx.create( property );
+                tx.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 1 );
+                tx.incrementRelationshipCount( ANY_LABEL, M, ANY_LABEL, 1 );
+            }
+        } );
+
+        createRelationshipPropertyExistenceConstraint( M, mandatory );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on( stats ).verify( RecordType.RELATIONSHIP, 1 )
+                .andThatsAllFolks();
     }
 
     private long inlinedLabelsLongRepresentation( long... labelIds )
@@ -679,7 +895,7 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-                tx.create( new RelationshipRecord( next.relationship(), 1, 2, 0 ) );
+                tx.create( new RelationshipRecord( next.relationship(), 1, 2, C ) );
             }
         } );
 
@@ -693,6 +909,35 @@ public class FullCheckIntegrationTest
     }
 
     @Test
+    public void shouldReportRelationshipOtherNodeInconsistencies() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                    GraphStoreFixture.IdGenerator next )
+            {
+                long node1 = next.node();
+                long node2 = next.node();
+                long rel = next.relationship();
+                tx.create( inUse( new RelationshipRecord( rel, node1, node2, 0 ) ) );
+                tx.create( inUse( new NodeRecord( node1, false, rel + 1, -1 ) ) );
+                tx.create( inUse( new NodeRecord( node2, false, rel + 2, -1 ) ) );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on( stats ).verify( RecordType.RELATIONSHIP, 2 )
+                   .verify( RecordType.NODE, 2 )
+                   .verify( RecordType.COUNTS, 2 )
+                   .andThatsAllFolks();
+    }
+
+    @Test
     public void shouldReportPropertyInconsistencies() throws Exception
     {
         // given
@@ -702,11 +947,17 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
+                NodeRecord node = new NodeRecord( next.node() );
                 PropertyRecord property = new PropertyRecord( next.property() );
-                property.setPrevProp( next.property() );
+                node.setNextProp( property.getId() );
+
+                // Mess up the prev/next pointers a bit
+                property.setNextProp( 1_000 );
+
                 PropertyBlock block = new PropertyBlock();
-                block.setSingleBlock( 1 | (((long) PropertyType.INT.intValue()) << 24) | (666 << 28) );
+                block.setSingleBlock( next.propertyKey() | (((long) PropertyType.INT.intValue()) << 24) | (666L << 28) );
                 property.addPropertyBlock( block );
+                tx.create( node );
                 tx.create( property );
             }
         } );
@@ -716,6 +967,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.PROPERTY, 2 )
+                   .verify( RecordType.NODE, 1 )
                    .andThatsAllFolks();
     }
 
@@ -769,8 +1021,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord schemaBefore = schema.clone();
 
                 schema.setNextBlock( next.schema() ); // Point to a record that isn't in use.
-                IndexRule rule = IndexRule.indexRule( 1, 1, 1,
-                        new SchemaIndexProvider.Descriptor( "lucene", "1.0" ) );
+                IndexRule rule = IndexRule.indexRule( schema.getId(), label1, key, DESCRIPTOR );
                 schema.setData( new RecordSerializer().append( rule ).serialize() );
 
                 tx.createSchema( asList( schemaBefore ), asList( schema ), rule );
@@ -805,11 +1056,8 @@ public class FullCheckIntegrationTest
                 DynamicRecord record1Before = record1.clone();
                 DynamicRecord record2Before = record2.clone();
 
-                SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "lucene", "1.0" );
-
-                IndexRule rule1 = IndexRule.constraintIndexRule( ruleId1, labelId, propertyKeyId, providerDescriptor,
-                        (long) ruleId1 );
-                IndexRule rule2 = IndexRule.constraintIndexRule( ruleId2, labelId, propertyKeyId, providerDescriptor, (long) ruleId1 );
+                IndexRule rule1 = IndexRule.constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, (long) ruleId1 );
+                IndexRule rule2 = IndexRule.constraintIndexRule( ruleId2, labelId, propertyKeyId, DESCRIPTOR, (long) ruleId1 );
 
                 Collection<DynamicRecord> records1 = serializeRule( rule1, record1 );
                 Collection<DynamicRecord> records2 = serializeRule( rule2, record2 );
@@ -853,10 +1101,9 @@ public class FullCheckIntegrationTest
                 DynamicRecord record1Before = record1.clone();
                 DynamicRecord record2Before = record2.clone();
 
-                SchemaIndexProvider.Descriptor providerDescriptor = new SchemaIndexProvider.Descriptor( "lucene", "1.0" );
-
-                IndexRule rule1 = IndexRule.constraintIndexRule( ruleId1, labelId, propertyKeyId, providerDescriptor, (long) ruleId2 );
-                UniquenessConstraintRule rule2 = UniquenessConstraintRule.uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
+                IndexRule rule1 = IndexRule.constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, (long) ruleId2 );
+                UniquePropertyConstraintRule rule2 = UniquePropertyConstraintRule
+                        .uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
 
 
                 Collection<DynamicRecord> records1 = serializeRule( rule1, record1 );
@@ -955,7 +1202,7 @@ public class FullCheckIntegrationTest
         access.getRelationshipTypeNameStore().updateRecord( record );
 
         // when
-        ConsistencySummaryStatistics stats = check( fixture.directStoreAccess() );
+        ConsistencySummaryStatistics stats = check();
 
         // then
         on( stats ).verify( RecordType.RELATIONSHIP_TYPE_NAME, 1 )
@@ -983,7 +1230,7 @@ public class FullCheckIntegrationTest
         access.getPropertyKeyNameStore().updateRecord( record );
 
         // when
-        ConsistencySummaryStatistics stats = check( fixture.directStoreAccess() );
+        ConsistencySummaryStatistics stats = check();
 
         // then
         on( stats ).verify( RecordType.PROPERTY_KEY_NAME, 1 )
@@ -1002,7 +1249,7 @@ public class FullCheckIntegrationTest
         relTypeStore.updateRecord( record );
 
         // when
-        ConsistencySummaryStatistics stats = check( fixture.directStoreAccess() );
+        ConsistencySummaryStatistics stats = check();
 
         // then
         access.close();
@@ -1021,7 +1268,7 @@ public class FullCheckIntegrationTest
         access.getLabelTokenStore().updateRecord( record );
 
         // when
-        ConsistencySummaryStatistics stats = check( fixture.directStoreAccess() );
+        ConsistencySummaryStatistics stats = check();
 
         // then
         on( stats ).verify( RecordType.LABEL, 1 )
@@ -1049,7 +1296,7 @@ public class FullCheckIntegrationTest
         access.getPropertyKeyNameStore().updateRecord( record );
 
         // when
-        ConsistencySummaryStatistics stats = check( fixture.directStoreAccess() );
+        ConsistencySummaryStatistics stats = check();
 
         // then
         on( stats ).verify( RecordType.PROPERTY_KEY, 1 )
@@ -1068,9 +1315,9 @@ public class FullCheckIntegrationTest
             {
                 long node = next.node();
                 long group = next.relationshipGroup();
+                int nonExistentType = next.relationshipType() + 1;
                 tx.create( inUse( new NodeRecord( node, true, group, NO_NEXT_PROPERTY.intValue() ) ) );
-                tx.create( withOwner( inUse( new RelationshipGroupRecord( group,
-                        11 /*non-existent type*/ ) ), node ) );
+                tx.create( withOwner( inUse( new RelationshipGroupRecord( group, nonExistentType ) ), node ) );
             }
         } );
 
@@ -1086,7 +1333,6 @@ public class FullCheckIntegrationTest
     public void shouldReportRelationshipGroupChainInconsistencies() throws Exception
     {
         // given
-        final int typeId = 0; // created in test setup
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
@@ -1096,7 +1342,7 @@ public class FullCheckIntegrationTest
                 long node = next.node();
                 long group = next.relationshipGroup();
                 tx.create( inUse( new NodeRecord( node, true, group, NO_NEXT_PROPERTY.intValue() ) ) );
-                tx.create( withOwner( withNext( inUse( new RelationshipGroupRecord( group, typeId ) ),
+                tx.create( withOwner( withNext( inUse( new RelationshipGroupRecord( group, C ) ),
                         group+1 /*non-existent group id*/ ), node ) );
             }
         } );
@@ -1113,7 +1359,6 @@ public class FullCheckIntegrationTest
     public void shouldReportRelationshipGroupUnsortedChainInconsistencies() throws Exception
     {
         // given
-        final int firstTypeId = 0, otherTypeId = 1;
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
@@ -1124,9 +1369,9 @@ public class FullCheckIntegrationTest
                 long firstGroupId = next.relationshipGroup();
                 long otherGroupId = next.relationshipGroup();
                 tx.create( inUse( new NodeRecord( node, true, firstGroupId, NO_NEXT_PROPERTY.intValue() ) ) );
-                tx.create( withOwner( withNext( inUse( new RelationshipGroupRecord( firstGroupId, otherTypeId ) ),
+                tx.create( withOwner( withNext( inUse( new RelationshipGroupRecord( firstGroupId, T ) ),
                         otherGroupId ), node ) );
-                tx.create( withOwner( inUse( new RelationshipGroupRecord( otherGroupId, firstTypeId ) ), node ) );
+                tx.create( withOwner( inUse( new RelationshipGroupRecord( otherGroupId, C ) ), node ) );
             }
         } );
 
@@ -1142,7 +1387,6 @@ public class FullCheckIntegrationTest
     public void shouldReportRelationshipGroupRelationshipNotInUseInconsistencies() throws Exception
     {
         // given
-        final int typeId = 0;
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
@@ -1153,7 +1397,7 @@ public class FullCheckIntegrationTest
                 long groupId = next.relationshipGroup();
                 long rel = next.relationship();
                 tx.create( inUse( new NodeRecord( node, true, groupId, NO_NEXT_PROPERTY.intValue() ) ) );
-                tx.create( withOwner( withRelationships( inUse( new RelationshipGroupRecord( groupId, typeId ) ),
+                tx.create( withOwner( withRelationships( inUse( new RelationshipGroupRecord( groupId, C ) ),
                         rel, rel, rel ), node ) );
             }
         } );
@@ -1170,7 +1414,6 @@ public class FullCheckIntegrationTest
     public void shouldReportRelationshipGroupRelationshipNotFirstInconsistencies() throws Exception
     {
         // given
-        final int typeId = 0;
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
@@ -1190,11 +1433,11 @@ public class FullCheckIntegrationTest
                 long relB = next.relationship();
                 tx.create( inUse( new NodeRecord( node, true, group, NO_NEXT_PROPERTY.intValue() ) ) );
                 tx.create( inUse( new NodeRecord( otherNode, false, relA, NO_NEXT_PROPERTY.intValue() ) ) );
-                tx.create( withNext( inUse( new RelationshipRecord( relA, otherNode, otherNode, typeId ) ), relB ) );
-                tx.create( withPrev( inUse( new RelationshipRecord( relB, otherNode, otherNode, typeId ) ), relA ) );
-                tx.create( withOwner( withRelationships( inUse( new RelationshipGroupRecord( group, typeId ) ), relB, relB, relB ), node ) );
+                tx.create( withNext( inUse( new RelationshipRecord( relA, otherNode, otherNode, C ) ), relB ) );
+                tx.create( withPrev( inUse( new RelationshipRecord( relB, otherNode, otherNode, C ) ), relA ) );
+                tx.create( withOwner( withRelationships( inUse( new RelationshipGroupRecord( group, C ) ), relB, relB, relB ), node ) );
                 tx.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 2 );
-                tx.incrementRelationshipCount( ANY_LABEL, typeId, ANY_LABEL, 2 );
+                tx.incrementRelationshipCount( ANY_LABEL, C, ANY_LABEL, 2 );
             }
         } );
 
@@ -1210,7 +1453,6 @@ public class FullCheckIntegrationTest
     public void shouldReportFirstRelationshipGroupOwnerInconsistency() throws Exception
     {
         // given
-        final int typeId = 0;
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
@@ -1224,7 +1466,7 @@ public class FullCheckIntegrationTest
                 tx.create( inUse( new NodeRecord( node, true, group, NO_NEXT_PROPERTY.intValue() ) ) );
                 tx.create( inUse( new NodeRecord( otherNode, false, NO_NEXT_RELATIONSHIP.intValue(),
                         NO_NEXT_PROPERTY.intValue() ) ) );
-                tx.create( withOwner( inUse( new RelationshipGroupRecord( group, typeId ) ), otherNode ) );
+                tx.create( withOwner( inUse( new RelationshipGroupRecord( group, C ) ), otherNode ) );
             }
         } );
 
@@ -1242,7 +1484,6 @@ public class FullCheckIntegrationTest
     public void shouldReportChainedRelationshipGroupOwnerInconsistency() throws Exception
     {
         // given
-        final int firstTypeId = 0, otherTypeId = 1;
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
@@ -1262,9 +1503,9 @@ public class FullCheckIntegrationTest
                 tx.create( inUse( new NodeRecord( node, true, groupA, NO_NEXT_PROPERTY.intValue() ) ) );
                 tx.create( inUse( new NodeRecord( otherNode, false, NO_NEXT_RELATIONSHIP.intValue(),
                         NO_NEXT_PROPERTY.intValue() ) ) );
-                tx.create( withNext( withOwner( inUse( new RelationshipGroupRecord( groupA, firstTypeId ) ),
+                tx.create( withNext( withOwner( inUse( new RelationshipGroupRecord( groupA, C ) ),
                         node ), groupB ) );
-                tx.create( withOwner( inUse( new RelationshipGroupRecord( groupB, otherTypeId ) ), otherNode ) );
+                tx.create( withOwner( inUse( new RelationshipGroupRecord( groupB, T ) ), otherNode ) );
             }
         } );
 
@@ -1280,7 +1521,6 @@ public class FullCheckIntegrationTest
     public void shouldReportRelationshipGroupOwnerNotInUse() throws Exception
     {
         // given
-        final int typeId = 0;
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
@@ -1290,7 +1530,7 @@ public class FullCheckIntegrationTest
                 // group -[owner]-> <not-in-use node>
                 long node = next.node();
                 long group = next.relationshipGroup();
-                tx.create( withOwner( inUse( new RelationshipGroupRecord( group, typeId ) ), node ) );
+                tx.create( withOwner( inUse( new RelationshipGroupRecord( group, C ) ), node ) );
             }
         } );
 
@@ -1306,7 +1546,6 @@ public class FullCheckIntegrationTest
     public void shouldReportRelationshipGroupOwnerInvalidValue() throws Exception
     {
         // given
-        final int typeId = 0;
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
@@ -1315,7 +1554,7 @@ public class FullCheckIntegrationTest
             {
                 // node -[first]-> group -[owner]-> -1
                 long group = next.relationshipGroup();
-                tx.create( withOwner( inUse( new RelationshipGroupRecord( group, typeId ) ), -1 ) );
+                tx.create( withOwner( inUse( new RelationshipGroupRecord( group, C ) ), -1 ) );
             }
         } );
 
@@ -1347,7 +1586,6 @@ public class FullCheckIntegrationTest
     public void shouldReportRelationshipGroupRelationshipOfOtherTypeInconsistencies() throws Exception
     {
         // given
-        final int typeA = 0, typeB = 1;
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
@@ -1366,11 +1604,11 @@ public class FullCheckIntegrationTest
                 long rel = next.relationship();
                 tx.create( new NodeRecord( node, true, group, NO_NEXT_PROPERTY.intValue() ) );
                 tx.create( new NodeRecord( otherNode, false, rel, NO_NEXT_PROPERTY.intValue() ) );
-                tx.create( new RelationshipRecord( rel, otherNode, otherNode, typeB ) );
-                tx.create( withOwner( withRelationships( new RelationshipGroupRecord( group, typeA ),
+                tx.create( new RelationshipRecord( rel, otherNode, otherNode, T ) );
+                tx.create( withOwner( withRelationships( new RelationshipGroupRecord( group, C ),
                         rel, rel, rel ), node ) );
                 tx.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 1 );
-                tx.incrementRelationshipCount( ANY_LABEL, typeB, ANY_LABEL, 1 );
+                tx.incrementRelationshipCount( ANY_LABEL, T, ANY_LABEL, 1 );
             }
         } );
 
@@ -1386,7 +1624,6 @@ public class FullCheckIntegrationTest
     public void shouldNotReportRelationshipGroupInconsistenciesForConsistentRecords() throws Exception
     {
         // given
-        final int typeA = 0, typeB = 1; // created in test setup
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
@@ -1410,13 +1647,13 @@ public class FullCheckIntegrationTest
 
                 tx.create( new NodeRecord( nodeA, true, groupA, NO_NEXT_PROPERTY.intValue() ) );
                 tx.create( new NodeRecord( nodeB, false, rel, NO_NEXT_PROPERTY.intValue() ) );
-                tx.create( firstInChains( new RelationshipRecord( rel, nodeA, nodeB, typeA ), 1 ) );
+                tx.create( firstInChains( new RelationshipRecord( rel, nodeA, nodeB, C ), 1 ) );
                 tx.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 1 );
-                tx.incrementRelationshipCount( ANY_LABEL, typeA, ANY_LABEL, 1 );
+                tx.incrementRelationshipCount( ANY_LABEL, C, ANY_LABEL, 1 );
 
-                tx.create( withOwner( withRelationship( withNext( new RelationshipGroupRecord( groupA, typeA ), groupB ),
+                tx.create( withOwner( withRelationship( withNext( new RelationshipGroupRecord( groupA, C ), groupB ),
                         Direction.OUTGOING, rel ), nodeA ) );
-                tx.create( withOwner( new RelationshipGroupRecord( groupB, typeB ), nodeA ) );
+                tx.create( withOwner( new RelationshipGroupRecord( groupB, T ), nodeA ) );
             }
         } );
 
@@ -1437,7 +1674,7 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-                tx.incrementNodeCount( 0 /* label3 */, 1 );
+                tx.incrementNodeCount( label3, 1 );
             }
         } );
 
@@ -1459,7 +1696,7 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-                tx.incrementRelationshipCount( 2 /* label1 */ , 0 /* T */, -1, 1 );
+                tx.incrementRelationshipCount( label1 , C, ANY_LABEL, 1 );
             }
         } );
 
@@ -1481,7 +1718,7 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-                tx.incrementNodeCount( 0 /* label3 */, -1 );
+                tx.incrementNodeCount( label3, -1 );
             }
         } );
 
@@ -1515,58 +1752,229 @@ public class FullCheckIntegrationTest
                    .andThatsAllFolks();
     }
 
-    @Rule
-    public final GraphStoreFixture fixture = new GraphStoreFixture()
+    @Test
+    public void shouldReportDuplicatedIndexRules() throws Exception
     {
-        @Override
-        protected void generateInitialData( GraphDatabaseService graphDb )
-        {
-            try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
-            {
-                graphDb.schema().indexFor( label( "label3" ) ).on( "key" ).create();
-                graphDb.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( "key" ).create();
-                tx.success();
-            }
+        // Given
+        int labelId = createLabel();
+        int propertyKeyId = createPropertyKey();
+        createIndexRule( labelId, propertyKeyId );
+        createIndexRule( labelId, propertyKeyId );
 
-            try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
-            {
-                Node node1 = set( graphDb.createNode( label( "label1" ) ) );
-                Node node2 = set( graphDb.createNode( label( "label2" ) ), property( "key", "value" ) );
-                node1.createRelationshipTo( node2, withName( "C" ) );
-                // Just to create one more rel type
-                graphDb.createNode().createRelationshipTo( graphDb.createNode(), withName( "T" ) );
-                indexedNodes.add( set( graphDb.createNode( label( "label3" ) ), property( "key", "value" ) ).getId() );
-                set( graphDb.createNode( label( "label4" ) ), property( "key", "value" ) );
-                tx.success();
-            }
-        }
-    };
+        // When
+        ConsistencySummaryStatistics stats = check();
 
-    private final StringWriter log = new StringWriter();
-    private final List<Long> indexedNodes = new ArrayList<>();
-    public final @Rule TestRule print_log_on_failure = new TestRule()
+        // Then
+        on( stats ).verify( RecordType.SCHEMA, 1 ).andThatsAllFolks();
+    }
+
+    @Test
+    public void shouldReportDuplicatedUniquenessConstraintRules() throws Exception
     {
-        @Override
-        public Statement apply( final Statement base, Description description )
+        // Given
+        int labelId = createLabel();
+        int propertyKeyId = createPropertyKey();
+        createUniquenessConstraintRule( labelId, propertyKeyId );
+        createUniquenessConstraintRule( labelId, propertyKeyId );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on( stats ).verify( RecordType.SCHEMA, 2 ) // pair of duplicated indexes & pair of duplicated constraints
+                .andThatsAllFolks();
+    }
+
+    @Test
+    public void shouldReportDuplicatedNodePropertyExistenceConstraintRules() throws Exception
+    {
+        // Given
+        int labelId = createLabel();
+        int propertyKeyId = createPropertyKey();
+        createNodePropertyExistenceConstraint( labelId, propertyKeyId );
+        createNodePropertyExistenceConstraint( labelId, propertyKeyId );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on( stats ).verify( RecordType.SCHEMA, 1 ).andThatsAllFolks();
+    }
+
+    @Test
+    public void shouldReportDuplicatedRelationshipPropertyExistenceConstraintRules() throws Exception
+    {
+        // Given
+        int relTypeId = createRelType();
+        int propertyKeyId = createPropertyKey();
+        createRelationshipPropertyExistenceConstraint( relTypeId, propertyKeyId );
+        createRelationshipPropertyExistenceConstraint( relTypeId, propertyKeyId );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on( stats ).verify( RecordType.SCHEMA, 1 ).andThatsAllFolks();
+    }
+
+    @Test
+    public void shouldReportInvalidLabelIdInIndexRule() throws Exception
+    {
+        // Given
+        int labelId = fixture.idGenerator().label();
+        int propertyKeyId = createPropertyKey();
+        createIndexRule( labelId, propertyKeyId );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on( stats ).verify( RecordType.SCHEMA, 1 ).andThatsAllFolks();
+    }
+
+    @Test
+    public void shouldReportInvalidLabelIdInUniquenessConstraintRule() throws Exception
+    {
+        // Given
+        int labelId = fixture.idGenerator().label();
+        int propertyKeyId = createPropertyKey();
+        createUniquenessConstraintRule( labelId, propertyKeyId );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on( stats ).verify( RecordType.SCHEMA, 2 ) // invalid label in both index & owning constraint
+                .andThatsAllFolks();
+    }
+
+    @Test
+    public void shouldReportInvalidLabelIdInNodePropertyExistenceConstraintRule() throws Exception
+    {
+        // Given
+        int labelId = fixture.idGenerator().label();
+        int propertyKeyId = createPropertyKey();
+        createNodePropertyExistenceConstraint( labelId, propertyKeyId );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on( stats ).verify( RecordType.SCHEMA, 1 ).andThatsAllFolks();
+    }
+
+    @Test
+    public void shouldReportInvalidPropertyKeyIdInIndexRule() throws Exception
+    {
+        // Given
+        int labelId = createLabel();
+        int propertyKeyId = fixture.idGenerator().propertyKey();
+        createIndexRule( labelId, propertyKeyId );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on( stats ).verify( RecordType.SCHEMA, 1 ).andThatsAllFolks();
+    }
+
+    @Test
+    public void shouldReportInvalidPropertyKeyIdInUniquenessConstraintRule() throws Exception
+    {
+        // Given
+        int labelId = createLabel();
+        int propertyKeyId = fixture.idGenerator().propertyKey();
+        createUniquenessConstraintRule( labelId, propertyKeyId );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on( stats ).verify( RecordType.SCHEMA, 2 ) // invalid property key in both index & owning constraint
+                .andThatsAllFolks();
+    }
+
+    @Test
+    public void shouldReportInvalidPropertyKeyIdInNodePropertyExistenceConstraintRule() throws Exception
+    {
+        // Given
+        int labelId = createLabel();
+        int propertyKeyId = fixture.idGenerator().propertyKey();
+        createNodePropertyExistenceConstraint( labelId, propertyKeyId );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on( stats ).verify( RecordType.SCHEMA, 1 ).andThatsAllFolks();
+    }
+
+    @Test
+    public void shouldReportInvalidRelTypeIdInRelationshipPropertyExistenceConstraintRule() throws Exception
+    {
+        // Given
+        int relTypeId = fixture.idGenerator().relationshipType();
+        int propertyKeyId = createPropertyKey();
+        createRelationshipPropertyExistenceConstraint( relTypeId, propertyKeyId );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on( stats ).verify( RecordType.SCHEMA, 1 ).andThatsAllFolks();
+    }
+
+    @Test
+    public void shouldReportNothingForUniquenessAndPropertyExistenceConstraintOnSameLabelAndProperty() throws Exception
+    {
+        // Given
+        int labelId = createLabel();
+        int propertyKeyId = createPropertyKey();
+
+        createUniquenessConstraintRule( labelId, propertyKeyId );
+        createNodePropertyExistenceConstraint( labelId, propertyKeyId );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        assertTrue( stats.isConsistent() );
+    }
+
+    @Test
+    public void shouldManageUnusedRecordsWithWeirdDataIn() throws Exception
+    {
+        // Given
+        final AtomicLong id = new AtomicLong();
+        fixture.apply( new GraphStoreFixture.Transaction()
         {
-            return new Statement()
+            @Override
+            protected void transactionData( TransactionDataBuilder tx, IdGenerator next )
             {
-                @Override
-                public void evaluate() throws Throwable
-                {
-                    try
-                    {
-                        base.evaluate();
-                    }
-                    catch ( Throwable t )
-                    {
-                        System.out.println( log );
-                        throw t;
-                    }
-                }
-            };
-        }
-    };
+                id.set( next.relationship() );
+                RelationshipRecord relationship = new RelationshipRecord( id.get() );
+                relationship.setFirstNode( -1 );
+                relationship.setSecondNode( -1 );
+                relationship.setInUse( true );
+                tx.create( relationship );
+            }
+        } );
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( TransactionDataBuilder tx, IdGenerator next )
+            {
+                RelationshipRecord relationship = new RelationshipRecord( id.get() );
+                tx.delete( relationship );
+            }
+        } );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        assertTrue( stats.isConsistent() );
+    }
 
     private ConsistencySummaryStatistics check() throws ConsistencyCheckIncompleteException
     {
@@ -1575,9 +1983,19 @@ public class FullCheckIntegrationTest
 
     private ConsistencySummaryStatistics check( DirectStoreAccess stores ) throws ConsistencyCheckIncompleteException
     {
-        Config config = config( taskExecutionOrder );
-        FullCheck checker = new FullCheck( config, ProgressMonitorFactory.NONE );
-        return checker.execute( stores, StringLogger.wrap( log ) );
+        Config config = config();
+        FullCheck checker = new FullCheck( config, ProgressMonitorFactory.NONE, fixture.getAccessStatistics(),
+                defaultConsistencyCheckThreadsNumber() );
+        return checker.execute( stores, FormattedLog.toOutputStream( out ), new ConsistencyReporter.Monitor()
+        {
+            @Override
+            public void reported( Class<?> report, String method, String message )
+            {
+                Set<String> types = allReports.get( report );
+                assert types != null;
+                types.remove( method );
+            }
+        } );
     }
 
     protected static RelationshipGroupRecord withRelationships( RelationshipGroupRecord group, long out,
@@ -1628,6 +2046,157 @@ public class FullCheckIntegrationTest
     {
         record.setOwningNode( owner );
         return record;
+    }
+
+    private int createLabel() throws Exception
+    {
+        final MutableInteger id = new MutableInteger( -1 );
+
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                    GraphStoreFixture.IdGenerator next )
+            {
+                int labelId = next.label();
+                tx.nodeLabel( labelId, "label" );
+                id.value = labelId;
+            }
+        } );
+
+        return id.value;
+    }
+
+    private int createPropertyKey() throws Exception
+    {
+        final MutableInteger id = new MutableInteger( -1 );
+
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                    GraphStoreFixture.IdGenerator next )
+            {
+                int propertyKeyId = next.propertyKey();
+                tx.propertyKey( propertyKeyId, "property" );
+                id.value = propertyKeyId;
+            }
+        } );
+
+        return id.value;
+    }
+
+    private int createRelType() throws Exception
+    {
+        final MutableInteger id = new MutableInteger( -1 );
+
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                    GraphStoreFixture.IdGenerator next )
+            {
+                int relTypeId = next.relationshipType();
+                tx.relationshipType( relTypeId, "relType" );
+                id.value = relTypeId;
+            }
+        } );
+
+        return id.value;
+    }
+
+    private void createIndexRule( final int labelId, final int propertyKeyId ) throws Exception
+    {
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                    GraphStoreFixture.IdGenerator next )
+            {
+                int id = (int) next.schema();
+
+                DynamicRecord recordBefore = new DynamicRecord( id );
+                DynamicRecord recordAfter = recordBefore.clone();
+
+                IndexRule rule = IndexRule.indexRule( id, labelId, propertyKeyId, DESCRIPTOR );
+                Collection<DynamicRecord> records = serializeRule( rule, recordAfter );
+
+                tx.createSchema( singleton( recordBefore ), records, rule );
+            }
+        } );
+    }
+
+    private void createUniquenessConstraintRule( final int labelId, final int propertyKeyId ) throws Exception
+    {
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                    GraphStoreFixture.IdGenerator next )
+            {
+                int ruleId1 = (int) next.schema();
+                int ruleId2 = (int) next.schema();
+
+                DynamicRecord record1 = new DynamicRecord( ruleId1 );
+                DynamicRecord record2 = new DynamicRecord( ruleId2 );
+                DynamicRecord record1Before = record1.clone();
+                DynamicRecord record2Before = record2.clone();
+
+                IndexRule rule1 = IndexRule.constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR,
+                        (long) ruleId2 );
+                UniquePropertyConstraintRule rule2 = UniquePropertyConstraintRule.uniquenessConstraintRule( ruleId2,
+                        labelId, propertyKeyId, ruleId1 );
+
+
+                Collection<DynamicRecord> records1 = serializeRule( rule1, record1 );
+                Collection<DynamicRecord> records2 = serializeRule( rule2, record2 );
+
+                assertEquals( asList( record1 ), records1 );
+                assertEquals( asList( record2 ), records2 );
+
+                tx.createSchema( asList( record1Before ), records1, rule1 );
+                tx.createSchema( asList( record2Before ), records2, rule2 );
+            }
+        } );
+    }
+
+    private void createNodePropertyExistenceConstraint( int labelId, int propertyKeyId )
+    {
+        SchemaStore schemaStore = (SchemaStore) fixture.directStoreAccess().nativeStores().getSchemaStore();
+        SchemaRule rule = nodePropertyExistenceConstraintRule( schemaStore.nextId(), labelId, propertyKeyId );
+        Collection<DynamicRecord> records = schemaStore.allocateFrom( rule );
+        for ( DynamicRecord record : records )
+        {
+            schemaStore.updateRecord( record );
+        }
+    }
+
+    private void createRelationshipPropertyExistenceConstraint( int relTypeId, int propertyKeyId )
+    {
+        SchemaStore schemaStore = (SchemaStore) fixture.directStoreAccess().nativeStores().getSchemaStore();
+        SchemaRule rule = relPropertyExistenceConstraintRule( schemaStore.nextId(), relTypeId, propertyKeyId );
+        Collection<DynamicRecord> records = schemaStore.allocateFrom( rule );
+        for ( DynamicRecord record : records )
+        {
+            schemaStore.updateRecord( record );
+        }
+    }
+
+    private static ReadOperations readOperationsOn( GraphDatabaseService db )
+    {
+        return statementOn( db ).readOperations();
+    }
+
+    private static TokenWriteOperations tokenWriteOperationsOn( GraphDatabaseService db )
+    {
+        return statementOn( db ).tokenWriteOperations();
+    }
+
+    private static KernelStatement statementOn( GraphDatabaseService db )
+    {
+        DependencyResolver resolver = ((GraphDatabaseAPI) db).getDependencyResolver();
+        ThreadToStatementContextBridge bridge = resolver.resolveDependency( ThreadToStatementContextBridge.class );
+        return (KernelStatement) bridge.get();
     }
 
     private static class Reference<T>

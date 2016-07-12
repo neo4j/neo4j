@@ -48,8 +48,9 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -110,7 +111,7 @@ public class ApplyTransactionsCommand extends ArgsCommand
         BatchingTransactionRepresentationStoreApplier applier = new BatchingTransactionRepresentationStoreApplier(
                 resolver.resolveDependency( IndexingService.class ),
                 resolver.resolveDependency( LabelScanStore.class ),
-                resolver.resolveDependency( NeoStoreProvider.class ).evaluate(),
+                resolver.resolveDependency( NeoStoresSupplier.class ).get(),
                 resolver.resolveDependency( CacheAccessBackDoor.class ),
                 resolver.resolveDependency( LockService.class ),
                 resolver.resolveDependency( LegacyIndexApplierLookup.class ),
@@ -119,16 +120,15 @@ public class ApplyTransactionsCommand extends ArgsCommand
                 resolver.resolveDependency( IdOrderingQueue.class ) );
         TransactionRepresentationCommitProcess commitProcess =
                 new TransactionRepresentationCommitProcess(
-                        resolver.resolveDependency( LogicalTransactionStore.class ),
-                        resolver.resolveDependency( NeoStoreProvider.class ).evaluate(),
+                        resolver.resolveDependency( TransactionAppender.class ),
                         applier,
                         resolver.resolveDependency( IndexUpdatesValidator.class ) );
         LifeSupport life = new LifeSupport();
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
         {
-            LogicalTransactionStore source = life.add( new ReadOnlyTransactionStore( fileSystem, fromPath,
-                    new Monitors(), resolver.resolveDependency( KernelHealth.class ) ) );
+            LogicalTransactionStore source = life.add(
+                    new ReadOnlyTransactionStore( pageCache, fileSystem, fromPath, new Monitors() ) );
             life.start();
             long lastAppliedTx = fromTxExclusive;
             // Some progress if there are more than a couple of transactions to apply

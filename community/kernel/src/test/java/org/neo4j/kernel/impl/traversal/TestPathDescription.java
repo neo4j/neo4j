@@ -50,18 +50,13 @@ public class TestPathDescription extends TraversalTestBase
                 "1 A 2", "2 B 3", "3 C 4", "4 D 5",
                 "1 A 6", "6 B 3" );
 
-        Transaction tx = beginTx();
-        try
+        try ( Transaction tx = beginTx() )
         {
             expectPaths( traversal( NODE_PATH )
                     .expand( path().step( A ).step( B ).step( C ).step( D ).build() )
                     .evaluator( includeWhereLastRelationshipTypeIs( D ) )
                     .traverse( getNodeWithName( "1" ) ),
                     "1,2,3,4,5", "1,6,3,4,5" );
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 }

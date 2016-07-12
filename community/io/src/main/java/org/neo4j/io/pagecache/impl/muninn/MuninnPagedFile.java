@@ -27,6 +27,7 @@ import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -48,7 +49,7 @@ final class MuninnPagedFile implements PagedFile
             UnsafeUtil.getFieldOffset( MuninnPagedFile.class, "lastPageId" );
 
     final MuninnPageCache pageCache;
-    final int pageSize;
+    final int filePageSize;
     final PageCacheTracer tracer;
 
     // This is the table where we translate file-page-ids to cache-page-ids. Only one thread can perform a resize at
@@ -58,20 +59,23 @@ final class MuninnPagedFile implements PagedFile
     final PageSwapper swapper;
     private final CursorPool cursorPool;
 
-    // Accessed via Unsafe
+    @SuppressWarnings( "unused" ) // Accessed via Unsafe
     private volatile int referenceCounter;
+    @SuppressWarnings( "unused" ) // Accessed via Unsafe
     private volatile long lastPageId;
 
     MuninnPagedFile(
             File file,
             MuninnPageCache pageCache,
-            int pageSize,
+            int filePageSize,
             PageSwapperFactory swapperFactory,
             CursorPool cursorPool,
-            PageCacheTracer tracer ) throws IOException
+            PageCacheTracer tracer,
+            boolean createIfNotExists,
+            boolean truncateExisting ) throws IOException
     {
         this.pageCache = pageCache;
-        this.pageSize = pageSize;
+        this.filePageSize = filePageSize;
         this.cursorPool = cursorPool;
         this.tracer = tracer;
 
@@ -88,7 +92,11 @@ final class MuninnPagedFile implements PagedFile
         // the remaining outer array slots with more inner arrays, and then finally assigns the new outer array to
         // the translationTable field and releases the resize lock.
         PageEvictionCallback onEviction = new MuninnPageEvictionCallback( this );
-        swapper = swapperFactory.createPageSwapper( file, pageSize, onEviction );
+        swapper = swapperFactory.createPageSwapper( file, filePageSize, onEviction, createIfNotExists );
+        if ( truncateExisting )
+        {
+            swapper.truncate();
+        }
         long lastPageId = swapper.getLastPageId();
 
         int initialChunks = 1 + computeChunkId( lastPageId );
@@ -111,11 +119,7 @@ final class MuninnPagedFile implements PagedFile
     @Override
     public PageCursor io( long pageId, int pf_flags )
     {
-        if ( getRefCount() == 0 )
-        {
-            throw new IllegalStateException(
-                    "File has been unmapped" );
-        }
+        assertStillMapped();
 
         int lockMask = PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK;
         if ( (pf_flags & lockMask) == 0 )
@@ -143,10 +147,18 @@ final class MuninnPagedFile implements PagedFile
         return cursor;
     }
 
+    void assertStillMapped()
+    {
+        if ( getRefCount() == 0 )
+        {
+            throw new IllegalStateException( "File has been unmapped: " + file().getPath() );
+        }
+    }
+
     @Override
     public int pageSize()
     {
-        return pageSize;
+        return filePageSize;
     }
 
     File file()
@@ -170,34 +182,57 @@ final class MuninnPagedFile implements PagedFile
         try ( MajorFlushEvent flushEvent = tracer.beginFileFlush( swapper ) )
         {
             flushAndForceInternal( flushEvent.flushEventOpportunity() );
+            syncDevice();
         }
     }
 
     void flushAndForceInternal( FlushEventOpportunity flushOpportunity ) throws IOException
     {
         pageCache.pauseBackgroundFlushTask();
+        long[] stamps = new long[translationTableChunkSize];
+        MuninnPage[] pages = new MuninnPage[translationTableChunkSize];
+        long filePageId = -1; // Start at -1 because we increment at the *start* of the chunk-loop iteration.
         try
         {
             for ( Object[] chunk : translationTable )
             {
+                // TODO Look into if we can tolerate flushing a few clean pages if it means we can use larger vectors.
+                // TODO The clean pages in question must still be loaded, though. Otherwise we'll end up writing
+                // TODO garbage to the file.
+                int pagesGrabbed = 0;
                 for ( Object element : chunk )
                 {
+                    filePageId++;
                     if ( element instanceof MuninnPage )
                     {
                         MuninnPage page = (MuninnPage) element;
-                        long stamp = page.readLock();
-                        try
+                        stamps[pagesGrabbed] = page.readLock();
+                        if ( page.isBoundTo( swapper, filePageId ) && page.isDirty() )
                         {
-                            page.flush( swapper, page.getFilePageId(), flushOpportunity );
+                            // The page is still bound to the expected file and file page id after we locked it,
+                            // so we didn't race with eviction and faulting, and the page is dirty.
+                            // So we add it to our IO vector.
+                            pages[pagesGrabbed] = page;
+                            pagesGrabbed++;
+                            continue;
                         }
-                        finally
+                        else
                         {
-                            page.unlockRead( stamp );
+                            page.unlockRead( stamps[pagesGrabbed] );
                         }
                     }
+                    if ( pagesGrabbed > 0 )
+                    {
+                        pagesGrabbed = vectoredFlush( stamps, pages, pagesGrabbed, flushOpportunity );
+                    }
+                }
+                if ( pagesGrabbed > 0 )
+                {
+                    vectoredFlush( stamps, pages, pagesGrabbed, flushOpportunity );
                 }
             }
-            force();
+
+            swapper.force();
         }
         finally
         {
@@ -205,10 +240,54 @@ final class MuninnPagedFile implements PagedFile
         }
     }
 
-    @Override
-    public void force() throws IOException
+    private int vectoredFlush(
+            long[] stamps, MuninnPage[] pages, int pagesGrabbed, FlushEventOpportunity flushOpportunity )
+            throws IOException
     {
-        swapper.force();
+        FlushEvent flush = null;
+        try
+        {
+            // Write the pages vector
+            MuninnPage firstPage = pages[0];
+            long startFilePageId = firstPage.getFilePageId();
+            flush = flushOpportunity.beginFlush( startFilePageId, firstPage.getCachePageId(), swapper );
+            long bytesWritten = swapper.write( startFilePageId, pages, 0, pagesGrabbed );
+
+            // Update the flush event
+            flush.addBytesWritten( bytesWritten );
+            flush.addPagesFlushed( pagesGrabbed );
+            flush.done();
+
+            // Mark the flushed pages as clean
+            for ( int j = 0; j < pagesGrabbed; j++ )
+            {
+                pages[j].markAsClean();
+            }
+
+            // There are now 0 'grabbed' pages
+            return 0;
+        }
+        catch ( IOException ioe )
+        {
+            if ( flush != null )
+            {
+                flush.done( ioe );
+            }
+            throw ioe;
+        }
+        finally
+        {
+            // Always unlock all the pages in the vector
+            for ( int j = 0; j < pagesGrabbed; j++ )
+            {
+                pages[j].unlockRead( stamps[j] );
+            }
+        }
+    }
+
+    private void syncDevice() throws IOException
+    {
+        pageCache.syncDevice();
     }
 
     @Override

@@ -21,6 +21,7 @@ package upgrade;
 
 import org.hamcrest.Matchers;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -36,11 +37,14 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
+import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
+import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -48,41 +52,47 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
-import static org.neo4j.kernel.impl.store.CommonAbstractStore.ALL_STORES_VERSION;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allLegacyStoreFilesHaveVersion;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveNoTrailer;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasLatestVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateAllFiles;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
 
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class StoreUpgradeOnStartupTest
 {
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public PageCacheRule pageCacheRule = new PageCacheRule();
+    @Parameterized.Parameter(0)
+    public String version;
+
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+    private File workingDirectory;
+    private StoreVersionCheck check;
 
-    private final String version;
-    private final File workingDirectory;
-
-    public StoreUpgradeOnStartupTest( String version )
-    {
-        this.version = version;
-        workingDirectory = TargetDirectory.forTest( getClass() ).cleanDirectory( version );
-    }
-
-    @Parameterized.Parameters(name = "{0}")
+    @Parameterized.Parameters( name = "{0}" )
     public static Collection<Object[]> versions()
     {
         return Arrays.asList(
                 new Object[]{Legacy19Store.LEGACY_VERSION},
                 new Object[]{Legacy20Store.LEGACY_VERSION},
-                new Object[]{Legacy21Store.LEGACY_VERSION}
+                new Object[]{Legacy21Store.LEGACY_VERSION},
+                new Object[]{Legacy22Store.LEGACY_VERSION}
         );
     }
 
     @Before
     public void setup() throws IOException
     {
-        prepareSampleLegacyDatabase( version, fileSystem, workingDirectory );
-        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, version ) );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+        workingDirectory = testDir.directory( "working_" + version );
+        check = new StoreVersionCheck( pageCache );
+        File prepareDirectory = testDir.directory( "prepare_" + version );
+        prepareSampleLegacyDatabase( version, fileSystem, workingDirectory, prepareDirectory );
+        assertTrue( allLegacyStoreFilesHaveVersion( fileSystem, workingDirectory, version ) );
+
     }
 
     @Test
@@ -94,7 +104,8 @@ public class StoreUpgradeOnStartupTest
 
         // then
         assertTrue( "Some store files did not have the correct version",
-                allStoreFilesHaveVersion( fileSystem, workingDirectory, ALL_STORES_VERSION ) );
+                checkNeoStoreHasLatestVersion( check, workingDirectory ) );
+        assertTrue( allStoreFilesHaveNoTrailer( fileSystem, workingDirectory ) );
         assertConsistentStore( workingDirectory );
     }
 
@@ -102,31 +113,8 @@ public class StoreUpgradeOnStartupTest
     public void shouldAbortOnNonCleanlyShutdown() throws Throwable
     {
         // given
-        truncateAllFiles( fileSystem, workingDirectory, version );
-        // Now everything has lost the version info
-
-        try
-        {
-            // when
-            GraphDatabaseService database = createGraphDatabaseService();
-            database.shutdown();// shutdown db in case test fails
-            fail( "Should have been unable to start upgrade on old version" );
-        }
-        catch ( RuntimeException e )
-        {
-            // then
-            assertThat( Exceptions.rootCause( e ), Matchers.instanceOf(
-                    StoreUpgrader.UpgradingStoreVersionNotFoundException.class ) );
-        }
-    }
-
-    @Test
-    public void shouldAbortOnCorruptStore() throws IOException
-    {
-        // given
         File file = new File( workingDirectory, "neostore.propertystore.db.index.keys" );
         truncateFile( fileSystem, file, "StringPropertyStore " + version );
-
         try
         {
             // when
@@ -137,14 +125,14 @@ public class StoreUpgradeOnStartupTest
         catch ( RuntimeException e )
         {
             // then
-            assertThat( Exceptions.rootCause( e ), Matchers.instanceOf( UnableToUpgradeException.class ) );
+            assertThat( Exceptions.rootCause( e ), Matchers.instanceOf( StoreUpgrader.UnableToUpgradeException.class ) );
         }
     }
 
     private GraphDatabaseService createGraphDatabaseService()
     {
         return new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( workingDirectory.getPath() )
+                .newEmbeddedDatabaseBuilder( workingDirectory )
                 .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" )
                 .newGraphDatabase();
     }

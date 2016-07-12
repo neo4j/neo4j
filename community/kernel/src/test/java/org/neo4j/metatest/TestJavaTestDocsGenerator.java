@@ -19,15 +19,16 @@
  */
 package org.neo4j.metatest;
 
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.Map;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -47,15 +48,21 @@ public class TestJavaTestDocsGenerator implements GraphHolder
 {
     private static GraphDatabaseService graphdb;
     public @Rule
-    TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
-            this, true ) );
-
+    TestData<Map<String,Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
     public @Rule
     TestData<JavaTestDocsGenerator> gen = TestData.producedThrough( JavaTestDocsGenerator.PRODUCER );
+    public @Rule TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
-    File directory = TargetDirectory.forTest(getClass()).cleanDirectory( "testdocs"  );
-    String sectionName = "testsection";
-    File sectionDirectory = new File(directory, sectionName);
+    private final String sectionName = "testsection";
+    private File directory;
+    private File sectionDirectory;
+
+    @Before
+    public void setup()
+    {
+        directory = testDirectory.directory( "testdocs" );
+        sectionDirectory = new File( directory, sectionName );
+    }
 
     @Documented( value = "Title1.\n\nhej\n@@snippet1\n\nmore docs\n@@snippet_2-1\n@@snippet12\n." )
     @Test
@@ -74,8 +81,7 @@ public class TestJavaTestDocsGenerator implements GraphHolder
         doc.addSnippet( "snippet_2-1", snippet2 );
         doc.document( directory.getAbsolutePath(), sectionName );
 
-        String result = readFileAsString( new File( sectionDirectory,
-                "title1.asciidoc" ) );
+        String result = readFileAsString( new File( sectionDirectory, "title1.asciidoc" ) );
         assertTrue( result.contains( "include::includes/title1-snippet1.asciidoc[]" ) );
         assertTrue( result.contains( "include::includes/title1-snippet_2-1.asciidoc[]" ) );
         assertTrue( result.contains( "include::includes/title1-snippet12.asciidoc[]" ) );
@@ -102,17 +108,14 @@ public class TestJavaTestDocsGenerator implements GraphHolder
         doc.document( directory.getAbsolutePath(), sectionName );
     }
 
-    /**
-     * Title2.
-     *
-     * @@snippet1
-     *
-     *            more stuff
-     *
-     *
-     * @@snippet2
-     */
-    @Documented
+    @Documented( "Title2.\n" +
+                 "\n" +
+                 "@@snippet1\n" +
+                 "\n" +
+                 "           more stuff\n" +
+                 "\n" +
+                 "\n" +
+                 "@@snippet2" )
     @Test
     @Graph( "I know you" )
     public void canCreateDocsFromSnippetsInAnnotations() throws Exception
@@ -126,24 +129,19 @@ public class TestJavaTestDocsGenerator implements GraphHolder
         doc.addSnippet( "snippet1", snippet1 );
         doc.addSnippet( "snippet2", snippet2 );
         doc.document( directory.getAbsolutePath(), sectionName );
-        String result = readFileAsString( new File( sectionDirectory,
-                "title2.asciidoc" ) );
+        String result = readFileAsString( new File( sectionDirectory, "title2.asciidoc" ) );
         assertTrue( result.contains( "include::includes/title2-snippet1.asciidoc[]" ) );
         assertTrue( result.contains( "include::includes/title2-snippet2.asciidoc[]" ) );
-        result = readFileAsString( new File( new File( sectionDirectory,
-                "includes" ), "title2-snippet1.asciidoc" ) );
+        result = readFileAsString( new File( new File( sectionDirectory, "includes" ), "title2-snippet1.asciidoc" ) );
         assertTrue( result.contains( snippet1 ) );
-        result = readFileAsString( new File( new File( sectionDirectory,
-                "includes" ), "title2-snippet2.asciidoc" ) );
+        result = readFileAsString( new File( new File( sectionDirectory, "includes" ), "title2-snippet2.asciidoc" ) );
         assertTrue( result.contains( snippet2 ) );
     }
 
-    public static String readFileAsString( File file )
-            throws java.io.IOException
+    public static String readFileAsString( File file ) throws java.io.IOException
     {
         byte[] buffer = new byte[(int) file.length()];
-        BufferedInputStream f = new BufferedInputStream( new FileInputStream(
-                file ) );
+        BufferedInputStream f = new BufferedInputStream( new FileInputStream( file ) );
         f.read( buffer );
         return new String( buffer );
     }

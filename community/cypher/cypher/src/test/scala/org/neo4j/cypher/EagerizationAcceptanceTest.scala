@@ -40,6 +40,16 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite
     assertNumberOfEagerness(query, 1)
   }
 
+  test("should plan eagerness for detach delete on paths") {
+    val node0 = createLabeledNode("L")
+    val node1 = createLabeledNode("L")
+    relate(node0, node1)
+
+    val query = "MATCH p=(:L)-[*]-() DETACH DELETE p"
+
+    assertNumberOfEagerness(query, 1)
+  }
+
   test("github issue ##5653") {
     assertNumberOfEagerness(
       "MATCH (p1:Person {name:'Michal'})-[r:FRIEND_OF {since:2007}]->(p2:Person {name:'Daniela'}) DELETE r, p1, p2", 1)
@@ -395,10 +405,10 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite
     assertNumberOfEagerness(query, 0)
   }
 
-  test("matching property using LABELS and writing should be eager") {
+  test("matching all nodes using LABELS and writing should not be eager") {
     val query = "MATCH n WHERE labels(n) = [] SET n:Lol"
 
-    assertNumberOfEagerness(query, 1)
+    assertNumberOfEagerness(query, 0)
   }
 
   test("matching property using LABELS and not writing should not be eager") {
@@ -623,6 +633,12 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite
     assertNumberOfEagerness(query, 0)
   }
 
+  test("should not be eager when merging on two different labels") {
+    val query = "MERGE(:L1) MERGE(p:L2) ON CREATE SET p.name = 'Blaine'"
+
+    assertNumberOfEagerness(query, 0)
+  }
+
   test("should be eager when merging on the same label") {
     val query = "MERGE(:L1) MERGE(p:L1) ON CREATE SET p.name = 'Blaine'"
 
@@ -639,6 +655,24 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite
     val query = "MERGE() MERGE(p) ON CREATE SET p.name = 'Blaine'"
 
     assertNumberOfEagerness(query, 1)
+  }
+
+  test("should not be eager when merging on already bound identifiers") {
+    val query = "MERGE (city:City) MERGE (country:Country) MERGE (city)-[:IN]->(country)"
+
+    assertNumberOfEagerness(query,  0)
+  }
+
+  ignore("should not be eager when creating single node after matching on pattern with relationship") {
+    val query = "MATCH ()--() CREATE ()"
+
+    assertNumberOfEagerness(query,  0)
+  }
+
+  ignore("should not be eager when creating single node after matching on pattern with relationship and also matching on label") {
+    val query = "MATCH (:L) MATCH ()--() CREATE ()"
+
+    assertNumberOfEagerness(query,  0)
   }
 
   test("should be eager when creating single node after matching on empty node") {
@@ -711,7 +745,7 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite
     val result = execute(q)
     val plan = result.executionPlanDescription().toString
     result.close()
-    val length = EagerRegEx.findAllIn(plan).length / 2
+    val length = EagerRegEx.findAllIn(plan).length
     assert(length == expectedEagerCount, plan)
   }
 }

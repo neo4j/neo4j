@@ -50,7 +50,7 @@ public class ExtensionInitializer
         GraphDatabaseAPI graphDatabaseService = neoServer.getDatabase().getGraph();
         Config configuration = neoServer.getConfig();
 
-        Collection<Injectable<?>> injectables = new HashSet<Injectable<?>>();
+        Collection<Injectable<?>> injectables = new HashSet<>();
         for ( PluginLifecycle lifecycle : lifecycles )
         {
             if ( hasPackage( lifecycle, packageNames ) )

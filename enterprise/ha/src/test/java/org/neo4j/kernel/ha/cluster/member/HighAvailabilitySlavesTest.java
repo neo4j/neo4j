@@ -41,8 +41,8 @@ import org.neo4j.kernel.ha.com.master.SlaveFactory;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.ReflectionUtil;
 
 import static java.net.URI.create;
@@ -163,8 +163,8 @@ public class HighAvailabilitySlavesTest
     {
         // Given
         HighAvailabilitySlaves haSlaves = new HighAvailabilitySlaves( clusterMembersOfSize( 1000 ),
-                mock( Cluster.class ), new DefaultSlaveFactory( DevNullLoggingService.DEV_NULL, new Monitors(), 42 ),
-                new HostnamePort( null, 0 ) );
+                mock( Cluster.class ), new DefaultSlaveFactory( NullLogProvider.getInstance(), new Monitors(), 42 ),
+                        new HostnamePort( null, 0 ) );
 
         // When
         ExecutorService executor = Executors.newFixedThreadPool( 5 );

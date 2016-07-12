@@ -27,11 +27,10 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.cursor.GenericCursor;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -39,13 +38,13 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
+import org.neo4j.kernel.impl.api.store.PropertyRecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
@@ -56,7 +55,7 @@ import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
  * Implementation of the property store. This implementation has two dynamic
  * stores. One used to store keys and another for string property values.
  */
-public class PropertyStore extends AbstractRecordStore<PropertyRecord> implements Store
+public class PropertyStore extends AbstractRecordStore<PropertyRecord>
 {
     public static abstract class Configuration extends AbstractStore.Configuration
     {
@@ -68,14 +67,14 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     public static final String TYPE_DESCRIPTOR = "PropertyStore";
 
     public static final int RECORD_SIZE = 1/*next and prev high bits*/
-    + 4/*next*/
-    + 4/*prev*/
-    + DEFAULT_PAYLOAD_SIZE /*property blocks*/;
+            + 4/*next*/
+            + 4/*prev*/
+            + DEFAULT_PAYLOAD_SIZE /*property blocks*/;
     // = 41
 
-    private DynamicStringStore stringPropertyStore;
-    private PropertyKeyTokenStore propertyKeyTokenStore;
-    private DynamicArrayStore arrayPropertyStore;
+    private final DynamicStringStore stringPropertyStore;
+    private final PropertyKeyTokenStore propertyKeyTokenStore;
+    private final DynamicArrayStore arrayPropertyStore;
     private final PropertyPhysicalToLogicalConverter physicalToLogicalConverter;
 
     public PropertyStore(
@@ -83,16 +82,12 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
             Config configuration,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger,
+            LogProvider logProvider,
             DynamicStringStore stringPropertyStore,
             PropertyKeyTokenStore propertyKeyTokenStore,
-            DynamicArrayStore arrayPropertyStore,
-            StoreVersionMismatchHandler versionMismatchHandler,
-            Monitors monitors )
+            DynamicArrayStore arrayPropertyStore )
     {
-        super( fileName, configuration, IdType.PROPERTY, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
+        super( fileName, configuration, IdType.PROPERTY, idGeneratorFactory, pageCache, logProvider );
         this.stringPropertyStore = stringPropertyStore;
         this.propertyKeyTokenStore = propertyKeyTokenStore;
         this.arrayPropertyStore = arrayPropertyStore;
@@ -114,26 +109,6 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     public DynamicArrayStore getArrayStore()
     {
         return arrayPropertyStore;
-    }
-
-    @Override
-    protected void closeStorage()
-    {
-        if ( stringPropertyStore != null )
-        {
-            stringPropertyStore.close();
-            stringPropertyStore = null;
-        }
-        if ( propertyKeyTokenStore != null )
-        {
-            propertyKeyTokenStore.close();
-            propertyKeyTokenStore = null;
-        }
-        if ( arrayPropertyStore != null )
-        {
-            arrayPropertyStore.close();
-            arrayPropertyStore = null;
-        }
     }
 
     @Override
@@ -177,7 +152,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
             {
                 throw new UnderlyingStorageException(
                         "Could not pin page[" + pageId +
-                        " exclusively for updateRecord: " + record );
+                                " exclusively for updateRecord: " + record );
             }
         }
         catch ( IOException e )
@@ -201,10 +176,10 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         {
             // Set up the record header
             short prevModifier = record.getPrevProp() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0
-                    : (short) ( ( record.getPrevProp() & 0xF00000000L ) >> 28 );
+                    : (short) ((record.getPrevProp() & 0xF00000000L) >> 28);
             short nextModifier = record.getNextProp() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0
-                    : (short) ( ( record.getNextProp() & 0xF00000000L ) >> 32 );
-            byte modifiers = (byte) ( prevModifier | nextModifier );
+                    : (short) ((record.getNextProp() & 0xF00000000L) >> 32);
+            byte modifiers = (byte) (prevModifier | nextModifier);
             /*
              * [pppp,nnnn] previous, next high bits
              */
@@ -276,7 +251,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
             else
             {
                 throw new InvalidRecordException( "Unknown dynamic record"
-                                                  + valueRecord );
+                        + valueRecord );
             }
         }
     }
@@ -290,34 +265,33 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     {
         if ( block.getType() == PropertyType.STRING )
         {
-            if ( block.isLight() )
-            {
-                Collection<DynamicRecord> stringRecords = stringPropertyStore.getLightRecords( block.getSingleValueLong() );
-                for ( DynamicRecord stringRecord : stringRecords )
-                {
-                    stringRecord.setType( PropertyType.STRING.intValue() );
-                    block.addValueRecord( stringRecord );
-                }
-            }
-            for ( DynamicRecord stringRecord : block.getValueRecords() )
-            {
-                stringPropertyStore.ensureHeavy( stringRecord );
-            }
+            loadPropertyBlock( block, stringPropertyStore );
         }
         else if ( block.getType() == PropertyType.ARRAY )
         {
-            if ( block.isLight() )
+            loadPropertyBlock( block, arrayPropertyStore );
+        }
+    }
+
+    private static void loadPropertyBlock( PropertyBlock block, AbstractDynamicStore dynamicStore )
+    {
+        if ( block.isLight() )
+        {
+            long startBlockId = block.getSingleValueLong();
+            try ( GenericCursor<DynamicRecord> cursor = dynamicStore.getRecordsCursor( startBlockId ) )
             {
-                Collection<DynamicRecord> arrayRecords = arrayPropertyStore.getLightRecords( block.getSingleValueLong() );
-                for ( DynamicRecord arrayRecord : arrayRecords )
+                while ( cursor.next() )
                 {
-                    arrayRecord.setType( PropertyType.ARRAY.intValue() );
-                    block.addValueRecord( arrayRecord );
+                    cursor.get().setType( block.getType().intValue() );
+                    block.addValueRecord( cursor.get().clone() );
                 }
             }
-            for ( DynamicRecord arrayRecord : block.getValueRecords() )
+        }
+        else
+        {
+            for ( DynamicRecord dynamicRecord : block.getValueRecords() )
             {
-                arrayPropertyStore.ensureHeavy( arrayRecord );
+                dynamicStore.ensureHeavy( dynamicRecord );
             }
         }
     }
@@ -325,20 +299,70 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     @Override
     public PropertyRecord getRecord( long id )
     {
-        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
+        return getRecord( new PropertyRecord( id ) );
+    }
+
+    public PropertyRecord getRecord( PropertyRecord record )
+    {
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( record.getId() ), PF_SHARED_LOCK ) )
         {
-            PropertyRecord record = null;
+            PropertyRecord tmpRecord = null;
             if ( cursor.next() )
             {
                 do
                 {
-                    record = getRecord( id, cursor );
+                    tmpRecord = getRecord( cursor, record );
                 } while ( cursor.shouldRetry() );
             }
 
-            if ( record == null || !record.inUse() )
+            if ( tmpRecord == null || !tmpRecord.inUse() )
             {
-                throw new InvalidRecordException( "PropertyRecord[" + id + "] not in use" );
+                throw new InvalidRecordException( "PropertyRecord[" + record.getId() + "] not in use" );
+            }
+
+            return record;
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
+
+    public PageCursor newReadCursor( long recordId ) throws IOException
+    {
+        PageCursor cursor = storeFile.io( pageIdForRecord( recordId ), PF_SHARED_LOCK );
+        try
+        {
+            if ( !cursor.next() )
+            {
+                throw new IOException( "Record not found: " + recordId );
+            }
+            cursor.setOffset( (int) (recordId * RECORD_SIZE % storeFile.pageSize()) );
+            return cursor;
+        }
+        catch ( Throwable failure )
+        {
+            cursor.close();
+            throw failure;
+        }
+    }
+
+    public PropertyRecord getRecord( PropertyRecord record, PageCursor cursor )
+    {
+        try
+        {
+            PropertyRecord tmpRecord = null;
+            if ( cursor.next( pageIdForRecord( record.getId() ) ) )
+            {
+                do
+                {
+                    tmpRecord = getRecord( cursor, record );
+                } while ( cursor.shouldRetry() );
+            }
+
+            if ( tmpRecord == null || !tmpRecord.inUse() )
+            {
+                throw new InvalidRecordException( "PropertyRecord[" + record.getId() + "] not in use" );
             }
             record.verifyRecordIsWellFormed();
 
@@ -355,15 +379,15 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     {
         try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
         {
-            PropertyRecord record = null;
+            PropertyRecord record = new PropertyRecord( id );
             if ( cursor.next() )
             {
                 do
                 {
-                    record = getRecord( id, cursor );
+                    record = getRecord( cursor, record );
                 } while ( cursor.shouldRetry() );
             }
-            return record == null? new PropertyRecord( id ) : record;
+            return record == null ? new PropertyRecord( id ) : record;
         }
         catch ( IOException e )
         {
@@ -371,29 +395,23 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         }
     }
 
-    @Override
-    public PropertyRecord forceGetRaw( PropertyRecord record )
-    {
-        return record;
-    }
-
-    @Override
-    public PropertyRecord forceGetRaw( long id )
-    {
-        return forceGetRecord( id );
-    }
-
     private PropertyRecord getRecordFromBuffer( long id, PageCursor cursor )
     {
+        return getRecordFromBuffer( cursor, new PropertyRecord( id ) );
+    }
+
+    private PropertyRecord getRecordFromBuffer( PageCursor cursor, PropertyRecord record )
+    {
+        record.clearPropertyBlocks();
+
         int offsetAtBeginning = cursor.getOffset();
-        PropertyRecord record = new PropertyRecord( id );
 
         /*
          * [pppp,nnnn] previous, next high bits
          */
         byte modifiers = cursor.getByte();
-        long prevMod = ( modifiers & 0xF0L ) << 28;
-        long nextMod = ( modifiers & 0x0FL ) << 32;
+        long prevMod = (modifiers & 0xF0L) << 28;
+        long nextMod = (modifiers & 0x0FL) << 32;
         long prevProp = cursor.getUnsignedInt();
         long nextProp = cursor.getUnsignedInt();
         record.setPrevProp( longFromIntAndMod( prevProp, prevMod ) );
@@ -416,10 +434,10 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         return record;
     }
 
-    private PropertyRecord getRecord( long id, PageCursor cursor )
+    private PropertyRecord getRecord( PageCursor cursor, PropertyRecord record )
     {
-        cursor.setOffset( (int) (id * RECORD_SIZE % storeFile.pageSize()) );
-        return getRecordFromBuffer( id, cursor );
+        cursor.setOffset( (int) (record.getId() * RECORD_SIZE % storeFile.pageSize()) );
+        return getRecordFromBuffer( cursor, record );
     }
 
     /*
@@ -465,24 +483,6 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     public Object getValue( PropertyBlock propertyBlock )
     {
         return propertyBlock.getType().getValue( propertyBlock, this );
-    }
-
-    @Override
-    public void makeStoreOk()
-    {
-        propertyKeyTokenStore.makeStoreOk();
-        stringPropertyStore.makeStoreOk();
-        arrayPropertyStore.makeStoreOk();
-        super.makeStoreOk();
-    }
-
-    @Override
-    public void visitStore( Visitor<CommonAbstractStore, RuntimeException> visitor )
-    {
-        propertyKeyTokenStore.visitStore( visitor );
-        stringPropertyStore.visitStore( visitor );
-        arrayPropertyStore.visitStore( visitor );
-        visitor.visit( this );
     }
 
     public static void allocateStringRecords( Collection<DynamicRecord> target, byte[] chars,
@@ -590,7 +590,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         }
     }
 
-    private static void setSingleBlockValue( PropertyBlock block, int keyId, PropertyType type, long longValue )
+    public static void setSingleBlockValue( PropertyBlock block, int keyId, PropertyType type, long longValue )
     {
         block.setSingleBlock( singleBlockLongValue( keyId, type, longValue ) );
     }
@@ -645,27 +645,21 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     }
 
     @Override
-    public void logVersions(StringLogger.LineLogger logger )
-    {
-        super.logVersions( logger );
-        propertyKeyTokenStore.logVersions( logger );
-        stringPropertyStore.logVersions( logger );
-        arrayPropertyStore.logVersions(logger  );
-    }
-
-    @Override
-    public void logIdUsage(StringLogger.LineLogger logger )
-    {
-        super.logIdUsage(logger);
-        propertyKeyTokenStore.logIdUsage( logger );
-        stringPropertyStore.logIdUsage( logger );
-        arrayPropertyStore.logIdUsage( logger );
-    }
-
-    @Override
     public String toString()
     {
         return super.toString() + "[blocksPerRecord:" + PropertyType.getPayloadSizeLongs() + "]";
+    }
+
+    public PropertyRecordCursor getPropertyRecordCursor( PropertyRecordCursor cursor, long firstRecordId )
+    {
+        if ( cursor == null )
+        {
+            cursor = new PropertyRecordCursor( new PropertyRecord( -1 ), this );
+        }
+
+        cursor.init( firstRecordId );
+
+        return cursor;
     }
 
     public Collection<PropertyRecord> getPropertyRecordChain( long firstRecordId )
@@ -675,13 +669,14 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
             PropertyRecord propRecord = getLightRecord( nextProp );
-            toReturn.add(propRecord);
+            toReturn.add( propRecord );
             nextProp = propRecord.getNextProp();
         }
         return toReturn;
     }
 
-    public Collection<PropertyRecord> getPropertyRecordChain( long firstRecordId, PrimitiveLongObjectMap<PropertyRecord> propertyLookup )
+    public Collection<PropertyRecord> getPropertyRecordChain( long firstRecordId,
+            PrimitiveLongObjectMap<PropertyRecord> propertyLookup )
     {
         long nextProp = firstRecordId;
         List<PropertyRecord> toReturn = new ArrayList<>();

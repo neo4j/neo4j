@@ -19,14 +19,14 @@
  */
 package org.neo4j.consistency;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.GraphStoreFixture;
@@ -39,13 +39,13 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -69,13 +69,12 @@ public class ConsistencyCheckServiceIntegrationTest
         Config configuration = new Config( settings(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
 
         // when
-        ConsistencyCheckService.Result result = service.runFullConsistencyCheck( fixture.directory().getPath(),
-                configuration, ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+        ConsistencyCheckService.Result result = runFullConsistencyCheck( service, configuration );
 
         // then
         assertEquals( ConsistencyCheckService.Result.SUCCESS, result );
         File reportFile = new File( fixture.directory(), defaultLogFileName( timestamp ) );
-        assertFalse( "Inconsistency report file " + reportFile + " not generated", reportFile.exists() );
+        assertFalse( "Unexpected generation of consistency check report file: " + reportFile, reportFile.exists() );
     }
 
     @Test
@@ -88,8 +87,7 @@ public class ConsistencyCheckServiceIntegrationTest
         Config configuration = new Config( settings(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
 
         // when
-        ConsistencyCheckService.Result result = service.runFullConsistencyCheck( fixture.directory().getPath(),
-                configuration, ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+        ConsistencyCheckService.Result result = runFullConsistencyCheck( service, configuration );
 
         // then
         assertEquals( ConsistencyCheckService.Result.FAILURE, result );
@@ -110,8 +108,7 @@ public class ConsistencyCheckServiceIntegrationTest
         );
 
         // when
-        service.runFullConsistencyCheck( fixture.directory().getPath(), configuration,
-                ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+        runFullConsistencyCheck( service, configuration );
 
         // then
         assertTrue( "Inconsistency report file " + specificLogFile + " not generated", specificLogFile.exists() );
@@ -123,7 +120,7 @@ public class ConsistencyCheckServiceIntegrationTest
         // given
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration = new Config( settings(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.absolutePath() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
 
         String propertyKey = "itemId";
         Label label = DynamicLabel.label( "Item" );
@@ -141,8 +138,7 @@ public class ConsistencyCheckServiceIntegrationTest
         db.shutdown();
 
         // when
-        Result result = service.runFullConsistencyCheck( testDirectory.absolutePath(), configuration,
-                ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+        Result result = runFullConsistencyCheck( service, configuration );
 
         // then
         assertEquals( ConsistencyCheckService.Result.SUCCESS, result );
@@ -167,8 +163,7 @@ public class ConsistencyCheckServiceIntegrationTest
                 Settings.FALSE ) );
 
         // when
-        Result result = service.runFullConsistencyCheck( testDirectory.absolutePath(), configuration,
-                ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+        Result result = runFullConsistencyCheck( service, configuration );
 
         // then
         assertEquals( ConsistencyCheckService.Result.SUCCESS, result );
@@ -176,7 +171,7 @@ public class ConsistencyCheckServiceIntegrationTest
 
     protected Map<String,String> settings( String... strings )
     {
-        Map<String,String> defaults = new HashMap<>();
+        Map<String, String> defaults = new HashMap<>();
         defaults.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         return stringMap( defaults, strings );
     }
@@ -187,11 +182,18 @@ public class ConsistencyCheckServiceIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
                 tx.create( new NodeRecord( next.node(), false, next.relationship(), -1 ) );
             }
         } );
+    }
+
+    private Result runFullConsistencyCheck( ConsistencyCheckService service, Config configuration )
+            throws ConsistencyCheckIncompleteException, IOException
+    {
+        return service.runFullConsistencyCheck( fixture.directory(),
+                configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );
     }
 
     @Rule
@@ -200,17 +202,12 @@ public class ConsistencyCheckServiceIntegrationTest
         @Override
         protected void generateInitialData( GraphDatabaseService graphDb )
         {
-            org.neo4j.graphdb.Transaction tx = graphDb.beginTx();
-            try
+            try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
             {
                 Node node1 = set( graphDb.createNode() );
                 Node node2 = set( graphDb.createNode(), property( "key", "value" ) );
                 node1.createRelationshipTo( node2, DynamicRelationshipType.withName( "C" ) );
                 tx.success();
-            }
-            finally
-            {
-                tx.finish();
             }
         }
     };

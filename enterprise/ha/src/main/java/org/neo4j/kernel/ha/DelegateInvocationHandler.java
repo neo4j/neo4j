@@ -23,6 +23,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Objects;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientDatabaseFailureException;
@@ -68,7 +69,7 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
      */
     public void setDelegate( T delegate )
     {
-        this.delegate = delegate;
+        this.delegate = Objects.requireNonNull( delegate, "delegate should not be null" );
         harden();
         concrete.invalidate();
     }
@@ -79,9 +80,9 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
      * will see the current delegate.
      */
     @SuppressWarnings( "unchecked" )
-    public void harden()
+    void harden()
     {
-        ((Concrete<T>)Proxy.getInvocationHandler( concrete.instance() )).set( delegate );
+        ((Concrete<T>) Proxy.getInvocationHandler( concrete.get() )).set( delegate );
     }
 
     @Override
@@ -113,7 +114,7 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
      */
     public T cement()
     {
-        return concrete.instance();
+        return concrete.get();
     }
 
     @Override
@@ -137,8 +138,9 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
             if ( delegate == null )
             {
                 throw new TransientDatabaseFailureException(
-                        "Transaction state is not valid. Perhaps a state change of" +
-                        "the database has happened while this transaction was running?" );
+                        "Instance state is not valid. There is no master currently available. Possible causes " +
+                                "include unavailability of a majority of the cluster members or network failure " +
+                                "that caused this instance to be partitioned away from the cluster" );
             }
 
             return proxyInvoke( delegate, method, args );

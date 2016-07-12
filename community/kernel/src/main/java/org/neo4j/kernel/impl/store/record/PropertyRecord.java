@@ -27,6 +27,7 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.kernel.impl.api.store.PropertyBlockCursor;
 
 /**
  * PropertyRecord is a container for PropertyBlocks. PropertyRecords form
@@ -315,5 +316,12 @@ public class PropertyRecord extends Abstract64BitRecord implements Iterable<Prop
             }
         }
         return result;
+    }
+
+    public PropertyBlockCursor getPropertyBlockCursor(PropertyBlockCursor cursor)
+    {
+        cursor.init(blockRecords, blockRecordsCursor);
+
+        return cursor;
     }
 }

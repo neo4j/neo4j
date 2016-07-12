@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.rest.web;
 
+import org.apache.commons.configuration.Configuration;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -28,7 +30,6 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -43,10 +44,11 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.EvaluationException;
 import org.neo4j.server.rest.domain.PropertySettingStrategy;
@@ -73,6 +75,7 @@ import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIPS;
 import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIP_INDEX;
 import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_CONSTRAINT;
 import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_INDEX;
+import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_RELATIONSHIP_CONSTRAINT;
 
 @Path( "/" )
 public class RestfulGraphDatabase
@@ -141,7 +144,13 @@ public class RestfulGraphDatabase
 
     public static final String PATH_SCHEMA_CONSTRAINT_LABEL = PATH_SCHEMA_CONSTRAINT + "/{label}";
     public static final String PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS = PATH_SCHEMA_CONSTRAINT_LABEL + "/uniqueness";
+    public static final String PATH_SCHEMA_CONSTRAINT_LABEL_EXISTENCE = PATH_SCHEMA_CONSTRAINT_LABEL + "/existence";
     public static final String PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS_PROPERTY = PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS + "/{property}";
+    public static final String PATH_SCHEMA_CONSTRAINT_LABEL_EXISTENCE_PROPERTY = PATH_SCHEMA_CONSTRAINT_LABEL_EXISTENCE + "/{property}";
+
+    public static final String PATH_SCHEMA_RELATIONSHIP_CONSTRAINT_TYPE = PATH_SCHEMA_RELATIONSHIP_CONSTRAINT + "/{type}";
+    public static final String PATH_SCHEMA_RELATIONSHIP_CONSTRAINT_TYPE_EXISTENCE = PATH_SCHEMA_RELATIONSHIP_CONSTRAINT_TYPE + "/existence";
+    public static final String PATH_SCHEMA_RELATIONSHIP_CONSTRAINT_EXISTENCE_PROPERTY = PATH_SCHEMA_RELATIONSHIP_CONSTRAINT_TYPE_EXISTENCE + "/{property}";
 
     public static final String NODE_AUTO_INDEX_TYPE = "node";
     public static final String RELATIONSHIP_AUTO_INDEX_TYPE = "relationship";
@@ -156,6 +165,7 @@ public class RestfulGraphDatabase
     private static final String HEADER_TRANSACTION = "Transaction";
 
     private final DatabaseActions actions;
+    private Configuration config;
     private final OutputFormat output;
     private final InputFormat input;
 
@@ -170,11 +180,14 @@ public class RestfulGraphDatabase
     }
 
     public RestfulGraphDatabase( @Context InputFormat input,
-                                 @Context OutputFormat output, @Context DatabaseActions actions )
+                                 @Context OutputFormat output,
+                                 @Context DatabaseActions actions,
+                                 @Context Configuration config )
     {
         this.input = input;
         this.output = output;
         this.actions = actions;
+        this.config = config;
     }
 
     public OutputFormat getOutputFormat()
@@ -539,9 +552,9 @@ public class RestfulGraphDatabase
 
     @GET
     @Path( PATH_LABELS )
-    public Response getAllLabels( )
+    public Response getAllLabels( @QueryParam( "in_use" ) @DefaultValue( "true" ) boolean inUse )
     {
-        return output.ok( actions.getAllLabels() );
+        return output.ok( actions.getAllLabels( inUse ) );
     }
 
     // Property keys
@@ -558,8 +571,7 @@ public class RestfulGraphDatabase
     @SuppressWarnings("unchecked")
     @POST
     @Path(PATH_NODE_RELATIONSHIPS)
-    public Response createRelationship(
-                                        @PathParam("nodeId") long startNodeId, String body )
+    public Response createRelationship( @PathParam("nodeId") long startNodeId, String body )
     {
         final Map<String, Object> data;
         final long endNodeId;
@@ -618,8 +630,7 @@ public class RestfulGraphDatabase
 
     @DELETE
     @Path(PATH_RELATIONSHIP)
-    public Response deleteRelationship(
-                                        @PathParam("relationshipId") long relationshipId )
+    public Response deleteRelationship( @PathParam("relationshipId") long relationshipId )
     {
         try
         {
@@ -975,6 +986,9 @@ public class RestfulGraphDatabase
     public Response addToNodeIndex( @PathParam("indexName") String indexName, @QueryParam("unique") String unique,
                                     @QueryParam("uniqueness") String uniqueness, String postBody )
     {
+        int otherHeaders = 512;
+        int maximumSizeInBytes = config.getInt( ServerSettings.maximum_response_header_size.name() ) - otherHeaders;
+
         try
         {
             Map<String, Object> entityBody;
@@ -984,18 +998,32 @@ public class RestfulGraphDatabase
             {
                 case GetOrCreate:
                     entityBody = input.readMap( postBody, "key", "value" );
+
+                    String getOrCreateValue = String.valueOf( entityBody.get( "value" ) );
+                    if ( getOrCreateValue.length() > maximumSizeInBytes )
+                    {
+                        return valueTooBig();
+                    }
+
                     result = actions.getOrCreateIndexedNode( indexName,
                             String.valueOf( entityBody.get( "key" ) ),
-                            String.valueOf( entityBody.get( "value" ) ), extractNodeIdOrNull( getStringOrNull(
+                            getOrCreateValue, extractNodeIdOrNull( getStringOrNull(
                             entityBody, "uri" ) ), getMapOrNull( entityBody, "properties" ) );
                     return result.other() ? output.created( result.first() ) : output.okIncludeLocation( result.first
                             () );
 
                 case CreateOrFail:
                     entityBody = input.readMap( postBody, "key", "value" );
+
+                    String createOrFailValue = String.valueOf( entityBody.get( "value" ) );
+                    if ( createOrFailValue.length() > maximumSizeInBytes )
+                    {
+                        return valueTooBig();
+                    }
+
                     result = actions.getOrCreateIndexedNode( indexName,
                             String.valueOf( entityBody.get( "key" ) ),
-                            String.valueOf( entityBody.get( "value" ) ), extractNodeIdOrNull( getStringOrNull(
+                            createOrFailValue, extractNodeIdOrNull( getStringOrNull(
                             entityBody, "uri" ) ), getMapOrNull( entityBody, "properties" ) );
                     if ( result.other() )
                     {
@@ -1021,9 +1049,16 @@ public class RestfulGraphDatabase
 
                 default:
                     entityBody = input.readMap( postBody, "key", "value", "uri" );
+                    String value = String.valueOf( entityBody.get( "value" ) );
+
+                    if ( value.length() > maximumSizeInBytes )
+                    {
+                        return valueTooBig();
+                    }
+
                     return output.created( actions.addToNodeIndex( indexName,
                             String.valueOf( entityBody.get( "key" ) ),
-                            String.valueOf( entityBody.get( "value" ) ), extractNodeId( entityBody.get( "uri" )
+                            value, extractNodeId( entityBody.get( "uri" )
                             .toString() ) ) );
 
             }
@@ -1044,6 +1079,15 @@ public class RestfulGraphDatabase
         {
             return output.serverError( e );
         }
+    }
+
+    private Response valueTooBig()
+    {
+        return Response.status( 413 ).entity( String.format(
+                "The property value provided was too large. The maximum size is currently set to %d bytes. " +
+                "You can configure this by setting the '%s' property.",
+                config.getInt(ServerSettings.maximum_response_header_size.name()),
+                ServerSettings.maximum_response_header_size.name() ) ).build();
     }
 
     @POST
@@ -1835,6 +1879,50 @@ public class RestfulGraphDatabase
         }
     }
 
+    @DELETE
+    @Path( PATH_SCHEMA_CONSTRAINT_LABEL_EXISTENCE_PROPERTY )
+    public Response dropNodePropertyExistenceConstraint( @PathParam( "label" ) String labelName,
+            @PathParam( "property" ) AmpersandSeparatedCollection properties )
+    {
+        try
+        {
+            if ( actions.dropNodePropertyExistenceConstraint( labelName, properties ) )
+            {
+                return nothing();
+            }
+            else
+            {
+                return output.notFound();
+            }
+        }
+        catch ( org.neo4j.graphdb.ConstraintViolationException e )
+        {
+            return output.conflict( e );
+        }
+    }
+
+    @DELETE
+    @Path( PATH_SCHEMA_RELATIONSHIP_CONSTRAINT_EXISTENCE_PROPERTY )
+    public Response dropRelationshipPropertyExistenceConstraint( @PathParam( "type" ) String typeName,
+            @PathParam( "property" ) AmpersandSeparatedCollection properties )
+    {
+        try
+        {
+            if ( actions.dropRelationshipPropertyExistenceConstraint( typeName, properties ) )
+            {
+                return nothing();
+            }
+            else
+            {
+                return output.notFound();
+            }
+        }
+        catch ( org.neo4j.graphdb.ConstraintViolationException e )
+        {
+            return output.conflict( e );
+        }
+    }
+
     @GET
     @Path(PATH_SCHEMA_CONSTRAINT)
     public Response getSchemaConstraints()
@@ -1857,6 +1945,20 @@ public class RestfulGraphDatabase
     }
 
     @GET
+    @Path( PATH_SCHEMA_CONSTRAINT_LABEL_EXISTENCE )
+    public Response getSchemaConstraintsForLabelAndExistence( @PathParam( "label" ) String labelName )
+    {
+        return output.ok( actions.getLabelExistenceConstraints( labelName ) );
+    }
+
+    @GET
+    @Path( PATH_SCHEMA_RELATIONSHIP_CONSTRAINT_TYPE_EXISTENCE )
+    public Response getSchemaConstraintsForRelationshipTypeAndExistence( @PathParam( "type" ) String typeName )
+    {
+        return output.ok( actions.getRelationshipTypeExistenceConstraints( typeName ) );
+    }
+
+    @GET
     @Path( PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS_PROPERTY )
     public Response getSchemaConstraintsForLabelAndPropertyUniqueness( @PathParam( "label" ) String labelName,
             @PathParam( "property" ) AmpersandSeparatedCollection propertyKeys )
@@ -1869,6 +1971,38 @@ public class RestfulGraphDatabase
         catch ( IllegalArgumentException e )
         {
         	return output.notFound( e );
+        }
+    }
+
+    @GET
+    @Path( PATH_SCHEMA_CONSTRAINT_LABEL_EXISTENCE_PROPERTY )
+    public Response getSchemaConstraintsForLabelAndPropertyExistence( @PathParam( "label" ) String labelName,
+            @PathParam( "property" ) AmpersandSeparatedCollection propertyKeys )
+    {
+        try
+        {
+            ListRepresentation constraints = actions.getNodePropertyExistenceConstraint( labelName, propertyKeys );
+            return output.ok( constraints );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            return output.notFound( e );
+        }
+    }
+
+    @GET
+    @Path( PATH_SCHEMA_RELATIONSHIP_CONSTRAINT_EXISTENCE_PROPERTY )
+    public Response getSchemaConstraintsForRelationshipTypeAndPropertyExistence( @PathParam( "type" ) String typeName,
+            @PathParam( "property" ) AmpersandSeparatedCollection propertyKeys )
+    {
+        try
+        {
+            ListRepresentation constraints = actions.getRelationshipPropertyExistenceConstraint( typeName, propertyKeys );
+            return output.ok( constraints );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            return output.notFound( e );
         }
     }
 

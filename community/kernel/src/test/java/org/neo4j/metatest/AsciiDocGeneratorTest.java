@@ -19,30 +19,37 @@
  */
 package org.neo4j.metatest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 
-import org.junit.Test;
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.TargetDirectory;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 public class AsciiDocGeneratorTest
 {
-    File directory = TargetDirectory.forTest( getClass() )
-            .cleanDirectory( "testasciidocs" );
-    String sectionName = "testsection";
-    File sectionDirectory = new File( directory, sectionName );
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
+    private File sectionDirectory;
+
+    @Before
+    public void setup()
+    {
+        sectionDirectory = new File( testDirectory.directory( "testasciidocs" ), "testsection" );
+    }
 
     @Test
     public void dumpToSeparateFile() throws IOException
     {
-        String reference = AsciiDocGenerator.dumpToSeparateFile(
-                sectionDirectory, "test1", ".title1\ntest1-content" );
-        assertEquals( ".title1\ninclude::includes/test1.asciidoc[]\n",
-                reference );
+        String reference = AsciiDocGenerator.dumpToSeparateFile( sectionDirectory, "test1", ".title1\ntest1-content" );
+        assertEquals( ".title1\ninclude::includes/test1.asciidoc[]\n", reference );
         File includeDir = new File( sectionDirectory, "includes" );
         File includeFile = new File( includeDir, "test1.asciidoc" );
         assertTrue( includeFile.canRead() );
@@ -53,9 +60,7 @@ public class AsciiDocGeneratorTest
     @Test
     public void dumpToSeparateFileWithType() throws IOException
     {
-        String reference = AsciiDocGenerator.dumpToSeparateFileWithType(
-                sectionDirectory,
-                "console", "test2-content" );
+        String reference = AsciiDocGenerator.dumpToSeparateFileWithType( sectionDirectory, "console", "test2-content" );
         assertEquals( "include::includes/console-1.asciidoc[]\n", reference );
         File includeDir = new File( sectionDirectory, "includes" );
         File includeFile = new File( includeDir, "console-1.asciidoc" );
@@ -63,8 +68,7 @@ public class AsciiDocGeneratorTest
         assertEquals( "test2-content", fileContent );
 
         // make sure the next console doesn't overwrite the first one
-        reference = AsciiDocGenerator.dumpToSeparateFileWithType(
-                sectionDirectory, "console", "test3-content" );
+        AsciiDocGenerator.dumpToSeparateFileWithType( sectionDirectory, "console", "test3-content" );
         includeFile = new File( includeDir, "console-2.asciidoc" );
         fileContent = TestJavaTestDocsGenerator.readFileAsString( includeFile );
         assertEquals( "test3-content", fileContent );

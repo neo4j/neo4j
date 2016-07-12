@@ -25,16 +25,14 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerState;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.PaxosInstanceStore;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.AssertableLogProvider;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.core.StringContains.containsString;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class LearnerContextImplTest
 {
@@ -42,18 +40,9 @@ public class LearnerContextImplTest
     public void shouldOnlyLogLearnMissOnce() throws Exception
     {
         // Given
-        StringBuffer buffer = new StringBuffer();
-        final StringLogger logger = StringLogger.wrap( buffer );
-        Logging logging = new DevNullLoggingService()
-        {
-            @Override
-            public StringLogger getMessagesLog( Class loggingClass )
-            {
-                return logger;
-            }
-        };
+        final AssertableLogProvider logProvider = new AssertableLogProvider();
         LearnerContextImpl ctx = new LearnerContextImpl( new InstanceId( 1 ), mock( CommonContextState.class ),
-                logging, mock( Timeouts.class ), mock( PaxosInstanceStore.class ), mock( AcceptorInstanceStore.class ),
+                logProvider, mock( Timeouts.class ), mock( PaxosInstanceStore.class ), mock( AcceptorInstanceStore.class ),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( HeartbeatContextImpl.class ) );
 
@@ -65,11 +54,11 @@ public class LearnerContextImplTest
         ctx.notifyLearnMiss( new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( 1L ) );
 
         // Then
-        String[] logs = buffer.toString().split( "\n" );
-        assertEquals( 3, logs.length );
-        assertThat( logs[0], containsString( "Did not have learned value for Paxos instance 1." ) );
-        assertThat( logs[1], containsString( "Did not have learned value for Paxos instance 2." ) );
-        assertThat( logs[2], containsString( "Did not have learned value for Paxos instance 1." ) );
+        logProvider.assertExactly(
+                inLog( LearnerState.class ).warn( containsString( "Did not have learned value for Paxos instance 1." ) ),
+                inLog( LearnerState.class ).warn( containsString( "Did not have learned value for Paxos instance 2." ) ),
+                inLog( LearnerState.class ).warn( containsString( "Did not have learned value for Paxos instance 1." ) )
+        );
     }
 
 }

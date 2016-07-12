@@ -22,11 +22,16 @@ package org.neo4j.kernel.impl.api.operations;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
+import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 
@@ -63,6 +68,11 @@ public interface SchemaReadOperations
     InternalIndexState indexGetState( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
+     * Get the index size.
+     **/
+    long indexSize( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+
+    /**
      * Calculate the index unique values percentage.
      **/
     double indexUniqueValuesPercentage( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
@@ -73,22 +83,35 @@ public interface SchemaReadOperations
     String indexGetFailure( Statement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
-     * Get all constraints applicable to label and propertyKey. There are only {@link UniquenessConstraint}
+     * Get all constraints applicable to label and propertyKey. There are only {@link NodePropertyConstraint}
      * for the time being.
      */
-    Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKeyId );
+    Iterator<NodePropertyConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKeyId );
 
     /**
-     * Get all constraints applicable to label. There are only {@link UniquenessConstraint}
+     * Get all constraints applicable to label. There are only {@link NodePropertyConstraint}
      * for the time being.
      */
-    Iterator<UniquenessConstraint> constraintsGetForLabel( KernelStatement state, int labelId );
+    Iterator<NodePropertyConstraint> constraintsGetForLabel( KernelStatement state, int labelId );
 
     /**
-     * Get all constraints. There are only {@link UniquenessConstraint}
+     * Get all constraints applicable to relationship type and propertyKey.
+     * There are only {@link RelationshipPropertyConstraint} for the time being.
+     */
+    Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipTypeAndPropertyKey( KernelStatement state,
+            int relTypeId, int propertyKeyId );
+
+    /**
+     * Get all constraints applicable to relationship type. There are only {@link RelationshipPropertyConstraint}
      * for the time being.
      */
-    Iterator<UniquenessConstraint> constraintsGetAll( KernelStatement state );
+    Iterator<RelationshipPropertyConstraint> constraintsGetForRelationshipType( KernelStatement state, int typeId );
+
+    /**
+     * Get all constraints. There are only {@link PropertyConstraint}
+     * for the time being.
+     */
+    Iterator<PropertyConstraint> constraintsGetAll( KernelStatement state );
 
     /**
      * Get the owning constraint for a constraint index. Returns null if the index does not have an owning constraint.
@@ -100,4 +123,13 @@ public interface SchemaReadOperations
      * - throws exception for indexes that aren't committed.
      */
     long indexGetCommittedId( KernelStatement state, IndexDescriptor index, SchemaStorage.IndexRuleKind constraint ) throws SchemaRuleNotFoundException;
+
+    /** List all defined procedures, given the current transactional context
+     * @param kernelStatement*/
+    Iterator<ProcedureDescriptor> proceduresGetAll( KernelStatement kernelStatement );
+
+    /**
+     * Load a procedure description given a signature, or return null if the procedure does not exist.
+     */
+    ProcedureDescriptor procedureGet( KernelStatement statement, ProcedureName signature ) throws ProcedureException;
 }

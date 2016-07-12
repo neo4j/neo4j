@@ -19,43 +19,45 @@
  */
 package org.neo4j.com;
 
-import org.junit.Test;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
-import org.neo4j.kernel.impl.util.TestLogger;
+import org.junit.Test;
+import org.neo4j.logging.Log;
 
 public class LoggingResourcePoolMonitorTest
 {
     @Test
     public void testUpdatedCurrentPeakSizeLogsOnlyOnChange() throws Exception
     {
-        TestLogger logger = new TestLogger();
-        LoggingResourcePoolMonitor monitor = new LoggingResourcePoolMonitor( logger );
+        Log log = mock( Log.class );
+        LoggingResourcePoolMonitor monitor = new LoggingResourcePoolMonitor( log );
 
         monitor.updatedCurrentPeakSize( 10 );
-        logger.assertLogCallAtLevel( "DEBUG", 1 );
-        logger.clear();
+        verify( log, times( 1 ) ).debug( anyString() );
 
         monitor.updatedCurrentPeakSize( 10 );
-        logger.assertNoDebugs();
+        verify( log, times( 1 ) ).debug( anyString() );
 
         monitor.updatedCurrentPeakSize( 11 );
-        logger.assertLogCallAtLevel( "DEBUG", 1 );
+        verify( log, times( 2 ) ).debug( anyString() );
     }
 
     @Test
     public void testUpdatedTargetSizeOnlyOnChange() throws Exception
     {
-        TestLogger logger = new TestLogger();
-        LoggingResourcePoolMonitor monitor = new LoggingResourcePoolMonitor( logger );
+        Log log = mock( Log.class );
+        LoggingResourcePoolMonitor monitor = new LoggingResourcePoolMonitor( log );
 
         monitor.updatedTargetSize( 10 );
-        logger.assertLogCallAtLevel( "DEBUG", 1 );
-        logger.clear();
+        verify( log, times( 1 ) ).debug( anyString() );
 
         monitor.updatedTargetSize( 10 );
-        logger.assertNoDebugs();
+        verify( log, times( 1 ) ).debug( anyString() );
 
         monitor.updatedTargetSize( 11 );
-        logger.assertLogCallAtLevel( "DEBUG", 1 );
+        verify( log, times( 2 ) ).debug( anyString() );
     }
 }

@@ -399,9 +399,9 @@ public abstract class MapUtil
     public static Map<String, String> toStringMap( PropertyContainer entity )
     {
         Map<String, String> out = new HashMap<>();
-        for ( String key : entity.getPropertyKeys() )
+        for ( Map.Entry<String, Object> property : entity.getAllProperties().entrySet() )
         {
-            out.put( key, entity.getProperty( key ).toString() );
+            out.put( property.getKey(), property.getValue().toString() );
         }
         return out;
     }
@@ -445,4 +445,26 @@ public abstract class MapUtil
 
         return true;
     }
+
+    public static <K, V> MapBuilder<K, V> entry( K key, V value )
+    {
+        return new MapBuilder<K, V>().entry( key, value );
+    }
+
+    public static class MapBuilder<K, V>
+    {
+        private Map<K, V> map = new HashMap<>();
+
+        public MapBuilder<K, V> entry( K key, V value )
+        {
+            map.put( key, value );
+            return this;
+        }
+
+        public Map<K, V> create()
+        {
+            return map;
+        }
+    }
+
 }

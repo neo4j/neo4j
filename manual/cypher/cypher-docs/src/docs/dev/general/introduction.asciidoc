@@ -1,0 +1,63 @@
+[[cypher-introduction]]
+= What is Cypher? =
+
+== Introduction ==
+
+_Cypher_ is a declarative graph query language that allows for expressive and efficient querying and updating of the graph store.
+Cypher is a relatively simple  but still very powerful language.
+Very complicated database queries can easily be expressed through Cypher.
+This allows you to focus on your domain instead of getting lost in database access.
+
+Cypher is designed to be a humane query language, suitable for both developers and (importantly, we think) operations professionals.
+Our guiding goal is to make the simple things easy, and the complex things possible.
+Its constructs are based on English prose and neat iconography which helps to make queries more self-explanatory.
+We have tried to optimize the language for reading and not for writing.
+
+Being a declarative language, Cypher focuses on the clarity of expressing _what_ to retrieve from a graph, not on _how_ to retrieve it.
+This is in contrast to imperative languages like Java, scripting languages like http://gremlin.tinkerpop.com[Gremlin], and https://github.com/neo4jrb/neo4j/[the JRuby Neo4j bindings].
+This approach makes query optimization an implementation detail instead of burdening the user with it and requiring her to update all traversals just because the physical database structure has changed (new indexes etc.).
+
+Cypher is inspired by a number of different approaches and builds upon established practices for expressive querying.
+Most of the keywords like +WHERE+ and +ORDER BY+ are inspired by http://en.wikipedia.org/wiki/SQL[SQL].
+Pattern matching borrows expression approaches from http://en.wikipedia.org/wiki/SPARQL[SPARQL].
+Some of the collection semantics have been borrowed from languages such as Haskell and Python.
+
+
+[[cypher-structure]]
+== Structure ==
+
+Cypher borrows its structure from SQL -- queries are built up using various clauses.
+
+Clauses are chained together, and the they feed intermediate result sets between each other.
+For example, the matching identifiers from one +MATCH+ clause will be the context that the next clause exists in.
+
+The query language is comprised of several distinct clauses.
+You can read more details about them later in the manual.
+
+Here are a few clauses used to read from the graph:
+
+* +MATCH+: The graph pattern to match.
+  This is the most common way to get data from the graph.
+
+* +WHERE+: Not a clause in its own right, but rather part of +MATCH+, +OPTIONAL MATCH+ and +WITH+.
+  Adds constraints to a pattern, or filters the intermediate result passing through +WITH+.
+
+* +RETURN+: What to return.
+
+Let's see +MATCH+ and +RETURN+ in action.
+
+include::intro-examples.asciidoc[]
+
+And here are examples of clauses that are used to update the graph:
+
+* +CREATE+ (and +DELETE+): Create (and delete) nodes and relationships.
+
+* +SET+ (and +REMOVE+): Set values to properties and add labels on nodes using +SET+ and use +REMOVE+ to remove them.
+
+* +MERGE+: Match existing or create new nodes and patterns. This is especially useful together with uniqueness constraints.
+
+
+For more Cypher examples, see <<data-modeling-examples>> as well as the rest of the Cypher part with details on the language.
+To use Cypher from Java, see <<tutorials-cypher-java>>.
+To take your first steps with Cypher, see <<cypher-getting-started>>.
+

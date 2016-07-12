@@ -35,26 +35,25 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 
+import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
-import static org.neo4j.kernel.impl.util.Cursors.iterable;
 
 /**
  * A set of hamcrest matchers for asserting logical logs look in certain ways.
  * Please expand as necessary.
- *
- * Please note: Matching specific commands is done by matchers found in
- * {@link org.neo4j.kernel.impl.transaction.command.CommandMatchers}.
  */
 public class LogMatchers
 {
@@ -162,6 +161,23 @@ public class LogMatchers
             public void describeTo( Description description )
             {
                 description.appendText( String.format( "Commit[txId=%d, <Any Date>]", txId ) );
+            }
+        };
+    }
+    public static Matcher<? extends LogEntry> checkPoint( final LogPosition position )
+    {
+        return new TypeSafeMatcher<CheckPoint>()
+        {
+            @Override
+            public boolean matchesSafely( CheckPoint cp )
+            {
+                return cp != null &&  position.equals( cp.getLogPosition() );
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( String.format( "CheckPoint[position=%s]", position.toString() ) );
             }
         };
     }

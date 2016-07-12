@@ -48,7 +48,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 @Deprecated
 public class TransactionEventHandlers
-    implements Lifecycle, TransactionHook<TransactionEventHandlers.TransactionHandlerState>
+        implements Lifecycle, TransactionHook<TransactionEventHandlers.TransactionHandlerState>
 {
     protected final Collection<TransactionEventHandler> transactionEventHandlers = new CopyOnWriteArraySet<>();
 
@@ -66,25 +66,25 @@ public class TransactionEventHandlers
 
     @Override
     public void init()
-        throws Throwable
+            throws Throwable
     {
     }
 
     @Override
     public void start()
-        throws Throwable
+            throws Throwable
     {
     }
 
     @Override
     public void stop()
-        throws Throwable
+            throws Throwable
     {
     }
 
     @Override
     public void shutdown()
-        throws Throwable
+            throws Throwable
     {
     }
 
@@ -110,16 +110,11 @@ public class TransactionEventHandlers
         return handler;
     }
 
-    public boolean hasHandlers()
-    {
-        return !transactionEventHandlers.isEmpty();
-    }
-
     @Override
     public TransactionHandlerState beforeCommit( ReadableTxState state, KernelTransaction transaction,
             StoreReadLayer storeReadLayer )
     {
-        if(transactionEventHandlers.isEmpty())
+        if ( transactionEventHandlers.isEmpty() )
         {
             return null;
         }
@@ -144,10 +139,12 @@ public class TransactionEventHandlers
     }
 
     @Override
-    @SuppressWarnings( "unchecked" )
-    public void afterCommit( ReadableTxState state, KernelTransaction transaction, TransactionHandlerState handlerState )
+    @SuppressWarnings("unchecked")
+    public void afterCommit( ReadableTxState state,
+            KernelTransaction transaction,
+            TransactionHandlerState handlerState )
     {
-        if(transactionEventHandlers.isEmpty())
+        if ( transactionEventHandlers.isEmpty() )
         {
             return;
         }
@@ -159,15 +156,17 @@ public class TransactionEventHandlers
     }
 
     @Override
-    @SuppressWarnings( "unchecked" )
-    public void afterRollback( ReadableTxState state, KernelTransaction transaction, TransactionHandlerState handlerState )
+    @SuppressWarnings("unchecked")
+    public void afterRollback( ReadableTxState state,
+            KernelTransaction transaction,
+            TransactionHandlerState handlerState )
     {
-        if(transactionEventHandlers.isEmpty())
+        if ( transactionEventHandlers.isEmpty() )
         {
             return;
         }
 
-        if(handlerState == null)
+        if ( handlerState == null )
         {
             // For legacy reasons, we don't call transaction handlers on implicit rollback.
             return;

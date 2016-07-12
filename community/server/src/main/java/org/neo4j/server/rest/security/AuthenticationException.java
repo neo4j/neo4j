@@ -30,7 +30,7 @@ public class AuthenticationException extends RuntimeException
 
     private static final long serialVersionUID = 3662922094534872711L;
 
-    private String realm;
+    private final String realm;
 
     public AuthenticationException( String msg, String realm )
     {

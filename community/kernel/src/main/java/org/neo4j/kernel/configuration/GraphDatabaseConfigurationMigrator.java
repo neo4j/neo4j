@@ -22,8 +22,8 @@ package org.neo4j.kernel.configuration;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
-import org.neo4j.helpers.Settings;
 
 import static java.util.regex.Pattern.quote;
 
@@ -156,9 +156,6 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
             }
         } );
 
-        add( new ConfigValueChanged( "cache_type", "gcr", "hpc",
-                "'gcr' cache type has been renamed to 'hpc', High Performance Cache." ));
-
         add( new SpecificPropertyMigration("neostore.nodestore.db.mapped_memory",
                 "The neostore.*.db.mapped_memory settings have been replaced by the single '" +
                 PAGECACHE_MEMORY + "'. The sum of the old configuration will be used as the" +
@@ -209,6 +206,34 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
                 }
             }
         });
+
+        add( new SpecificPropertyMigration( "cache_type",
+                "The cache_type setting has been removed as of Neo4j 2.3. " +
+                "Configuration has been simplified to only require tuning of the page cache.")
+        {
+            @Override
+            public boolean appliesTo( Map<String,String> rawConfiguration )
+            {
+                String value = rawConfiguration.get( "cache_type" );
+                if ( value == null )
+                {
+                    // differentiate between the setting not being set, and it being set to null
+                    return rawConfiguration.containsKey( "cache_type" );
+                }
+                if ( GraphDatabaseSettings.cache_type.getDefaultValue().equals( value ) )
+                {
+                    // remove the default value, but don't issue a warning.
+                    rawConfiguration.remove( "cache_type" );
+                    return false;
+                }
+                return true;
+            }
+
+            @Override
+            public void setValueWithOldSetting( String value, Map<String,String> rawConfiguration )
+            {
+            }
+        } );
     }
 
     @Deprecated

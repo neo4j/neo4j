@@ -27,7 +27,7 @@ import java.io.File;
 import java.net.InetAddress;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.fail;

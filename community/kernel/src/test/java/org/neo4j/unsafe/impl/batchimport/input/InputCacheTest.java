@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.RandomRule;
@@ -35,14 +36,11 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 
+import static java.lang.Math.abs;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
-import static java.lang.Math.abs;
-
-import static org.neo4j.helpers.Format.KB;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_LABELS;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
@@ -55,7 +53,7 @@ public class InputCacheTest
     public void shouldCacheAndRetrieveNodes() throws Exception
     {
         // GIVEN
-        try ( InputCache cache = new InputCache( fs, dir.directory(), 8*KB ) )
+        try ( InputCache cache = new InputCache( fs, dir.directory(), (int) ByteUnit.kibiBytes( 8 ) ) )
         {
             List<InputNode> nodes = new ArrayList<>();
             Randoms random = new Randoms( randomRule.random(), Randoms.DEFAULT );
@@ -95,7 +93,7 @@ public class InputCacheTest
     public void shouldCacheAndRetrieveRelationships() throws Exception
     {
         // GIVEN
-        try ( InputCache cache = new InputCache( fs, dir.directory(), 8*KB ) )
+        try ( InputCache cache = new InputCache( fs, dir.directory(), (int) ByteUnit.kibiBytes( 8 ) ) )
         {
             List<InputRelationship> relationships = new ArrayList<>();
             Randoms random = new Randoms( randomRule.random(), Randoms.DEFAULT );

@@ -20,7 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.graphdb.Node
 
 class RewindableExecutionResultAcceptanceTest extends ExecutionEngineFunSuite {
@@ -38,7 +38,7 @@ class RewindableExecutionResultAcceptanceTest extends ExecutionEngineFunSuite {
     val a = createNode("name" -> "Aslan")
     val b = createNode("name" -> "White Queen")
 
-    val result = rewindableExecutionResult("match n return n")
+    val result = rewindableExecutionResult(" match n return n")
 
     assert(List(Map("n" -> a), Map("n" -> b)) === result.toList)
 

@@ -1,138 +1,46 @@
 [[ha-upgrade-guide]]
 = Upgrade of a Neo4j HA Cluster
 
-[CAUTION]
-Before attempting any of the upgrades described here, please
-<<operations-backup, backup your database store!>>
+Upgrading a Neo4j HA cluster to Neo4j {neo4j-version} requires following a specific process in order to ensure that the cluster remains consistent, and that all cluster instances are able to join and participate in the cluster following their upgrade.
+Neo4j {neo4j-version} does not support rolling upgrades.
 
-To upgrade a Neo4j HA cluster to Neo4j {neo4j-version} requires following a specific process which ensures that the cluster remains consistent and all cluster instances are able to join and participate following their upgrade.
+== Back up the Neo4j database
+- Before starting any upgrade procedure, it is _very important_ to make a full backup of your database.
+- For detailed instructions on backing up your Neo4j database, <<operations-backup, refer to the backup guide.>>
 
-Neo4j {neo4j-version} does not support rolling upgrades, only the standard upgrade procedure is available.
+== Shut down the cluster
+- Shut down the database slave instances one by one. 
+- Shut down the master last.
 
-////
-Neo4j supports two approaches to HA cluster upgrades,
-the <<ha-standard-upgrade, standard upgrade process>> and the
-<<ha-rolling-upgrade, rolling upgrade process for zero downtime>>.
+== Upgrade the master
+ . Install Neo4j {neo4j-version} on the master, keeping the database files untouched.
+ . Disable HA in the configuration, by setting  the variable `org.neo4j.server.database.mode=SINGLE` in `conf/neo4j.properties`.
+ . <<deployment-upgrading,Upgrade as described for a single instance of Neo4j>>
+ . When upgrade has finished, shut down Neo4j again.
+ . Re-enable HA in the configuration by setting `org.neo4j.server.database.mode=HA` in `conf/neo4j.properties`.
+ . Make a full backup of the Neo4j database.
+   Please note that backups from before the upgrade are no longer valid for update via the incremental online backup. 
+   Therefore it is important to perform a _full backup_, using an empty target directory, at this point.
 
-[NOTE]
-It is strongly recommended to follow the <<ha-standard-upgrade, standard
-upgrade process>> over the <<ha-rolling-upgrade, rolling upgrade process>>, as
-it is much simpler and less likely to encounter issues.
-////
+== Upgrade the slaves
+On each slave:
 
-[IMPORTANT]
-After upgrade is complete, existing backups will not be suitable for updating
-via the <<operations-backup, incremental online backup>>. Please ensure that
-the first backup after upgrading uses an empty target directory, and thus
-performs a full backup.
-
-[[ha-standard-upgrade]]
-== Standard upgrade ==
-
-In order to perform a cluster upgrade to Neo4j {neo4j-version}, you need to first
-upgrade the database store on a single instance, and then allow that store to
-propagate out to slaves.
-
-=== Steps ===
-
-The following process is recommended:
-
-.Backup
-- Before anything else, <<operations-backup, backup your database store!>>
-
-.Shut down the cluster
-- Shut down all instances. This is usually best done one instance after the
-  other, rather than all at once. It is also strongly recommended to shut down
-  the master of the cluster last.
-
-.Upgrade the database store on the previous master
- . Install Neo4j {neo4j-version} on the previous master, keeping the database
-  store (typically _data/graph.db_) from the previous version.
- . Disable HA in the configuration, by setting `org.neo4j.server.database.mode=SINGLE`.
- . <<deployment-upgrading,Upgrade as described for a single instance of Neo4j>> (this may involve configuring with `allow_store_upgrade=true`, as described in <<explicit-upgrade, "Explicit Upgrades">>).
- . Once upgraded, shut down Neo4j again.
- . Re-enable HA in the configuration, by setting `org.neo4j.server.database.mode=HA` again.
-
-.Upgrade the slaves
-- Install Neo4j {neo4j-version} on all previous slaves *and remove their database store* (typically _data/graph.db_).
-  _Slaves should not be started with a previous store present._
-- Note: The security configuration of the master is _not_ propagated to the slaves.
-  See <<rest-api-security-copy-config>> for more information.
-
-.Restart the cluster
- . Start the previous master instance.
- . Start each slave, one after the other.
-   Once each slave has joined the cluster, it will sync the store from the master instance.
+. Remove all database files.
+. Install Neo4j {neo4j-version}.
+. Review the parameter settings in the files under conf directory in the previous installation, and transfer any custom set parameters to the {neo4j-version} installation.
+  Be aware of parameters that have changed names between versions.
+  Also, ensure that you configure the {neo4j-version} installation to use the same database file directory as the previous installation.
+. If applicable, copy security the security configuration from the master, since this is not propagated automatically. 
+  See <<rest-api-security-copy-config>> for instructions.
 
 [TIP]
-For larger databases, it is possible to manually copy the database store from the previous master _after it has completed the upgrade_ to the slaves before starting
-them.
-This will avoid the need for them to sync from the master when starting.
+At this point it is an alternative is to manually copy database files from the master to the slaves.
+Doing so will avoid the need to sync from the master when starting.
+This can save considerable time when upgrading large databases.
 
-////
-[[ha-rolling-upgrade]]
-== Rolling upgrade ==
 
-Upgrading a Neo4j cluster without disrupting its operation is referred to as a
-_rolling upgrade_.
+== Restart the cluster
+ . Start the master instance.
+ . Start the slaves, one by one.
+   Once a slave has joined the cluster, it will sync the database from the master instance.
 
-[IMPORTANT]
-*Neo4j {neo4j-version} only supports rolling upgrades from Neo4j 2.0.x
-and previous Neo4j 2.1.x patch releases*.
-
-[CAUTION]
-It is not possible to downgrade a Neo4j cluster without downtime.
-
-In order to perform a rolling upgrade to Neo4j {neo4j-version}, you need to first
-upgrade the database store and then replace the database store of each cluster
-instance with the upgraded version, one at a time, with the cluster master done last.
-
-=== Steps ===
-
-The following process is recommended:
-
-.Backup
-- Before anything else, <<operations-backup, backup your database store!>>
-
-.Upgrade a single database store
-- Perform upgrade, using one slave instance to do so:
- . Shut down a single slave instance.
- . Install Neo4j {neo4j-version} on that instance, keeping the database store (typically _data/graph.db_) from the previous version.
- . Disable HA in the configuration, by setting `org.neo4j.server.database.mode=SINGLE`.
- . <<deployment-upgrading,Upgrade as described for a single instance of Neo4j>>. This may involve configuring with `allow_store_upgrade=true`, as described in <<explicit-upgrade, "Explicit Upgrades">>).
- . Once upgraded, shut down Neo4j again.
- . Copy the upgraded database store (typically _data/graph.db_) to a separate location.
-
-[WARNING]
-You *must* also ensure any external application will not attempt to access this instance while it performs the upgrade in `SINGLE` mode.
-You should either disable access externally (e.g. in the load balancer), or by reconfiguring the port Neo4j will listen on, such that it cannot be found (e.g. temporarily set `org.neo4j.server.webserver.port=7470`).
-
-.Rejoin the slave to the cluster:
-. Re-enable HA in the configuration (setting `org.neo4j.server.database.mode=HA`).
-  Also restore any webserver port changes.
-. Start up, and allow to join the cluster.
-
-.Upgrade remaining slaves
-- Repeat for each remaining slave:
- . Shut down the slave.
- . Replace the entire database store directory (typically _data/graph.db_) with the upgraded copy.
- . Start up slave, allow to join the cluster and sync any new transactions.
-
-.Upgrade the master
-. Shut down the master
-. Wait for failover to occur to one of the slaves.
-. Replace the entire database store directory (typically _data/graph.db_) with the upgraded copy.
-. Start up the old master, and allow to join the cluster.
-  It will now be a slave.
-
-Your entire cluster has now been completely upgraded to Neo4j {neo4j-version}.
-////
-
-[[ha-downgrade]]
-== Downgrading ==
-
-Downgrade is only supported between Neo4j versions between which automatic upgrades are possible.
-This typically means only within patch releases of the same Neo4j version.
-See <<deployment-upgrading>> for more information.
-
-Downgrade follows the same process as for <<ha-standard-upgrade, standard upgrade>>.

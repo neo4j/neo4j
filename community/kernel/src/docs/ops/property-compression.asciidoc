@@ -1,0 +1,67 @@
+[[property-compression]]
+= Compressed storage of property values =
+
+Neo4j can in many cases compress and inline the storage of property values, such as short arrays and strings.
+
+== Compressed storage of short arrays ==
+
+Neo4j will try to store your primitive arrays in a compressed way, so as to save disk space and possibly an I/O operation.
+To do that, it employs a "bit-shaving" algorithm that tries to reduce the number of bits required for storing the members of the array.
+In particular:
+
+1. For each member of the array, it determines the position of leftmost set bit.
+2. Determines the largest such position among all members of the array.
+3. It reduces all members to that number of bits.
+4. Stores those values, prefixed by a small header.
+
+That means that when even a single negative value is included in the array then the original size of the primitives will be used.
+
+There is a possibility that the result can be inlined in the property record if:
+
+* It is less than 24 bytes after compression.
+* It has less than 64 members.
+
+For example, an array `long[] {0L, 1L, 2L, 4L}` will be inlined, as the largest entry (`4`) will require 3 bits to store so the whole array will be stored in 4 × 3 = _12 bits_.
+The array `long[] {-1L, 1L, 2L, 4L}` however will require the whole 64 bits for the `-1` entry so it needs 64 × 4 = _32 bytes_ and it will end up in the dynamic store.
+
+== Compressed storage of short strings ==
+
+Neo4j will try to classify your strings in a short string class and if it manages that it will treat it accordingly.
+In that case, it will be stored without indirection in the property store, inlining it instead in the property record,
+meaning that the dynamic string store will not be involved in storing that value, leading to reduced disk footprint.
+Additionally, when no string record is needed to store the property, it can be read and written in a single lookup,
+leading to performance improvements and less disk space required.
+
+The various classes for short strings are:
+
+* Numerical, consisting of digits 0..9 and the punctuation space, period, dash, plus, comma and apostrophe.
+* Date, consisting of digits 0..9 and the punctuation space dash, colon, slash, plus and comma.
+* Hex (lower case), consisting of digits 0..9 and lower case letters a..f
+* Hex (upper case), consisting of digits 0..9 and upper case letters a..f
+* Upper case, consisting of upper case letters A..Z, and the punctuation space, underscore, period, dash, colon and slash.
+* Lower case, like upper but with lower case letters a..z instead of upper case
+* E-mail, consisting of lower case letters a..z and the punctuation comma, underscore, period, dash, plus and the at sign (@).
+* URI, consisting of lower case letters a..z, digits 0..9 and most punctuation available.
+* Alpha-numerical, consisting of both upper and lower case letters a..zA..z, digits 0..9 and punctuation space and underscore.
+* Alpha-symbolical, consisting of both upper and lower case letters a..zA..Z and the punctuation space, underscore, period, dash, colon, slash, plus, comma, apostrophe, at sign, pipe and semicolon.
+* European, consisting of most accented european characters and digits plus punctuation space, dash, underscore and period -- like latin1 but with less punctuation.
+* Latin 1.
+* UTF-8.
+
+In addition to the string's contents, the number of characters also determines if the string can be inlined or not. Each class has its own character count limits, which are
+
+.Character count limits
+[options="header",cols="10,3m", width="50%"]
+|============================================
+| String class | Character count limit
+| Numerical, Date and Hex | 54
+| Uppercase, Lowercase and E-mail | 43
+| URI, Alphanumerical and Alphasymbolical | 36
+| European | 31
+| Latin1 | 27
+| UTF-8 | 14
+|============================================
+
+That means that the largest inline-able string is 54 characters long and must be of the Numerical class and also that all Strings of size 14 or less will always be inlined.
+
+Also note that the above limits are for the default 41 byte PropertyRecord layout -- if that parameter is changed via editing the source and recompiling, the above have to be recalculated.

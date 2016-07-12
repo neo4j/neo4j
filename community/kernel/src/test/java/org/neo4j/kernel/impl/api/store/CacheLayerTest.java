@@ -19,60 +19,36 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.util.Set;
-
 import org.junit.Test;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.graphdb.Direction;
+import java.util.Set;
+
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.KernelStatement;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class CacheLayerTest
 {
     private final DiskLayer diskLayer = mock( DiskLayer.class );
-    private final PersistenceCache persistenceCache = mock( PersistenceCache.class );
     private final SchemaCache schemaCache = mock( SchemaCache.class );
-    private final IndexingService indexingService = mock( IndexingService.class );
-    private final CacheLayer context = new CacheLayer( diskLayer, persistenceCache, indexingService, schemaCache );
-
-    @Test
-    public void shouldGetCachedLabelsIfCached() throws EntityNotFoundException
-    {
-        // GIVEN
-        long nodeId = 3;
-        int[] labels = new int[] {1, 2, 3};
-        when( persistenceCache.nodeGetLabels( eq( nodeId ), any( CacheLoader.class ) ) )
-                .thenReturn( labels );
-
-        // WHEN
-        PrimitiveIntIterator receivedLabels = context.nodeGetLabels( nodeId );
-
-        // THEN
-        assertArrayEquals( labels, PrimitiveIntCollections.asArray( receivedLabels ) );
-    }
+    private final CacheLayer context = new CacheLayer( diskLayer, schemaCache, new ProcedureCache() );
 
     @Test
     public void shouldLoadAllConstraintsFromCache() throws Exception
     {
         // Given
-        Set<UniquenessConstraint> constraints = asSet( new UniquenessConstraint( 0, 1 ) );
-        when(schemaCache.constraints()).thenReturn( constraints.iterator() );
+        Set<PropertyConstraint> constraints = asSet( (PropertyConstraint) new UniquenessConstraint( 0, 1 ) );
+        when( schemaCache.constraints() ).thenReturn( constraints.iterator() );
 
         // When & Then
         assertThat( asSet( context.constraintsGetAll() ), equalTo( constraints ) );
@@ -82,9 +58,9 @@ public class CacheLayerTest
     public void shouldLoadConstraintsByLabelFromCache() throws Exception
     {
         // Given
-        int labelId =  0;
-        Set<UniquenessConstraint> constraints = asSet( new UniquenessConstraint( labelId, 1 ) );
-        when(schemaCache.constraintsForLabel(labelId)).thenReturn( constraints.iterator() );
+        int labelId = 0;
+        Set<NodePropertyConstraint> constraints = asSet( (NodePropertyConstraint) new UniquenessConstraint( labelId, 1 ) );
+        when( schemaCache.constraintsForLabel( labelId ) ).thenReturn( constraints.iterator() );
 
         // When & Then
         assertThat( asSet( context.constraintsGetForLabel( labelId ) ), equalTo( constraints ) );
@@ -95,28 +71,29 @@ public class CacheLayerTest
     {
         // Given
         int labelId = 0, propertyId = 1;
-        Set<UniquenessConstraint> constraints = asSet( new UniquenessConstraint( labelId, propertyId ) );
-        when(schemaCache.constraintsForLabelAndProperty(labelId, propertyId)).thenReturn( constraints.iterator() );
+        Set<NodePropertyConstraint> constraints = asSet( (NodePropertyConstraint) new UniquenessConstraint( labelId, propertyId ) );
+        when( schemaCache.constraintsForLabelAndProperty( labelId, propertyId ) ).thenReturn( constraints.iterator() );
 
         // When & Then
-        assertThat( asSet( context.constraintsGetForLabelAndPropertyKey( labelId, propertyId ) ),
-                equalTo( constraints ) );
+        assertThat( asSet( context.constraintsGetForLabelAndPropertyKey( labelId, propertyId ) ), equalTo( constraints ) );
     }
 
     @Test
-    public void shouldLoadRelationshipsFromCache() throws Exception
+    public void shouldNotCallToDiskLayerOnEmptyRangeSeekByString() throws Exception
     {
-        // GIVEN
-        long nodeId = 3;
-        int[] relTypes = new int[] {1,2};
-        PrimitiveLongIterator rels = PrimitiveLongCollections.iterator( 1l, 2l, 3l );
-        when( persistenceCache.nodeGetRelationships( eq( nodeId ),
-                eq( Direction.BOTH ), eq(relTypes) ) ) .thenReturn( rels );
+        // Given
+        int labelId = 0, propertyId = 1;
+        IndexDescriptor index = new IndexDescriptor( labelId, propertyId );
+        KernelStatement statement = mock( KernelStatement.class );
 
-        // WHEN
-        PrimitiveLongIterator recievedRels = context.nodeListRelationships( nodeId, Direction.BOTH, relTypes );
+        // When
+        assertFalse(
+            context.nodesGetFromIndexRangeSeekByString( statement, index, "b", false, "a", false ).hasNext()
+        );
 
-        // THEN
-        assertEquals(rels, recievedRels);
+        // Then
+        verifyZeroInteractions( schemaCache );
+        verifyZeroInteractions( statement );
+        verifyZeroInteractions( diskLayer );
     }
 }

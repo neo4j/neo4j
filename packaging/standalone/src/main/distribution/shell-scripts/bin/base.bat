@@ -54,7 +54,7 @@ goto:eof
       set javaPath=%%P
   )
 
-  set wrapperJarFilename=${windows-wrapper.filename}
+  set wrapperJarFilename=#{windows-wrapper.filename}
   set command=""
   call:parseConfig "%~dps0..\%configFile%"
 
@@ -130,7 +130,7 @@ goto:eof
   goto :eof
 
 :console
-  "%javapath%\bin\java.exe" -DworkingDir="%~dps0.." -Djava.util.logging.config.file=%~dps0../conf/windows-wrapper-logging.properties -DconfigFile=%configFile% %classpath% %mainclass% -jar "%~dps0%wrapperJarFilename%"
+  "%javapath%\bin\java.exe" -DworkingDir="%~dps0.." -DconfigFile=%configFile% %classpath% %mainclass% -jar "%~dps0%wrapperJarFilename%"
   goto :eof
 
 :help

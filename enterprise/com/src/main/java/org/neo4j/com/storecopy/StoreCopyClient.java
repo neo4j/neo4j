@@ -31,17 +31,18 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.CancellationRequest;
-import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyLogVersionRepository;
@@ -51,14 +52,15 @@ import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 
 import static java.lang.Math.max;
-
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 
 /**
@@ -155,32 +157,33 @@ public class StoreCopyClient
                    && !file.getName().startsWith( "messages." );
         }
     };
+    private final File storeDir;
     private final Config config;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
-    private final ConsoleLogger console;
-    private final Logging logging;
+    private final Log log;
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
     private final Monitor monitor;
+    private final boolean forensics;
 
-    public StoreCopyClient( Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                            ConsoleLogger console, Logging logging, FileSystemAbstraction fs,
-                            PageCache pageCache, Monitor monitor )
+    public StoreCopyClient( File storeDir, Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions,
+            LogProvider logProvider, FileSystemAbstraction fs,
+            PageCache pageCache, Monitor monitor, boolean forensics )
     {
+        this.storeDir = storeDir;
         this.config = config;
         this.kernelExtensions = kernelExtensions;
-        this.console = console;
-        this.logging = logging;
+        this.log = logProvider.getLog( getClass() );
         this.fs = fs;
         this.pageCache = pageCache;
         this.monitor = monitor;
+        this.forensics = forensics;
     }
 
     public void copyStore( StoreCopyRequester requester, CancellationRequest cancellationRequest )
             throws IOException
     {
-        // Clear up the current temp directory if there
-        File storeDir = config.get( InternalAbstractGraphDatabase.Configuration.store_dir );
+        // Create a temp directory (or clean if present)
         File tempStore = new File( storeDir, TEMP_COPY_DIRECTORY_NAME );
         cleanDirectory( tempStore );
 
@@ -213,19 +216,22 @@ public class StoreCopyClient
         {
             FileUtils.moveFileToDirectory( candidate, storeDir );
         }
+
+        // All done, delete temp directory
+        FileUtils.deleteRecursively( tempStore );
     }
 
-    private void writeTransactionsToActiveLogFile( File storeDir, Response<?> response ) throws IOException
+    private void writeTransactionsToActiveLogFile( File tempStoreDir, Response<?> response ) throws IOException
     {
         LifeSupport life = new LifeSupport();
         try
         {
             // Start the log and appender
-            PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fs );
+            PhysicalLogFiles logFiles = new PhysicalLogFiles( tempStoreDir, fs );
             TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 10, 100 );
-            ReadOnlyLogVersionRepository logVersionRepository = new ReadOnlyLogVersionRepository( fs, storeDir );
+            ReadOnlyLogVersionRepository logVersionRepository = new ReadOnlyLogVersionRepository( pageCache, tempStoreDir );
             LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, Long.MAX_VALUE /*don't rotate*/,
-                    new ReadOnlyTransactionIdStore( fs, storeDir ), logVersionRepository,
+                    new ReadOnlyTransactionIdStore( pageCache, tempStoreDir ), logVersionRepository,
                     new Monitors().newMonitor( PhysicalLogFile.Monitor.class ),
                     transactionMetadataCache ) );
             life.start();
@@ -273,11 +279,30 @@ public class StoreCopyClient
                 monitor.finishReceivingTransactions( endTxId );
             }
 
+            long currentLogVersion = logVersionRepository.getCurrentLogVersion();
+            writer.checkPoint( new LogPosition( currentLogVersion, LOG_HEADER_SIZE ) );
+
             // And since we write this manually we need to set the correct transaction id in the
             // header of the log that we just wrote.
-            writeLogHeader( fs,
-                    logFiles.getLogFileForVersion( logVersionRepository.getCurrentLogVersion() ),
-                    logVersionRepository.getCurrentLogVersion(), max( BASE_TX_ID, endTxId-1 ) );
+            File currentLogFile = logFiles.getLogFileForVersion( currentLogVersion );
+            writeLogHeader( fs, currentLogFile, currentLogVersion, max( BASE_TX_ID, endTxId - 1 ) );
+
+            if ( !forensics )
+            {
+                // since we just create new log and put checkpoint into it with offset equals to
+                // LOG_HEADER_SIZE we need to update last transaction offset to be equal to this newly defined max
+                // offset otherwise next checkpoint that use last transaction offset will be created for non
+                // existing offset that is in most of the cases bigger than new log size.
+                // Recovery will treat that as last checkpoint and will not try to recover store till new
+                // last closed transaction offset will not overcome old one. Till that happens it will be
+                // impossible for recovery process to restore the store
+                File neoStore = new File( tempStoreDir, MetaDataStore.DEFAULT_NAME );
+                MetaDataStore.setRecord(
+                        pageCache,
+                        neoStore,
+                        MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET,
+                        (long) LOG_HEADER_SIZE );
+            }
         }
         finally
         {
@@ -289,19 +314,14 @@ public class StoreCopyClient
     {
         GraphDatabaseFactory factory = ExternallyManagedPageCache.graphDatabaseFactoryWithPageCache( pageCache );
         return factory
-                .setLogging( logging )
+                .setUserLogProvider( NullLogProvider.getInstance() )
                 .setKernelExtensions( kernelExtensions )
                 .newEmbeddedDatabaseBuilder( tempStore.getAbsolutePath() )
+                .setConfig( "online_backup_enabled", Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.allow_store_upgrade,
                         config.get( GraphDatabaseSettings.allow_store_upgrade ).toString() )
-                .setConfig( InternalAbstractGraphDatabase.Configuration.log_configuration_file, logConfigFileName() )
                 .newGraphDatabase();
-    }
-
-    String logConfigFileName()
-    {
-        return "neo4j-backup-logback.xml";
     }
 
     private StoreWriter decorateWithProgressIndicator( final StoreWriter actual )
@@ -314,9 +334,9 @@ public class StoreCopyClient
             public long write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,
                               boolean hasData ) throws IOException
             {
-                console.log( "Copying " + path );
+                log.info( "Copying %s", path );
                 long written = actual.write( path, data, temporaryBuffer, hasData );
-                console.log( "Copied  " + path + " " + bytes( written ) );
+                log.info( "Copied %s %s", path, bytes( written ) );
                 totalFiles++;
                 return written;
             }
@@ -325,7 +345,7 @@ public class StoreCopyClient
             public void close()
             {
                 actual.close();
-                console.log( "Done, copied " + totalFiles + " files" );
+                log.info( "Done, copied %s files", totalFiles );
             }
         };
     }
@@ -343,6 +363,7 @@ public class StoreCopyClient
     {
         if ( cancellationRequest.cancellationRequested() )
         {
+            log.info( "Store copying was cancelled. Cleaning up temp-directories." );
             cleanDirectory( tempStore );
         }
     }

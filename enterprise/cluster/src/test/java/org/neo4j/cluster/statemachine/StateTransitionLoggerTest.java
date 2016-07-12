@@ -20,17 +20,15 @@
 package org.neo4j.cluster.statemachine;
 
 import org.junit.Test;
-
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.kernel.impl.util.TestLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
+import org.neo4j.logging.AssertableLogProvider;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.neo4j.cluster.protocol.cluster.ClusterMessage.join;
 import static org.neo4j.cluster.protocol.cluster.ClusterState.entered;
 import static org.neo4j.cluster.protocol.cluster.ClusterState.joining;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class StateTransitionLoggerTest
 {
@@ -38,22 +36,22 @@ public class StateTransitionLoggerTest
     public void shouldThrottle() throws Exception
     {
         // Given
-        Logging logging = mock( Logging.class );
-        TestLogger logger = new TestLogger();
-        when( logging.getMessagesLog( any( Class.class ) ) ).thenReturn( logger );
+        AssertableLogProvider logProvider = new AssertableLogProvider( true );
 
-        StateTransitionLogger stateLogger = new StateTransitionLogger( logging );
+        StateTransitionLogger stateLogger = new StateTransitionLogger( logProvider,
+                new AtomicBroadcastSerializer( new ObjectStreamFactory(), new ObjectStreamFactory() ) );
 
         // When
-        stateLogger.stateTransition( new StateTransition( entered, Message.internal( join ), joining ) );
-        stateLogger.stateTransition( new StateTransition( entered, Message.internal( join ), joining ) );
-        stateLogger.stateTransition( new StateTransition( joining, Message.internal( join ), entered ) );
-        stateLogger.stateTransition( new StateTransition( entered, Message.internal( join ), joining ) );
+        stateLogger.stateTransition( new StateTransition( entered, Message.internal( join), joining ) );
+        stateLogger.stateTransition( new StateTransition( entered, Message.internal( join), joining ) );
+        stateLogger.stateTransition( new StateTransition( joining, Message.internal( join), entered ) );
+        stateLogger.stateTransition( new StateTransition( entered, Message.internal( join), joining ) );
 
         // Then
-        logger.assertAtLeastOnce(
-                TestLogger.LogCall.debug( "ClusterState: entered-[join]->joining" ),
-                TestLogger.LogCall.debug( "ClusterState: joining-[join]->entered" )
+        logProvider.assertExactly(
+                inLog( entered.getClass() ).debug( "ClusterState: entered-[join]->joining" ),
+                inLog( joining.getClass() ).debug( "ClusterState: joining-[join]->entered" ),
+                inLog( entered.getClass() ).debug( "ClusterState: entered-[join]->joining" )
         );
     }
 }

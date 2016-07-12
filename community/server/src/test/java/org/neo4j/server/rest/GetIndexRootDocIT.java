@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -42,20 +41,13 @@ public class GetIndexRootDocIT extends AbstractRestFunctionalTestBase
         functionalTestHelper = new FunctionalTestHelper( server() );
     }
 
-    @Before
-    public void cleanTheDatabase()
-    {
-        cleanDatabase();
-    }
-
     /**
      * /db/data/index is not itself a resource
-     *
      */
     @Test
     public void shouldRespondWith404ForNonResourceIndexPath() throws Exception
     {
-        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.indexUri());
+        JaxRsResponse response = RestRequest.req().get( functionalTestHelper.indexUri() );
         assertEquals( 404, response.getStatus() );
         response.close();
     }
@@ -66,9 +58,10 @@ public class GetIndexRootDocIT extends AbstractRestFunctionalTestBase
      * @throws Exception
      */
     @Test
-    public void shouldRespondWithNodeIndexes() throws Exception {
-        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.nodeIndexUri());
-        assertResponseContainsNoIndexesOtherThanAutoIndexes(response);
+    public void shouldRespondWithNodeIndexes() throws Exception
+    {
+        JaxRsResponse response = RestRequest.req().get( functionalTestHelper.nodeIndexUri() );
+        assertResponseContainsNoIndexesOtherThanAutoIndexes( response );
         response.close();
     }
 
@@ -76,9 +69,13 @@ public class GetIndexRootDocIT extends AbstractRestFunctionalTestBase
     {
         switch ( response.getStatus() )
         {
-        case 204: return; // OK no auto indices
-        case 200: assertEquals( 0, functionalTestHelper.removeAnyAutoIndex( jsonToMap( response.getEntity() ) ).size() ); break;
-        default: fail( "Invalid response code " + response.getStatus() );
+        case 204:
+            return; // OK no auto indices
+        case 200:
+            assertEquals( 0, functionalTestHelper.removeAnyAutoIndex( jsonToMap( response.getEntity() ) ).size() );
+            break;
+        default:
+            fail( "Invalid response code " + response.getStatus() );
         }
     }
 
@@ -88,9 +85,10 @@ public class GetIndexRootDocIT extends AbstractRestFunctionalTestBase
      * @throws Exception
      */
     @Test
-    public void shouldRespondWithRelationshipIndexes() throws Exception {
-        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.relationshipIndexUri());
-        assertResponseContainsNoIndexesOtherThanAutoIndexes(response);
+    public void shouldRespondWithRelationshipIndexes() throws Exception
+    {
+        JaxRsResponse response = RestRequest.req().get( functionalTestHelper.relationshipIndexUri() );
+        assertResponseContainsNoIndexesOtherThanAutoIndexes( response );
         response.close();
     }
 

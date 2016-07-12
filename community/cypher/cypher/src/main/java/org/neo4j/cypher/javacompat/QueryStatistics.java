@@ -23,7 +23,7 @@ import java.util.Map;
 
 /**
  * Holds statistics for the execution of a query.
- * 
+ *
  * @deprecated See {@link org.neo4j.graphdb.QueryStatistics} which you can get from {@link org.neo4j.graphdb.Result}
  * when using {@link org.neo4j.graphdb.GraphDatabaseService#execute(String, Map)}.
  */

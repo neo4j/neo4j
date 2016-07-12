@@ -39,7 +39,7 @@ public class RelationshipLegacyIndexProxy extends LegacyIndexProxy<Relationship>
     @Override
     public IndexHits<Relationship> get( String key, Object valueOrNull, Node startNodeOrNull, Node endNodeOrNull )
     {
-        try ( Statement statement = statementContextBridge.instance() )
+        try ( Statement statement = statementContextBridge.get() )
         {
             return wrapIndexHits( statement.readOperations().relationshipLegacyIndexGet( name, key, valueOrNull,
                     entityId( startNodeOrNull ), entityId( endNodeOrNull ) ) );
@@ -54,7 +54,7 @@ public class RelationshipLegacyIndexProxy extends LegacyIndexProxy<Relationship>
     public IndexHits<Relationship> query( String key, Object queryOrQueryObjectOrNull, Node startNodeOrNull,
             Node endNodeOrNull )
     {
-        try ( Statement statement = statementContextBridge.instance() )
+        try ( Statement statement = statementContextBridge.get() )
         {
             return wrapIndexHits( statement.readOperations().relationshipLegacyIndexQuery( name, key,
                     queryOrQueryObjectOrNull, entityId( startNodeOrNull ), entityId( endNodeOrNull ) ) );
@@ -68,7 +68,7 @@ public class RelationshipLegacyIndexProxy extends LegacyIndexProxy<Relationship>
     @Override
     public IndexHits<Relationship> query( Object queryOrQueryObjectOrNull, Node startNodeOrNull, Node endNodeOrNull )
     {
-        try ( Statement statement = statementContextBridge.instance() )
+        try ( Statement statement = statementContextBridge.get() )
         {
             return wrapIndexHits( statement.readOperations().relationshipLegacyIndexQuery( name,
                     queryOrQueryObjectOrNull, entityId( startNodeOrNull ), entityId( endNodeOrNull ) ) );

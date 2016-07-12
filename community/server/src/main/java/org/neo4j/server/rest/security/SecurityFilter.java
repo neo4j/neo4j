@@ -36,7 +36,7 @@ import javax.servlet.http.HttpServletResponse;
 
 public class SecurityFilter implements Filter
 {
-    private final HashMap<UriPathWildcardMatcher, HashSet<SecurityRule>> rules = new HashMap<UriPathWildcardMatcher, HashSet<SecurityRule>>();
+    private final HashMap<UriPathWildcardMatcher, HashSet<ForbiddingSecurityRule>> rules = new HashMap<UriPathWildcardMatcher, HashSet<ForbiddingSecurityRule>>();
 
     public SecurityFilter( SecurityRule rule, SecurityRule... rules )
     {
@@ -55,14 +55,22 @@ public class SecurityFilter implements Filter
             }
 
             UriPathWildcardMatcher uriPathWildcardMatcher = new UriPathWildcardMatcher( rulePath );
-            HashSet<SecurityRule> ruleHashSet = rules.get( uriPathWildcardMatcher );
+            HashSet<ForbiddingSecurityRule> ruleHashSet = rules.get( uriPathWildcardMatcher );
             if ( ruleHashSet == null )
             {
-                ruleHashSet = new HashSet<SecurityRule>();
+                ruleHashSet = new HashSet<ForbiddingSecurityRule>();
                 rules.put( uriPathWildcardMatcher, ruleHashSet );
             }
-            ruleHashSet.add( r );
+            ruleHashSet.add( fromSecurityRule(r) );
         }
+    }
+
+    private static ForbiddingSecurityRule fromSecurityRule(final SecurityRule rule) {
+        if (rule instanceof ForbiddingSecurityRule)
+        {
+            return (ForbiddingSecurityRule) rule;
+        }
+        return new ForbiddenRuleDecorator(rule);
     }
 
     private static Iterable<SecurityRule> merge( SecurityRule rule, SecurityRule[] rules )
@@ -92,12 +100,13 @@ public class SecurityFilter implements Filter
         HttpServletRequest httpReq = (HttpServletRequest) request;
         String path = httpReq.getContextPath() + (httpReq.getPathInfo() == null ? "" : httpReq.getPathInfo());
 
+        boolean requestIsForbidden = false;
         for ( UriPathWildcardMatcher uriPathWildcardMatcher : rules.keySet() )
         {
             if ( uriPathWildcardMatcher.matches( path ) )
             {
-                HashSet<SecurityRule> securityRules = rules.get( uriPathWildcardMatcher );
-                for ( SecurityRule securityRule : securityRules )
+                HashSet<ForbiddingSecurityRule> securityRules = rules.get( uriPathWildcardMatcher );
+                for ( ForbiddingSecurityRule securityRule : securityRules )
                 {
                     // 401 on the first failed rule we come along
                     if ( !securityRule.isAuthorized( httpReq ) )
@@ -105,8 +114,13 @@ public class SecurityFilter implements Filter
                         createUnauthorizedChallenge( response, securityRule );
                         return;
                     }
+                    requestIsForbidden |= securityRule.isForbidden(httpReq);
                 }
             }
+        }
+        if (requestIsForbidden) {
+            createForbiddenResponse( response );
+            return;
         }
 
         chain.doFilter( request, response );
@@ -139,6 +153,13 @@ public class SecurityFilter implements Filter
         httpServletResponse.addHeader( "WWW-Authenticate", rule.wwwAuthenticateHeader() );
     }
 
+    private void createForbiddenResponse( ServletResponse response )
+    {
+        HttpServletResponse httpServletResponse = (HttpServletResponse) response;
+        httpServletResponse.setStatus(403);
+    }
+
+
     @Override
     public synchronized void destroy()
     {
@@ -148,5 +169,33 @@ public class SecurityFilter implements Filter
     public static String basicAuthenticationResponse( String realm )
     {
         return "Basic realm=\"" + realm + "\"";
+    }
+
+    private static class ForbiddenRuleDecorator implements ForbiddingSecurityRule {
+        private final SecurityRule innerRule;
+
+        public ForbiddenRuleDecorator(SecurityRule rule) {
+            this.innerRule = rule;
+        }
+
+        @Override
+        public boolean isForbidden(HttpServletRequest request) {
+            return false;
+        }
+
+        @Override
+        public boolean isAuthorized(HttpServletRequest request) {
+            return innerRule.isAuthorized(request);
+        }
+
+        @Override
+        public String forUriPath() {
+            return innerRule.forUriPath();
+        }
+
+        @Override
+        public String wwwAuthenticateHeader() {
+            return innerRule.wwwAuthenticateHeader();
+        }
     }
 }

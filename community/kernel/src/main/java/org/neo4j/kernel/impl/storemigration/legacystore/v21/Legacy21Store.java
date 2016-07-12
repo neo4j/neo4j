@@ -21,12 +21,9 @@ package org.neo4j.kernel.impl.storemigration.legacystore.v21;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.neo4j.helpers.UTF8;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
-import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 
 /**
@@ -40,13 +37,10 @@ import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 public class Legacy21Store implements LegacyStore
 {
     public static final String LEGACY_VERSION = "v0.A.3";
-
-    private final FileSystemAbstraction fs;
     private final File storageFileName;
 
-    public Legacy21Store( FileSystemAbstraction fs, File storageFileName ) throws IOException
+    public Legacy21Store( File storageFileName ) throws IOException
     {
-        this.fs = fs;
         this.storageFileName = storageFileName;
         assertLegacyAndCurrentVersionHaveSameLength( LEGACY_VERSION, CommonAbstractStore.ALL_STORES_VERSION );
     }
@@ -68,16 +62,6 @@ public class Legacy21Store implements LegacyStore
     public File getStorageFileName()
     {
         return storageFileName;
-    }
-
-    public static long getUnsignedInt( ByteBuffer buf )
-    {
-        return buf.getInt() & 0xFFFFFFFFL;
-    }
-
-    protected static long longFromIntAndMod( long base, long modifier )
-    {
-        return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base | modifier;
     }
 
     @Override

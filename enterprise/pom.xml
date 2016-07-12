@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.2.11-SNAPSHOT</version>
+    <version>2.3.6-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.build</groupId>
   <artifactId>enterprise-build</artifactId>
-  <version>2.2.11-SNAPSHOT</version>
+  <version>2.3.6-SNAPSHOT</version>
 
   <name>Neo4j - Enterprise Build</name>
   <packaging>pom</packaging>
@@ -19,6 +19,7 @@
 
   <properties>
     <short-name>enterprise-build</short-name>
+    <componentversion.skip>true</componentversion.skip>
   </properties>
 
   <scm>
@@ -32,7 +33,9 @@
     <module>com</module>
     <module>cluster</module>
     <module>backup</module>
+    <module>kernel</module>
     <module>ha</module>
+    <module>metrics</module>
     <module>neo4j-enterprise</module>
     <module>server-enterprise</module>
     <module>enterprise-performance-tests</module>
@@ -84,9 +87,8 @@ terms of the relevant Commercial Agreement.
                     <include>org.neo4j.app:*</include>
                   </includes>
                   <excludes>
-                    <exclude>org.neo4j:neo4j-cypher-compiler-1.9</exclude>
-                    <exclude>org.neo4j:neo4j-cypher-compiler-2.0</exclude>
-                    <exclude>org.neo4j:neo4j-cypher-compiler-2.1</exclude>
+                    <exclude>org.neo4j:neo4j-cypher-compiler-1.9_2.11</exclude>
+                    <exclude>org.neo4j:neo4j-cypher-compiler-2.2_2.11</exclude>
                   </excludes>
                 </configuration>
               </execution>

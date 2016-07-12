@@ -26,6 +26,7 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Apache Commons Configuration
+  Apache Commons Lang
   Commons BeanUtils
   Commons Digester
   Commons IO
@@ -33,9 +34,10 @@ Apache Software License, Version 2.0
   Commons Logging
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
+  Ganglia Integration for Metrics
+  Graphite Integration for Metrics
   Jackson
   JAX-RS provider for JSON content type
-  JCL 1.1.1 implemented over SLF4J
   Jetty :: Http Utility
   Jetty :: IO Utility
   Jetty :: Security
@@ -45,7 +47,9 @@ Apache Software License, Version 2.0
   Jetty :: Webapp Application Support
   Jetty :: XML utilities
   Lucene Core
+  Metrics Core
   Netty
+  Netty/All-in-One
   opencsv
   parboiled-core
   parboiled-scala
@@ -55,12 +59,13 @@ BSD - Scala License
   Scala Library
 
 BSD License
-  Commons Compiler
-  Janino
+  ASM Core
   Scala Compiler
+  scala-parser-combinators
 
 Bouncy Castle License
-  Legion of the Bouncy Castle Java Cryptography APIs
+  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
+  Bouncy Castle Provider
 
 Common Development and Distribution License Version 1.1
   Java Servlet API
@@ -97,8 +102,10 @@ GNU Lesser General Public License, Version 2.1
   Logback Access Module
   Logback Classic Module
   Logback Core Module
+  Remote Tea Runtime
 
 MIT License
+  gmetric4j
   SLF4J API Module
 
 Mozilla Public License, Version 2.0

@@ -53,7 +53,7 @@ public class LuceneIndexSiteExamples
     public void finishTx()
     {
         tx.success();
-        tx.finish();
+        tx.close();
     }
     
     @Test

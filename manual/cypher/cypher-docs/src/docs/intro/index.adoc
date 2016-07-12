@@ -1,0 +1,61 @@
+[[cypher-getting-started]]
+= Introduction to Cypher
+
+This friendly guide will introduce you to Cypher, Neo4j's query language.
+
+The guide will help you:
+
+* start thinking about graphs and patterns,
+* apply this knowledge to simple problems,
+* learn how to write Cypher statements,
+* use Cypher for loading data,
+* transition from SQL to Cypher.
+
+If you want to keep a reference at your side while reading, please see the link:cypher-refcard/[Cypher Refcard].
+
+[NOTE]
+.Work in Progress
+====
+There may still be unfinished parts in this chapter.
+Please comment on it so we can make it suit our readers better!
+====
+
+:leveloffset: 2
+
+include::cypher-motivation.adoc[]
+
+:leveloffset: 2
+
+include::graphs-patterns-cypher.adoc[]
+
+:leveloffset: 2
+
+include::../parsed-graphgists/intro/patterns-in-practice.adoc[]
+
+:leveloffset: 2
+
+include::../parsed-graphgists/intro/getting-the-results-you-want.adoc[]
+
+:leveloffset: 2
+
+include::../parsed-graphgists/intro/compose-statements.adoc[]
+
+:leveloffset: 2
+
+include::../parsed-graphgists/intro/labels.adoc[]
+
+//include::indexes-and-constraints.adoc[]
+
+:leveloffset: 2
+
+include::../parsed-graphgists/intro/loading-data.adoc[]
+
+:leveloffset: 2
+
+include::../parsed-graphgists/intro/data-structures.adoc[]
+
+:leveloffset: 2
+
+include::../parsed-graphgists/sql/cypher-vs-sql.asciidoc[]
+
+

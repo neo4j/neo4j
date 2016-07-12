@@ -27,7 +27,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -57,14 +57,14 @@ public class NodeIdsInUseSampleableTest
             tx.success();
         }
 
-        assertThat( sampleable.getValue(), is (1d ) );
+        assertThat( sampleable.getValue(), is( 1d ) );
     }
 
     @Before
     public void setUp() throws Exception
     {
         DependencyResolver dependencyResolver = dbRule.getGraphDatabaseAPI().getDependencyResolver();
-        NeoStoreProvider neoStore = dependencyResolver.resolveDependency( NeoStoreProvider.class );
+        NeoStoresSupplier neoStore = dependencyResolver.resolveDependency( NeoStoresSupplier.class );
         AvailabilityGuard guard = dependencyResolver.resolveDependency( AvailabilityGuard.class );
         sampleable = new NodeIdsInUseSampleable( neoStore, guard );
     }

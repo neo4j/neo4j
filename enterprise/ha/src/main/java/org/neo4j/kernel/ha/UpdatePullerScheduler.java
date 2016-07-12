@@ -22,9 +22,11 @@ package org.neo4j.kernel.ha;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+
+import static org.neo4j.kernel.impl.util.JobScheduler.Groups.pullUpdates;
 
 /**
  * This scheduler is part of slave lifecycle that will schedule periodic pulling on slave switch
@@ -34,18 +36,18 @@ import org.neo4j.kernel.logging.Logging;
  */
 public class UpdatePullerScheduler extends LifecycleAdapter
 {
-    private final UpdatePuller updatePuller;
     private final JobScheduler scheduler;
-    private final StringLogger logger;
+    private final Log log;
+    private final UpdatePuller updatePuller;
     private final long pullIntervalMillis;
     private JobScheduler.JobHandle intervalJobHandle;
 
-    public UpdatePullerScheduler( UpdatePuller updatePuller, JobScheduler scheduler, Logging logging, long
-            pullIntervalMillis )
+    public UpdatePullerScheduler( JobScheduler scheduler, LogProvider logProvider, UpdatePuller updatePullingThread,
+            long pullIntervalMillis )
     {
-        this.updatePuller = updatePuller;
         this.scheduler = scheduler;
-        this.logger = logging.getMessagesLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
+        this.updatePuller = updatePullingThread;
         this.pullIntervalMillis = pullIntervalMillis;
     }
 
@@ -54,7 +56,7 @@ public class UpdatePullerScheduler extends LifecycleAdapter
     {
         if ( pullIntervalMillis > 0 )
         {
-            intervalJobHandle = scheduler.scheduleRecurring( JobScheduler.Group.pullUpdates, new Runnable()
+            intervalJobHandle = scheduler.scheduleRecurring( pullUpdates, new Runnable()
             {
                 @Override
                 public void run()
@@ -65,7 +67,7 @@ public class UpdatePullerScheduler extends LifecycleAdapter
                     }
                     catch ( InterruptedException e )
                     {
-                        logger.error( "Pull updates failed", e );
+                        log.error( "Pull updates failed", e );
                     }
                 }
             }, pullIntervalMillis, pullIntervalMillis, TimeUnit.MILLISECONDS );

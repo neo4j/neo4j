@@ -1,6 +1,8 @@
 [[tutorials-java-embedded-graph-algo]]
-Graph Algorithm examples
-========================
+= Graph Algorithm examples
+
+For details on the graph algorithm usage, see the
+link:javadocs/org/neo4j/graphalgo/GraphAlgoFactory.html[Javadocs].
 
 [TIP]
 The source code used in the example is found here:

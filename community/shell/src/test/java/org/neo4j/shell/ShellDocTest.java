@@ -19,13 +19,14 @@
  */
 package org.neo4j.shell;
 
+import org.junit.Test;
+
 import java.io.PrintWriter;
 
-import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.impl.CollectingOutput;
@@ -34,6 +35,7 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static java.lang.System.lineSeparator;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -46,8 +48,6 @@ import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphViz;
 
 public class ShellDocTest
 {
-    private final static String NL = System.getProperty( "line.separator" );
-
     private AppCommandParser parse( final String line ) throws Exception
     {
         return new AppCommandParser( new GraphDatabaseShellServer( null ), line );
@@ -63,7 +63,7 @@ public class ShellDocTest
         assertTrue( parser.options().containsKey( "a" ) );
         assertTrue( parser.arguments().isEmpty() );
     }
-    
+
     @Test
     public void parsingUnrecognizedOptionShouldFail() throws Exception
     {
@@ -91,7 +91,7 @@ public class ShellDocTest
         assertEquals( "value", parser.arguments().get( 1 ) );
         assertShellException( "set -tsd" );
     }
-    
+
     @Test
     public void testEnableRemoteShellOnCustomPort() throws Exception
     {
@@ -185,11 +185,11 @@ public class ShellDocTest
         doc.add( "create index on :Person(name);", "", "create an index" );
         doc.add( "create (m:Person:Hacker {name:'Mattias'}), (m)-[:KNOWS]->(m);", "", "create one labeled node and a relationship" );
         doc.add( "dump", "begin" +
-                NL +"create index on :`Person`(`name`)" +
-                NL +"create (_0:`Person`:`Hacker` {`name`:\"Mattias\"})" +
-                NL +"create _0-[:`KNOWS`]->_0" +
-                NL +";" +
-                NL +"commit", "Export the whole database including indexes" );
+                lineSeparator() + "create index on :`Person`(`name`)" +
+                lineSeparator() + "create (_0:`Person`:`Hacker` {`name`:\"Mattias\"})" +
+                lineSeparator() + "create _0-[:`KNOWS`]->_0" +
+                lineSeparator() + ";" +
+                lineSeparator() + "commit", "Export the whole database including indexes" );
         doc.run();
         server.shutdown();
         db.shutdown();
@@ -248,7 +248,7 @@ public class ShellDocTest
                 "return zionist.name;",
                 "Trinity",
                 "Morpheus' friends, looking up Morpheus by name in the Neo4j autoindex" );
-        doc.add( "cypher 2.0 start morpheus = node:node_auto_index(name='Morpheus') " +
+        doc.add( "cypher 2.2 start morpheus = node:node_auto_index(name='Morpheus') " +
                 "match morpheus-[:KNOWS]-zionist " +
                 "return zionist.name;",
                 "Cypher",
@@ -281,7 +281,7 @@ public class ShellDocTest
             assertTrue( "Could not find the node connecting the root and Neo nodes.", foundRootAndNeoRelationship );
             tx.success();
         }
-        
+
         try ( PrintWriter writer = doc.getWriter( "shell-matrix-example-graph" );
                 Transaction tx = db.beginTx() )
         {

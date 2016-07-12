@@ -8,7 +8,7 @@ For these situations you can use the unmanaged extension API.
 [CAUTION]
 This is a sharp tool, allowing users to deploy arbitrary http://en.wikipedia.org/wiki/JAX-RS[JAX-RS] classes to the server so be careful when using this.
 In particular it's easy to consume lots of heap space on the server and degrade performance.
-If in doubt please ask for help via one of the community channels (see <<community-support>>).
+If in doubt please ask for help via one of the community channels (see <<preface>>).
 
 :leveloffset: 3
 [[intro-unmanaged-extensions]]

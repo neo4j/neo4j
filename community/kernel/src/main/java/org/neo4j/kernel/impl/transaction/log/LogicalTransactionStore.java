@@ -30,11 +30,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.Transactio
 public interface LogicalTransactionStore
 {
     /**
-     * @return a {@link TransactionAppender} capable of adding new transactions.
-     */
-    TransactionAppender getAppender();
-
-    /**
      * Acquires a {@link IOCursor cursor} which will provide {@link CommittedTransactionRepresentation}
      * instances for committed transactions, starting from the specified {@code transactionIdToStartFrom}.
      * Transactions will be returned from the cursor in transaction-id-sequential order.

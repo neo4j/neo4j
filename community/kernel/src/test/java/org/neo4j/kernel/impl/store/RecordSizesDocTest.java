@@ -66,7 +66,7 @@ public class RecordSizesDocTest
 
     private static Store store( String storeFileName, int recordSize, String contentsDescription )
     {
-        return new Store( NeoStore.DEFAULT_NAME + storeFileName, recordSize, contentsDescription );
+        return new Store( MetaDataStore.DEFAULT_NAME + storeFileName, recordSize, contentsDescription );
     }
 
     private static int defaultDynamicSize( Setting<Integer> setting )

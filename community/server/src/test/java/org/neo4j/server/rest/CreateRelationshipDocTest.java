@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.rest;
 
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
+import com.sun.jersey.api.client.ClientResponse.Status;
 import org.junit.Test;
+
+import java.util.Map;
+import javax.ws.rs.core.MediaType;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -34,19 +34,13 @@ import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.TestData.Title;
 
-import com.sun.jersey.api.client.ClientResponse.Status;
 import static org.junit.Assert.assertTrue;
 
-public class CreateRelationshipDocTest extends
-        AbstractRestFunctionalTestBase
+public class CreateRelationshipDocTest extends AbstractRestFunctionalDocTestBase
 {
-    /**
-     * Upon successful creation of a relationship, the new relationship is
-     * returned.
-     */
     @Test
     @Graph( "Joe knows Sara" )
-    @Documented
+    @Documented( "Upon successful creation of a relationship, the new relationship is returned." )
     @Title( "Create a relationship with properties" )
     public void create_a_relationship_with_properties() throws Exception
     {
@@ -66,12 +60,8 @@ public class CreateRelationshipDocTest extends
         }
     }
 
-    /**
-     * Upon successful creation of a relationship, the new relationship is
-     * returned.
-     */
     @Test
-    @Documented
+    @Documented( "Upon successful creation of a relationship, the new relationship is returned." )
     @Title( "Create relationship" )
     @Graph( "Joe knows Sara" )
     public void create_relationship() throws Exception
@@ -83,8 +73,9 @@ public class CreateRelationshipDocTest extends
                             + "\", \"type\" : \"LOVES\"}";
         Node i = getNode( "Joe" );
         String entity = gen.get().expectedStatus(
-                Status.CREATED.getStatusCode() ).payload( jsonString ).post(
-                getNodeUri( i ) + "/relationships" ).entity();
+                Status.CREATED.getStatusCode() ).payload( jsonString )
+                .description( startGraph( "create relationship" ) )
+                .post( getNodeUri( i ) + "/relationships" ).entity();
         try ( Transaction tx = graphdb().beginTx() )
         {
             assertTrue( i.hasRelationship( DynamicRelationshipType.withName( "LOVES" ) ) );

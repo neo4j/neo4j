@@ -22,12 +22,14 @@ package org.neo4j.test.server;
 import java.io.IOException;
 
 import org.neo4j.server.NeoServer;
+import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.helpers.ServerHelper;
 
 final class ServerHolder extends Thread
 {
     private static AssertionError allocation;
     private static NeoServer server;
+    private static CommunityServerBuilder builder;
 
     static synchronized NeoServer allocate() throws IOException
     {
@@ -52,9 +54,16 @@ final class ServerHolder extends Thread
         shutdown();
     }
 
+    static synchronized void setServerBuilderProperty( String key, String value )
+    {
+        initBuilder();
+        builder = builder.withProperty( key, value );
+    }
+
     private static NeoServer startServer() throws IOException
     {
-        NeoServer server = ServerHelper.createNonPersistentServer();
+        initBuilder();
+        NeoServer server = ServerHelper.createNonPersistentServer( builder );
         return server;
     }
 
@@ -67,7 +76,16 @@ final class ServerHolder extends Thread
         }
         finally
         {
+            builder = null;
             server = null;
+        }
+    }
+
+    private static void initBuilder()
+    {
+        if ( builder == null )
+        {
+            builder = CommunityServerBuilder.server();
         }
     }
 

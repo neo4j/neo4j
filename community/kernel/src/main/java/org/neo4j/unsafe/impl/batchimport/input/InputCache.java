@@ -23,15 +23,13 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.function.IOFunction;
-import org.neo4j.function.RawFunction;
+import org.neo4j.function.ThrowingSupplier;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
-
-import static org.neo4j.helpers.Format.KB;
 
 /**
  * Cache of streams of {@link InputNode} or {@link InputRelationship} from an {@link Input} instance.
@@ -119,7 +117,7 @@ public class InputCache implements Closeable
 
     public InputCache( FileSystemAbstraction fs, File cacheDirectory )
     {
-        this( fs, cacheDirectory, 512*KB );
+        this( fs, cacheDirectory, (int) ByteUnit.kibiBytes( 512 ) );
     }
 
     public InputCache( FileSystemAbstraction fs, File cacheDirectory, int bufferSize )
@@ -152,10 +150,10 @@ public class InputCache implements Closeable
 
     public InputIterable<InputNode> nodes()
     {
-        return entities( new IOFunction<Void, InputIterator<InputNode>>()
+        return entities( new ThrowingSupplier<InputIterator<InputNode>, IOException>()
         {
             @Override
-            public InputIterator<InputNode> apply( Void ignore ) throws IOException
+            public InputIterator<InputNode> get() throws IOException
             {
                 return new InputNodeReader( channel( NODES, "r" ), channel( NODES_HEADER, "r" ), bufferSize );
             }
@@ -164,10 +162,10 @@ public class InputCache implements Closeable
 
     public InputIterable<InputRelationship> relationships()
     {
-        return entities( new IOFunction<Void, InputIterator<InputRelationship>>()
+        return entities( new ThrowingSupplier<InputIterator<InputRelationship>, IOException>()
         {
             @Override
-            public InputIterator<InputRelationship> apply( Void ignore ) throws IOException
+            public InputIterator<InputRelationship> get() throws IOException
             {
                 return new InputRelationshipReader( channel( RELATIONSHIPS, "r" ),
                         channel( RELATIONSHIPS_HEADER, "r" ), bufferSize );
@@ -176,7 +174,7 @@ public class InputCache implements Closeable
     }
 
     private <T extends InputEntity> InputIterable<T> entities(
-            final RawFunction<Void,InputIterator<T>,IOException> factory )
+            final ThrowingSupplier<InputIterator<T>, IOException> factory )
     {
         return new InputIterable<T>()
         {
@@ -185,7 +183,7 @@ public class InputCache implements Closeable
             {
                 try
                 {
-                    return factory.apply( null );
+                    return factory.get();
                 }
                 catch ( IOException e )
                 {

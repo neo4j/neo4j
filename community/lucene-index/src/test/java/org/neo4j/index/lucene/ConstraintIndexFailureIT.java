@@ -31,6 +31,7 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.api.index.util.FolderLayout;
@@ -41,6 +42,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.test.TargetDirectory.testDirForTest;
 
@@ -59,8 +61,7 @@ public class ConstraintIndexFailureIT
         GraphDatabaseService db = startDatabase();
         try
         {
-            Transaction tx = db.beginTx();
-            try
+            try ( Transaction tx = db.beginTx() )
             {
                 db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
 
@@ -71,10 +72,6 @@ public class ConstraintIndexFailureIT
             {
                 assertThat( e.getCause(), instanceOf( UnableToValidateConstraintKernelException.class ) );
                 assertThat( e.getCause().getCause().getMessage(), equalTo( "The index is in a failed state: 'Injected failure'.") );
-            }
-            finally
-            {
-                tx.finish();
             }
         }
         finally
@@ -93,16 +90,11 @@ public class ConstraintIndexFailureIT
         GraphDatabaseService db = startDatabase();
         try
         {
-            Transaction tx = db.beginTx();
-            try
+            try ( Transaction tx = db.beginTx() )
             {
                 db.schema().constraintFor( label( "Label1" ) ).assertPropertyIsUnique( "key1" ).create();
 
                 tx.success();
-            }
-            finally
-            {
-                tx.finish();
             }
         }
         finally
@@ -114,7 +106,7 @@ public class ConstraintIndexFailureIT
     private void storeIndexFailure( String failure ) throws IOException
     {
         File luceneRootDirectory = new File( storeDir.directory(), "schema/index/lucene" );
-        new FailureStorage( new FolderLayout( luceneRootDirectory ) )
+        new FailureStorage( new DefaultFileSystemAbstraction(), new FolderLayout( luceneRootDirectory ) )
                 .storeIndexFailure( singleIndexId( luceneRootDirectory ), failure );
     }
 

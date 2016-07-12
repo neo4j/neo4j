@@ -23,7 +23,7 @@ import java.io.IOException;
 
 public class PhysicalLogFileInformation implements LogFileInformation
 {
-    public interface SPI
+    public interface LogVersionToTimestamp
     {
         long getTimestampForVersion( long version ) throws IOException;
     }
@@ -31,17 +31,17 @@ public class PhysicalLogFileInformation implements LogFileInformation
     private final PhysicalLogFiles logFiles;
     private final TransactionMetadataCache transactionMetadataCache;
     private final TransactionIdStore transactionIdStore;
-    private final SPI spi;
+    private final LogVersionToTimestamp logVersionToTimestamp;
 
     public PhysicalLogFileInformation( PhysicalLogFiles logFiles,
                                        TransactionMetadataCache transactionMetadataCache,
                                        TransactionIdStore transactionIdStore,
-                                       SPI spi )
+                                       LogVersionToTimestamp logVersionToTimestamp )
     {
         this.logFiles = logFiles;
         this.transactionMetadataCache = transactionMetadataCache;
         this.transactionIdStore = transactionIdStore;
-        this.spi = spi;
+        this.logVersionToTimestamp = logVersionToTimestamp;
     }
 
     @Override
@@ -89,6 +89,6 @@ public class PhysicalLogFileInformation implements LogFileInformation
     @Override
     public long getFirstStartRecordTimestamp( long version ) throws IOException
     {
-        return spi.getTimestampForVersion( version );
+        return logVersionToTimestamp.getTimestampForVersion( version );
     }
 }

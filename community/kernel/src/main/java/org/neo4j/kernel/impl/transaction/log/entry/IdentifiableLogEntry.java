@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import java.io.IOException;
 import java.util.TimeZone;
 
-import org.neo4j.kernel.impl.transaction.command.LogHandler;
-
-/**
+/*
  * This class is used when reading legacy log entries and it will preserve their identifiers.
  * Identifiers will be use for reordering the log entries when migrating from older neo4j versions.
  */
@@ -37,12 +34,6 @@ public class IdentifiableLogEntry implements LogEntry
     {
         this.entry = entry;
         this.identifier = identifier;
-    }
-
-    @Override
-    public void accept( LogHandler handler ) throws IOException
-    {
-        entry.accept( handler );
     }
 
     @Override

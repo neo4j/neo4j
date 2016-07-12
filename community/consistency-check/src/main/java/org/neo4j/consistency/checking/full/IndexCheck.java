@@ -22,7 +22,6 @@ package org.neo4j.consistency.checking.full;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -41,12 +40,5 @@ public class IndexCheck implements RecordCheck<IndexEntry, ConsistencyReport.Ind
     {
         engine.comparativeCheck( records.node( record.getId() ),
                 new NodeInUseWithCorrectLabelsCheck<IndexEntry,ConsistencyReport.IndexConsistencyReport>(new long[] {indexRule.getLabel()}) );
-    }
-
-    @Override
-    public void checkChange( IndexEntry oldRecord, IndexEntry newRecord, CheckerEngine<IndexEntry, ConsistencyReport
-            .IndexConsistencyReport> engine, DiffRecordAccess records )
-    {
-        check( newRecord, engine, records );
     }
 }

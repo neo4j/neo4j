@@ -19,17 +19,16 @@
  */
 package org.neo4j.metatest;
 
-import static org.junit.Assert.assertNotNull;
-
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.assertNotNull;
 
 public class TargetDirectoryTest
 {
-    private static final TargetDirectory target = TargetDirectory.forTest( TargetDirectoryTest.class );
-
-    public @Rule TargetDirectory.TestDirectory dir = target.testDirectory();
+    public @Rule TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( TargetDirectoryTest.class );
 
     @Test
     public void hasDir() throws Exception

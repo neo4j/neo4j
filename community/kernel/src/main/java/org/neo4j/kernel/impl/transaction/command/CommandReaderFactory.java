@@ -35,43 +35,43 @@ public abstract class CommandReaderFactory
 
     public static final DynamicRecordAdder<PropertyBlock> PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER =
             new DynamicRecordAdder<PropertyBlock>()
-    {
-        @Override
-        public void add( PropertyBlock target, DynamicRecord record )
-        {
-            record.setCreated();
-            target.addValueRecord( record );
-        }
-    };
+            {
+                @Override
+                public void add( PropertyBlock target, DynamicRecord record )
+                {
+                    record.setCreated();
+                    target.addValueRecord( record );
+                }
+            };
 
     public static final DynamicRecordAdder<Collection<DynamicRecord>> COLLECTION_DYNAMIC_RECORD_ADDER =
             new DynamicRecordAdder<Collection<DynamicRecord>>()
-    {
-        @Override
-        public void add( Collection<DynamicRecord> target, DynamicRecord record )
-        {
-            target.add( record );
-        }
-    };
+            {
+                @Override
+                public void add( Collection<DynamicRecord> target, DynamicRecord record )
+                {
+                    target.add( record );
+                }
+            };
 
     public static final DynamicRecordAdder<PropertyRecord> PROPERTY_DELETED_DYNAMIC_RECORD_ADDER =
             new DynamicRecordAdder<PropertyRecord>()
-    {
-        @Override
-        public void add( PropertyRecord target, DynamicRecord record )
-        {
-            assert !record.inUse() : record + " is kinda weird";
-            target.addDeletedRecord( record );
-        }
-    };
+            {
+                @Override
+                public void add( PropertyRecord target, DynamicRecord record )
+                {
+                    assert !record.inUse() : record + " is kinda weird";
+                    target.addDeletedRecord( record );
+                }
+            };
 
     public static final DynamicRecordAdder<PropertyKeyTokenRecord> PROPERTY_INDEX_DYNAMIC_RECORD_ADDER =
             new DynamicRecordAdder<PropertyKeyTokenRecord>()
-    {
-        @Override
-        public void add( PropertyKeyTokenRecord target, DynamicRecord record )
-        {
-            target.addNameRecord( record );
-        }
-    };
+            {
+                @Override
+                public void add( PropertyKeyTokenRecord target, DynamicRecord record )
+                {
+                    target.addNameRecord( record );
+                }
+            };
 }

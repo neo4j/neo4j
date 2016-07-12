@@ -20,17 +20,17 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.lang.String.format;
 
 public class NoSuchConstraintException extends SchemaKernelException
 {
-    private final UniquenessConstraint constraint;
+    private final PropertyConstraint constraint;
     private final static String message = "No such constraint %s.";
 
-    public NoSuchConstraintException( UniquenessConstraint constraint )
+    public NoSuchConstraintException( PropertyConstraint constraint )
     {
         super( Status.Schema.NoSuchConstraint, format( message, constraint ) );
         this.constraint = constraint;

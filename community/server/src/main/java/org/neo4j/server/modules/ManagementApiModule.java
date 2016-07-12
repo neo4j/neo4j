@@ -29,7 +29,7 @@ import org.neo4j.server.rest.management.VersionAndEditionService;
 import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.WebServer;
 
-import static org.neo4j.server.JAXRSHelper.listFrom;
+import static java.util.Arrays.asList;
 
 public class ManagementApiModule implements ServerModule
 {
@@ -51,7 +51,7 @@ public class ManagementApiModule implements ServerModule
 
     private List<String> getClassNames()
     {
-        return listFrom(
+        return asList(
                 JmxService.class.getName(),
                 RootService.class.getName(),
                 VersionAndEditionService.class.getName() );

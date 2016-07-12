@@ -24,13 +24,19 @@ import java.util.concurrent.Executor;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastContext;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastState;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.cluster.util.Quorums;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 
+/**
+ * Context for {@link AtomicBroadcastState} state machine.
+ * <p/>
+ * This holds the set of listeners for atomic broadcasts, and allows distribution of received values to those listeners.
+ */
 class AtomicBroadcastContextImpl
     extends AbstractContextImpl
     implements AtomicBroadcastContext
@@ -40,7 +46,7 @@ class AtomicBroadcastContextImpl
     private final HeartbeatContext heartbeatContext;
 
     AtomicBroadcastContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState,
-                                Logging logging,
+                                LogProvider logging,
                                 Timeouts timeouts, Executor executor, HeartbeatContext heartbeatContext  )
     {
         super( me, commonState, logging, timeouts );
@@ -73,7 +79,7 @@ class AtomicBroadcastContextImpl
         } );
     }
 
-    public AtomicBroadcastContextImpl snapshot( CommonContextState commonStateSnapshot, Logging logging,
+    public AtomicBroadcastContextImpl snapshot( CommonContextState commonStateSnapshot, LogProvider logging,
                                                 Timeouts timeouts, Executor executor, HeartbeatContext heartbeatContext )
     {
         return new AtomicBroadcastContextImpl( me, commonStateSnapshot, logging, timeouts, executor, heartbeatContext );

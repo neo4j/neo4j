@@ -22,7 +22,8 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.junit.After;
 import org.junit.Before;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelAPI;
@@ -35,17 +36,14 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.test.TestGraphDatabaseBuilder;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 public abstract class KernelIntegrationTest
 {
     @SuppressWarnings("deprecation")
     protected GraphDatabaseAPI db;
-    protected ThreadToStatementContextBridge statementContextProvider;
+    protected ThreadToStatementContextBridge statementContextSupplier;
     protected KernelAPI kernel;
     protected IndexingService indexingService;
 
@@ -115,7 +113,7 @@ public abstract class KernelIntegrationTest
     public void setup()
     {
         fs = new EphemeralFileSystemAbstraction();
-        startDb("soft");
+        startDb();
     }
 
     @After
@@ -125,21 +123,26 @@ public abstract class KernelIntegrationTest
         fs.shutdown();
     }
 
-    protected void startDb(String cacheType)
+    protected void startDb()
     {
-        TestGraphDatabaseBuilder graphDatabaseFactory = (TestGraphDatabaseBuilder) new TestGraphDatabaseFactory().setFileSystem(fs).newImpermanentDatabaseBuilder();
-
-        //noinspection deprecation
-        db = (GraphDatabaseAPI) graphDatabaseFactory.setConfig(GraphDatabaseSettings.cache_type,cacheType).newGraphDatabase();
+        db = (GraphDatabaseAPI) createGraphDatabase( fs );
         kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
-        statementContextProvider = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+        statementContextSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+    }
+
+    protected GraphDatabaseService createGraphDatabase( EphemeralFileSystemAbstraction fs )
+    {
+        TestGraphDatabaseBuilder graphDatabaseFactory = (TestGraphDatabaseBuilder) new TestGraphDatabaseFactory()
+                .setFileSystem( fs )
+                .newImpermanentDatabaseBuilder();
+        return graphDatabaseFactory.newGraphDatabase();
     }
 
     protected void dbWithNoCache() throws TransactionFailureException
     {
         stopDb();
-        startDb("none");
+        startDb();
     }
 
     protected void stopDb() throws TransactionFailureException
@@ -154,11 +157,6 @@ public abstract class KernelIntegrationTest
     protected void restartDb() throws TransactionFailureException
     {
         stopDb();
-        startDb("soft");
-    }
-
-    protected NeoStore neoStore()
-    {
-        return db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate();
+        startDb();
     }
 }

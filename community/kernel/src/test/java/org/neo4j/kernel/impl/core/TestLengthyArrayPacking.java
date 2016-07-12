@@ -19,17 +19,17 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.junit.Test;
+
+import java.util.Arrays;
+
+import org.neo4j.graphdb.Node;
+import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.kernel.impl.store.PropertyStore.DEFAULT_DATA_BLOCK_SIZE;
-
-import java.util.Arrays;
-
-import org.junit.Test;
-
-import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 public class TestLengthyArrayPacking extends AbstractNeo4jTestCase
 {
@@ -39,7 +39,7 @@ public class TestLengthyArrayPacking extends AbstractNeo4jTestCase
     public void bitPackingOfLengthyArrays() throws Exception
     {
         long arrayRecordsBefore = dynamicArrayRecordsInUse();
-        
+
         // Store an int array which would w/o packing require two dynamic records
         // 4*40 = 160B (assuming data size of 120B)
         int[] arrayWhichUnpackedWouldFillTwoDynamicRecords = new int[40];
@@ -51,30 +51,29 @@ public class TestLengthyArrayPacking extends AbstractNeo4jTestCase
         String key = "the array";
         node.setProperty( key, arrayWhichUnpackedWouldFillTwoDynamicRecords );
         newTransaction();
-        
+
         // Make sure it only requires one dynamic record
         assertEquals( arrayRecordsBefore+1, dynamicArrayRecordsInUse() );
-        clearCache();
         assertTrue( Arrays.equals( arrayWhichUnpackedWouldFillTwoDynamicRecords,
                 (int[]) node.getProperty( key ) ) );
     }
 
     // Tests for strings, although the test class name suggests otherwise
-    
+
     @Test
     public void makeSureLongLatin1StringUsesOneBytePerChar() throws Exception
     {
         String string = stringOfLength( SOME_LATIN_1_CHARS, DEFAULT_DATA_BLOCK_SIZE*2-1 );
         makeSureRightAmountOfDynamicRecordsUsed( string, 2, STRING_RECORD_COUNTER );
     }
-    
+
     @Test
     public void makeSureLongUtf8StringUsesLessThanTwoBytesPerChar() throws Exception
     {
         String string = stringOfLength( SOME_MIXED_CHARS, DEFAULT_DATA_BLOCK_SIZE+10 );
         makeSureRightAmountOfDynamicRecordsUsed( string, 2, STRING_RECORD_COUNTER );
     }
-    
+
     @Test
     public void makeSureLongLatin1StringArrayUsesOneBytePerChar() throws Exception
     {
@@ -91,7 +90,7 @@ public class TestLengthyArrayPacking extends AbstractNeo4jTestCase
         for ( int i = 0; i < stringArray.length; i++ ) stringArray[i] = stringOfLength( SOME_MIXED_CHARS, 20 );
         makeSureRightAmountOfDynamicRecordsUsed( stringArray, 2, ARRAY_RECORD_COUNTER );
     }
-    
+
     private void makeSureRightAmountOfDynamicRecordsUsed( Object value, int expectedAddedDynamicRecords,
             DynamicRecordCounter recordCounter ) throws Exception
     {
@@ -102,7 +101,7 @@ public class TestLengthyArrayPacking extends AbstractNeo4jTestCase
         long stringRecordsAfter = recordCounter.count();
         assertEquals( stringRecordsBefore+expectedAddedDynamicRecords, stringRecordsAfter );
     }
-    
+
     private String stringOfLength( String possibilities, int length )
     {
         StringBuilder builder = new StringBuilder();
@@ -112,12 +111,12 @@ public class TestLengthyArrayPacking extends AbstractNeo4jTestCase
         }
         return builder.toString();
     }
-    
+
     private interface DynamicRecordCounter
     {
         long count();
     }
-    
+
     private class ArrayRecordCounter implements DynamicRecordCounter
     {
         @Override
@@ -135,7 +134,7 @@ public class TestLengthyArrayPacking extends AbstractNeo4jTestCase
             return dynamicStringRecordsInUse();
         }
     }
-    
+
     private final DynamicRecordCounter ARRAY_RECORD_COUNTER = new ArrayRecordCounter();
     private final DynamicRecordCounter STRING_RECORD_COUNTER = new StringRecordCounter();
 }

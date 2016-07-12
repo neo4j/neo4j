@@ -31,7 +31,7 @@ public class NamedThreadFactory implements ThreadFactory
         void threadFinished( String threadNamePrefix );
     }
 
-    private static final Monitor NO_OP_MONITOR = new Monitor()
+    public static final Monitor NO_OP_MONITOR = new Monitor()
     {
         @Override
         public void threadCreated( String threadNamePrefix )

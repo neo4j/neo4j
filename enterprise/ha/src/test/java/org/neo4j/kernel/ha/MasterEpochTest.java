@@ -25,6 +25,7 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.ha.com.master.ConversationManager;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.InvalidEpochException;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
@@ -33,7 +34,6 @@ import org.neo4j.kernel.ha.com.master.MasterImplTest;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdRange;
-import org.neo4j.kernel.impl.util.TestLogging;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -57,7 +57,7 @@ public class MasterEpochTest
         when( spi.getTransactionChecksum( anyLong() ) ).thenReturn( 10L );
         StoreId storeId = new StoreId();
         MasterImpl master = new MasterImpl( spi,
-                mock( MasterImpl.Monitor.class ), new TestLogging(),
+                mock( ConversationManager.class ), mock( MasterImpl.Monitor.class ),
                 new Config( stringMap( ClusterSettings.server_id.name(), "1" ) ) );
         HandshakeResult handshake = master.handshake( 1, storeId ).response();
         master.start();

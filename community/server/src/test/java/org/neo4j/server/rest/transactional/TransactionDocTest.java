@@ -19,14 +19,7 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsMapContaining.hasKey;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.junit.Test;
 
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -42,24 +35,27 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.util.RFC1123;
 import org.neo4j.test.server.HTTP;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsMapContaining.hasKey;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 import static org.neo4j.test.server.HTTP.GET;
 import static org.neo4j.test.server.HTTP.POST;
 
-import org.junit.Test;
-
 public class TransactionDocTest extends AbstractRestFunctionalTestBase
 {
-    /**
-     * Begin a transaction
-     *
-     * You begin a new transaction by posting zero or more Cypher statements
-     * to the transaction endpoint. The server will respond with the result of
-     * your statements, as well as the location of your open transaction.
-     */
     @Test
-    @Documented
+    @Documented( "Begin a transaction\n" +
+                 "\n" +
+                 "You begin a new transaction by posting zero or more Cypher statements\n" +
+                 "to the transaction endpoint. The server will respond with the result of\n" +
+                 "your statements, as well as the location of your open transaction." )
     public void begin_a_transaction() throws JsonParseException
     {
         // Document
@@ -77,14 +73,11 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         assertThat( (String) node.get( "name" ), equalTo( "My Node" ) );
     }
 
-    /**
-     * Execute statements in an open transaction
-     *
-     * Given that you have an open transaction, you can make a number of requests, each of which executes additional
-     * statements, and keeps the transaction open by resetting the transaction timeout.
-     */
     @Test
-    @Documented
+    @Documented( "Execute statements in an open transaction\n" +
+                 "\n" +
+                 "Given that you have an open transaction, you can make a number of requests, each of which executes additional\n" +
+                 "statements, and keeps the transaction open by resetting the transaction timeout." )
     public void execute_statements_in_an_open_transaction() throws JsonParseException
     {
         // Given
@@ -102,15 +95,12 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         assertNoErrors( result );
     }
 
-    /**
-     * Execute statements in an open transaction in REST format for the return.
-     *
-     * Given that you have an open transaction, you can make a number of requests, each of which executes additional
-     * statements, and keeps the transaction open by resetting the transaction timeout. Specifying the `REST` format will
-     * give back full Neo4j Rest API representations of the Neo4j Nodes, Relationships and Paths, if returned.
-     */
     @Test
-    @Documented
+    @Documented( "Execute statements in an open transaction in REST format for the return.\n" +
+                 "\n" +
+                 "Given that you have an open transaction, you can make a number of requests, each of which executes additional\n" +
+                 "statements, and keeps the transaction open by resetting the transaction timeout. Specifying the `REST` format will\n" +
+                 "give back full Neo4j Rest API representations of the Neo4j Nodes, Relationships and Paths, if returned." )
     public void execute_statements_in_an_open_transaction_using_REST() throws JsonParseException
     {
         // Given
@@ -131,18 +121,15 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         assertNoErrors( result );
     }
 
-    /**
-     * Reset transaction timeout of an open transaction
-     *
-     * Every orphaned transaction is automatically expired after a period of inactivity.  This may be prevented
-     * by resetting the transaction timeout.
-     *
-     * The timeout may be reset by sending a keep-alive request to the server that executes an empty list of statements.
-     * This request will reset the transaction timeout and return the new time at which the transaction will
-     * expire as an RFC1123 formatted timestamp value in the ``transaction'' section of the response.
-     */
     @Test
-    @Documented
+    @Documented( "Reset transaction timeout of an open transaction\n" +
+                 "\n" +
+                 "Every orphaned transaction is automatically expired after a period of inactivity.  This may be prevented\n" +
+                 "by resetting the transaction timeout.\n" +
+                 "\n" +
+                 "The timeout may be reset by sending a keep-alive request to the server that executes an empty list of statements.\n" +
+                 "This request will reset the transaction timeout and return the new time at which the transaction will\n" +
+                 "expire as an RFC1123 formatted timestamp value in the ``transaction'' section of the response." )
     public void reset_transaction_timeout_of_an_open_transaction()
             throws JsonParseException, ParseException, InterruptedException
     {
@@ -173,14 +160,11 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         assertTrue( "Expiration time was not increased", newExpirationTime > initialExpirationTime );
     }
 
-    /**
-     * Commit an open transaction
-     *
-     * Given you have an open transaction, you can send a commit request. Optionally, you submit additional statements
-     * along with the request that will be executed before committing the transaction.
-     */
     @Test
-    @Documented
+    @Documented( "Commit an open transaction\n" +
+                 "\n" +
+                 "Given you have an open transaction, you can send a commit request. Optionally, you submit additional statements\n" +
+                 "along with the request that will be executed before committing the transaction." )
     public void commit_an_open_transaction() throws JsonParseException
     {
         // Given
@@ -201,14 +185,11 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         assertThat( GET( getNodeUri( id ) ).status(), is( 200 ) );
     }
 
-    /**
-     * Begin and commit a transaction in one request
-     *
-     * If there is no need to keep a transaction open across multiple HTTP requests, you can begin a transaction,
-     * execute statements, and commit with just a single HTTP request.
-     */
     @Test
-    @Documented
+    @Documented( "Begin and commit a transaction in one request\n" +
+                 "\n" +
+                 "If there is no need to keep a transaction open across multiple HTTP requests, you can begin a transaction,\n" +
+                 "execute statements, and commit with just a single HTTP request." )
     public void begin_and_commit_a_transaction_in_one_request() throws JsonParseException
     {
         // Document
@@ -226,14 +207,11 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         assertThat( GET( getNodeUri( id ) ).status(), is( 200 ) );
     }
 
-    /**
-     * Execute multiple statements
-     *
-     * You can send multiple Cypher statements in the same request.
-     * The response will contain the result of each statement.
-     */
     @Test
-    @Documented
+    @Documented( "Execute multiple statements\n" +
+                 "\n" +
+                 "You can send multiple Cypher statements in the same request.\n" +
+                 "The response will contain the result of each statement." )
     public void execute_multiple_statements() throws JsonParseException
     {
         // Document
@@ -251,16 +229,13 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         assertThat( response.entity(), containsString( "My Node" ) );
     }
 
-    /**
-     * Return results in graph format
-     *
-     * If you want to understand the graph structure of nodes and relationships returned by your query,
-     * you can specify the "graph" results data format. For example, this is useful when you want to visualise the
-     * graph structure. The format collates all the nodes and relationships from all columns of the result,
-     * and also flattens collections of nodes and relationships, including paths.
-     */
     @Test
-    @Documented
+    @Documented( "Return results in graph format\n" +
+                 "\n" +
+                 "If you want to understand the graph structure of nodes and relationships returned by your query,\n" +
+                 "you can specify the \"graph\" results data format. For example, this is useful when you want to visualise the\n" +
+                 "graph structure. The format collates all the nodes and relationships from all columns of the result,\n" +
+                 "and also flattens collections of nodes and relationships, including paths." )
     public void return_results_in_graph_format() throws JsonParseException
     {
         // Document
@@ -286,14 +261,11 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         assertEquals( 2, row.get( "relationships" ).size() );
     }
 
-    /**
-     * Rollback an open transaction
-     *
-     * Given that you have an open transaction, you can send a rollback request. The server will rollback the
-     * transaction. Any further statements trying to run in this transaction will fail immediately.
-     */
     @Test
-    @Documented
+    @Documented( "Rollback an open transaction\n" +
+                 "\n" +
+                 "Given that you have an open transaction, you can send a rollback request. The server will rollback the\n" +
+                 "transaction. Any further statements trying to run in this transaction will fail immediately." )
     public void rollback_an_open_transaction() throws JsonParseException
     {
         // Given
@@ -315,25 +287,22 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         assertThat( GET( getNodeUri( id ) ).status(), is( 404 ) );
     }
 
-    /**
-     * Handling errors
-     *
-     * The result of any request against the transaction endpoint is streamed back to the client.
-     * Therefore the server does not know whether the request will be successful or not when it sends the HTTP status
-     * code.
-     *
-     * Because of this, all requests against the transactional endpoint will return 200 or 201 status code, regardless
-     * of whether statements were successfully executed. At the end of the response payload, the server includes a list
-     * of errors that occurred while executing statements. If this list is empty, the request completed successfully.
-     *
-     * If any errors occur while executing statements, the server will roll back the transaction.
-     *
-     * In this example, we send the server an invalid statement to demonstrate error handling.
-     * 
-     * For more information on the status codes, see <<status-codes>>.
-     */
     @Test
-    @Documented
+    @Documented( "Handling errors\n" +
+                 "\n" +
+                 "The result of any request against the transaction endpoint is streamed back to the client.\n" +
+                 "Therefore the server does not know whether the request will be successful or not when it sends the HTTP status\n" +
+                 "code.\n" +
+                 "\n" +
+                 "Because of this, all requests against the transactional endpoint will return 200 or 201 status code, regardless\n" +
+                 "of whether statements were successfully executed. At the end of the response payload, the server includes a list\n" +
+                 "of errors that occurred while executing statements. If this list is empty, the request completed successfully.\n" +
+                 "\n" +
+                 "If any errors occur while executing statements, the server will roll back the transaction.\n" +
+                 "\n" +
+                 "In this example, we send the server an invalid statement to demonstrate error handling.\n" +
+                 " \n" +
+                 "For more information on the status codes, see <<status-codes>>." )
     public void handling_errors() throws JsonParseException
     {
         // Given
@@ -351,13 +320,10 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         assertErrors( result, Status.Statement.InvalidSyntax );
     }
 
-    /**
-     * Include query statistics
-     *
-     * By setting `includeStats` to `true` for a statement, query statistics will be returned for it.
-     */
     @Test
-    @Documented
+    @Documented( "Include query statistics\n" +
+                 "\n" +
+                 "By setting `includeStats` to `true` for a statement, query statistics will be returned for it." )
     public void include_query_statistics() throws JsonParseException
     {
         // Document

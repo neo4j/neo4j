@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher
 
-import org.junit.Assert._
 import java.util.regex.Pattern
+
+import org.junit.Assert._
 
 class ExecutionResultTest extends ExecutionEngineFunSuite {
   test("columnOrderIsPreserved") {
@@ -118,8 +119,8 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
     val result = execute("create constraint on (n:Person) assert n.name is unique")
     val stats  = result.queryStatistics()
 
-    assert(stats.constraintsAdded === 1)
-    assert(stats.constraintsRemoved === 0)
+    assert(stats.uniqueConstraintsAdded === 1)
+    assert(stats.uniqueConstraintsRemoved === 0)
   }
 
   test("correctConstraintStatisticsForUniquenessConstraintAddedTwice") {
@@ -128,7 +129,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
     val result = execute("create constraint on (n:Person) assert n.name is unique")
     val stats  = result.queryStatistics()
 
-    assert(stats.constraintsAdded === 0)
-    assert(stats.constraintsRemoved === 0)
+    assert(stats.uniqueConstraintsAdded === 0)
+    assert(stats.uniqueConstraintsRemoved === 0)
   }
 }

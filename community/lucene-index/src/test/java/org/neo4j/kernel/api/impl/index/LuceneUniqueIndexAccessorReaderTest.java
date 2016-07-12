@@ -19,33 +19,37 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.IndexSearcher;
+import java.io.IOException;
+
+import org.apache.lucene.search.Query;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.Closeable;
-import java.io.IOException;
-
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.CancellationRequest.NEVER_CANCELLED;
 
-public class LuceneUniqueIndexAccessorReaderTest
+public class LuceneUniqueIndexAccessorReaderTest extends AbstractLuceneIndexAccessorReaderTest<LuceneUniqueIndexAccessorReader>
 {
-    private final Closeable closeable = mock( Closeable.class );
-    private final LuceneDocumentStructure documentLogic = mock( LuceneDocumentStructure.class );
-    private final IndexSearcher searcher = mock( IndexSearcher.class );
-    private final IndexReader reader = mock( IndexReader.class );
-
     @Before
     public void setup() throws IOException
     {
+        this.accessor = new LuceneUniqueIndexAccessorReader( searcher, documentLogic, closeable, NEVER_CANCELLED )
+        {
+            @Override
+            public PrimitiveLongIterator query( Query query )
+            {
+                return Primitive.iterator();
+            }
+        };
+
         when( searcher.getIndexReader() ).thenReturn( reader );
     }
 
@@ -54,8 +58,6 @@ public class LuceneUniqueIndexAccessorReaderTest
     {
         // Given
         when( reader.numDocs() ).thenReturn( 0 );
-        final LuceneUniqueIndexAccessorReader accessor =
-                new LuceneUniqueIndexAccessorReader( searcher, documentLogic, closeable, NEVER_CANCELLED );
 
         // When
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
@@ -72,8 +74,6 @@ public class LuceneUniqueIndexAccessorReaderTest
     {
         // Given
         when( reader.numDocs() ).thenReturn( 2 );
-        final LuceneUniqueIndexAccessorReader accessor =
-                new LuceneUniqueIndexAccessorReader( searcher, documentLogic, closeable, NEVER_CANCELLED );
 
         // When
         final DoubleLongRegister output = Registers.newDoubleLongRegister();

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.helpers
 
 import org.neo4j.cypher.CypherTypeException
 
+// TODO: This is only here for accomodating cypher-compiler-1.9. Do not touch, do not import, purge it with fire post 2.3
 object CastSupport {
 
   // TODO Switch to using ClassTag once we decide to depend on the reflection api
@@ -97,6 +98,6 @@ object CastSupport {
     case _: Long    => Converter(x => x.asInstanceOf[Number].longValue(), x => x.asInstanceOf[Seq[Long]].toArray[Long])
     case _: Float   => Converter(x => x.asInstanceOf[Number].floatValue(), x => x.asInstanceOf[Seq[Float]].toArray[Float])
     case _: Double  => Converter(x => x.asInstanceOf[Number].doubleValue(), x => x.asInstanceOf[Seq[Double]].toArray[Double])
-    case _          => throw new CypherTypeException("Property values can only be of primitive types or arrays thereof")
+    case _          => throw new CypherTypeException("Properties containing arrays of non-primitive types are not supported")
   }
 }

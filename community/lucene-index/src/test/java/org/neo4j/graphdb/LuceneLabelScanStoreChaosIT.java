@@ -30,6 +30,7 @@ import java.util.Set;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.function.Predicates;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.DatabaseRule.RestartAction;
@@ -41,7 +42,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import static org.neo4j.helpers.Exceptions.exceptionsOfType;
 import static org.neo4j.helpers.Exceptions.peel;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
@@ -90,7 +90,7 @@ public class LuceneLabelScanStoreChaosIT
         {
             // THEN
             @SuppressWarnings( "unchecked" )
-            Throwable ioe = peel( e, exceptionsOfType( RuntimeException.class ) );
+            Throwable ioe = peel( e, Predicates.<Throwable>instanceOf( RuntimeException.class ) );
             assertThat( ioe.getMessage(), containsString( "Label scan store could not be read" ) );
         }
     }

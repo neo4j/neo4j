@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.neo4j.helpers.Provider;
+import org.neo4j.function.Supplier;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
@@ -34,26 +34,26 @@ public class PropertyKeyCreatorModeSwitcher extends AbstractModeSwitcher<TokenCr
 {
     private final DelegateInvocationHandler<Master> master;
     private final RequestContextFactory requestContextFactory;
-    private final Provider<KernelAPI> kernelProvider;
+    private final Supplier<KernelAPI> kernelSupplier;
     private final IdGeneratorFactory idGeneratorFactory;
 
     public PropertyKeyCreatorModeSwitcher( ModeSwitcherNotifier modeSwitcherNotifier,
                                            DelegateInvocationHandler<TokenCreator> delegate,
                                            DelegateInvocationHandler<Master> master,
                                            RequestContextFactory requestContextFactory,
-                                           Provider<KernelAPI> kernelProvider, IdGeneratorFactory idGeneratorFactory )
+                                           Supplier<KernelAPI> kernelSupplier, IdGeneratorFactory idGeneratorFactory )
     {
         super( modeSwitcherNotifier, delegate );
         this.master = master;
         this.requestContextFactory = requestContextFactory;
-        this.kernelProvider = kernelProvider;
+        this.kernelSupplier = kernelSupplier;
         this.idGeneratorFactory = idGeneratorFactory;
     }
 
     @Override
     protected TokenCreator getMasterImpl( LifeSupport life )
     {
-        return new DefaultPropertyTokenCreator( kernelProvider, idGeneratorFactory );
+        return new DefaultPropertyTokenCreator( kernelSupplier, idGeneratorFactory );
     }
 
     @Override

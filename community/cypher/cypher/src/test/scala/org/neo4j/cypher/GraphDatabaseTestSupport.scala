@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.commons.{CypherFunSuite, CypherTestSupport}
-import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.helpers.GraphIcing
-import org.neo4j.cypher.internal.spi.v2_2.TransactionBoundPlanContext
-import org.neo4j.cypher.internal.spi.v2_2.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.spi.v2_3.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.spi.v2_3.TransactionBoundPlanContext
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api.{DataWriteOperations, KernelAPI}
@@ -38,15 +38,19 @@ import scala.collection.Map
 trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   self: CypherFunSuite  =>
 
-  var graph: GraphDatabaseAPI with Snitch = null
+  var graph: GraphDatabaseAPI = null
   var nodes: List[Node] = null
 
-  def databaseConfig(): Map[String,String] =
-    Map(GraphDatabaseSettings.pagecache_memory.name -> "8M")
+  def databaseConfig(): Map[String,String] = Map()
 
   override protected def initTest() {
     super.initTest()
-    graph = new ImpermanentGraphDatabase(databaseConfig().asJava) with Snitch
+    graph = createGraphDatabase()
+  }
+
+  protected def createGraphDatabase(): GraphDatabaseAPI = {
+    val config: Map[String, String] = databaseConfig() + (GraphDatabaseSettings.pagecache_memory.name -> "8M")
+    new ImpermanentGraphDatabase(config.asJava)
   }
 
   override protected def stopTest() {
@@ -144,7 +148,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     val tx = graph.beginTx
     val result = f(statement.dataWriteOperations())
     tx.success()
-    tx.finish()
+    tx.close()
     result
   }
 
@@ -215,7 +219,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     (a, b, c, d)
   }
 
-  def statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).instance()
+  def statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
 
   def kernelMonitors = graph.getDependencyResolver.resolveDependency(classOf[monitoring.Monitors])
 
@@ -224,14 +228,4 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   def planContext: PlanContext = new TransactionBoundPlanContext(statement, graph)
 
   def indexSearchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
-}
-
-trait Snitch extends GraphDatabaseAPI {
-  val createdNodes = collection.mutable.Queue[Node]()
-
-  abstract override def createNode(): Node = {
-    val n = super.createNode()
-    createdNodes.enqueue(n)
-    n
-  }
 }

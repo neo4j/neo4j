@@ -19,16 +19,21 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.NewPlannerMonitor.{NewPlannerMonitorCall, NewQuerySeen, UnableToHandleQuery}
+import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, NewRuntimeMonitorCall, UnableToCompileQuery}
 import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor2_2
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{NewLogicalPlanSuccessRateMonitor, InternalExecutionResult}
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
-import org.neo4j.cypher.internal.commons.CypherTestSupport
-import org.neo4j.cypher.NewPlannerMonitor.{NewQuerySeen, UnableToHandleQuery, NewPlannerMonitorCall}
-import java.io.{PrintWriter, StringWriter}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
+import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor2_3
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{InternalExecutionResult, NewLogicalPlanSuccessRateMonitor, NewRuntimeSuccessRateMonitor}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryException, CantHandleQueryException}
+import org.neo4j.cypher.internal.frontend.v2_3.ast.Statement
+import org.neo4j.cypher.internal.frontend.v2_3.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherTestSupport
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.helpers.Exceptions
+import org.scalatest.matchers.{MatchResult, Matcher}
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 object NewPlannerMonitor {
 
@@ -44,11 +49,7 @@ class NewPlannerMonitor extends NewLogicalPlanSuccessRateMonitor {
   private var traceBuilder = List.newBuilder[NewPlannerMonitorCall]
 
   override def unableToHandleQuery(queryText: String, ast: Statement, e: CantHandleQueryException) {
-    val sw = new StringWriter()
-    val pw = new PrintWriter(sw)
-    e.printStackTrace(pw)
-
-    traceBuilder += UnableToHandleQuery(sw.toString)
+    traceBuilder += UnableToHandleQuery(Exceptions.stringify(e))
   }
 
   override def newQuerySeen(queryText: String, ast: Statement) {
@@ -62,21 +63,89 @@ class NewPlannerMonitor extends NewLogicalPlanSuccessRateMonitor {
   }
 }
 
+object NewRuntimeMonitor {
+
+  sealed trait NewRuntimeMonitorCall {
+    def stackTrace: String
+  }
+
+  final case class UnableToCompileQuery(stackTrace: String) extends NewRuntimeMonitorCall
+  final case class NewPlanSeen(stackTrace: String) extends NewRuntimeMonitorCall
+}
+
+class NewRuntimeMonitor extends NewRuntimeSuccessRateMonitor {
+  private var traceBuilder = List.newBuilder[NewRuntimeMonitorCall]
+
+  override def unableToHandlePlan(plan: LogicalPlan, e: CantCompileQueryException) {
+    traceBuilder += UnableToCompileQuery(Exceptions.stringify(e))
+  }
+
+  override def newPlanSeen(plan: LogicalPlan) {
+    traceBuilder += NewPlanSeen(plan.toString)
+  }
+
+  def trace = traceBuilder.result()
+
+  def clear() {
+    traceBuilder.clear()
+  }
+}
+
 trait NewPlannerTestSupport extends CypherTestSupport {
   self: ExecutionEngineFunSuite =>
 
-  override def databaseConfig(): Map[String,String] = Map("cypher_parser_version" -> CypherVersion.v2_2.name)
+  //todo once the compiled runtime handles dumpToString and plan descriptions, we should enable it by default here
+  //in that way we will notice when we support new queries
+  override def databaseConfig(): Map[String, String] =
+    Map("cypher_parser_version" -> CypherVersion.v2_3.name,
+        GraphDatabaseSettings.query_non_indexed_label_warning_threshold.name() -> "10")
 
   val newPlannerMonitor = new NewPlannerMonitor
+
+  val newRuntimeMonitor = new NewRuntimeMonitor
 
   override protected def initTest() {
     super.initTest()
     self.kernelMonitors.addMonitorListener(newPlannerMonitor)
+    self.kernelMonitors.addMonitorListener(newRuntimeMonitor)
   }
+
+  private def failedToUseNewRuntime(query: String)(trace: List[NewRuntimeMonitorCall]) {
+    trace.collect {
+      case UnableToCompileQuery(stackTrace) => fail(s"Failed to use the new runtime on: $query\n$stackTrace")
+    }
+  }
+
+  private def unexpectedlyUsedNewRuntime(query: String)(trace: List[NewRuntimeMonitorCall]) {
+    val attempts = trace.collectFirst {
+      case event: NewPlanSeen => event
+    }
+    attempts.foreach(_ => {
+      val failures = trace.collectFirst {
+        case failure: UnableToCompileQuery => failure
+      }
+      failures.orElse(fail(s"Unexpectedly used the new runtime on: $query"))
+    })
+  }
+
+    private def failedToUseNewPlanner(query: String)(trace: List[NewPlannerMonitorCall]) {
+      trace.collect {
+        case UnableToHandleQuery(stackTrace) => fail(s"Failed to use the new planner on: $query\n$stackTrace")
+      }
+    }
+
+    private def unexpectedlyUsedNewPlanner(query: String)(trace: List[NewPlannerMonitorCall]) {
+      val events = trace.collectFirst {
+        case event: UnableToHandleQuery => event
+      }
+      events.orElse {
+        fail(s"Unexpectedly used the new planner on: $query")
+      }
+    }
 
   def executeScalarWithAllPlanners[T](queryText: String, params: (String, Any)*): T = {
     val ruleResult = self.executeScalar[T](queryText, params: _*)
-    val costResult = monitoringNewPlanner(self.executeScalar[T](queryText, params: _*))(failedToUseNewPlanner(queryText))
+    val costResult = monitoringNewPlanner(self.executeScalar[T](queryText, params: _*))(failedToUseNewPlanner(queryText))(unexpectedlyUsedNewRuntime(queryText))
 
     assert(ruleResult === costResult, "Diverging results between rule and cost planners")
 
@@ -85,76 +154,113 @@ trait NewPlannerTestSupport extends CypherTestSupport {
 
   def executeWithAllPlanners(queryText: String, params: (String, Any)*): InternalExecutionResult = {
     val ruleResult = innerExecute(s"CYPHER planner=rule $queryText", params: _*)
+    val greedyResult = innerExecute(s"CYPHER planner=greedy $queryText", params: _*)
+    val idpResult = executeWithCostPlannerOnly(queryText, params: _*)
+
+    assertResultsAreSame(ruleResult, idpResult, queryText, "Diverging results between rule and cost planners")
+    assertResultsAreSame(greedyResult, idpResult, queryText, "Diverging results between IDP and greedy planner")
+    ruleResult.close()
+    idpResult
+  }
+
+  def executeWithAllPlannersReplaceNaNs(queryText: String, params: (String, Any)*): InternalExecutionResult = {
+    val ruleResult = innerExecute(s"CYPHER planner=rule $queryText", params: _*)
+    val idpResult = innerExecute(s"CYPHER planner=idp $queryText", params: _*)
     val costResult = executeWithCostPlannerOnly(queryText, params: _*)
 
-    assertResultsAreSame(ruleResult, costResult, queryText, "Diverging results between rule and cost planners")
-
+    assertResultsAreSame(ruleResult, costResult, queryText, "Diverging results between rule and cost planners", replaceNaNs = true)
+    assertResultsAreSame(idpResult, costResult, queryText, "Diverging results between IDP and greedy planner", replaceNaNs = true)
+    ruleResult.close()
     costResult
   }
 
-  def executeWithCostPlannerOnly(queryText: String, params: (String, Any)*): InternalExecutionResult =
-    monitoringNewPlanner(innerExecute(queryText, params: _*))(failedToUseNewPlanner(queryText))
 
-  def executeWithRulePlannerOnly(queryText: String, params: (String, Any)*) =
-    monitoringNewPlanner(innerExecute(queryText, params: _*))(unexpectedlyUsedNewPlanner(queryText))
+  def executeWithCostPlannerOnly(queryText: String, params: (String, Any)*): InternalExecutionResult =
+    monitoringNewPlanner(innerExecute(queryText, params: _*))(failedToUseNewPlanner(queryText))(unexpectedlyUsedNewRuntime(queryText))
+
+  private def assertResultsAreSame(ruleResult: InternalExecutionResult, costResult: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false) {
+    withClue(errorMsg) {
+      if (queryText.toLowerCase contains "order by") {
+        ruleResult.toComparableResultWithOptions(replaceNaNs) should contain theSameElementsInOrderAs costResult.toComparableResultWithOptions(replaceNaNs)
+      } else {
+        ruleResult.toComparableResultWithOptions(replaceNaNs) should contain theSameElementsAs costResult.toComparableResultWithOptions(replaceNaNs)
+      }
+    }
+  }
 
   protected def innerExecute(queryText: String, params: (String, Any)*): InternalExecutionResult =
     eengine.execute(queryText, params.toMap) match {
-      case ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, _) => RewindableExecutionResult(inner)
+      case e:ExecutionResultWrapperFor2_3 => RewindableExecutionResult(e)
     }
 
   override def execute(queryText: String, params: (String, Any)*) =
     fail("Don't use execute together with NewPlannerTestSupport")
 
-  def monitoringNewPlanner[T](action: => T)(test: List[NewPlannerMonitorCall] => Unit): T = {
+  def executeWithRulePlanner(queryText: String, params: (String, Any)*) = {
+    val plannerWatcher: (List[NewPlannerMonitorCall]) => Unit = unexpectedlyUsedNewPlanner(queryText)
+    val runtimeWatcher: (List[NewRuntimeMonitorCall]) => Unit = unexpectedlyUsedNewRuntime(queryText)
+    monitoringNewPlanner(innerExecute(queryText, params: _*))(plannerWatcher)(runtimeWatcher)
+  }
+
+  def monitoringNewPlanner[T](action: => T)(testPlanner: List[NewPlannerMonitorCall] => Unit)(testRuntime: List[NewRuntimeMonitorCall] => Unit): T = {
     newPlannerMonitor.clear()
+    newRuntimeMonitor.clear()
     //if action fails we must wait to throw until after test has run
     val result = Try(action)
-    test(newPlannerMonitor.trace)
 
+    //check for unexpected exceptions
+    result match {
+      case f@Failure(ex: CantHandleQueryException) => //do nothing
+      case f@Failure(ex: CantCompileQueryException) => //do nothing
+      case Failure(ex) => throw ex
+      case Success(r) => //do nothing
+    }
+
+    testPlanner(newPlannerMonitor.trace)
+    testRuntime(newRuntimeMonitor.trace)
     //now it is safe to throw
     result.get
   }
 
-  private def assertResultsAreSame(ruleResult: InternalExecutionResult, costResult: InternalExecutionResult, queryText: String, errorMsg: String) {
-    withClue(errorMsg) {
-      if (queryText.toLowerCase contains "order by") {
-        ruleResult.toComparableList should contain theSameElementsInOrderAs costResult.toComparableList
-      } else {
-        ruleResult.toComparableList should contain theSameElementsAs costResult.toComparableList
-      }
-    }
-  }
-
   /**
-   * Get rid of Arrays to make it easier to compare results by equality.
+   * Get rid of Arrays and java.util.Map to make it easier to compare results by equality.
    */
   implicit class RichInternalExecutionResults(res: InternalExecutionResult) {
-    def toComparableList: Seq[Map[String, Any]] = res.toList.withArraysAsLists
+    def toComparableResultWithOptions(replaceNaNs: Boolean): Seq[Map[String, Any]] = res.toList.toCompararableSeq(replaceNaNs)
+    def toComparableResult: Seq[Map[String, Any]] = res.toList.toCompararableSeq(replaceNaNs = false)
   }
-
 
   implicit class RichMapSeq(res: Seq[Map[String, Any]]) {
-    def withArraysAsLists: Seq[Map[String, Any]] = res.map((map: Map[String, Any]) =>
-      map.map {
-        case (k, a: Array[_]) => k -> a.toList
+
+    import scala.collection.JavaConverters._
+
+    def toCompararableSeq(replaceNaNs: Boolean): Seq[Map[String, Any]] = {
+      def convert(v: Any): Any = v match {
+        case a: Array[_] => a.toList.map(convert)
+        case m: Map[_,_] =>  {
+          Eagerly.immutableMapValues(m, convert)
+        }
+        case m: java.util.Map[_,_] =>  {
+          Eagerly.immutableMapValues(m.asScala, convert)
+        }
+        case l: java.util.List[_] => l.asScala.map(convert)
+        case d: java.lang.Double if replaceNaNs && java.lang.Double.isNaN(d) => "NaNreplacement"
         case m => m
       }
-    )
-  }
 
-  private def failedToUseNewPlanner(query: String)(trace: List[NewPlannerMonitorCall]) {
-    trace.collect {
-      case UnableToHandleQuery(stackTrace) => fail(s"Failed to use the new planner on: $query\n$stackTrace")
+
+      res.map((map: Map[String, Any]) => map.map {
+        case (k, v) => k -> convert(v)
+      })
     }
   }
 
-  private def unexpectedlyUsedNewPlanner(query: String)(trace: List[NewPlannerMonitorCall]) {
-    val events = trace.collectFirst {
-      case event: UnableToHandleQuery => event
-    }
-    events.orElse {
-      fail(s"Unexpectedly used the new planner on: $query")
+  def evaluateTo(expected: Seq[Map[String, Any]]): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
+    override def apply(actual: InternalExecutionResult): MatchResult = {
+      MatchResult(
+        matches = actual.toComparableResult == expected.toCompararableSeq(replaceNaNs = false),
+        rawFailureMessage = s"Results differ: ${actual.toComparableResult} did not equal to $expected",
+        rawNegatedFailureMessage = s"Results are equal")
     }
   }
 }

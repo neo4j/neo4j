@@ -30,3 +30,5 @@ integrationtests/data
 .cache-main
 .cache-tests
 Thumbs.db
+.cache-main
+.cache-tests

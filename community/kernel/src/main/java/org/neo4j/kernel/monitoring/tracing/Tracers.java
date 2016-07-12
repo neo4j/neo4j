@@ -21,8 +21,9 @@ package org.neo4j.kernel.monitoring.tracing;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 /**
  * <h1>Tracers</h1>
@@ -85,7 +86,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
  * </p>
  * <p>
  *     The {@code default} and {@code null} implementation are always available, and 3rd party implementations can
- *     piggy-back on them and extend them. At least one 3rd party implimentation is known at this point; the
+ *     piggy-back on them and extend them. At least one 3rd party implementation is known at this point; the
  *     <a href="https://github.com/neo4j-contrib/neo4j-jfr">neo4j-jfr implementation</a>. It is recommended that
  *     those change the tracer or trace event interfaces, or add tracing to more subsystems, also make sure to keep
  *     the neo4j-jfr code base up to date.
@@ -95,6 +96,7 @@ public class Tracers
 {
     public final PageCacheTracer pageCacheTracer;
     public final TransactionTracer transactionTracer;
+    public final CheckPointTracer checkPointTracer;
 
     /**
      * Create a Tracers subsystem with the desired implementation, if it can be found and created.
@@ -102,14 +104,15 @@ public class Tracers
      * Otherwise the default implementation is used, and a warning is logged to the given StringLogger.
      * @param desiredImplementationName The name of the desired {@link org.neo4j.kernel.monitoring.tracing
      * .TracerFactory} implementation, as given by its {@link TracerFactory#getImplementationName()} method.
-     * @param msgLog A logger for logging if the desired implementation cannot be created.
+     * @param msgLog A {@link Log} for logging when the desired implementation cannot be created.
      */
-    public Tracers( String desiredImplementationName, StringLogger msgLog )
+    public Tracers( String desiredImplementationName, Log msgLog )
     {
         if ( "null".equalsIgnoreCase( desiredImplementationName ) )
         {
             pageCacheTracer = PageCacheTracer.NULL;
             transactionTracer = TransactionTracer.NULL;
+            checkPointTracer = CheckPointTracer.NULL;
         }
         else
         {
@@ -135,11 +138,12 @@ public class Tracers
 
             if ( !found )
             {
-                msgLog.warn( "Using default tracer implementations instead of '" + desiredImplementationName + "'" );
+                msgLog.warn( "Using default tracer implementations instead of '%s'", desiredImplementationName );
             }
 
             pageCacheTracer = foundFactory.createPageCacheTracer();
             transactionTracer = foundFactory.createTransactionTracer();
+            checkPointTracer = foundFactory.createCheckPointTracer();
         }
     }
 }

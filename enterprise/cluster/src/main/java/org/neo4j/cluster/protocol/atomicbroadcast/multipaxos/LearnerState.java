@@ -21,13 +21,12 @@ package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.statemachine.State;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 /**
  * State machine for Paxos Learner
@@ -39,8 +38,8 @@ public enum LearnerState
             {
                 @Override
                 public LearnerState handle( LearnerContext context,
-                        Message<LearnerMessage> message,
-                        MessageHolder outgoing
+                                            Message<LearnerMessage> message,
+                                            MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -60,8 +59,8 @@ public enum LearnerState
             {
                 @Override
                 public LearnerState handle( LearnerContext context,
-                        Message<LearnerMessage> message,
-                        MessageHolder outgoing
+                                            Message<LearnerMessage> message,
+                                            MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -73,7 +72,7 @@ public enum LearnerState
                             InstanceId instanceId = new InstanceId( message );
                             PaxosInstance instance = context.getPaxosInstance( instanceId );
 
-                            StringLogger logger = context.getLogger( getClass() );
+                            Log log = context.getLog( getClass() );
 
                             // Skip if we already know about this
                             if ( instanceId.getId() <= context.getLastDeliveredInstanceId() )
@@ -89,22 +88,21 @@ public enum LearnerState
                              * The conditional below is simply so that no expensive deserialization will happen if we
                              * are not to print anything anyway if debug is not enabled.
                              */
-                            if ( logger.isDebugEnabled() )
+                            if ( log.isDebugEnabled() )
                             {
                                 String description;
                                 if ( instance.value_2 instanceof Payload )
                                 {
                                     AtomicBroadcastSerializer atomicBroadcastSerializer = context.newSerializer();
 
-                                    description = atomicBroadcastSerializer.receive(
-                                            (Payload) instance.value_2 ).toString();
+                                    description = atomicBroadcastSerializer.receive( (Payload) instance.value_2 ).toString();
                                 }
                                 else
                                 {
                                     description = instance.value_2.toString();
                                 }
-                                logger.debug(
-                                        "Learned and closed instance " + instance.id +
+                                log.debug(
+                                        "Learned and closed instance "+instance.id +
                                                 " from conversation " +
                                                 instance.conversationIdHeader +
                                                 " and the content was " +
@@ -118,7 +116,7 @@ public enum LearnerState
                                 outgoing.offer( Message.internal( AtomicBroadcastMessage.broadcastResponse,
                                         learnState.getValue() )
                                         .setHeader( InstanceId.INSTANCE, instance.id.toString() )
-                                        .setHeader( Message.CONVERSATION_ID, instance.conversationIdHeader ) );
+                                        .setHeader( Message.CONVERSATION_ID, instance.conversationIdHeader ));
                                 context.setLastDeliveredInstanceId( instanceId.getId() );
 
                                 long checkInstanceId = instanceId.getId() + 1;
@@ -145,14 +143,14 @@ public enum LearnerState
                                 else
                                 {
                                     // Found hole - we're waiting for this to be filled, i.e. timeout already set
-                                    context.getLogger( LearnerState.class ).debug( "*** HOLE! WAITING " +
+                                    context.getLog( LearnerState.class ).debug( "*** HOLE! WAITING " +
                                             "FOR " + (context.getLastDeliveredInstanceId() + 1) );
                                 }
                             }
                             else
                             {
                                 // Found hole - we're waiting for this to be filled, i.e. timeout already set
-                                context.getLogger( LearnerState.class ).debug( "*** GOT " + instanceId
+                                context.getLog( LearnerState.class ).debug( "*** GOT " + instanceId
                                         + ", WAITING FOR " + (context.getLastDeliveredInstanceId() + 1) );
 
                                 context.setTimeout( "learn", Message.timeout( LearnerMessage.learnTimedout,
@@ -163,8 +161,7 @@ public enum LearnerState
 
                         case learnTimedout:
                         {
-                            // Timed out waiting for learned values - send explicit request to everyone that is not
-                            // failed
+                            // Timed out waiting for learned values - send explicit request to everyone that is not failed
                             if ( !context.hasDeliveredAllKnownInstances() )
                             {
                                 for ( long instanceId = context.getLastDeliveredInstanceId() + 1;
@@ -215,7 +212,7 @@ public enum LearnerState
                                 outgoing.offer( message.copyHeadersTo( Message.respond( LearnerMessage.learnFailed,
                                         message,
                                         new LearnerMessage.LearnFailedState() ), org.neo4j.cluster.protocol
-                                        .atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
+                                  .atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                             }
                             break;
                         }
@@ -255,10 +252,12 @@ public enum LearnerState
                                     }
                                 }
 
-                                context.setLastKnownLearnedInstanceInCluster(
-                                        catchUpTo,
-                                        new org.neo4j.cluster.InstanceId(
-                                                Integer.parseInt( message.getHeader( Message.INSTANCE_ID ) ) ) );
+                                org.neo4j.cluster.InstanceId instanceId =
+                                        message.hasHeader( Message.INSTANCE_ID )
+                                        ? new org.neo4j.cluster.InstanceId(
+                                                Integer.parseInt( message.getHeader( Message.INSTANCE_ID ) ) )
+                                        : context.getMyId();
+                                context.setLastKnownLearnedInstanceInCluster( catchUpTo, instanceId );
                             }
                             break;
                         }
@@ -280,10 +279,9 @@ public enum LearnerState
                     if ( lastKnownAliveInstance != null )
                     {
                         return context.getUriForId( lastKnownAliveInstance );
-                    }
-                    else
+                    } else
                     {
-                        return new URI( message.getHeader( Message.FROM ) );
+                        return new URI(message.getHeader( Message.FROM ));
                     }
                 }
             }

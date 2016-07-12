@@ -24,10 +24,10 @@ import java.util.concurrent.Future;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Function;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.OtherThreadExecutor;
@@ -144,8 +144,7 @@ public class UniquenessConstraintValidationConcurrencyIT
             @Override
             public Boolean doWork( Void nothing ) throws Exception
             {
-                Transaction tx = db.beginTx();
-                try
+                try ( Transaction tx = db.beginTx() )
                 {
                     db.createNode( label( label ) ).setProperty( propertyKey, propertyValue );
 
@@ -155,10 +154,6 @@ public class UniquenessConstraintValidationConcurrencyIT
                 catch ( ConstraintViolationException e )
                 {
                     return false;
-                }
-                finally
-                {
-                    tx.finish();
                 }
             }
         };

@@ -1,8 +1,0 @@
-[[server-installation-cloud]]
-Server Installation in the Cloud
-================================
-
-Neo4j can be hosted on various cloud services.
-See http://www.neo4j.org/develop/cloud for more information.
-
-

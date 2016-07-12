@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 describe 'Service: Cypher', () ->
   [backend, node, rel] = [null, null, null]
+  Settings = {}
 
   # load the service's module
   beforeEach module 'neo4jApp.services'
@@ -35,13 +36,20 @@ describe 'Service: Cypher', () ->
   # instantiate service
   Cypher = {}
   scope = {}
-  beforeEach inject (_Cypher_, $rootScope) ->
+  beforeEach inject (_Cypher_, $rootScope, _Settings_) ->
     Cypher = _Cypher_
     scope = $rootScope.$new()
+    Settings = _Settings_
 
   describe "transaction:", ->
     it 'should execute statement and commit transaction', ->
-      backend.expectPOST(/db\/data\/transaction\/commit/).respond()
+      backend.expectPOST(/db\/data\/transaction\/commit/).respond(->
+        return [200, JSON.stringify({
+          commit: "http://localhost:9000#{Settings.endpoint.transaction}/1/commit",
+          results: []
+          errors: []
+        })]
+      )
       Cypher.transaction().commit('START n=node(*) RETURN n;')
       scope.$apply()
       backend.flush()

@@ -56,8 +56,7 @@ public class TestMultiRelTypesAndDirections extends TraversalTestBase
 
     private void testCIsReturnedOnDepthTwo( TraversalDescription description )
     {
-        Transaction transaction = beginTx();
-        try
+        try ( Transaction transaction = beginTx() )
         {
             description = description.expand( PathExpanders.forTypeAndDirection( ONE, OUTGOING ) );
             int i = 0;
@@ -65,10 +64,6 @@ public class TestMultiRelTypesAndDirections extends TraversalTestBase
             {
                 assertEquals( i++, position.length() );
             }
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 }

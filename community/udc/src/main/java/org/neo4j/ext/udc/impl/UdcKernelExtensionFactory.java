@@ -27,11 +27,13 @@ import java.util.Timer;
 
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.KernelData;
+import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.core.StartupStatistics;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.udc.UsageData;
 
 /**
  * Kernel extension for UDC, the Usage Data Collector. The UDC runs as a background
@@ -49,11 +51,11 @@ public class UdcKernelExtensionFactory extends KernelExtensionFactory<UdcKernelE
 
     public interface Dependencies
     {
-        Config getConfig();
-
-        DataSourceManager getXaDataSourceManager();
-
-        KernelData getKernelData();
+        Config config();
+        DataSourceManager dataSourceManager();
+        UsageData usageData();
+        IdGeneratorFactory idGeneratorFactory();
+        StartupStatistics startupStats();
     }
 
     /**
@@ -73,8 +75,13 @@ public class UdcKernelExtensionFactory extends KernelExtensionFactory<UdcKernelE
     @Override
     public Lifecycle newKernelExtension( UdcKernelExtensionFactory.Dependencies dependencies ) throws Throwable
     {
-        return new UdcKernelExtension( loadConfig( dependencies.getConfig() ), dependencies.getXaDataSourceManager(),
-                dependencies.getKernelData(), new Timer( "Neo4j UDC Timer", isAlwaysDaemon() ) );
+        return new UdcKernelExtension(
+                loadConfig( dependencies.config() ),
+                dependencies.dataSourceManager(),
+                dependencies.idGeneratorFactory(),
+                dependencies.startupStats(),
+                dependencies.usageData(),
+                new Timer( "Neo4j UDC Timer", isAlwaysDaemon() ) );
     }
 
     private boolean isAlwaysDaemon()

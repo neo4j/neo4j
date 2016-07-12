@@ -27,7 +27,7 @@ article.help
     section.row-fluid.example
       .col-sm-9.col-sm-offset-3
         figure
-          pre.code.runnable.
+          pre.code.runnable.standalone-example.
             MATCH (director:Person)-[:DIRECTED]->(movie)
             RETURN director.name AS Director, collect(movie.title) AS Movies
           figcaption Return all directors, each paired with a collection of the movies they've directed.

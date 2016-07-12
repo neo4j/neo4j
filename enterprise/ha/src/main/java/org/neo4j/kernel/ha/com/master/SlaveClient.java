@@ -39,7 +39,7 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 import static org.neo4j.com.Protocol.VOID_SERIALIZER;
@@ -53,10 +53,11 @@ public class SlaveClient extends Client<Slave> implements Slave
     private final InstanceId machineId;
 
     public SlaveClient( InstanceId machineId, String destinationHostNameOrIp, int destinationPort,
-            String originHostNameOrIp, Logging logging, StoreId storeId, int maxConcurrentChannels, int chunkSize,
-            ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
+                        String originHostNameOrIp, LogProvider logProvider,
+                        StoreId storeId, int maxConcurrentChannels, int chunkSize,
+                        ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
-        super( destinationHostNameOrIp, destinationPort, originHostNameOrIp, logging, storeId,
+        super( destinationHostNameOrIp, destinationPort, originHostNameOrIp, logProvider, storeId,
                 Protocol.DEFAULT_FRAME_LENGTH,
                 new ProtocolVersion( SlaveServer.APPLICATION_PROTOCOL_VERSION, INTERNAL_PROTOCOL_VERSION ),
                 HaSettings.read_timeout.apply( Functions.<String,String>nullFunction() ), maxConcurrentChannels,

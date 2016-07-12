@@ -19,21 +19,20 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import static junit.framework.Assert.fail;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.when;
-
-import static org.neo4j.kernel.impl.store.UniquenessConstraintRule.uniquenessConstraintRule;
-
-import static org.powermock.api.mockito.PowerMockito.mock;
 import org.junit.Test;
 
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.UniquenessConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
+
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule.uniquenessConstraintRule;
+import static org.powermock.api.mockito.PowerMockito.mock;
 
 public class IntegrityValidatorTest
 {
@@ -41,14 +40,14 @@ public class IntegrityValidatorTest
     public void shouldValidateUniquenessIndexes() throws Exception
     {
         // Given
-        NeoStore store = mock( NeoStore.class );
+        NeoStores store = mock( NeoStores.class );
         IndexingService indexes = mock(IndexingService.class);
         IntegrityValidator validator = new IntegrityValidator(store, indexes);
 
-        doThrow( new ConstraintVerificationFailedKernelException( null, new RuntimeException() ))
-         .when( indexes ).validateIndex( 2l );
+        doThrow( new UniquenessConstraintVerificationFailedKernelException( null, new RuntimeException() ) )
+                .when( indexes ).validateIndex( 2l );
 
-        UniquenessConstraintRule record = uniquenessConstraintRule( 1l, 1, 1, 2l );
+        UniquePropertyConstraintRule record = uniquenessConstraintRule( 1l, 1, 1, 2l );
 
         // When
         try
@@ -66,7 +65,7 @@ public class IntegrityValidatorTest
     public void deletingNodeWithRelationshipsIsNotAllowed() throws Exception
     {
         // Given
-        NeoStore store = mock( NeoStore.class );
+        NeoStores store = mock( NeoStores.class );
         IndexingService indexes = mock(IndexingService.class);
         IntegrityValidator validator = new IntegrityValidator(store, indexes );
 
@@ -89,9 +88,11 @@ public class IntegrityValidatorTest
     public void transactionsStartedBeforeAConstraintWasCreatedAreDisallowed() throws Exception
     {
         // Given
-        NeoStore store = mock( NeoStore.class );
-        IndexingService indexes = mock(IndexingService.class);
-        when(store.getLatestConstraintIntroducingTx()).thenReturn( 10l );
+        NeoStores store = mock( NeoStores.class );
+        MetaDataStore metaDataStore = mock( MetaDataStore.class );
+        when( store.getMetaDataStore() ).thenReturn( metaDataStore );
+        IndexingService indexes = mock( IndexingService.class );
+        when( metaDataStore.getLatestConstraintIntroducingTx() ).thenReturn( 10l );
         IntegrityValidator validator = new IntegrityValidator( store, indexes );
 
         // When

@@ -20,6 +20,7 @@
 package org.neo4j.server.modules;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.kernel.configuration.Config;
@@ -27,8 +28,6 @@ import org.neo4j.server.rest.management.MonitorService;
 import org.neo4j.server.rest.management.console.ConsoleService;
 import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.WebServer;
-
-import static org.neo4j.server.JAXRSHelper.listFrom;
 
 public class WebAdminModule implements ServerModule
 {
@@ -45,9 +44,9 @@ public class WebAdminModule implements ServerModule
     }
 
     @Override
-	public void start()
+    public void start()
     {
-        if(config.get( ServerInternalSettings.webadmin_enabled ))
+        if ( config.get( ServerInternalSettings.webadmin_enabled ) )
         {
             String serverMountPoint = managementApiUri().toString();
             webServer.addStaticContent( DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION, DEFAULT_WEB_ADMIN_PATH );
@@ -57,20 +56,25 @@ public class WebAdminModule implements ServerModule
 
     private List<String> getClassNames()
     {
-        return listFrom(
-                MonitorService.class.getName(),
-                ConsoleService.class.getName() );
+        List<String> classNames = new ArrayList<>();
+        if ( config.get( ServerInternalSettings.webadmin_enabled ) &&
+             config.get( ServerInternalSettings.rrdb_enabled ) )
+        {
+            classNames.add( MonitorService.class.getName() );
+        }
+        classNames.add( ConsoleService.class.getName() );
+        return classNames;
     }
 
-    private URI managementApiUri( )
+    private URI managementApiUri()
     {
         return config.get( ServerInternalSettings.management_api_path );
     }
 
     @Override
-	public void stop()
+    public void stop()
     {
-        if(config.get( ServerInternalSettings.webadmin_enabled ))
+        if ( config.get( ServerInternalSettings.webadmin_enabled ) )
         {
             webServer.removeStaticContent( DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION, DEFAULT_WEB_ADMIN_PATH );
         }

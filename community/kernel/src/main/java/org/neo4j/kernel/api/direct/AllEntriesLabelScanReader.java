@@ -19,31 +19,6 @@
  */
 package org.neo4j.kernel.api.direct;
 
-import java.io.IOException;
-import java.util.Iterator;
-
-import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
-
 public interface AllEntriesLabelScanReader extends BoundedIterable<NodeLabelRange>
 {
-    AllEntriesLabelScanReader EMPTY = new AllEntriesLabelScanReader()
-    {
-        @Override
-        public long maxCount()
-        {
-            return 0;
-        }
-
-        @Override
-        public void close() throws IOException
-        {
-        }
-
-        @Override
-        public Iterator<NodeLabelRange> iterator()
-        {
-            return emptyIterator();
-        }
-    };
-
 }

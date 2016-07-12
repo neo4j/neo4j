@@ -33,6 +33,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Future;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.IOFunction;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
@@ -45,21 +46,35 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.register.Registers;
 import org.neo4j.test.ThreadingRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.reserving;
-import static org.neo4j.test.ThreadingRule.stackTracePredicate;
+import static org.neo4j.test.ThreadingRule.waitingWhileIn;
 
 @RunWith( Parameterized.class )
 public class LuceneIndexAccessorTest
 {
+    @Test
+    public void indexReaderShouldSupportScan() throws Exception
+    {
+        // GIVEN
+        updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
+        IndexReader reader = accessor.newReader();
+
+        // WHEN
+        PrimitiveLongIterator results = reader.scan();
+
+        // THEN
+        assertEquals( asSet( nodeId, nodeId2 ), asSet( results ) );
+        assertEquals( asSet( nodeId ), asUniqueSet( reader.seek( value ) ) );
+        reader.close();
+    }
+
     @Test
     public void indexReaderShouldHonorRepeatableReads() throws Exception
     {
@@ -71,7 +86,7 @@ public class LuceneIndexAccessorTest
         updateAndCommit( asList( remove( nodeId, value ) ) );
 
         // THEN
-        assertEquals( asSet( nodeId ), asUniqueSet( reader.lookup( value ) ) );
+        assertEquals( asSet( nodeId ), asUniqueSet( reader.seek( value ) ) );
         reader.close();
     }
 
@@ -85,10 +100,10 @@ public class LuceneIndexAccessorTest
         IndexReader secondReader = accessor.newReader();
 
         // THEN
-        assertEquals( asSet( nodeId ), asUniqueSet( firstReader.lookup( value ) ) );
-        assertEquals( asSet(  ), asUniqueSet( firstReader.lookup( value2 ) ) );
-        assertEquals( asSet( nodeId ), asUniqueSet( secondReader.lookup( value ) ) );
-        assertEquals( asSet( nodeId2 ), asUniqueSet( secondReader.lookup( value2 ) ) );
+        assertEquals( asSet( nodeId ), asUniqueSet( firstReader.seek( value ) ) );
+        assertEquals( asSet(  ), asUniqueSet( firstReader.seek( value2 ) ) );
+        assertEquals( asSet( nodeId ), asUniqueSet( secondReader.seek( value ) ) );
+        assertEquals( asSet( nodeId2 ), asUniqueSet( secondReader.seek( value2 ) ) );
         firstReader.close();
         secondReader.close();
     }
@@ -103,7 +118,7 @@ public class LuceneIndexAccessorTest
         IndexReader reader = accessor.newReader();
 
         // THEN
-        assertEquals( asSet( nodeId ), asUniqueSet( reader.lookup( value ) ) );
+        assertEquals( asSet( nodeId ), asUniqueSet( reader.seek( value ) ) );
         reader.close();
     }
 
@@ -118,8 +133,8 @@ public class LuceneIndexAccessorTest
         IndexReader reader = accessor.newReader();
 
         // THEN
-        assertEquals( asSet( nodeId ), asUniqueSet( reader.lookup( value2 ) ) );
-        assertEquals( emptySetOf( Long.class ), asUniqueSet( reader.lookup( value ) ) );
+        assertEquals( asSet( nodeId ), asUniqueSet( reader.seek( value2 ) ) );
+        assertEquals( emptySetOf( Long.class ), asUniqueSet( reader.seek( value ) ) );
         reader.close();
     }
 
@@ -136,8 +151,8 @@ public class LuceneIndexAccessorTest
         IndexReader reader = accessor.newReader();
 
         // THEN
-        assertEquals( asSet( nodeId2 ), asUniqueSet( reader.lookup( value2 ) ) );
-        assertEquals( asSet(  ), asUniqueSet( reader.lookup( value ) ) );
+        assertEquals( asSet( nodeId2 ), asUniqueSet( reader.seek( value2 ) ) );
+        assertEquals( asSet(  ), asUniqueSet( reader.seek( value ) ) );
         reader.close();
     }
 
@@ -160,7 +175,7 @@ public class LuceneIndexAccessorTest
                 accessor.drop();
                 return nothing;
             }
-        }, null, stackTracePredicate( 3, TaskCoordinator.class, "awaitCompletion" ), 3, SECONDS );
+        }, null, waitingWhileIn( TaskCoordinator.class, "awaitCompletion" ), 3, SECONDS );
 
         try ( IndexReader reader = indexReader /* do not inline! */ )
         {
@@ -193,7 +208,6 @@ public class LuceneIndexAccessorTest
     {
         final File dir = new File( "dir" );
         final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
-        final IndexWriterStatus writerLogic = new IndexWriterStatus();
         return Arrays.asList(
                 arg( new IOFunction<DirectoryFactory,LuceneIndexAccessor>()
                 {
@@ -201,8 +215,7 @@ public class LuceneIndexAccessorTest
                     public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
                             throws IOException
                     {
-                        return new NonUniqueLuceneIndexAccessor( documentLogic, reserving(), writerLogic, dirFactory,
-                                dir, 100_000 );
+                        return new NonUniqueLuceneIndexAccessor( documentLogic, reserving(), dirFactory, dir, 100_000 );
                     }
 
                     @Override
@@ -217,7 +230,7 @@ public class LuceneIndexAccessorTest
                     public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
                             throws IOException
                     {
-                        return new UniqueLuceneIndexAccessor( documentLogic, reserving(), writerLogic, dirFactory, dir );
+                        return new UniqueLuceneIndexAccessor( documentLogic, reserving(), dirFactory, dir );
                     }
 
                     @Override

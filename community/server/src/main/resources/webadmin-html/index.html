@@ -27,10 +27,79 @@
 		<link rel="stylesheet" href="css/style.css" type="text/css" />
 		
 		<title>Neo4j - ${neo4j.version}</title>
-		
+        <style>
+            .de-banner {
+                    background-color: #555;
+                    position: fixed;
+                    width: 100%;
+                    top: 0; left: 0;
+                    z-index: 999;
+            }
+            .de-banner-info-box {
+                    padding: 15px;
+                    background-color: white;
+                    border-radius: 5px;
+                    width: 600px;
+                    margin: 10px auto;
+                    position: relative;
+            }
+            .de-banner-left {
+                    float: left;
+                    width: 40%;
+                    margin-left: 10px;
+            }
+            .de-banner-right {
+                    float: right;
+                    width: 40%;
+                    margin-right: 10px;
+            }
+            .de-banner-title-holder.warning {
+                    color: red;
+            }
+            .de-banner-body-holder {
+                    color: #000
+            }
+            .de-banner-close {
+                    float: right;
+                    cursor: pointer;
+                    color: white;
+                    background-color: #555;
+                    border-radius: 50%;
+                    padding: 2px;
+                    width: 20px;
+                    height: 20px;
+                    text-align: center;
+                    line-height: 21px;
+                    position: absolute;
+                    right: 2px;
+                    top: 2px;
+            }
+        </style>
 	</head>
 	
 	<body>
 		<div id="auth-error" class="overlay"><div class="info-splash"><h2>Authentication required.</h2><p>Please use the <a href="/browser">Neo4j Browser</a> to log in.</p></div></div>
+        <div class="de-banner">
+                <div class="de-banner-info-box">
+                        <div class="de-banner-left">
+                                <div class="de-banner-title-holder warning">
+                                        <span class="de-banner-title">Webadmin is deprecated</span>
+                                </div>
+                                <div class="de-banner-body-holder">
+                                        <p>This user interface is being replaced. Please use the <a href="/browser">Neo4j Browser</a> instead.</p>
+                                </div>
+                        </div>
+                        <div class="de-banner-right">
+                                <div class="de-banner-title-holder">
+                                        <span class="de-banner-title">Will you miss something?</span>
+                                </div>
+                                <div class="de-banner-body-holder">
+                                        <p>Join us on Slack to give feedback. <a href="http://neo4j.com/blog/public-neo4j-users-slack-group/">Read more</a>.</p>
+                                </div>
+                        </div>
+                        <div style="clear: both"></div>
+                </div>
+                <div class="de-banner-close" onclick="$(this).parents('.de-banner').remove()">X</div>
+        </div>
 	</body>
 </html>

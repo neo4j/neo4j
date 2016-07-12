@@ -27,22 +27,11 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
+import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.storemigration.StoreFileType;
 
 public class Validators
 {
-    public static final Validator<File> FILE_EXISTS = new Validator<File>()
-    {
-        @Override
-        public void validate( File file )
-        {
-            if ( !file.exists() )
-            {
-                throw new IllegalArgumentException( "File '" + file + "' doesn't exist" );
-            }
-        }
-    };
-
     public static final Validator<File> REGEX_FILE_EXISTS = new Validator<File>()
     {
         @Override
@@ -105,7 +94,8 @@ public class Validators
         @Override
         public void validate( File value )
         {
-            if ( NeoStoreUtil.neoStoreExists( new DefaultFileSystemAbstraction(), value ) )
+            if ( new DefaultFileSystemAbstraction()
+                    .fileExists( new File( value, StoreFileType.STORE.augment( MetaDataStore.DEFAULT_NAME ) ) ) )
             {
                 throw new IllegalArgumentException( "Directory '" + value + "' already contains a database" );
             }
@@ -122,8 +112,8 @@ public class Validators
                 if ( value.length < length )
                 {
                     throw new IllegalArgumentException( "Expected '" + key + "' to have at least " +
-                            length + " item" + (length == 1 ? "" : "s") + ", but had " + value.length +
-                            " (" + Arrays.toString( value ) + ")" );
+                            length + " valid item" + (length == 1 ? "" : "s") + ", but had " + value.length +
+                            " " + Arrays.toString( value ) );
                 }
             }
         };

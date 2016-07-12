@@ -31,20 +31,21 @@ angular.module('neo4jApp.services')
       httpOptions =
         timeout: (Settings.maxExecutionTime * 1000)
 
-      returnAndUpdate = (Type, promise) ->
-        rv = new Type()
+      returnAndUpdate = (Type, initial, promise) ->
+        rv = initial
         promise.success(
           (r) ->
             if angular.isArray(rv)
+              rv.length = 0
               rv.push.apply(rv, r)
             else
               angular.extend(rv, r)
         )
         rv
 
-      returnAndUpdateArray = (promise) -> returnAndUpdate(Array, promise)
+      returnAndUpdateArray = (initial, promise) -> returnAndUpdate(Array, initial, promise)
 
-      returnAndUpdateObject = (promise) -> returnAndUpdate(Object, promise)
+      returnAndUpdateObject = (initial, promise) -> returnAndUpdate(Object, initial, promise)
 
       class Server
         constructor: ->
@@ -108,20 +109,20 @@ angular.module('neo4jApp.services')
         jmx: (query) ->
           @post Settings.endpoint.jmx, query
 
-        labels: ->
-          returnAndUpdateArray @get Settings.endpoint.rest + '/labels'
+        labels: (initial = [])->
+          returnAndUpdateArray initial, @get Settings.endpoint.rest + '/labels'
 
-        relationships: ->
-          returnAndUpdateArray @get Settings.endpoint.rest + '/relationship/types'
+        relationships: (initial = [])->
+          returnAndUpdateArray initial, @get Settings.endpoint.rest + '/relationship/types'
 
-        propertyKeys: ->
-          returnAndUpdateArray @get Settings.endpoint.rest + '/propertykeys'
+        propertyKeys: (initial = [])->
+          returnAndUpdateArray initial, @get Settings.endpoint.rest + '/propertykeys'
 
-        info: ->
-          returnAndUpdateObject @get Settings.endpoint.rest + '/'
+        info: (initial = {})->
+          returnAndUpdateObject initial, @get Settings.endpoint.rest + '/'
 
-        version: ->
-          returnAndUpdateObject @get Settings.endpoint.version + '/'
+        version: (initial = {})->
+          returnAndUpdateObject initial, @get Settings.endpoint.version + '/'
 
         status: (params = '')->
           # User a smaller timeout for status requests so IE10 detects when the

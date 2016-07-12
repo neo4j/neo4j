@@ -23,9 +23,13 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+/**
+ *  JUnit rule that allows you to manage lifecycle of a set of instances. Register instances
+ *  and then use the init/start/stop/shutdown methods.
+ */
 public class LifeRule implements TestRule
 {
-    private LifeSupport life = new LifeSupport();
+    private LifeSupport life = new LifeSupport(  );
     private final boolean autoStart;
 
     public LifeRule()
@@ -66,10 +70,9 @@ public class LifeRule implements TestRule
                         failure.addSuppressed( suppressed );
                     }
                     throw failure;
-                }
-                finally
+                } finally
                 {
-                    life = new LifeSupport();
+                    life = new LifeSupport(  );
                 }
             }
         };
@@ -77,7 +80,7 @@ public class LifeRule implements TestRule
 
     public <T extends Lifecycle> T add( T instance )
     {
-        return life.add( instance );
+        return life.add(instance);
     }
 
 

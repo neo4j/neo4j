@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.Mute;
+import org.neo4j.test.SuppressOutput;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -56,7 +56,7 @@ import static org.junit.Assert.assertTrue;
 public class CheckTxLogsTest
 {
     @Rule
-    public final Mute mute = Mute.muteAll();
+    public final SuppressOutput mute = SuppressOutput.suppressAll();
     @Rule
     public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
 

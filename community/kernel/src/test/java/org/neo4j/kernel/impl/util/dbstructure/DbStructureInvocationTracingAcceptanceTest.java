@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.util.dbstructure;
 
+import org.junit.Test;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -41,8 +43,6 @@ import javax.tools.SimpleJavaFileObject;
 import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
-import org.junit.Test;
-
 import org.neo4j.function.Function;
 import org.neo4j.helpers.collection.Visitable;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -52,7 +52,6 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-
 import static org.neo4j.function.Functions.constant;
 
 public class DbStructureInvocationTracingAcceptanceTest
@@ -139,8 +138,8 @@ public class DbStructureInvocationTracingAcceptanceTest
         visitor.apply( null ).visitPropertyKey( 1, "age" );
         visitor.apply( null ).visitRelationshipType( 0, "ACCEPTS" );
         visitor.apply( null ).visitRelationshipType( 1, "REJECTS" );
-        visitor.apply( null ).visitIndex( new IndexDescriptor( 0, 1 ), ":Person(age)", 0.5d );
-        visitor.apply( null ).visitUniqueIndex( new IndexDescriptor( 0, 0 ), ":Person(name)", 0.5d );
+        visitor.apply( null ).visitIndex( new IndexDescriptor( 0, 1 ), ":Person(age)", 0.5d, 1l );
+        visitor.apply( null ).visitUniqueIndex( new IndexDescriptor( 0, 0 ), ":Person(name)", 0.5d, 1l );
         visitor.apply( null ).visitUniqueConstraint( new UniquenessConstraint( 1, 0 ), ":Party(name)" );
         visitor.apply( null ).visitAllNodesCount( 55 );
         visitor.apply( null ).visitNodeCount( 0, "Person", 50 );

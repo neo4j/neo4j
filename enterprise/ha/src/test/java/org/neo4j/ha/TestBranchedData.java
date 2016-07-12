@@ -37,14 +37,14 @@ import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
+import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.util.Listener;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.util.StoreUtil;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
@@ -80,9 +80,9 @@ public class TestBranchedData
 
         File dir = directory.directory();
         new TestHighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( dir.getAbsolutePath() )
+                newEmbeddedDatabaseBuilder( dir )
                 .setConfig( ClusterSettings.server_id, "1" )
-                .setConfig( ClusterSettings.initial_hosts, ":5001" )
+                .setConfig( ClusterSettings.initial_hosts, "localhost:5001" )
                 .newGraphDatabase().shutdown();
         // It should have migrated those to the new location. Verify that.
         for ( long timestamp : timestamps )
@@ -90,7 +90,7 @@ public class TestBranchedData
             assertFalse( "directory branched-" + timestamp + " still exists.",
                     new File( dir, "branched-" + timestamp ).exists() );
             assertTrue( "directory " + timestamp + " is not there",
-                    BranchedDataPolicy.getBranchedDataDirectory( dir, timestamp ).exists() );
+                    StoreUtil.getBranchedDataDirectory( dir, timestamp ).exists() );
         }
     }
 
@@ -99,7 +99,8 @@ public class TestBranchedData
     {
         // GIVEN
         File dir = directory.directory();
-        ClusterManager clusterManager = life.add( new ClusterManager( clusterOfSize( 2 ), dir, stringMap() ) );
+        ClusterManager clusterManager = life.add( new ClusterManager.Builder( dir )
+                .withProvider( clusterOfSize( 2 ) ).build() );
         ManagedCluster cluster = clusterManager.getDefaultCluster();
         cluster.await( allSeesAllAsAvailable() );
         createNode( cluster.getMaster(), "A" );
@@ -117,7 +118,7 @@ public class TestBranchedData
 
         // THEN
         cluster.await( allSeesAllAsAvailable() );
-        slave.beginTx().finish();
+        slave.beginTx().close();
     }
 
     /**
@@ -132,10 +133,11 @@ public class TestBranchedData
         // thor is whoever is the master to begin with
         // odin is whoever is picked as _the_ slave given thor as initial master
         File dir = directory.directory();
-        ClusterManager clusterManager = life.add( new ClusterManager( clusterOfSize( 3 ), dir, stringMap(
+        ClusterManager clusterManager = life.add( new ClusterManager.Builder( dir )
+                .withSharedConfig( stringMap(
                 // Effectively disable automatic transaction propagation within the cluster
                 HaSettings.tx_push_factor.name(), "0",
-                HaSettings.pull_interval.name(), "0" ) ) );
+                HaSettings.pull_interval.name(), "0" ) ).build() );
         ManagedCluster cluster = clusterManager.getDefaultCluster();
         cluster.await( allSeesAllAsAvailable() );
         HighlyAvailableGraphDatabase thor = cluster.getMaster();
@@ -301,7 +303,7 @@ public class TestBranchedData
         for ( File file : nonNull( dir.listFiles() ) )
         {
             String fileName = file.getName();
-            if ( !fileName.equals( StringLogger.DEFAULT_NAME ) && !file.getName().startsWith( "branched-" ) )
+            if ( !fileName.equals( StoreLogService.INTERNAL_LOG_NAME ) && !file.getName().startsWith( "branched-" ) )
             {
                 assertTrue( FileUtils.renameFile( file, new File( branchDir, file.getName() ) ) );
             }

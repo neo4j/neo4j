@@ -29,7 +29,6 @@ import java.util.Set;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.Settings;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.is;
@@ -37,9 +36,9 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.Settings.BOOLEAN;
-import static org.neo4j.helpers.Settings.STRING;
-import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.STRING;
+import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TestConfig
@@ -190,5 +189,20 @@ public class TestConfig
         // Then
         assertThat( config.get( MyMigratingSettings.newer ), equalTo( "hello!" ) );
         assertThat( config.get( MySettingsWithDefaults.hello ), equalTo( "Hello, World!" ) );
+    }
+
+    @Test
+    public void shouldBeAbleToAgumentConfig() throws Exception
+    {
+        // Given
+        Config config = new Config( stringMap( "newer", "old", "non-overlapping", "huzzah" ) );
+
+        // When
+        config.augment( stringMap( "newer", "new", "unrelated", "hello" ) );
+
+        // Then
+        assertThat( config.get( setting("newer", STRING, "") ), equalTo( "new" ) );
+        assertThat( config.get( setting("non-overlapping", STRING, "") ), equalTo( "huzzah" ) );
+        assertThat( config.get( setting("unrelated", STRING, "") ), equalTo( "hello" ) );
     }
 }

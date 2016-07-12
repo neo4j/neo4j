@@ -20,16 +20,18 @@
 package org.neo4j.cypher.javacompat;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.Map;
+
 import org.neo4j.cypher.ArithmeticException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.test.TestGraphDatabaseFactory;
-
-import java.util.Map;
+import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -38,25 +40,25 @@ import static org.hamcrest.core.IsNull.nullValue;
 
 public class ExecutionResultTest
 {
-    private GraphDatabaseAPI db;
+    @Rule
+    public final ImpermanentDatabaseRule db = new ImpermanentDatabaseRule();
     private ExecutionEngine engine;
 
     @Before
-    public void setUp() throws Exception
+    public void initializeExecutionEngine() throws Exception
     {
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .newGraphDatabase();
         engine = new ExecutionEngine( db );
     }
 
+    //TODO this test is not valid for compiled runtime as the transaction will be closed when the iterator was created
     @Test
     public void shouldCloseTransactionsWhenIteratingResults() throws Exception
     {
         // Given an execution result that has been started but not exhausted
         createNode();
         createNode();
-        ExecutionResult executionResult = engine.execute( "MATCH (n) RETURN n" );
-        ResourceIterator<Map<String, Object>> resultIterator = executionResult.iterator();
+        ExecutionResult executionResult = engine.execute( "CYPHER runtime=interpreted MATCH (n) RETURN n" );
+        ResourceIterator<Map<String,Object>> resultIterator = executionResult.iterator();
         resultIterator.next();
         assertThat( activeTransaction(), is( notNullValue() ) );
 
@@ -67,14 +69,15 @@ public class ExecutionResultTest
         assertThat( activeTransaction(), is( nullValue() ) );
     }
 
+    //TODO this test is not valid for compiled runtime as the transaction will be closed when the iterator was created
     @Test
     public void shouldCloseTransactionsWhenIteratingOverSingleColumn() throws Exception
     {
         // Given an execution result that has been started but not exhausted
         createNode();
         createNode();
-        ExecutionResult executionResult = engine.execute( "MATCH (n) RETURN n" );
-        ResourceIterator<Node> resultIterator = executionResult.columnAs("n");
+        ExecutionResult executionResult = engine.execute( "CYPHER runtime=interpreted MATCH (n) RETURN n" );
+        ResourceIterator<Node> resultIterator = executionResult.columnAs( "n" );
         resultIterator.next();
         assertThat( activeTransaction(), is( notNullValue() ) );
 
@@ -85,11 +88,25 @@ public class ExecutionResultTest
         assertThat( activeTransaction(), is( nullValue() ) );
     }
 
-    @Test( expected = ArithmeticException.class)
+    @Test( expected = ArithmeticException.class )
     public void shouldThrowAppropriateException() throws Exception
     {
-       engine.execute( "RETURN rand()/0" ).iterator().next();
+        engine.execute( "RETURN rand()/0" ).iterator().next();
     }
+
+    @Test( expected = ArithmeticException.class )
+    public void shouldThrowAppropriateExceptionAlsoWhenVisiting() throws Exception
+    {
+        engine.execute( "RETURN rand()/0" ).accept( new Result.ResultVisitor()
+        {
+            @Override
+            public boolean visit( Result.ResultRow row )
+            {
+                return true;
+            }
+        } );
+    }
+
 
     private void createNode()
     {
@@ -102,7 +119,9 @@ public class ExecutionResultTest
 
     private org.neo4j.kernel.TopLevelTransaction activeTransaction()
     {
-        ThreadToStatementContextBridge bridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+        ThreadToStatementContextBridge bridge = db.getDependencyResolver().resolveDependency(
+                ThreadToStatementContextBridge.class );
         return bridge.getTopLevelTransactionBoundToThisThread( false );
     }
+
 }

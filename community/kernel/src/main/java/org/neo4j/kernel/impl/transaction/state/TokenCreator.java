@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import java.util.Collection;
 
+import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
@@ -28,18 +29,18 @@ import org.neo4j.kernel.impl.store.record.TokenRecord;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 
-public class TokenCreator<T extends TokenRecord>
+public class TokenCreator<R extends TokenRecord, T extends Token>
 {
-    private final TokenStore<T> store;
+    private final TokenStore<R, T> store;
 
-    public TokenCreator( TokenStore<T> store )
+    public TokenCreator( TokenStore<R, T> store )
     {
         this.store = store;
     }
 
-    public void createToken( String name, int id, RecordAccess<Integer,T,Void> recordAccess )
+    public void createToken( String name, int id, RecordAccess<Integer, R,Void> recordAccess )
     {
-        T record = recordAccess.create( id, null ).forChangingData();
+        R record = recordAccess.create( id, null ).forChangingData();
         record.setInUse( true );
         record.setCreated();
         Collection<DynamicRecord> nameRecords = store.allocateNameRecords( encodeString( name ) );

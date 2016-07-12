@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index.sampling;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -76,7 +77,7 @@ public class IndexSamplingJobTracker
             }
 
             executingJobDescriptors.add( descriptor );
-            jobScheduler.schedule( JobScheduler.Group.indexSampling, new Runnable()
+            jobScheduler.schedule( JobScheduler.Groups.indexSampling, new Runnable()
             {
                 @Override
                 public void run()
@@ -134,6 +135,27 @@ public class IndexSamplingJobTracker
         }
     }
 
+    public void awaitAllJobs(long time, TimeUnit unit) throws InterruptedException
+    {
+        lock.lock();
+        try
+        {
+            if ( stopped )
+            {
+                return;
+            }
+
+            while ( !executingJobDescriptors.isEmpty() )
+            {
+                allJobsFinished.await( time, unit );
+            }
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
     public void stopAndAwaitAllJobs()
     {
         lock.lock();
@@ -150,6 +172,5 @@ public class IndexSamplingJobTracker
         {
             lock.unlock();
         }
-
     }
 }

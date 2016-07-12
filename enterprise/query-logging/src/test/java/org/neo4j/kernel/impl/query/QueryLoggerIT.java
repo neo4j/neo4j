@@ -32,12 +32,14 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -54,14 +56,17 @@ public class QueryLoggerIT
     public final EphemeralFileSystemRule fileSystem = new EphemeralFileSystemRule();
     @Rule
     public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    private AssertableLogProvider inMemoryLog;
     private GraphDatabaseBuilder databaseBuilder;
     public static final String QUERY = "CREATE (n:Foo{bar:\"baz\"})";
 
     @Before
     public void setUp()
     {
+        inMemoryLog = new AssertableLogProvider();
         databaseBuilder = new TestGraphDatabaseFactory().setFileSystem( fileSystem.get() )
-                .newImpermanentDatabaseBuilder( testDirectory.graphDbDir().getAbsolutePath() );
+                .setInternalLogProvider( inMemoryLog )
+                .newImpermanentDatabaseBuilder( testDirectory.graphDbDir() );
     }
 
     @Test
@@ -132,25 +137,16 @@ public class QueryLoggerIT
     @Test
     public void shouldSuppressQueryLoggingIfTheGivenPathIsNull() throws Exception
     {
-        final File logFilename = new File( testDirectory.graphDbDir(), "messages.log" );
         GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
                 .newGraphDatabase();
 
         executeQueryAndShutdown( database );
 
-        List<String> lines = readAllLines( logFilename );
-        boolean found = false;
-        for ( String line : lines )
-        {
-            if ( line.endsWith( GraphDatabaseSettings.log_queries.name() +
-                                " is enabled but no " +
-                                GraphDatabaseSettings.log_queries_filename.name() +
-                                " has not been provided in configuration, hence query logging is suppressed" ) )
-            {
-                found = true;
-            }
-        }
-        assertTrue( found );
+        inMemoryLog.assertContainsMessageContaining( GraphDatabaseSettings.log_queries.name() +
+                                                     " is enabled but no " +
+                                                     GraphDatabaseSettings.log_queries_filename.name() +
+                                                     " has not been provided in configuration, hence query logging is" +
+                                                     " suppressed" );
     }
 
     @Test
@@ -174,15 +170,15 @@ public class QueryLoggerIT
         final File shiftedLogFilename = new File( testDirectory.graphDbDir(), "queries.log.1" );
         GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.log_queries_filename, logFilename.getPath() )
-                .setConfig( GraphDatabaseSettings.log_queries_rotation_threshold, "1M" )
+                .setConfig( GraphDatabaseSettings.log_queries_rotation_threshold, "1" )
                 .newGraphDatabase();
 
-
-        String longQuery = createLongQuery();
-        database.execute( longQuery );
-        database.execute( longQuery );
+        database.execute( QUERY );
+        database.execute( QUERY );
+        // wait for file rotation to finish
+        Thread.sleep( TimeUnit.SECONDS.toMillis( 1 ) );
         // execute one more slow query which should go to new log file
-        database.execute( longQuery );
+        database.execute( QUERY );
         database.shutdown();
 
         List<String> lines = readAllLines( logFilename );
@@ -190,20 +186,6 @@ public class QueryLoggerIT
         List<String> shiftedLines = readAllLines( shiftedLogFilename );
         assertEquals( 2, shiftedLines.size() );
     }
-
-    private String createLongQuery()
-    {
-        String longIdentifier = getStringWithLenght( 1024 * 1024 );
-        return "CREATE (n:Foo{bar:\"" + longIdentifier + "\"})";
-    }
-
-    private String getStringWithLenght(int size)
-    {
-        char[] chars = new char[size];
-        Arrays.fill(chars, 'a');
-        return new String( chars );
-    }
-
 
     private void executeQueryAndShutdown( GraphDatabaseService database )
     {
@@ -228,7 +210,6 @@ public class QueryLoggerIT
                 logLines.add( line );
             }
         }
-
         return logLines;
     }
 }

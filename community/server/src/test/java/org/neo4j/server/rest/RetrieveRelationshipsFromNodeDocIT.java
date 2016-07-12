@@ -48,7 +48,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
-public class RetrieveRelationshipsFromNodeDocIT extends AbstractRestFunctionalTestBase
+public class RetrieveRelationshipsFromNodeDocIT extends AbstractRestFunctionalDocTestBase
 {
     private long nodeWithRelationships;
     private long nodeWithoutRelationships;
@@ -138,10 +138,7 @@ public class RetrieveRelationshipsFromNodeDocIT extends AbstractRestFunctionalTe
         }
     }
 
-    /**
-     * Get all relationships.
-     */
-    @Documented
+    @Documented( "Get all relationships." )
     @Test
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingAllRelationshipsForANode()
             throws JsonParseException
@@ -165,10 +162,7 @@ public class RetrieveRelationshipsFromNodeDocIT extends AbstractRestFunctionalTe
         verifyRelReps( 3, entity );
     }
 
-    /**
-     * Get incoming relationships.
-     */
-    @Documented
+    @Documented( "Get incoming relationships." )
     @Test
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingIncomingRelationshipsForANode()
             throws JsonParseException
@@ -180,10 +174,7 @@ public class RetrieveRelationshipsFromNodeDocIT extends AbstractRestFunctionalTe
         verifyRelReps( 1, entity );
     }
 
-    /**
-     * Get outgoing relationships.
-     */
-    @Documented
+    @Documented( "Get outgoing relationships." )
     @Test
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingOutgoingRelationshipsForANode()
             throws JsonParseException
@@ -195,13 +186,10 @@ public class RetrieveRelationshipsFromNodeDocIT extends AbstractRestFunctionalTe
         verifyRelReps( 2, entity );
     }
 
-    /**
-     * Get typed relationships.
-     *
-     * Note that the "+&+" needs to be encoded like "+%26+" for example when
-     * using http://curl.haxx.se/[cURL] from the terminal.
-     */
-    @Documented
+    @Documented( "Get typed relationships.\n" +
+                 "\n" +
+                 "Note that the \"+&+\" needs to be encoded like \"+%26+\" for example when\n" +
+                 "using http://curl.haxx.se/[cURL] from the terminal." )
     @Test
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingAllTypedRelationshipsForANode()
             throws JsonParseException
@@ -236,10 +224,7 @@ public class RetrieveRelationshipsFromNodeDocIT extends AbstractRestFunctionalTe
         response.close();
     }
 
-    /**
-     * Get relationships on a node without relationships.
-     */
-    @Documented
+    @Documented( "Get relationships on a node without relationships." )
     @Test
     public void shouldRespondWith200AndEmptyListOfRelationshipRepresentationsWhenGettingAllRelationshipsForANodeWithoutRelationships()
             throws JsonParseException

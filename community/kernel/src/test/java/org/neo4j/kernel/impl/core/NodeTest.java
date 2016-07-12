@@ -21,9 +21,8 @@ package org.neo4j.kernel.impl.core;
 
 import java.lang.Thread.State;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -109,10 +108,6 @@ public class NodeTest
         // do some evil stuff
         Node node = getGraphDb().createNode();
         node.delete();
-        Logger log = Logger
-            .getLogger( "org.neo4j.kernel.impl.core.NeoConstraintsListener" );
-        Level level = log.getLevel();
-        log.setLevel( Level.OFF );
         try
         {
             node.setProperty( "key1", new Integer( 1 ) );
@@ -121,7 +116,6 @@ public class NodeTest
         catch ( Exception e )
         { // good
         }
-        log.setLevel( level );
     }
 
     @Test
@@ -333,9 +327,40 @@ public class NodeTest
         keys.next();
         keys.next();
         keys.next();
-        assertTrue( node1.hasProperty( key1 ) );
-        assertTrue( node1.hasProperty( key2 ) );
-        assertTrue( node1.hasProperty( key3 ) );
+        Map<String, Object> properties = node1.getAllProperties();
+        assertTrue( properties.get( key1 ).equals( int1 ) );
+        assertTrue( properties.get( key2 ).equals( int2 ) );
+        assertTrue( properties.get( key3 ).equals( string ) );
+        properties = node1.getProperties( key1, key2 );
+        assertTrue( properties.get( key1 ).equals( int1 ) );
+        assertTrue( properties.get( key2 ).equals( int2 ) );
+        assertFalse( properties.containsKey( key3 ) );
+
+        properties = node1.getProperties();
+        assertTrue( properties.isEmpty() );
+
+        try
+        {
+            String[] names = null;
+            node1.getProperties( names );
+            fail();
+        }
+        catch ( NullPointerException e )
+        {
+            // Ok
+        }
+
+        try
+        {
+            String[] names = new String[]{null};
+            node1.getProperties( names );
+            fail();
+        }
+        catch ( NullPointerException e )
+        {
+            // Ok
+        }
+
         try
         {
             node1.removeProperty( key3 );

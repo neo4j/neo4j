@@ -22,11 +22,11 @@ package org.neo4j.kernel.impl.locking.community;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.function.Consumer;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Logger;
 
 public class LockManagerImpl
 {
@@ -43,56 +43,80 @@ public class LockManagerImpl
         return ragManager.getDeadlockCount();
     }
 
-    public void getReadLock( Object resource, Object tx, CommunityLockClientTermination termination )
+    public boolean getReadLock( Object resource, Object tx )
         throws DeadlockDetectedException, IllegalResourceException
     {
-        getRWLockForAcquiring( resource, tx ).acquireReadLock( tx, termination );
+        return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).acquireReadLock( tx ) );
     }
 
     public boolean tryReadLock( Object resource, Object tx )
         throws IllegalResourceException
     {
-        return getRWLockForAcquiring( resource, tx ).tryAcquireReadLock( tx );
+        return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).tryAcquireReadLock( tx ) );
     }
 
-    public void getWriteLock( Object resource, Object tx, CommunityLockClientTermination termination )
+    public boolean getWriteLock( Object resource, Object tx )
         throws DeadlockDetectedException, IllegalResourceException
     {
-        getRWLockForAcquiring( resource, tx ).acquireWriteLock( tx, termination );
+        return unusedResourceGuard(resource, tx, getRWLockForAcquiring( resource, tx ).acquireWriteLock( tx ) );
     }
 
     public boolean tryWriteLock( Object resource, Object tx )
         throws IllegalResourceException
     {
-        return getRWLockForAcquiring( resource, tx ).tryAcquireWriteLock( tx );
+        return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).tryAcquireWriteLock( tx ) );
     }
 
     public void releaseReadLock( Object resource, Object tx )
         throws LockNotFoundException, IllegalResourceException
     {
-        getRWLockForReleasing( resource, tx, 1, 0 ).releaseReadLock( tx );
+        getRWLockForReleasing( resource, tx, 1, 0, true ).releaseReadLock( tx );
     }
 
     public void releaseWriteLock( Object resource, Object tx )
         throws LockNotFoundException, IllegalResourceException
     {
-        getRWLockForReleasing( resource, tx, 0, 1 ).releaseWriteLock( tx );
+        getRWLockForReleasing( resource, tx, 0, 1, true ).releaseWriteLock( tx );
     }
 
-    public void dumpLocksOnResource( Object resource, Logging logging )
+    public void dumpLocksOnResource( final Object resource, Logger logger )
     {
-        StringLogger logger = logging.getMessagesLog( LockManagerImpl.class );
-        RWLock lock;
+        final RWLock lock;
         synchronized ( resourceLockMap )
         {
             if ( !resourceLockMap.containsKey( resource ) )
             {
-                logger.info( "No locks on " + resource );
+                logger.log( "No locks on " + resource );
                 return;
             }
             lock = resourceLockMap.get( resource );
         }
-        logger.logLongMessage( "Dump locks on resource " + resource, lock );
+        logger.bulk( new Consumer<Logger>()
+        {
+            @Override
+            public void accept( Logger bulkLogger )
+            {
+                bulkLogger.log( "Dump locks on resource %s", resource );
+                lock.logTo( bulkLogger );
+            }
+        } );
+    }
+
+    /**
+     * Check if lock was obtained and in case if not will try to clear optimistically allocated lock from global
+     * resource map
+     *
+     * @return {@code lockObtained }
+     **/
+    private boolean unusedResourceGuard(Object resource, Object tx, boolean lockObtained) {
+        if (!lockObtained)
+        {
+            // if lock was not acquired cleaning up optimistically allocated value
+            // for case when it was only used by current call, if it was used by somebody else
+            // lock will be released during release call
+            getRWLockForReleasing( resource, tx, 0, 0, false );
+        }
+        return lockObtained;
     }
 
     /**
@@ -132,7 +156,7 @@ public class LockManagerImpl
             RWLock lock = resourceLockMap.get( resource );
             if ( lock == null )
             {
-                lock = new RWLock( resource, ragManager );
+                lock = createLock( resource );
                 resourceLockMap.put( resource, lock );
             }
             lock.mark();
@@ -140,23 +164,39 @@ public class LockManagerImpl
         }
     }
 
+    // visible for testing
+    protected RWLock createLock( Object resource )
+    {
+        return new RWLock( resource, ragManager );
+    }
+
     private RWLock getRWLockForReleasing( Object resource, Object tx, int readCountPrerequisite,
-            int writeCountPrerequisite )
+            int writeCountPrerequisite, boolean strict )
     {
         assertValidArguments( resource, tx );
         synchronized ( resourceLockMap )
         {
             RWLock lock = resourceLockMap.get( resource );
-            if ( lock == null )
+            if (lock == null )
             {
+                if (!strict)
+                {
+                    return null;
+                }
                 throw new LockNotFoundException( "Lock not found for: "
                     + resource + " tx:" + tx );
             }
-            if ( !lock.isMarked() && lock.getReadCount() == readCountPrerequisite &&
-                lock.getWriteCount() == writeCountPrerequisite &&
-                lock.getWaitingThreadsCount() == 0 )
+            // we need to get info from a couple of synchronized methods
+            // to make it info consistent we need to synchronized lock to make sure it will not change between
+            // various calls
+            synchronized ( lock )
             {
-                resourceLockMap.remove( resource );
+                if ( !lock.isMarked() && lock.getReadCount() == readCountPrerequisite &&
+                     lock.getWriteCount() == writeCountPrerequisite &&
+                     lock.getWaitingThreadsCount() == 0 )
+                {
+                    resourceLockMap.remove( resource );
+                }
             }
             return lock;
         }

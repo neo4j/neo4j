@@ -20,11 +20,7 @@
 package org.neo4j.kernel.impl.store;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Settings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -41,92 +37,100 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 
 /**
  * Not thread safe (since DiffRecordStore is not thread safe), intended for
  * single threaded use.
+ *
+ * Make sure to call {@link #initialize()} after constructor has been run.
  */
 public class StoreAccess
 {
     // Top level stores
-    private final RecordStore<DynamicRecord> schemaStore;
-    private final RecordStore<NodeRecord> nodeStore;
-    private final RecordStore<RelationshipRecord> relStore;
-    private final RecordStore<RelationshipTypeTokenRecord> relationshipTypeTokenStore;
-    private final RecordStore<LabelTokenRecord> labelTokenStore;
-    private final RecordStore<DynamicRecord> nodeDynamicLabelStore;
-    private final RecordStore<PropertyRecord> propStore;
+    private RecordStore<DynamicRecord> schemaStore;
+    private RecordStore<NodeRecord> nodeStore;
+    private RecordStore<RelationshipRecord> relStore;
+    private RecordStore<RelationshipTypeTokenRecord> relationshipTypeTokenStore;
+    private RecordStore<LabelTokenRecord> labelTokenStore;
+    private RecordStore<DynamicRecord> nodeDynamicLabelStore;
+    private RecordStore<PropertyRecord> propStore;
     // Transitive stores
-    private final RecordStore<DynamicRecord> stringStore, arrayStore;
-    private final RecordStore<PropertyKeyTokenRecord> propertyKeyTokenStore;
-    private final RecordStore<DynamicRecord> relationshipTypeNameStore;
-    private final RecordStore<DynamicRecord> labelNameStore;
-    private final RecordStore<DynamicRecord> propertyKeyNameStore;
-    private final RecordStore<RelationshipGroupRecord> relGroupStore;
+    private RecordStore<DynamicRecord> stringStore, arrayStore;
+    private RecordStore<PropertyKeyTokenRecord> propertyKeyTokenStore;
+    private RecordStore<DynamicRecord> relationshipTypeNameStore;
+    private RecordStore<DynamicRecord> labelNameStore;
+    private RecordStore<DynamicRecord> propertyKeyNameStore;
+    private RecordStore<RelationshipGroupRecord> relGroupStore;
     private final CountsAccessor counts;
     // internal state
     private boolean closeable;
-    private NeoStore neoStore;
+    private final NeoStores neoStores;
 
     public StoreAccess( GraphDatabaseAPI graphdb )
     {
-        this( getNeoStoreFrom( graphdb ) );
+        this( getNeoStoresFrom( graphdb ) );
     }
 
     @SuppressWarnings( "deprecation" )
-    private static NeoStore getNeoStoreFrom( GraphDatabaseAPI graphdb )
+    private static NeoStores getNeoStoresFrom( GraphDatabaseAPI graphdb )
     {
-        return graphdb.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate();
+        return graphdb.getDependencyResolver().resolveDependency( NeoStores.class );
     }
 
-    public StoreAccess( NeoStore store )
+    public StoreAccess( NeoStores store )
     {
-        this.neoStore = store;
-        this.schemaStore = wrapStore( store.getSchemaStore() );
-        this.nodeStore = wrapStore( store.getNodeStore() );
-        this.relStore = wrapStore( store.getRelationshipStore() );
-        this.propStore = wrapStore( store.getPropertyStore() );
-        this.stringStore = wrapStore( store.getPropertyStore().getStringStore() );
-        this.arrayStore = wrapStore( store.getPropertyStore().getArrayStore() );
-        this.relationshipTypeTokenStore = wrapStore( store.getRelationshipTypeTokenStore() );
-        this.labelTokenStore = wrapStore( store.getLabelTokenStore() );
-        this.nodeDynamicLabelStore = wrapStore( wrapNodeDynamicLabelStore( store.getNodeStore().getDynamicLabelStore() ) );
-        this.propertyKeyTokenStore = wrapStore( store.getPropertyStore().getPropertyKeyTokenStore() );
-        this.relationshipTypeNameStore = wrapStore( store.getRelationshipTypeTokenStore().getNameStore() );
-        this.labelNameStore = wrapStore( store.getLabelTokenStore().getNameStore() );
-        this.propertyKeyNameStore = wrapStore( store.getPropertyStore().getPropertyKeyTokenStore().getNameStore() );
-        this.relGroupStore = wrapStore( store.getRelationshipGroupStore() );
+        this.neoStores = store;
         this.counts = store.getCounts();
     }
 
-    public StoreAccess( PageCache pageCache, String path )
+    public StoreAccess( PageCache pageCache, File storeDir )
     {
-        this( new DefaultFileSystemAbstraction(), pageCache, path );
+        this( new DefaultFileSystemAbstraction(), pageCache, storeDir );
     }
 
-    public StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, String path )
+    public StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir )
     {
-        this( fileSystem, pageCache, path, new Config( requiredParams( defaultParams(), path )), new Monitors() );
+        this( fileSystem, pageCache, storeDir, new Config() );
     }
 
-    private StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, String path, Config config, Monitors monitors )
+    private StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config )
     {
-        this( new StoreFactory( config, new DefaultIdGeneratorFactory(), pageCache,
-                fileSystem, StringLogger.DEV_NULL, monitors ).newNeoStore( false ) );
+        this( new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
+                fileSystem, NullLogProvider.getInstance() ).openAllNeoStores() );
         this.closeable = true;
     }
 
-    private static Map<String, String> requiredParams( Map<String, String> params, String path )
+    /**
+     * This method exists since {@link #wrapStore(RecordStore)} might depend on the existence of a variable
+     * that gets set in a subclass' constructor <strong>after</strong> this constructor of {@link StoreAccess}
+     * has been executed. I.e. a correct creation of a {@link StoreAccess} instance must be the creation of the
+     * object plus a call to {@link #initialize()}.
+     *
+     * @return this
+     */
+    public StoreAccess initialize()
     {
-        return StoreFactory.configForStoreDir( new Config(), new File( path ) ).getParams();
+        this.schemaStore = wrapStore( neoStores.getSchemaStore() );
+        this.nodeStore = wrapStore( neoStores.getNodeStore() );
+        this.relStore = wrapStore( neoStores.getRelationshipStore() );
+        this.propStore = wrapStore( neoStores.getPropertyStore() );
+        this.stringStore = wrapStore( neoStores.getPropertyStore().getStringStore() );
+        this.arrayStore = wrapStore( neoStores.getPropertyStore().getArrayStore() );
+        this.relationshipTypeTokenStore = wrapStore( neoStores.getRelationshipTypeTokenStore() );
+        this.labelTokenStore = wrapStore( neoStores.getLabelTokenStore() );
+        this.nodeDynamicLabelStore = wrapStore( wrapNodeDynamicLabelStore( neoStores.getNodeStore().getDynamicLabelStore() ) );
+        this.propertyKeyTokenStore = wrapStore( neoStores.getPropertyStore().getPropertyKeyTokenStore() );
+        this.relationshipTypeNameStore = wrapStore( neoStores.getRelationshipTypeTokenStore().getNameStore() );
+        this.labelNameStore = wrapStore( neoStores.getLabelTokenStore().getNameStore() );
+        this.propertyKeyNameStore = wrapStore( neoStores.getPropertyStore().getPropertyKeyTokenStore().getNameStore() );
+        this.relGroupStore = wrapStore( neoStores.getRelationshipGroupStore() );
+        return this;
     }
 
-    public NeoStore getRawNeoStore()
+    public NeoStores getRawNeoStores()
     {
-        return neoStore;
+        return neoStores;
     }
 
     public RecordStore<DynamicRecord> getSchemaStore()
@@ -204,15 +208,6 @@ public class StoreAccess
         return counts;
     }
 
-    public final <F extends Exception, P extends RecordStore.Processor<F>> P applyToAll( P processor ) throws F
-    {
-        for ( RecordStore<?> store : allStores() )
-        {
-            apply( processor, store );
-        }
-        return processor;
-    }
-
     protected RecordStore<?>[] allStores()
     {
         if ( propStore == null )
@@ -252,14 +247,7 @@ public class StoreAccess
     protected <FAILURE extends Exception> void apply( RecordStore.Processor<FAILURE> processor, RecordStore<?> store )
             throws FAILURE
     {
-        processor.applyFiltered( store, RecordStore.IN_USE );
-    }
-
-    private static Map<String, String> defaultParams()
-    {
-        Map<String, String> params = new HashMap<>();
-        params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.TRUE );
-        return params;
+        processor.applyFiltered( store );
     }
 
     public synchronized void close()
@@ -267,7 +255,7 @@ public class StoreAccess
         if ( closeable )
         {
             closeable = false;
-            neoStore.close();
+            neoStores.close();
         }
     }
 }

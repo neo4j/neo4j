@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.neo4j.function.Supplier;
 import org.neo4j.helpers.Listeners;
-import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -29,11 +29,11 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
 
 /**
  * Adds change listener features to a {@link NeoStoreDataSource}.
- *
- * TODO This being a {@link KernelAPI} {@link Provider} is a smell, it comes from established bad dependency hierarchy
+ * <p/>
+ * TODO This being a {@link KernelAPI} {@link Supplier} is a smell, it comes from established bad dependency hierarchy
  * where {@link NeoStoreDataSource} and {@link KernelAPI} are needed before they exist.
  */
-public class DataSourceManager implements Lifecycle, Provider<KernelAPI>
+public class DataSourceManager implements Lifecycle, Supplier<KernelAPI>
 {
     public interface Listener
     {
@@ -62,11 +62,6 @@ public class DataSourceManager implements Lifecycle, Provider<KernelAPI>
             }
         }
         dsRegistrationListeners = Listeners.addListener( listener, dsRegistrationListeners );
-    }
-
-    public void removeListener( Listener listener )
-    {
-        dsRegistrationListeners = Listeners.removeListener( listener, dsRegistrationListeners );
     }
 
     public void register( final NeoStoreDataSource dataSource )
@@ -145,7 +140,7 @@ public class DataSourceManager implements Lifecycle, Provider<KernelAPI>
     }
 
     @Override
-    public KernelAPI instance()
+    public KernelAPI get()
     {
         return dataSource.getKernel();
     }

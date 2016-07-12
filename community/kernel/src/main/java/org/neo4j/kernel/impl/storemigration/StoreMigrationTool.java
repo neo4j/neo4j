@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -30,11 +29,16 @@ import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensions;
-import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.StoreLogService;
+import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.logging.SystemOutLogging;
+import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.ignore;
@@ -48,79 +52,79 @@ import static org.neo4j.kernel.impl.storemigration.StoreUpgrader.NO_MONITOR;
  */
 public class StoreMigrationTool
 {
-    public static void main( String[] args )
+    public static void main( String[] args ) throws IOException
     {
         String legacyStoreDirectory = args[0];
-        new StoreMigrationTool().run( legacyStoreDirectory, new Config(), new SystemOutLogging(), NO_MONITOR );
+        FormattedLogProvider userLogProvider = FormattedLogProvider.toOutputStream( System.out );
+        new StoreMigrationTool().run( new DefaultFileSystemAbstraction(), new File( legacyStoreDirectory ),
+                new Config(), userLogProvider, NO_MONITOR );
     }
 
-    public void run( String legacyStoreDirectory, Config config, Logging logging, StoreUpgrader.Monitor monitor )
+    public void run( final FileSystemAbstraction fs, final File legacyStoreDirectory, Config config,
+            LogProvider userLogProvider, StoreUpgrader.Monitor monitor ) throws IOException
     {
-        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         ConfigMapUpgradeConfiguration upgradeConfiguration = new ConfigMapUpgradeConfiguration( config );
-        StoreUpgrader migrationProcess = new StoreUpgrader( upgradeConfiguration, fs, monitor, logging );
+        StoreUpgrader migrationProcess = new StoreUpgrader( upgradeConfiguration, fs, monitor, userLogProvider );
 
         LifeSupport life = new LifeSupport();
 
         // Add participants from kernel extensions...
+        Dependencies deps = new Dependencies();
+        deps.satisfyDependencies( fs, config );
+
+
+        KernelContext kernelContext = new KernelContext()
+        {
+            @Override
+            public FileSystemAbstraction fileSystem()
+            {
+                return fs;
+            }
+
+            @Override
+            public File storeDir()
+            {
+                return legacyStoreDirectory;
+            }
+        };
         KernelExtensions kernelExtensions = life.add( new KernelExtensions(
-                GraphDatabaseDependencies.newDependencies().kernelExtensions(),
-                kernelExtensionDependencyResolver( fs, config ), ignore() ) );
+                kernelContext, GraphDatabaseDependencies.newDependencies().kernelExtensions(),
+                deps, ignore() ) );
+
+        LogService logService =
+                StoreLogService.withUserLogProvider( userLogProvider ).inStoreDirectory( fs, legacyStoreDirectory );
 
         // Add the kernel store migrator
-        config = StoreFactory.configForStoreDir( config, new File( legacyStoreDirectory ) );
         life.start();
         SchemaIndexProvider schemaIndexProvider = kernelExtensions.resolveDependency( SchemaIndexProvider.class,
                 SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
-        try
-        {
-            UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( fs ) );
-            migrationProcess.addParticipant( new StoreMigrator(
-                    new VisibleMigrationProgressMonitor( logging.getMessagesLog( StoreMigrationTool.class ), System.out ),
-                    fs, upgradableDatabase, config, logging ) );
-            migrationProcess.addParticipant( schemaIndexProvider.storeMigrationParticipant( fs, upgradableDatabase) );
-        }
-        catch ( IllegalArgumentException e )
-        {   // That's fine actually, no schema index provider on the classpath or something
-        }
 
-        // Perform the migration
+        Log log = userLogProvider.getLog( StoreMigrationTool.class );
         try ( PageCache pageCache = createPageCache( fs, config ) )
         {
+            UpgradableDatabase upgradableDatabase =
+                    new UpgradableDatabase( new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ) );
+            migrationProcess.addParticipant( new StoreMigrator(
+                    new VisibleMigrationProgressMonitor( logService.getInternalLog( StoreMigrationTool.class ) ),
+                    fs, pageCache, config, logService ) );
+            migrationProcess.addParticipant(
+                    schemaIndexProvider.storeMigrationParticipant( fs, pageCache ) );
+            // Perform the migration
             long startTime = System.currentTimeMillis();
-            migrationProcess.migrateIfNeeded( new File( legacyStoreDirectory ), schemaIndexProvider, pageCache );
+            migrationProcess.migrateIfNeeded( legacyStoreDirectory, upgradableDatabase, schemaIndexProvider );
             long duration = System.currentTimeMillis() - startTime;
-            logging.getMessagesLog( StoreMigrationTool.class )
-                    .info( format( "Migration completed in %d s%n", duration / 1000 ) );
+            log.info( format( "Migration completed in %d s%n", duration / 1000 ) );
         }
         catch ( IOException e )
         {
             throw new StoreUpgrader.UnableToUpgradeException( "Failure during upgrade", e );
         }
+        catch ( IllegalArgumentException e )
+        {   // That's fine actually, no schema index provider on the classpath or something
+        }
         finally
         {
             life.shutdown();
         }
-    }
-
-    private DependencyResolver kernelExtensionDependencyResolver(
-            final FileSystemAbstraction fileSystem, final Config config )
-    {
-        return new DependencyResolver.Adapter()
-        {
-            @Override
-            public <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException
-            {
-                if ( type.isInstance( fileSystem ) )
-                {
-                    return type.cast( fileSystem );
-                }
-                if ( type.isInstance( config ) )
-                {
-                    return type.cast( config );
-                }
-                throw new IllegalArgumentException( type.toString() );
-            }
-        };
     }
 }

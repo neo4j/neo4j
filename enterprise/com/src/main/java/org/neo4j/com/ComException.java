@@ -19,7 +19,7 @@
  */
 package org.neo4j.com;
 
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 public class ComException extends RuntimeException
 {
@@ -45,7 +45,7 @@ public class ComException extends RuntimeException
         super( cause );
     }
 
-    public ComException traceComException( StringLogger log, String tracePoint )
+    public ComException traceComException( Log log, String tracePoint )
     {
         if ( TRACE_HA_CONNECTIVITY )
         {

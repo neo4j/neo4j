@@ -19,16 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-public class RelationshipTypeTokenHolder extends TokenHolder<RelationshipTypeToken>
+public interface RelationshipTypeTokenHolder extends TokenHolder<RelationshipTypeToken>
 {
-    public RelationshipTypeTokenHolder( TokenCreator tokenCreator )
-    {
-        super( tokenCreator );
-    }
-
-    @Override
-    protected RelationshipTypeToken newToken( String name, int id )
-    {
-        return new RelationshipTypeToken( name, id );
-    }
 }

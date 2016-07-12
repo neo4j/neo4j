@@ -105,6 +105,27 @@ public class VersionAwareLogEntryReaderTest
     }
 
     @Test
+    public void shouldReadACheckPointLogEntry() throws IOException
+    {
+        // given
+        LogEntryVersion version = LogEntryVersion.CURRENT;
+        final LogPosition logPosition = new LogPosition( 42, 43 );
+        final CheckPoint checkPoint = new CheckPoint( version, logPosition );
+        final InMemoryLogChannel channel = new InMemoryLogChannel();
+
+        channel.put( version.byteCode() );
+        channel.put( LogEntryByteCodes.CHECK_POINT );
+        channel.putLong( logPosition.getLogVersion() );
+        channel.putLong( logPosition.getByteOffset() );
+
+        // when
+        final LogEntry logEntry = logEntryReader.readLogEntry( channel );
+
+        // then
+        assertEquals( checkPoint, logEntry );
+    }
+
+    @Test
     public void shouldReturnNullWhenThereIsNoCommand() throws IOException
     {
         // given

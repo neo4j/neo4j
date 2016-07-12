@@ -23,7 +23,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.Collection;
 import java.util.Map;
 
 import org.neo4j.jmx.Kernel;
@@ -32,7 +31,6 @@ import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -87,18 +85,6 @@ public class ManagementBeansTest
     {
         return new Neo4jManager( graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
                 .getSingleManagementBean( Kernel.class ) );
-    }
-
-    @Test
-    public void canGetCacheBean() throws Exception
-    {
-        Collection<Cache> beans = getManager().getCacheBeans();
-        assertNotNull( beans );
-        assertFalse( "No Cache beans found", beans.isEmpty() );
-        for ( Cache bean : beans )
-        {
-            assertNotNull( bean );
-        }
     }
 
     @Test

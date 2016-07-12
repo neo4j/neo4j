@@ -1,0 +1,234 @@
+[[powershell]]
+= Windows PowerShell module
+
+The Neo4j PowerShell module allows administrators to:
+
+* audit and set Neo4j configuration settings,
+* install, start and stop Neo4j Windows® Services
+* and start tools, such as `Neo4j Shell` and `Neo4j Import`.
+
+The PowerShell module is installed as part of the http://neo4j.com/download/[ZIP file] distributions of Neo4j.
+
+[[powershell-requirements]]
+== System Requirements
+
+* Requires PowerShell v2.0 or above.
+* Supported on either 32 or 64 bit operating systems.
+
+[[powershell-module-import]]
+== How do I import the module?
+
+The module file is located in the _bin_ directory of your Neo4j installation, i.e. where you unzipped the downloaded file.
+For example, if Neo4j was installed in _C:\Neo4j_ then the module would be imported like this:
+
+[source,powershell]
+----
+Import-Module C:\Neo4j\bin\Neo4j-Management.psd1
+----
+
+This will add the module to the current session.
+
+[NOTE]
+--
+On Windows it is sometimes necessary to _Unblock_ a downloaded zip file before you can import its contents as a module. If you right-click on the zip file and choose "Properties" you will get a dialog. Bottom-right on that dialog you will find an "Unblock" button. Click that. Then you should be able to import the module.
+--
+
+[NOTE]
+--
+Running scripts has to be enabled on the system.
+This can for example be achieved by executing the following from an elevated PowerShell prompt:
+[source,powershell]
+----
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned
+----
+For more information see http://go.microsoft.com/fwlink/?LinkID=135[About execution policies].
+--
+
+Once the module has been imported you can start an interactive console version of a Neo4j Server like this:
+
+[source,powershell]
+----
+'C:\Neo4j' | Start-Neo4jServer -Console -Wait
+----
+
+To stop the server, issue `ctrl-c` in the console window that was created by the command.
+
+[[powershell-help]]
+== How do I get help about the module?
+
+Once the module is imported you can query the available commands like this:
+
+[source,powershell]
+----
+Get-Command -Module Neo4j-Management
+----
+
+The output should be similar to the following:
+
+[source]
+----
+CommandType     Name                          Version    Source
+-----------     ----                          -------    ------
+Function        Get-Neo4jHome                 2.3.0      Neo4j-Management
+Function        Get-Neo4jServer               2.3.0      Neo4j-Management
+Function        Get-Neo4jSetting              2.3.0      Neo4j-Management
+Function        Initialize-Neo4jHACluster     2.3.0      Neo4j-Management
+Function        Initialize-Neo4jServer        2.3.0      Neo4j-Management
+Function        Install-Neo4jArbiter          2.3.0      Neo4j-Management
+Function        Install-Neo4jServer           2.3.0      Neo4j-Management
+Function        Remove-Neo4jSetting           2.3.0      Neo4j-Management
+Function        Restart-Neo4jArbiter          2.3.0      Neo4j-Management
+Function        Restart-Neo4jServer           2.3.0      Neo4j-Management
+Function        Set-Neo4jSetting              2.3.0      Neo4j-Management
+Function        Start-Neo4jArbiter            2.3.0      Neo4j-Management
+Function        Start-Neo4jBackup             2.3.0      Neo4j-Management
+Function        Start-Neo4jImport             2.3.0      Neo4j-Management
+Function        Start-Neo4jServer             2.3.0      Neo4j-Management
+Function        Start-Neo4jShell              2.3.0      Neo4j-Management
+Function        Stop-Neo4jArbiter             2.3.0      Neo4j-Management
+Function        Stop-Neo4jServer              2.3.0      Neo4j-Management
+Function        Uninstall-Neo4jArbiter        2.3.0      Neo4j-Management
+Function        Uninstall-Neo4jServer         2.3.0      Neo4j-Management
+----
+
+The module also supports the standard PowerShell help commands.
+
+[source,powershell]
+----
+Get-Help Initialize-Neo4jServer
+----
+
+To see examples for a command, do like this:
+
+----
+Get-Help Initialize-Neo4jServer -examples
+----
+
+[[powershell-basic-examples]]
+== Basic Examples
+
+* Retrieve basic information about the Neo4j Server e.g. Version and Edition.
++
+[source,powershell]
+----
+Get-Neo4jServer C:\Neo4j
+----
+
+* Retrieve all of the settings of a Neo4j Server and display in a nice table
++
+[source,powershell]
+----
+'C:\Neo4j' | Get-Neo4jSetting | `
+Select ConfigurationFile, Name, Value | `
+Format-Table
+----
+
+* The module uses the pipeline so you can export the settings, modify or filter them.
+  For example, only show settings with the value of `True`:
++
+[source,powershell]
+----
+'C:\Neo4j' | Get-Neo4jSetting | `
+Where { $_.Value -eq 'True' } | `
+Select ConfigurationFile, Name, Value | `
+Format-Table
+----
+
+* Quickly configure a Neo4j Server from saved settings in a CSV file.
++
+[source,powershell]
+----
+Import-CSV -Path 'C:\Neo4jSettings.CSV' | Set-Neo4jSetting -Force
+----
+
+[[powershell-advanced-examples]]
+== Advanced examples
+
+* You can quickly configure and start an interactive console version of a Neo4j Server like this:
++
+[source,powershell]
+----
+'C:\Neo4j' | `
+Initialize-Neo4jServer -ListenOnIPAddress 127.0.0.1 -PassThru | `
+Start-Neo4jServer -Console -Wait
+----
++
+To stop the server, issue `ctrl-c` in the console window that was created by the command.
+
+* You can quickly configure and start a Service version of a Neo4j Server.
++
+NOTE: The following must be executed from an elevated PowerShell prompt, where the Neo4j module has been imported into the session.
++
+[source,powershell]
+----
+'C:\Neo4j' | `
+Initialize-Neo4jServer -ListenOnIPAddress 127.0.0.1 -PassThru | `
+Install-Neo4jServer -PassThru | `
+Start-Neo4jServer
+----
++
+To stop the server do this:
++
+[source,powershell]
+----
+'C:\Neo4j' | Stop-Neo4jServer
+----
+
+* Create a three node cluster on the local computer.
+  This example assumes three installations of the Enterprise version of Neo4j installed at `C:\Neo4j-1`,`C:\Neo4j-2` and `C:\Neo4j-3`.
++
+[source,powershell]
+----
+'C:\Neo4j-1' |
+Initialize-Neo4jServer `
+ -ListenOnIPAddress 127.0.0.1 `
+ -HTTPPort 7474 `
+ -OnlineBackupServer '127.0.0.1:6362' `
+ -PassThru |
+Initialize-Neo4jHACluster `
+ -ServerID 1 `
+ -InitialHosts '127.0.0.1:5001' `
+ -ClusterServer '127.0.0.1:5001' `
+ -HAServer '127.0.0.1:6001' `
+ -PassThru |
+Start-Neo4jServer -Console
+
+'C:\Neo4j-2' |
+Initialize-Neo4jServer `
+ -ListenOnIPAddress 127.0.0.1 `
+ -HTTPPort 7475 `
+ -ClearExistingDatabase `
+ -OnlineBackupServer '127.0.0.1:6363' `
+ -PassThru |
+Initialize-Neo4jHACluster `
+ -ServerID 2 `
+ -InitialHosts '127.0.0.1:5001' `
+ -ClusterServer '127.0.0.1:5002' `
+ -HAServer '127.0.0.1:6002' `
+ -DisallowClusterInit `
+ -PassThru |
+Start-Neo4jServer -Console
+
+'C:\Neo4j-3' |
+Initialize-Neo4jServer `
+ -ListenOnIPAddress 127.0.0.1 `
+ -HTTPPort 7476 `
+ -ClearExistingDatabase `
+ -OnlineBackupServer '127.0.0.1:6364' `
+ -PassThru |
+Initialize-Neo4jHACluster `
+ -ServerID 3 `
+ -InitialHosts '127.0.0.1:5001' `
+ -ClusterServer '127.0.0.1:5003' `
+ -HAServer '127.0.0.1:6003' `
+ -DisallowClusterInit `
+ -PassThru |
+Start-Neo4jServer -Console
+----
+
+[[powershell-common-parameters]]
+== Common PowerShell parameters
+
+The module commands support the common PowerShell parameters of `Verbose`, `Debug`, `WhatIf` etc.
+
+

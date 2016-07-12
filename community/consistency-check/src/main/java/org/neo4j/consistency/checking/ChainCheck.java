@@ -53,7 +53,7 @@ public class ChainCheck<RECORD extends PrimitiveRecord, REPORT extends Consisten
         }
     }
 
-    private static int[] keys( PropertyRecord property )
+    public static int[] keys( PropertyRecord property )
     {
         int[] toStartWith = new int[ MAX_BLOCK_PER_RECORD_COUNT ];
         int index = 0;

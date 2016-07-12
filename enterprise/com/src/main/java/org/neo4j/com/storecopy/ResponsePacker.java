@@ -27,7 +27,7 @@ import org.neo4j.com.Response;
 import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
-import org.neo4j.helpers.Provider;
+import org.neo4j.function.Supplier;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -40,11 +40,11 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
 public class ResponsePacker
 {
     protected final LogicalTransactionStore transactionStore;
-    protected final Provider<StoreId> storeId; // for lazy storeId getter
+    protected final Supplier<StoreId> storeId; // for lazy storeId getter
     private final TransactionIdStore transactionIdStore;
 
     public ResponsePacker( LogicalTransactionStore transactionStore, TransactionIdStore transactionIdStore,
-                           Provider<StoreId> storeId )
+                           Supplier<StoreId> storeId )
     {
         this.transactionStore = transactionStore;
         this.transactionIdStore = transactionIdStore;
@@ -67,7 +67,7 @@ public class ResponsePacker
                 }
             }
         };
-        return new TransactionStreamResponse<>( response, storeId.instance(), transactions, ResourceReleaser.NO_OP );
+        return new TransactionStreamResponse<>( response, storeId.get(), transactions, ResourceReleaser.NO_OP );
     }
 
     public <T> Response<T> packTransactionObligationResponse( RequestContext context, T response )
@@ -79,13 +79,13 @@ public class ResponsePacker
     public <T> Response<T> packTransactionObligationResponse( RequestContext context, T response,
                                                               long obligationTxId )
     {
-        return new TransactionObligationResponse<>( response, storeId.instance(), obligationTxId,
+        return new TransactionObligationResponse<>( response, storeId.get(), obligationTxId,
                 ResourceReleaser.NO_OP );
     }
 
     public <T> Response<T> packEmptyResponse( T response )
     {
-        return new TransactionObligationResponse<>( response, storeId.instance(), TransactionIdStore.BASE_TX_ID,
+        return new TransactionObligationResponse<>( response, storeId.get(), TransactionIdStore.BASE_TX_ID,
                 ResourceReleaser.NO_OP );
     }
 

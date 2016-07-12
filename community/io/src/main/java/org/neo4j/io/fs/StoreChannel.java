@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.fs;
 
+import java.io.Flushable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileLock;
@@ -28,7 +29,7 @@ import java.nio.channels.ScatteringByteChannel;
 import java.nio.channels.SeekableByteChannel;
 
 public interface StoreChannel
-        extends SeekableByteChannel, GatheringByteChannel, ScatteringByteChannel, InterruptibleChannel
+        extends Flushable, SeekableByteChannel, GatheringByteChannel, ScatteringByteChannel, InterruptibleChannel
 {
     /**
      * Attempts to acquire an exclusive lock on this channel's file.

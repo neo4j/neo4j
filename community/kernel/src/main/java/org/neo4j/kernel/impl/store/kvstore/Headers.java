@@ -19,14 +19,12 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 public abstract class Headers
 {
-
     public abstract <Value> Value get( HeaderField<Value> field );
 
     public static Builder headersBuilder()
@@ -72,21 +70,6 @@ public abstract class Headers
     {
         // internal subclasses
     }
-
-    static final Headers EMPTY = new Headers()
-    {
-        @Override
-        public <Value> Value get( HeaderField<Value> field )
-        {
-            return null;
-        }
-
-        @Override
-        Set<HeaderField<?>> fields()
-        {
-            return Collections.emptySet();
-        }
-    };
 
     static Headers indexedHeaders( Map<HeaderField<?>, Integer> indexes, Object[] values )
     {

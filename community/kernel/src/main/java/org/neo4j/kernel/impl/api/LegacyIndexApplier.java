@@ -33,21 +33,21 @@ import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
+import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 
-public class LegacyIndexApplier extends NeoCommandHandler.Adapter
+public class LegacyIndexApplier extends CommandHandler.Adapter
 {
     private final LegacyIndexApplierLookup applierLookup;
 
     // We have these two maps here for "applier lookup" performance reasons. Every command that we apply we must
     // redirect to the correct applier, i.e. the _single_ applier for the provider managing the specific index.
     // Looking up provider for an index has a certain cost so those are cached in applierByIndex.
-    private Map<String/*indexName*/,NeoCommandHandler> applierByNodeIndex = Collections.emptyMap();
-    private Map<String/*indexName*/,NeoCommandHandler> applierByRelationshipIndex = Collections.emptyMap();
-    private Map<String/*providerName*/,NeoCommandHandler> applierByProvider = Collections.emptyMap();
+    private Map<String/*indexName*/,CommandHandler> applierByNodeIndex = Collections.emptyMap();
+    private Map<String/*indexName*/,CommandHandler> applierByRelationshipIndex = Collections.emptyMap();
+    private Map<String/*providerName*/,CommandHandler> applierByProvider = Collections.emptyMap();
 
     private final IndexConfigStore indexConfigStore;
     private final IdOrderingQueue transactionOrdering;
@@ -66,12 +66,12 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
         this.mode = mode;
     }
 
-    private NeoCommandHandler applier( IndexCommand command ) throws IOException
+    private CommandHandler applier( IndexCommand command ) throws IOException
     {
         // Have we got an applier for this index?
         String indexName = defineCommand.getIndexName( command.getIndexNameId() );
-        Map<String,NeoCommandHandler> applierByIndex = applierByIndexMap( command );
-        NeoCommandHandler applier = applierByIndex.get( indexName );
+        Map<String,CommandHandler> applierByIndex = applierByIndexMap( command );
+        CommandHandler applier = applierByIndex.get( indexName );
         if ( applier == null )
         {
             // We don't. Have we got an applier for the provider of this index?
@@ -81,7 +81,7 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
             {
                 // This provider doesn't even exist, return an EMPTY handler, i.e. ignore these changes.
                 // Could be that the index provider is temporarily unavailable?
-                return NeoCommandHandler.EMPTY;
+                return CommandHandler.EMPTY;
             }
             String providerName = config.get( PROVIDER );
             applier = applierByProvider.get( providerName );
@@ -100,7 +100,7 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
     }
 
     // Some lazy creation of Maps for holding appliers per provider and index
-    private Map<String,NeoCommandHandler> applierByIndexMap( IndexCommand command )
+    private Map<String,CommandHandler> applierByIndexMap( IndexCommand command )
     {
         if ( command.getEntityType() == IndexEntityType.Node.id() )
         {
@@ -173,7 +173,7 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
     @Override
     public void apply()
     {
-        for ( NeoCommandHandler applier : applierByProvider.values() )
+        for ( CommandHandler applier : applierByProvider.values() )
         {
             applier.apply();
         }
@@ -184,7 +184,7 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
     {
         try
         {
-            for ( NeoCommandHandler applier : applierByProvider.values() )
+            for ( CommandHandler applier : applierByProvider.values() )
             {
                 applier.close();
             }

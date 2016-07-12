@@ -39,7 +39,7 @@ import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.statemachine.State;
 import org.neo4j.cluster.statemachine.StateMachine;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -58,7 +58,7 @@ public class StateMachinesTest
     public void whenMessageHandlingCausesNewMessagesThenEnsureCorrectOrder() throws Exception
     {
         // Given
-        StateMachines stateMachines = new StateMachines( mock( StateMachines.Monitor.class ),
+        StateMachines stateMachines = new StateMachines( NullLogProvider.getInstance(), mock( StateMachines.Monitor.class ),
                 mock( MessageSource.class ),
                 Mockito.mock( MessageSender.class ), Mockito.mock( Timeouts.class ),
                 Mockito.mock( DelayedDirectExecutor.class ), new Executor()
@@ -72,8 +72,7 @@ public class StateMachinesTest
         );
 
         ArrayList<TestMessage> handleOrder = new ArrayList<>();
-        StateMachine stateMachine = new StateMachine( handleOrder, TestMessage.class, TestState.test,
-                mock( Logging.class ) );
+        StateMachine stateMachine = new StateMachine( handleOrder, TestMessage.class, TestState.test, NullLogProvider.getInstance() );
 
         stateMachines.addStateMachine( stateMachine );
 
@@ -109,7 +108,7 @@ public class StateMachinesTest
             }
         } ).when( sender ).process( Matchers.<List<Message<? extends MessageType>>>any() );
 
-        StateMachines stateMachines = new StateMachines( mock( StateMachines.Monitor.class ),
+        StateMachines stateMachines = new StateMachines( NullLogProvider.getInstance(), mock( StateMachines.Monitor.class ),
                 mock( MessageSource.class ), sender,
                 mock( Timeouts.class ), mock( DelayedDirectExecutor.class ), new Executor()
         {

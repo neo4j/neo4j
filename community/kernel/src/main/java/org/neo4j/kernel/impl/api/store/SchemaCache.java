@@ -20,23 +20,24 @@
 package org.neo4j.kernel.impl.api.store;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Predicate;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.NestingIterable;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.impl.store.record.NodePropertyConstraintRule;
+import org.neo4j.kernel.impl.store.record.PropertyConstraintRule;
+import org.neo4j.kernel.impl.store.record.RelationshipPropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
-
-import static java.util.Collections.unmodifiableCollection;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 
@@ -51,14 +52,16 @@ import static org.neo4j.helpers.collection.Iterables.filter;
  */
 public class SchemaCache
 {
-    private final Map<Integer, Map<Long,SchemaRule>> rulesByLabelMap = new HashMap<>();
     private final Map<Long, SchemaRule> rulesByIdMap = new HashMap<>();
 
-    private final Collection<UniquenessConstraint> constraints = new HashSet<>();
+    private final Collection<NodePropertyConstraint> nodeConstraints = new HashSet<>();
+    private final Collection<RelationshipPropertyConstraint> relationshipConstraints = new HashSet<>();
     private final Map<Integer, Map<Integer, CommittedIndexDescriptor>> indexDescriptors = new HashMap<>();
+    private final ConstraintSemantics constraintSemantics;
 
-    public SchemaCache( Iterable<SchemaRule> initialRules )
+    public SchemaCache( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> initialRules )
     {
+        this.constraintSemantics = constraintSemantics;
         splitUpInitialRules( initialRules );
     }
 
@@ -70,77 +73,108 @@ public class SchemaCache
         }
     }
 
-    private Map<Long,SchemaRule> getOrCreateSchemaRulesMapForLabel( int label )
-    {
-        Map<Long,SchemaRule> rulesForLabel = rulesByLabelMap.get( label );
-        if ( rulesForLabel == null )
-        {
-            rulesForLabel = new HashMap<>();
-            rulesByLabelMap.put( label, rulesForLabel );
-        }
-        return rulesForLabel;
-    }
-
     public Iterable<SchemaRule> schemaRules()
     {
-        return new NestingIterable<SchemaRule, Map<Long,SchemaRule>>( rulesByLabelMap.values() )
+        return rulesByIdMap.values();
+    }
+
+    public Iterable<SchemaRule> schemaRulesForLabel( final int label )
+    {
+        return filter( new Predicate<SchemaRule>()
         {
             @Override
-            protected Iterator<SchemaRule> createNestedIterator( Map<Long,SchemaRule> item )
+            public boolean test( SchemaRule schemaRule )
             {
-                return item.values().iterator();
+                return schemaRule.getKind() != SchemaRule.Kind.RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT &&
+                       schemaRule.getLabel() == label;
             }
-        };
+        }, schemaRules() );
     }
 
-    public Collection<SchemaRule> schemaRulesForLabel( int label )
+    public Iterable<SchemaRule> schemaRulesForRelationshipType( final int typeId )
     {
-        Map<Long,SchemaRule> rulesForLabel = rulesByLabelMap.get( label );
-        return rulesForLabel != null ? unmodifiableCollection( rulesForLabel.values() ) :
-            Collections.<SchemaRule>emptyList();
-    }
-
-    public Iterator<UniquenessConstraint> constraints()
-    {
-        return constraints.iterator();
-    }
-
-    public Iterator<UniquenessConstraint> constraintsForLabel( final int label )
-    {
-        return filter( new Predicate<UniquenessConstraint>()
+        return filter( new Predicate<SchemaRule>()
         {
             @Override
-            public boolean accept( UniquenessConstraint item )
+            public boolean test( SchemaRule schemaRule )
             {
-                return item.label() == label;
+                return schemaRule.getKind() == SchemaRule.Kind.RELATIONSHIP_PROPERTY_EXISTENCE_CONSTRAINT &&
+                       schemaRule.getRelationshipType() == typeId;
             }
-        }, constraints.iterator() );
+        }, schemaRules() );
     }
 
-    public Iterator<UniquenessConstraint> constraintsForLabelAndProperty( final int label, final int property )
+    public Iterator<PropertyConstraint> constraints()
     {
-        return filter( new Predicate<UniquenessConstraint>()
+        return Iterables.concat( nodeConstraints.iterator(), relationshipConstraints.iterator() );
+    }
+
+    public Iterator<NodePropertyConstraint> constraintsForLabel( final int label )
+    {
+        return filter( new Predicate<NodePropertyConstraint>()
         {
             @Override
-            public boolean accept( UniquenessConstraint item )
+            public boolean test( NodePropertyConstraint constraint )
             {
-                return item.label() == label && item.propertyKeyId() == property;
+                return constraint.label() == label;
             }
-        }, constraints.iterator() );
+        }, nodeConstraints.iterator() );
+    }
+
+    public Iterator<NodePropertyConstraint> constraintsForLabelAndProperty( final int label, final int property )
+    {
+        return filter( new Predicate<NodePropertyConstraint>()
+        {
+            @Override
+            public boolean test( NodePropertyConstraint constraint )
+            {
+                return constraint.label() == label && constraint.propertyKey() == property;
+            }
+        }, nodeConstraints.iterator() );
+    }
+
+    public Iterator<RelationshipPropertyConstraint> constraintsForRelationshipType( final int typeId )
+    {
+        return filter( new Predicate<RelationshipPropertyConstraint>()
+        {
+            @Override
+            public boolean test( RelationshipPropertyConstraint constraint )
+            {
+                return constraint.relationshipType() == typeId;
+            }
+        }, relationshipConstraints.iterator() );
+    }
+
+    public Iterator<RelationshipPropertyConstraint> constraintsForRelationshipTypeAndProperty( final int typeId,
+            final int propertyKeyId )
+    {
+        return filter( new Predicate<RelationshipPropertyConstraint>()
+        {
+            @Override
+            public boolean test( RelationshipPropertyConstraint constraint )
+            {
+                return constraint.relationshipType() == typeId && constraint.propertyKey() == propertyKeyId;
+            }
+        }, relationshipConstraints.iterator() );
     }
 
     public void addSchemaRule( SchemaRule rule )
     {
-        getOrCreateSchemaRulesMapForLabel( rule.getLabel() ).put( rule.getId(), rule );
         rulesByIdMap.put( rule.getId(), rule );
 
-        // Note: If you start adding more unmarshalling of other types of things here,
-        // make this into a more generic thing rather than adding more branch statement.
-        if( rule instanceof UniquenessConstraintRule )
+        if ( rule instanceof PropertyConstraintRule )
         {
-            constraints.add( ruleToConstraint( (UniquenessConstraintRule) rule ) );
+            PropertyConstraint constraint = constraintSemantics.readConstraint( (PropertyConstraintRule) rule );
+            if ( constraint instanceof NodePropertyConstraint )
+            {
+                nodeConstraints.add( (NodePropertyConstraint) constraint );
+            }
+            else if ( constraint instanceof RelationshipPropertyConstraint )
+            {
+                relationshipConstraints.add( (RelationshipPropertyConstraint) constraint );
+            }
         }
-        else if( rule instanceof IndexRule )
+        else if ( rule instanceof IndexRule )
         {
             IndexRule indexRule = (IndexRule) rule;
             Map<Integer, CommittedIndexDescriptor> byLabel = indexDescriptors.get( indexRule.getLabel() );
@@ -155,16 +189,16 @@ public class SchemaCache
 
     public void clear()
     {
-        rulesByLabelMap.clear();
         rulesByIdMap.clear();
-        constraints.clear();
+        nodeConstraints.clear();
+        relationshipConstraints.clear();
         indexDescriptors.clear();
     }
 
-    public void load( Iterator<SchemaRule> schemaRuleIterator )
+    public void load( List<SchemaRule> schemaRuleIterator )
     {
         clear();
-        for ( SchemaRule schemaRule : Iterables.toList( schemaRuleIterator ) )
+        for ( SchemaRule schemaRule : schemaRuleIterator )
         {
             addSchemaRule( schemaRule );
         }
@@ -205,18 +239,15 @@ public class SchemaCache
             return;
         }
 
-        int labelId = rule.getLabel();
-        Map<Long, SchemaRule> rules = rulesByLabelMap.get( labelId );
-        if ( rules.remove( id ) != null && rules.isEmpty() )
+        if ( rule instanceof NodePropertyConstraintRule )
         {
-            rulesByLabelMap.remove( labelId );
+            nodeConstraints.remove( ((NodePropertyConstraintRule) rule).toConstraint() );
         }
-
-        if( rule instanceof UniquenessConstraintRule )
+        else if ( rule instanceof RelationshipPropertyConstraintRule )
         {
-            constraints.remove( ruleToConstraint( (UniquenessConstraintRule)rule ) );
+            relationshipConstraints.remove( ((RelationshipPropertyConstraintRule) rule).toConstraint() );
         }
-        else if( rule instanceof IndexRule )
+        else if ( rule instanceof IndexRule )
         {
             IndexRule indexRule = (IndexRule) rule;
             Map<Integer, CommittedIndexDescriptor> byLabel = indexDescriptors.get( indexRule.getLabel() );
@@ -226,28 +257,6 @@ public class SchemaCache
                 indexDescriptors.remove( indexRule.getLabel() );
             }
         }
-    }
-
-    public long indexId( IndexDescriptor index ) throws IndexNotFoundKernelException
-    {
-        Map<Integer, CommittedIndexDescriptor> byLabel = indexDescriptors.get( index.getLabelId() );
-        if ( byLabel != null )
-        {
-            CommittedIndexDescriptor committed = byLabel.get( index.getPropertyKeyId() );
-            if ( committed != null )
-            {
-                return committed.getId();
-            }
-        }
-
-        throw new IndexNotFoundKernelException(
-            "Couldn't resolve index id for " + index + " at this point. Schema rule not committed yet?"
-        );
-    }
-
-    private UniquenessConstraint ruleToConstraint( UniquenessConstraintRule constraintRule )
-    {
-        return new UniquenessConstraint( constraintRule.getLabel(), constraintRule.getPropertyKey() );
     }
 
     public IndexDescriptor indexDescriptor( int labelId, int propertyKey )
@@ -260,16 +269,6 @@ public class SchemaCache
             {
                 return committed.getDescriptor();
             }
-        }
-        return null;
-    }
-
-    public IndexDescriptor indexDescriptor( long indexId )
-    {
-        SchemaRule rule = rulesByIdMap.get( indexId );
-        if ( rule instanceof IndexRule )
-        {
-            return indexDescriptor( rule.getLabel(), ((IndexRule) rule).getPropertyKey() );
         }
         return null;
     }

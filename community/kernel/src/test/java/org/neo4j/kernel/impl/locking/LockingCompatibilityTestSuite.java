@@ -33,6 +33,7 @@ import java.util.concurrent.TimeoutException;
 import org.neo4j.kernel.api.index.ParameterizedSuiteRunner;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.OtherThreadRule;
+import org.neo4j.test.TargetDirectory;
 
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.fail;
@@ -46,8 +47,8 @@ import static org.neo4j.test.OtherThreadRule.isWaiting;
         DeadlockCompatibility.class,
         LockReentrancyCompatibility.class,
         RWLockCompatibility.class,
-        CloseCompatibility.class,
-        TerminationCompatibility.class
+        StopCompatibility.class,
+        CloseCompatibility.class
 })
 public abstract class LockingCompatibilityTestSuite
 {
@@ -63,6 +64,9 @@ public abstract class LockingCompatibilityTestSuite
 
         @Rule
         public OtherThreadRule<Void> threadC = new OtherThreadRule<>();
+
+        @Rule
+        public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
         protected final Locks locks;
         protected final Locks.Client clientA;

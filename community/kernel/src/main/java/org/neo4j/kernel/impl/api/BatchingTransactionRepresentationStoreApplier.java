@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
 /**
@@ -40,23 +40,24 @@ public class BatchingTransactionRepresentationStoreApplier extends TransactionRe
 {
     private final RecoveryLabelScanWriterProvider labelScanWriterProvider;
     private final RecoveryLegacyIndexApplierLookup legacyIndexApplierLookup;
+    private KernelHealth health;
 
     public BatchingTransactionRepresentationStoreApplier( IndexingService indexingService,
-            LabelScanStore labelScanStore, NeoStore neoStore, CacheAccessBackDoor cacheAccess,
+            LabelScanStore labelScanStore, NeoStores neoStore, CacheAccessBackDoor cacheAccess,
             LockService lockService, LegacyIndexApplierLookup legacyIndexProviderLookup,
-            IndexConfigStore indexConfigStore, KernelHealth kernelHealth,
-            IdOrderingQueue legacyIndexTransactionOrdering )
+            IndexConfigStore indexConfigStore, KernelHealth kernelHealth, IdOrderingQueue legacyIndexTransactionOrdering )
     {
         this( indexingService, new RecoveryLabelScanWriterProvider( labelScanStore, 1000 ),
                 neoStore, cacheAccess, lockService,
                 new RecoveryLegacyIndexApplierLookup( legacyIndexProviderLookup, 1000 ),
                 indexConfigStore, kernelHealth, legacyIndexTransactionOrdering );
+        this.health = kernelHealth;
     }
 
     private BatchingTransactionRepresentationStoreApplier(
             IndexingService indexingService,
             RecoveryLabelScanWriterProvider labelScanWriterProvider,
-            NeoStore neoStore,
+            NeoStores neoStore,
             CacheAccessBackDoor cacheAccess,
             LockService lockService,
             RecoveryLegacyIndexApplierLookup legacyIndexApplierLookup,

@@ -21,14 +21,12 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Dynamic store that stores strings.
@@ -37,7 +35,6 @@ public class DynamicStringStore extends AbstractDynamicStore
 {
     // store version, each store ends with this string (byte encoded)
     public static final String TYPE_DESCRIPTOR = "StringPropertyStore";
-    public static final String VERSION = buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR );
 
     public DynamicStringStore(
             File fileName,
@@ -45,13 +42,10 @@ public class DynamicStringStore extends AbstractDynamicStore
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger,
-            StoreVersionMismatchHandler versionMismatchHandler,
-            Monitors monitors )
+            LogProvider logProvider,
+            int blockSize )
     {
-        super( fileName, configuration, idType, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
+        super( fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider, blockSize );
     }
 
     @Override
@@ -62,7 +56,7 @@ public class DynamicStringStore extends AbstractDynamicStore
     }
 
     @Override
-    public String getTypeDescriptor()
+    protected String getTypeDescriptor()
     {
         return TYPE_DESCRIPTOR;
     }

@@ -37,7 +37,6 @@ import java.util.Map;
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.function.Function;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileLock;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 
@@ -64,7 +63,7 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     public StoreChannel open( File fileName, String mode ) throws IOException
     {
         adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
-        return new AdversarialFileChannel( delegate.open( fileName, mode ), adversary );
+        return AdversarialFileChannel.wrap( delegate.open( fileName, mode ), adversary );
     }
 
     public boolean renameFile( File from, File to ) throws IOException
@@ -82,7 +81,7 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     public StoreChannel create( File fileName ) throws IOException
     {
         adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
-        return new AdversarialFileChannel( delegate.create( fileName ), adversary );
+        return AdversarialFileChannel.wrap( delegate.create( fileName ), adversary );
     }
 
     public boolean mkdir( File fileName )
@@ -177,12 +176,6 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     {
         adversary.injectFailure( SecurityException.class, NullPointerException.class, IOException.class );
         delegate.deleteRecursively( directory );
-    }
-
-    public FileLock tryLock( File fileName, StoreChannel channel ) throws IOException
-    {
-        adversary.injectFailure( SecurityException.class, IOException.class, FileNotFoundException.class );
-        return delegate.tryLock( fileName, channel );
     }
 
     private final Map<Class<? extends ThirdPartyFileSystem>, ThirdPartyFileSystem> thirdPartyFileSystems =

@@ -19,6 +19,7 @@
  */
 package org.neo4j.helpers.collection;
 
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,10 +32,12 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+import org.neo4j.cursor.Cursor;
+import org.neo4j.function.Function;
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.function.Function;
-import org.neo4j.helpers.Predicate;
+import org.neo4j.kernel.impl.transaction.log.IOCursor;
 
 import static java.util.Arrays.asList;
 
@@ -216,9 +219,35 @@ public final class Iterables
         return c;
     }
 
+    /**
+     * @deprecated use {@link #filter(Predicate, Iterable)} instead
+     * @param specification filter
+     * @param i source iterable
+     * @param <X> the type of the elements
+     * @return a filtering iterable
+     */
+    @Deprecated
+    public static <X> Iterable<X> filter( org.neo4j.helpers.Predicate<? super X> specification, Iterable<X> i )
+    {
+        return new FilterIterable<>( i, org.neo4j.helpers.Predicates.upgrade( specification ) );
+    }
+
     public static <X> Iterable<X> filter( Predicate<? super X> specification, Iterable<X> i )
     {
         return new FilterIterable<>( i, specification );
+    }
+
+    /**
+     * @deprecated use {@link #filter(Predicate, Iterator)} instead
+     * @param specification filter
+     * @param i source iterator
+     * @param <X> the type of the elements
+     * @return a filtering iterator
+     */
+    @Deprecated
+    public static <X> Iterator<X> filter( org.neo4j.helpers.Predicate<? super X> specification, Iterator<X> i )
+    {
+        return new FilterIterable.FilterIterator<>( i, org.neo4j.helpers.Predicates.upgrade( specification ) );
     }
 
     public static <X> Iterator<X> filter( Predicate<? super X> specification, Iterator<X> i )
@@ -293,6 +322,12 @@ public final class Iterables
     public static <X, I extends Iterable<? extends X>> Iterable<X> flatten( I... multiIterator )
     {
         return new FlattenIterable<>( asList(multiIterator) );
+    }
+
+    public static <X, S extends Iterable<? extends X>, I extends Iterable<S>> Iterable<X> flattenIterable( I
+            multiIterator )
+    {
+        return new FlattenIterable<X, S>( multiIterator );
     }
 
     @SafeVarargs
@@ -606,6 +641,169 @@ public final class Iterables
         };
     }
 
+    public static <T> ResourceIterable<T> iterable( final IOCursor<T> cursor )
+    {
+        return new ResourceIterable<T>()
+        {
+            @Override
+            public ResourceIterator<T> iterator()
+            {
+                try
+                {
+                    if ( cursor.next() )
+                    {
+                        final T first = cursor.get();
+
+                        return new ResourceIterator<T>()
+                        {
+                            T instance = first;
+
+                            @Override
+                            public boolean hasNext()
+                            {
+                                return instance != null;
+                            }
+
+                            @Override
+                            public T next()
+                            {
+                                try
+                                {
+                                    return instance;
+                                }
+                                finally
+                                {
+                                    try
+                                    {
+                                        if ( cursor.next() )
+                                        {
+                                            instance = cursor.get();
+                                        }
+                                        else
+                                        {
+                                            cursor.close();
+                                            instance = null;
+                                        }
+                                    }
+                                    catch ( IOException e )
+                                    {
+                                        instance = null;
+                                    }
+                                }
+                            }
+
+                            @Override
+                            public void remove()
+                            {
+                                throw new UnsupportedOperationException();
+                            }
+
+                            @Override
+                            public void close()
+                            {
+                                try
+                                {
+                                    cursor.close();
+                                }
+                                catch ( IOException e )
+                                {
+                                    // Ignore
+                                }
+                            }
+                        };
+                    }
+                    else
+                    {
+                        cursor.close();
+                        return IteratorUtil.<T>asResourceIterator( Collections.<T>emptyIterator() );
+                    }
+                }
+                catch ( IOException e )
+                {
+                    return IteratorUtil.<T>asResourceIterator( Collections.<T>emptyIterator() );
+                }
+            }
+        };
+    }
+
+    public static <T, C extends Cursor> ResourceIterator<T> iterator( final C resourceCursor, final Function<C, T> map )
+    {
+        return new CursorResourceIterator<>( resourceCursor, map );
+    }
+
+    private static class CursorResourceIterator<T, C extends Cursor> implements ResourceIterator<T>
+    {
+        private final Function<C, T> map;
+        private C cursor;
+        private boolean hasNext;
+
+        public CursorResourceIterator( C resourceCursor, Function<C, T> map )
+        {
+            this.map = map;
+            cursor = resourceCursor;
+            hasNext = nextCursor();
+        }
+
+        private boolean nextCursor()
+        {
+            if ( cursor != null )
+            {
+                boolean hasNext = cursor.next();
+                if ( !hasNext )
+                {
+                    close();
+                }
+                return hasNext;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return hasNext;
+        }
+
+        @Override
+        public T next()
+        {
+            if ( hasNext )
+            {
+                try
+                {
+                    return map.apply( cursor );
+                }
+                finally
+                {
+                    hasNext = nextCursor();
+                }
+            }
+            else
+            {
+                throw new NoSuchElementException();
+            }
+        }
+
+        @Override
+        public void remove()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void close()
+        {
+            if ( cursor != null )
+            {
+                cursor.close();
+                cursor = null;
+            }
+        }
+    }
+
     public static <T> Set<T> toSet( Iterable<T> iterable )
     {
         return addAll( new HashSet<T>(), iterable );
@@ -683,9 +881,9 @@ public final class Iterables
     {
         private final Iterable<T> iterable;
 
-        private final Predicate<? super T> specification;
+        private final org.neo4j.function.Predicate<? super T> specification;
 
-        public FilterIterable( Iterable<T> iterable, Predicate<? super T> specification )
+        public FilterIterable( Iterable<T> iterable, org.neo4j.function.Predicate<? super T> specification )
         {
             this.iterable = iterable;
             this.specification = specification;
@@ -720,7 +918,7 @@ public final class Iterables
                 while ( !found && iterator.hasNext() )
                 {
                     T currentValue = iterator.next();
-                    boolean satisfies = specification.accept( currentValue );
+                    boolean satisfies = specification.test( currentValue );
 
                     if ( satisfies )
                     {

@@ -26,12 +26,12 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.test.Mute;
+import org.neo4j.test.SuppressOutput;
 
 public class LonelyProcessingStepTest
 {
     @Rule
-    public Mute mute = Mute.muteAll();
+    public SuppressOutput mute = SuppressOutput.suppressAll();
 
     @Test( timeout = 1000 )
     public void issuePanicBeforeCompletionOnError() throws Exception

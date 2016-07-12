@@ -27,9 +27,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.CommunityIdTypeConfigurationProvider;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.IdTypeConfiguration;
+import org.neo4j.kernel.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdRange;
 
@@ -37,22 +39,31 @@ public class EphemeralIdGenerator implements IdGenerator
 {
     public static class Factory implements IdGeneratorFactory
     {
-        protected final Map<IdType, IdGenerator> generators = new EnumMap<IdType, IdGenerator>( IdType.class );
+        protected final Map<IdType,IdGenerator> generators = new EnumMap<>( IdType.class );
+        private IdTypeConfigurationProvider
+                idTypeConfigurationProvider = new CommunityIdTypeConfigurationProvider();
 
         @Override
-        public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType, long highId )
+        public IdGenerator open( File filename, IdType idType, long highId )
+        {
+            return open( filename, 0, idType, highId );
+        }
+
+        @Override
+        public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
         {
             IdGenerator generator = generators.get( idType );
             if ( generator == null )
             {
-                generator = new EphemeralIdGenerator( idType );
+                IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
+                generator = new EphemeralIdGenerator( idType, idTypeConfiguration );
                 generators.put( idType, generator );
             }
             return generator;
         }
 
         @Override
-        public void create( FileSystemAbstraction fs, File fileName, long highId )
+        public void create( File fileName, long highId, boolean throwIfFileExists )
         {
         }
 
@@ -68,10 +79,10 @@ public class EphemeralIdGenerator implements IdGenerator
     private final Queue<Long> freeList;
     private final AtomicInteger freedButNotReturnableIdCount = new AtomicInteger();
 
-    public EphemeralIdGenerator( IdType idType )
+    public EphemeralIdGenerator( IdType idType, IdTypeConfiguration idTypeConfiguration )
     {
         this.idType = idType;
-        this.freeList = idType != null && idType.allowAggressiveReuse() ? new ConcurrentLinkedQueue<Long>() : null;
+        this.freeList = idType != null && idTypeConfiguration.allowAggressiveReuse() ? new ConcurrentLinkedQueue<Long>() : null;
     }
 
     @Override
@@ -88,7 +99,7 @@ public class EphemeralIdGenerator implements IdGenerator
             Long id = freeList.poll();
             if ( id != null )
             {
-                return id.longValue();
+                return id;
             }
         }
         return nextId.getAndIncrement();

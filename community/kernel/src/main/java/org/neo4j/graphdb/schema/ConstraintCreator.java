@@ -20,12 +20,11 @@
 package org.neo4j.graphdb.schema;
 
 import org.neo4j.graphdb.ConstraintViolationException;
-import org.neo4j.graphdb.Label;
 
 /**
  * A builder for entering details about a constraint to create. After all details have been entered
  * {@link #create()} must be called for the constraint to actually be created. A constraint creator knows
- * which {@link Label label} it is to be created for.
+ * which {@link org.neo4j.graphdb.Label label} it is to be created for.
  *
  * All methods except {@link #create()} will return an {@link ConstraintCreator} which should be
  * used for further interaction.

@@ -19,74 +19,64 @@
  */
 package org.neo4j.server.enterprise;
 
-import java.util.Map;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Pattern;
 
+import org.neo4j.graphdb.EnterpriseGraphDatabase;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.server.InterruptThreadTimer;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.advanced.AdvancedNeoServer;
-import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase.GraphFactory;
 import org.neo4j.server.modules.ServerModule;
-import org.neo4j.server.preflight.EnsurePreparedForHttpLogging;
-import org.neo4j.server.preflight.PerformRecoveryIfNecessary;
-import org.neo4j.server.preflight.PerformUpgradeIfNecessary;
-import org.neo4j.server.preflight.PreFlightTasks;
-import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.rest.management.AdvertisableService;
+import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.webadmin.rest.MasterInfoServerModule;
 import org.neo4j.server.webadmin.rest.MasterInfoService;
 
 import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.collection.Iterables.mix;
-import static org.neo4j.server.database.LifecycleManagingDatabase.EMBEDDED;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
 public class EnterpriseNeoServer extends AdvancedNeoServer
 {
-    public static final String SINGLE = "SINGLE";
     public static final String HA = "HA";
     private static final GraphFactory HA_FACTORY = new GraphFactory()
     {
         @Override
-        public GraphDatabaseAPI newGraphDatabase( String storeDir, Map<String,String> params, Dependencies dependencies )
+        public GraphDatabaseAPI newGraphDatabase( Config config, Dependencies dependencies )
         {
-            return new HighlyAvailableGraphDatabase( storeDir, params, dependencies );
+            File storeDir = config.get( ServerInternalSettings.legacy_db_location );
+            return new HighlyAvailableGraphDatabase( storeDir, config.getParams(), dependencies );
+        }
+    };
+    private static final GraphFactory ENTERPRISE_FACTORY = new GraphFactory()
+    {
+        @Override
+        public GraphDatabaseAPI newGraphDatabase( Config config, Dependencies dependencies )
+        {
+            File storeDir = config.get( ServerInternalSettings.legacy_db_location );
+            return new EnterpriseGraphDatabase( storeDir, config.getParams(), dependencies );
         }
     };
 
-    public EnterpriseNeoServer( ConfigurationBuilder configurator, Dependencies dependencies )
+    public EnterpriseNeoServer( Config config, Dependencies dependencies, LogProvider logProvider )
     {
-        super( configurator, createDbFactory( configurator.configuration() ), dependencies );
-    }
-
-    public EnterpriseNeoServer( ConfigurationBuilder configurator, Database.Factory dbFactory, Dependencies dependencies )
-    {
-        super( configurator, dbFactory, dependencies );
+        super( config, createDbFactory( config ), dependencies, logProvider );
     }
 
     protected static Database.Factory createDbFactory( Config config )
     {
-        final String mode = config.get( EnterpriseServerSettings.mode ).toUpperCase();
-        return mode.equals( HA ) ? lifecycleManagingDatabase( HA_FACTORY ) : lifecycleManagingDatabase( EMBEDDED );
-    }
-
-    @Override
-    protected PreFlightTasks createPreflightTasks()
-    {
-        final Logging logging = dependencies.logging();
-        return new PreFlightTasks( logging,
-                new EnsurePreparedForHttpLogging( configurator.configuration() ), new PerformUpgradeIfNecessary(
-                        getConfig(), configurator.getDatabaseTuningProperties(), logging,
-                        StoreUpgrader.NO_MONITOR ), new PerformRecoveryIfNecessary( getConfig(),
-                        configurator.getDatabaseTuningProperties(), System.out, logging ) );
+        String mode = config.get( EnterpriseServerSettings.mode ).toUpperCase();
+        return lifecycleManagingDatabase( mode.equals( HA ) ? HA_FACTORY : ENTERPRISE_FACTORY );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -95,48 +85,7 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
     {
         return mix(
                 asList( (ServerModule) new MasterInfoServerModule( webServer, getConfig(),
-                        dependencies.logging() ) ), super.createServerModules() );
-    }
-
-    @Override
-    protected InterruptThreadTimer createInterruptStartupTimer()
-    {
-        // If we are in HA mode, database startup can take a very long time, so
-        // we default to disabling the startup timeout here, unless explicitly overridden
-        // by configuration.
-        if ( getConfig().get( EnterpriseServerSettings.mode ).equalsIgnoreCase( "ha" ) )
-        {
-            final long startupTimeout = getStartTimeoutFromPropertiesOrSetToZeroIfNoKeyFound();
-            InterruptThreadTimer stopStartupTimer;
-            if ( startupTimeout > 0 )
-            {
-                stopStartupTimer = InterruptThreadTimer.createTimer( startupTimeout, Thread.currentThread() );
-            }
-            else
-            {
-                stopStartupTimer = InterruptThreadTimer.createNoOpTimer();
-            }
-            return stopStartupTimer;
-        }
-        else
-        {
-            return super.createInterruptStartupTimer();
-        }
-    }
-
-    private long getStartTimeoutFromPropertiesOrSetToZeroIfNoKeyFound()
-    {
-        long startupTimeout;
-        final Map<String,String> params = getConfig().getParams();
-        if ( params.containsKey( ServerInternalSettings.startup_timeout.name() ) )
-        {
-            startupTimeout = getConfig().get( ServerInternalSettings.startup_timeout );
-        }
-        else
-        {
-            startupTimeout = 0;
-        }
-        return startupTimeout;
+                        logProvider ) ), super.createServerModules() );
     }
 
     @Override
@@ -150,5 +99,16 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
         {
             return super.getServices();
         }
+    }
+
+    @Override
+    protected Pattern[] getUriWhitelist()
+    {
+        final List<Pattern> uriWhitelist = new ArrayList<>( Arrays.asList( super.getUriWhitelist() ) );
+        if ( !getConfig().get( HaSettings.ha_status_auth_enabled ) )
+        {
+            uriWhitelist.add( Pattern.compile( "/db/manage/server/ha.*" ) );
+        }
+        return uriWhitelist.toArray( new Pattern[uriWhitelist.size()] );
     }
 }

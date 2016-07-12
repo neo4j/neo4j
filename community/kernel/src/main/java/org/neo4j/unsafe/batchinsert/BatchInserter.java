@@ -278,7 +278,7 @@ public interface BatchInserter
      *
      * @param label the label this constraint is for.
      * @return a {@link ConstraintCreator} capable of providing details for, as well as creating
-     * a constraint for the given {@link Label label}.
+     * a constraint for the given {@linkplain Label label}.
      */
     ConstraintCreator createDeferredConstraint( Label label );
 

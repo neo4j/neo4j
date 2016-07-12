@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.helpers
 
+import collection.Seq
+import collection.Map
 import java.lang.{Iterable => JavaIterable}
 import java.util.{Map => JavaMap}
+import collection.JavaConverters._
 
-import scala.collection.JavaConverters._
-import scala.collection.{Map, Seq}
-
+// TODO: This is only here for accomodating cypher-compiler-1.9. Do not touch, do not import, purge it with fire post 2.3
 object IsCollection extends CollectionSupport {
   def unapply(x: Any):Option[Iterable[Any]] = {
     val collection = isCollection(x)
@@ -36,6 +37,7 @@ object IsCollection extends CollectionSupport {
   }
 }
 
+// TODO: This is only here for accomodating cypher-compiler-1.9. Do not touch, do not import, purge it with fire post 2.3
 trait CollectionSupport {
 
   def singleOr[T](in:Iterator[T], or: => Exception):Iterator[T] = new Iterator[T] {

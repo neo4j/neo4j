@@ -21,15 +21,14 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
-import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
+import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
-
-import static org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
+import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
 
 /**
  * Logic to check whether a database version is upgradable to the current version. It looks at the
@@ -38,13 +37,15 @@ import static org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
 public class UpgradableDatabase
 {
     private final StoreVersionCheck storeVersionCheck;
+    private final LegacyStoreVersionCheck legacyStoreVersionCheck;
 
-    public UpgradableDatabase( StoreVersionCheck storeVersionCheck )
+    public UpgradableDatabase( StoreVersionCheck storeVersionCheck, LegacyStoreVersionCheck legacyStoreVersionCheck )
     {
         this.storeVersionCheck = storeVersionCheck;
+        this.legacyStoreVersionCheck = legacyStoreVersionCheck;
     }
 
-    public boolean storeFilesUpgradeable( File storeDirectory )
+    boolean storeFilesUpgradeable( File storeDirectory )
     {
         try
         {
@@ -77,18 +78,25 @@ public class UpgradableDatabase
             return Legacy21Store.LEGACY_VERSION;
         }
 
+        result = checkUpgradeableFor( storeDirectory, Legacy22Store.LEGACY_VERSION );
+        if ( result.outcome.isSuccessful() )
+        {
+            return Legacy22Store.LEGACY_VERSION;
+        }
+
         // report error
+        String path = new File( storeDirectory, result.storeFilename ).getAbsolutePath();
         switch ( result.outcome )
         {
             case missingStoreFile:
-                throw new StoreUpgrader.UpgradeMissingStoreFilesException( result.storeFilename );
+                throw new StoreUpgrader.UpgradeMissingStoreFilesException( path );
             case storeVersionNotFound:
-                throw new StoreUpgrader.UpgradingStoreVersionNotFoundException( result.storeFilename );
+                throw new StoreUpgrader.UpgradingStoreVersionNotFoundException( path );
             case unexpectedUpgradingStoreVersion:
                 throw new StoreUpgrader.UnexpectedUpgradingStoreVersionException(
-                        result.storeFilename, Legacy21Store.LEGACY_VERSION, result.actualVersion );
+                        path, Legacy21Store.LEGACY_VERSION, result.actualVersion );
             default:
-                throw new IllegalArgumentException( result.outcome.name() );
+                throw new IllegalArgumentException( "Unexpected outcome: " + result.outcome.name() );
         }
     }
 
@@ -99,7 +107,7 @@ public class UpgradableDatabase
         {
             String expectedVersion = store.forVersion( version );
             File storeFile = new File( storeDirectory, store.storeFileName() );
-            result = storeVersionCheck.hasVersion( storeFile, expectedVersion );
+            result = legacyStoreVersionCheck.hasVersion( storeFile, expectedVersion, store.isOptional() );
             if ( !result.outcome.isSuccessful() )
             {
                 break;
@@ -108,10 +116,23 @@ public class UpgradableDatabase
         return result;
     }
 
-    public boolean hasCurrentVersion( FileSystemAbstraction fs, File storeDir )
+    public boolean hasCurrentVersion( File storeDir )
     {
-        NeoStoreUtil neoStoreUtil = new NeoStoreUtil( storeDir, fs );
-        String versionAsString = NeoStore.versionLongToString( neoStoreUtil.getStoreVersion() );
-        return CommonAbstractStore.ALL_STORES_VERSION.equals( versionAsString );
+        File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        Result result = storeVersionCheck.hasVersion( neoStore, CommonAbstractStore.ALL_STORES_VERSION );
+        switch ( result.outcome )
+        {
+        case ok:
+            return true;
+        case missingStoreFile:
+            // let's assume the db is empty
+            return true;
+        case storeVersionNotFound:
+            return false;
+        case unexpectedUpgradingStoreVersion:
+            return false;
+        default:
+            throw new IllegalArgumentException( "Unknown outcome: " + result.outcome.name() );
+        }
     }
 }

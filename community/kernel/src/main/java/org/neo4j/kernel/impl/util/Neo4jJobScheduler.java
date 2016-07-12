@@ -19,46 +19,83 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.util.Map;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
-
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
 import static org.neo4j.kernel.impl.util.DebugUtil.trackTest;
+import static org.neo4j.kernel.impl.util.JobScheduler.Group.NO_METADATA;
 
 public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 {
-    private final String id;
-
-    private ExecutorService executor;
+    private ExecutorService globalPool;
     private ScheduledThreadPoolExecutor scheduledExecutor;
-
-    public Neo4jJobScheduler()
-    {
-        this.id = getClass().getSimpleName();
-    }
-
-    public Neo4jJobScheduler( String id )
-    {
-        this.id = id;
-    }
 
     @Override
     public void init()
     {
-        this.executor = newCachedThreadPool( daemon( "Neo4j " + id + trackTest() ) );
-        this.scheduledExecutor = new ScheduledThreadPoolExecutor( 2, daemon( "Scheduled Neo4j " + id + trackTest() ) );
+        this.globalPool = newCachedThreadPool( daemon( "neo4j.Pooled" + trackTest() ) );
+        this.scheduledExecutor = new ScheduledThreadPoolExecutor( 2, daemon( "neo4j.Scheduled" + trackTest() ) );
+    }
+
+    @Override
+    public Executor executor( final Group group )
+    {
+        return new Executor()
+        {
+            @Override
+            public void execute( Runnable command )
+            {
+                schedule( group, command );
+            }
+        };
+    }
+
+    @Override
+    public ThreadFactory threadFactory( final Group group )
+    {
+        return new ThreadFactory()
+        {
+            @Override
+            public Thread newThread( Runnable r )
+            {
+                return createNewThread( group, r, NO_METADATA );
+            }
+        };
     }
 
     @Override
     public JobHandle schedule( Group group, Runnable job )
     {
-        return new Handle( this.executor.submit( job ) );
+        return schedule( group, job, NO_METADATA );
+    }
+
+    @Override
+    public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
+    {
+        if (globalPool == null)
+            throw new RejectedExecutionException( "Scheduler is not started" );
+
+        switch( group.strategy() )
+        {
+        case POOLED:
+            return new PooledJobHandle( this.globalPool.submit( job ) );
+        case NEW_THREAD:
+            Thread thread = createNewThread( group, job, metadata );
+            thread.start();
+            return new SingleThreadHandle( thread );
+        default:
+            throw new IllegalArgumentException( "Unsupported strategy for scheduling job: " + group.strategy() );
+        }
     }
 
     @Override
@@ -71,7 +108,25 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     public JobHandle scheduleRecurring( Group group, final Runnable runnable, long initialDelay, long period,
                                         TimeUnit timeUnit )
     {
-        return new Handle( scheduledExecutor.scheduleAtFixedRate( runnable, initialDelay, period, timeUnit ) );
+        switch ( group.strategy() )
+        {
+        case POOLED:
+            return new PooledJobHandle( scheduledExecutor.scheduleAtFixedRate( runnable, initialDelay, period, timeUnit ) );
+        default:
+            throw new IllegalArgumentException( "Unsupported strategy to use for recurring jobs: " + group.strategy() );
+        }
+    }
+
+    @Override
+    public JobHandle schedule( Group group, final Runnable runnable, long initialDelay, TimeUnit timeUnit )
+    {
+        switch ( group.strategy() )
+        {
+        case POOLED:
+            return new PooledJobHandle( scheduledExecutor.schedule( runnable, initialDelay, timeUnit ) );
+        default:
+            throw new IllegalArgumentException( "Unsupported strategy to use for delayed jobs: " + group.strategy() );
+        }
     }
 
     @Override
@@ -80,11 +135,11 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         RuntimeException exception = null;
         try
         {
-            if(executor != null)
+            if( globalPool != null)
             {
-                executor.shutdownNow();
-                executor.awaitTermination( 5, TimeUnit.SECONDS );
-                executor = null;
+                globalPool.shutdownNow();
+                globalPool.awaitTermination( 5, TimeUnit.SECONDS );
+                globalPool = null;
             }
         } catch(RuntimeException e)
         {
@@ -118,11 +173,22 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         }
     }
 
-    private class Handle implements JobHandle
+    /**
+     * Used to spin up new threads for groups or access-patterns that don't use the pooled thread options.
+     * The returned thread is not started, to allow users to modify it before setting it in motion.
+     */
+    private Thread createNewThread( Group group, Runnable job, Map<String,String> metadata )
+    {
+        Thread thread = new Thread( null, job, group.threadName( metadata ) );
+        thread.setDaemon( true );
+        return thread;
+    }
+
+    private static class PooledJobHandle implements JobHandle
     {
         private final Future<?> job;
 
-        public Handle( Future<?> job )
+        public PooledJobHandle( Future<?> job )
         {
             this.job = job;
         }
@@ -131,6 +197,25 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         public void cancel( boolean mayInterruptIfRunning )
         {
             job.cancel( mayInterruptIfRunning );
+        }
+    }
+
+    private static class SingleThreadHandle implements JobHandle
+    {
+        private final Thread thread;
+
+        public SingleThreadHandle( Thread thread )
+        {
+            this.thread = thread;
+        }
+
+        @Override
+        public void cancel( boolean mayInterruptIfRunning )
+        {
+            if ( mayInterruptIfRunning )
+            {
+                thread.interrupt();
+            }
         }
     }
 }

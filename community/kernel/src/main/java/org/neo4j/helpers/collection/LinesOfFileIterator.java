@@ -26,6 +26,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+/**
+ * @deprecated This class will be removed in the next major release.
+ */
+@Deprecated
 public class LinesOfFileIterator extends PrefetchingIterator<String> implements ClosableIterator<String>
 {
     private final BufferedReader reader;

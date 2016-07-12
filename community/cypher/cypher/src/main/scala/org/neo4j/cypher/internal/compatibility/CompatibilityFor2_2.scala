@@ -29,18 +29,20 @@ import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v2_2.{CypherException => CypherException_v2_2, _}
-import org.neo4j.cypher.internal.spi.v2_2.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.compiler.v2_2.{CypherCompilerFactory, CypherException => CypherException_v2_2, InputPosition => InputPositionForV_2_2, _}
+import org.neo4j.cypher.internal.compiler.v2_3.CompilationPhaseTracer
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.iteratorToVisitable
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
 import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, HintException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, _}
+import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{GraphDatabaseService, QueryExecutionType, ResourceIterator}
-import org.neo4j.helpers.{Assertion, Clock}
+import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{KernelAPI, Statement}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
-import org.neo4j.kernel.impl.util.StringLogger
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
+import org.neo4j.logging.Log
 
 import scala.collection.JavaConverters._
 import scala.util.Try
@@ -72,8 +74,6 @@ object exceptionHandlerFor2_2 extends MapToPublicExceptions[CypherException] {
 
   def internalException(message: String) = new InternalException(message)
 
-  def missingConstraintException() = new MissingConstraintException
-
   def loadCsvStatusWrapCypherException(extraInfo: String, cause: CypherException_v2_2) =
     new LoadCsvStatusWrapCypherException(extraInfo, cause.mapToPublic(exceptionHandlerFor2_2))
 
@@ -81,13 +81,13 @@ object exceptionHandlerFor2_2 extends MapToPublicExceptions[CypherException] {
 
   def parameterNotFoundException(message: String, cause: Throwable) = throw new ParameterNotFoundException(message, cause)
 
-  def uniquePathNotUniqueException(message: String) = throw new UniquePathNotUniqueException(message)
+  def uniquePathNotUniqueException(message: String) = throw new UniquePathNotUniqueException(message, null)
 
   def entityNotFoundException(message: String, cause: Throwable) = throw new EntityNotFoundException(message, cause)
 
   def cypherTypeException(message: String, cause: Throwable) = throw new CypherTypeException(message, cause)
 
-  def hintException(message: String): CypherException = throw new HintException(message)
+  def hintException(message: String): CypherException = throw new HintException(message, null)
 
   def labelScanHintException(identifier: String, label: String, message: String) = throw new LabelScanHintException(identifier, label, message)
 
@@ -96,11 +96,9 @@ object exceptionHandlerFor2_2 extends MapToPublicExceptions[CypherException] {
 
   def parameterWrongTypeException(message: String, cause: Throwable) = throw new ParameterWrongTypeException(message, cause)
 
-  def outOfBoundsException(message: String) = throw new OutOfBoundsException(message)
-
   def nodeStillHasRelationshipsException(nodeId: Long, cause: Throwable) = throw new NodeStillHasRelationshipsException(nodeId, cause)
 
-  def indexHintException(identifier: String, label: String, property: String, message: String) = throw new IndexHintException(identifier, label, property, message)
+  def indexHintException(identifier: String, label: String, property: String, message: String) = throw new IndexHintException(identifier, label, property, message, null)
 
   def periodicCommitInOpenTransactionException() = throw new PeriodicCommitInOpenTransactionException
 
@@ -123,27 +121,27 @@ object exceptionHandlerFor2_2 extends MapToPublicExceptions[CypherException] {
 
 import scala.reflect.ClassTag
 
-case class WrappedMonitors(kernelMonitors: KernelMonitors) extends Monitors {
+case class WrappedMonitors2_2(kernelMonitors: KernelMonitors) extends Monitors {
   def addMonitorListener[T](monitor: T, tags: String*) {
     kernelMonitors.addMonitorListener(monitor, tags: _*)
   }
-
   def newMonitor[T <: AnyRef : ClassTag](tags: String*): T = {
     val clazz = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
     kernelMonitors.newMonitor(clazz, tags: _*)
   }
 }
 
-
 trait CompatibilityFor2_2 {
+  import org.neo4j.cypher.internal.compatibility.helpers._
+
   val graph: GraphDatabaseService
   val queryCacheSize: Int
   val kernelMonitors: KernelMonitors
   val kernelAPI: KernelAPI
 
-  protected val createRewriterSequence: (String) => RewriterStepSequencer = {
-    import Assertion._
-    import RewriterStepSequencer._
+  protected val rewriterSequencer: (String) => RewriterStepSequencer = {
+    import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer._
+    import org.neo4j.helpers.Assertion._
 
     if (assertionsEnabled()) newValidating _ else newPlain _
   }
@@ -151,14 +149,15 @@ trait CompatibilityFor2_2 {
   protected val compiler: v2_2.CypherCompiler
 
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
-  implicit val indexSearchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
 
-  def produceParsedQuery(statementAsText: String, rawStatement: String, offset: InputPosition) = new ParsedQuery {
-    val preparedQueryForV_2_2 = Try(compiler.prepareQuery(statementAsText, Some(RawQuery(rawStatement,offset))))
+  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer) = new ParsedQuery {
+    val offset_2_3 = preParsedQuery.offset
+    val offset_2_2 = InputPositionForV_2_2(offset_2_3.offset, offset_2_3.line, offset_2_3.column)
+    val preparedQueryForV_2_2 = Try(compiler.prepareQuery(preParsedQuery.statement, Some(RawQuery(preParsedQuery.rawStatement, offset_2_2))))
 
     def isPeriodicCommit = preparedQueryForV_2_2.map(_.isPeriodicCommit).getOrElse(false)
 
-    def plan(statement: Statement): (ExecutionPlan, Map[String, Any]) = exceptionHandlerFor2_2.runSafely {
+    def plan(statement: Statement, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = exceptionHandlerFor2_2.runSafely {
       val planContext = new TransactionBoundPlanContext(statement, graph)
       val (planImpl, extractedParameters) = compiler.planPreparedQuery(preparedQueryForV_2_2.get, planContext)
       (new ExecutionPlanWrapper(planImpl), extractedParameters)
@@ -171,13 +170,18 @@ trait CompatibilityFor2_2 {
 
     private def queryContext(graph: GraphDatabaseAPI, txInfo: TransactionInfo) = {
       val ctx = new TransactionBoundQueryContext(graph, txInfo.tx, txInfo.isTopLevelTx, txInfo.statement)
-      new ExceptionTranslatingQueryContext(ctx)
+      new ExceptionTranslatingQueryContextFor2_2(ctx)
     }
 
-    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: ExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
+    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: CypherExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
       implicit val s = session
+      val internalMode = executionMode match {
+        case CypherExecutionMode.normal  => NormalMode
+        case CypherExecutionMode.profile => ProfileMode
+        case CypherExecutionMode.explain => ExplainMode
+      }
       exceptionHandlerFor2_2.runSafely {
-        ExecutionResultWrapperFor2_2(inner.run(queryContext(graph, txInfo), executionMode, params), inner.plannerUsed)
+        ExecutionResultWrapperFor2_2(inner.run(queryContext(graph, txInfo), internalMode, params), inner.plannerUsed)
       }
     }
 
@@ -189,6 +193,8 @@ trait CompatibilityFor2_2 {
 }
 
 case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, planner: PlannerName)(implicit monitor: QueryExecutionMonitor, session: QuerySession) extends ExtendedExecutionResult {
+
+  self =>
 
   import org.neo4j.cypher.internal.compatibility.helpers._
   def planDescriptionRequested = exceptionHandlerFor2_2.runSafely {inner.planDescriptionRequested}
@@ -219,9 +225,12 @@ case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, planner:
       }
       def remove() =  exceptionHandlerFor2_2.runSafely{innerJavaIterator.remove()}
     }
+
   }
 
-  def columnAs[T](column: String) = exceptionHandlerFor2_2.runSafely{inner.columnAs[T](column)}
+  def columnAs[T](column: String) = exceptionHandlerFor2_2.runSafely {
+    inner.columnAs[T](column)
+  }
 
   def columns = exceptionHandlerFor2_2.runSafely{inner.columns}
 
@@ -277,13 +286,24 @@ case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, planner:
   }
 
   def executionType: QueryExecutionType = exceptionHandlerFor2_2.runSafely {inner.executionType}
+
+  def notifications = Seq.empty
+
+  def accept[EX <: Exception](visitor: ResultVisitor[EX]) = {
+    try {
+      exceptionHandlerFor2_2.runSafely {iteratorToVisitable.accept(self, visitor)}
+    } finally {
+      self.close()
+    }
+  }
 }
 
 case class CompatibilityPlanDescription(inner: InternalPlanDescription, version: CypherVersion, planner: PlannerName)
   extends ExtendedPlanDescription {
 
   self =>
-  def children = extendedChildren
+
+  override def children = extendedChildren
 
   def extendedChildren = exceptionHandlerFor2_2.runSafely {
     inner.children.toSeq.map(CompatibilityPlanDescription.apply(_, version, planner))
@@ -295,7 +315,7 @@ case class CompatibilityPlanDescription(inner: InternalPlanDescription, version:
 
   def identifiers = exceptionHandlerFor2_2.runSafely { inner.orderedIdentifiers.toSet }
 
-  def hasProfilerStatistics = exceptionHandlerFor2_2.runSafely { inner.arguments.exists(_.isInstanceOf[DbHits]) }
+  override def hasProfilerStatistics = exceptionHandlerFor2_2.runSafely { inner.arguments.exists(_.isInstanceOf[DbHits]) }
 
   def name = exceptionHandlerFor2_2.runSafely { inner.name }
 
@@ -330,12 +350,11 @@ case class CompatibilityPlanDescription(inner: InternalPlanDescription, version:
   }
 }
 
-class StringInfoLogger(stringLogger: StringLogger) extends InfoLogger {
+case class StringInfoLogger2_2(log: Log) extends InfoLogger {
   def info(message: String) {
-    stringLogger.info(message)
+    log.info(message)
   }
 }
-
 
 case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                    queryCacheSize: Int,
@@ -344,12 +363,24 @@ case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                    clock: Clock,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI,
-                                   logger: StringLogger,
-                                   plannerName: Option[CostBasedPlannerName] = None) extends CompatibilityFor2_2 {
-  protected val compiler = CypherCompilerFactory.costBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, new WrappedMonitors(kernelMonitors),
-    new StringInfoLogger(logger), plannerName, createRewriterSequence
-  )
+                                   log: Log,
+                                   planner: CypherPlanner) extends CompatibilityFor2_2 {
+
+  protected val compiler = {
+    val plannerName = planner match {
+      case CypherPlanner.default => ConservativePlannerName
+      case CypherPlanner.cost => CostPlannerName
+      case CypherPlanner.greedy => CostPlannerName
+      case CypherPlanner.idp => IDPPlannerName
+      case CypherPlanner.dp => DPPlannerName
+      case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${planner.name}")
+    }
+
+    CypherCompilerFactory.costBasedCompiler(
+      graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, WrappedMonitors2_2(kernelMonitors),
+      StringInfoLogger2_2(log), Some(plannerName), rewriterSequencer
+    )
+  }
 }
 
 case class CompatibilityFor2_2Rule(graph: GraphDatabaseService,
@@ -359,7 +390,9 @@ case class CompatibilityFor2_2Rule(graph: GraphDatabaseService,
                                    clock: Clock,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI) extends CompatibilityFor2_2 {
+
   protected val compiler = CypherCompilerFactory.ruleBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, new WrappedMonitors(kernelMonitors), createRewriterSequence
+    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, WrappedMonitors2_2(kernelMonitors),
+    rewriterSequencer
   )
 }

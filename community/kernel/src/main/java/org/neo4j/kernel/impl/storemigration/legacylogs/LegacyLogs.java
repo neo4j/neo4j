@@ -28,6 +28,7 @@ import java.util.List;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
@@ -116,7 +117,7 @@ public class LegacyLogs
         }
     }
 
-    public long getTransactionChecksum( File storeDir, long transactionId ) throws IOException
+    public TransactionId getTransactionInformation( File storeDir, long transactionId ) throws IOException
     {
         List<File> logFiles = Arrays.asList( fs.listFiles( storeDir, versionedLegacyLogFilesFilter ) );
         Collections.sort( logFiles, NEWEST_FIRST );
@@ -141,7 +142,8 @@ public class LegacyLogs
                         LogEntryCommit commitEntry = logEntry.as();
                         if ( commitEntry.getTxId() == transactionId )
                         {
-                            return startEntry.checksum();
+                            return new TransactionId( transactionId, startEntry.checksum(),
+                                    commitEntry.getTimeWritten() );
                         }
                     }
                 }

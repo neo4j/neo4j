@@ -19,22 +19,27 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import java.io.Flushable;
 import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
+import org.neo4j.kernel.impl.transaction.tracing.LogForceEvents;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart.checksum;
 
@@ -42,7 +47,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart.checksum
  * Concurrently appends transactions to the transaction log, while coordinating with the log rotation and forcing the
  * log file in batches.
  */
-class BatchingTransactionAppender implements TransactionAppender
+public class BatchingTransactionAppender extends LifecycleAdapter implements TransactionAppender
 {
     private static class ThreadLink
     {
@@ -61,7 +66,9 @@ class BatchingTransactionAppender implements TransactionAppender
         }
 
         static final ThreadLink END = new ThreadLink( null );
-        static {
+
+        static
+        {
             END.next = END;
         }
     }
@@ -73,45 +80,50 @@ class BatchingTransactionAppender implements TransactionAppender
     private final IdOrderingQueue legacyIndexTransactionOrdering;
 
     private final AtomicReference<ThreadLink> threadLinkHead = new AtomicReference<>( ThreadLink.END );
-    private final WritableLogChannel channel;
     private final TransactionMetadataCache transactionMetadataCache;
     private final LogFile logFile;
     private final LogRotation logRotation;
     private final TransactionIdStore transactionIdStore;
-    private final TransactionLogWriter transactionLogWriter;
     private final LogPositionMarker positionMarker = new LogPositionMarker();
-    private final IndexCommandDetector indexCommandDetector;
     private final KernelHealth kernelHealth;
-    private final Lock forceLock;
+    private final Lock forceLock = new ReentrantLock();
+
+    private WritableLogChannel writer;
+    private TransactionLogWriter transactionLogWriter;
+    private IndexCommandDetector indexCommandDetector;
 
     public BatchingTransactionAppender( LogFile logFile, LogRotation logRotation,
-                                        TransactionMetadataCache transactionMetadataCache,
-                                        TransactionIdStore transactionIdStore,
-                                        IdOrderingQueue legacyIndexTransactionOrdering,
-                                        KernelHealth kernelHealth )
+            TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore,
+            IdOrderingQueue legacyIndexTransactionOrdering, KernelHealth kernelHealth )
     {
         this.logFile = logFile;
         this.logRotation = logRotation;
         this.transactionIdStore = transactionIdStore;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
         this.kernelHealth = kernelHealth;
-        this.channel = logFile.getWriter();
         this.transactionMetadataCache = transactionMetadataCache;
-        this.indexCommandDetector = new IndexCommandDetector( new CommandWriter( channel ) );
-        this.transactionLogWriter = new TransactionLogWriter( new LogEntryWriter( channel, indexCommandDetector ) );
-        forceLock = new ReentrantLock();
     }
 
     @Override
-    public long append( TransactionRepresentation transaction, LogAppendEvent logAppendEvent ) throws IOException
+    public void start() throws Throwable
+    {
+        this.writer = logFile.getWriter();
+        this.indexCommandDetector = new IndexCommandDetector( new CommandWriter( writer ) );
+        this.transactionLogWriter = new TransactionLogWriter( new LogEntryWriter( writer, indexCommandDetector ) );
+    }
+
+    @Override
+    public Commitment append( TransactionRepresentation transaction, LogAppendEvent logAppendEvent ) throws IOException
     {
         long transactionId = -1;
         int phase = 0;
+
         // We put log rotation check outside the private append method since it must happen before
         // we generate the next transaction id
-        logAppendEvent.setLogRotated( logRotation.rotateLogIfNeeded( logAppendEvent ) );
+        boolean logRotated = logRotation.rotateLogIfNeeded( logAppendEvent );
+        logAppendEvent.setLogRotated( logRotated );
 
-        TransactionCommitment commit;
+        TransactionCommitment commitment;
         try
         {
             // Synchronized with logFile to get absolute control over concurrent rotations happening
@@ -121,15 +133,15 @@ class BatchingTransactionAppender implements TransactionAppender
                 {
                     transactionId = transactionIdStore.nextCommittingTransactionId();
                     phase = 1;
-                    commit = appendToLog( transaction, transactionId );
+                    commitment = appendToLog( transaction, transactionId );
                 }
             }
 
             forceAfterAppend( logAppendEvent );
-            commit.publishAsCommitted();
-            orderLegacyIndexChanges( commit );
+            commitment.publishAsCommitted();
+            orderLegacyIndexChanges( commitment );
             phase = 2;
-            return transactionId;
+            return commitment;
         }
         finally
         {
@@ -137,7 +149,7 @@ class BatchingTransactionAppender implements TransactionAppender
             {
                 // So we end up here if we enter phase 1, but fails to reach phase 2, which means that
                 // we told TransactionIdStore that we committed transaction, but something failed right after
-                transactionIdStore.transactionClosed( transactionId );
+                transactionIdStore.transactionClosed( transactionId, 0l, 0l );
             }
         }
     }
@@ -156,12 +168,34 @@ class BatchingTransactionAppender implements TransactionAppender
             long transactionId = transactionIdStore.nextCommittingTransactionId();
             if ( transactionId != expectedTransactionId )
             {
-                throw new ThisShouldNotHappenError( "Zhen Li and Mattias Persson",
+                IllegalStateException illegalStateException = new IllegalStateException(
                         "Received " + transaction + " with txId:" + expectedTransactionId +
                         " to be applied, but appending it ended up generating an unexpected txId:" + transactionId );
+                kernelHealth.panic( illegalStateException );
+                throw illegalStateException;
             }
             return appendToLog( transaction, transactionId );
         }
+    }
+
+    @Override
+    public void checkPoint( LogPosition logPosition, LogCheckPointEvent logCheckPointEvent ) throws IOException
+    {
+        try
+        {
+            // Synchronized with logFile to get absolute control over concurrent rotations happening
+            synchronized ( logFile )
+            {
+                transactionLogWriter.checkPoint( logPosition );
+            }
+        }
+        catch ( Throwable cause )
+        {
+            kernelHealth.panic( cause );
+            throw cause;
+        }
+
+        forceAfterAppend( logCheckPointEvent );
     }
 
     private static class TransactionCommitment implements Commitment
@@ -169,15 +203,19 @@ class BatchingTransactionAppender implements TransactionAppender
         private final boolean hasLegacyIndexChanges;
         private final long transactionId;
         private final long transactionChecksum;
+        private final long transactionCommitTimestamp;
+        private final LogPosition logPosition;
         private final TransactionIdStore transactionIdStore;
         private boolean markedAsCommitted;
 
         TransactionCommitment( boolean hasLegacyIndexChanges, long transactionId, long transactionChecksum,
-                               TransactionIdStore transactionIdStore )
+                long transactionCommitTimestamp, LogPosition logPosition, TransactionIdStore transactionIdStore )
         {
             this.hasLegacyIndexChanges = hasLegacyIndexChanges;
             this.transactionId = transactionId;
             this.transactionChecksum = transactionChecksum;
+            this.transactionCommitTimestamp = transactionCommitTimestamp;
+            this.logPosition = logPosition;
             this.transactionIdStore = transactionIdStore;
         }
 
@@ -185,7 +223,20 @@ class BatchingTransactionAppender implements TransactionAppender
         public void publishAsCommitted()
         {
             markedAsCommitted = true;
-            transactionIdStore.transactionCommitted( transactionId, transactionChecksum );
+            transactionIdStore.transactionCommitted( transactionId, transactionChecksum, transactionCommitTimestamp );
+        }
+
+        @Override
+        public void publishAsApplied()
+        {
+            transactionIdStore.transactionClosed( transactionId,
+                    logPosition.getLogVersion(), logPosition.getByteOffset() );
+        }
+
+        @Override
+        public long transactionId()
+        {
+            return transactionId;
         }
 
         @Override
@@ -196,11 +247,11 @@ class BatchingTransactionAppender implements TransactionAppender
     }
 
     /**
-     * @return A TransactionCommitment instance with metadata about the committed transaction, such as whether or not this transaction
-     * contains any legacy index changes.
+     * @return A TransactionCommitment instance with metadata about the committed transaction, such as whether or not
+     * this transaction contains any legacy index changes.
      */
-    private TransactionCommitment appendToLog(
-            TransactionRepresentation transaction, long transactionId ) throws IOException
+    private TransactionCommitment appendToLog( TransactionRepresentation transaction, long transactionId )
+            throws IOException
     {
         // Reset command writer so that we, after we've written the transaction, can ask it whether or
         // not any legacy index command was written. If so then there's additional ordering to care about below.
@@ -214,18 +265,15 @@ class BatchingTransactionAppender implements TransactionAppender
         // log rotation, which will wait for all transactions closed or fail on kernel panic.
         try
         {
-            LogPosition logPosition;
-            synchronized ( channel )
-            {
-                logPosition = channel.getCurrentPosition( positionMarker ).newPosition();
-                transactionLogWriter.append( transaction, transactionId );
-            }
+            LogPosition logPositionBeforeCommit = writer.getCurrentPosition( positionMarker ).newPosition();
+            transactionLogWriter.append( transaction, transactionId );
+            LogPosition logPositionAfterCommit = writer.getCurrentPosition( positionMarker ).newPosition();
 
             long transactionChecksum = checksum(
                     transaction.additionalHeader(), transaction.getMasterId(), transaction.getAuthorId() );
             transactionMetadataCache.cacheTransactionMetadata(
-                    transactionId, logPosition, transaction.getMasterId(), transaction.getAuthorId(),
-                    transactionChecksum );
+                    transactionId, logPositionBeforeCommit, transaction.getMasterId(), transaction.getAuthorId(),
+                    transactionChecksum, transaction.getTimeCommitted() );
 
             boolean hasLegacyIndexChanges = indexCommandDetector.hasWrittenAnyLegacyIndexCommand();
             if ( hasLegacyIndexChanges )
@@ -234,7 +282,8 @@ class BatchingTransactionAppender implements TransactionAppender
                 legacyIndexTransactionOrdering.offer( transactionId );
             }
             return new TransactionCommitment(
-                    hasLegacyIndexChanges, transactionId, transactionChecksum, transactionIdStore );
+                    hasLegacyIndexChanges, transactionId, transactionChecksum, transaction.getTimeCommitted(),
+                    logPositionAfterCommit, transactionIdStore );
         }
         catch ( final Throwable panic )
         {
@@ -260,16 +309,17 @@ class BatchingTransactionAppender implements TransactionAppender
 
     /**
      * Called by the appender that just appended a transaction to the log.
-     * @param logAppendEvent A trace event for the given log append operation.
+     *
+     * @param logForceEvents A trace event for the given log append operation.
      */
-    protected void forceAfterAppend( LogAppendEvent logAppendEvent ) throws IOException // 'protected' because of LogRotationDeadlockTest
+    protected void forceAfterAppend( LogForceEvents logForceEvents ) throws IOException
     {
         // There's a benign race here, where we add our link before we update our next pointer.
         // This is okay, however, because unparkAll() spins when it sees a null next pointer.
         ThreadLink threadLink = new ThreadLink( Thread.currentThread() );
         threadLink.next = threadLinkHead.getAndSet( threadLink );
 
-        try ( LogForceWaitEvent logForceWaitEvent = logAppendEvent.beginLogForceWait() )
+        try ( LogForceWaitEvent logForceWaitEvent = logForceEvents.beginLogForceWait() )
         {
             do
             {
@@ -277,7 +327,7 @@ class BatchingTransactionAppender implements TransactionAppender
                 {
                     try
                     {
-                        forceLog( logAppendEvent );
+                        forceLog( logForceEvents );
                     }
                     finally
                     {
@@ -300,11 +350,10 @@ class BatchingTransactionAppender implements TransactionAppender
         }
     }
 
-    private void forceLog( LogAppendEvent logAppendEvent ) throws IOException
+    private void forceLog( LogForceEvents logForceEvents ) throws IOException
     {
         ThreadLink links = threadLinkHead.getAndSet( ThreadLink.END );
-
-        try ( LogForceEvent logForceEvent = logAppendEvent.beginLogForce() )
+        try ( LogForceEvent logForceEvent = logForceEvents.beginLogForce() )
         {
             force();
         }
@@ -313,8 +362,10 @@ class BatchingTransactionAppender implements TransactionAppender
             kernelHealth.panic( panic );
             throw panic;
         }
-
-        unparkAll( links );
+        finally
+        {
+            unparkAll( links );
+        }
     }
 
     private void unparkAll( ThreadLink links )
@@ -344,15 +395,27 @@ class BatchingTransactionAppender implements TransactionAppender
     @Override
     public void force() throws IOException
     {
-        // Empty buffer into channel. We want to synchronize with appenders somehow so that they
+        // Empty buffer into writer. We want to synchronize with appenders somehow so that they
         // don't append while we're doing that. The way rotation is coordinated we can't synchronize
-        // on logFile because it would cause deadlocks. Synchronizing on channel assumes that appenders
-        // also synchronize on channel.
-        synchronized ( channel )
+        // on logFile because it would cause deadlocks. Synchronizing on writer assumes that appenders
+        // also synchronize on writer.
+        Flushable flushable;
+        synchronized ( logFile )
         {
-            channel.emptyBufferIntoChannelAndClearIt();
+            flushable = writer.emptyBufferIntoChannelAndClearIt();
         }
-
-        channel.force();
+        // Force the writer outside of the lock.
+        // This allows other threads access to the buffer while the writer is being forced.
+        try
+        {
+            flushable.flush();
+        }
+        catch ( ClosedChannelException ignored )
+        {
+            // This is ok, we were already successful in emptying the buffer, so the channel being closed here means
+            // that some other thread is rotating the log and has closed the underlying channel. But since we were
+            // successful in emptying the buffer *UNDER THE LOCK* we know that the rotating thread included the changes
+            // we emptied into the channel, and thus it is already flushed by that thread.
+        }
     }
 }

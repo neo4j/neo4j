@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import java.io.File;
-
 import org.junit.Test;
 import org.mockito.Matchers;
 
+import java.io.File;
+
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
-import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 
 import static org.mockito.Matchers.anyLong;
@@ -34,7 +33,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
 public class ThresholdBasedPruneStrategyTest
@@ -42,15 +40,12 @@ public class ThresholdBasedPruneStrategyTest
     private final FileSystemAbstraction fileSystem = mock( FileSystemAbstraction.class );
     private final LogFileInformation logFileInfo = mock( LogFileInformation.class );
     private final PhysicalLogFiles files = mock( PhysicalLogFiles.class );
-    private final LogVersionRepository logVersionRepository = mock( LogVersionRepository.class );
     private final Threshold threshold = mock( Threshold.class );
 
     @Test
     public void shouldNotDeleteAnythingIfThresholdDoesNotAllow() throws Exception
     {
         // Given
-        when( logVersionRepository.getCurrentLogVersion() ).thenReturn( 7l );
-
         File fileName1 = new File( "logical.log.v1" );
         File fileName2 = new File( "logical.log.v2" );
         File fileName3 = new File( "logical.log.v3" );
@@ -76,10 +71,10 @@ public class ThresholdBasedPruneStrategyTest
 
         when( threshold.reached( Matchers.<File>any(), anyLong(), Matchers.<LogFileInformation>any() ) ).thenReturn( false );
 
-        final ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( fileSystem, logFileInfo, files, logVersionRepository, threshold );
+        final ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( fileSystem, logFileInfo, files, threshold );
 
         // When
-        strategy.prune();
+        strategy.prune( 7l );
 
         // Then
         verify( threshold, times( 1 ) ).init();
@@ -122,15 +117,12 @@ public class ThresholdBasedPruneStrategyTest
 
         when( fileSystem.getFileSize( Matchers.<File>any() ) ).thenReturn( LOG_HEADER_SIZE + 1l );
 
-
-        when( logVersionRepository.getCurrentLogVersion() ).thenReturn( 7l );
-
         final ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy(
-                fileSystem, logFileInfo, files, logVersionRepository, threshold
+                fileSystem, logFileInfo, files, threshold
         );
 
         // When
-        strategy.prune();
+        strategy.prune( 7l );
 
         // Then
         verify( threshold, times( 1 ) ).init();

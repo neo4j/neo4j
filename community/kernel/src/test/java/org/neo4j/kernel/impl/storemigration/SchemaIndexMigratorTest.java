@@ -38,21 +38,14 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.store.AbstractStore;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
-import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator.SchemaStoreProvider;
-import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreVersionException;
-import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -61,91 +54,43 @@ import static org.neo4j.kernel.api.index.SchemaIndexProvider.getRootDirectory;
 
 public class SchemaIndexMigratorTest
 {
-    @Test
-    public void shouldNotMigrateFor1_9Version() throws Exception
+    private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
+    private final SchemaIndexProvider schemaIndexProvider = mock( SchemaIndexProvider.class );
+    private final StoreFactory storeFactory = mock( StoreFactory.class );
+    private final NeoStores neoStores = mock( NeoStores.class );
+    private final PageCache pageCache = mock( PageCache.class );
+    private final SchemaIndexMigrator migrator = new SchemaIndexMigrator( fs, pageCache, storeFactory );
+    private final SchemaStore schemaStore = mock( SchemaStore.class );
+    private final IndexAccessor accessor = mock( IndexAccessor.class );
+    private final IndexReader indexReader = mock( IndexReader.class );
+    private final File storeDir = new File( "store" );
+    private final File migrationDir = new File( "migration" );
+    private final IndexConfiguration indexConfig = new IndexConfiguration( false );
+    private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
+    private final int indexRuleId = 0;
+
+    @Before
+    public void setup() throws IOException
     {
-        // given
-        when( upgradableDatabase.hasCurrentVersion( fs, storeDir )).thenReturn( false );
-        when( upgradableDatabase.checkUpgradeable( storeDir ) ).thenReturn( Legacy19Store.LEGACY_VERSION );
+        when( schemaIndexProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "key", "version" ) );
 
-        // when
-        boolean needsMigration = migrator.needsMigration( storeDir );
-
-        // then
-        assertFalse( needsMigration );
-    }
-
-    @Test
-    public void shouldMigrateFor2_0Version() throws Exception
-    {
-        // given
-        when( upgradableDatabase.hasCurrentVersion( fs, storeDir )).thenReturn( false );
-        when( upgradableDatabase.checkUpgradeable( storeDir ) ).thenReturn( Legacy20Store.LEGACY_VERSION );
-
-        // when
-        boolean needsMigration = migrator.needsMigration( storeDir );
-
-        // then
-        assertTrue( needsMigration );
-    }
-
-    @Test
-    public void shouldMigrateFor2_1Version() throws Exception
-    {
-        // given
-        when( upgradableDatabase.hasCurrentVersion( fs, storeDir )).thenReturn( false );
-        when( upgradableDatabase.checkUpgradeable( storeDir ) ).thenReturn( Legacy21Store.LEGACY_VERSION );
-
-        // when
-        boolean needsMigration = migrator.needsMigration( storeDir );
-
-        // then
-        assertTrue( needsMigration );
-    }
-
-    @Test
-    public void shouldNotMigrateFor2_2Version() throws Exception
-    {
-        // given
-        when( upgradableDatabase.hasCurrentVersion( fs, storeDir )).thenReturn( true );
-        when( upgradableDatabase.checkUpgradeable( storeDir ) ).thenThrow( new UnexpectedUpgradingStoreVersionException(
-                NeoStore.DEFAULT_NAME, Legacy21Store.LEGACY_VERSION, AbstractStore.ALL_STORES_VERSION ) );
-
-        // when
-        boolean needsMigration = migrator.needsMigration( storeDir );
-
-        // then
-        assertFalse( needsMigration );
-    }
-
-    @Test
-    public void shouldThrowWhenTryingToMigrateAnUnexpectedVersion() throws Exception
-    {
-        // given
-        when( upgradableDatabase.checkUpgradeable( storeDir ) ).thenReturn( Legacy19Store.LEGACY_VERSION );
-
-        // when
-        try
-        {
-            migrator.migrate( storeDir, migrationDir, schemaIndexProvider, pageCache );
-            fail( "should have thrown" );
-        }
-        catch ( IllegalStateException ex )
-        {
-            // then
-            assertEquals( "Unknown version to upgrade from: " + Legacy19Store.LEGACY_VERSION, ex.getMessage() );
-        }
+        when( storeFactory.openNeoStores( NeoStores.StoreType.SCHEMA) ).thenReturn( neoStores );
+        when( storeFactory.openAllNeoStores( anyBoolean() ) ).thenReturn( neoStores );
+        when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
+        Iterator<SchemaRule> iterator = Arrays.asList( schemaRule( indexRuleId, 42, 21 ) ).iterator();
+        when( schemaStore.loadAllSchemaRules() ).thenReturn( iterator );
+        when( schemaIndexProvider.getOnlineAccessor( indexRuleId, indexConfig, samplingConfig )).thenReturn( accessor );
+        when( accessor.newReader() ).thenReturn( indexReader );
     }
 
     @Test
     public void shouldDeleteTheIndexIfItContainsIndexedArrayValues() throws Exception
     {
         // given
-        when( upgradableDatabase.checkUpgradeable( storeDir ) ).thenReturn( Legacy21Store.LEGACY_VERSION );
         when( indexReader.valueTypesInIndex() ).thenReturn( asSet( String.class, Array.class ) );
 
         // when
-        migrator.migrate( storeDir, migrationDir, schemaIndexProvider, pageCache );
+        migrator.migrate( storeDir, migrationDir, schemaIndexProvider, Legacy21Store.LEGACY_VERSION );
 
         // then
         verify( fs ).deleteRecursively( new File( getRootDirectory( storeDir, schemaIndexProvider.getProviderDescriptor().getKey() ), "" + indexRuleId ) );
@@ -155,11 +100,10 @@ public class SchemaIndexMigratorTest
     public void shouldNotDeleteTheIndexIfItDoesNotContainIndexedArrayValues() throws Exception
     {
         // given
-        when( upgradableDatabase.checkUpgradeable( storeDir ) ).thenReturn( Legacy21Store.LEGACY_VERSION );
         when( indexReader.valueTypesInIndex() ).thenReturn( asSet( String.class, Boolean.class ) );
 
         // when
-        migrator.migrate( storeDir, migrationDir, schemaIndexProvider, pageCache );
+        migrator.migrate( storeDir, migrationDir, schemaIndexProvider, Legacy21Store.LEGACY_VERSION );
 
         // then
         verify( fs, never() ).deleteRecursively( new File( getRootDirectory( storeDir, schemaIndexProvider.getProviderDescriptor().getKey() ), "" + indexRuleId ) );
@@ -173,7 +117,6 @@ public class SchemaIndexMigratorTest
         int otherIndexRuleId = 2;
         int yetAnotherIndexRuleId = 3;
 
-        when( upgradableDatabase.checkUpgradeable( storeDir ) ).thenReturn( Legacy21Store.LEGACY_VERSION );
         Iterator<SchemaRule> iterator = Arrays.asList(
                 schemaRule( indexRuleId, 42, 21 ), schemaRule( anotherIndexRuleId, 41, 20 ),
                 schemaRule( otherIndexRuleId, 40, 19 ), schemaRule( yetAnotherIndexRuleId, 40, 19 )
@@ -200,7 +143,7 @@ public class SchemaIndexMigratorTest
         when( yetAnotherIndexReader.valueTypesInIndex() ).thenReturn( asSet( Array.class ) );
 
         // when
-        migrator.migrate( storeDir, migrationDir, schemaIndexProvider, pageCache );
+        migrator.migrate( storeDir, migrationDir, schemaIndexProvider, Legacy21Store.LEGACY_VERSION );
 
         // then
         verify( fs, never() ).deleteRecursively( new File( getRootDirectory( storeDir, schemaIndexProvider.getProviderDescriptor().getKey() ), "" + indexRuleId ) );
@@ -219,29 +162,5 @@ public class SchemaIndexMigratorTest
         return IndexRule.indexRule( id, labelId, propertyKeyId, schemaIndexProvider.getProviderDescriptor() );
     }
 
-    @Before
-    public void setup() throws IOException
-    {
-        when( schemaIndexProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "key", "version" ) );
-        when( schemaStoreProvider.provide( storeDir, pageCache ) ).thenReturn( schemaStore );
-        Iterator<SchemaRule> iterator = Arrays.asList( schemaRule( indexRuleId, 42, 21 ) ).iterator();
-        when( schemaStore.loadAllSchemaRules() ).thenReturn( iterator );
-        when( schemaIndexProvider.getOnlineAccessor( indexRuleId, indexConfig, samplingConfig )).thenReturn( accessor );
-        when( accessor.newReader() ).thenReturn( indexReader );
-    }
 
-    private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
-    private final UpgradableDatabase upgradableDatabase = mock( UpgradableDatabase.class );
-    private final SchemaIndexProvider schemaIndexProvider = mock( SchemaIndexProvider.class );
-    private final SchemaStoreProvider schemaStoreProvider = mock( SchemaStoreProvider.class );
-    private final PageCache pageCache = mock( PageCache.class );
-    private final SchemaIndexMigrator migrator = new SchemaIndexMigrator( fs, upgradableDatabase, schemaStoreProvider );
-    private final SchemaStore schemaStore = mock( SchemaStore.class );
-    private final IndexAccessor accessor = mock( IndexAccessor.class );
-    private final IndexReader indexReader = mock( IndexReader.class );
-    private final File storeDir = new File( "store" );
-    private final File migrationDir = new File( "migration" );
-    private final IndexConfiguration indexConfig = new IndexConfiguration( false );
-    private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
-    private final int indexRuleId = 0;
 }

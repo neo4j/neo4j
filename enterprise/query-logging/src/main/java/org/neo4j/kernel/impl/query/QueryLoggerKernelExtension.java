@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.query;
 
+import java.io.Closeable;
 import java.io.File;
+import java.io.OutputStream;
 import java.util.Map;
 
-import org.neo4j.function.Factory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Service;
@@ -30,24 +31,33 @@ import org.neo4j.helpers.Strings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.QuerySession.MetadataKey;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.FormattedLog;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.RotatingFileOutputStreamSupplier;
+
+import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
 @Service.Implementation( KernelExtensionFactory.class )
 public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLoggerKernelExtension.Dependencies>
 {
     public interface Dependencies
     {
-        FileSystemAbstraction filesystem();
+        FileSystemAbstraction fileSystem();
 
         Config config();
 
         Monitors monitoring();
 
-        StringLogger logger();
+        LogService logger();
+
+        JobScheduler jobScheduler();
     }
 
     public QueryLoggerKernelExtension()
@@ -56,32 +66,70 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
     }
 
     @Override
-    public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
+    public Lifecycle newInstance( @SuppressWarnings( "unused" ) KernelContext context,
+            final Dependencies dependencies ) throws Throwable
     {
-        Config config = dependencies.config();
+        final Config config = dependencies.config();
         boolean queryLogEnabled = config.get( GraphDatabaseSettings.log_queries );
         final File queryLogFile = config.get( GraphDatabaseSettings.log_queries_filename );
+        final FileSystemAbstraction fileSystem = dependencies.fileSystem();
+        final JobScheduler jobScheduler = dependencies.jobScheduler();
+        final Monitors monitoring = dependencies.monitoring();
+
         if (!queryLogEnabled)
         {
             return createEmptyAdapter();
         }
         if ( queryLogFile == null )
         {
-            dependencies.logger().warn( GraphDatabaseSettings.log_queries.name() + " is enabled but no " +
+            dependencies.logger().getInternalLog( getClass() )
+                    .warn( GraphDatabaseSettings.log_queries.name() + " is enabled but no " +
                            GraphDatabaseSettings.log_queries_filename.name() +
                            " has not been provided in configuration, hence query logging is suppressed" );
 
             return createEmptyAdapter();
         }
 
-        Long rotationThreshold = config.get( GraphDatabaseSettings.log_queries_rotation_threshold );
-        long thresholdMillis = config.get( GraphDatabaseSettings.log_queries_threshold );
-        boolean logQueryParameters = config.get( GraphDatabaseSettings.log_queries_parameter_logging_enabled );
+        return new LifecycleAdapter()
+        {
+            Closeable closable;
 
-        LoggerFactory loggerFactory = new LoggerFactory( dependencies.filesystem(), queryLogFile, rotationThreshold );
-        QueryLogger logger = new QueryLogger( Clock.SYSTEM_CLOCK, loggerFactory, thresholdMillis, logQueryParameters );
-        dependencies.monitoring().addMonitorListener( logger );
-        return logger;
+            @Override
+            public void init() throws Throwable
+            {
+                Long thresholdMillis = config.get( GraphDatabaseSettings.log_queries_threshold );
+                Long rotationThreshold = config.get( GraphDatabaseSettings.log_queries_rotation_threshold );
+                int maxArchives = config.get( GraphDatabaseSettings.log_queries_max_archives );
+                boolean logQueryParameters = config.get( GraphDatabaseSettings.log_queries_parameter_logging_enabled );
+
+                FormattedLog.Builder logBuilder = FormattedLog.withUTCTimeZone();
+                Log log;
+                if (rotationThreshold == 0)
+                {
+                    OutputStream logOutputStream = createOrOpenAsOuputStream( fileSystem, queryLogFile, true );
+                    log = logBuilder.toOutputStream( logOutputStream );
+                    closable = logOutputStream;
+                }
+                else
+                {
+                    RotatingFileOutputStreamSupplier
+                            rotatingSupplier = new RotatingFileOutputStreamSupplier( fileSystem, queryLogFile,
+                            rotationThreshold, 0, maxArchives,
+                            jobScheduler.executor( JobScheduler.Groups.queryLogRotation ) );
+                    log = logBuilder.toOutputStream( rotatingSupplier );
+                    closable = rotatingSupplier;
+                }
+
+                QueryLogger logger = new QueryLogger( Clock.SYSTEM_CLOCK, log, thresholdMillis, logQueryParameters );
+                monitoring.addMonitorListener( logger );
+            }
+
+            @Override
+            public void shutdown() throws Throwable
+            {
+                closable.close();
+            }
+        };
     }
 
     private Lifecycle createEmptyAdapter()
@@ -89,38 +137,23 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         return new LifecycleAdapter();
     }
 
-    public static class QueryLogger extends LifecycleAdapter implements QueryExecutionMonitor
+    public static class QueryLogger implements QueryExecutionMonitor
     {
         private static final MetadataKey<Long> START_TIME = new MetadataKey<>( Long.class, "start time" );
         private static final MetadataKey<String> QUERY_STRING = new MetadataKey<>( String.class, "query string" );
         private static final MetadataKey<Map<String,Object>> PARAMS = new MetadataKey<>( paramsClass(), "parameters" );
 
         private final Clock clock;
-        private final Factory<StringLogger> loggerFactory;
+        private final Log log;
         private final long thresholdMillis;
         private final boolean logQueryParameters;
-        private StringLogger logger;
 
-        public QueryLogger( Clock clock, Factory<StringLogger> loggerFactory, long thresholdMillis,
-                boolean logQueryParameters )
+        public QueryLogger( Clock clock, Log log, long thresholdMillis, boolean logQueryParameters )
         {
             this.clock = clock;
-            this.loggerFactory = loggerFactory;
+            this.log = log;
             this.thresholdMillis = thresholdMillis;
             this.logQueryParameters = logQueryParameters;
-        }
-
-        @Override
-        public void init()
-        {
-            logger = loggerFactory.newInstance();
-        }
-
-        @Override
-        public void shutdown()
-        {
-            logger.close();
-            logger = null;
         }
 
         @Override
@@ -135,8 +168,8 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             }
             if ( oldTime != null || oldQuery != null )
             {
-                logger.warn( String.format( "Concurrent queries for session %s: \"%s\" @ %s and \"%s\" @ %s",
-                        session, oldQuery, oldTime, query, startTime ) );
+                log.error( "Concurrent queries for session %s: \"%s\" @ %s and \"%s\" @ %s",
+                        session.toString(), oldQuery, oldTime, query, startTime );
             }
         }
 
@@ -169,27 +202,29 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
 
         private void logFailure( long time, QuerySession session, String query, Throwable failure )
         {
+            String sessionString = session.toString();
             if ( logQueryParameters )
             {
                 String params = extractParamsString( session );
-                logger.error( String.format( "FAILURE %d ms: %s - %s - %s", time, session, query, params ), failure );
+                log.error( String.format( "%d ms: %s - %s - %s", time, sessionString, query, params ), failure );
             }
             else
             {
-                logger.error( String.format( "FAILURE %d ms: %s - %s", time, session, query ), failure );
+                log.error( String.format( "%d ms: %s - %s", time, sessionString, query ), failure );
             }
         }
 
         private void logSuccess( long time, QuerySession session, String query )
         {
+            String sessionString = session.toString();
             if ( logQueryParameters )
             {
                 String params = extractParamsString( session );
-                logger.info( String.format( "SUCCESS %d ms: %s - %s - %s", time, session, query, params ) );
+                log.info( "%d ms: %s - %s - %s", time, sessionString, query, params );
             }
             else
             {
-                logger.info( String.format( "SUCCESS %d ms: %s - %s", time, session, query ) );
+                log.info( "%d ms: %s - %s", time, sessionString, query );
             }
         }
 
@@ -239,26 +274,6 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         private static Class<Map<String,Object>> paramsClass()
         {
             return (Class<Map<String,Object>>) (Object) Map.class;
-        }
-    }
-
-    private static class LoggerFactory implements Factory<StringLogger>
-    {
-        private final FileSystemAbstraction filesystem;
-        private final File logfile;
-        private final Long rotationThreshold;
-
-        public LoggerFactory( FileSystemAbstraction filesystem, File logfile, Long rotationThreshold )
-        {
-            this.filesystem = filesystem;
-            this.logfile = logfile;
-            this.rotationThreshold = rotationThreshold;
-        }
-
-        @Override
-        public StringLogger newInstance()
-        {
-            return StringLogger.logger( filesystem, logfile, rotationThreshold.intValue(), false );
         }
     }
 }

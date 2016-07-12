@@ -19,20 +19,28 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.LabelChainWalker;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
+import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 
 public class NodeLabelReader
 {
@@ -77,6 +85,36 @@ public class NodeLabelReader
         {
             copyToSet( nodeLabels.get( null ), labels );
         }
+
+        return labels;
+    }
+
+    public static long[] getListOfLabels( NodeRecord nodeRecord, RecordStore<DynamicRecord> labels )
+    {
+        long field = nodeRecord.getLabelField();
+        if ( NodeLabelsField.fieldPointsToDynamicRecordOfLabels( field ) )
+        {
+            List<DynamicRecord> recordList = new ArrayList<>();
+            PrimitiveLongSet alreadySeen = Primitive.longSet( 16 );
+            long id = NodeLabelsField.firstDynamicLabelRecordId( field );
+            while ( !Record.NULL_REFERENCE.is( id ) )
+            {
+                DynamicRecord record = labels.forceGetRecord( id );
+                if ( !record.inUse() || !alreadySeen.add( id ) )
+                {
+                    return PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+                }
+                recordList.add( record );
+            }
+            return LabelChainWalker.labelIds( recordList );
+        }
+        return NodeLabelsField.get( nodeRecord, null );
+    }
+
+    public static Set<Long> getListOfLabels( long labelField )
+    {
+        final Set<Long> labels = new HashSet<>();
+        copyToSet( InlineNodeLabels.parseInlined(labelField), labels );
 
         return labels;
     }

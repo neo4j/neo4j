@@ -22,13 +22,10 @@ package org.neo4j.consistency.checking;
 import java.util.Arrays;
 
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 public abstract class PrimitiveRecordCheck
@@ -65,62 +62,9 @@ public abstract class PrimitiveRecordCheck
             };
 
     @SafeVarargs
-    PrimitiveRecordCheck( RecordField<RECORD, REPORT>... fields )
+    PrimitiveRecordCheck( RecordField<RECORD,REPORT>... fields )
     {
-        this.fields = Arrays.copyOf( fields, fields.length + 1 );
-        this.fields[fields.length] = new FirstProperty();
-    }
-
-    private class FirstProperty
-            implements RecordField<RECORD, REPORT>, ComparativeRecordChecker<RECORD, PropertyRecord, REPORT>
-    {
-        @Override
-        public void checkConsistency( RECORD record, CheckerEngine<RECORD, REPORT> engine,
-                                      RecordAccess records )
-        {
-            if ( !Record.NO_NEXT_PROPERTY.is( record.getNextProp() ) )
-            {
-                engine.comparativeCheck( records.property( record.getNextProp() ), this );
-            }
-        }
-
-        @Override
-        public long valueFrom( RECORD record )
-        {
-            return record.getNextProp();
-        }
-
-        @Override
-        public void checkChange( RECORD oldRecord, RECORD newRecord, CheckerEngine<RECORD, REPORT> engine,
-                                 DiffRecordAccess records )
-        {
-            if ( !newRecord.inUse() || valueFrom( oldRecord ) != valueFrom( newRecord ) )
-            {
-                if ( !Record.NO_NEXT_PROPERTY.is( valueFrom( oldRecord ) )
-                     && records.changedProperty( valueFrom( oldRecord ) ) == null )
-                {
-                    engine.report().propertyNotUpdated();
-                }
-            }
-        }
-
-        @Override
-        public void checkReference( RECORD record, PropertyRecord property, CheckerEngine<RECORD, REPORT> engine,
-                                    RecordAccess records )
-        {
-            if ( !property.inUse() )
-            {
-                engine.report().propertyNotInUse( property );
-            }
-            else
-            {
-                if ( !Record.NO_PREVIOUS_PROPERTY.is( property.getPrevProp() ) )
-                {
-                    engine.report().propertyNotFirstInChain( property );
-                }
-                new ChainCheck<RECORD, REPORT>().checkReference( record, property, engine, records );
-            }
-        }
+        this.fields = Arrays.copyOf( fields, fields.length );
     }
 
     @Override
@@ -133,20 +77,6 @@ public abstract class PrimitiveRecordCheck
         for ( RecordField<RECORD, REPORT> field : fields )
         {
             field.checkConsistency( record, engine, records );
-        }
-    }
-
-    @Override
-    public void checkChange( RECORD oldRecord, RECORD newRecord, CheckerEngine<RECORD, REPORT> engine,
-                             DiffRecordAccess records )
-    {
-        check( newRecord, engine, records );
-        if ( oldRecord.inUse() )
-        {
-            for ( RecordField<RECORD, REPORT> field : fields )
-            {
-                field.checkChange( oldRecord, newRecord, engine, records );
-            }
         }
     }
 

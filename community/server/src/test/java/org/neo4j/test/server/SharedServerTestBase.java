@@ -27,9 +27,10 @@ import java.util.concurrent.Callable;
 
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.helpers.ServerHelper;
-import org.neo4j.test.Mute;
+import org.neo4j.test.SuppressOutput;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
-import static org.neo4j.test.Mute.muteAll;
+import static org.neo4j.test.SuppressOutput.suppressAll;
 
 public class SharedServerTestBase
 {
@@ -40,30 +41,25 @@ public class SharedServerTestBase
         return server;
     }
 
-    protected final void cleanDatabase()
-    {
-        if ( !useExternal )
-        {
-            ServerHelper.cleanTheDatabase( server );
-        }
-    }
-
     private static NeoServer server;
 
 	@Rule
-	public Mute mute = muteAll();
+	public SuppressOutput suppressOutput = suppressAll();
 
     @BeforeClass
     public static void allocateServer() throws Throwable
     {
+        System.setProperty( "org.neo4j.useInsecureCertificateGeneration", "true" );
         if ( !useExternal )
         {
-            muteAll().call( new Callable<Void>()
+            suppressAll().call( new Callable<Void>()
             {
                 @Override
                 public Void call() throws Exception
                 {
+                    ServerHolder.setServerBuilderProperty( GraphDatabaseSettings.cypher_hints_error.name(), "true" );
                     server = ServerHolder.allocate();
+                    ServerHelper.cleanTheDatabase( server );
                     return null;
                 }
             } );
@@ -77,7 +73,7 @@ public class SharedServerTestBase
         {
             try
             {
-                muteAll().call( new Callable<Void>()
+                suppressAll().call( new Callable<Void>()
                 {
                     @Override
                     public Void call() throws Exception

@@ -44,59 +44,59 @@ public class TestTransactionEventDeadlocks
     public void canAvoidDeadlockThatWouldHappenIfTheRelationshipTypeCreationTransactionModifiedData() throws Exception
     {
         GraphDatabaseService graphdb = database.getGraphDatabaseService();
-        Transaction tx = graphdb.beginTx();
-        final Node root = graphdb.createNode();
-        try
+        Node node = null;
+        try ( Transaction tx = graphdb.beginTx() )
         {
-            root.setProperty( "counter", Long.valueOf( 0L ) );
+            node = graphdb.createNode();
+            node.setProperty( "counter", 0L );
             tx.success();
         }
-        finally
+
+        graphdb.registerTransactionEventHandler( new RelationshipCounterTransactionEventHandler( node ) );
+
+        try ( Transaction tx = graphdb.beginTx() )
         {
-            tx.finish();
+            node.setProperty( "state", "not broken yet" );
+            node.createRelationshipTo( graphdb.createNode(), DynamicRelationshipType.withName( "TEST" ) );
+            node.removeProperty( "state" );
+            tx.success();
         }
 
-        graphdb.registerTransactionEventHandler( new TransactionEventHandler<Void>()
+        assertThat( node, inTx( graphdb, hasProperty( "counter" ).withValue( 1L ) ) );
+    }
+
+    private static class RelationshipCounterTransactionEventHandler implements TransactionEventHandler<Void>
+    {
+        private final Node node;
+
+        public RelationshipCounterTransactionEventHandler( Node node )
         {
-            @SuppressWarnings( "boxing" )
-            @Override
-            public Void beforeCommit( TransactionData data ) throws Exception
-            {
-                // TODO Hmm, makes me think... should we really call transaction event handlers
-                // for these relationship type / property index transasctions?
-                if ( count( data.createdRelationships() ) == 0 )
-                    return null;
-                
-                root.setProperty( "counter", ( (Long) root.removeProperty( "counter" ) ) + 1 );
+            this.node = node;
+        }
+
+        @SuppressWarnings( "boxing" )
+        @Override
+        public Void beforeCommit( TransactionData data ) throws Exception
+        {
+            // TODO Hmm, makes me think... should we really call transaction event handlers
+            // for these relationship type / property index transasctions?
+            if ( count( data.createdRelationships() ) == 0 )
                 return null;
-            }
 
-            @Override
-            public void afterCommit( TransactionData data, Void state )
-            {
-                // nothing
-            }
-
-            @Override
-            public void afterRollback( TransactionData data, Void state )
-            {
-                // nothing
-            }
-        } );
-
-        tx = graphdb.beginTx();
-        try
-        {
-            root.setProperty( "state", "not broken yet" );
-            root.createRelationshipTo( graphdb.createNode(), DynamicRelationshipType.withName( "TEST" ) );
-            root.removeProperty( "state" );
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
+            node.setProperty( "counter", ((Long) node.removeProperty( "counter" )) + 1 );
+            return null;
         }
 
-        assertThat( root, inTx( graphdb, hasProperty( "counter" ).withValue( 1L ) ) );
+        @Override
+        public void afterCommit( TransactionData data, Void state )
+        {
+            // nothing
+        }
+
+        @Override
+        public void afterRollback( TransactionData data, Void state )
+        {
+            // nothing
+        }
     }
 }

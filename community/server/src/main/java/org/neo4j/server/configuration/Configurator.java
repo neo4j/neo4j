@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.configuration;
 
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.MapConfiguration;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,15 +29,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.MapConfiguration;
-
 import org.neo4j.helpers.TimeUtil;
-import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsPhase;
+import org.neo4j.logging.Logger;
 import org.neo4j.server.web.ServerInternalSettings;
+
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
@@ -95,18 +95,18 @@ public interface Configurator
     String WEBSERVER_HTTPS_PORT_PROPERTY_KEY = ServerSettings.webserver_https_port.name();
     int DEFAULT_WEBSERVER_HTTPS_PORT = Integer.valueOf( ServerSettings.webserver_https_port.getDefaultValue() );
 
-    String WEBSERVER_KEYSTORE_PATH_PROPERTY_KEY = ServerSettings.webserver_keystore_path.name();
-    String DEFAULT_WEBSERVER_KEYSTORE_PATH = ServerSettings.webserver_keystore_path.getDefaultValue();
+    String WEBSERVER_KEYSTORE_PATH_PROPERTY_KEY = "org.neo4j.server.webserver.https.keystore.location";
+    String DEFAULT_WEBSERVER_KEYSTORE_PATH = "";
 
-    String WEBSERVER_HTTPS_CERT_PATH_PROPERTY_KEY = ServerSettings.webserver_https_cert_path.name();
-    String DEFAULT_WEBSERVER_HTTPS_CERT_PATH = ServerSettings.webserver_https_cert_path.getDefaultValue();
+    String WEBSERVER_HTTPS_CERT_PATH_PROPERTY_KEY = ServerSettings.tls_certificate_file.name();
+    String DEFAULT_WEBSERVER_HTTPS_CERT_PATH = ServerSettings.tls_certificate_file.getDefaultValue();
 
-    String WEBSERVER_HTTPS_KEY_PATH_PROPERTY_KEY = ServerSettings.webserver_https_key_path.name();
-    String DEFAULT_WEBSERVER_HTTPS_KEY_PATH = ServerSettings.webserver_https_key_path.getDefaultValue();
+    String WEBSERVER_HTTPS_KEY_PATH_PROPERTY_KEY = ServerSettings.tls_key_file.name();
+    String DEFAULT_WEBSERVER_HTTPS_KEY_PATH = ServerSettings.tls_key_file.getDefaultValue();
 
     String HTTP_LOGGING = ServerSettings.http_logging_enabled.name();
     boolean DEFAULT_HTTP_LOGGING = Boolean.valueOf( ServerSettings.http_logging_enabled.getDefaultValue() );
-    String HTTP_LOG_CONFIG_LOCATION = ServerSettings.http_log_config_File.name();
+    String HTTP_LOG_CONFIG_LOCATION = ServerSettings.http_log_config_file.name();
 
     String HTTP_CONTENT_LOGGING = ServerSettings.http_content_logging_enabled.name();
     boolean DEFAULT_HTTP_CONTENT_LOGGING = Boolean.valueOf( ServerSettings.http_content_logging_enabled.getDefaultValue() );
@@ -132,29 +132,18 @@ public interface Configurator
     DiagnosticsExtractor<Configurator> DIAGNOSTICS = new DiagnosticsExtractor<Configurator>()
     {
         @Override
-        public void dumpDiagnostics( final Configurator source, DiagnosticsPhase phase, StringLogger log )
+        public void dumpDiagnostics( final Configurator source, DiagnosticsPhase phase, Logger logger )
         {
             if ( phase.isInitialization() || phase.isExplicitlyRequested() )
             {
                 final Configuration config = source.configuration();
-                log.logLongMessage( "Server configuration:", new PrefetchingIterator<String>()
+                logger.log( "Server configuration:" );
+                Iterator<String> keys = config.getKeys();
+                while ( keys.hasNext() )
                 {
-                    final Iterator<?> keys = config.getKeys();
-
-                    @Override
-                    protected String fetchNextOrNull()
-                    {
-                        while ( keys.hasNext() )
-                        {
-                            Object key = keys.next();
-                            if ( key instanceof String )
-                            {
-                                return key + " = " + config.getProperty( (String) key );
-                            }
-                        }
-                        return null;
-                    }
-                }, true );
+                    String key = keys.next();
+                    logger.log( "%s=%s", key, config.getProperty( key ) );
+                }
             }
         }
 

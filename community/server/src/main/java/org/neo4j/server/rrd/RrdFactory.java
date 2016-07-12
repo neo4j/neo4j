@@ -35,11 +35,11 @@ import java.util.Map;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.RrdDbWrapper;
@@ -48,15 +48,16 @@ import org.neo4j.server.rrd.sampler.PropertyCountSampleable;
 import org.neo4j.server.rrd.sampler.RelationshipCountSampleable;
 import org.neo4j.server.web.ServerInternalSettings;
 
+import static org.rrd4j.ConsolFun.AVERAGE;
+import static org.rrd4j.ConsolFun.MAX;
+import static org.rrd4j.ConsolFun.MIN;
+
 import static java.lang.Double.NaN;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.rrd4j.ConsolFun.AVERAGE;
-import static org.rrd4j.ConsolFun.MAX;
-import static org.rrd4j.ConsolFun.MIN;
 
 public class RrdFactory
 {
@@ -64,18 +65,18 @@ public class RrdFactory
     private static final String RRD_THREAD_NAME = "Statistics Gatherer";
 
     private final Config config;
-    private final ConsoleLogger log;
+    private final Log log;
 
-    public RrdFactory( Config config, Logging logging )
+    public RrdFactory( Config config, LogProvider logProvider )
     {
         this.config = config;
-        this.log = logging.getConsoleLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
     }
 
     public org.neo4j.server.database.RrdDbWrapper createRrdDbAndSampler( final Database db, JobScheduler scheduler )
             throws IOException
     {
-        NeoStoreProvider neoStore = db.getGraph().getDependencyResolver().resolveDependency( NeoStoreProvider.class );
+        NeoStoresSupplier neoStore = db.getGraph().getDependencyResolver().resolveDependency( NeoStoresSupplier.class );
         AvailabilityGuard guard = db.getGraph().getDependencyResolver().resolveDependency( AvailabilityGuard.class );
 
         Sampleable[] primitives = {
@@ -166,7 +167,7 @@ public class RrdFactory
         }
         else
         {
-            Boolean ephemeral = config.get( InternalAbstractGraphDatabase.Configuration.ephemeral );
+            Boolean ephemeral = config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
             return ephemeral != null && ephemeral;
         }
     }

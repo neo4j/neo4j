@@ -21,8 +21,12 @@ package org.neo4j.unsafe.impl.batchimport.cache;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.mockito.InOrder;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Random;
 
 import org.neo4j.graphdb.Direction;
@@ -39,13 +43,26 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static java.lang.Math.max;
 import static java.lang.System.currentTimeMillis;
 
+@RunWith( Parameterized.class )
 public class NodeRelationshipCacheTest
 {
+    @Parameterized.Parameter( 0 )
+    public long base;
+
+    @Parameterized.Parameters
+    public static Collection<Object[]> data()
+    {
+        Collection<Object[]> data = new ArrayList<>();
+        data.add( new Object[]{ 0L } );
+        data.add( new Object[]{ (long) Integer.MAX_VALUE * 2 } );
+        return data;
+    }
+
     @Test
     public void shouldReportCorrectNumberOfDenseNodes() throws Exception
     {
         // GIVEN
-        NodeRelationshipCache cache = new NodeRelationshipCache( NumberArrayFactory.AUTO, 5 );
+        NodeRelationshipCache cache = new NodeRelationshipCache( NumberArrayFactory.AUTO, 5, base );
         increment( cache, 2, 10 );
         increment( cache, 5, 2 );
         increment( cache, 7, 12 );
@@ -68,7 +85,7 @@ public class NodeRelationshipCacheTest
     {
         // GIVEN
         int nodeCount = 10;
-        NodeRelationshipCache link = new NodeRelationshipCache( NumberArrayFactory.OFF_HEAP, 20 );
+        NodeRelationshipCache link = new NodeRelationshipCache( NumberArrayFactory.OFF_HEAP, 20, base );
         incrementRandomCounts( link, nodeCount, nodeCount*20 );
 
         // Test sparse node semantics
@@ -91,7 +108,7 @@ public class NodeRelationshipCacheTest
     {
         // GIVEN a dense node
         long denseNode = 0;
-        NodeRelationshipCache link = new NodeRelationshipCache( NumberArrayFactory.AUTO, 1 );
+        NodeRelationshipCache link = new NodeRelationshipCache( NumberArrayFactory.AUTO, 1, base );
         link.incrementCount( denseNode );
         link.getAndPutRelationship( denseNode, 0, Direction.OUTGOING, 0, true );
 
@@ -105,7 +122,7 @@ public class NodeRelationshipCacheTest
         GroupVisitor visitor = mock( GroupVisitor.class );
         assertEquals( 0L, link.getFirstRel( denseNode, visitor ) );
         InOrder order = inOrder( visitor );
-        order.verify( visitor ).visit( denseNode, 0,  1L, 0L, 2L, -1L );
+        order.verify( visitor ).visit( denseNode, 0, base + 1L, 0L, 2L, -1L );
         order.verify( visitor ).visit( denseNode, 1, -1L, 3L, 1L, -1L );
         order.verifyNoMoreInteractions();
     }
@@ -115,7 +132,7 @@ public class NodeRelationshipCacheTest
     {
         // GIVEN a dense node
         long denseNode = 0;
-        NodeRelationshipCache link = new NodeRelationshipCache( NumberArrayFactory.AUTO, 1 );
+        NodeRelationshipCache link = new NodeRelationshipCache( NumberArrayFactory.AUTO, 1, base );
         link.incrementCount( denseNode );
         link.getAndPutRelationship( denseNode, 1, Direction.INCOMING, 1, true );
 
@@ -129,7 +146,7 @@ public class NodeRelationshipCacheTest
         GroupVisitor visitor = mock( GroupVisitor.class );
         assertEquals( 0L, link.getFirstRel( denseNode, visitor ) );
         InOrder order = inOrder( visitor );
-        order.verify( visitor ).visit( denseNode, 0,  1L, 0L, 2L, -1L );
+        order.verify( visitor ).visit( denseNode, 0, base + 1L, 0L, 2L, -1L );
         order.verify( visitor ).visit( denseNode, 1, -1L, 3L, 1L, -1L );
         order.verifyNoMoreInteractions();
     }
@@ -139,7 +156,7 @@ public class NodeRelationshipCacheTest
     {
         // GIVEN a dense node
         long denseNode = 0;
-        NodeRelationshipCache link = new NodeRelationshipCache( NumberArrayFactory.AUTO, 1 );
+        NodeRelationshipCache link = new NodeRelationshipCache( NumberArrayFactory.AUTO, 1, base );
         link.incrementCount( denseNode );
         link.getAndPutRelationship( denseNode, 0, Direction.OUTGOING, 0, true );
         link.getAndPutRelationship( denseNode, 2, Direction.OUTGOING, 1, true );
@@ -155,8 +172,8 @@ public class NodeRelationshipCacheTest
         // THEN
         GroupVisitor visitor = mock( GroupVisitor.class );
         assertEquals( 0L, link.getFirstRel( denseNode, visitor ) );
-        verify( visitor ).visit( denseNode, 0,  2L, 0L, 3L, -1L );
-        verify( visitor ).visit( denseNode, 1,  1L, 4L, 2L,  6L );
+        verify( visitor ).visit( denseNode, 0, base + 2L, 0L, 3L, -1L );
+        verify( visitor ).visit( denseNode, 1, base + 1L, 4L, 2L, 6L );
         verify( visitor ).visit( denseNode, 2, -1L, 1L, 5L, -1L );
         verifyNoMoreInteractions( visitor );
     }

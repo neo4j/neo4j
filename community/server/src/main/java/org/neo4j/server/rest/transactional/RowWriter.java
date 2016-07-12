@@ -20,14 +20,15 @@
 package org.neo4j.server.rest.transactional;
 
 import java.io.IOException;
-import java.util.Map;
 
 import org.codehaus.jackson.JsonGenerator;
+
+import org.neo4j.graphdb.Result;
 
 class RowWriter implements ResultDataContentWriter
 {
     @Override
-    public void write( JsonGenerator out, Iterable<String> columns, Map<String, Object> row ) throws IOException
+    public void write( JsonGenerator out, Iterable<String> columns, Result.ResultRow row ) throws IOException
     {
         out.writeArrayFieldStart( "row" );
         try

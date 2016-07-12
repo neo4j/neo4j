@@ -27,8 +27,10 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -45,14 +47,15 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.test.EphemeralFileSystemRule;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 import static java.lang.Long.parseLong;
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class LuceneSchemaIndexPopulatorTest
 {
@@ -223,6 +226,7 @@ public class LuceneSchemaIndexPopulatorTest
         return NodePropertyUpdate.remove( nodeId, 0, removedValue, new long[0] );
     }
 
+    public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private IndexDescriptor indexDescriptor;
     private IndexStoreView indexStoreView;
     private LuceneSchemaIndexProvider provider;
@@ -231,7 +235,7 @@ public class LuceneSchemaIndexPopulatorTest
     private IndexReader reader;
     private IndexSearcher searcher;
     private final long indexId = 0;
-    private int propertyKeyId = 666;
+    private final int propertyKeyId = 666;
     private final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
 
     @Before
@@ -240,12 +244,11 @@ public class LuceneSchemaIndexPopulatorTest
         directory = new RAMDirectory();
         DirectoryFactory directoryFactory = new DirectoryFactory.Single(
                 new DirectoryFactory.UncloseableDirectory( directory ) );
-        Config config = new Config( stringMap( store_dir.name(), "target/whatever" ) );
-        provider = new LuceneSchemaIndexProvider( directoryFactory, config );
+        provider = new LuceneSchemaIndexProvider( fs.get(), directoryFactory, new File( "target/whatever" ) );
         indexDescriptor = new IndexDescriptor( 42, propertyKeyId );
         indexStoreView = mock( IndexStoreView.class );
         IndexConfiguration indexConfig = new IndexConfiguration( false );
-        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
         index = provider.getPopulator( indexId, indexDescriptor, indexConfig, samplingConfig );
         index.create();
     }
@@ -264,7 +267,7 @@ public class LuceneSchemaIndexPopulatorTest
 
         for ( Hit hit : expectedHits )
         {
-            TopDocs hits = searcher.search( documentLogic.newQuery( hit.value ), 10 );
+            TopDocs hits = searcher.search( documentLogic.newSeekQuery( hit.value ), 10 );
             assertEquals( "Unexpected number of index results from " + hit.value, hit.nodeIds.length, hits.totalHits );
             Set<Long> foundNodeIds = new HashSet<>();
             for ( int i = 0; i < hits.totalHits; i++ )

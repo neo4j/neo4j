@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.function.BooleanSupplier;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Label;
@@ -45,37 +46,40 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.impl.transaction.log.LogRotation;
-import org.neo4j.kernel.impl.util.Condition;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.impl.util.DependenciesProxy;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
+
+import static org.junit.Assert.assertTrue;
 
 import static java.lang.System.currentTimeMillis;
-import static org.junit.Assert.assertTrue;
 
 public class BackupServiceStressTestingBuilder
 {
-    private Condition untilCondition;
+    private BooleanSupplier untilCondition;
     private File storeDirectory;
     private File backupDirectory;
     private String backupHostname = "localhost";
     private int backupPort = 8200;
 
-    public static Condition untilTimeExpired( long duration, TimeUnit unit )
+    public static BooleanSupplier untilTimeExpired( long duration, TimeUnit unit )
     {
         final long endTimeInMilliseconds = currentTimeMillis() + unit.toMillis( duration );
-        return new Condition()
+        return new BooleanSupplier()
         {
             @Override
-            public boolean evaluate()
+            public boolean getAsBoolean()
             {
                 return currentTimeMillis() <= endTimeInMilliseconds;
             }
         };
     }
 
-    public BackupServiceStressTestingBuilder until( Condition untilCondition )
+    public BackupServiceStressTestingBuilder until( BooleanSupplier untilCondition )
     {
         Objects.requireNonNull( untilCondition );
         this.untilCondition = untilCondition;
@@ -129,7 +133,7 @@ public class BackupServiceStressTestingBuilder
         if ( directory.list().length > 0 )
         {
             throw new IllegalArgumentException( "Given directory is not empty: '" + path + "' " +
-                                                Arrays.toString( directory.list() ) );
+                    Arrays.toString( directory.list() ) );
         }
     }
 
@@ -140,14 +144,14 @@ public class BackupServiceStressTestingBuilder
 
         private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 
-        private final Condition until;
+        private final BooleanSupplier until;
         private final File storeDir;
         private final String backupHostname;
         private final int backupPort;
         private final File backupDir;
         private final File brokenDir;
 
-        private RunTest( Condition until, File storeDir, File backupDir, String backupHostname, int backupPort )
+        private RunTest( BooleanSupplier until, File storeDir, File backupDir, String backupHostname, int backupPort )
         {
             this.until = until;
             this.storeDir = storeDir;
@@ -162,29 +166,30 @@ public class BackupServiceStressTestingBuilder
         @Override
         public Integer call() throws Exception
         {
-            final GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory()
-                    .newEmbeddedDatabaseBuilder( storeDir.getAbsolutePath() )
-                    .setConfig( OnlineBackupSettings.online_backup_server, backupHostname + ":" + backupPort )
-                    .setConfig( GraphDatabaseSettings.keep_logical_logs, "true" )
+            final GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(
+                    storeDir.getAbsolutePath() ).setConfig( OnlineBackupSettings.online_backup_server,
+                    backupHostname + ":" + backupPort ).setConfig( GraphDatabaseSettings.keep_logical_logs, "true" )
                     .newGraphDatabase();
 
             try
             {
                 createIndex( db );
                 createSomeData( db );
-                rotateLog( db );
+                rotateLogAndCheckPoint( db );
 
                 final AtomicBoolean keepGoing = new AtomicBoolean( true );
 
                 // when
-                final OnlineBackupKernelExtension backup = new OnlineBackupKernelExtension(
-                        new Config(),
-                        db,
-                        db.getDependencyResolver().resolveDependency( KernelPanicEventGenerator.class ),
-                        new DevNullLoggingService(),
-                        new Monitors() );
+                Dependencies dependencies = new Dependencies( db.getDependencyResolver() );
+                dependencies.satisfyDependencies( new Config(), NullLogProvider.getInstance(), new Monitors() );
+
+                OnlineBackupKernelExtension backup;
                 try
                 {
+                    backup = (OnlineBackupKernelExtension) new OnlineBackupExtensionFactory().newKernelExtension(
+                            DependenciesProxy.dependencies( dependencies,
+                                    OnlineBackupExtensionFactory.Dependencies.class ) );
+
                     backup.init();
                     backup.start();
                 }
@@ -199,7 +204,7 @@ public class BackupServiceStressTestingBuilder
                     @Override
                     public void run()
                     {
-                        while ( keepGoing.get() && until.evaluate() )
+                        while ( keepGoing.get() && until.getAsBoolean() )
                         {
                             createSomeData( db );
                         }
@@ -209,20 +214,18 @@ public class BackupServiceStressTestingBuilder
                 final AtomicInteger inconsistentDbs = new AtomicInteger( 0 );
                 executor.execute( new Runnable()
                 {
-                    private final BackupService backupService = new BackupService(
-                            fileSystem, DevNullLoggingService.DEV_NULL, new Monitors() );
+                    private final BackupService backupService = new BackupService( fileSystem,
+                            NullLogProvider.getInstance(), new Monitors() );
 
                     @Override
                     public void run()
                     {
-                        while ( keepGoing.get() && until.evaluate() )
+                        while ( keepGoing.get() && until.getAsBoolean() )
                         {
                             cleanup( backupDir );
-                            BackupService.BackupOutcome backupOutcome =
-                                    backupService.doFullBackup( backupHostname, backupPort,
-                                            backupDir.getAbsolutePath(), true, new Config(),
-                                            BackupClient.BIG_READ_TIMEOUT,
-                                            false );
+                            BackupService.BackupOutcome backupOutcome = backupService.doFullBackup( backupHostname,
+                                    backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.DEFAULT, new Config(),
+                                    BackupClient.BIG_READ_TIMEOUT, false );
 
                             if ( !backupOutcome.isConsistent() )
                             {
@@ -261,7 +264,7 @@ public class BackupServiceStressTestingBuilder
 
                 } );
 
-                while ( keepGoing.get() && until.evaluate() )
+                while ( keepGoing.get() && until.getAsBoolean() )
                 {
                     Thread.sleep( 500 );
                 }
@@ -311,9 +314,12 @@ public class BackupServiceStressTestingBuilder
             }
         }
 
-        private void rotateLog( GraphDatabaseAPI db ) throws IOException
+        private void rotateLogAndCheckPoint( GraphDatabaseAPI db ) throws IOException
         {
             db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
+            db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
+                    new SimpleTriggerInfo( "test" )
+            );
         }
 
         private static Label randomLabel()

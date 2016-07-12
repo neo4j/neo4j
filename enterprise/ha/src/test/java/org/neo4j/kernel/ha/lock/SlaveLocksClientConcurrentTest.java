@@ -39,9 +39,10 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.ha.lock.forseti.ForsetiLockManager;
+import org.neo4j.kernel.impl.enterprise.lock.forseti.ForsetiLockManager;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.logging.Log;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -51,14 +52,12 @@ import static org.mockito.Mockito.when;
 
 public class SlaveLocksClientConcurrentTest
 {
-
     private static ExecutorService executor;
 
     private Master master;
     private ForsetiLockManager lockManager;
     private RequestContextFactory requestContextFactory;
     private AvailabilityGuard availabilityGuard;
-    private long availabilityTimeoutMillis;
 
     @BeforeClass
     public static void initExecutor()
@@ -78,8 +77,7 @@ public class SlaveLocksClientConcurrentTest
         master = mock( Master.class, new LockedOnMasterAnswer() );
         lockManager = new ForsetiLockManager( ResourceTypes.values() );
         requestContextFactory = mock( RequestContextFactory.class );
-        availabilityGuard = new AvailabilityGuard( Clock.SYSTEM_CLOCK );
-        availabilityTimeoutMillis = 100;
+        availabilityGuard = new AvailabilityGuard( Clock.SYSTEM_CLOCK, mock( Log.class ) );
 
         when( requestContextFactory.newRequestContext( Mockito.anyInt() ) )
                 .thenReturn( RequestContext.anonymous( 1 ) );
@@ -112,12 +110,12 @@ public class SlaveLocksClientConcurrentTest
     private SlaveLocksClient createClient()
     {
         return new SlaveLocksClient( master, lockManager.newClient(), lockManager,
-                requestContextFactory, availabilityGuard, availabilityTimeoutMillis );
+                requestContextFactory, availabilityGuard, false );
     }
 
     private static class LockedOnMasterAnswer implements Answer
     {
-        private Response lockResult;
+        private final Response lockResult;
 
         public LockedOnMasterAnswer()
         {

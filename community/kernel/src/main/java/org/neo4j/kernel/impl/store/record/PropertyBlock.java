@@ -26,11 +26,11 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.neo4j.function.Supplier;
+import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
-
-import static org.neo4j.kernel.impl.util.Providers.singletonProvider;
 
 public class PropertyBlock implements Cloneable
 {
@@ -57,8 +57,7 @@ public class PropertyBlock implements Cloneable
 
     public int getKeyIndexId()
     {
-        // [][][][][][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
-        return (int) (valueBlocks[0] & KEY_BITMASK);
+        return keyIndexId( valueBlocks[0] );
     }
 
     public void setKeyIndexId( int key )
@@ -107,22 +106,22 @@ public class PropertyBlock implements Cloneable
      */
     public long getSingleValueLong()
     {
-        return (valueBlocks[0] & 0xFFFFFFFFF0000000L) >>> 28;
+        return fetchLong( valueBlocks[0] );
     }
 
     public int getSingleValueInt()
     {
-        return (int)((valueBlocks[0] & 0x0FFFFFFFF0000000L) >>> 28);
+        return fetchInt( valueBlocks[0] );
     }
 
     public short getSingleValueShort()
     {
-        return (short)((valueBlocks[0] & 0x00000FFFF0000000L) >>> 28);
+        return fetchShort( valueBlocks[0] );
     }
 
     public byte getSingleValueByte()
     {
-        return (byte)((valueBlocks[0] & 0x0000000FF0000000L) >>> 28);
+        return fetchByte( valueBlocks[0] );
     }
 
     public long[] getValueBlocks()
@@ -245,6 +244,43 @@ public class PropertyBlock implements Cloneable
 
     public DefinedProperty newPropertyData( PropertyStore propertyStore )
     {
-        return getType().readProperty( getKeyIndexId(), this, singletonProvider(propertyStore) );
+        return newPropertyData( Suppliers.singleton( propertyStore ) );
+    }
+
+    public DefinedProperty newPropertyData( Supplier<PropertyStore> propertyStore )
+    {
+        return getType().readProperty( getKeyIndexId(), this, propertyStore );
+    }
+
+    public static int keyIndexId( long valueBlock )
+    {
+        // [][][][][][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
+        return (int) (valueBlock & KEY_BITMASK);
+    }
+
+    public static long fetchLong( long valueBlock )
+    {
+        return (valueBlock & 0xFFFFFFFFF0000000L) >>> 28;
+    }
+
+    public static int fetchInt( long valueBlock )
+    {
+        return (int) ((valueBlock & 0x0FFFFFFFF0000000L) >>> 28);
+    }
+
+    public static short fetchShort( long valueBlock )
+    {
+        return (short) ((valueBlock & 0x00000FFFF0000000L) >>> 28);
+    }
+
+    public static byte fetchByte( long valueBlock )
+    {
+        return (byte) ((valueBlock & 0x0000000FF0000000L) >>> 28);
+    }
+
+    public static boolean valueIsInlined( long valueBlock )
+    {
+        // [][][][][   i,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
+        return (valueBlock & 0x10000000L) > 0;
     }
 }

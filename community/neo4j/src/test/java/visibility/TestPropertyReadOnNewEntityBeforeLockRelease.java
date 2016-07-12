@@ -19,169 +19,163 @@
  */
 package visibility;
 
-import java.util.concurrent.CountDownLatch;
-
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.test.AbstractSubProcessTestBase;
-import org.neo4j.test.subprocess.BreakPoint;
-import org.neo4j.test.subprocess.DebugInterface;
-import org.neo4j.test.subprocess.DebuggedThread;
-import org.neo4j.test.subprocess.KillSubProcess;
+import org.neo4j.test.DatabaseRule;
+import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.RepeatRule;
+import org.neo4j.test.RepeatRule.Repeat;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
-@SuppressWarnings( "serial" )
-public class TestPropertyReadOnNewEntityBeforeLockRelease extends AbstractSubProcessTestBase
+public class TestPropertyReadOnNewEntityBeforeLockRelease
 {
-    private final CountDownLatch latch1 = new CountDownLatch( 1 ), latch2 = new CountDownLatch( 1 );
+    private static final String INDEX_NAME = "nodes";
+    private static final int MAX_READER_DELAY_MS = 10;
+
+    @ClassRule
+    public static final DatabaseRule db = new ImpermanentDatabaseRule();
+    @Rule
+    public final RepeatRule repeat = new RepeatRule();
+
+    @BeforeClass
+    public static void initializeIndex() throws Exception
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            db.index().forNodes( INDEX_NAME ).add( node, "foo", "bar" );
+            tx.success();
+        }
+    }
 
     @Test
+    @Repeat( times = 100 )
     public void shouldBeAbleToReadPropertiesFromNewNodeReturnedFromIndex() throws Exception
     {
-        runInThread( new CreateData() );
-        latch1.await();
-        run( new ReadData() );
-        latch2.await();
-    }
+        String propertyKey = UUID.randomUUID().toString();
+        String propertyValue = UUID.randomUUID().toString();
+        AtomicBoolean start = new AtomicBoolean( false );
+        int readerDelay = ThreadLocalRandom.current().nextInt( MAX_READER_DELAY_MS );
 
-    private static class CreateData implements Task
-    {
-        @Override
-        public void run( GraphDatabaseAPI graphdb )
-        {
-            try(Transaction tx = graphdb.beginTx())
-            {
-                Node node = graphdb.createNode();
-                node.setProperty( "value", "present" );
-                graphdb.index().forNodes( "nodes" ).add( node, "value", "present" );
-                enableBreakPoints();
+        Writer writer = new Writer( db, propertyKey, propertyValue, start );
+        Reader reader = new Reader( db, propertyKey, propertyValue, start, readerDelay );
 
-                tx.success();
-            }
-            done();
-        }
-    }
-
-    static void enableBreakPoints()
-    {
-        // triggers breakpoint
-    }
-
-    static void done()
-    {
-        // triggers breakpoint
-    }
-
-    static void resumeThread()
-    {
-        // triggers breakpoint
-    }
-
-    private static class ReadData implements Task
-    {
-        @Override
-        public void run( GraphDatabaseAPI graphdb )
-        {
-            try(Transaction ignored = graphdb.beginTx())
-            {
-                Node node = graphdb.index().forNodes( "nodes" ).get( "value", "present" ).getSingle();
-                assertNotNull( "did not get the node from the index", node );
-                assertEquals( "present", node.getProperty( "value" ) );
-            }
-            resumeThread();
-        }
-    }
-
-    private volatile DebuggedThread thread;
-    private final BreakPoint lockReleaserCommit = new BreakPoint( KernelTransactionImplementation.class, "release" )
-    {
-        @Override
-        protected void callback( DebugInterface debug ) throws KillSubProcess
-        {
-            thread = debug.thread().suspend( this );
-            resumeThread.enable();
-            this.disable();
-            latch1.countDown();
-        }
-    }, enableBreakPoints = new BreakPoint( TestPropertyReadOnNewEntityBeforeLockRelease.class, "enableBreakPoints" )
-    {
-        @Override
-        protected void callback( DebugInterface debug ) throws KillSubProcess
-        {
-            lockReleaserCommit.enable();
-            this.disable();
-        }
-    }, resumeThread = new BreakPoint( TestPropertyReadOnNewEntityBeforeLockRelease.class, "resumeThread" )
-    {
-        @Override
-        protected void callback( DebugInterface debug ) throws KillSubProcess
-        {
-            thread.resume();
-            this.disable();
-        }
-    }, done = new BreakPoint( TestPropertyReadOnNewEntityBeforeLockRelease.class, "done" )
-    {
-        @Override
-        protected void callback( DebugInterface debug ) throws KillSubProcess
-        {
-            latch2.countDown();
-            this.disable();
-        }
-    };
-
-    @Override
-    protected BreakPoint[] breakpoints( int id )
-    {
-        return new BreakPoint[] { lockReleaserCommit, enableBreakPoints.enable(), resumeThread, done.enable() };
-    }
-
-    /**
-     * Version of the test case useful for manual debugging.
-     */
-    public static void main( String... args ) throws Exception
-    {
-        final GraphDatabaseAPI graphdb = (GraphDatabaseAPI) new GraphDatabaseFactory().
-                                                  newEmbeddedDatabase( "target/test-data/" + TestPropertyReadOnNewEntityBeforeLockRelease.class
-                                                      .getName() + "/graphdb" );
-        final CountDownLatch completion = new CountDownLatch( 2 );
-        class TaskRunner implements Runnable
-        {
-            private final Task task;
-
-            TaskRunner( Task task )
-            {
-                this.task = task;
-            }
-
-            @Override
-            public void run()
-            {
-                try
-                {
-                    task.run( graphdb );
-                }
-                finally
-                {
-                    completion.countDown();
-                }
-            }
-        }
-        new Thread( new TaskRunner( new CreateData() ) ).start();
-        new Thread( new TaskRunner( new ReadData() ) ).start();
+        ExecutorService executor = Executors.newFixedThreadPool( 2 );
+        Future<?> readResult;
+        Future<?> writeResult;
         try
         {
-            completion.await();
+            writeResult = executor.submit( writer );
+            readResult = executor.submit( reader );
+
+            start.set( true );
         }
         finally
         {
-            graphdb.shutdown();
+            executor.shutdown();
+            executor.awaitTermination( 20, TimeUnit.SECONDS );
+        }
+
+        assertNull( writeResult.get() );
+        assertNull( readResult.get() );
+    }
+
+    private static class Writer implements Runnable
+    {
+        final GraphDatabaseService db;
+        final String propertyKey;
+        final String propertyValue;
+        final AtomicBoolean start;
+
+        Writer( GraphDatabaseService db, String propertyKey, String propertyValue, AtomicBoolean start )
+        {
+            this.db = db;
+            this.propertyKey = propertyKey;
+            this.propertyValue = propertyValue;
+            this.start = start;
+        }
+
+        @Override
+        public void run()
+        {
+            while ( !start.get() )
+            {
+                // spin
+            }
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = db.createNode();
+                node.setProperty( propertyKey, propertyValue );
+                db.index().forNodes( INDEX_NAME ).add( node, propertyKey, propertyValue );
+                tx.success();
+            }
+        }
+    }
+
+    private static class Reader implements Runnable
+    {
+        final GraphDatabaseService db;
+        final String propertyKey;
+        final String propertyValue;
+        final AtomicBoolean start;
+        private final int delay;
+
+        Reader( GraphDatabaseService db, String propertyKey, String propertyValue, AtomicBoolean start, int delay )
+        {
+            this.db = db;
+            this.propertyKey = propertyKey;
+            this.propertyValue = propertyValue;
+            this.start = start;
+            this.delay = delay;
+        }
+
+        @Override
+        public void run()
+        {
+            while ( !start.get() )
+            {
+                // spin
+            }
+            sleep();
+            try ( Transaction tx = db.beginTx() )
+            {
+                // it is acceptable to either see a node with correct property or not see it at all
+                Node node = db.index().forNodes( INDEX_NAME ).get( propertyKey, propertyValue ).getSingle();
+                if ( node != null )
+                {
+                    assertEquals( propertyValue, node.getProperty( propertyKey ) );
+                }
+                tx.success();
+            }
+        }
+
+        private void sleep()
+        {
+            try
+            {
+                Thread.sleep( delay );
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException( e );
+            }
         }
     }
 }

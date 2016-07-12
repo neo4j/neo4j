@@ -57,7 +57,7 @@ public interface ExecutionPlanDescription
     /**
      * @return the set of identifiers used in this execution step
      */
-    public Set<String> getIdentifiers();
+    Set<String> getIdentifiers();
 
     /**
      * Signifies that the query was profiled, and that statistics from the profiling can

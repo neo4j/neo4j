@@ -61,20 +61,21 @@ public class TestSorting extends TraversalTestBase
                 triplet( me, knows, zack ), triplet( zack, knows, andreas ), triplet( george, knows, andreas ),
                 triplet( andreas, knows, nicholas ) );
 
-        Transaction tx = beginTx();
-        List<Node> nodes = asNodes( abraham, george, dan, zack, andreas, nicholas );
-        assertEquals( nodes, asCollection( traversal().evaluator( excludeStartPosition() )
-                .sort( endNodeProperty( "name" ) ).traverse( getNodeWithName( me ) ).nodes() ) );
-        tx.success();
-        tx.finish();
+        try (Transaction tx = beginTx())
+        {
+            List<Node> nodes = asNodes( abraham, george, dan, zack, andreas, nicholas );
+            assertEquals( nodes, asCollection( traversal().evaluator( excludeStartPosition() )
+                    .sort( endNodeProperty( "name" ) ).traverse( getNodeWithName( me ) ).nodes() ) );
+            tx.success();
+        }
     }
 
     private List<Node> asNodes( String abraham, String george, String dan, String zack, String andreas,
             String nicholas )
     {
-        List<String> allNames = new ArrayList<String>( asList( abraham, george, dan, zack, andreas, nicholas ) );
+        List<String> allNames = new ArrayList<>( asList( abraham, george, dan, zack, andreas, nicholas ) );
         Collections.sort( allNames );
-        List<Node> all = new ArrayList<Node>();
+        List<Node> all = new ArrayList<>();
         for ( String name : allNames )
         {
             all.add( getNodeWithName( name ) );

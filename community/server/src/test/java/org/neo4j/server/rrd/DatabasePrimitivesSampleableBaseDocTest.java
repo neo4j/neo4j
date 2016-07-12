@@ -28,7 +28,7 @@ import javax.management.MalformedObjectNameException;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.server.rrd.sampler.DatabasePrimitivesSampleableBase;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
 import org.neo4j.test.DatabaseRule;
@@ -58,9 +58,8 @@ public class DatabasePrimitivesSampleableBaseDocTest
     public void setup()
     {
         DependencyResolver dependencyResolver = dbRule.getGraphDatabaseAPI().getDependencyResolver();
-        NeoStoreProvider neoStore = dependencyResolver.resolveDependency( NeoStoreProvider.class );
+        NeoStoresSupplier neoStore = dependencyResolver.resolveDependency( NeoStoresSupplier.class );
         AvailabilityGuard guard = dependencyResolver.resolveDependency( AvailabilityGuard.class );
         sampleable = new NodeIdsInUseSampleable( neoStore, guard );
     }
-
 }

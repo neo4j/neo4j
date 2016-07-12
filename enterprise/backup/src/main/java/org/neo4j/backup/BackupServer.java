@@ -33,8 +33,8 @@ import org.neo4j.com.Server;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 
@@ -49,23 +49,12 @@ class BackupServer extends Server<TheBackupInterface,Object>
     static final int DEFAULT_PORT = 6362;
     static final int FRAME_LENGTH = Protocol.MEGA * 4;
 
-    BackupServer( TheBackupInterface requestTarget, HostnamePort server, Logging logging,
-            ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
+    public BackupServer( TheBackupInterface requestTarget, final HostnamePort server,
+                         LogProvider logProvider, ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
-        super( requestTarget, newBackupConfig( FRAME_LENGTH, server ), logging, FRAME_LENGTH,
+        super( requestTarget, newBackupConfig( FRAME_LENGTH, server ), logProvider, FRAME_LENGTH,
                 new ProtocolVersion( PROTOCOL_VERSION, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ),
                 TxChecksumVerifier.ALWAYS_MATCH, SYSTEM_CLOCK, byteCounterMonitor, requestMonitor );
-    }
-
-    @Override
-    protected RequestType<TheBackupInterface> getRequestContext( byte id )
-    {
-        return contexts[id];
-    }
-
-    @Override
-    protected void finishOffChannel( Channel channel, RequestContext context )
-    {
     }
 
     @Override
@@ -104,5 +93,22 @@ class BackupServer extends Server<TheBackupInterface,Object>
                 return server;
             }
         };
+    }
+
+    @Override
+    protected void responseWritten( RequestType<TheBackupInterface> type, Channel channel,
+                                    RequestContext context )
+    {
+    }
+
+    @Override
+    protected RequestType<TheBackupInterface> getRequestContext( byte id )
+    {
+        return contexts[id];
+    }
+
+    @Override
+    protected void stopConversation( RequestContext context )
+    {
     }
 }

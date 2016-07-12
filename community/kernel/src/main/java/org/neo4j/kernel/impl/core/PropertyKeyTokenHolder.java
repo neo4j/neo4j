@@ -19,16 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-public class PropertyKeyTokenHolder extends TokenHolder<Token>
+public interface PropertyKeyTokenHolder extends TokenHolder<Token>
 {
-    public PropertyKeyTokenHolder( TokenCreator tokenCreator )
-    {
-        super( tokenCreator );
-    }
-
-    @Override
-    protected Token newToken( String name, int id )
-    {
-        return new Token( name, id );
-    }
 }

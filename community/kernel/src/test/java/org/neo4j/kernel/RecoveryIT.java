@@ -32,8 +32,8 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Format;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.io.ByteUnit;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -65,16 +65,18 @@ public class RecoveryIT
         File restoreDbStoreDir = copyTransactionLogs();
 
         GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir );
-        NeoStore neoStore =
-                ((GraphDatabaseAPI) recoveredDatabase).getDependencyResolver().resolveDependency( NeoStore.class );
+        NeoStores neoStore =
+                ((GraphDatabaseAPI) recoveredDatabase).getDependencyResolver().resolveDependency( NeoStores.class );
         assertEquals( numberOfNodes, neoStore.getNodeStore().getHighId() );
+        // Make sure id generator has been rebuilt so this doesn't throw null pointer exception
+        assertTrue( neoStore.getNodeStore().nextId() > 0 );
 
         database.shutdown();
         recoveredDatabase.shutdown();
     }
 
     @Test
-    public void deleteAndRemoveNodePropertyDuringOneRecoveryRun() throws IOException
+    public void shouldRecoverIdsCorrectlyWhenWeCreateAndDeleteANodeInTheSameRecoveryRun() throws IOException
     {
         GraphDatabaseService database = startDatabase( directory.graphDbDir() );
         Label testLabel = DynamicLabel.label( "testLabel" );
@@ -129,7 +131,7 @@ public class RecoveryIT
 
     private String createLongString()
     {
-        String[] strings = new String[Format.KB * 2];
+        String[] strings = new String[(int) ByteUnit.kibiBytes( 2 )];
         Arrays.fill( strings, "a" );
         return Arrays.toString( strings );
     }

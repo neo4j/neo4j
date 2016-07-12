@@ -23,7 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
 
 import static org.junit.Assert.assertNotNull;
@@ -34,15 +34,12 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class UpdatePullerSchedulerTest
 {
-
     private UpdatePuller updatePuller;
-    private Logging logging;
 
     @Before
     public void setUp()
     {
         updatePuller = mock( UpdatePuller.class );
-        logging = mock( Logging.class );
     }
 
     @Test
@@ -50,7 +47,7 @@ public class UpdatePullerSchedulerTest
     {
         JobScheduler jobScheduler = mock( JobScheduler.class );
         UpdatePullerScheduler pullerScheduler =
-                new UpdatePullerScheduler( updatePuller, jobScheduler, logging, 0 );
+                new UpdatePullerScheduler( jobScheduler, NullLogProvider.getInstance(), updatePuller, 0 );
 
         // when start puller scheduler - nothing should be scheduled
         pullerScheduler.init();
@@ -64,21 +61,21 @@ public class UpdatePullerSchedulerTest
     @Test
     public void scheduleUpdatePulling() throws Throwable
     {
-        OnDemandJobScheduler demandJobScheduler = new OnDemandJobScheduler();
+        OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
         UpdatePullerScheduler pullerScheduler =
-                new UpdatePullerScheduler( updatePuller, demandJobScheduler, logging, 10 );
+                new UpdatePullerScheduler( jobScheduler, NullLogProvider.getInstance(), updatePuller, 10 );
 
         // schedule update pulling and run it
         pullerScheduler.init();
-        demandJobScheduler.runJob();
+        jobScheduler.runJob();
 
         verify( updatePuller ).pullUpdates();
-        assertNotNull( "Job should be scheduled", demandJobScheduler.getJob() );
+        assertNotNull( "Job should be scheduled", jobScheduler.getJob() );
 
         // stop scheduler - job should be canceled
         pullerScheduler.shutdown();
 
-        assertNull( "Job should be canceled", demandJobScheduler.getJob() );
+        assertNull( "Job should be canceled", jobScheduler.getJob() );
     }
 
 }

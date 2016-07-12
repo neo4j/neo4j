@@ -39,7 +39,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -99,7 +99,7 @@ public class RebuildFromLogsTest
         finally
         {
             txId = prototype.getDependencyResolver()
-                    .resolveDependency( NeoStore.class ).getLastCommittedTransactionId();
+                    .resolveDependency( MetaDataStore.class ).getLastCommittedTransactionId();
             prototype.shutdown();
         }
 

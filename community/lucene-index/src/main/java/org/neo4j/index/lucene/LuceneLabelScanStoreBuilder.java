@@ -29,11 +29,10 @@ import org.neo4j.kernel.api.impl.index.LuceneLabelScanStore;
 import org.neo4j.kernel.api.impl.index.NodeRangeDocumentLabelScanStorageStrategy;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
-import org.neo4j.kernel.impl.transaction.state.SimpleNeoStoreProvider;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.SingleLoggingService;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
+import org.neo4j.kernel.impl.transaction.state.SimpleNeoStoresSupplier;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
 
@@ -46,22 +45,22 @@ import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLab
  */
 public class LuceneLabelScanStoreBuilder
 {
-    private final String storeDir;
-    private final NeoStoreProvider neoStoreProvider;
+    private final File storeDir;
+    private final NeoStoresSupplier neoStoresSupplier;
     private final FileSystemAbstraction fileSystem;
-    private final SingleLoggingService logger;
+    private final LogProvider logProvider;
 
     private LuceneLabelScanStore labelScanStore = null;
 
-    public LuceneLabelScanStoreBuilder( String storeDir,
-                                        NeoStore neoStore,
+    public LuceneLabelScanStoreBuilder( File storeDir,
+                                        NeoStores neoStores,
                                         FileSystemAbstraction fileSystem,
-                                        StringLogger logger )
+                                        LogProvider logProvider )
     {
         this.storeDir = storeDir;
-        this.neoStoreProvider = new SimpleNeoStoreProvider( neoStore );
+        this.neoStoresSupplier = new SimpleNeoStoresSupplier( neoStores );
         this.fileSystem = fileSystem;
-        this.logger = new SingleLoggingService( logger );
+        this.logProvider = logProvider;
     }
 
     public LabelScanStore build()
@@ -75,8 +74,8 @@ public class LuceneLabelScanStoreBuilder
                     // <db>/schema/label/lucene
                     new File( new File( new File( storeDir, "schema" ), "label" ), "lucene" ),
                     fileSystem, IndexWriterFactories.tracking(),
-                    fullStoreLabelUpdateStream( neoStoreProvider ),
-                    LuceneLabelScanStore.loggerMonitor( logger ) );
+                    fullStoreLabelUpdateStream( neoStoresSupplier ),
+                    LuceneLabelScanStore.loggerMonitor( logProvider ) );
 
             try
             {

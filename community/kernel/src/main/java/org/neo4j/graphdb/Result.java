@@ -115,6 +115,7 @@ public interface Result extends ResourceIterator<Map<String, Object>>
      *
      * @return {@code true} if there is more rows available in this result, {@code false} otherwise.
      */
+    @Override
     boolean hasNext();
 
     /**
@@ -122,6 +123,7 @@ public interface Result extends ResourceIterator<Map<String, Object>>
      *
      * @return the next row in this result.
      */
+    @Override
     Map<String, Object> next();
 
     /**
@@ -131,6 +133,7 @@ public interface Result extends ResourceIterator<Map<String, Object>>
      * It is thus safe (and even encouraged, for style and simplicity) to invoke this method even after consuming all
      * rows in the result through the {@link #next() next-method}.
      */
+    @Override
     void close();
 
     /**
@@ -177,5 +180,74 @@ public interface Result extends ResourceIterator<Map<String, Object>>
     void writeAsStringTo( PrintWriter writer );
 
     /** Removing rows from the result is not supported. */
+    @Override
     void remove();
+
+    /**
+     * Provides notifications about the query producing this result.
+     *
+     * Notifications can be warnings about problematic queries or other valuable information that can be
+     * presented in a client.
+     *
+     * @return an iterable of all notifications created when running the query.
+     */
+    Iterable<Notification> getNotifications();
+
+    /**
+     * Visits all rows in this Result by iterating over them.
+     *
+     * This is an alternative to using the iterator form of Result. Using the visitor is better from a object
+     * creation perspective.
+     *
+     * @param visitor the ResultVisitor instance that will see the results of the visit.
+     * @param <VisitationException> the type of the exception that might get thrown
+     * @throws VisitationException if the {@code visit(ResultRow)} method of {@link ResultVisitor} throws such an
+     * exception.
+     */
+    <VisitationException extends Exception> void accept( ResultVisitor<VisitationException> visitor )
+            throws VisitationException;
+
+    /**
+     * Describes a row of a result. The contents of this object is only stable during the
+     * call to the {@code visit(ResultRow)} method of {@link ResultVisitor}.
+     * The data it contains can change between calls to the {@code visit(ResultRow)} method.
+     * Instances of this type should thus not be saved
+     * for later use, or shared with other threads, rather the content should be copied.
+     */
+    interface ResultRow
+    {
+        // TODO: Type safe getters for collections and maps?
+        Node getNode( String key );
+
+        Relationship getRelationship( String key );
+
+        Object get( String key );
+
+        String getString( String key );
+
+        Number getNumber( String key );
+
+        Boolean getBoolean( String key );
+
+        Path getPath( String key );
+    }
+
+    /**
+     * This is the visitor interface you need to implement to use the {@link Result#accept(ResultVisitor)} method.
+     */
+    interface ResultVisitor<VisitationException extends Exception>
+    {
+        /**
+         * Visits the specified row.
+         *
+         * @param row the row to visit. The row object is only guaranteed to be stable until flow of control has
+         *            returned from this method.
+         * @return true if the next row should also be visited. Returning false will terminate the iteration of
+         * result rows.
+         * @throws VisitationException if there is a problem in the execution of this method. This exception will close
+         * the result being visited, and the exception will propagate out through the
+         * {@linkplain #accept(ResultVisitor) accept method}.
+         */
+        boolean visit( ResultRow row ) throws VisitationException;
+    }
 }

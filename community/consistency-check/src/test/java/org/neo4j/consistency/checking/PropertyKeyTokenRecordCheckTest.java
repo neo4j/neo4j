@@ -33,7 +33,7 @@ public class PropertyKeyTokenRecordCheckTest extends
 {
     public PropertyKeyTokenRecordCheckTest()
     {
-        super( new PropertyKeyTokenRecordCheck(), ConsistencyReport.PropertyKeyTokenConsistencyReport.class );
+        super( new PropertyKeyTokenRecordCheck(), ConsistencyReport.PropertyKeyTokenConsistencyReport.class, new int[0] );
     }
 
     @Test
@@ -91,42 +91,6 @@ public class PropertyKeyTokenRecordCheckTest extends
 
         // then
         verify( report ).emptyName( name );
-        verifyNoMoreInteractions( report );
-    }
-
-    // change checking
-
-    @Test
-    public void shouldNotReportAnythingForConsistentlyChangedRecord() throws Exception
-    {
-        // given
-        PropertyKeyTokenRecord oldRecord = notInUse( new PropertyKeyTokenRecord( 42 ) );
-        PropertyKeyTokenRecord newRecord = inUse( new PropertyKeyTokenRecord( 42 ) );
-        DynamicRecord name = addKeyName( inUse( new DynamicRecord( 6 ) ) );
-        name.setData( new byte[1] );
-        newRecord.setNameId( (int) name.getId() );
-
-        // when
-        ConsistencyReport.PropertyKeyTokenConsistencyReport report = checkChange( oldRecord, newRecord );
-
-        // then
-        verifyNoMoreInteractions( report );
-    }
-
-    @Test
-    public void shouldReportProblemsWithTheNewStateWhenCheckingChanges() throws Exception
-    {
-        // given
-        PropertyKeyTokenRecord oldRecord = notInUse( new PropertyKeyTokenRecord( 42 ) );
-        PropertyKeyTokenRecord newRecord = inUse( new PropertyKeyTokenRecord( 42 ) );
-        DynamicRecord name = addKeyName( notInUse( new DynamicRecord( 6 ) ) );
-        newRecord.setNameId( (int) name.getId() );
-
-        // when
-        ConsistencyReport.PropertyKeyTokenConsistencyReport report = checkChange( oldRecord, newRecord );
-
-        // then
-        verify( report ).nameBlockNotInUse( name );
         verifyNoMoreInteractions( report );
     }
 }

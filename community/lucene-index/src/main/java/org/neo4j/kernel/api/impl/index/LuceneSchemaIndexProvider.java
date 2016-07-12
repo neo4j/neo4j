@@ -39,35 +39,27 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.api.index.util.FolderLayout;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
-import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
-import org.neo4j.kernel.monitoring.Monitors;
-
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
-import static org.neo4j.kernel.impl.store.StoreVersionMismatchHandler.ALLOW_OLD_VERSION;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 {
     private final DirectoryFactory directoryFactory;
     private final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
-    private final IndexWriterStatus writerStatus = new IndexWriterStatus();
     private final FailureStorage failureStorage;
     private final FolderLayout folderLayout;
     private final Map<Long, String> failures = new HashMap<>();
 
-    public LuceneSchemaIndexProvider( DirectoryFactory directoryFactory, Config config )
+    public LuceneSchemaIndexProvider( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
+            File storeDir )
     {
         super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 1 );
         this.directoryFactory = directoryFactory;
-        File rootDirectory = getRootDirectory( config.get( store_dir ), LuceneSchemaIndexProviderFactory.KEY );
+        File rootDirectory = getRootDirectory( storeDir, LuceneSchemaIndexProviderFactory.KEY );
         this.folderLayout = new FolderLayout( rootDirectory );
-        this.failureStorage = new FailureStorage( folderLayout );
+        this.failureStorage = new FailureStorage( fileSystem, folderLayout );
     }
 
     @Override
@@ -78,14 +70,13 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         {
             return new DeferredConstraintVerificationUniqueLuceneIndexPopulator(
                     documentStructure, IndexWriterFactories.tracking(), SearcherManagerFactories.standard() ,
-                    writerStatus, directoryFactory, folderLayout.getFolder( indexId ), failureStorage,
-                    indexId, descriptor );
+                    directoryFactory, folderLayout.getFolder( indexId ), failureStorage, indexId, descriptor );
         }
         else
         {
             return new NonUniqueLuceneIndexPopulator(
                     NonUniqueLuceneIndexPopulator.DEFAULT_QUEUE_THRESHOLD, documentStructure,
-                    IndexWriterFactories.tracking(), writerStatus, directoryFactory, folderLayout.getFolder( indexId ),
+                    IndexWriterFactories.tracking(), directoryFactory, folderLayout.getFolder( indexId ),
                     failureStorage, indexId, samplingConfig );
         }
     }
@@ -96,13 +87,13 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     {
         if ( config.isUnique() )
         {
-            return new UniqueLuceneIndexAccessor( documentStructure, IndexWriterFactories.reserving(), writerStatus,
+            return new UniqueLuceneIndexAccessor( documentStructure, IndexWriterFactories.reserving(),
                     directoryFactory, folderLayout.getFolder( indexId ) );
         }
         else
         {
             return new NonUniqueLuceneIndexAccessor( documentStructure, IndexWriterFactories.reserving(),
-                    writerStatus, directoryFactory, folderLayout.getFolder( indexId ), samplingConfig.bufferSize() );
+                    directoryFactory, folderLayout.getFolder( indexId ), samplingConfig.bufferSize() );
         }
     }
 
@@ -125,7 +116,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 
             try ( Directory directory = directoryFactory.open( folderLayout.getFolder( indexId ) ) )
             {
-                boolean status = writerStatus.isOnline( directory );
+                boolean status = LuceneIndexWriter.isOnline( directory );
                 return status ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
             }
         }
@@ -150,17 +141,9 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public StoreMigrationParticipant storeMigrationParticipant( final FileSystemAbstraction fs,
-                                                                UpgradableDatabase upgradableDatabase )
+    public StoreMigrationParticipant storeMigrationParticipant( final FileSystemAbstraction fs, PageCache pageCache )
     {
-        return new SchemaIndexMigrator( fs, upgradableDatabase, new SchemaIndexMigrator.SchemaStoreProvider()
-        {
-            @Override
-            public SchemaStore provide( File dir, PageCache pageCache )
-            {
-                return new StoreFactory( fs, dir, pageCache, DEV_NULL, new Monitors(), ALLOW_OLD_VERSION ).newSchemaStore();
-            }
-        } );
+        return new SchemaIndexMigrator( fs, pageCache, new StoreFactory() );
     }
 
     @Override

@@ -32,17 +32,17 @@ public abstract class ResourcePool<R>
 {
     public interface Monitor<R>
     {
-        public void updatedCurrentPeakSize( int currentPeakSize );
+        void updatedCurrentPeakSize( int currentPeakSize );
 
-        public void updatedTargetSize( int targetSize );
+        void updatedTargetSize( int targetSize );
 
-        public void created( R resource );
+        void created( R resource );
 
-        public void acquired( R resource );
+        void acquired( R resource );
 
-        public void disposed( R resource );
+        void disposed( R resource );
 
-        public class Adapter<R> implements Monitor<R>
+        class Adapter<R> implements Monitor<R>
         {
             @Override
             public void updatedCurrentPeakSize( int currentPeakSize )
@@ -73,12 +73,12 @@ public abstract class ResourcePool<R>
 
     public interface CheckStrategy
     {
-        public boolean shouldCheck();
+        boolean shouldCheck();
 
-        public class TimeoutCheckStrategy implements CheckStrategy
+        class TimeoutCheckStrategy implements CheckStrategy
         {
             private final long interval;
-            private long lastCheckTime;
+            private volatile long lastCheckTime;
             private final Clock clock;
 
             public TimeoutCheckStrategy( long interval, Clock clock )
@@ -104,7 +104,8 @@ public abstract class ResourcePool<R>
 
     public static final int DEFAULT_CHECK_INTERVAL = 60 * 1000;
 
-    private final LinkedList<R> unused = new LinkedList<>();
+    // protected for testing
+    protected final LinkedList<R> unused = new LinkedList<>();
     private final Map<Thread,R> current = new ConcurrentHashMap<>();
     private final Monitor<R> monitor;
     private final int minSize;

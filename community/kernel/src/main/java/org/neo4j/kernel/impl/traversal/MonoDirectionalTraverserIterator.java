@@ -50,11 +50,6 @@ class MonoDirectionalTraverserIterator extends AbstractTraverserIterator
                 expander );
     }
 
-    protected BranchSelector selector()
-    {
-        return selector;
-    }
-
     @Override
     public Evaluation evaluate( TraversalBranch branch, BranchState state )
     {

@@ -58,7 +58,7 @@ public class IndexManagerImpl implements IndexManager
     @Override
     public boolean existsForNodes( String indexName )
     {
-        try ( Statement statement = transactionBridge.instance() )
+        try ( Statement statement = transactionBridge.get() )
         {
             statement.readOperations().nodeLegacyIndexGetConfiguration( indexName );
             return true;
@@ -91,7 +91,7 @@ public class IndexManagerImpl implements IndexManager
     @Override
     public String[] nodeIndexNames()
     {
-        try ( Statement statement = transactionBridge.instance() )
+        try ( Statement statement = transactionBridge.get() )
         {
             return statement.readOperations().nodeLegacyIndexesGetAll();
         }
@@ -100,7 +100,7 @@ public class IndexManagerImpl implements IndexManager
     @Override
     public boolean existsForRelationships( String indexName )
     {
-        try ( Statement statement = transactionBridge.instance() )
+        try ( Statement statement = transactionBridge.get() )
         {
             statement.readOperations().relationshipLegacyIndexGetConfiguration( indexName );
             return true;
@@ -134,7 +134,7 @@ public class IndexManagerImpl implements IndexManager
     @Override
     public String[] relationshipIndexNames()
     {
-        try ( Statement statement = transactionBridge.instance() )
+        try ( Statement statement = transactionBridge.get() )
         {
             return statement.readOperations().relationshipLegacyIndexesGetAll();
         }
@@ -143,7 +143,7 @@ public class IndexManagerImpl implements IndexManager
     @Override
     public Map<String,String> getConfiguration( Index<? extends PropertyContainer> index )
     {
-        try ( Statement statement = transactionBridge.instance() )
+        try ( Statement statement = transactionBridge.get() )
         {
             if ( index.getEntityType().equals( Node.class ) )
             {
@@ -166,7 +166,7 @@ public class IndexManagerImpl implements IndexManager
     {
         // Configuration changes should be done transactionally. However this
         // has always been done non-transactionally, so it's not a regression.
-        try ( Statement statement = transactionBridge.instance() )
+        try ( Statement statement = transactionBridge.get() )
         {
             if ( index.getEntityType().equals( Node.class ) )
             {
@@ -194,7 +194,7 @@ public class IndexManagerImpl implements IndexManager
     {
         // Configuration changes should be done transactionally. However this
         // has always been done non-transactionally, so it's not a regression.
-        try ( Statement statement = transactionBridge.instance() )
+        try ( Statement statement = transactionBridge.get() )
         {
             if ( index.getEntityType().equals( Node.class ) )
             {

@@ -236,7 +236,7 @@ public class TestProperties extends AbstractNeo4jTestCase
         node.setProperty( "key", value );
         assertEquals( value, node.getProperty( "key" ) );
     }
-    
+
     @Test
     public void loadManyProperties() throws Exception
     {
@@ -246,7 +246,6 @@ public class TestProperties extends AbstractNeo4jTestCase
             node.setProperty( "property " + i, "value" );
         }
         newTransaction();
-        clearCache();
         assertEquals( "value", node.getProperty( "property 0" ) );
     }
 
@@ -258,16 +257,10 @@ public class TestProperties extends AbstractNeo4jTestCase
         node.getProperty( "name" );
         commit();
 
-        Transaction tx = getGraphDb().beginTx();
-        try
+        try ( Transaction tx = getGraphDb().beginTx() )
         {
             node.getProperty( "name" );
-           tx.success();
-        }
-        finally
-        {
-            //noinspection deprecation
-            tx.finish();
+            tx.success();
         }
     }
 }

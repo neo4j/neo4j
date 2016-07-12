@@ -88,7 +88,6 @@ public class LuceneIndexIT
     private final long nodeId = 1, nodeId2 = 2;
     private final Object value = "value";
     private final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
-    private final IndexWriterStatus writerLogic = new IndexWriterStatus();
     private LuceneIndexAccessor accessor;
     private DirectoryFactory dirFactory;
 
@@ -100,7 +99,7 @@ public class LuceneIndexIT
     {
         dirFactory = DirectoryFactory.PERSISTENT;
         accessor = new NonUniqueLuceneIndexAccessor(
-                documentLogic, reserving(), writerLogic, dirFactory, testDir.directory(), 100_000
+                documentLogic, reserving(), dirFactory, testDir.directory(), 100_000
         );
     }
 

@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal
 
 import java.util
 
-import org.neo4j.cypher.internal.compiler.v2_2.PlannerName
+import org.neo4j.cypher.internal.compiler.v2_3.{RuntimeName, PlannerName}
 import org.neo4j.cypher.{ExtendedPlanDescription, CypherVersion, PlanDescription}
 import org.neo4j.cypher.javacompat.{PlanDescription => JPlanDescription}
 
 
-class AmendedRootPlanDescription(inner: ExtendedPlanDescription, version: CypherVersion, planner: PlannerName)
+class AmendedRootPlanDescription(inner: ExtendedPlanDescription, version: CypherVersion, planner: PlannerName, runtime: RuntimeName)
   extends ExtendedPlanDescription {
 
   self =>
@@ -45,7 +45,10 @@ class AmendedRootPlanDescription(inner: ExtendedPlanDescription, version: Cypher
       val newArgs = new util.HashMap[String, AnyRef]()
       newArgs.putAll(args)
       newArgs.put("version", s"CYPHER ${version.name}")
-      newArgs.put("planner", s"Planner ${planner.name}")
+      newArgs.put("planner", s"Planner ${planner.toTextOutput}")
+      newArgs.put("planner-impl", s"Planner ${planner.name}")
+      newArgs.put("runtime", s"Runtime ${runtime.toTextOutput}")
+      newArgs.put("runtime-impl", s"Runtime ${runtime.name}")
       java.util.Collections.unmodifiableMap[String, AnyRef](newArgs)
     }
 
@@ -54,16 +57,17 @@ class AmendedRootPlanDescription(inner: ExtendedPlanDescription, version: Cypher
     override def toString = self.toString
   }
 
-  override def toString = {
+  override def toString: String = {
     // Have to hack toString here as the alternative would be to release 1.9, 2.0, .. to add a new argument type
     val innerToString = childAsJava.toString
     val arguments = asJava.getArguments
     val version = arguments.get("version")
     val planner = arguments.get("planner")
-    s"Compiler $version \n\n$planner\n\n$innerToString"
+    val runtime = arguments.get("runtime")
+    s"Compiler $version \n\n$planner\n\n$runtime\n\n$innerToString"
   }
 
-  def children: Seq[PlanDescription] = inner.children
+  override def children: Seq[PlanDescription] = inner.children
 
   def extendedChildren: Seq[ExtendedPlanDescription] = inner.extendedChildren
 
@@ -71,5 +75,5 @@ class AmendedRootPlanDescription(inner: ExtendedPlanDescription, version: Cypher
 
   def identifiers: Set[String] = inner.identifiers
 
-  def hasProfilerStatistics: Boolean = inner.hasProfilerStatistics
+  override def hasProfilerStatistics: Boolean = inner.hasProfilerStatistics
 }

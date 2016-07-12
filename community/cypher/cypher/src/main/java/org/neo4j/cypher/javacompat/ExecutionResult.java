@@ -19,14 +19,19 @@
  */
 package org.neo4j.cypher.javacompat;
 
+import scala.collection.JavaConversions;
+
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.QueryExecutionType;
+import org.neo4j.graphdb.QueryExecutionType.QueryType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
@@ -51,7 +56,12 @@ import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Result
 {
     private final org.neo4j.cypher.ExtendedExecutionResult inner;
-    private final ResourceIterator<Map<String, Object>> iter;
+
+    /**
+     * Initialized lazily and should be accessed with {@link #innerIterator()} method
+     * because {@link #accept(ResultVisitor)} does not require iterator.
+     */
+    private ResourceIterator<Map<String,Object>> innerIterator;
 
     /**
      * Constructor used by the Cypher framework. End-users should not
@@ -62,8 +72,12 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
      */
     public ExecutionResult( org.neo4j.cypher.ExtendedExecutionResult projection )
     {
-        inner = projection;
-        iter = inner.javaIterator();
+        inner = Objects.requireNonNull( projection );
+        //if updating query we must fetch the iterator right away in order to eagerly perform updates
+        if ( projection.executionType().queryType() == QueryType.WRITE )
+        {
+            innerIterator();
+        }
     }
 
     /**
@@ -176,6 +190,9 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     public void toString( PrintWriter writer )
     {
         inner.dumpToString( writer ); // legacy method - don't convert exceptions...
+        for (Notification notification : scala.collection.JavaConversions.asJavaIterable( inner.notifications() )) {
+            writer.println( notification.getDescription() );
+        }
     }
 
     /**
@@ -192,7 +209,7 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     @Override
     public ResourceIterator<Map<String, Object>> iterator()
     {
-        return iter; // legacy method - don't convert exceptions...
+        return innerIterator(); // legacy method - don't convert exceptions...
     }
 
     @Override
@@ -200,7 +217,7 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     {
         try
         {
-            return iter.hasNext();
+            return innerIterator().hasNext();
         }
         catch ( CypherException e )
         {
@@ -213,7 +230,7 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     {
         try
         {
-            return iter.next();
+            return innerIterator().next();
         }
         catch ( CypherException e )
         {
@@ -226,7 +243,13 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     {
         try
         {
-            iter.close();
+            // inner iterator might be null if this result was consumed using visitor
+            if ( innerIterator != null )
+            {
+                innerIterator.close();
+            }
+            // but we still need to close the underlying exetended execution result
+            inner.close();
         }
         catch ( CypherException e )
         {
@@ -277,6 +300,28 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     public void remove()
     {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <VisitationException extends Exception> void accept( ResultVisitor<VisitationException> visitor )
+            throws VisitationException
+    {
+        inner.accept( visitor );
+    }
+
+    @Override
+    public Iterable<Notification> getNotifications()
+    {
+        return JavaConversions.asJavaIterable( inner.notifications() );
+    }
+
+    private ResourceIterator<Map<String,Object>> innerIterator()
+    {
+        if ( innerIterator == null )
+        {
+            innerIterator = inner.javaIterator();
+        }
+        return innerIterator;
     }
 
     private static class ExceptionConversion<T> implements ResourceIterator<T>

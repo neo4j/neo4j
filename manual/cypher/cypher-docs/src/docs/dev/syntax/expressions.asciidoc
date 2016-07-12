@@ -1,0 +1,48 @@
+[[cypher-expressions]]
+Expressions
+===========
+
+== Expressions in general ==
+
+An expression in Cypher can be:
+
+* A decimal (integer or double) literal: `13`, `-40000`, `3.14`, `6.022E23`.
+* A hexadecimal integer literal (starting with `0x`): `0x13zf`, `0xFC3A9`, `-0x66eff`.
+* An octal integer literal (starting with `0`): `01372`, `02127`, `-05671`.
+* A string literal: `"Hello"`, `'World'`.
+* A boolean literal:  `true`, `false`, `TRUE`, `FALSE`.
+* An identifier: `n`, `x`, `rel`, `myFancyIdentifier`, +\`A name with weird stuff in it[]!`+.
+* A property: `n.prop`, `x.prop`, `rel.thisProperty`, +myFancyIdentifier.\`(weird property name)`+.
+* A dynamic property: `n["prop"]`, `rel[n.city + n.zip]`, `map[coll[0]]`.
+* A parameter: `{param}`, `{0}`
+* A collection of expressions: `["a", "b"]`, `[1,2,3]`, `["a", 2, n.property, {param}]`, `[ ]`.
+* A function call: `length(p)`, `nodes(p)`.
+* An aggregate function: `avg(x.prop)`, `count(*)`.
+* A path-pattern: `(a)-->()<--(b)`.
+* An operator application: `1 + 2` and `3 < 4`.
+* A predicate expression is an expression that returns true or false: `a.prop = "Hello"`, `length(p) > 10`,
+`has(a.name)`.
+* A regular expression: `a.name =~ "Tob.*"`
+* A case-sensitive string matching expression: `a.surname STARTS WITH "Sven"`, `a.surname ENDS WITH "son"` or `a.surname CONTAINS "son"`
+* A +CASE+ expression.
+
+== Note on string literals ==
+String literals can contain these escape sequences.
+
+[options="header", cols=">1,<2", width="50%"]
+|===================
+|Escape sequence|Character
+|`\t`|Tab
+|`\b`|Backspace
+|`\n`|Newline
+|`\r`|Carriage return
+|`\f`|Form feed
+|`\'`|Single quote
+|`\"`|Double quote
+|`\\`|Backslash
+|`\uxxxx`|Unicode UTF-16 code point (4 hex digits must follow the `\u`)
+|`\Uxxxxxxxx`|Unicode UTF-32 code point (8 hex digits must follow the `\U`)
+|===================
+
+include::../ql/syntax/index.asciidoc[]
+

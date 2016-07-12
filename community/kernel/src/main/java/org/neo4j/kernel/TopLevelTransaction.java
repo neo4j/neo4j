@@ -19,16 +19,21 @@
  */
 package org.neo4j.kernel;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransaction.CloseListener;
+import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.Status.Classification;
+import org.neo4j.kernel.api.exceptions.Status.Code;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 
@@ -82,7 +87,7 @@ public class TopLevelTransaction implements Transaction
     @Override
     public final void terminate()
     {
-        this.transaction.markForTermination();
+        this.transaction.markForTermination( Status.Transaction.Terminated );
     }
 
     @Override
@@ -97,23 +102,36 @@ public class TopLevelTransaction implements Transaction
         }
         catch ( TransientFailureException e )
         {
-            // We let deadlock exceptions pass through unchanged since they aren't really transaction failures
-            // in the same sense as unexpected failures are. A deadlock exception signals that the transaction
+            // We let transient exceptions pass through unchanged since they aren't really transaction failures
+            // in the same sense as unexpected failures are. Such exception signals that the transaction
             // can be retried and might be successful the next time.
             throw e;
         }
+        catch ( ConstraintViolationTransactionFailureException e)
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
+        }
+        catch ( KernelException | TransactionTerminatedException e )
+        {
+            Code statusCode = e.status().code();
+            if ( statusCode.classification() == Classification.TransientError )
+            {
+                throw new TransientTransactionFailureException(
+                        closeFailureMessage() + ": " + statusCode.description(), e );
+            }
+            throw new TransactionFailureException( closeFailureMessage(), e );
+        }
         catch ( Exception e )
         {
-            String userMessage = successCalled
-                    ? "Transaction was marked as successful, but unable to commit transaction so rolled back."
-                    : "Unable to rollback transaction";
-            if ( e instanceof KernelException &&
-                    ((KernelException)e).status().code().classification() == Classification.TransientError )
-            {
-                throw new TransientTransactionFailureException( userMessage, e );
-            }
-            throw new TransactionFailureException( userMessage, e );
+            throw new TransactionFailureException( closeFailureMessage(), e );
         }
+    }
+
+    private String closeFailureMessage()
+    {
+        return successCalled
+                        ? "Transaction was marked as successful, but unable to commit transaction so rolled back."
+                        : "Unable to rollback transaction";
     }
 
     @Override

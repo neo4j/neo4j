@@ -72,13 +72,6 @@ class AdversarialPagedFile implements PagedFile
     }
 
     @Override
-    public void force() throws IOException
-    {
-        adversary.injectFailure( IOException.class, SecurityException.class );
-        delegate.force();
-    }
-
-    @Override
     public long getLastPageId() throws IOException
     {
         adversary.injectFailure( IllegalStateException.class );

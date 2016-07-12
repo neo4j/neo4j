@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.recovery.StoreRecoverer;
+import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -55,14 +55,14 @@ public class TestStoreAccess
         snapshot.deleteFile( messages );
 
         PageCache pageCache = pageCacheRule.getPageCache( snapshot );
-        new StoreAccess( snapshot, pageCache, storeDir.getPath() ).close();
+        new StoreAccess( snapshot, pageCache, storeDir ).initialize().close();
         assertTrue( "Store should be unclean", isUnclean( snapshot ) );
     }
 
     private EphemeralFileSystemAbstraction produceUncleanStore()
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() )
-                .newImpermanentDatabase( storeDir.getPath() );
+                .newImpermanentDatabase( storeDir );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
@@ -75,6 +75,7 @@ public class TestStoreAccess
 
     private boolean isUnclean( FileSystemAbstraction fileSystem ) throws IOException
     {
-        return new StoreRecoverer( fileSystem ).recoveryNeededAt( storeDir );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+        return new RecoveryRequiredChecker( fileSystem, pageCache ).isRecoveryRequiredAt( storeDir );
     }
 }

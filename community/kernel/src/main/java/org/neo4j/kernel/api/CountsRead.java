@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
-interface CountsRead
+public interface CountsRead
 {
     int ANY_LABEL = -1;
     int ANY_RELATIONSHIP_TYPE = -1;

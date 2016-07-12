@@ -19,11 +19,15 @@
  */
 package org.neo4j.harness;
 
+import org.apache.commons.io.FileUtils;
 import org.codehaus.jackson.JsonNode;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -36,18 +40,29 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.test.Mute;
+import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.HTTP;
+import org.neo4j.tooling.GlobalGraphOperations;
 
-import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.harness.TestServerBuilders.newInProcessBuilder;
 
 public class InProcessBuilderTest
@@ -55,7 +70,7 @@ public class InProcessBuilderTest
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( InProcessBuilderTest.class );
 
-    @Rule public Mute mute = Mute.muteAll();
+    @Rule public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
     public void shouldLaunchAServerInSpecifiedDirectory() throws Exception
@@ -83,17 +98,17 @@ public class InProcessBuilderTest
         trustAllSSLCerts();
 
         // When
-        try(ServerControls server = newInProcessBuilder( testDir.directory() )
+        try ( ServerControls server = newInProcessBuilder( testDir.directory() )
                 .withConfig( Configurator.WEBSERVER_HTTPS_ENABLED_PROPERTY_KEY, "true")
-                .withConfig( Configurator.WEBSERVER_HTTPS_CERT_PATH_PROPERTY_KEY, testDir.file( "cert" ).getAbsolutePath() )
+                .withConfig( ServerSettings.tls_certificate_file.name(), testDir.file( "cert" ).getAbsolutePath() )
                 .withConfig( Configurator.WEBSERVER_KEYSTORE_PATH_PROPERTY_KEY, testDir.file( "keystore" ).getAbsolutePath() )
-                .withConfig( Configurator.WEBSERVER_HTTPS_KEY_PATH_PROPERTY_KEY, testDir.file( "key" ).getAbsolutePath() )
-                .withConfig( GraphDatabaseSettings.cache_type, "none" )
-                .newServer())
+                .withConfig( ServerSettings.tls_key_file.name(), testDir.file( "key" ).getAbsolutePath() )
+                .withConfig( GraphDatabaseSettings.dense_node_threshold, "20" )
+                .newServer() )
         {
             // Then
             assertThat( HTTP.GET( server.httpsURI().toString() ).status(), equalTo( 200 ) );
-            assertDBConfig( server, "none", "cache_type" );
+            assertDBConfig( server, "20", GraphDatabaseSettings.dense_node_threshold.name() );
         }
     }
 
@@ -106,7 +121,8 @@ public class InProcessBuilderTest
                 .newServer())
         {
             // Then
-            assertThat( HTTP.GET( server.httpURI().toString() + "path/to/my/extension/myExtension" ).status(), equalTo( 234 ) );
+            assertThat( HTTP.GET( server.httpURI().toString() + "path/to/my/extension/myExtension" ).status(),
+                    equalTo( 234 ) );
         }
     }
 
@@ -119,7 +135,8 @@ public class InProcessBuilderTest
                 .newServer())
         {
             // Then
-            assertThat( HTTP.GET( server.httpURI().toString() + "path/to/my/extension/myExtension" ).status(), equalTo( 234 ) );
+            assertThat( HTTP.GET( server.httpURI().toString() + "path/to/my/extension/myExtension" ).status(),
+                    equalTo( 234 ) );
         }
     }
 
@@ -136,6 +153,83 @@ public class InProcessBuilderTest
                 assertThat( secondServer.httpURI().getPort(), not( firstServer.httpURI().getPort() ) );
             }
         }
+    }
+
+    @Test
+    public void shouldRunBuilderOnExistingStoreDir() throws Exception
+    {
+        // When
+        // create graph db with one node upfront
+        Path dir = Files.createTempDirectory( getClass().getSimpleName() +
+                "_shouldRunBuilderOnExistingStorageDir" );
+        try
+        {
+
+            GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( dir.toString() );
+            try
+            {
+                db.execute( "create ()" );
+            }
+            finally
+            {
+                db.shutdown();
+            }
+
+            try ( ServerControls server = newInProcessBuilder( testDir.directory() ).copyFrom( dir.toFile() )
+                    .newServer() )
+            {
+                // Then
+                try ( Transaction tx = server.graph().beginTx() )
+                {
+                    ResourceIterable<Node> allNodes = GlobalGraphOperations.at(
+                            server.graph() ).getAllNodes();
+
+                    assertTrue( IteratorUtil.count( allNodes ) > 0 );
+
+                    // When: create another node
+                    server.graph().createNode();
+                    tx.success();
+                }
+            }
+
+            // Then: we still only have one node since the server is supposed to work on a copy
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( dir.toString() );
+            try
+            {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    assertEquals( 1, IteratorUtil.count( GlobalGraphOperations.at( db ).getAllNodes() ) );
+                    tx.success();
+                }
+            }
+            finally
+            {
+                db.shutdown();
+            }
+        }
+        finally
+        {
+            FileUtils.forceDelete( dir.toFile() );
+        }
+    }
+
+    @Test
+    public void shouldFailWhenProvidingANonDirectoryAsSource() throws IOException
+    {
+
+        File notADirectory = File.createTempFile( "prefix", "suffix" );
+        assertFalse( notADirectory.isDirectory() );
+
+        try ( ServerControls server = newInProcessBuilder( ).copyFrom( notADirectory )
+                .newServer() )
+        {
+            fail("server should not start");
+        } catch (RuntimeException rte) {
+            Throwable cause = rte.getCause();
+            assertTrue( cause instanceof IOException);
+            assertTrue( cause.getMessage().contains( "exists but is not a directory" ));
+        }
+
     }
 
     private void assertDBConfig( ServerControls server, String expected, String key ) throws JsonParseException

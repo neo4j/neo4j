@@ -30,14 +30,14 @@
     <!-- filter plain text -->
     <fileSet>
       <directory>src/main/distribution/text/community</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <lineEnding>dos</lineEnding>
       <filtered>true</filtered>
     </fileSet>
     <!-- non-maven jars -->
     <fileSet>
       <directory>src/main/distribution/binary</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <includes>
         <include>system/lib/*.jar</include>
         <include>lib/*.jar</include>
@@ -45,7 +45,7 @@
     </fileSet>
     <fileSet>
       <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <lineEnding>dos</lineEnding>
       <includes>
         <include>**/*.bat</include>
@@ -57,10 +57,22 @@
       </excludes>
       <filtered>true</filtered>
     </fileSet>
+    <!-- Neo4j Powershell Modules -->
+    <fileSet>
+      <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
+      <outputDirectory></outputDirectory>
+      <lineEnding>dos</lineEnding>
+      <includes>
+        <include>**/*.psd1</include>
+        <include>**/*.psm1</include>
+        <include>**/*.ps1</include>
+      </includes>
+	  <filtered>true</filtered>
+    </fileSet>
     <!-- upgrade text file -->
     <fileSet>
       <directory>target/upgrade</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <fileMode>0644</fileMode>
       <lineEnding>dos</lineEnding>
       <includes>
@@ -84,12 +96,14 @@
       <useStrictFiltering>true</useStrictFiltering>
       <includes>
         <include>org.neo4j:*</include>
-        <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</include>
+        <include>jline:jline</include>
         <include>org.apache.lucene:lucene-core</include>
-        <include>org.scala-lang:scala-library</include>
+        <include>org.scala-lang:*</include>
+        <include>org.scala-lang.modules:*</include>
         <include>org.parboiled:*</include>
         <include>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</include>
         <include>net.sf.opencsv:opencsv</include>
+        <include>org.apache.commons:commons-lang3</include>
       </includes>
       <excludes>
         <exclude>*:pom:*</exclude>
@@ -104,13 +118,15 @@
       <excludes>
         <exclude>org.neo4j:*</exclude>
         <exclude>org.neo4j.doc:*</exclude>
-        <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</exclude>
+        <exclude>jline:jline</exclude>
         <exclude>org.apache.lucene:lucene-core</exclude>
-        <exclude>org.scala-lang:scala-library</exclude>
+        <exclude>org.scala-lang:*</exclude>
+        <exclude>org.scala-lang.modules:*</exclude>
         <exclude>org.parboiled:*</exclude>
         <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
         <exclude>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</exclude>
         <exclude>net.sf.opencsv:opencsv</exclude>
+        <exclude>org.apache.commons:commons-lang3</exclude>
       </excludes>
     </dependencySet>
   </dependencySets>

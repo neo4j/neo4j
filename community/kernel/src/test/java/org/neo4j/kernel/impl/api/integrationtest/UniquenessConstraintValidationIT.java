@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.schema.UniqueConstraintViolationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.Property;
 
@@ -58,7 +58,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
             fail( "should have thrown exception" );
         }
         // then
-        catch ( UniqueConstraintViolationKernelException e )
+        catch ( UniquePropertyConstraintViolationKernelException e )
         {
             assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "\"key1\"=[value1]" ) );
         }
@@ -90,7 +90,32 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldEnforceUniquenessConstraintOnAddLabel() throws Exception
+    public void shouldEnforceUniquenessConstraintOnAddLabelForNumberPropertyOnNodeNotFromTransaction() throws Exception
+    {
+        // given
+        constrainedNode( "Label1", "key1", 1 );
+
+        // when
+        DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+        long node = createNode( statement, "key1", 1 );
+        commit();
+
+        statement = dataWriteOperationsInNewTransaction();
+        try
+        {
+            statement.nodeAddLabel( node, statement.labelGetOrCreateForName( "Label1" ) );
+
+            fail( "should have thrown exception" );
+        }
+        // then
+        catch ( UniquePropertyConstraintViolationKernelException e )
+        {
+            assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "\"key1\"=[1]" ) );
+        }
+    }
+
+    @Test
+    public void shouldEnforceUniquenessConstraintOnAddLabelForStringProperty() throws Exception
     {
         // given
         constrainedNode( "Label1", "key1", "value1" );
@@ -106,7 +131,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
             fail( "should have thrown exception" );
         }
         // then
-        catch ( UniqueConstraintViolationKernelException e )
+        catch ( UniquePropertyConstraintViolationKernelException e )
         {
             assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "\"key1\"=[value1]" ) );
         }
@@ -211,7 +236,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
             fail( "expected exception" );
         }
         // then
-        catch ( UniqueConstraintViolationKernelException e )
+        catch ( UniquePropertyConstraintViolationKernelException e )
         {
             assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "\"key1\"=[value2]" ) );
         }
@@ -297,7 +322,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         createLabeledNode( statement, "Item", "id", 2 );
 
         // then I should find the original node
-        assertThat( statement.nodeGetUniqueFromIndexLookup( idx, 1 ), equalTo( ourNode ) );
+        assertThat( statement.nodeGetFromUniqueIndexSeek( idx, 1 ), equalTo( ourNode ) );
     }
 
     @Test
@@ -322,7 +347,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         createLabeledNode( statement, "Person", "id", 2 );
 
         // then I should find the original node
-        assertThat( statement.nodeGetUniqueFromIndexLookup( idx, 1 ), equalTo( ourNode ));
+        assertThat( statement.nodeGetFromUniqueIndexSeek( idx, 1 ), equalTo( ourNode ));
     }
 
     private long constrainedNode( String labelName, String propertyKey, Object propertyValue )
@@ -354,7 +379,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
 
         {
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
-            statement.uniquenessConstraintCreate( labelId, propertyKeyId );
+            statement.uniquePropertyConstraintCreate( labelId, propertyKeyId );
             commit();
         }
     }

@@ -19,24 +19,19 @@
  */
 package jmx;
 
-import org.junit.After;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 
 import java.net.URI;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.function.Function;
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.ha.HaSettings;
@@ -50,7 +45,7 @@ import org.neo4j.management.BranchedStore;
 import org.neo4j.management.ClusterMemberInfo;
 import org.neo4j.management.HighAvailability;
 import org.neo4j.management.Neo4jManager;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -59,44 +54,24 @@ import static org.junit.Assert.fail;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import static org.neo4j.kernel.configuration.Settings.STRING;
+import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.first;
-import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.kernel.impl.ha.ClusterManager.instanceEvicted;
+import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesMembers;
+import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
+import static org.neo4j.test.ha.ClusterRule.intBase;
+import static org.neo4j.test.ha.ClusterRule.stringWithIntBase;
 
 public class HaBeanIT
 {
-    @Rule
-    public final TestName testName = new TestName();
-
-    private static final TargetDirectory dir = TargetDirectory.forTest( HaBeanIT.class );
-    private ManagedCluster cluster;
-    private ClusterManager clusterManager;
-
-    public void startCluster( int size ) throws Throwable
-    {
-        clusterManager = new ClusterManager( clusterOfSize( size ), dir.cleanDirectory( testName.getMethodName() ),
-                MapUtil.stringMap() )
-        {
-            @Override
-            protected void config( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
-            {
-                builder.setConfig( "jmx.port", "" + ( 9912 + serverId.toIntegerIndex() ) );
-                builder.setConfig( HaSettings.ha_server, ":" + ( 1136 + serverId.toIntegerIndex() ) );
-                builder.setConfig( GraphDatabaseSettings.forced_kernel_id, testName.getMethodName() + serverId );
-
-            }
-        };
-        clusterManager.start();
-        cluster = clusterManager.getDefaultCluster();
-        cluster.await( ClusterManager.allSeesAllAsAvailable() );
-    }
-
-    @After
-    public void stopCluster() throws Throwable
-    {
-        clusterManager.stop();
-    }
+    @ClassRule
+    public static final ClusterRule clusterRule = new ClusterRule( HaBeanIT.class )
+            .withInstanceSetting( setting( "jmx.port", STRING, (String) null ), intBase( 9912 ) )
+            .withInstanceSetting( HaSettings.ha_server, stringWithIntBase( ":", 1136 ) )
+            .withInstanceSetting( GraphDatabaseSettings.forced_kernel_id, stringWithIntBase( "kernel", 0 ) );
 
     public Neo4jManager beans( HighlyAvailableGraphDatabase db )
     {
@@ -112,7 +87,7 @@ public class HaBeanIT
     @Test
     public void canGetHaBean() throws Throwable
     {
-        startCluster( 1 );
+        ManagedCluster cluster = clusterRule.startCluster();
         HighAvailability ha = ha( cluster.getMaster() );
         assertNotNull( "could not get ha bean", ha );
         assertMasterInformation( ha );
@@ -120,16 +95,14 @@ public class HaBeanIT
 
     private void assertMasterInformation( HighAvailability ha )
     {
-        assertTrue( "single instance should be master and available", ha.isAvailable() );
-        assertEquals( "single instance should be master", HighAvailabilityModeSwitcher.MASTER, ha.getRole() );
-        ClusterMemberInfo info = ha.getInstancesInCluster()[0];
-        assertEquals( "single instance should be the returned instance id", "1", info.getInstanceId() );
+        assertTrue( "should be available", ha.isAvailable() );
+        assertEquals( "should be master", HighAvailabilityModeSwitcher.MASTER, ha.getRole() );
     }
 
     @Test
     public void testLatestTxInfoIsCorrect() throws Throwable
     {
-        startCluster( 1 );
+        ManagedCluster cluster = clusterRule.startCluster();
         HighlyAvailableGraphDatabase db = cluster.getMaster();
         HighAvailability masterHa = ha( db );
         long lastCommitted = masterHa.getLastCommittedTxId();
@@ -144,13 +117,14 @@ public class HaBeanIT
     @Test
     public void testUpdatePullWorksAndUpdatesLastUpdateTime() throws Throwable
     {
-        startCluster( 2 );
+        ManagedCluster cluster = clusterRule.startCluster();
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-        Transaction tx = master.beginTx();
-        master.createNode();
-        tx.success();
-        tx.finish();
+        try (Transaction tx = master.beginTx())
+        {
+            master.createNode();
+            tx.success();
+        }
         HighAvailability slaveBean = ha( slave );
         DateFormat format = new SimpleDateFormat( "yyyy-MM-DD kk:mm:ss.SSSZZZZ" );
         // To begin with, no updates
@@ -162,16 +136,22 @@ public class HaBeanIT
     @Test
     public void testAfterGentleMasterSwitchClusterInfoIsCorrect() throws Throwable
     {
-        startCluster( 3 );
-        RepairKit masterShutdown = cluster.shutdown( cluster.getMaster() );
-        cluster.await( ClusterManager.masterAvailable() );
-        cluster.await( ClusterManager.masterSeesSlavesAsAvailable( 1 ) );
+        ManagedCluster cluster = clusterRule.startCluster();
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        RepairKit masterShutdown = cluster.shutdown( master );
+
+        cluster.await( masterAvailable( master ) );
+        cluster.await( masterSeesSlavesAsAvailable( 1 ) );
+
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
             assertEquals( 2, ha( db ).getInstancesInCluster().length );
         }
+
         masterShutdown.repair();
+
         cluster.await( ClusterManager.allSeesAllAsAvailable() );
+
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
             HighAvailability bean = ha( db );
@@ -205,10 +185,15 @@ public class HaBeanIT
     @Test
     public void testAfterHardMasterSwitchClusterInfoIsCorrect() throws Throwable
     {
-        startCluster( 3 );
-        RepairKit masterShutdown = cluster.fail( cluster.getMaster() );
-        cluster.await( ClusterManager.masterAvailable() );
-        cluster.await( ClusterManager.masterSeesSlavesAsAvailable( 1 ) );
+        ManagedCluster cluster = clusterRule.startCluster();
+
+        cluster.await( masterSeesSlavesAsAvailable( 2 ) );
+
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        RepairKit masterShutdown = cluster.fail( master );
+
+        cluster.await( instanceEvicted( master ) );
+
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
             if ( db.getInstanceState() == HighAvailabilityMemberState.PENDING )
@@ -218,9 +203,12 @@ public class HaBeanIT
             // Instance that was hard killed will still be in the cluster
             assertEquals( 3, ha( db ).getInstancesInCluster().length );
         }
+
         masterShutdown.repair();
+
         cluster.await( ClusterManager.masterAvailable() );
         cluster.await( ClusterManager.masterSeesSlavesAsAvailable( 2 ) );
+
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
             int mastersFound = 0;
@@ -233,7 +221,7 @@ public class HaBeanIT
                         info.isAvailable() );
                 for ( String role : info.getRoles() )
                 {
-                    if (role.equals( HighAvailabilityModeSwitcher.MASTER ))
+                    if ( role.equals( HighAvailabilityModeSwitcher.MASTER ) )
                     {
                         mastersFound++;
                     }
@@ -246,21 +234,19 @@ public class HaBeanIT
     @Test
     public void canGetBranchedStoreBean() throws Throwable
     {
-        startCluster( 1 );
+        ManagedCluster cluster = clusterRule.startCluster();
         BranchedStore bs = beans( cluster.getMaster() ).getBranchedStoreBean();
         assertNotNull( "could not get branched store bean", bs );
-        assertEquals( "no branched stores for new db", 0,
-                bs.getBranchedStores().length );
     }
 
     @Test
     public void joinedInstanceShowsUpAsSlave() throws Throwable
     {
-        startCluster( 2 );
+        ManagedCluster cluster = clusterRule.startCluster();
         ClusterMemberInfo[] instancesInCluster = ha( cluster.getMaster() ).getInstancesInCluster();
-        assertEquals( 2, instancesInCluster.length );
+        assertEquals( 3, instancesInCluster.length );
         ClusterMemberInfo[] secondInstancesInCluster = ha( cluster.getAnySlave() ).getInstancesInCluster();
-        assertEquals( 2, secondInstancesInCluster.length );
+        assertEquals( 3, secondInstancesInCluster.length );
         assertMasterAndSlaveInformation( instancesInCluster );
         assertMasterAndSlaveInformation( secondInstancesInCluster );
     }
@@ -268,32 +254,43 @@ public class HaBeanIT
     @Test
     public void leftInstanceDisappearsFromMemberList() throws Throwable
     {
-        // Start the second db and make sure it's visible in the member list.
-        // Then shut it down to see if it disappears from the member list again.
-        startCluster( 3 );
+        // Start the cluster and make sure it's up.
+        // Then shut down one of the slaves to see if it disappears from the member list.
+        ManagedCluster cluster = clusterRule.startCluster();
         assertEquals( 3, ha( cluster.getAnySlave() ).getInstancesInCluster().length );
-        cluster.shutdown( cluster.getAnySlave() );
+        RepairKit repair = cluster.shutdown( cluster.getAnySlave() );
 
-        cluster.await( masterSeesMembers( 2 ) );
-
-        assertEquals( 2, ha( cluster.getMaster() ).getInstancesInCluster().length );
-        assertMasterInformation( ha( cluster.getMaster() ) );
+        try
+        {
+            cluster.await( masterSeesMembers( 2 ) );
+            HighAvailability haMaster = ha( cluster.getMaster() );
+            assertEquals( 2, haMaster.getInstancesInCluster().length );
+        }
+        finally
+        {
+            repair.repair();
+        }
     }
 
     @Test
     public void failedMemberIsStillInMemberListAlthoughFailed() throws Throwable
     {
-        startCluster( 3 );
+        ManagedCluster cluster = clusterRule.startCluster();
         assertEquals( 3, ha( cluster.getAnySlave() ).getInstancesInCluster().length );
 
         // Fail the instance
         HighlyAvailableGraphDatabase failedDb = cluster.getAnySlave();
         RepairKit dbFailure = cluster.fail( failedDb );
-        await( ha( cluster.getMaster() ), dbAlive( false ) );
-        await( ha( cluster.getAnySlave( failedDb )), dbAlive( false ) );
-
-        // Repair the failure and come back
-        dbFailure.repair();
+        try
+        {
+            await( ha( cluster.getMaster() ), dbAlive( false ) );
+            await( ha( cluster.getAnySlave( failedDb ) ), dbAlive( false ) );
+        }
+        finally
+        {
+            // Repair the failure and come back
+            dbFailure.repair();
+        }
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
             await( ha( db ), dbAvailability( true ) );
@@ -306,7 +303,7 @@ public class HaBeanIT
         return first( filter( new Predicate<URI>()
         {
             @Override
-            public boolean accept( URI item )
+            public boolean test( URI item )
             {
                 return item.getScheme().equals( scheme );
             }
@@ -356,11 +353,9 @@ public class HaBeanIT
     private void await( HighAvailability ha, Predicate<ClusterMemberInfo> predicate ) throws InterruptedException
     {
         long end = System.currentTimeMillis() + SECONDS.toMillis( 300 );
-        boolean conditionMet = false;
         while ( System.currentTimeMillis() < end )
         {
-            conditionMet = predicate.accept( member( ha.getInstancesInCluster(), 2 ) );
-            if ( conditionMet )
+            if ( predicate.test( member( ha.getInstancesInCluster(), 2 ) ) )
             {
                 return;
             }
@@ -374,7 +369,7 @@ public class HaBeanIT
         return new Predicate<ClusterMemberInfo>()
         {
             @Override
-            public boolean accept( ClusterMemberInfo item )
+            public boolean test( ClusterMemberInfo item )
             {
                 return item.isAvailable() == available;
             }
@@ -386,7 +381,7 @@ public class HaBeanIT
         return new Predicate<ClusterMemberInfo>()
         {
             @Override
-            public boolean accept( ClusterMemberInfo item )
+            public boolean test( ClusterMemberInfo item )
             {
                 return item.isAlive() == alive;
             }

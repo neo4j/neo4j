@@ -12,7 +12,6 @@ The main parts of the manual are:
 * <<reference-documentation>> -- detailed information on Neo4j.
 * <<operations>> -- how to install and maintain Neo4j.
 * <<tools>> -- guides on tools.
-* <<community>> -- getting help from, contributing to.
 * <<advanced-usage>> -- using Neo4j in more advanced ways.
 * <<terminology>> -- terminology about graph databases.
 * <<resources>> -- find additional documentation resources.
@@ -30,9 +29,32 @@ The included code examples are executed when Neo4j is built and tested.
 Also, the REST API request and response examples are captured from real interaction with a Neo4j server.
 Thus, the examples are always in sync with how Neo4j actually works.
 
-There's other documentation resources besides the manual as well, see <<resources>>.
+There are other documentation resources besides the manual as well, see <<resources>>.
 
 _Who should read this?_
 
 The topics should be relevant to architects, administrators, developers and operations personnel.
+
+_Where to get help?_
+
+You can learn a lot about Neo4j at different _events._
+To get information on upcoming Neo4j events, have a look here:
+
+* http://neo4j.com/events/
+* http://neo4j.meetup.com/
+
+Get help from the Neo4j open source community; here are some starting points.
+
+* The neo4j tag at stackoverflow: http://stackoverflow.com/questions/tagged/neo4j
+* Neo4j Discussions: https://groups.google.com/forum/#!forum/neo4j
+* Twitter: https://twitter.com/neo4j
+
+Report a _bug_ or add a _feature request_:
+
+* https://github.com/neo4j/neo4j/issues
+
+Questions regarding the _documentation:_
+The Neo4j Manual is published online with a comment function, please use that to post any questions or comments regarding the documentation.
+
+If you want to contribute to the Neo4j open source project, see http://neo4j.com/developer/contribute/.
 

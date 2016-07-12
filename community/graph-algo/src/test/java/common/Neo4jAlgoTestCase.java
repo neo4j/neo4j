@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -83,7 +84,7 @@ public abstract class Neo4jAlgoTestCase
     {
         graph.clear();
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     public static void deleteFileOrDirectory( File file )
@@ -115,6 +116,19 @@ public abstract class Neo4jAlgoTestCase
                     names[i++], node.getProperty( SimpleGraphBuilder.KEY_ID ) );
         }
         assertEquals( names.length, i );
+    }
+
+    protected void assertPath( Path path, String commaSeparatedNodePath )
+    {
+        String[] nodeIds = commaSeparatedNodePath.split( "," );
+        Node[] nodes = new Node[nodeIds.length];
+        int i = 0;
+        for ( String id : nodeIds )
+        {
+            nodes[i] = graph.getNode( id );
+            i++;
+        }
+        assertPath( path, nodes );
     }
 
     protected void assertPath( Path path, Node... nodes )
@@ -159,9 +173,8 @@ public abstract class Neo4jAlgoTestCase
         return builder.toString();
     }
 
-    public void assertPaths( Iterable<? extends Path> paths, String... pathDefinitions )
+    public void assertPaths( Iterable<? extends Path> paths, List<String> pathDefs )
     {
-        List<String> pathDefs = new ArrayList<String>( Arrays.asList( pathDefinitions ) );
         List<String> unexpectedDefs = new ArrayList<String>();
         for ( Path path : paths )
         {
@@ -178,5 +191,40 @@ public abstract class Neo4jAlgoTestCase
         }
         assertTrue( "These unexpected paths were found: " + unexpectedDefs + ". In addition these expected paths weren't found:" + pathDefs, unexpectedDefs.isEmpty() );
         assertTrue( "These were expected, but not found: " + pathDefs.toString(), pathDefs.isEmpty() );
+    }
+
+    public void assertPaths( Iterable<? extends Path> paths, String... pathDefinitions )
+    {
+        assertPaths( paths, new ArrayList<String>( Arrays.asList( pathDefinitions ) ) );
+    }
+
+    public void assertPathsWithPaths( Iterable<? extends Path> actualPaths, Path... expectedPaths )
+    {
+        List<String> pathDefs = new ArrayList<>( );
+        for ( Path path : expectedPaths )
+        {
+            pathDefs.add( getPathDef( path ) );
+        }
+        assertPaths( actualPaths, pathDefs );
+    }
+
+    public void assertPathDef( Path expected, Path actual )
+    {
+        int expectedLength = expected.length();
+        int actualLength = actual.length();
+        assertEquals( "Actual path length " + actualLength + " differ from expected path length " + expectedLength,
+                expectedLength, actualLength );
+        Iterator<Node> expectedNodes = expected.nodes().iterator();
+        Iterator<Node> actualNodes = actual.nodes().iterator();
+        int position = 0;
+        while ( expectedNodes.hasNext() && actualNodes.hasNext() )
+        {
+            assertEquals( "Path differ on position " + position +
+                          ". Expected " + getPathDef( expected ) +
+                          ", actual " + getPathDef( actual ),
+                    expectedNodes.next().getProperty( SimpleGraphBuilder.KEY_ID ),
+                    actualNodes.next().getProperty( SimpleGraphBuilder.KEY_ID ) );
+            position++;
+        }
     }
 }

@@ -24,6 +24,8 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import org.neo4j.collection.primitive.base.Empty;
+import org.neo4j.function.IntPredicate;
+import org.neo4j.function.IntPredicates;
 import org.neo4j.function.primitive.FunctionFromPrimitiveInt;
 import org.neo4j.function.primitive.PrimitiveIntPredicate;
 
@@ -238,7 +240,10 @@ public class PrimitiveIntCollections
         }
     }
 
-    // Filtering
+    /**
+     * @deprecated use {@link #filter(PrimitiveIntIterator, IntPredicate)} instead
+     */
+    @Deprecated
     public static PrimitiveIntIterator filter( PrimitiveIntIterator source, final PrimitiveIntPredicate filter )
     {
         return new PrimitiveIntFilteringIterator( source )
@@ -247,6 +252,18 @@ public class PrimitiveIntCollections
             public boolean accept( int item )
             {
                 return filter.accept( item );
+            }
+        };
+    }
+
+    public static PrimitiveIntIterator filter( PrimitiveIntIterator source, final IntPredicate filter )
+    {
+        return new PrimitiveIntFilteringIterator( source )
+        {
+            @Override
+            public boolean accept( int item )
+            {
+                return filter.test( item );
             }
         };
     }
@@ -320,6 +337,10 @@ public class PrimitiveIntCollections
             return false;
         }
 
+        /**
+         * @deprecated use {@link IntPredicate} instead
+         */
+        @Deprecated
         @Override
         public abstract boolean accept( int testItem );
     }
@@ -742,6 +763,10 @@ public class PrimitiveIntCollections
         }
     };
 
+    /**
+     * @deprecated use {@link IntPredicates#alwaysTrue()} instead
+     */
+    @Deprecated
     public static PrimitiveIntPredicate alwaysTrue()
     {
         return TRUE;
@@ -757,5 +782,15 @@ public class PrimitiveIntCollections
                 return next( value );
             }
         };
+    }
+
+    public static PrimitiveIntSet asSet( int[] values )
+    {
+        PrimitiveIntSet set = Primitive.intSet( values.length );
+        for ( int value : values )
+        {
+            set.add( value );
+        }
+        return set;
     }
 }

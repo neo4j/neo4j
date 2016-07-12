@@ -27,8 +27,19 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.server.configuration.ServerSettings;
+
 public class HttpConnectorFactory
 {
+    private Config configuration;
+
+    public HttpConnectorFactory( Config config )
+    {
+
+        this.configuration = config;
+    }
+
     public ConnectionFactory createHttpConnectionFactory()
     {
         return new HttpConnectionFactory( createHttpConfig() );
@@ -37,8 +48,8 @@ public class HttpConnectorFactory
     protected HttpConfiguration createHttpConfig()
     {
         HttpConfiguration httpConfig = new HttpConfiguration();
-        httpConfig.setRequestHeaderSize( 20 * 1024 );
-        httpConfig.setResponseHeaderSize( 20 * 1024 );
+        httpConfig.setRequestHeaderSize( configuration.get( ServerSettings.maximum_request_header_size) );
+        httpConfig.setResponseHeaderSize( configuration.get( ServerSettings.maximum_response_header_size) );
         return httpConfig;
     }
 

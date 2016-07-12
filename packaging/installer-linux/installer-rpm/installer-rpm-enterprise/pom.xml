@@ -4,17 +4,16 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>neo4j-installer-rpm</artifactId>
-        <version>2.2.11-SNAPSHOT</version>
+        <version>2.3.6-SNAPSHOT</version>
         <relativePath>..</relativePath>
     </parent>
 
-    <groupId>org.neo4j</groupId>
     <artifactId>neo4j-enterprise-rpm</artifactId>
-    <version>2.2.11-SNAPSHOT</version>
+    <version>2.3.6-SNAPSHOT</version>
     <packaging>pom</packaging>
 
 
-    <name>Neo4j Community RPM</name>
+    <name>Neo4j Enterprise RPM</name>
     <description>Neo4j - the NoSQL, Big Data Graph Database</description>
 
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -34,6 +33,8 @@
         <rpm.name>neo4j-enterprise</rpm.name>
 
         <buildnumber>0</buildnumber>
+
+        <neo4j.mainClass>org.neo4j.server.enterprise.EnterpriseBootstrapper</neo4j.mainClass>
 
         <neo4j.debian.maintainer>Anders Nawroth &lt;anders@neotechnology.com&gt;</neo4j.debian.maintainer>
         <licensing.phase>none</licensing.phase>

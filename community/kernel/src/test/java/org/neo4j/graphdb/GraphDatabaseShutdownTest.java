@@ -26,13 +26,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.locking.LockCountVisitor;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -130,28 +129,18 @@ public class GraphDatabaseShutdownTest
         try
         {
             secondTxResult.get( 60, SECONDS );
-            fail( "exception expected" );
+            fail( "Exception expected" );
         }
         catch ( Exception e )
         {
-            assertThat( rootCause( e ), anyOf( instanceOf( TransactionFailureException.class ),
-                    instanceOf( TransactionTerminatedException.class ) ) );
+            assertThat( rootCause( e ), instanceOf( TransactionTerminatedException.class ) );
         }
     }
 
     private static int lockCount( Locks locks )
     {
-        final int[] counter = new int[1];
-
-        locks.accept( new Locks.Visitor()
-        {
-            @Override
-            public void visit( Locks.ResourceType resourceType, long resourceId, String description, long waitTime )
-            {
-                counter[0]++;
-            }
-        } );
-
-        return counter[0];
+        LockCountVisitor lockCountVisitor = new LockCountVisitor();
+        locks.accept( lockCountVisitor );
+        return lockCountVisitor.getLockCount();
     }
 }

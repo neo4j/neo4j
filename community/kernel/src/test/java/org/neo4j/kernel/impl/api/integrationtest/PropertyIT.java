@@ -30,28 +30,30 @@ import org.junit.Test;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.core.Token;
 
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.Matchers.not;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.kernel.api.properties.Property.byteArrayProperty;
 import static org.neo4j.kernel.api.properties.Property.property;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
 public class PropertyIT extends KernelIntegrationTest
 {
     @Test
-    public void shouldSetNodePropertyValue() throws Exception
+    public void shouldBeAbleToSetAndReadLargeByteArray() throws Exception
     {
         // GIVEN
         int propertyKeyId;
@@ -62,10 +64,7 @@ public class PropertyIT extends KernelIntegrationTest
 
             // WHEN
             propertyKeyId = statement.propertyKeyGetOrCreateForName( "clown" );
-            statement.nodeSetProperty( nodeId, stringProperty( propertyKeyId, "bozo" ) );
-
-            // THEN
-            assertEquals( "bozo", statement.nodeGetProperty( nodeId, propertyKeyId ).value() );
+            statement.nodeSetProperty( nodeId, byteArrayProperty( propertyKeyId, new byte[100_000] ) );
 
             // WHEN
             commit();
@@ -74,7 +73,37 @@ public class PropertyIT extends KernelIntegrationTest
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
             // THEN
-            assertEquals( "bozo", statement.nodeGetProperty( nodeId, propertyKeyId ).value() );
+            Object value = statement.nodeGetProperty( nodeId, propertyKeyId );
+        }
+    }
+
+    @Test
+    public void shouldSetNodePropertyValue() throws Exception
+    {
+        // GIVEN
+        int propertyKeyId;
+        String value = "bozo";
+        long nodeId;
+        {
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+            nodeId = statement.nodeCreate();
+
+            // WHEN
+            propertyKeyId = statement.propertyKeyGetOrCreateForName( "clown" );
+            statement.nodeSetProperty( nodeId, stringProperty( propertyKeyId, value ) );
+
+            // THEN
+            assertEquals( value, statement.nodeGetProperty(
+                    nodeId, propertyKeyId ) );
+
+            // WHEN
+            commit();
+        }
+        {
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+
+            // THEN
+            assertEquals( value, statement.nodeGetProperty( nodeId, propertyKeyId ) );
         }
     }
 
@@ -94,7 +123,7 @@ public class PropertyIT extends KernelIntegrationTest
             statement.nodeRemoveProperty( nodeId, propertyKeyId );
 
             // THEN
-            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), not( isDefinedProperty() ) );
+            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
 
             // WHEN
             commit();
@@ -103,7 +132,7 @@ public class PropertyIT extends KernelIntegrationTest
         // THEN
         {
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), not( isDefinedProperty() ) );
+            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
         }
     }
 
@@ -128,7 +157,7 @@ public class PropertyIT extends KernelIntegrationTest
 
             // THEN
             assertEquals( "bozo", previous );
-            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), not( isDefinedProperty() ) );
+            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
 
             // WHEN
             commit();
@@ -137,7 +166,7 @@ public class PropertyIT extends KernelIntegrationTest
         // THEN
         {
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), not( isDefinedProperty() ) );
+            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
         }
     }
 
@@ -167,7 +196,7 @@ public class PropertyIT extends KernelIntegrationTest
             statement.nodeSetProperty( nodeId, newProperty );
 
             // THEN
-            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), equalTo( (Property) newProperty ) );
+            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), equalTo( newProperty.value() ) );
 
             // WHEN
             commit();
@@ -176,9 +205,9 @@ public class PropertyIT extends KernelIntegrationTest
         // THEN
         {
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), equalTo( (Property)newProperty ) );
-            assertThat( IteratorUtil.asList(statement.nodeGetAllProperties( nodeId )), equalTo( Arrays.asList(
-                    newProperty ) ));
+            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), equalTo( newProperty.value() ) );
+            assertThat( IteratorUtil.asList( statement.nodeGetPropertyKeys( nodeId ) ), equalTo( Arrays.asList(
+                    newProperty.propertyKeyId() ) ) );
         }
     }
 
@@ -220,7 +249,8 @@ public class PropertyIT extends KernelIntegrationTest
             statement.nodeSetProperty( nodeId, stringProperty( propertyKeyId, "bozo" ) );
 
             // THEN
-            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), isDefinedProperty() );
+            assertThat( statement.nodeHasProperty( nodeId, propertyKeyId ), is( true ) );
+            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), notNullValue() );
 
             // WHEN
             commit();
@@ -229,7 +259,8 @@ public class PropertyIT extends KernelIntegrationTest
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
             // THEN
-            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), isDefinedProperty() );
+            assertThat( statement.nodeHasProperty( nodeId, propertyKeyId ), is( true ) );
+            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), notNullValue() );
         }
     }
 
@@ -247,7 +278,8 @@ public class PropertyIT extends KernelIntegrationTest
             propertyKeyId = statement.propertyKeyGetOrCreateForName( "clown" );
 
             // THEN
-            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), not( isDefinedProperty() ) );
+            assertThat( statement.nodeHasProperty( nodeId, propertyKeyId ), is( false ) );
+            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
 
             // WHEN
             commit();
@@ -257,7 +289,8 @@ public class PropertyIT extends KernelIntegrationTest
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
             // THEN
-            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), not( isDefinedProperty() ) );
+            assertThat( statement.nodeHasProperty( nodeId, propertyKeyId ), is( false ) );
+            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
         }
     }
 
@@ -284,7 +317,8 @@ public class PropertyIT extends KernelIntegrationTest
         // THEN
         {
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), not( isDefinedProperty() ) );
+            assertThat( statement.nodeHasProperty( nodeId, propertyKeyId ), is( false ) );
+            assertThat( statement.nodeGetProperty( nodeId, propertyKeyId ), nullValue() );
         }
     }
 
@@ -312,76 +346,7 @@ public class PropertyIT extends KernelIntegrationTest
         // THEN
         {
             DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            assertEquals( 42, statement.nodeGetProperty( nodeId, propertyId ).value() );
-        }
-    }
-
-    @Test
-    public void nodeHasStringPropertyIfSetAndLazyPropertyIfRead() throws Exception
-    {
-        // GIVEN
-        dbWithNoCache();
-
-        int propertyKeyId;
-        long nodeId;
-        String value = "Bozo the Clown is a clown character very popular in the United States, peaking in the 1960s";
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            nodeId = statement.nodeCreate();
-
-            // WHEN
-            propertyKeyId = statement.propertyKeyGetOrCreateForName( "clown" );
-            statement.nodeSetProperty( nodeId, stringProperty( propertyKeyId, value ) );
-
-            // THEN
-            assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).getClass().getSimpleName().equals( "StringProperty" ) );
-
-            // WHEN
-            commit();
-        }
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-
-            // THEN
-            assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).getClass().getSimpleName().equals( "LazyStringProperty" ) );
-            assertEquals( value, statement.nodeGetProperty( nodeId, propertyKeyId ).value() );
-            assertEquals( value.hashCode(), statement.nodeGetProperty( nodeId, propertyKeyId ).hashCode() );
-            assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).valueEquals( value ) );
-        }
-    }
-
-    @Test
-    public void nodeHasArrayPropertyIfSetAndLazyPropertyIfRead() throws Exception
-    {
-        // GIVEN
-        dbWithNoCache();
-
-        int propertyKeyId;
-        long nodeId;
-        int[] value = new int[] {-1,0,1,2,3,4,5,6,7,8,9,10};
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-            nodeId = statement.nodeCreate();
-
-            // WHEN
-            propertyKeyId = statement.propertyKeyGetOrCreateForName( "numbers" );
-            statement.nodeSetProperty( nodeId, Property.intArrayProperty( propertyKeyId, value ) );
-
-            // THEN
-            assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).getClass().getSimpleName().equals( "IntArrayProperty" ) );
-
-            // WHEN
-            commit();
-        }
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-
-            // THEN
-            assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).getClass().getSimpleName().equals( "LazyArrayProperty" ) );
-            assertArrayEquals( value, (int[]) statement.nodeGetProperty( nodeId, propertyKeyId ).value() );
-            assertEquals( Property.intArrayProperty( propertyKeyId, value ).hashCode(),
-                          statement.nodeGetProperty( nodeId, propertyKeyId ).hashCode() );
-            assertTrue( statement.nodeGetProperty( nodeId, propertyKeyId ).valueEquals( value ) );
+            assertEquals( 42, statement.nodeGetProperty( nodeId, propertyId ) );
         }
     }
 
@@ -403,7 +368,7 @@ public class PropertyIT extends KernelIntegrationTest
 
             // then
             assertThat( asCollection( propIdsBeforeCommit ),
-                    hasItems( new Token( "prop1", (int) prop1 ), new Token( "prop2", (int) prop2 )) );
+                    hasItems( new Token( "prop1", (int) prop1 ), new Token( "prop2", (int) prop2 ) ) );
 
             // when
             commit();
@@ -413,8 +378,8 @@ public class PropertyIT extends KernelIntegrationTest
             Iterator<Token> propIdsAfterCommit = statement.propertyKeyGetAllTokens();
 
             // then
-            assertThat(asCollection( propIdsAfterCommit ) ,
-                    hasItems( new Token( "prop1", (int) prop1 ), new Token( "prop2", (int) prop2 ) ));
+            assertThat( asCollection( propIdsAfterCommit ),
+                    hasItems( new Token( "prop1", (int) prop1 ), new Token( "prop2", (int) prop2 ) ) );
         }
     }
 
@@ -438,10 +403,10 @@ public class PropertyIT extends KernelIntegrationTest
                 statement.nodeRemoveProperty( node, prop1 );
                 fail( "Should have failed." );
             }
-            catch ( IllegalStateException e )
+            catch ( EntityNotFoundException e )
             {
                 assertThat( e.getMessage(),
-                            equalTo( "Node " + node + " has been deleted" ) );
+                            equalTo( "Unable to load NODE with id " + node + "." ) );
             }
         }
     }
@@ -467,10 +432,10 @@ public class PropertyIT extends KernelIntegrationTest
                 statement.relationshipRemoveProperty( rel, prop1 );
                 fail( "Should have failed." );
             }
-            catch ( IllegalStateException e )
+            catch ( EntityNotFoundException e )
             {
                 assertThat( e.getMessage(),
-                            equalTo( "Relationship " + rel + " has been deleted" ) );
+                            equalTo( "Unable to load RELATIONSHIP with id " + rel + "." ) );
             }
         }
     }
@@ -505,7 +470,7 @@ public class PropertyIT extends KernelIntegrationTest
         // then
         {
             ReadOperations ops = readOperationsInNewTransaction();
-            assertThat( ops.nodeGetProperty( node, prop ), not( isDefinedProperty() ) );
+            assertThat( ops.nodeGetProperty( node, prop ), nullValue() );
         }
     }
 
@@ -540,7 +505,7 @@ public class PropertyIT extends KernelIntegrationTest
         // then
         {
             ReadOperations ops = readOperationsInNewTransaction();
-            assertThat( ops.relationshipGetProperty( rel, prop ), not( isDefinedProperty() ) );
+            assertThat( ops.relationshipGetProperty( rel, prop ), nullValue() );
         }
     }
 
@@ -562,3 +527,4 @@ public class PropertyIT extends KernelIntegrationTest
         };
     }
 }
+

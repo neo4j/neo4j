@@ -25,7 +25,7 @@ import java.util.List;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageType;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 
 /**
  * State machine that wraps a context and a state, which can change when a Message comes in.
@@ -37,17 +37,17 @@ public class StateMachine
     private Object context;
     private Class<? extends MessageType> messageEnumType;
     private State<?, ?> state;
-    private Logging logging;
+    private LogProvider logProvider;
 
     private List<StateTransitionListener> listeners = new ArrayList<StateTransitionListener>();
 
     public StateMachine( Object context, Class<? extends MessageType> messageEnumType, State<?, ?> state,
-                         Logging logging )
+                         LogProvider logProvider )
     {
         this.context = context;
         this.messageEnumType = messageEnumType;
         this.state = state;
-        this.logging = logging;
+        this.logProvider = logProvider;
     }
 
     public Class<? extends MessageType> getMessageType()
@@ -99,13 +99,13 @@ public class StateMachine
                 catch ( Throwable e )
                 {
                     // Ignore
-                    logging.getMessagesLog( listener.getClass() ).warn( "Listener threw exception", e );
+                    logProvider.getLog( listener.getClass() ).warn( "Listener threw exception", e );
                 }
             }
         }
         catch ( Throwable throwable )
         {
-            logging.getMessagesLog( getClass() ).warn( "Exception in message handling", throwable );
+            logProvider.getLog( getClass() ).warn( "Exception in message handling", throwable );
         }
     }
 

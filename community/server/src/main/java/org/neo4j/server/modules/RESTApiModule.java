@@ -23,15 +23,18 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 
+import org.neo4j.concurrent.RecentK;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.guard.GuardingRequestFilter;
 import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.rest.web.BatchOperationService;
+import org.neo4j.server.rest.web.CollectUserAgentFilter;
 import org.neo4j.server.rest.web.CypherService;
 import org.neo4j.server.rest.web.DatabaseMetadataService;
 import org.neo4j.server.rest.web.ExtensionService;
@@ -40,29 +43,35 @@ import org.neo4j.server.rest.web.RestfulGraphDatabase;
 import org.neo4j.server.rest.web.TransactionalService;
 import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.WebServer;
+import org.neo4j.udc.UsageData;
+import org.neo4j.udc.UsageDataKeys;
 
-import static org.neo4j.server.JAXRSHelper.listFrom;
+import static java.util.Arrays.asList;
 
 /**
  * Mounts the database REST API.
  */
 public class RESTApiModule implements ServerModule
 {
-    private PluginManager plugins;
     private final Config config;
     private final WebServer webServer;
     private final Database database;
-    private GuardingRequestFilter requestTimeLimitFilter;
-    private final ConsoleLogger log;
-    private final Logging logging;
+    private DependencyResolver dependencyResolver;
+    private final LogProvider logProvider;
+    private final Log log;
 
-    public RESTApiModule( WebServer webServer, Database database, Config config, Logging logging )
+    private PluginManager plugins;
+    private GuardingRequestFilter requestTimeLimitFilter;
+
+    public RESTApiModule( WebServer webServer, Database database, Config config, DependencyResolver dependencyResolver,
+            LogProvider logProvider )
     {
         this.webServer = webServer;
         this.config = config;
         this.database = database;
-        this.logging = logging;
-        this.log = logging.getConsoleLog( getClass() );
+        this.dependencyResolver = dependencyResolver;
+        this.logProvider = logProvider;
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -72,6 +81,7 @@ public class RESTApiModule implements ServerModule
         {
             URI restApiUri = restApiUri( );
 
+            webServer.addFilter( new CollectUserAgentFilter( clientNames() ), "/*" );
             webServer.addJAXRSClasses( getClassNames(), restApiUri.toString(), null );
             loadPlugins();
 
@@ -83,9 +93,21 @@ public class RESTApiModule implements ServerModule
         }
     }
 
+    /**
+     * The modules are instantiated before the database is, meaning we can't access the UsageData service before we
+     * start. This resolves UsageData at start time.
+     *
+     * Obviously needs to be refactored, pending discussion on unifying module frameworks between kernel and server
+     * and hashing out associated dependency hierarchy and lifecycles.
+     */
+    private RecentK<String> clientNames()
+    {
+        return dependencyResolver.resolveDependency( UsageData.class ).get( UsageDataKeys.clientNames );
+    }
+
     private List<String> getClassNames()
     {
-        return listFrom(
+        return asList(
                 RestfulGraphDatabase.class.getName(),
                 TransactionalService.class.getName(),
                 CypherService.class.getName(),
@@ -102,23 +124,25 @@ public class RESTApiModule implements ServerModule
         {
             webServer.removeJAXRSClasses( getClassNames(), restApiUri().toString() );
 
-        tearDownRequestTimeLimit();
-        unloadPlugins();
+            tearDownRequestTimeLimit();
+            unloadPlugins();
         }
         catch ( URISyntaxException e )
         {
-          log.warn( "Unable to unmount REST API", e );
+            log.warn( "Unable to unmount REST API", e );
         }
     }
 
-    private void tearDownRequestTimeLimit() {
+    private void tearDownRequestTimeLimit()
+    {
         if(requestTimeLimitFilter != null)
         {
             webServer.removeFilter(requestTimeLimitFilter, "/*");
         }
     }
 
-    private void setupRequestTimeLimit() {
+    private void setupRequestTimeLimit()
+    {
         Long limit = config.get( ServerSettings.webserver_limit_execution_time );
         
         if ( limit != null )
@@ -144,10 +168,11 @@ public class RESTApiModule implements ServerModule
 
     private void loadPlugins()
     {
-        plugins = new PluginManager( config, logging );
+        plugins = new PluginManager( config, logProvider );
     }
 
-    private void unloadPlugins() {
+    private void unloadPlugins()
+    {
         // TODO
     }
 

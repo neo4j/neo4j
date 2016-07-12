@@ -43,7 +43,7 @@ public class IndexProviderImpl implements IndexProvider
     @Override
     public Index<Node> getOrCreateNodeIndex( String indexName, Map<String,String> customConfiguration )
     {
-        try ( Statement statement = transactionBridge.instance() )
+        try ( Statement statement = transactionBridge.get() )
         {
             // There's a sub-o-meta thing here where we create index config,
             // and the index will itself share the same IndexConfigStore as us and pick up and use
@@ -61,7 +61,7 @@ public class IndexProviderImpl implements IndexProvider
     public RelationshipIndex getOrCreateRelationshipIndex( String indexName, Map<String,
             String> customConfiguration )
     {
-        try ( Statement statement = transactionBridge.instance() )
+        try ( Statement statement = transactionBridge.get() )
         {
             // There's a sub-o-meta thing here where we create index config,
             // and the index will itself share the same IndexConfigStore as us and pick up and use

@@ -36,4 +36,5 @@ public class LogEntryByteCodes
     public static final byte DONE = (byte) 4;
     public static final byte TX_1P_COMMIT = (byte) 5;
     public static final byte TX_2P_COMMIT = (byte) 6;
+    public static final byte CHECK_POINT = (byte) 7;
 }

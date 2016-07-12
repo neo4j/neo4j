@@ -29,7 +29,7 @@ import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.com.storecopy.ResponsePacker;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreCopyServer.Monitor;
-import org.neo4j.helpers.Provider;
+import org.neo4j.function.Supplier;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -55,7 +55,7 @@ public class StoreCopyResponsePacker extends ResponsePacker
 
     public StoreCopyResponsePacker( LogicalTransactionStore transactionStore,
             TransactionIdStore transactionIdStore, LogFileInformation logFileInformation,
-            Provider<StoreId> storeId, long mandatoryStartTransactionId, StoreCopyServer.Monitor monitor )
+            Supplier<StoreId> storeId, long mandatoryStartTransactionId, StoreCopyServer.Monitor monitor )
     {
         super( transactionStore, transactionIdStore, storeId );
         this.transactionIdStore = transactionIdStore;
@@ -83,7 +83,7 @@ public class StoreCopyResponsePacker extends ResponsePacker
                 }
             }
         };
-        return new TransactionStreamResponse<>( response, storeId.instance(), transactions, ResourceReleaser.NO_OP );
+        return new TransactionStreamResponse<>( response, storeId.get(), transactions, ResourceReleaser.NO_OP );
     }
 
     @Override

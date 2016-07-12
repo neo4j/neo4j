@@ -36,7 +36,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
@@ -53,12 +55,10 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.index.IndexConfiguration;
@@ -76,7 +76,8 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.logging.StoreLogService;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -84,19 +85,19 @@ import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static java.lang.Integer.parseInt;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.emptyArray;
@@ -113,15 +114,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.lang.Integer.parseInt;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asList;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -200,19 +200,19 @@ public class BatchInsertTest
         return stringMap( GraphDatabaseSettings.dense_node_threshold.name(), String.valueOf( denseNodeThreshold ) );
     }
 
-    private BatchInserter newBatchInserter()
+    private BatchInserter newBatchInserter() throws Exception
     {
         return BatchInserters.inserter( storeDir.absolutePath(), fs, configuration() );
     }
 
-    private BatchInserter newBatchInserterWithSchemaIndexProvider( KernelExtensionFactory<?> provider )
+    private BatchInserter newBatchInserterWithSchemaIndexProvider( KernelExtensionFactory<?> provider ) throws Exception
     {
         List<KernelExtensionFactory<?>> extensions = Arrays.asList(
                 provider, new InMemoryLabelScanStoreExtension() );
         return BatchInserters.inserter( storeDir.absolutePath(), fs, configuration(), extensions );
     }
 
-    private BatchInserter newBatchInserterWithLabelScanStore( KernelExtensionFactory<?> provider )
+    private BatchInserter newBatchInserterWithLabelScanStore( KernelExtensionFactory<?> provider ) throws Exception
     {
         List<KernelExtensionFactory<?>> extensions = Arrays.asList(
                 new InMemoryIndexProviderFactory(), provider );
@@ -220,7 +220,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldUpdateStringArrayPropertiesOnNodesUsingBatchInserter1()
+    public void shouldUpdateStringArrayPropertiesOnNodesUsingBatchInserter1() throws Exception
     {
         // Given
         BatchInserter batchInserter = newBatchInserter();
@@ -248,7 +248,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void testSimple()
+    public void testSimple() throws Exception
     {
         BatchInserter graphDb = newBatchInserter();
         long node1 = graphDb.createNode( null );
@@ -263,7 +263,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void testSetAndAddNodeProperties()
+    public void testSetAndAddNodeProperties() throws Exception
     {
         BatchInserter inserter = newBatchInserter();
 
@@ -298,23 +298,31 @@ public class BatchInsertTest
         inserter.shutdown();
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs );
-        return factory.newImpermanentDatabaseBuilder( inserter.getStoreDir() )
+        GraphDatabaseService db = factory.newImpermanentDatabaseBuilder( new File( inserter.getStoreDir() ) )
                 // Shouldn't be necessary to set dense node threshold since it's a stick config
                 .setConfig( configuration() )
                 .newGraphDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+            tx.success();
+        }
+
+        return db;
     }
 
-    private NeoStore switchToNeoStore( BatchInserter inserter )
+    private NeoStores switchToNeoStores( BatchInserter inserter )
     {
         inserter.shutdown();
         File dir = new File( inserter.getStoreDir() );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, StringLogger.DEV_NULL, new Monitors() );
-        return storeFactory.newNeoStore( false );
+        StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, NullLogProvider.getInstance() );
+        return storeFactory.openAllNeoStores();
     }
 
     @Test
-    public void testSetAndKeepNodeProperty()
+    public void testSetAndKeepNodeProperty() throws Exception
     {
         BatchInserter inserter = newBatchInserter();
 
@@ -355,7 +363,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void testSetAndKeepRelationshipProperty()
+    public void testSetAndKeepRelationshipProperty() throws Exception
     {
         BatchInserter inserter = newBatchInserter();
 
@@ -400,7 +408,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void testNodeHasProperty()
+    public void testNodeHasProperty() throws Exception
     {
         BatchInserter inserter = newBatchInserter();
 
@@ -420,7 +428,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void testRemoveProperties()
+    public void testRemoveProperties() throws Exception
     {
         BatchInserter inserter = newBatchInserter();
 
@@ -477,7 +485,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveDynamicProperty()
+    public void shouldBeAbleToRemoveDynamicProperty() throws Exception
     {
         // Only triggered if assertions are enabled
 
@@ -495,7 +503,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldBeAbleToOverwriteDynamicProperty()
+    public void shouldBeAbleToOverwriteDynamicProperty() throws Exception
     {
         // Only triggered if assertions are enabled
 
@@ -514,7 +522,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void testMore()
+    public void testMore() throws Exception
     {
         BatchInserter graphDb = newBatchInserter();
         long startNode = graphDb.createNode( properties );
@@ -536,7 +544,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void makeSureLoopsCanBeCreated()
+    public void makeSureLoopsCanBeCreated() throws Exception
     {
         BatchInserter graphDb = newBatchInserter();
         long startNode = graphDb.createNode( properties );
@@ -739,11 +747,10 @@ public class BatchInsertTest
     @Test
     public void messagesLogGetsClosed() throws Exception
     {
-        String storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir().getAbsolutePath();
-        BatchInserter inserter = BatchInserters.inserter( storeDir, new DefaultFileSystemAbstraction(),
-                stringMap() );
+        File storeDir = this.storeDir.graphDbDir();
+        BatchInserter inserter = BatchInserters.inserter( storeDir, stringMap() );
         inserter.shutdown();
-        assertTrue( new File( storeDir, StringLogger.DEFAULT_NAME ).delete() );
+        assertTrue( new File( storeDir, StoreLogService.INTERNAL_LOG_NAME ).delete() );
     }
 
     @Test
@@ -899,8 +906,8 @@ public class BatchInsertTest
         GraphDatabaseAPI graphdb = (GraphDatabaseAPI) switchToEmbeddedGraphDatabaseService( inserter );
         try
         {
-            NeoStore neoStore = graphdb.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate();
-            SchemaStore store = neoStore.getSchemaStore();
+            NeoStores neoStores = graphdb.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get();
+            SchemaStore store = neoStores.getSchemaStore();
             SchemaStorage storage = new SchemaStorage( store );
             List<Long> inUse = new ArrayList<>();
             for ( long i = 1, high = store.getHighestPossibleIdInUse(); i <= high; i++ )
@@ -915,15 +922,15 @@ public class BatchInsertTest
             SchemaRule rule0 = storage.loadSingleSchemaRule( inUse.get( 0 ) );
             SchemaRule rule1 = storage.loadSingleSchemaRule( inUse.get( 1 ) );
             IndexRule indexRule;
-            UniquenessConstraintRule constraintRule;
+            UniquePropertyConstraintRule constraintRule;
             if ( rule0 instanceof IndexRule )
             {
                 indexRule = (IndexRule) rule0;
-                constraintRule = (UniquenessConstraintRule) rule1;
+                constraintRule = (UniquePropertyConstraintRule) rule1;
             }
             else
             {
-                constraintRule = (UniquenessConstraintRule) rule0;
+                constraintRule = (UniquePropertyConstraintRule) rule0;
                 indexRule = (IndexRule) rule1;
             }
             assertEquals( "index should reference constraint",
@@ -1135,7 +1142,7 @@ public class BatchInsertTest
         verifyNoMoreInteractions( populator );
     }
 
-    private long dbWithIndexAndSingleIndexedNode()
+    private long dbWithIndexAndSingleIndexedNode() throws Exception
     {
         IndexPopulator populator = mock( IndexPopulator.class );
         SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
@@ -1197,7 +1204,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void propertiesCanBeReSetUsingBatchInserter()
+    public void propertiesCanBeReSetUsingBatchInserter() throws Exception
     {
         // GIVEN
         BatchInserter batchInserter = newBatchInserter();
@@ -1266,7 +1273,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void propertiesCanBeReSetUsingBatchInserter2()
+    public void propertiesCanBeReSetUsingBatchInserter2() throws Exception
     {
         // GIVEN
         BatchInserter batchInserter = newBatchInserter();
@@ -1283,7 +1290,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void replaceWithBiggerPropertySpillsOverIntoNewPropertyRecord()
+    public void replaceWithBiggerPropertySpillsOverIntoNewPropertyRecord() throws Exception
     {
         // GIVEN
         BatchInserter batchInserter = newBatchInserter();
@@ -1303,7 +1310,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void mustSplitUpRelationshipChainsWhenCreatingDenseNodes()
+    public void mustSplitUpRelationshipChainsWhenCreatingDenseNodes() throws Exception
     {
         BatchInserter inserter = newBatchInserter();
 
@@ -1322,9 +1329,9 @@ public class BatchInsertTest
         try
         {
             DependencyResolver dependencyResolver = db.getDependencyResolver();
-            NeoStoreProvider neoStoreProvider = dependencyResolver.resolveDependency( NeoStoreProvider.class );
-            NeoStore neoStore = neoStoreProvider.evaluate();
-            NodeStore nodeStore = neoStore.getNodeStore();
+            NeoStoresSupplier neoStoresSupplier = dependencyResolver.resolveDependency( NeoStoresSupplier.class );
+            NeoStores neoStores = neoStoresSupplier.get();
+            NodeStore nodeStore = neoStores.getNodeStore();
             NodeRecord record = nodeStore.getRecord( 1 );
             assertTrue( "Node " + record + " should have been dense", record.isDense() );
         }
@@ -1362,17 +1369,17 @@ public class BatchInsertTest
                 DynamicLabel.label( "Item" ) );
 
         // THEN
-        NeoStore neoStore = switchToNeoStore( inserter );
+        NeoStores neoStores = switchToNeoStores( inserter );
         try
         {
-            NodeRecord node = neoStore.getNodeStore().getRecord( nodeId );
+            NodeRecord node = neoStores.getNodeStore().getRecord( nodeId );
             NodeLabels labels = NodeLabelsField.parseLabelsField( node );
-            long[] labelIds = labels.get( neoStore.getNodeStore() );
+            long[] labelIds = labels.get( neoStores.getNodeStore() );
             assertEquals( 1, labelIds.length );
         }
         finally
         {
-            neoStore.close();
+            neoStores.close();
         }
     }
 
@@ -1389,20 +1396,136 @@ public class BatchInsertTest
                 DynamicLabel.label( "DD" ), DynamicLabel.label( "EE" ), DynamicLabel.label( "FF" ) );
 
         // THEN
-        NeoStore neoStore = switchToNeoStore( inserter );
-        try
+        try ( NeoStores neoStores = switchToNeoStores( inserter ) )
         {
-            NodeRecord node = neoStore.getNodeStore().getRecord( nodeId );
+            NodeRecord node = neoStores.getNodeStore().getRecord( nodeId );
             NodeLabels labels = NodeLabelsField.parseLabelsField( node );
 
-            long[] labelIds = labels.get( neoStore.getNodeStore() );
+            long[] labelIds = labels.get( neoStores.getNodeStore() );
             long[] sortedLabelIds = labelIds.clone();
             Arrays.sort( sortedLabelIds );
             assertArrayEquals( sortedLabelIds, labelIds );
         }
+    }
+
+    @Test
+    public void shouldCreateUniquenessConstraint() throws Exception
+    {
+        // Given
+        Label label = label( "Person" );
+        String propertyKey = "name";
+        String duplicatedValue = "Tom";
+
+        BatchInserter inserter = newBatchInserter();
+
+        // When
+        inserter.createDeferredConstraint( label ).assertPropertyIsUnique( propertyKey ).create();
+
+        // Then
+        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
+        try
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                List<ConstraintDefinition> constraints = asList( db.schema().getConstraints() );
+                assertEquals( 1, constraints.size() );
+                ConstraintDefinition constraint = constraints.get( 0 );
+                assertEquals( label.name(), constraint.getLabel().name() );
+                assertEquals( propertyKey, single( constraint.getPropertyKeys() ) );
+
+                db.createNode( label ).setProperty( propertyKey, duplicatedValue );
+
+                tx.success();
+            }
+
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.createNode( label ).setProperty( propertyKey, duplicatedValue );
+                tx.success();
+            }
+            fail( "Uniqueness property constraint was violated, exception expected" );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            assertEquals( e.getMessage(),
+                    "Node 0 already exists with label " + label.name() + " and property \"" + propertyKey + "\"=[" +
+                    duplicatedValue + "]"
+            );
+        }
         finally
         {
-            neoStore.close();
+            db.shutdown();
+        }
+    }
+
+    @Test
+    public void shouldNotAllowCreationOfUniquenessConstraintAndIndexOnSameLabelAndProperty() throws Exception
+    {
+        // Given
+        Label label = label( "Person" );
+        String property = "name";
+
+        BatchInserter inserter = newBatchInserter();
+
+        // When
+        inserter.createDeferredConstraint( label ).assertPropertyIsUnique( property ).create();
+        try
+        {
+            inserter.createDeferredSchemaIndex( label ).on( property ).create();
+            fail( "Exception expected" );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            // Then
+            assertEquals( "Index for given {label;property} already exists", e.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldNotAllowDuplicatedUniquenessConstraints() throws Exception
+    {
+        // Given
+        Label label = label( "Person" );
+        String property = "name";
+
+        BatchInserter inserter = newBatchInserter();
+
+        // When
+        inserter.createDeferredConstraint( label ).assertPropertyIsUnique( property ).create();
+        try
+        {
+            inserter.createDeferredConstraint( label ).assertPropertyIsUnique( property ).create();
+            fail( "Exception expected" );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            // Then
+            assertEquals(
+                    "It is not allowed to create uniqueness constraints and indexes on the same {label;property}",
+                    e.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldNotAllowDuplicatedIndexes() throws Exception
+    {
+        // Given
+        Label label = label( "Person" );
+        String property = "name";
+
+        BatchInserter inserter = newBatchInserter();
+
+        // When
+        inserter.createDeferredSchemaIndex( label ).on( property ).create();
+        try
+        {
+            inserter.createDeferredSchemaIndex( label ).on( property ).create();
+            fail( "Exception expected" );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            // Then
+            assertEquals( "Index for given {label;property} already exists", e.getMessage() );
         }
     }
 

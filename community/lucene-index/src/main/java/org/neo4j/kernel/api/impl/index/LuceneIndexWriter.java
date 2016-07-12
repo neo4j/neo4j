@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexDeletionPolicy;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
@@ -35,6 +36,8 @@ import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 
+import static java.util.Collections.singletonMap;
+
 /**
  * A thin wrapper around {@link org.apache.lucene.index.IndexWriter} that exposes only some part of it's
  * functionality that it really needed.
@@ -47,6 +50,10 @@ public class LuceneIndexWriter implements Closeable
     // their source in future versions, the deviation can never be bigger than 128.
     private static final long MAX_DOC_LIMIT = Integer.MAX_VALUE - 128;
 
+    private static final String KEY_STATUS = "status";
+    private static final String ONLINE = "online";
+    private static final Map<String,String> ONLINE_COMMIT_USER_DATA = singletonMap( KEY_STATUS, ONLINE );
+
     protected final IndexWriter writer;
 
     /**
@@ -55,6 +62,20 @@ public class LuceneIndexWriter implements Closeable
     LuceneIndexWriter( Directory dir, IndexWriterConfig conf ) throws IOException
     {
         this.writer = new IndexWriter( dir, conf );
+    }
+
+    public static boolean isOnline( Directory directory ) throws IOException
+    {
+        if ( !IndexReader.indexExists( directory ) )
+        {
+            return false;
+        }
+
+        try ( IndexReader reader = IndexReader.open( directory ) )
+        {
+            Map<String,String> userData = reader.getIndexCommit().getUserData();
+            return ONLINE.equals( userData.get( KEY_STATUS ) );
+        }
     }
 
     public void addDocument( Document document ) throws IOException, IndexCapacityExceededException
@@ -92,25 +113,20 @@ public class LuceneIndexWriter implements Closeable
         writer.commit();
     }
 
+    public void commitAsOnline() throws IOException
+    {
+        writer.commit( ONLINE_COMMIT_USER_DATA );
+    }
+
     @Override
     public void close() throws IOException
     {
-        close( true );
+        writer.close( true );
     }
 
     IndexDeletionPolicy getIndexDeletionPolicy()
     {
         return writer.getConfig().getIndexDeletionPolicy();
-    }
-
-    void commit( Map<String,String> commitUserData ) throws IOException
-    {
-        writer.commit( commitUserData );
-    }
-
-    void close( boolean waitForMerges ) throws IOException
-    {
-        writer.close( waitForMerges );
     }
 
     long maxDocLimit()

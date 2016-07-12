@@ -24,14 +24,15 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TransactionHook;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
-import org.neo4j.kernel.api.heuristics.StatisticsData;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -40,7 +41,6 @@ import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.util.Providers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -50,7 +50,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedParts;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 import static org.neo4j.kernel.impl.store.SchemaStorage.IndexRuleKind.CONSTRAINT;
@@ -75,7 +74,7 @@ public class ConstraintIndexCreatorTest
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( 2468l ) ).thenReturn( indexProxy );
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( Providers.<KernelAPI>singletonProvider(kernel), indexingService );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( Suppliers.<KernelAPI>singleton( kernel ), indexingService );
 
         // when
         long indexId = creator.createUniquenessConstraintIndex( state, constraintCreationContext.schemaReadOperations(), 123, 456 );
@@ -110,7 +109,7 @@ public class ConstraintIndexCreatorTest
         doThrow( new IndexPopulationFailedKernelException( descriptor, "some index", cause) )
                 .when(indexProxy).awaitStoreScanCompleted();
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( Providers.<KernelAPI>singletonProvider(kernel), indexingService );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( Suppliers.<KernelAPI>singleton( kernel ), indexingService );
 
         // when
         try
@@ -145,7 +144,7 @@ public class ConstraintIndexCreatorTest
 
         IndexDescriptor descriptor = new IndexDescriptor( 123, 456 );
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( Providers.<KernelAPI>singletonProvider(kernel), indexingService );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( Suppliers.<KernelAPI>singleton( kernel ), indexingService );
 
         // when
         creator.dropUniquenessConstraintIndex( descriptor );
@@ -199,14 +198,20 @@ public class ConstraintIndexCreatorTest
                 }
 
                 @Override
-                public boolean shouldBeTerminated()
+                public Status getReasonIfTerminated()
                 {
-                    return false;
+                    return null;
                 }
 
                 @Override
-                public void markForTermination()
+                public void markForTermination( Status reason )
                 {
+                }
+
+                @Override
+                public long lastTransactionTimestampWhenStarted()
+                {
+                    return 0;
                 }
 
                 @Override
@@ -224,12 +229,6 @@ public class ConstraintIndexCreatorTest
 
         @Override
         public void unregisterTransactionHook( TransactionHook hook )
-        {
-            throw new UnsupportedOperationException( "Please implement" );
-        }
-
-        @Override
-        public StatisticsData heuristics()
         {
             throw new UnsupportedOperationException( "Please implement" );
         }

@@ -1,0 +1,20 @@
+[[query-delete]]
+= Delete
+
+[abstract]
+The `DELETE` clause is used to delete graph elements -- nodes, relationships or paths.
+
+For removing properties and labels, see <<query-remove>>.
+Remember that you can not delete a node without also deleting relationships that start or end on said node.
+Either explicitly delete the relationships, or use `DETACH DELETE`.
+
+The examples start out with the following database:
+
+include::includes/cypher-delete-graph.asciidoc[]
+
+include::delete-single-node.asciidoc[]
+
+include::delete-all-nodes-and-relationships.asciidoc[]
+
+include::delete-a-node-with-all-its-relationships.asciidoc[]
+

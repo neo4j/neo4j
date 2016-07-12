@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.helpers
 
+// TODO: This is only here for accomodating cypher-compiler-1.9. Do not touch, do not import, purge it with fire post 2.3
 trait TypeSafeMathSupport {
   def plus(left: Any, right: Any): Any = {
     (left, right) match {

@@ -98,13 +98,13 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
         {
             return kernelData.getMemberInfo().getHaRole();
         }
-        
+
         @Override
         public boolean isAvailable()
         {
             return kernelData.getMemberInfo().isAvailable();
         }
-        
+
         @Override
         public boolean isAlive()
         {
@@ -130,7 +130,9 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
             long time = System.currentTimeMillis();
             try
             {
-                kernelData.graphDatabase().getDependencyResolver().resolveDependency( UpdatePuller.class )
+                kernelData.graphDatabase()
+                        .getDependencyResolver()
+                        .resolveDependency( UpdatePuller.class )
                         .pullUpdates();
             }
             catch ( Exception e )

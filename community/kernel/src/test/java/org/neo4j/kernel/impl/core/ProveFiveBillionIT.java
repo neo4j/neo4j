@@ -87,7 +87,7 @@ public class ProveFiveBillionIT
             if ( i % 100000 == 0 )
             {
                 tx.success();
-                tx.finish();
+                tx.close();
                 System.out.println( (i/1000000) + "M" );
                 tx = db.beginTx();
             }

@@ -43,6 +43,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -57,8 +58,9 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
-import org.neo4j.kernel.impl.transaction.log.LogRotation;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.register.Register.DoubleLong;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -137,7 +139,7 @@ public class IndexRecoveryIT
                         any( IndexSamplingConfig.class ) ) )
                 .thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         createIndex( myLabel );
-        rotateLogs();
+        rotateLogsAndCheckPoint();
 
         // And Given
         Future<Void> killFuture = killDbInSeparateThread();
@@ -193,7 +195,7 @@ public class IndexRecoveryIT
         ).thenReturn( mockedAccessor );
         createIndexAndAwaitPopulation( myLabel );
         // rotate logs
-        rotateLogs();
+        rotateLogsAndCheckPoint();
         // make updates
         Set<NodePropertyUpdate> expectedUpdates = createSomeBananas( myLabel );
 
@@ -237,7 +239,7 @@ public class IndexRecoveryIT
         ).thenReturn( mock( IndexAccessor.class ) );
         startDb();
         createIndex( myLabel );
-        rotateLogs();
+        rotateLogsAndCheckPoint();
 
         // And Given
         killDb();
@@ -271,7 +273,7 @@ public class IndexRecoveryIT
         when( mockedIndexProvider.compareTo( any( SchemaIndexProvider.class ) ) )
                 .thenReturn( 1 ); // always pretend to have highest priority
         when( mockedIndexProvider.storeMigrationParticipant(
-                any( FileSystemAbstraction.class), any( UpgradableDatabase.class)) ).thenReturn( NOT_PARTICIPATING );
+                any( FileSystemAbstraction.class), any( PageCache.class ) ) ).thenReturn( NOT_PARTICIPATING );
     }
 
     @SuppressWarnings("deprecation")
@@ -329,9 +331,12 @@ public class IndexRecoveryIT
         }
     }
 
-    private void rotateLogs() throws IOException
+    private void rotateLogsAndCheckPoint() throws IOException
     {
         db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
+        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
+                new SimpleTriggerInfo( "test" )
+        );
     }
 
     private void createIndexAndAwaitPopulation( Label label )
@@ -359,9 +364,9 @@ public class IndexRecoveryIT
         Set<NodePropertyUpdate> updates = new HashSet<>();
         try ( Transaction tx = db.beginTx() )
         {
-            ThreadToStatementContextBridge ctxProvider = db.getDependencyResolver().resolveDependency(
+            ThreadToStatementContextBridge ctxSupplier = db.getDependencyResolver().resolveDependency(
                     ThreadToStatementContextBridge.class );
-            try ( Statement statement = ctxProvider.instance() )
+            try ( Statement statement = ctxSupplier.get() )
             {
                 for ( int number : new int[] {4, 10} )
                 {

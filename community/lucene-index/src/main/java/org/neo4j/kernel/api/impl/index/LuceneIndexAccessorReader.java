@@ -37,12 +37,12 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.index.impl.lucene.Hits;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ValueEncoding;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
+import org.neo4j.register.Register.DoubleLong;
 
-import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.*;
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
-import static org.neo4j.register.Register.DoubleLong;
 
 class LuceneIndexAccessorReader implements IndexReader
 {
@@ -96,24 +96,41 @@ class LuceneIndexAccessorReader implements IndexReader
     }
 
     @Override
-    public PrimitiveLongIterator lookup( Object value )
+    public PrimitiveLongIterator seek( Object value )
     {
-        try
-        {
-            Hits hits = new Hits( searcher, documentLogic.newQuery( value ), null );
-            return new HitsPrimitiveLongIterator( hits, documentLogic );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        return query( documentLogic.newSeekQuery( value ) );
     }
 
     @Override
-    public int getIndexedCount( long nodeId, Object propertyValue )
+    public PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
     {
-        Query nodeIdQuery = new TermQuery( documentLogic.newQueryForChangeOrRemove( nodeId ) );
-        Query valueQuery = documentLogic.newQuery( propertyValue );
+        return query( documentLogic.newInclusiveNumericRangeSeekQuery( lower, upper ) );
+    }
+
+    @Override
+    public PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
+                                                    String upper, boolean includeUpper )
+    {
+        return query( documentLogic.newRangeSeekByStringQuery( lower, includeLower, upper, includeUpper ) );
+    }
+
+    @Override
+    public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
+    {
+        return query( documentLogic.newRangeSeekByPrefixQuery( prefix ) );
+    }
+
+    @Override
+    public PrimitiveLongIterator scan()
+    {
+        return query( documentLogic.newScanQuery() );
+    }
+
+    @Override
+    public int countIndexedNodes( long nodeId, Object propertyValue )
+    {
+        Query nodeIdQuery = new TermQuery( documentLogic.newTermForChangeOrRemove( nodeId ) );
+        Query valueQuery = documentLogic.newSeekQuery( propertyValue );
         BooleanQuery nodeIdAndValueQuery = new BooleanQuery( true );
         nodeIdAndValueQuery.add( nodeIdQuery, BooleanClause.Occur.MUST );
         nodeIdAndValueQuery.add( valueQuery, BooleanClause.Occur.MUST );
@@ -190,5 +207,19 @@ class LuceneIndexAccessorReader implements IndexReader
     protected org.apache.lucene.index.IndexReader luceneIndexReader()
     {
         return searcher.getIndexReader();
+    }
+
+
+    protected PrimitiveLongIterator query( Query query )
+    {
+        try
+        {
+            Hits hits = new Hits( searcher, query, null );
+            return new HitsPrimitiveLongIterator( hits, documentLogic );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }

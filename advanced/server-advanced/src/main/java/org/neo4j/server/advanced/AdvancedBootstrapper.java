@@ -19,14 +19,26 @@
  */
 package org.neo4j.server.advanced;
 
+import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.NeoServer;
 
 public class AdvancedBootstrapper extends CommunityBootstrapper
 {
-	@Override
-	protected NeoServer createNeoServer()
+	public static void main( String[] args )
 	{
-		return new AdvancedNeoServer( configurator, dependencies );
+		int exit = start( new AdvancedBootstrapper(), args );
+		if ( exit != 0 )
+		{
+			System.exit( exit );
+		}
+	}
+
+	@Override
+	protected NeoServer createNeoServer( Config config, GraphDatabaseDependencies dependencies, LogProvider userLogProvider )
+	{
+		return new AdvancedNeoServer( config, dependencies, userLogProvider );
 	}
 }

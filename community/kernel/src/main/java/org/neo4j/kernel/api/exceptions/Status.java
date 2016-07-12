@@ -24,8 +24,8 @@ import java.util.Collection;
 import java.util.Collections;
 
 import static java.lang.String.format;
-
 import static org.neo4j.kernel.api.exceptions.Status.Classification.ClientError;
+import static org.neo4j.kernel.api.exceptions.Status.Classification.ClientNotification;
 import static org.neo4j.kernel.api.exceptions.Status.Classification.DatabaseError;
 import static org.neo4j.kernel.api.exceptions.Status.Classification.TransientError;
 
@@ -65,7 +65,7 @@ public interface Status
             return code;
         }
 
-        private Network( Classification classification, String description )
+        Network( Classification classification, String description )
         {
             this.code = new Code( classification, this, description );
         }
@@ -85,7 +85,7 @@ public interface Status
             return code;
         }
 
-        private Request( Classification classification, String description )
+        Request( Classification classification, String description )
         {
             this.code = new Code( classification, this, description );
         }
@@ -121,6 +121,10 @@ public interface Status
         MarkedAsFailed( ClientError, "Transaction was marked as both successful and failed. Failure takes precedence" +
                 " and so this transaction was rolled back although it may have looked like it was going to be " +
                 "committed" ),
+        Outdated( TransientError, "Transaction has seen state which has been invalidated by applied updates while " +
+                "transaction was active. Transaction may succeed if retried." ),
+        LockClientStopped( TransientError, "Transaction terminated, no more locks can be acquired." ),
+        Terminated( TransientError, "Explicitly terminated by the user." )
         ;
 
 
@@ -132,7 +136,7 @@ public interface Status
             return code;
         }
 
-        private Transaction( Classification classification, String description )
+        Transaction( Classification classification, String description )
         {
             this.code = new Code( classification, this, description );
         }
@@ -158,7 +162,22 @@ public interface Status
         // database
         ExecutionFailure( DatabaseError, "The database was unable to execute the statement." ),
         ExternalResourceFailure( TransientError, "The external resource is not available"),
-        ;
+        CartesianProduct( ClientNotification, "This query builds a cartesian product between disconnected patterns." ),
+        PlannerUnsupportedWarning( ClientNotification, "This query is not supported by the COST planner." ),
+        RuntimeUnsupportedWarning( ClientNotification, "This query is not supported by the compiled runtime." ),
+        DeprecationWarning( ClientNotification, "This feature is deprecated and will be removed in future versions." ),
+        JoinHintUnfulfillableWarning( ClientNotification, "The database was unable to plan a hinted join." ),
+        JoinHintUnsupportedWarning( ClientNotification, "Queries with join hints are not supported by the RULE planner." ),
+        DynamicPropertyWarning( ClientNotification, "Queries using dynamic properties will use neither index seeks " +
+                                                    "nor index scans for those properties" ),
+        EagerWarning(ClientNotification, "The execution plan for this query contains the Eager operator, " +
+                                         "which forces all dependent data to be materialized in main memory " +
+                                         "before proceeding"),
+        IndexMissingWarning( ClientNotification, "Adding a schema index may speed up this query." ),
+        LabelMissingWarning( ClientNotification, "The provided label is not in the database." ),
+        RelTypeMissingWarning( ClientNotification, "The provided relationship type is not in the database." ),
+        PropertyNameMissingWarning( ClientNotification, "The provided property name is not in the database" ),
+        UnboundedPatternWarning( ClientNotification, "The provided pattern is unbounded, consider adding an upper limit to the number of node hops."  );
 
         private final Code code;
 
@@ -168,7 +187,7 @@ public interface Status
             return code;
         }
 
-        private Statement( Classification classification, String description )
+        Statement( Classification classification, String description )
         {
             this.code = new Code( classification, this, description );
         }
@@ -204,6 +223,7 @@ public interface Status
         NoSuchPropertyKey( DatabaseError, "The request accessed a property that does not exist." ),
         NoSuchRelationshipType( DatabaseError, "The request accessed a relationship type that does not exist." ),
         NoSuchSchemaRule( DatabaseError, "The request referred to a schema rule that does not exist." ),
+        DuplicateSchemaRule( DatabaseError, "The request referred to a schema rule that defined multiple times." ),
 
         LabelLimitReached( ClientError, "The maximum number of labels supported has been reached, no more labels can be created." ),
         IndexLimitReached( ClientError, "The maximum number of index entries supported has been reached, no more entities can be indexed." ),
@@ -220,7 +240,7 @@ public interface Status
             return code;
         }
 
-        private Schema( Classification classification, String description )
+        Schema( Classification classification, String description )
         {
             this.code = new Code( classification, this, description );
         }
@@ -240,7 +260,7 @@ public interface Status
             return code;
         }
 
-        private LegacyIndex( Classification classification, String description )
+        LegacyIndex( Classification classification, String description )
         {
             this.code = new Code( classification, this, description );
         }
@@ -262,7 +282,7 @@ public interface Status
             return code;
         }
 
-        private Security( Classification classification, String description )
+        Security( Classification classification, String description )
         {
             this.code = new Code( classification, this, description );
         }
@@ -289,7 +309,7 @@ public interface Status
             return code;
         }
 
-        private General( Classification classification, String description )
+        General( Classification classification, String description )
         {
             this.code = new Code( classification, this, description );
         }
@@ -397,16 +417,19 @@ public interface Status
         }
     }
 
-    public enum Classification
+    enum Classification
     {
         /** The Client sent a bad request - changing the request might yield a successful outcome. */
-        ClientError( TransactionEffect.ROLLBACK,
-                "The Client sent a bad request - changing the request might yield a successful outcome." ),
+        ClientError( TransactionEffect.ROLLBACK, PublishingPolicy.PUBLISHABLE,
+                "The Client sent a bad request - changing the request might yield a successful outcome."),
+        /** There are notifications about the request sent by the client.*/
+        ClientNotification( TransactionEffect.NONE, PublishingPolicy.PUBLISHABLE,
+                "There are notifications about the request sent by the client." ),
         /** The database failed to service the request. */
-        DatabaseError( TransactionEffect.ROLLBACK,
+        DatabaseError( TransactionEffect.ROLLBACK, PublishingPolicy.INTERNAL,
                 "The database failed to service the request. " ),
         /** The database cannot service the request right now, retrying later might yield a successful outcome. */
-        TransientError( TransactionEffect.ROLLBACK,
+        TransientError( TransactionEffect.ROLLBACK, PublishingPolicy.PUBLISHABLE,
                 "The database cannot service the request right now, retrying later might yield a successful outcome. "),
         ;
 
@@ -415,24 +438,43 @@ public interface Status
             ROLLBACK, NONE,
         }
 
-        final boolean rollbackTransaction;
-
-        private final String description;
-
-        private Classification( TransactionEffect transactionEffect, String description )
+        /**
+         * A PUBLISHABLE error/warning is one which allows sending a meaningful error message to
+         * the client with the expectation that the user will be able to take any necessary action
+         * to resolve the error. INTERNAL errors are more sensitive and may not be resolvable by
+         * the user - these will be logged and a only a reference will be forwarded to the user.
+         * This is a security feature to avoid leaking potentially sensitive information to end
+         * users.
+         */
+        private enum PublishingPolicy
         {
-            this.description = description;
-            this.rollbackTransaction = transactionEffect == TransactionEffect.ROLLBACK;
+            PUBLISHABLE, INTERNAL,
         }
 
-        public String description()
+        private final boolean rollbackTransaction;
+        private final boolean publishable;
+        private final String description;
+
+        Classification( TransactionEffect transactionEffect, PublishingPolicy publishingPolicy, String description )
         {
-            return description;
+            this.description = description;
+            this.publishable = publishingPolicy == PublishingPolicy.PUBLISHABLE;
+            this.rollbackTransaction = transactionEffect == TransactionEffect.ROLLBACK;
         }
 
         public boolean rollbackTransaction()
         {
             return rollbackTransaction;
+        }
+
+        public boolean publishable()
+        {
+            return publishable;
+        }
+
+        public String description()
+        {
+            return description;
         }
     }
 

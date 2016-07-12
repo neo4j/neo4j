@@ -48,17 +48,15 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.helpers.Exceptions.containsStackTraceElement;
 import static org.neo4j.helpers.Exceptions.forMethod;
@@ -66,19 +64,36 @@ import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.NodeStore.readOwnerFromDynamicLabelsRecord;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class NodeStoreTest
 {
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
+    @Rule
+    public final EphemeralFileSystemRule efs = new EphemeralFileSystemRule();
+
+    private NodeStore nodeStore;
+    private NeoStores neoStores;
+
+    @After
+    public void tearDown()
+    {
+        if ( neoStores != null )
+        {
+            neoStores.close();
+        }
+    }
+
     @Test
     public void shouldReadFirstFromSingleRecordDynamicLongArray() throws Exception
     {
         // GIVEN
         Long expectedId = 12l;
-        long[] ids = new long[] { expectedId, 23l, 42l };
+        long[] ids = new long[]{expectedId, 23l, 42l};
         DynamicRecord firstRecord = new DynamicRecord( 0l );
         List<DynamicRecord> dynamicRecords = asList( firstRecord );
-        allocateFromNumbers( new ArrayList<DynamicRecord>(), ids, dynamicRecords.iterator(), new PreAllocatedRecords( 60 ) );
+        allocateFromNumbers( new ArrayList<DynamicRecord>(), ids, dynamicRecords.iterator(),
+                new PreAllocatedRecords( 60 ) );
 
         // WHEN
         Long firstId = readOwnerFromDynamicLabelsRecord( firstRecord );
@@ -92,10 +107,11 @@ public class NodeStoreTest
     {
         // GIVEN
         Long expectedId = null;
-        long[] ids = new long[] { };
+        long[] ids = new long[]{};
         DynamicRecord firstRecord = new DynamicRecord( 0l );
         List<DynamicRecord> dynamicRecords = asList( firstRecord );
-        allocateFromNumbers( new ArrayList<DynamicRecord>(), ids, dynamicRecords.iterator(), new PreAllocatedRecords( 60 ) );
+        allocateFromNumbers( new ArrayList<DynamicRecord>(), ids, dynamicRecords.iterator(),
+                new PreAllocatedRecords( 60 ) );
 
         // WHEN
         Long firstId = readOwnerFromDynamicLabelsRecord( firstRecord );
@@ -109,10 +125,11 @@ public class NodeStoreTest
     {
         // GIVEN
         Long expectedId = 12l;
-        long[] ids = new long[] { expectedId, 1l, 2l, 3l, 4l, 5l, 6l, 7l, 8l, 9l, 10l, 11l };
+        long[] ids = new long[]{expectedId, 1l, 2l, 3l, 4l, 5l, 6l, 7l, 8l, 9l, 10l, 11l};
         DynamicRecord firstRecord = new DynamicRecord( 0l );
         List<DynamicRecord> dynamicRecords = asList( firstRecord, new DynamicRecord( 1l ) );
-        allocateFromNumbers( new ArrayList<DynamicRecord>(), ids, dynamicRecords.iterator(), new PreAllocatedRecords( 8 ) );
+        allocateFromNumbers( new ArrayList<DynamicRecord>(), ids, dynamicRecords.iterator(),
+                new PreAllocatedRecords( 8 ) );
 
         // WHEN
         Long firstId = readOwnerFromDynamicLabelsRecord( firstRecord );
@@ -127,11 +144,12 @@ public class NodeStoreTest
         // GIVEN
         // -- a store
         EphemeralFileSystemAbstraction fs = efs.get();
-        NodeStore nodeStore = newNodeStore( fs );
+        nodeStore = newNodeStore( fs );
 
         // -- a record with the msb carrying a negative value
         long nodeId = 0, labels = 0x8000000001L;
-        NodeRecord record = new NodeRecord( nodeId, false, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
+        NodeRecord record =
+                new NodeRecord( nodeId, false, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
         record.setInUse( true );
         record.setLabelField( labels, Collections.<DynamicRecord>emptyList() );
         nodeStore.updateRecord( record );
@@ -143,10 +161,6 @@ public class NodeStoreTest
         // THEN
         // -- the label field must be the same
         assertEquals( labels, readRecord.getLabelField() );
-
-        // CLEANUP
-        nodeStore.close();
-        fs.shutdown();
     }
 
     @Test
@@ -193,7 +207,7 @@ public class NodeStoreTest
         // When & then
         assertTrue( store.inUse( exists ) );
         assertFalse( store.inUse( deleted ) );
-        assertFalse(store.inUse( IdType.NODE.getMaxValue() ));
+        assertFalse( store.inUse( IdType.NODE.getMaxValue() ) );
     }
 
     @Test
@@ -201,7 +215,7 @@ public class NodeStoreTest
     {
         // GIVEN we have a NodeStore with data that spans several pages...
         EphemeralFileSystemAbstraction fs = efs.get();
-        NodeStore store = newNodeStore( fs );
+        nodeStore = newNodeStore( fs );
 
         ThreadLocalRandom rng = ThreadLocalRandom.current();
         final PrimitiveLongSet nextRelSet = Primitive.longSet();
@@ -211,15 +225,15 @@ public class NodeStoreTest
             int nextRelCandidate = rng.nextInt( 0, Integer.MAX_VALUE );
             if ( nextRelSet.add( nextRelCandidate ) )
             {
-                long nodeId = store.nextId();
+                long nodeId = nodeStore.nextId();
                 NodeRecord record = new NodeRecord(
                         nodeId, false, nextRelCandidate, 20, true );
-                store.updateRecord( record );
+                nodeStore.updateRecord( record );
                 if ( rng.nextInt( 0, 10 ) < 3 )
                 {
                     nextRelSet.remove( nextRelCandidate );
                     record.setInUse( false );
-                    store.updateRecord( record );
+                    nodeStore.updateRecord( record );
                 }
             }
         }
@@ -227,7 +241,7 @@ public class NodeStoreTest
         // ...WHEN we now have an interesting set of node records, and we
         // visit each and remove that node from our nextRelSet...
 
-        Visitor<NodeRecord, IOException> scanner = new Visitor<NodeRecord, IOException>()
+        Visitor<NodeRecord,IOException> scanner = new Visitor<NodeRecord,IOException>()
         {
             @Override
             public boolean visit( NodeRecord record ) throws IOException
@@ -237,7 +251,7 @@ public class NodeStoreTest
                 return false;
             }
         };
-        store.scanAllRecords( scanner );
+        nodeStore.scanAllRecords( scanner );
 
         // ...NOR do we have anything left in the set afterwards.
         assertTrue( nextRelSet.isEmpty() );
@@ -260,7 +274,7 @@ public class NodeStoreTest
                     {
                         Exception stack = new Exception();
                         if ( containsStackTraceElement( stack, forMethod( "initGenerator" ) ) &&
-                            !containsStackTraceElement( stack, forMethod( "createNodeStore" ) ) )
+                             !containsStackTraceElement( stack, forMethod( "createNodeStore" ) ) )
                         {
                             fired.set( true );
                             throw new IOException( "Proving a point here" );
@@ -294,34 +308,11 @@ public class NodeStoreTest
     {
         File storeDir = new File( "dir" );
         fs.mkdirs( storeDir );
-        Config config = StoreFactory.configForStoreDir( new Config(), storeDir );
-        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
-        Monitors monitors = new Monitors();
-        StoreFactory factory = new StoreFactory(
-                config,
-                idGeneratorFactory,
-                pageCache,
-                fs,
-                DEV_NULL,
-                monitors );
-        factory.createNodeStore();
-        nodeStore = factory.newNodeStore();
+        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
+        StoreFactory factory = new StoreFactory( storeDir, new Config(), idGeneratorFactory, pageCache, fs,
+                NullLogProvider.getInstance() );
+        neoStores = factory.openAllNeoStores( true );
+        nodeStore = neoStores.getNodeStore();
         return nodeStore;
     }
-
-    private NodeStore nodeStore;
-
-    @After
-    public void tearDown()
-    {
-        if ( nodeStore != null )
-        {
-            nodeStore.close();
-            nodeStore = null;
-        }
-    }
-
-    @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
-    public final @Rule EphemeralFileSystemRule efs = new EphemeralFileSystemRule();
 }

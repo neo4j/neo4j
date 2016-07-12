@@ -77,8 +77,8 @@ public class RelationshipGroupStoreIT
     private void shiftHighId( GraphDatabaseAPI db )
     {
         GraphDatabaseAPI databaseAPI = db;
-        NeoStore neoStore = databaseAPI.getDependencyResolver().resolveDependency( NeoStore.class );
-        neoStore.getRelationshipTypeTokenStore().setHighId( 30000 );
+        NeoStores neoStores = databaseAPI.getDependencyResolver().resolveDependency( NeoStores.class );
+        neoStores.getRelationshipTypeTokenStore().setHighId( 30000 );
     }
 
     private DynamicRelationshipType type( int i )

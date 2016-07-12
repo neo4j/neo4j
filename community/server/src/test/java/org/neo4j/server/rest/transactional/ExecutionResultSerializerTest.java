@@ -19,18 +19,13 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import org.codehaus.jackson.JsonNode;
-import org.junit.Test;
-import org.mockito.internal.stubbing.answers.ThrowsException;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,33 +36,44 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import org.codehaus.jackson.JsonNode;
+import org.junit.Test;
+import org.mockito.internal.stubbing.answers.ThrowsException;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.impl.notification.NotificationCode;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.util.TestLogger;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.test.mocking.GraphMock;
 import org.neo4j.test.mocking.Link;
 
 import static java.util.Arrays.asList;
+
+import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 import static org.neo4j.test.Property.property;
@@ -84,7 +90,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         // when
         serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
@@ -100,7 +106,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         Result executionResult = mockExecutionResult( map(
                 "column1", "value1",
@@ -122,7 +128,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         Result executionResult = mockExecutionResult( map(
                 "column1", "value1",
@@ -143,7 +149,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         Result executionResult = mockExecutionResult( map(
                 "column1", "value1",
@@ -168,7 +174,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         Result executionResult = mockExecutionResult( map(
                 "column1", "value1",
@@ -192,7 +198,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         // when
         serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
@@ -210,7 +216,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         // when
         serializer.errors( asList( new Neo4jError( Status.Request.InvalidFormat, new Exception( "cause1" ) ) ) );
@@ -228,7 +234,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         // when
         serializer.finish();
@@ -243,7 +249,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         Result executionResult = mockExecutionResult( map(
                 "column1", "value1",
@@ -267,7 +273,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         Result executionResult1 = mockExecutionResult( map(
                 "column1", "value1",
@@ -294,7 +300,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         Result executionResult = mockExecutionResult( map(
                 "node", node( 1, properties(
@@ -320,7 +326,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         Node a = node( 1, properties( property( "foo", 12 ) ) );
         Node b = node( 2, properties( property( "bar", false ) ) );
@@ -348,7 +354,7 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         Result executionResult = mockExecutionResult( map(
                 "path", mockPath( map( "key1", "value1" ), map( "key2", "value2" ), map( "key3", "value3" ) ) ) );
@@ -369,12 +375,13 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         Map<String, Object> data = map(
                 "column1", "value1",
                 "column2", "value2" );
         Result executionResult = mock( Result.class );
+        mockAccept( executionResult );
         when( executionResult.columns() ).thenReturn( new ArrayList<>( data.keySet() ) );
         when( executionResult.hasNext() ).thenReturn( true, true, false );
         when( executionResult.next() ).thenReturn( data ).thenThrow( new RuntimeException( "Stuff went wrong!" ) );
@@ -404,12 +411,13 @@ public class ExecutionResultSerializerTest
     {
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         Map<String, Object> data = map(
                 "column1", "value1",
                 "column2", "value2" );
         Result executionResult = mock( Result.class );
+        mockAccept( executionResult );
         when( executionResult.columns() ).thenReturn( new ArrayList<>( data.keySet() ) );
         when( executionResult.hasNext() ).thenReturn( true ).thenThrow(
                 new RuntimeException( "Stuff went wrong!" ) );
@@ -450,7 +458,7 @@ public class ExecutionResultSerializerTest
                 relationship( 1, node[2], "LOVES", node[3], property( "name", "rel1" ) )};
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
 
         // when
         serializer.statementResult( mockExecutionResult(
@@ -503,7 +511,7 @@ public class ExecutionResultSerializerTest
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer(
-                output, URI.create( "http://base.uri/" ), DEV_NULL );
+                output, URI.create( "http://base.uri/" ), NullLogProvider.getInstance() );
 
         // when
         serializer.statementResult( mockExecutionResult(
@@ -541,7 +549,7 @@ public class ExecutionResultSerializerTest
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer(
-                output, URI.create( "http://base.uri/" ), DEV_NULL );
+                output, URI.create( "http://base.uri/" ), NullLogProvider.getInstance() );
 
         // when
         serializer.statementResult( mockExecutionResult(
@@ -572,7 +580,7 @@ public class ExecutionResultSerializerTest
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer(
-                output, URI.create( "http://base.uri/" ), DEV_NULL );
+                output, URI.create( "http://base.uri/" ), NullLogProvider.getInstance() );
 
         String operatorType = "Ich habe einen Plan";
 
@@ -614,7 +622,7 @@ public class ExecutionResultSerializerTest
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer(
-                output, URI.create( "http://base.uri/" ), DEV_NULL );
+                output, URI.create( "http://base.uri/" ), NullLogProvider.getInstance() );
 
         String operatorType = "Ich habe einen Plan";
         String id1 = "id1";
@@ -646,7 +654,7 @@ public class ExecutionResultSerializerTest
         // given
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = new ExecutionResultSerializer(
-                output, URI.create( "http://base.uri/" ), DEV_NULL );
+                output, URI.create( "http://base.uri/" ), NullLogProvider.getInstance() );
 
         String leftId = "leftId";
         String rightId = "rightId";
@@ -737,14 +745,17 @@ public class ExecutionResultSerializerTest
         // given
         IOException failure = new IOException();
         OutputStream output = mock( OutputStream.class, new ThrowsException( failure ) );
-        TestLogger log = new TestLogger();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, log );
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, logProvider );
 
         // when
         serializer.finish();
 
         // then
-        log.assertExactly( error( "Failed to generate JSON output.", failure ) );
+        logProvider.assertExactly(
+                AssertableLogProvider.inLog( ExecutionResultSerializer.class ).error(
+                        is( "Failed to generate JSON output." ), sameInstance( failure ) )
+        );
     }
 
     @Test
@@ -752,46 +763,112 @@ public class ExecutionResultSerializerTest
     {
         // given
         OutputStream output = mock( OutputStream.class, new ThrowsException( new IOException("Broken pipe") ) );
-        TestLogger log = new TestLogger();
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, log );
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, logProvider );
 
         // when
         serializer.finish();
 
         // then
-        log.assertExactly( error( "Unable to reply to request, because the client has closed the connection (Broken pipe)." ) );
+        logProvider.assertExactly(
+                AssertableLogProvider.inLog( ExecutionResultSerializer.class ).error( "Unable to reply to request, because the client has closed the connection (Broken pipe)." )
+        );
     }
 
-    @SuppressWarnings({"unchecked"})
     @Test
-    public void shouldCloseResultIterator() throws Exception
+    public void shouldReturnNotifications() throws IOException
     {
         // given
-        OutputStream output = mock( OutputStream.class );
-        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, null );
-        RuntimeException onCloseException = new IllegalStateException("Iterator closed");
-        Result result = mock( Result.class );
-        when( result.hasNext() ).thenReturn( true );
-        when( result.next() ).thenThrow( onCloseException );
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
+
+        Notification notification = NotificationCode.CARTESIAN_PRODUCT.notification( new InputPosition( 1, 2, 3 ) );
+        List<Notification> notifications = Arrays.asList( notification );
+        Result executionResult = mockExecutionResult( null, notifications, map(
+                "column1", "value1",
+                "column2", "value2" ) );
 
         // when
-        try
-        {
-            serializer.statementResult( result, false );
-            fail("Expected IllegalStateException to be thrown when closing the iterator");
-        }
-        catch (IllegalStateException e)
-        {
-            // expected to be thrown by iterator access
-            assertEquals( onCloseException, e );
-        }
+        serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
+        serializer.statementResult( executionResult, false );
+        serializer.notifications( notifications );
+        serializer.finish();
 
         // then
-        verify( result, times( 1 ) ).columns();
-        verify( result, times( 1 ) ).hasNext();
-        verify( result, times( 1 ) ).next();
-        verify( result, times( 1 ) ).close();
-        verifyNoMoreInteractions(result);
+        String result = output.toString( "UTF-8" );
+
+        assertEquals(
+                "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
+                        "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}],\"notifications\":[{\"code\":\"Neo" +
+                        ".ClientNotification.Statement.CartesianProduct\",\"severity\":\"WARNING\",\"title\":\"This " +
+                        "query builds a cartesian product between disconnected patterns.\",\"description\":\"If a " +
+                        "part of a query contains multiple disconnected patterns, this will build a cartesian product" +
+                        " between all those parts. This may produce a large amount of data and slow down query " +
+                        "processing. While occasionally intended, it may often be possible to reformulate the query " +
+                        "that avoids the use of this cross product, perhaps by adding a relationship between the " +
+                        "different parts or by using OPTIONAL MATCH\",\"position\":{\"offset\":1,\"line\":2," +
+                        "\"column\":3}}],\"errors\":[]}", result );
+    }
+
+    @Test
+    public void shouldNotReturnNotificationsWhenEmptyNotifications() throws IOException
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
+
+        List<Notification> notifications = Collections.emptyList();
+        Result executionResult = mockExecutionResult( null, notifications, map(
+                "column1", "value1",
+                "column2", "value2" ) );
+
+        // when
+        serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
+        serializer.statementResult( executionResult, false );
+        serializer.notifications( notifications );
+        serializer.finish();
+
+        // then
+        String result = output.toString( "UTF-8" );
+
+        assertEquals(
+                "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
+                        "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}],\"errors\":[]}", result );
+    }
+
+    @Test
+    public void shouldNotReturnPositionWhenEmptyPosition() throws IOException
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, NullLogProvider.getInstance() );
+
+        Notification notification = NotificationCode.CARTESIAN_PRODUCT.notification( InputPosition.empty );
+
+        List<Notification> notifications = Arrays.asList( notification );
+        Result executionResult = mockExecutionResult( null, notifications, map(
+                "column1", "value1",
+                "column2", "value2" ) );
+
+        // when
+        serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
+        serializer.statementResult( executionResult, false );
+        serializer.notifications( notifications );
+        serializer.finish();
+
+        // then
+        String result = output.toString( "UTF-8" );
+
+        assertEquals(
+                "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
+                        "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}],\"notifications\":[{\"code\":\"Neo" +
+                        ".ClientNotification.Statement.CartesianProduct\",\"severity\":\"WARNING\",\"title\":\"This " +
+                        "query builds a cartesian product between disconnected patterns.\",\"description\":\"If a " +
+                        "part of a query contains multiple disconnected patterns, this will build a cartesian product" +
+                        " between all those parts. This may produce a large amount of data and slow down query " +
+                        "processing. While occasionally intended, it may often be possible to reformulate the query " +
+                        "that avoids the use of this cross product, perhaps by adding a relationship between the " +
+                        "different parts or by using OPTIONAL MATCH\"}],\"errors\":[]}", result );
     }
 
     @SafeVarargs
@@ -801,7 +878,13 @@ public class ExecutionResultSerializerTest
     }
 
     @SafeVarargs
-    private static Result mockExecutionResult( ExecutionPlanDescription planDescription, Map<String, Object>... rows )
+    private static Result mockExecutionResult(ExecutionPlanDescription planDescription, Map<String, Object>... rows )
+    {
+        return mockExecutionResult( planDescription, Collections.<Notification>emptyList(), rows );
+    }
+
+    @SafeVarargs
+    private static Result mockExecutionResult( ExecutionPlanDescription planDescription, Iterable<Notification> notifications, Map<String, Object>... rows )
     {
         Set<String> keys = new TreeSet<>();
         for ( Map<String, Object> row : rows )
@@ -838,8 +921,30 @@ public class ExecutionResultSerializerTest
         {
             when( executionResult.getExecutionPlanDescription() ).thenReturn( planDescription );
         }
+        mockAccept( executionResult );
+
+        when( executionResult.getNotifications() ).thenReturn( notifications );
 
         return executionResult;
+    }
+
+    private static void mockAccept( Result mock )
+    {
+        doAnswer( new Answer<Void>()
+        {
+            @Override
+            public Void answer( InvocationOnMock invocation ) throws Throwable
+            {
+                Result result = (Result) invocation.getMock();
+                Result.ResultVisitor visitor = (Result.ResultVisitor) invocation.getArguments()[0];
+                while ( result.hasNext() )
+                {
+                    visitor.visit( new MapRow( result.next() ) );
+                }
+                return null;
+            }
+        } ).when( mock )
+           .accept( (Result.ResultVisitor<RuntimeException>) any( Result.ResultVisitor.class ) );
     }
 
     private static Path mockPath( Map<String, Object> startNodeProperties, Map<String, Object> relationshipProperties,

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.storemigration.legacystore.indexcompat;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -35,6 +36,7 @@ import org.neo4j.graphdb.MultipleFoundException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.Unzip;
 
@@ -48,14 +50,16 @@ import static org.neo4j.helpers.collection.IteratorUtil.loop;
 @Ignore( "This test is for an index format change between 2.0.0 and 2.0.x so not applicable for later versions" )
 public class IndexFormatCompatibilityTest
 {
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
     private GraphDatabaseService db;
 
     @Before
     public void startDatabase() throws IOException
     {
-        File storeDir = Unzip.unzip( getClass(), "db.zip" );
-
-        db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.getPath() );
+        File storeDir = Unzip.unzip( getClass(), "db.zip", testDirectory.graphDbDir() );
+        db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
     }
 
     @After

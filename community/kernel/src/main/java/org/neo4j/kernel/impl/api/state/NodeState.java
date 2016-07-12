@@ -28,15 +28,27 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.EntityType;
+import org.neo4j.kernel.api.cursor.LabelItem;
+import org.neo4j.kernel.api.cursor.PropertyItem;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.txstate.UpdateTriState;
+import org.neo4j.kernel.impl.api.cursor.TxAllPropertyCursor;
+import org.neo4j.kernel.impl.api.cursor.TxIteratorRelationshipCursor;
+import org.neo4j.kernel.impl.api.cursor.TxLabelCursor;
+import org.neo4j.kernel.impl.api.cursor.TxSingleLabelCursor;
+import org.neo4j.kernel.impl.api.cursor.TxSinglePropertyCursor;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
+import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
-
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
 
 /**
  * Represents the transactional changes to a node:
@@ -51,7 +63,8 @@ public interface NodeState extends PropertyContainerState
 {
     interface Visitor extends PropertyContainerState.Visitor
     {
-        void visitLabelChanges( long nodeId, Set<Integer> added, Set<Integer> removed );
+        void visitLabelChanges( long nodeId, Set<Integer> added, Set<Integer> removed )
+                throws ConstraintValidationKernelException;
 
         void visitRelationshipChanges(
                 long nodeId, RelationshipChangesForNode added, RelationshipChangesForNode removed );
@@ -59,17 +72,28 @@ public interface NodeState extends PropertyContainerState
 
     ReadableDiffSets<Integer> labelDiffSets();
 
-    PrimitiveLongIterator augmentRelationships( Direction direction, PrimitiveLongIterator rels );
+    RelationshipIterator augmentRelationships( Direction direction, RelationshipIterator rels );
 
-    PrimitiveLongIterator augmentRelationships( Direction direction, int[] types, PrimitiveLongIterator rels );
+    RelationshipIterator augmentRelationships( Direction direction, int[] types, RelationshipIterator rels );
 
     PrimitiveLongIterator addedRelationships( Direction direction, int[] types );
+
+    Cursor<LabelItem> augmentLabelCursor( InstanceCache<TxLabelCursor> labelCursorCache, Cursor<LabelItem> cursor );
+
+    Cursor<LabelItem> augmentLabelCursor( InstanceCache<TxSingleLabelCursor> labelCursorCache,
+            Cursor<LabelItem> cursor,
+            int labelId );
+
+    Cursor<RelationshipItem> augmentNodeRelationshipCursor( InstanceCache<TxIteratorRelationshipCursor>
+            nodeRelationshipCursor,
+            Cursor<RelationshipItem> cursor,
+            Direction direction, int[] relTypes );
 
     int augmentDegree( Direction direction, int degree );
 
     int augmentDegree( Direction direction, int degree, int typeId );
 
-    void accept( NodeState.Visitor visitor );
+    void accept( NodeState.Visitor visitor ) throws ConstraintValidationKernelException;
 
     PrimitiveIntIterator relationshipTypes();
 
@@ -83,10 +107,12 @@ public interface NodeState extends PropertyContainerState
         private RelationshipChangesForNode relationshipsAdded;
         private RelationshipChangesForNode relationshipsRemoved;
         private Set<DiffSets<Long>> indexDiffs;
+        private final TxState state;
 
-        private Mutable( long id )
+        private Mutable( long id, TxState state )
         {
-            super( id );
+            super( id, EntityType.NODE );
+            this.state = state;
         }
 
         @Override
@@ -108,7 +134,7 @@ public interface NodeState extends PropertyContainerState
         {
             if ( !hasAddedRelationships() )
             {
-                relationshipsAdded = new RelationshipChangesForNode( DiffStrategy.ADD );
+                relationshipsAdded = new RelationshipChangesForNode( DiffStrategy.ADD, state );
             }
             relationshipsAdded.addRelationship( relId, typeId, direction );
         }
@@ -126,7 +152,7 @@ public interface NodeState extends PropertyContainerState
             }
             if ( !hasRemovedRelationships() )
             {
-                relationshipsRemoved = new RelationshipChangesForNode( DiffStrategy.REMOVE );
+                relationshipsRemoved = new RelationshipChangesForNode( DiffStrategy.REMOVE, state );
             }
             relationshipsRemoved.addRelationship( relId, typeId, direction );
         }
@@ -154,7 +180,7 @@ public interface NodeState extends PropertyContainerState
         }
 
         @Override
-        public PrimitiveLongIterator augmentRelationships( Direction direction, PrimitiveLongIterator rels )
+        public RelationshipIterator augmentRelationships( Direction direction, RelationshipIterator rels )
         {
             if ( hasAddedRelationships() )
             {
@@ -164,8 +190,8 @@ public interface NodeState extends PropertyContainerState
         }
 
         @Override
-        public PrimitiveLongIterator augmentRelationships( Direction direction, int[] types,
-                                                           PrimitiveLongIterator rels )
+        public RelationshipIterator augmentRelationships( Direction direction, int[] types,
+                RelationshipIterator rels )
         {
             if ( hasAddedRelationships() )
             {
@@ -175,13 +201,74 @@ public interface NodeState extends PropertyContainerState
         }
 
         @Override
-        public PrimitiveLongIterator addedRelationships( Direction direction, int[] types )
+        public RelationshipIterator addedRelationships( Direction direction, int[] types )
         {
             if ( hasAddedRelationships() )
             {
-                return relationshipsAdded.augmentRelationships( direction, types, emptyIterator() );
+                return relationshipsAdded.augmentRelationships( direction, types, RelationshipIterator.EMPTY );
             }
             return null;
+        }
+
+        @Override
+        public Cursor<LabelItem> augmentLabelCursor( InstanceCache<TxLabelCursor> labelCursorCache,
+                Cursor<LabelItem> cursor )
+        {
+            if ( labelDiffSets == null )
+            {
+                return cursor;
+            }
+            else
+            {
+                return labelCursorCache.get().init( cursor, labelDiffSets );
+            }
+        }
+
+        @Override
+        public Cursor<LabelItem> augmentLabelCursor( InstanceCache<TxSingleLabelCursor> labelCursorCache,
+                Cursor<LabelItem> cursor,
+                int labelId )
+        {
+            if ( labelDiffSets == null )
+            {
+                return cursor;
+            }
+            else
+            {
+                return labelCursorCache.get().init( cursor, labelDiffSets );
+            }
+        }
+
+        @Override
+        public Cursor<RelationshipItem> augmentNodeRelationshipCursor( InstanceCache<TxIteratorRelationshipCursor>
+                nodeRelationshipCursorCache,
+                Cursor<RelationshipItem> cursor,
+                Direction direction,
+                int[] relTypes )
+        {
+            if ( hasAddedRelationships() || hasRemovedRelationships() )
+            {
+                if ( relTypes == null )
+                {
+                    return nodeRelationshipCursorCache.get().init( cursor,
+                            relationshipsAdded != null ?
+                                    relationshipsAdded.augmentRelationships( direction, RelationshipIterator.EMPTY ) :
+                                    RelationshipIterator.EMPTY );
+                }
+                else
+                {
+                    return nodeRelationshipCursorCache.get().init( cursor,
+                            relationshipsAdded != null ?
+                                    relationshipsAdded.augmentRelationships( direction, relTypes,
+                                            RelationshipIterator.EMPTY ) :
+                                    RelationshipIterator.EMPTY );
+                }
+
+            }
+            else
+            {
+                return cursor;
+            }
         }
 
         @Override
@@ -213,7 +300,7 @@ public interface NodeState extends PropertyContainerState
         }
 
         @Override
-        public void accept( NodeState.Visitor visitor )
+        public void accept( NodeState.Visitor visitor ) throws ConstraintValidationKernelException
         {
             super.accept( visitor );
             if ( labelDiffSets != null )
@@ -300,9 +387,9 @@ public interface NodeState extends PropertyContainerState
     abstract class Defaults extends StateDefaults<Long, NodeState, NodeState.Mutable>
     {
         @Override
-        final Mutable createValue( Long id )
+        final Mutable createValue( Long id, TxState state )
         {
-            return new Mutable( id );
+            return new Mutable( id, state );
         }
 
         @Override
@@ -355,14 +442,14 @@ public interface NodeState extends PropertyContainerState
             }
 
             @Override
-            public PrimitiveLongIterator augmentRelationships( Direction direction, PrimitiveLongIterator rels )
+            public RelationshipIterator augmentRelationships( Direction direction, RelationshipIterator rels )
             {
                 return rels;
             }
 
             @Override
-            public PrimitiveLongIterator augmentRelationships( Direction direction, int[] types,
-                                                               PrimitiveLongIterator rels )
+            public RelationshipIterator augmentRelationships( Direction direction, int[] types,
+                    RelationshipIterator rels )
             {
                 return rels;
             }
@@ -371,6 +458,42 @@ public interface NodeState extends PropertyContainerState
             public PrimitiveLongIterator addedRelationships( Direction direction, int[] types )
             {
                 return Primitive.iterator();
+            }
+
+            @Override
+            public Cursor<LabelItem> augmentLabelCursor( InstanceCache<TxLabelCursor> labelCursorCache,
+                    Cursor<LabelItem> cursor )
+            {
+                return cursor;
+            }
+
+            @Override
+            public Cursor<LabelItem> augmentLabelCursor( InstanceCache<TxSingleLabelCursor> labelCursorCache,
+                    Cursor<LabelItem> cursor, int labelId )
+            {
+                return cursor;
+            }
+
+            @Override
+            public Cursor<RelationshipItem> augmentNodeRelationshipCursor(
+                    InstanceCache<TxIteratorRelationshipCursor> nodeRelationshipCursor,
+                    Cursor<RelationshipItem> cursor, Direction direction, int[] relTypes )
+            {
+                return cursor;
+            }
+
+            @Override
+            public Cursor<PropertyItem> augmentPropertyCursor( Supplier<TxAllPropertyCursor> propertyCursor,
+                    Cursor<PropertyItem> cursor )
+            {
+                return cursor;
+            }
+
+            @Override
+            public Cursor<PropertyItem> augmentSinglePropertyCursor( Supplier<TxSinglePropertyCursor> propertyCursor,
+                    Cursor<PropertyItem> cursor, int propertyKeyId )
+            {
+                return cursor;
             }
 
             @Override

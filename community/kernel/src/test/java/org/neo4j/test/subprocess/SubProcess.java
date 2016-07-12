@@ -44,16 +44,14 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Predicate;
 import org.neo4j.test.ProcessStreamHandler;
 
 @SuppressWarnings( "serial" )
@@ -64,12 +62,17 @@ public abstract class SubProcess<T, P> implements Serializable
         // Used when no interface is declared
     }
 
+    // by default will inherit output destinations for subprocess from current process
+    private static final boolean INHERIT_OUTPUT_DEFAULT_VALUE = true;
+
     private final Class<T> t;
+    private transient boolean inheritOutput = INHERIT_OUTPUT_DEFAULT_VALUE;
     private final transient Predicate<String> classPathFilter;
 
     @SuppressWarnings( { "unchecked", "rawtypes" } )
-    public SubProcess( Predicate<String> classPathFilter )
+    public SubProcess( Predicate<String> classPathFilter, boolean inheritOutput )
     {
+        this.inheritOutput = inheritOutput;
         if ( getClass().getSuperclass() != SubProcess.class )
         {
             throw new ClassCastException( SubProcess.class.getName() + " may only be extended one level " );
@@ -112,18 +115,23 @@ public abstract class SubProcess<T, P> implements Serializable
         this.classPathFilter = classPathFilter;
     }
 
-    public SubProcess()
+    public SubProcess( Predicate<String> classPathFilter )
     {
-        this( null );
+        this( classPathFilter, INHERIT_OUTPUT_DEFAULT_VALUE );
     }
 
-    public T start( P parameter, BreakPoint... breakpoints )
+    public SubProcess( boolean inheritOutput )
     {
-        DebuggerConnector debugger = null;
-        if ( breakpoints != null && breakpoints.length != 0 )
-        {
-            debugger = new DebuggerConnector( breakpoints );
-        }
+        this(null, inheritOutput );
+    }
+
+    public SubProcess()
+    {
+        this( null, INHERIT_OUTPUT_DEFAULT_VALUE );
+    }
+
+    public T start( P parameter )
+    {
         DispatcherTrapImpl callback;
         try
         {
@@ -135,30 +143,19 @@ public abstract class SubProcess<T, P> implements Serializable
         }
         Process process;
         String pid;
-        DebugDispatch debugDispatch = null;
         Dispatcher dispatcher;
         try
         {
-            synchronized ( debugger != null ? DebuggerConnector.class : new Object() )
+            process = start( inheritOutput, "java", "-ea", "-Xmx1G", "-Djava.awt.headless=true", "-cp",
+                    classPath( System.getProperty( "java.class.path" ) ),
+                    SubProcess.class.getName(), serialize( callback ) );
+            pid = getPid( process );
+            // if IO was not inherited by current process we need to pipe error and input stream to corresponding
+            // target streams
+            if ( !inheritOutput )
             {
-                if ( debugger != null )
-                {
-                    process = start( "java", "-ea", "-Xmx1G", debugger.listen(), "-Djava.awt.headless=true", "-cp",
-                            classPath( System.getProperty( "java.class.path" ) ), SubProcess.class.getName(),
-                            serialize( callback ) );
-                }
-                else
-                {
-                    process = start( "java", "-ea", "-Xmx1G", "-Djava.awt.headless=true", "-cp", classPath( System.getProperty( "java.class.path" ) ),
-                            SubProcess.class.getName(), serialize( callback ) );
-                }
-                pid = getPid( process );
                 pipe( "[" + toString() + ":" + pid + "] ", process.getErrorStream(), errorStreamTarget() );
                 pipe( "[" + toString() + ":" + pid + "] ", process.getInputStream(), inputStreamTarget() );
-                if ( debugger != null )
-                {
-                    debugDispatch = debugger.connect( toString() + ":" + pid );
-                }
             }
             dispatcher = callback.get( process );
         }
@@ -177,19 +174,15 @@ public abstract class SubProcess<T, P> implements Serializable
         {
             throw new IllegalStateException( "failed to start sub process" );
         }
-        Handler handler = new Handler( t, dispatcher, process, "<" + toString() + ":" + pid + ">", debugDispatch );
-        if ( debugDispatch != null )
-        {
-            debugDispatch.handler = handler;
-        }
-        return t.cast( Proxy.newProxyInstance( t.getClassLoader(), new Class[] { t }, live( handler ) ) );
+        Handler handler = new Handler( t, dispatcher, process, "<" + toString() + ":" + pid + ">" );
+        return t.cast( Proxy.newProxyInstance( t.getClassLoader(), new Class[]{t}, live( handler ) ) );
     }
-    
+
     protected PrintStream errorStreamTarget()
     {
         return System.err;
     }
-    
+
     protected PrintStream inputStreamTarget()
     {
         return System.out;
@@ -204,7 +197,7 @@ public abstract class SubProcess<T, P> implements Serializable
         StringBuilder result = new StringBuilder();
         for ( String part : parentClasspath.split( File.pathSeparator ) )
         {
-            if ( classPathFilter.accept( part ) )
+            if ( classPathFilter.test( part ) )
             {
                 result.append( result.length() > 0 ? File.pathSeparator : "" ).append( part );
             }
@@ -212,9 +205,18 @@ public abstract class SubProcess<T, P> implements Serializable
         return result.toString();
     }
 
-    private static Process start( String... args )
+    private static Process start(boolean inheritOutput, String... args )
     {
         ProcessBuilder builder = new ProcessBuilder( args );
+        if ( inheritOutput )
+        {
+            // We can not simply use builder.inheritIO here because
+            // that will also inherit input which will be closed in case of background execution of main process.
+            // Closed input stream will cause immediate exit from a subprocess liveloop.
+            // And we use background execution in scripts and on CI server.
+            builder.redirectError( ProcessBuilder.Redirect.INHERIT )
+                   .redirectOutput( ProcessBuilder.Redirect.INHERIT );
+        }
         try
         {
             return builder.start();
@@ -222,281 +224,6 @@ public abstract class SubProcess<T, P> implements Serializable
         catch ( IOException e )
         {
             throw new RuntimeException( "Failed to start sub process", e );
-        }
-    }
-
-    @SuppressWarnings( "restriction" )
-    private static class DebuggerConnector
-    {
-        private static final com.sun.jdi.connect.ListeningConnector connector;
-        static
-        {
-            com.sun.jdi.connect.ListeningConnector first = null;
-            for ( com.sun.jdi.connect.ListeningConnector conn : com.sun.jdi.Bootstrap.virtualMachineManager().listeningConnectors() )
-            {
-                first = conn;
-                break;
-            }
-            connector = first;
-        }
-        private final Map<String, List<BreakPoint>> breakpoints = new HashMap<>();
-        private final Map<String, ? extends com.sun.jdi.connect.Connector.Argument> args;
-
-        DebuggerConnector( BreakPoint[] breakpoints )
-        {
-            this.args = connector.defaultArguments();
-            for ( BreakPoint breakpoint : breakpoints )
-            {
-                List<BreakPoint> list = this.breakpoints.get( breakpoint.type );
-                if ( list == null )
-                {
-                    this.breakpoints.put( breakpoint.type, list = new ArrayList<>() );
-                }
-                list.add( breakpoint );
-            }
-        }
-
-        String listen()
-        {
-            try
-            {
-                return String.format( "-agentlib:jdwp=transport=%s,address=%s", connector.transport().name(),
-                        connector.startListening( args ) );
-            }
-            catch ( Exception e )
-            {
-                throw new UnsupportedOperationException( "Debugger not supported", e );
-            }
-        }
-
-        DebugDispatch connect( String string )
-        {
-            final com.sun.jdi.VirtualMachine vm;
-            try
-            {
-                vm = connector.accept( args );
-                connector.stopListening( args );
-            }
-            catch ( Exception e )
-            {
-                throw new RuntimeException( "Debugger connection failure", e );
-            }
-            com.sun.jdi.request.EventRequestManager erm = vm.eventRequestManager();
-            TYPES: for ( Map.Entry<String, List<BreakPoint>> entry : breakpoints.entrySet() )
-            {
-                for ( com.sun.jdi.ReferenceType type : vm.classesByName( entry.getKey() ) )
-                {
-                    if ( type.name().equals( entry.getKey() ) )
-                    {
-                        for ( BreakPoint breakpoint : entry.getValue() )
-                        {
-                            breakpoint.setup( type );
-                        }
-                        continue TYPES;
-                    }
-                }
-                com.sun.jdi.request.ClassPrepareRequest prepare = erm.createClassPrepareRequest();
-                prepare.addClassFilter( entry.getKey() );
-                prepare.enable();
-            }
-            if ( vm.canRequestMonitorEvents() )
-            {
-                erm.createMonitorContendedEnterRequest().enable();
-            }
-            DebugDispatch dispatch = new DebugDispatch( vm.eventQueue(), breakpoints );
-            new Thread( dispatch, "Debugger: [" + string + "]" ).start();
-            return dispatch;
-        }
-    }
-
-    @SuppressWarnings( "restriction" )
-    static class DebugDispatch implements Runnable
-    {
-        static DebugDispatch get( Object o )
-        {
-            if ( Proxy.isProxyClass( o.getClass() ) )
-            {
-                InvocationHandler handler = Proxy.getInvocationHandler( o );
-                if ( handler instanceof Handler )
-                {
-                    return ( (Handler) handler ).debugDispatch;
-                }
-            }
-            throw new IllegalArgumentException( "Not a sub process: " + o );
-        }
-
-        volatile Handler handler;
-        private final com.sun.jdi.event.EventQueue queue;
-        private final Map<String, List<BreakPoint>> breakpoints;
-        private final Map<com.sun.jdi.ThreadReference, DebuggerDeadlockCallback> suspended = new HashMap<>();
-        static final DebuggerDeadlockCallback defaultCallback = new DebuggerDeadlockCallback()
-        {
-            @Override
-            public void deadlock( DebuggedThread thread )
-            {
-                throw new DeadlockDetectedError();
-            }
-        };
-
-        DebugDispatch( com.sun.jdi.event.EventQueue queue, Map<String, List<BreakPoint>> breakpoints )
-        {
-            this.queue = queue;
-            this.breakpoints = breakpoints;
-        }
-
-        @Override
-        public void run()
-        {
-            for ( ;; )
-            {
-                final com.sun.jdi.event.EventSet events;
-                try
-                {
-                    events = queue.remove();
-                }
-                catch ( InterruptedException e )
-                {
-                    return;
-                }
-                Integer exitCode = null;
-                try
-                {
-                    for ( com.sun.jdi.event.Event event : events )
-                    {
-                        if ( event instanceof com.sun.jdi.event.MonitorContendedEnterEvent )
-                        {
-                            com.sun.jdi.event.MonitorContendedEnterEvent monitor = (com.sun.jdi.event.MonitorContendedEnterEvent) event;
-                            final com.sun.jdi.ThreadReference thread;
-                            try
-                            {
-                                thread = monitor.monitor().owningThread();
-                            }
-                            catch ( com.sun.jdi.IncompatibleThreadStateException e )
-                            {
-                                e.printStackTrace();
-                                continue;
-                            }
-                            if ( thread != null && thread.isSuspended() )
-                            {
-                                DebuggerDeadlockCallback callback = suspended.get( thread );
-                                try
-                                {
-                                    if ( callback != null )
-                                    {
-                                        callback.deadlock( new DebuggedThread( this, thread ) );
-                                    }
-                                }
-                                catch ( DeadlockDetectedError deadlock )
-                                {
-                                    @SuppressWarnings( "hiding" ) Handler handler = this.handler;
-                                    if ( handler != null )
-                                    {
-                                        handler.kill( false );
-                                    }
-                                }
-                            }
-                        }
-                        else if ( event instanceof com.sun.jdi.event.LocatableEvent )
-                        {
-                            callback( (com.sun.jdi.event.LocatableEvent) event );
-                        }
-                        else if ( event instanceof com.sun.jdi.event.ClassPrepareEvent )
-                        {
-                            setup( ( (com.sun.jdi.event.ClassPrepareEvent) event ).referenceType() );
-                        }
-                        else if ( event instanceof com.sun.jdi.event.VMDisconnectEvent
-                                  || event instanceof com.sun.jdi.event.VMDeathEvent )
-                        {
-                            return;
-                        }
-                    }
-                }
-                catch ( KillSubProcess kill )
-                {
-                    exitCode = kill.exitCode;
-                }
-                finally
-                {
-                    if ( exitCode != null )
-                    {
-                        events.virtualMachine().exit( exitCode );
-                    }
-                    else
-                    {
-                        events.resume();
-                    }
-                }
-            }
-        }
-
-        private void setup( com.sun.jdi.ReferenceType type )
-        {
-            List<BreakPoint> list = breakpoints.get( type.name() );
-            if ( list == null )
-            {
-                return;
-            }
-            for ( BreakPoint breakpoint : list )
-            {
-                breakpoint.setup( type );
-            }
-        }
-
-        private void callback( com.sun.jdi.event.LocatableEvent event ) throws KillSubProcess
-        {
-            List<BreakPoint> list = breakpoints.get( event.location().declaringType().name() );
-            if ( list == null )
-            {
-                return;
-            }
-            com.sun.jdi.Method method = event.location().method();
-            for ( BreakPoint breakpoint : list )
-            {
-                if ( breakpoint.matches( method.name(), method.argumentTypeNames() ) )
-                {
-                    if ( breakpoint.enabled )
-                    {
-                        breakpoint.invoke( new DebugInterface( this, event ) );
-                    }
-                }
-            }
-        }
-
-        void suspended( com.sun.jdi.ThreadReference thread, DebuggerDeadlockCallback callback )
-        {
-            if ( callback == null )
-            {
-                callback = defaultCallback;
-            }
-            suspended.put( thread, callback );
-        }
-
-        void resume( com.sun.jdi.ThreadReference thread )
-        {
-            suspended.remove( thread );
-        }
-
-        DebuggedThread[] suspendedThreads()
-        {
-            if ( suspended.isEmpty() )
-            {
-                return new DebuggedThread[0];
-            }
-            List<DebuggedThread> threads = new ArrayList<>();
-            for ( com.sun.jdi.ThreadReference thread : suspended.keySet() )
-            {
-                threads.add( new DebuggedThread( this, thread ) );
-            }
-            return threads.toArray( new DebuggedThread[threads.size()] );
-        }
-    }
-
-    static class DeadlockDetectedError extends Error
-    {
-        @Override
-        public Throwable fillInStackTrace()
-        {
-            return this;
         }
     }
 
@@ -835,7 +562,7 @@ public abstract class SubProcess<T, P> implements Serializable
     {
         void stop() throws RemoteException;
 
-        Object dispatch( String name, String[] types, Object[] args ) throws RemoteException, Throwable;
+        Object dispatch( String name, String[] types, Object[] args ) throws Throwable;
     }
 
     private static InvocationHandler live( Handler handler )
@@ -915,15 +642,13 @@ public abstract class SubProcess<T, P> implements Serializable
         private final Process process;
         private final Class<?> type;
         private final String repr;
-        private final DebugDispatch debugDispatch;
 
-        Handler( Class<?> type, Dispatcher dispatcher, Process process, String repr, DebugDispatch debugDispatch )
+        Handler( Class<?> type, Dispatcher dispatcher, Process process, String repr )
         {
             this.type = type;
             this.dispatcher = dispatcher;
             this.process = process;
             this.repr = repr;
-            this.debugDispatch = debugDispatch;
         }
 
         @Override
@@ -1030,7 +755,7 @@ public abstract class SubProcess<T, P> implements Serializable
 
     private static class DispatcherImpl extends UnicastRemoteObject implements Dispatcher
     {
-        private transient final SubProcess<?, ?> subprocess;
+        private final transient SubProcess<?, ?> subprocess;
 
         protected DispatcherImpl( SubProcess<?, ?> subprocess ) throws RemoteException
         {

@@ -46,7 +46,7 @@ import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.test.Mute;
+import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 
 import static java.lang.Boolean.getBoolean;
@@ -54,7 +54,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeNotNull;
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.test.Mute.mute;
+import static org.neo4j.test.SuppressOutput.suppress;
 import static org.neo4j.test.TargetDirectory.testDirForTest;
 
 @RunWith( Parameterized.class )
@@ -81,7 +81,7 @@ public class UniquenessRecoveryTest
     }
 
     @Rule
-    public final Mute muted = mute( Mute.System.out );
+    public final SuppressOutput muted = suppress( SuppressOutput.System.out );
     @Rule
     public final TargetDirectory.TestDirectory dir = testDirForTest( UniquenessRecoveryTest.class );
     private final Configuration config;

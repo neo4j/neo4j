@@ -8,11 +8,6 @@
             match="org.neo4j.server.database.location=.*"
             replace="org.neo4j.server.database.location=/var/lib/neo4j"
             />
-    <replaceregexp
-            file="${project.build.directory}/neo4j-${edition}-${neo4j.version}/conf/logging.properties"
-            match="java.util.logging.FileHandler.pattern=.*"
-            replace="java.util.logging.FileHandler.pattern=/var/log/neo4j/neo4j.%u.%g.log"
-            />
 
     <replaceregexp
             file="${project.build.directory}/neo4j-${edition}-${neo4j.version}/conf/neo4j-server.properties"

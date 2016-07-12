@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.helpers
 /**
  * Subclasses prefer to use StringBuilders to render themselves
  */
+// TODO: This is only here for accomodating cypher-compiler-1.9. Do not touch, do not import, purge it with fire post 2.3
 trait StringRenderingSupport {
   override def toString = {
     val builder = new StringBuilder
@@ -33,3 +34,4 @@ trait StringRenderingSupport {
     builder ++= super.toString
   }
 }
+

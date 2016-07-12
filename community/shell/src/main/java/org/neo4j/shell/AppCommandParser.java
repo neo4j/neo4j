@@ -107,13 +107,13 @@ public class AppCommandParser
      */
     public static String parseOutAppName( String line )
     {
-        int index = findNextWhiteSpace( line, 0 );
+        int index = findNextWhiteSpaceOrLeftParenthesis( line, 0 );
         return index == -1 ? line : line.substring( 0, index );
     }
 
     private void parseApp( String line ) throws Exception
     {
-        int index = findNextWhiteSpace( line, 0 );
+        int index = findNextWhiteSpaceOrLeftParenthesis( line, 0 );
         appName = index == -1 ? line : line.substring( 0, index );
         appName = appName.toLowerCase();
         app = server.findApp( appName );
@@ -227,10 +227,24 @@ public class AppCommandParser
         }
     }
 
-    private static int findNextWhiteSpace( String line, int fromIndex )
+    private static int findNextWhiteSpaceOrLeftParenthesis( String line, int fromIndex )
     {
-        int index = line.indexOf( ' ', fromIndex );
-        return index == -1 ? line.indexOf( '\t', fromIndex ) : index;
+        int indexOfWhiteSpace = line.indexOf( ' ', fromIndex );
+        if (indexOfWhiteSpace == - 1)
+        {
+            indexOfWhiteSpace = line.indexOf( '\t', fromIndex );
+        }
+        //allow using both create () and create()
+        int indexOfLeftParenthesis = line.indexOf( '(', fromIndex );
+
+        if (indexOfLeftParenthesis != -1)
+        {
+            return Math.min(indexOfWhiteSpace, indexOfLeftParenthesis);
+        }
+        else
+        {
+            return indexOfWhiteSpace;
+        }
     }
 
     /** @return the name of the app (from {@link #getLine()}). */

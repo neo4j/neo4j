@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
+import org.neo4j.function.Predicate;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Queue;
-
-import org.neo4j.helpers.Predicate;
 
 public class IndexSamplingJobQueue<T>
 {
@@ -69,7 +69,7 @@ public class IndexSamplingJobQueue<T>
         }
 
         // or otherwise only if seen enough updates (as determined by updatePredicate)
-        return enqueueablePredicate.accept( item );
+        return enqueueablePredicate.test( item );
     }
 
     public synchronized T poll()

@@ -132,4 +132,10 @@ public class AbstractStoreChannel implements StoreChannel
     {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public void flush() throws IOException
+    {
+        force( false );
+    }
 }

@@ -1,4 +1,3 @@
-org.neo4j.management.impl.CacheBean
 org.neo4j.management.impl.LockManagerBean
 org.neo4j.management.impl.IndexSamplingManagerBean
 org.neo4j.management.impl.MemoryMappingBean

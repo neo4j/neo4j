@@ -20,16 +20,12 @@
 package org.neo4j.consistency.checking;
 
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
-interface RecordField<RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
+public interface RecordField<RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport>
 {
     void checkConsistency( RECORD record, CheckerEngine<RECORD, REPORT> engine, RecordAccess records );
 
     long valueFrom( RECORD record );
-
-    void checkChange( RECORD oldRecord, RECORD newRecord, CheckerEngine<RECORD, REPORT> engine,
-                      DiffRecordAccess records );
 }

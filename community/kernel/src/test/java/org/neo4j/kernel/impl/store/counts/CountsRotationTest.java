@@ -39,13 +39,16 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
-import org.neo4j.kernel.impl.transaction.log.LogRotation;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.TriggerInfo;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -136,7 +139,7 @@ public class CountsRotationTest
             tx.success();
         }
         // and rotating the log (which implies flushing)
-        rotateLog( db );
+        checkPoint( db );
         // and creating another node after it
         try ( Transaction tx = db.beginTx() )
         {
@@ -163,7 +166,7 @@ public class CountsRotationTest
         }
 
         // on the other hand the tracker should read the correct value by merging data on disk and data in memory
-        final CountsTracker tracker = db.getDependencyResolver().resolveDependency( NeoStore.class ).getCounts();
+        final CountsTracker tracker = db.getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
         assertEquals( 1 + 1, tracker.nodeCount( -1, newDoubleLongRegister() ).readSecond() );
 
         final LabelTokenHolder holder = db.getDependencyResolver().resolveDependency( LabelTokenHolder.class );
@@ -175,13 +178,14 @@ public class CountsRotationTest
 
     private CountsTracker createCountsTracker(PageCache pageCache)
     {
-        return new CountsTracker( StringLogger.DEV_NULL, fs, pageCache, emptyConfig, new File( dir.getPath(),
-                COUNTS_STORE_BASE ) );
+        return new CountsTracker( NullLogProvider.getInstance(), fs, pageCache, emptyConfig,
+                new File( dir.getPath(), COUNTS_STORE_BASE ) );
     }
 
-    private void rotateLog( GraphDatabaseAPI db ) throws IOException
+    private void checkPoint( GraphDatabaseAPI db ) throws IOException
     {
-        db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
+        TriggerInfo triggerInfo = new SimpleTriggerInfo( "test" );
+        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint( triggerInfo );
     }
 
     private final Label A = DynamicLabel.label( "A" );
@@ -207,12 +211,12 @@ public class CountsRotationTest
     {
         fs = fsRule.get();
         dir = testDir.directory( "dir" ).getAbsoluteFile();
-        dbBuilder = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabaseBuilder( dir.getPath() );
+        dbBuilder = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabaseBuilder( dir );
         pageCache = pcRule.getPageCache( fs );
         emptyConfig = new Config();
     }
 
-    private static final String COUNTS_STORE_BASE = NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
+    private static final String COUNTS_STORE_BASE = MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
 
     private File alphaStoreFile()
     {

@@ -19,20 +19,19 @@
  */
 package org.neo4j.server.security.ssl;
 
+import java.security.KeyStore;
+
 public class KeyStoreInformation {
 
-    private final String keyStorePath;
     private final char[] keyStorePassword;
     private final char[] keyPassword;
-    
-    public KeyStoreInformation(String keyStorePath, char[] keyStorePassword, char[] keyPassword) {
+    private final KeyStore keyStore;
+
+    public KeyStoreInformation(KeyStore keyStore, char[] keyStorePassword, char[] keyPassword)
+    {
+        this.keyStore = keyStore;
         this.keyStorePassword = keyStorePassword;
-        this.keyStorePath = keyStorePath;
         this.keyPassword = keyPassword;
-    }
-    
-    public String getKeyStorePath() {
-        return keyStorePath;
     }
     
     public char[] getKeyStorePassword() {
@@ -42,5 +41,9 @@ public class KeyStoreInformation {
     public char[] getKeyPassword() {
         return keyPassword;
     }
-    
+
+    public KeyStore getKeyStore()
+    {
+        return keyStore;
+    }
 }

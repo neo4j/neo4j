@@ -21,6 +21,7 @@ package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 
 /**
  * Instances allow looking up ids back to their names.
@@ -47,6 +48,19 @@ public final class StatementTokenNameLookup implements TokenNameLookup
         catch ( LabelNotFoundKernelException e )
         {
             return "[" + labelId + "]";
+        }
+    }
+
+    @Override
+    public String relationshipTypeGetName( int relTypeId )
+    {
+        try
+        {
+            return statement.relationshipTypeGetName( relTypeId );
+        }
+        catch ( RelationshipTypeIdNotFoundKernelException e )
+        {
+            return "[" + relTypeId + "]";
         }
     }
 

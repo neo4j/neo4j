@@ -45,7 +45,7 @@ svg
   width: 100%
   overflow: hidden
 
-[play-topic], [help-topic], [server-topic], a[target]
+[play-topic], [help-topic], [server-topic], a[target], .warn
   &:before
     font-family: FontAwesome
     padding-right: 4px
@@ -58,13 +58,9 @@ svg
   &:before
     content: "\f144"
 
-[help-topic]
+[help-topic], .warn
   &:before
     content: "\f05a"
-
-a[target]:not(.no-out-symbol)
-  &:before
-    content: "\f14c"
 
 table.data
   width: 100%
@@ -157,6 +153,8 @@ table.json-object
     color: color-error
     > .status
       line-height middlebar-height - inspector-footer-row-margin
+    &.client-warning
+      color: color-warning-on-white
   i[class*="fa-"]
     margin: 0
   .fa-ok
@@ -210,6 +208,12 @@ table.json-object
         display: table
         width: 100%
         height: 100%
+        &.one-legend-row
+          .frame-notifications
+            padding-top: legend-row-height
+        &.two-legend-rows
+          .frame-notifications
+            padding-top: legend-row-height*2
         > *
           display: table-row
           > .cell
@@ -241,6 +245,13 @@ table.json-object
         height: 100%
         padding-bottom: (middlebar-height - 1)
         background: #fff
+      .status-bar
+        position: fixed
+        bottom: 0
+        width: 100%
+    .view-result-raw
+      .raw-holder
+        padding-bottom: (middlebar-height - 1)
       .status-bar
         position: fixed
         bottom: 0
@@ -604,3 +615,38 @@ span.error
 .btn-neutral
   background-color: color-no
   border-radius: 6px
+
+.request-card
+  float: left
+  width: 45%
+  margin: 15px 1% 20px 1%
+  padding: 0 10px 20px 10px
+  border: 1px solid #ccc
+  border-radius: 4px
+  background-color: #ffffff
+  .frame-card
+    font-size: 12px
+    margin: 10px 5px 0 5px
+    .frame-card-contents
+      padding: 0 10px
+      margin: 0 5px
+    pre
+      font-size: 11px
+    th, td
+      padding: 0 0 0 1px
+    tr td:first-child
+      width: 30%
+      &:first-letter
+        text-transform: uppercase
+    .div-toggler
+      cursor: pointer
+      &:before
+        content: "\f0d7\00a0 "
+        font-family: FontAwesome
+      &.collapsed
+        &:before
+          content: "\f0da\00a0 "
+          font-family: FontAwesome
+
+.clearfix
+  clearfix()

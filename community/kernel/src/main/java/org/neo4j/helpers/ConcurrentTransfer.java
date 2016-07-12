@@ -22,12 +22,13 @@ package org.neo4j.helpers;
 import java.util.concurrent.CountDownLatch;
 
 import org.neo4j.function.Consumer;
+import org.neo4j.function.Supplier;
 
 /**
  * Abstracts a meeting point between two threads, where a reference can change hands. It is essentially
  * a latch where a reference to a value can be set while a thread waits on it.
  */
-public class ConcurrentTransfer<TYPE> implements Consumer<TYPE>, Provider<TYPE>
+public class ConcurrentTransfer<TYPE> implements Consumer<TYPE>, Provider<TYPE>, Supplier<TYPE>
 {
     private final CountDownLatch latch = new CountDownLatch( 1 );
     private TYPE value;
@@ -39,8 +40,18 @@ public class ConcurrentTransfer<TYPE> implements Consumer<TYPE>, Provider<TYPE>
         latch.countDown();
     }
 
+    /**
+     * @deprecated use {@link #get()} instead
+     */
+    @Deprecated
     @Override
     public TYPE instance()
+    {
+        return get();
+    }
+
+    @Override
+    public TYPE get()
     {
         try
         {

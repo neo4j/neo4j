@@ -1,0 +1,115 @@
+= Utilizing Data Structures
+
+//file:movies.csv
+//file:roles.csv
+//file:persons.csv
+//file:movie_actor_roles.csv
+
+Cypher can create and consume more complex data structures out of the box.
+As already mentioned you can create literal lists (`[1,2,3]`) and maps (`{name: value}`) within a statement.
+
+There are a number of functions that work with lists.
+They range from simple ones like `size(list)` that returns the size of a list to `reduce`, which runs an expression against the elements and accumulates the results.
+
+Let's first load a bit of data into the graph.
+If you want more details on how the data is loaded, see <<cypher-intro-importing-csv>>.
+
+[source,cypher]
+----
+LOAD CSV WITH HEADERS FROM "movies.csv" AS line
+CREATE (m:Movie {id:line.id,title:line.title, released:toInt(line.year)});
+LOAD CSV WITH HEADERS FROM "persons.csv" AS line
+MERGE (a:Person {id:line.id}) ON CREATE SET a.name=line.name;
+LOAD CSV WITH HEADERS FROM "roles.csv" AS line
+MATCH (m:Movie {id:line.movieId})
+MATCH (a:Person {id:line.personId})
+CREATE (a)-[:ACTED_IN {roles:[line.role]}]->(m);
+LOAD CSV WITH HEADERS FROM "movie_actor_roles.csv" AS line FIELDTERMINATOR ";"
+MERGE (m:Movie {title:line.title}) ON CREATE SET m.released = toInt(line.released)
+MERGE (a:Person {name:line.actor}) ON CREATE SET a.born = toInt(line.born)
+MERGE (a)-[:ACTED_IN {roles:split(line.characters,",") }]->(m)
+----
+
+Now, let's try out data structures.
+
+To begin with, collect the names of the actors per movie, and return two of them:
+
+[source,cypher]
+----
+MATCH (movie:Movie)<-[:ACTED_IN]-(actor:Person)
+RETURN movie.title as movie, collect(actor.name)[0..2] as two_of_cast
+----
+
+//table
+
+You can also access individual elements or slices of a list quickly with `list[1]` or `list[5..-5]`.
+Other functions to access parts of a list are `head(list)`, `tail(list)` and `last(list)`.
+
+== List Predicates
+
+When using lists and arrays in comparisons you can use predicates like `value IN list` or `any(x IN list WHERE x = value)`.
+There are list predicates to satisfy conditions for `all`, `any`, `none` and `single` elements.
+
+[source,cypher]
+----
+MATCH path = (:Person)-->(:Movie)<--(:Person)
+WHERE any(n in nodes(path) WHERE n.name = 'Michael Douglas')
+RETURN extract(n IN nodes(path)| coalesce(n.name, n.title))
+----
+
+//table
+
+== List Processing
+
+Oftentimes you want to process lists to `filter`, aggregate (`reduce`) or transform (`extract`) their values.
+Those transformations can be done within Cypher or in the calling code.
+This kind of list-processing can reduce the amount of data handled and returned, so it might make sense to do it within the Cypher statement.
+
+A simple, non-graph example would be:
+
+[source,cypher]
+----
+WITH range(1,10) as numbers
+WITH extract(n in numbers | n*n) as squares
+WITH filter(n in squares WHERE n > 25) as large_squares
+RETURN reduce( a = 0, n in large_squares | a + n ) as sum_large_squares
+----
+
+//table
+
+In a graph-query you can filter or aggregate collected values instead or work on array properties.
+// need to be rephrased somehow
+
+[source,cypher]
+----
+MATCH (m:Movie)<-[r:ACTED_IN]-(a:Person)
+WITH m.title as movie, collect({name: a.name, roles: r.roles}) as cast
+RETURN movie, filter(actor IN cast WHERE actor.name STARTS WITH "M")
+----
+
+//table
+
+== Unwind Lists
+
+Sometimes you have collected information into a list, but want to use each element individually as a row.
+For instance, you might want to further match patterns in the graph.
+Or you passed in a collection of values but now want to create or match a node or relationship for each element.
+Then you can use the `UNWIND` clause to unroll a list into a sequence of rows again.
+
+For instance, a query to find the top 3 co-actors and then follow their movies and again list the cast for each of those movies:
+
+[source,cypher]
+----
+MATCH (actor:Person)-[:ACTED_IN]->(movie:Movie)<-[:ACTED_IN]-(colleague:Person)
+WHERE actor.name < colleague.name
+WITH actor, colleague, count(*) AS frequency, collect(movie) AS movies
+ORDER BY frequency DESC
+LIMIT 3
+UNWIND movies AS m
+MATCH (m)<-[:ACTED_IN]-(a)
+RETURN m.title AS movie, collect(a.name) AS cast
+----
+
+//table
+
+

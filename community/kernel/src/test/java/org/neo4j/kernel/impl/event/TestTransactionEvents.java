@@ -45,12 +45,10 @@ import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.TestLabels;
@@ -68,7 +66,6 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -394,11 +391,9 @@ public class TestTransactionEvents
         try ( Transaction tx = db.beginTx() )
         {
             GraphDatabaseAPI dbApi = dbRule.getGraphDatabaseAPI();
-            dbApi.getDependencyResolver().resolveDependency( Caches.class ).clear();
             rel.delete();
             node1.delete();
             node2.delete();
-            dbApi.getDependencyResolver().resolveDependency( Caches.class ).clear();
             tx.success();
         }
         assertEquals( "stringvalue", handler.nodeProps.get( "test1" ) );
@@ -1210,12 +1205,5 @@ public class TestTransactionEvents
     }
 
     @Rule
-    public final DatabaseRule dbRule = new ImpermanentDatabaseRule()
-    {
-        @Override
-        protected void configure( GraphDatabaseBuilder builder )
-        {
-            builder.setConfig( cache_type, "none" );
-        }
-    };
+    public final DatabaseRule dbRule = new ImpermanentDatabaseRule();
 }

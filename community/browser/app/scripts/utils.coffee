@@ -41,5 +41,6 @@ angular.module('neo4jApp.utils', [])
         timeout = $timeout(later, wait)
         result = func.apply(context, args) if callNow
         result
+
     that
   ])

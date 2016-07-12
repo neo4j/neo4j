@@ -52,19 +52,19 @@ public class PhysicalLogCommandReadersTest
     @Test
     public void readRelGroupWithHugeTypeInV1_9()
     {
-        assertDoesNotKnowAboutRelGroups( new PhysicalLogNeoCommandReaderV1_9() );
+        assertDoesNotKnowAboutRelGroups( new PhysicalLogCommandReaderV1_9() );
     }
 
     @Test
     public void readRelGroupWithHugeTypeInV2_0()
     {
-        assertDoesNotKnowAboutRelGroups( new PhysicalLogNeoCommandReaderV2_0() );
+        assertDoesNotKnowAboutRelGroups( new PhysicalLogCommandReaderV2_0() );
     }
 
     @Test
     public void readRelGroupWithHugeTypeInV2_1() throws IOException
     {
-        assertCanReadRelGroup( new PhysicalLogNeoCommandReaderV2_1() );
+        assertCanReadRelGroup( new PhysicalLogCommandReaderV2_1() );
     }
 
     @Test
@@ -76,7 +76,7 @@ public class PhysicalLogCommandReadersTest
     @Test
     public void readRelGroupWithHugeTypeInV2_2_4() throws IOException
     {
-        assertCanReadRelGroup( new PhysicalLogNeoCommandReaderV2_2_4() );
+        assertCanReadRelGroup( new PhysicalLogCommandReaderV2_2_4() );
     }
 
     @Test

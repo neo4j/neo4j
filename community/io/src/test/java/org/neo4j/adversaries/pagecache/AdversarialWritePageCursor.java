@@ -155,10 +155,24 @@ class AdversarialWritePageCursor implements PageCursor
     }
 
     @Override
+    public void getBytes( byte[] data, int arrayOffset, int length )
+    {
+        adversary.injectFailure( IndexOutOfBoundsException.class );
+        delegate.getBytes( data, arrayOffset, length );
+    }
+
+    @Override
     public void putBytes( byte[] data )
     {
         adversary.injectFailure( IndexOutOfBoundsException.class );
         delegate.putBytes( data );
+    }
+
+    @Override
+    public void putBytes( byte[] data, int arrayOffset, int length )
+    {
+        adversary.injectFailure( IndexOutOfBoundsException.class );
+        delegate.putBytes( data, arrayOffset, length );
     }
 
     @Override

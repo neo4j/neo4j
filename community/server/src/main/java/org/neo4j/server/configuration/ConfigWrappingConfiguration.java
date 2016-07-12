@@ -34,6 +34,11 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.AnnotatedFieldHarvester;
 import org.neo4j.kernel.configuration.Config;
 
+/**
+ * This exists solely for backwards compatibility, and will be removed in the next major version of Neo4j. Please use
+ * {@link Config} instead.
+ */
+@Deprecated
 public class ConfigWrappingConfiguration extends AbstractConfiguration
 {
     private final Config config;
@@ -60,31 +65,22 @@ public class ConfigWrappingConfiguration extends AbstractConfiguration
     public Object getProperty( String key )
     {
         Setting<?> setting = getSettingForKey( key );
-        if( setting == null )
-        {
-            return null;
-        }
-        else
-        {
-            return config.get( setting );
-        }
+        return setting == null ? config.getParams().get( key ) : config.get( setting );
     }
 
     @Override
     public Iterator<String> getKeys()
     {
-        // get all the properties keys
-        Set<String> staticKeys = getRegisteredSettings().keySet();
-        // only keep the properties which have been assigned default values or user-defined values
-        Set<String> notNullKeys = new HashSet<>();
-        for ( String key : staticKeys )
+        Set<String> propertyKeys = new HashSet<>( config.getParams().keySet() );
+        // only keep the properties which have been assigned some values
+        for ( String registeredSettingName : getRegisteredSettings().keySet() )
         {
-            if ( containsKey( key ) )
+            if ( containsKey( registeredSettingName ) )
             {
-                notNullKeys.add( key );
+                propertyKeys.add( registeredSettingName );
             }
         }
-        return notNullKeys.iterator();
+        return propertyKeys.iterator();
     }
 
     @Override
@@ -98,7 +94,7 @@ public class ConfigWrappingConfiguration extends AbstractConfiguration
         return getRegisteredSettings().get( key );
     }
 
-    private Map<String, Setting<?>> getRegisteredSettings()
+    private Map<String,Setting<?>> getRegisteredSettings()
     {
         Iterable<Class<?>> settingsClasses = config.getSettingsClasses();
         AnnotatedFieldHarvester fieldHarvester = new AnnotatedFieldHarvester();

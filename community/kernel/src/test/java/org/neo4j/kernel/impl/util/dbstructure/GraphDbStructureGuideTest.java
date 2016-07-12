@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.util.dbstructure;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -42,7 +42,6 @@ import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 
@@ -117,7 +116,7 @@ public class GraphDbStructureGuideTest
         accept( visitor );
 
         // THEN
-        verify( visitor ).visitIndex( descriptor, ":Person(name)", 1.0d );
+        verify( visitor ).visitIndex( descriptor, ":Person(name)", 1.0d, 0l );
     }
 
     @Test
@@ -136,7 +135,7 @@ public class GraphDbStructureGuideTest
         accept( visitor );
 
         // THEN
-        verify( visitor ).visitUniqueIndex( descriptor, ":Person(name)", 1.0d );
+        verify( visitor ).visitUniqueIndex( descriptor, ":Person(name)", 1.0d, 0l );
         verify( visitor ).visitUniqueConstraint( constraint, "CONSTRAINT ON ( person:Person ) ASSERT person.name IS " +
                 "UNIQUE" );
     }
@@ -216,7 +215,7 @@ public class GraphDbStructureGuideTest
 
     private UniquenessConstraint createUniqueConstraint( int labelId, int pkId ) throws Exception
     {
-        return schemaWrite().uniquenessConstraintCreate( labelId, pkId );
+        return schemaWrite().uniquePropertyConstraintCreate( labelId, pkId );
     }
 
     private int createLabeledNodes( String labelName, int amount ) throws Exception
@@ -281,7 +280,7 @@ public class GraphDbStructureGuideTest
 
     private Statement statement()
     {
-        return bridge.instance();
+        return bridge.get();
     }
 
     private ReadOperations read()

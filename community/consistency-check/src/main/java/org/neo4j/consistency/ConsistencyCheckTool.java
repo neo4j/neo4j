@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -32,35 +33,40 @@ import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.recovery.StoreRecoverer;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
+import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
+import org.neo4j.legacy.consistency.ConsistencyCheckTool.ExitHandle;
+import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.LogProvider;
 
+import static java.lang.System.currentTimeMillis;
+
+import static org.neo4j.helpers.Args.jarUsage;
+import static org.neo4j.helpers.Strings.joinAsLines;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ConsistencyCheckTool
 {
-    private static final String RECOVERY = "recovery";
-    private static final String CONFIG = "config";
-    private static final String PROP_OWNER = "propowner";
+    // This to easily change this behaviour before/after releases
+    public static final boolean USE_LEGACY_BY_DEFAULT = false;
 
-    static interface ExitHandle
+    static final String RECOVERY = "recovery";
+    static final String CONFIG = "config";
+    static final String PROP_OWNER = "propowner";
+    static final String VERBOSE = "v";
+    static final String USE_LEGACY_CHECKER = "use-legacy-checker";
+
+    // Use the ExitHandle from consistency-check-legacy so that ConsistencyCheckToolTest can properly
+    // test everything with -experimental and w/o it.
+
+    public static void main( String[] args ) throws IOException
     {
-        static final ExitHandle SYSTEM_EXIT = new ExitHandle()
-        {
-            @Override
-            public void pull()
-            {
-                System.exit( 1 );
-            }
-        };
-
-        void pull();
-    }
-
-    public static void main( String[] args )
-    {
-        ConsistencyCheckTool tool = new ConsistencyCheckTool( new ConsistencyCheckService(), System.err );
+        ConsistencyCheckTool tool = new ConsistencyCheckTool( new ConsistencyCheckService(), new GraphDatabaseFactory(),
+                new DefaultFileSystemAbstraction(), System.err, ExitHandle.SYSTEM_EXIT );
         try
         {
             tool.run( args );
@@ -72,52 +78,93 @@ public class ConsistencyCheckTool
     }
 
     private final ConsistencyCheckService consistencyCheckService;
-    private final StoreRecoverer recoveryChecker;
     private final GraphDatabaseFactory dbFactory;
     private final PrintStream systemError;
     private final ExitHandle exitHandle;
+    private final FileSystemAbstraction fs;
 
-    ConsistencyCheckTool( ConsistencyCheckService consistencyCheckService, PrintStream systemError )
-    {
-        this( consistencyCheckService, new StoreRecoverer(), new GraphDatabaseFactory(), systemError,
-                ExitHandle.SYSTEM_EXIT );
-    }
-
-    ConsistencyCheckTool( ConsistencyCheckService consistencyCheckService, StoreRecoverer recoveryChecker,
-            GraphDatabaseFactory dbFactory, PrintStream systemError, ExitHandle exitHandle )
+    ConsistencyCheckTool( ConsistencyCheckService consistencyCheckService,
+            GraphDatabaseFactory dbFactory, FileSystemAbstraction fs, PrintStream systemError, ExitHandle exitHandle )
     {
         this.consistencyCheckService = consistencyCheckService;
-        this.recoveryChecker = recoveryChecker;
         this.dbFactory = dbFactory;
+        this.fs = fs;
         this.systemError = systemError;
         this.exitHandle = exitHandle;
     }
 
-    void run( String... args ) throws ToolFailureException
+    void run( String... args ) throws ToolFailureException, IOException
     {
-        Args arguments = Args.withFlags( RECOVERY, PROP_OWNER ).parse( args );
-        String storeDir = determineStoreDirectory( arguments );
-        Config tuningConfiguration = readTuningConfiguration( storeDir, arguments );
+        Args arguments = Args.withFlags( RECOVERY, PROP_OWNER, VERBOSE, USE_LEGACY_CHECKER ).parse( args );
+        if ( useLegacyChecker( arguments ) )
+        {
+            // We want to actually use the legacy checker, so just go ahead and invoke that main instead,
+            // this component depends on the old checker (w/ changed top-level package to not let all
+            // this classes clash with these ones). We keep the legacy checker until we're confident this
+            // new checker works and then we can just go ahead and delete it.
+            runLegacyConsistencyChecker( args );
+            return;
+        }
 
-        attemptRecoveryOrCheckStateOfLogicalLogs( arguments, storeDir );
+        File storeDir = determineStoreDirectory( arguments );
+        Config tuningConfiguration = readTuningConfiguration( arguments );
+        boolean verbose = isVerbose( arguments );
 
-        StringLogger logger = StringLogger.SYSTEM;
+        attemptRecoveryOrCheckStateOfLogicalLogs( arguments, storeDir, tuningConfiguration );
+
+        LogProvider logProvider = FormattedLogProvider.toOutputStream( System.out );
         try
         {
             consistencyCheckService.runFullConsistencyCheck( storeDir, tuningConfiguration,
-                    ProgressMonitorFactory.textual( System.err ), logger );
+                    ProgressMonitorFactory.textual( System.err ), logProvider, fs, verbose );
         }
         catch ( ConsistencyCheckIncompleteException e )
         {
             throw new ToolFailureException( "Check aborted due to exception", e );
         }
+    }
+
+    private void runLegacyConsistencyChecker( String[] args ) throws ToolFailureException, IOException
+    {
+        long time = currentTimeMillis();
+        try
+        {
+            org.neo4j.legacy.consistency.ConsistencyCheckTool legacyTool = new org.neo4j.legacy.consistency.ConsistencyCheckTool(
+                    new org.neo4j.legacy.consistency.ConsistencyCheckService(),
+                    dbFactory,
+                    fs,
+                    systemError,
+                    exitHandle );
+            legacyTool.run( args );
+        }
+        catch ( org.neo4j.legacy.consistency.ConsistencyCheckTool.ToolFailureException e )
+        {
+            throw new ToolFailureException( e.getMessage(), e.getCause() );
+        }
         finally
         {
-            logger.flush();
+            long duration = currentTimeMillis() - time;
+            if ( TimeUnit.MILLISECONDS.toMinutes( duration ) >= 20 )
+            {
+                systemError.println( joinAsLines(
+                        "Tip: adding the option  -experimental  to the consistency check tool will",
+                        "use new experimental features, which may result in much reduced time",
+                        "running a consistency check" ) );
+            }
         }
     }
 
-    private void attemptRecoveryOrCheckStateOfLogicalLogs( Args arguments, String storeDir )
+    private boolean isVerbose( Args arguments )
+    {
+        return arguments.getBoolean( VERBOSE, false, true );
+    }
+
+    private boolean useLegacyChecker( Args arguments )
+    {
+        return arguments.getBoolean( USE_LEGACY_CHECKER, USE_LEGACY_BY_DEFAULT, true );
+    }
+
+    private void attemptRecoveryOrCheckStateOfLogicalLogs( Args arguments, File storeDir, Config tuningConfiguration )
     {
         if ( arguments.getBoolean( RECOVERY, false, true ) )
         {
@@ -125,9 +172,9 @@ public class ConsistencyCheckTool
         }
         else
         {
-            try
+            try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, tuningConfiguration ) )
             {
-                if ( recoveryChecker.recoveryNeededAt( new File( storeDir ) ) )
+                if ( new RecoveryRequiredChecker( fs, pageCache ).isRecoveryRequiredAt( storeDir ) )
                 {
                     systemError.print( Strings.joinAsLines(
                             "Active logical log detected, this might be a source of inconsistencies.",
@@ -145,23 +192,23 @@ public class ConsistencyCheckTool
         }
     }
 
-    private String determineStoreDirectory( Args arguments ) throws ToolFailureException
+    private File determineStoreDirectory( Args arguments ) throws ToolFailureException
     {
         List<String> unprefixedArguments = arguments.orphans();
         if ( unprefixedArguments.size() != 1 )
         {
             throw new ToolFailureException( usage() );
         }
-        String storeDir = unprefixedArguments.get( 0 );
-        if ( !new File( storeDir ).isDirectory() )
+        File storeDir = new File( unprefixedArguments.get( 0 ) );
+        if ( !storeDir.isDirectory() )
         {
-            throw new ToolFailureException( Strings.joinAsLines( String.format( "'%s' is not a directory", storeDir ) ) +
-                                            usage() );
+            throw new ToolFailureException(
+                    Strings.joinAsLines( String.format( "'%s' is not a directory", storeDir ) ) + usage() );
         }
         return storeDir;
     }
 
-    private Config readTuningConfiguration( String storeDir, Args arguments ) throws ToolFailureException
+    private Config readTuningConfiguration( Args arguments ) throws ToolFailureException
     {
         Map<String,String> specifiedProperties = stringMap();
 
@@ -179,21 +226,22 @@ public class ConsistencyCheckTool
                         propertyFilePath ), e );
             }
         }
-        specifiedProperties.put( GraphDatabaseSettings.store_dir.name(), storeDir );
         return new Config( specifiedProperties, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
     }
 
     private String usage()
     {
-        return Strings.joinAsLines(
-                Args.jarUsage( getClass(), "[-propowner] [-recovery] [-config <neo4j.properties>] <storedir>" ),
-                "WHERE:   <storedir>         is the path to the store to check",
-                "         -recovery          to perform recovery on the store before checking",
-                "         <neo4j.properties> is the location of an optional properties file",
-                "                            containing tuning parameters for the consistency check"
+        return joinAsLines(
+                jarUsage( getClass(), "[-propowner] [-recovery] [-config <neo4j.properties>] [-v] [-" + USE_LEGACY_CHECKER + "] <storedir>" ),
+                "WHERE:   -propowner          also check property owner consistency (more time consuming)",
+                "         -recovery           to perform recovery on the store before checking",
+                "         -config <filename>  is the location of an optional properties file",
+                "                             containing tuning parameters for the consistency check",
+                "         -v                  produce execution output",
+                "         -use-legacy-checker (ADVANCED) runs the legacyconsistency checker (" + USE_LEGACY_BY_DEFAULT + " by default)",
+                "         <storedir>          is the path to the store to check"
         );
     }
-
 
     class ToolFailureException extends Exception
     {

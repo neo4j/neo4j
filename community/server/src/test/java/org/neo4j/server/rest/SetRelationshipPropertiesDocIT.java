@@ -37,7 +37,7 @@ import org.neo4j.test.GraphDescription.Graph;
 
 import static org.junit.Assert.assertEquals;
 
-public class SetRelationshipPropertiesDocIT extends AbstractRestFunctionalTestBase
+public class SetRelationshipPropertiesDocIT extends AbstractRestFunctionalDocTestBase
 {
     private URI propertiesUri;
     private URI badUri;
@@ -58,10 +58,7 @@ public class SetRelationshipPropertiesDocIT extends AbstractRestFunctionalTestBa
         badUri = new URI( functionalTestHelper.relationshipPropertiesUri( relationshipId + 1 * 99999 ) );
     }
 
-    /**
-     * Update relationship properties.
-     */
-    @Documented
+    @Documented( "Update relationship properties." )
     @Test
     @Graph
     public void shouldReturn204WhenPropertiesAreUpdated() throws JsonParseException
@@ -69,7 +66,7 @@ public class SetRelationshipPropertiesDocIT extends AbstractRestFunctionalTestBa
         data.get();
         Map<String, Object> map = new HashMap<String, Object>();
         map.put( "jim", "tobias" );
-        gen.get()
+        gen.get().description( startGraph( "update relationship properties" ) )
                 .payload( JsonHelper.createJsonFrom( map ) )
                 .expectedStatus( 204 )
                 .put( propertiesUri.toString() );

@@ -20,14 +20,15 @@
 package org.neo4j.graphdb.factory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.graphdb.security.URLAccessRule;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
@@ -36,9 +37,9 @@ public class GraphDatabaseFactoryState
 {
     private final List<Class<?>> settingsClasses;
     private final List<KernelExtensionFactory<?>> kernelExtensions;
-    private final List<CacheProvider> cacheProviders;
-    private Logging logging;
     private Monitors monitors;
+    private LogProvider userLogProvider;
+    private Map<String,URLAccessRule> urlAccessRules;
 
     public GraphDatabaseFactoryState() {
         settingsClasses = new ArrayList<>();
@@ -48,17 +49,17 @@ public class GraphDatabaseFactoryState
         {
             kernelExtensions.add( factory );
         }
-        cacheProviders = Iterables.toList( Service.load( CacheProvider.class ) );
+        urlAccessRules = new HashMap<>();
     }
 
     public GraphDatabaseFactoryState( GraphDatabaseFactoryState previous )
     {
         settingsClasses = new ArrayList<>( previous.settingsClasses );
         kernelExtensions = new ArrayList<>( previous.kernelExtensions );
-        cacheProviders = new ArrayList<>( previous.cacheProviders );
+        urlAccessRules = new HashMap<>( previous.urlAccessRules );
         monitors = previous.monitors;
-        logging = previous.logging;
         monitors = previous.monitors;
+        userLogProvider = previous.userLogProvider;
     }
 
     public Iterable<KernelExtensionFactory<?>> getKernelExtension()
@@ -80,23 +81,22 @@ public class GraphDatabaseFactoryState
         }
     }
 
-    public List<CacheProvider> getCacheProviders()
+    public void addSettingsClasses( Iterable<Class<?>> settings )
     {
-        return cacheProviders;
-    }
-
-    public void setCacheProviders( Iterable<CacheProvider> newCacheProviders )
-    {
-        cacheProviders.clear();
-        for ( CacheProvider newCacheProvider : newCacheProviders )
+        for ( Class<?> setting : settings )
         {
-            cacheProviders.add( newCacheProvider );
+            settingsClasses.add( setting );
         }
     }
 
-    public void setLogging( Logging logging )
+    public void addURLAccessRule( String protocol, URLAccessRule rule )
     {
-        this.logging = logging;
+        urlAccessRules.put( protocol, rule );
+    }
+
+    public void setUserLogProvider( LogProvider userLogProvider )
+    {
+        this.userLogProvider = userLogProvider;
     }
 
     public void setMonitors(Monitors monitors)
@@ -104,13 +104,13 @@ public class GraphDatabaseFactoryState
         this.monitors = monitors;
     }
 
-    public Dependencies databaseDependencies()
+    public GraphDatabaseFacadeFactory.Dependencies databaseDependencies()
     {
-        return newDependencies().
+        return  newDependencies().
                 monitors(monitors).
-                logging(logging).
+                userLogProvider(userLogProvider).
                 settingsClasses(settingsClasses).
-                kernelExtensions(kernelExtensions).
-                cacheProviders(cacheProviders);
+                urlAccessRules( urlAccessRules ).
+                kernelExtensions(kernelExtensions);
     }
 }

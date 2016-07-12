@@ -38,17 +38,14 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.CountsComputer;
-import org.neo4j.kernel.impl.store.LabelTokenStore;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
-import org.neo4j.kernel.impl.storemigration.StoreFile;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -281,12 +278,12 @@ public class CountsComputerTest
     {
         fs = fsRule.get();
         dir = testDir.directory( "dir" ).getAbsoluteFile();
-        dbBuilder = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabaseBuilder( dir.getPath() );
+        dbBuilder = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabaseBuilder( dir );
         pageCache = pcRule.getPageCache( fs );
         emptyConfig = new Config();
     }
 
-    private static final String COUNTS_STORE_BASE = NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
+    private static final String COUNTS_STORE_BASE = MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
 
     private File alphaStoreFile()
     {
@@ -300,8 +297,8 @@ public class CountsComputerTest
 
     private long getLastTxId( @SuppressWarnings( "deprecation" ) GraphDatabaseAPI db )
     {
-        return db.getDependencyResolver().resolveDependency( NeoStore.class )
-                .getLastCommittedTransactionId();
+        return db.getDependencyResolver().resolveDependency( NeoStores.class ).getMetaDataStore().getLastCommittedTransactionId();
+
     }
 
     private void cleanupCountsForRebuilding()
@@ -312,25 +309,26 @@ public class CountsComputerTest
 
     private CountsTracker createCountsTracker()
     {
-        return new CountsTracker( StringLogger.DEV_NULL, fs, pageCache, emptyConfig,
-                new File( dir, COUNTS_STORE_BASE ) );
+        return new CountsTracker( NullLogProvider.getInstance(), fs, pageCache,
+                emptyConfig, new File( dir, COUNTS_STORE_BASE ) );
     }
 
     private void rebuildCounts( long lastCommittedTransactionId ) throws IOException
     {
         cleanupCountsForRebuilding();
 
-        StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, StringLogger.DEV_NULL, new Monitors() );
+        StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, NullLogProvider.getInstance() );
         try ( Lifespan life = new Lifespan();
-              NodeStore nodeStore = storeFactory.newNodeStore();
-              RelationshipStore relationshipStore = storeFactory.newRelationshipStore() )
+              NeoStores neoStores = storeFactory.openAllNeoStores() )
         {
-            int highLabelId = (int) storeFactory.getHighId( StoreFile.LABEL_TOKEN_STORE, LabelTokenStore.RECORD_SIZE );
-            int highRelationshipTypeId = (int) storeFactory.getHighId(
-                    StoreFile.RELATIONSHIP_TYPE_TOKEN_STORE, RelationshipTypeTokenStore.RECORD_SIZE );
+            NodeStore nodeStore = neoStores.getNodeStore();
+            RelationshipStore relationshipStore = neoStores.getRelationshipStore();
+            int highLabelId = (int) neoStores.getLabelTokenStore().getHighId();
+            int highRelationshipTypeId = (int) neoStores.getRelationshipTypeTokenStore().getHighId();
             CountsComputer countsComputer = new CountsComputer(
                     lastCommittedTransactionId, nodeStore, relationshipStore, highLabelId, highRelationshipTypeId );
-            life.add( storeFactory.newCountsStore().setInitializer( countsComputer ) );
+            CountsTracker countsTracker = createCountsTracker();
+            life.add( countsTracker.setInitializer( countsComputer ) );
         }
     }
 

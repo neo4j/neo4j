@@ -20,6 +20,7 @@
 package org.neo4j.kernel.extension;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public abstract class KernelExtensionFactory<DEPENDENCIES> extends Service
@@ -45,11 +46,29 @@ public abstract class KernelExtensionFactory<DEPENDENCIES> extends Service
      *
      * @param dependencies Dependencies
      * @return the lifecycle for the instance
+     * @deprecated use {@link #newInstance(KernelContext, Object)} instead
      * @throws Throwable depends on the implementation
      */
-    public abstract Lifecycle newKernelExtension( DEPENDENCIES dependencies )
-            throws Throwable;
-    
+    @Deprecated
+    public Lifecycle newKernelExtension( DEPENDENCIES dependencies )
+            throws Throwable
+    {
+        throw new UnsupportedOperationException( "deprecated" );
+    }
+
+    /**
+     * Create a new instance of this kernel extension.
+     *
+     * @param context the context the extension should be created for
+     * @param dependencies deprecated
+     * @return the {@link Lifecycle} for the extension
+     * @throws Throwable if there is an error
+     */
+    public Lifecycle newInstance( @SuppressWarnings( "unused" ) KernelContext context, DEPENDENCIES dependencies ) throws Throwable
+    {
+        return newKernelExtension( dependencies );
+    }
+
     @Override
     public String toString()
     {

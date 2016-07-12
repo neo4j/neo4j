@@ -34,6 +34,7 @@ import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Mark;
 import org.neo4j.function.Factory;
 import org.neo4j.function.Function;
+import org.neo4j.function.Supplier;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.HeaderException;
@@ -102,7 +103,7 @@ public class DataFactories
      * @return {@link DataFactory} that returns a {@link CharSeeker} over the supplied {@code readable}
      */
     public static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final Function<ENTITY,ENTITY> decorator,
-            final Factory<CharReadable> readable )
+            final Supplier<CharReadable> readable )
     {
         return new DataFactory<ENTITY>()
         {
@@ -114,7 +115,7 @@ public class DataFactories
                     @Override
                     public CharSeeker stream()
                     {
-                        return charSeeker( readable.newInstance(), config, true );
+                        return charSeeker( readable.get(), config, true );
                     }
 
                     @Override
@@ -185,8 +186,8 @@ public class DataFactories
         CharSeeker open( CharSeeker seeker, Configuration config ) throws IOException;
 
         /**
-         * Closes the header {@link CharSeeker}. Only close if {@link #openCharSeeker(CharSeeker)} opens its own.
-         * @param seeker {@link CharSeeker} returned from {@link #openCharSeeker(CharSeeker)}.
+         * Closes the header {@link CharSeeker}. Only close if {@link #open(CharSeeker, Configuration)} opens its own.
+         * @param seeker {@link CharSeeker} returned from {@link #open(CharSeeker, Configuration)}.
          */
         void close( CharSeeker seeker );
     }

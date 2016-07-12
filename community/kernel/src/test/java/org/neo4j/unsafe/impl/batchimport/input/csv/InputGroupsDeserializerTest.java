@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.function.Function;
+import org.neo4j.function.Suppliers;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 
 import static org.junit.Assert.assertEquals;
@@ -37,7 +38,6 @@ import static org.mockito.Mockito.when;
 import static java.util.Arrays.asList;
 
 import static org.neo4j.csv.reader.Readables.wrap;
-import static org.neo4j.function.Functions.constantly;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
@@ -99,6 +99,6 @@ public class InputGroupsDeserializerTest
 
     private DataFactory<InputNode> data( String string )
     {
-        return DataFactories.data( NO_NODE_DECORATOR, constantly( wrap( new StringReader( string ) ) ) );
+        return DataFactories.data( NO_NODE_DECORATOR, Suppliers.singleton( wrap( new StringReader( string ) ) ) );
     }
 }

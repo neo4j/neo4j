@@ -20,6 +20,7 @@
 package org.neo4j.ha;
 
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -48,14 +49,14 @@ public class ForeignStoreIdIT
         // GIVEN
         // -- one instance running
         firstInstance = new TestHighlyAvailableGraphDatabaseFactory()
-                .newHighlyAvailableDatabaseBuilder( DIR.cleanDirectory( "1" ).getAbsolutePath() )
+                .newHighlyAvailableDatabaseBuilder( testDirectory.directory( "1" ).getAbsolutePath() )
                 .setConfig( server_id, "1" )
                 .setConfig( cluster_server, "127.0.0.1:5001" )
                 .setConfig( ha_server, "127.0.0.1:6031" )
                 .setConfig( initial_hosts, "127.0.0.1:5001" )
                 .newGraphDatabase();
         // -- another instance preparing to join with a store with a different store ID
-        String foreignDbStoreDir = createAnotherStore( DIR.cleanDirectory( "2" ), 0 );
+        String foreignDbStoreDir = createAnotherStore( testDirectory.directory( "2" ), 0 );
 
         // WHEN
         // -- the other joins
@@ -80,7 +81,7 @@ public class ForeignStoreIdIT
         // GIVEN
         // -- one instance running
         firstInstance = new TestHighlyAvailableGraphDatabaseFactory()
-                .newHighlyAvailableDatabaseBuilder( DIR.cleanDirectory( "1" ).getAbsolutePath() )
+                .newHighlyAvailableDatabaseBuilder( testDirectory.directory( "1" ).getAbsolutePath() )
                 .setConfig( server_id, "1" )
                 .setConfig( initial_hosts, "127.0.0.1:5001" )
                 .setConfig( cluster_server, "127.0.0.1:5001" )
@@ -88,7 +89,7 @@ public class ForeignStoreIdIT
                 .newGraphDatabase();
         createNodes( firstInstance, 3, "first" );
         // -- another instance preparing to join with a store with a different store ID
-        String foreignDbStoreDir = createAnotherStore( DIR.cleanDirectory( "2" ), 1 );
+        String foreignDbStoreDir = createAnotherStore( testDirectory.directory( "2" ), 1 );
 
         // WHEN
         // -- the other joins
@@ -113,10 +114,11 @@ public class ForeignStoreIdIT
             // Good
         }
     }
-    
-    private final TargetDirectory DIR = TargetDirectory.forTest( getClass() );
+
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
     private GraphDatabaseService firstInstance, foreignInstance;
-    
+
     @After
     public void after() throws Exception
     {
@@ -125,22 +127,16 @@ public class ForeignStoreIdIT
         if ( firstInstance != null )
             firstInstance.shutdown();
     }
-    
+
     private long findNode( GraphDatabaseService db, String name )
     {
-        Transaction transaction = db.beginTx();
-
-        try
+        try ( Transaction transaction = db.beginTx() )
         {
             for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
                 if ( name.equals( node.getProperty( "name", null ) ) )
                     return node.getId();
             fail( "Didn't find node '" + name + "' in " + db );
             return -1; // will never happen
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 
@@ -161,17 +157,12 @@ public class ForeignStoreIdIT
 
     private long createNode( GraphDatabaseService db, String name )
     {
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();
             node.setProperty( "name", name );
             tx.success();
             return node.getId();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 }

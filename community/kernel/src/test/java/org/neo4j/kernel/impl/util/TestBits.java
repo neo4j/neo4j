@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
@@ -80,5 +83,18 @@ public class TestBits
             bits.put( value );
             assertEquals( value, bits.getByte() );
         }
+    }
+
+    @Test
+    public void writeAndReadByteBuffer()
+    {
+        byte[] bytes = new byte[512];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes).order( ByteOrder.LITTLE_ENDIAN );
+        buffer.putLong( 123456789L );
+        buffer.flip();
+        Bits bits = Bits.bitsFromBytes( bytes, 0, buffer.limit() );
+
+        assertEquals( 123456789L, bits.getLong());
+
     }
 }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
-
 /**
  * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
  * we don't extend a class that has fields.
@@ -58,11 +56,5 @@ final class BooleanProperty extends DefinedProperty
     boolean hasEqualValue( DefinedProperty that )
     {
         return that instanceof BooleanProperty && value == ((BooleanProperty) that).value;
-    }
-
-    @Override
-    public int sizeOfObjectInBytesIncludingOverhead()
-    {
-        return withObjectOverhead( 8 );
     }
 }

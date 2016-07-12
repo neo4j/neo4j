@@ -1,0 +1,68 @@
+= How to Compose Large Statements
+
+Let's first get some data in to retrieve results from:
+
+[source,cypher]
+----
+CREATE (matrix:Movie {title:"The Matrix",released:1997})
+CREATE (cloudAtlas:Movie {title:"Cloud Atlas",released:2012})
+CREATE (forrestGump:Movie {title:"Forrest Gump",released:1994})
+CREATE (keanu:Person {name:"Keanu Reeves", born:1964})
+CREATE (robert:Person {name:"Robert Zemeckis", born:1951})
+CREATE (tom:Person {name:"Tom Hanks", born:1956})
+CREATE (tom)-[:ACTED_IN {roles:["Forrest"]}]->(forrestGump)
+CREATE (tom)-[:ACTED_IN {roles:['Zachry']} ]->(cloudAtlas)
+CREATE (robert)-[:DIRECTED]->(forrestGump)
+----
+
+== Combine statements with UNION
+
+A Cypher statement is usually quite compact.
+Expressing references between nodes as visual patterns makes them easy to understand.
+
+If you want to combine the results of two statements that have the same result structure, you can use `UNION [ALL]`.
+
+For instance if you want to list both actors and directors without using the alternative relationship-type syntax `()-[:ACTED_IN|:DIRECTED]->()` you can do this:
+
+[source,cypher]
+----
+MATCH (actor:Person)-[r:ACTED_IN]->(movie:Movie)
+RETURN actor.name AS name, type(r) AS acted_in, movie.title AS title
+UNION
+MATCH (director:Person)-[r:DIRECTED]->(movie:Movie)
+RETURN director.name AS name, type(r) AS acted_in, movie.title AS title
+----
+
+//table
+
+// maybe use a better example - we don't want users to to use it in this case or?
+
+== Use WITH to Chain Statements
+
+In Cypher it's possible to chain fragments of statements together, much like you would do within a data-flow pipeline.
+Each fragment works on the output from the previous one and its results can feed into the next one.
+
+You use the `WITH` clause to combine the individual parts and declare which data flows from one to the other.
+`WITH` is very much like `RETURN` with the difference that it doesn't finish a query but prepares the input for the next part.
+You can use the same expressions, aggregations, ordering and pagination as in the `RETURN` clause.
+
+The only difference is that you _must_ alias all columns as they would otherwise not be accessible.
+Only columns that you declare in your `WITH` clause is available in subsequent query parts.
+
+See below for an example where we collect the movies someone appeared in, and then filter out those which appear in only one movie.
+
+[source,cypher]
+----
+MATCH (person:Person)-[:ACTED_IN]->(m:Movie)
+WITH person, count(*) as appearances, collect(m.title) as movies
+WHERE appearances > 1
+RETURN person.name, appearances, movies
+----
+
+//table
+
+[TIP]
+If you want to filter by an aggregated value in SQL or similar languages you would have to use `HAVING`.
+That's a single purpose clause for filtering aggregated information.
+In Cypher, `WHERE` can be used in both cases.
+

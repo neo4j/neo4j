@@ -25,7 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
@@ -52,7 +53,6 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
-import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.register.Register;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -89,7 +89,7 @@ public class IndexCRUDIT
         // Then, for now, this should trigger two NodePropertyUpdates
         try ( Transaction tx = db.beginTx() )
         {
-            DataWriteOperations statement = ctxProvider.instance().dataWriteOperations();
+            DataWriteOperations statement = ctxSupplier.get().dataWriteOperations();
             int propertyKey1 = statement.propertyKeyGetForName( indexProperty );
             long[] labels = new long[]{statement.labelGetForName( myLabel.name() )};
             assertThat( writer.updatesCommitted, equalTo( asSet(
@@ -128,7 +128,7 @@ public class IndexCRUDIT
         // THEN
         try ( Transaction tx = db.beginTx() )
         {
-            DataWriteOperations statement = ctxProvider.instance().dataWriteOperations();
+            DataWriteOperations statement = ctxSupplier.get().dataWriteOperations();
             int propertyKey1 = statement.propertyKeyGetForName( indexProperty );
             long[] labels = new long[]{statement.labelGetForName( myLabel.name() )};
             assertThat( writer.updatesCommitted, equalTo( asSet(
@@ -142,7 +142,7 @@ public class IndexCRUDIT
     private final SchemaIndexProvider mockedIndexProvider = mock( SchemaIndexProvider.class );
     private final KernelExtensionFactory<?> mockedIndexProviderFactory =
             singleInstanceSchemaIndexProviderFactory( "none", mockedIndexProvider );
-    private ThreadToStatementContextBridge ctxProvider;
+    private ThreadToStatementContextBridge ctxSupplier;
     private final Label myLabel = label( "MYLABEL" );
 
     private Node createNode( Map<String, Object> properties, Label ... labels )
@@ -163,14 +163,14 @@ public class IndexCRUDIT
     @Before
     public void before() throws Exception
     {
-        when( mockedIndexProvider.storeMigrationParticipant(
-                any( FileSystemAbstraction.class ), any( UpgradableDatabase.class )
+        when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class )
         ) ).thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
-        factory.addKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( mockedIndexProviderFactory ) );
+        factory.addKernelExtensions(
+                Collections.<KernelExtensionFactory<?>>singletonList( mockedIndexProviderFactory ) );
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
-        ctxProvider = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+        ctxSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
 
     private GatheringIndexWriter newWriter( String propertyKey ) throws IOException
@@ -214,7 +214,7 @@ public class IndexCRUDIT
         @Override
         public void add( long nodeId, Object propertyValue )
         {
-            ReadOperations statement = ctxProvider.instance().readOperations();
+            ReadOperations statement = ctxSupplier.get().readOperations();
             updatesCommitted.add( NodePropertyUpdate.add(
                     nodeId, statement.propertyKeyGetForName( propertyKey ),
                     propertyValue, new long[]{statement.labelGetForName( myLabel.name() )} ) );

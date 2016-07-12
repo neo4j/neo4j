@@ -20,10 +20,8 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 
-import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.concurrent.jsr166e.StampedLock;
 import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -31,11 +29,10 @@ import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
-import org.neo4j.concurrent.jsr166e.StampedLock;
+import org.neo4j.unsafe.impl.internal.dragons.MemoryManager;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
-import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.allowUnalignedMemoryAccess;
-import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.storeByteOrderIsNative;
+import static java.lang.String.format;
 
 final class MuninnPage extends StampedLock implements Page
 {
@@ -45,14 +42,15 @@ final class MuninnPage extends StampedLock implements Page
     // The other 7 bits are used as an exponent for computing the cache page size (as a power of two).
     private byte cachePageHeader;
 
-    // We keep this reference to prevent the MemoryReleaser from becoming
+    // We keep this reference to prevent the MemoryManager from becoming
     // finalizable until all our pages are finalizable or collected.
-    private final MemoryReleaser memoryReleaser;
+    private final MemoryManager memoryManager;
 
     private long pointer;
 
     // Optimistically incremented; occasionally truncated to a max of 4.
     // accessed through unsafe
+    @SuppressWarnings( "unused" )
     private volatile byte usageStamp;
 
     // Next pointer in the freelist of available pages. This is either a
@@ -63,19 +61,19 @@ final class MuninnPage extends StampedLock implements Page
     private PageSwapper swapper;
     private long filePageId = PageCursor.UNBOUND_PAGE_ID;
 
-    public MuninnPage( int cachePageSize, MemoryReleaser memoryReleaser )
+    public MuninnPage( int cachePageSize, MemoryManager memoryManager )
     {
         this.cachePageHeader = (byte) (31 - Integer.numberOfLeadingZeros( cachePageSize ));
-        this.memoryReleaser = memoryReleaser;
+        this.memoryManager = memoryManager;
         getCachePageId(); // initialize our identity hashCode
     }
 
     private void checkBounds( int position )
     {
-        if ( position > getCachePageSize() )
+        if ( position > size() )
         {
             String msg = "Position " + position + " is greater than the upper " +
-                    "page size bound of " + (getCachePageSize());
+                    "page size bound of " + (size());
             throw new IndexOutOfBoundsException( msg );
         }
     }
@@ -85,9 +83,16 @@ final class MuninnPage extends StampedLock implements Page
         return System.identityHashCode( this );
     }
 
-    private int getCachePageSize()
+    @Override
+    public int size()
     {
         return 1 << (cachePageHeader & 0x7F);
+    }
+
+    @Override
+    public long address()
+    {
+        return pointer;
     }
 
     /**
@@ -103,7 +108,7 @@ final class MuninnPage extends StampedLock implements Page
         cachePageHeader |= ~0x7F;
     }
 
-    private void markAsClean()
+    public void markAsClean()
     {
         cachePageHeader &= 0x7F;
     }
@@ -147,10 +152,10 @@ final class MuninnPage extends StampedLock implements Page
     public long getLong( int offset )
     {
         checkBounds( offset + 8 );
-        if ( allowUnalignedMemoryAccess )
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             long x = UnsafeUtil.getLong( pointer + offset );
-            return storeByteOrderIsNative ? x : Long.reverseBytes( x );
+            return UnsafeUtil.storeByteOrderIsNative ? x : Long.reverseBytes( x );
         }
         return getLongBigEndian( offset );
     }
@@ -172,10 +177,10 @@ final class MuninnPage extends StampedLock implements Page
     public void putLong( long value, int offset )
     {
         checkBounds( offset + 8 );
-        if ( allowUnalignedMemoryAccess )
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             long p = pointer + offset;
-            UnsafeUtil.putLong( p, storeByteOrderIsNative ? value : Long.reverseBytes( value ) );
+            UnsafeUtil.putLong( p, UnsafeUtil.storeByteOrderIsNative ? value : Long.reverseBytes( value ) );
         }
         else
         {
@@ -199,10 +204,10 @@ final class MuninnPage extends StampedLock implements Page
     public int getInt( int offset )
     {
         checkBounds( offset + 4 );
-        if ( allowUnalignedMemoryAccess )
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             int x = UnsafeUtil.getInt( pointer + offset );
-            return storeByteOrderIsNative ? x : Integer.reverseBytes( x );
+            return UnsafeUtil.storeByteOrderIsNative ? x : Integer.reverseBytes( x );
         }
         return getIntBigEndian( offset );
     }
@@ -220,10 +225,10 @@ final class MuninnPage extends StampedLock implements Page
     public void putInt( int value, int offset )
     {
         checkBounds( offset + 4 );
-        if ( allowUnalignedMemoryAccess )
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             long p = pointer + offset;
-            UnsafeUtil.putInt( p, storeByteOrderIsNative ? value : Integer.reverseBytes( value ) );
+            UnsafeUtil.putInt( p, UnsafeUtil.storeByteOrderIsNative ? value : Integer.reverseBytes( value ) );
         }
         else
         {
@@ -243,10 +248,10 @@ final class MuninnPage extends StampedLock implements Page
     public short getShort( int offset )
     {
         checkBounds( offset + 2 );
-        if ( allowUnalignedMemoryAccess )
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             short x = UnsafeUtil.getShort( pointer + offset );
-            return storeByteOrderIsNative ? x : Short.reverseBytes( x );
+            return UnsafeUtil.storeByteOrderIsNative ? x : Short.reverseBytes( x );
         }
         return getShortBigEndian( offset );
     }
@@ -262,10 +267,10 @@ final class MuninnPage extends StampedLock implements Page
     public void putShort( short value, int offset )
     {
         checkBounds( offset + 2 );
-        if ( allowUnalignedMemoryAccess )
+        if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             long p = pointer + offset;
-            UnsafeUtil.putShort( p, storeByteOrderIsNative ? value : Short.reverseBytes( value ) );
+            UnsafeUtil.putShort( p, UnsafeUtil.storeByteOrderIsNative ? value : Short.reverseBytes( value ) );
         }
         else
         {
@@ -280,93 +285,24 @@ final class MuninnPage extends StampedLock implements Page
         UnsafeUtil.putByte( p + 1, (byte)( value      ) );
     }
 
-    public void getBytes( byte[] data, int offset )
+    public void getBytes( byte[] data, int pageOffset, int arrayOffset, int length )
     {
-        checkBounds( offset + data.length );
-        long address = pointer + offset;
-        int length = data.length;
+        checkBounds( pageOffset + length );
+        long address = pointer + pageOffset;
         for ( int i = 0; i < length; i++ )
         {
-            data[i] = UnsafeUtil.getByte( address );
-            address++;
+            data[arrayOffset + i] = UnsafeUtil.getByte( address + i );
         }
     }
 
-    public void putBytes( byte[] data, int offset )
+    public void putBytes( byte[] data, int pageOffset, int arrayOffset, int length )
     {
-        checkBounds( offset + data.length );
-        long address = pointer + offset;
-        int length = data.length;
+        checkBounds( pageOffset + length );
+        long address = pointer + pageOffset;
         for ( int i = 0; i < length; i++ )
         {
-            UnsafeUtil.putByte( address, data[i] );
-            address++;
-        }
-    }
-
-    /**
-     * NOTE: This method must be called while holding the page write lock.
-     * This method assumes that initBuffer() has already been called at least once.
-     */
-    @Override
-    public int swapIn( StoreChannel channel, long offset, int length ) throws IOException
-    {
-        assert isWriteLocked() : "swapIn requires write lock to protect the cache page";
-        int readTotal = 0;
-        try
-        {
-            ByteBuffer bufferProxy = UnsafeUtil.newDirectByteBuffer( pointer, getCachePageSize() );
-            bufferProxy.clear();
-            bufferProxy.limit( length );
-            int read;
-            do
-            {
-                read = channel.read( bufferProxy, offset + readTotal );
-            }
-            while ( read != -1 && (readTotal += read) < length );
-
-            // Zero-fill the rest.
-            while ( bufferProxy.position() < bufferProxy.limit() )
-            {
-                bufferProxy.put( (byte) 0 );
-            }
-            return readTotal;
-        }
-        catch ( ClosedChannelException e )
-        {
-            throw e;
-        }
-        catch ( Throwable e )
-        {
-            String msg = String.format(
-                    "Read failed after %s of %s bytes from offset %s",
-                    readTotal, length, offset );
-            throw new IOException( msg, e );
-        }
-    }
-
-    /**
-     * NOTE: This method must be called while holding at least the page read lock.
-     * This method assumes that initBuffer() has already been called at least once.
-     */
-    @Override
-    public void swapOut( StoreChannel channel, long offset, int length ) throws IOException
-    {
-        assert isReadLocked() || isWriteLocked() : "swapOut requires lock";
-        try
-        {
-            ByteBuffer bufferProxy = UnsafeUtil.newDirectByteBuffer( pointer, getCachePageSize() );
-            bufferProxy.clear();
-            bufferProxy.limit( length );
-            channel.writeAll( bufferProxy, offset );
-        }
-        catch ( IOException e )
-        {
-            throw e;
-        }
-        catch ( Throwable e )
-        {
-            throw new IOException( e );
+            byte b = data[arrayOffset + i];
+            UnsafeUtil.putByte( address + i, b );
         }
     }
 
@@ -382,30 +318,16 @@ final class MuninnPage extends StampedLock implements Page
         }
     }
 
-    /**
-     * NOTE: This method must be called while holding a pessimistic lock on the page.
-     */
-    public void flush(
-            PageSwapper swapper,
-            long filePageId,
-            FlushEventOpportunity flushOpportunity ) throws IOException
-    {
-        if ( isDirty() && this.swapper == swapper && this.filePageId == filePageId )
-        {
-            // The page is bound to the given swapper and has stuff to flush
-            doFlush( swapper, filePageId, flushOpportunity );
-        }
-    }
-
     private void doFlush(
             PageSwapper swapper,
             long filePageId,
             FlushEventOpportunity flushOpportunity ) throws IOException
     {
+        assert isReadLocked() || isWriteLocked() : "doFlush requires lock";
         FlushEvent event = flushOpportunity.beginFlush( filePageId, getCachePageId(), swapper );
         try
         {
-            int bytesWritten = swapper.write( filePageId, this );
+            long bytesWritten = swapper.write( filePageId, this );
             markAsClean();
             event.addBytesWritten( bytesWritten );
             event.done();
@@ -428,10 +350,10 @@ final class MuninnPage extends StampedLock implements Page
         assert isWriteLocked(): "Cannot fault page without write-lock";
         if ( this.swapper != null || this.filePageId != PageCursor.UNBOUND_PAGE_ID )
         {
-            String msg = String.format(
+            String msg = format(
                     "Cannot fault page {filePageId = %s, swapper = %s} into " +
-                            "cache page %s. Already bound to {filePageId = " +
-                            "%s, swapper = %s}.",
+                    "cache page %s. Already bound to {filePageId = " +
+                    "%s, swapper = %s}.",
                     filePageId, swapper, getCachePageId(), this.filePageId, this.swapper );
             throw new IllegalStateException( msg );
         }
@@ -444,7 +366,7 @@ final class MuninnPage extends StampedLock implements Page
         // the file page, so any subsequent thread that finds the page in their
         // translation table will re-do the page fault.
         this.filePageId = filePageId; // Page now considered isLoaded()
-        int bytesRead = swapper.read( filePageId, this );
+        long bytesRead = swapper.read( filePageId, this );
         faultEvent.addBytesRead( bytesRead );
         faultEvent.setCachePageId( getCachePageId() );
         this.swapper = swapper; // Page now considered isBoundTo( swapper, filePageId )
@@ -463,7 +385,6 @@ final class MuninnPage extends StampedLock implements Page
         evictionEvent.setSwapper( swapper );
 
         flush( evictionEvent.flushEventOpportunity() );
-        UnsafeUtil.setMemory( pointer, getCachePageSize(), (byte) 0 );
         this.filePageId = PageCursor.UNBOUND_PAGE_ID;
 
         this.swapper = null;
@@ -493,14 +414,8 @@ final class MuninnPage extends StampedLock implements Page
         assert isWriteLocked(): "Cannot initBuffer without write-lock";
         if ( pointer == 0 )
         {
-            pointer = UnsafeUtil.malloc( getCachePageSize() );
-            memoryReleaser.registerPointer( pointer );
+            pointer = memoryManager.allocateAligned( size() );
         }
-    }
-
-    public PageSwapper getSwapper()
-    {
-        return swapper;
     }
 
     public long getFilePageId()
@@ -511,8 +426,8 @@ final class MuninnPage extends StampedLock implements Page
     @Override
     public String toString()
     {
-        return String.format( "MuninnPage@%x[%s -> %x, filePageId = %s%s, swapper = %s]%s",
-                hashCode(), getCachePageId(), pointer, filePageId, (isDirty()? ", dirty" : ""),
+        return format( "MuninnPage@%x[%s -> %x, filePageId = %s%s, swapper = %s]%s",
+                hashCode(), getCachePageId(), pointer, filePageId, (isDirty() ? ", dirty" : ""),
                 swapper, getLockStateString() );
     }
 }

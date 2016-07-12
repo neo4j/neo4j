@@ -19,8 +19,13 @@
  */
 package org.neo4j.kernel.api.properties;
 
+import org.neo4j.helpers.MathUtil;
 import org.neo4j.helpers.ObjectUtil;
-import org.neo4j.kernel.impl.cache.SizeOfObject;
+
+import java.util.Comparator;
+
+import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_VALUES;
+
 
 /**
  * Base class for properties that have a value.
@@ -40,8 +45,24 @@ import org.neo4j.kernel.impl.cache.SizeOfObject;
  * the (unused) area. Added members after that will be appended after that. The total space of the object
  * will be aligned to whole 8 bytes.
  */
-public abstract class DefinedProperty extends Property implements SizeOfObject
+public abstract class DefinedProperty extends Property
 {
+    public static Comparator<DefinedProperty> COMPARATOR = new Comparator<DefinedProperty>()
+    {
+        @Override
+        public int compare( DefinedProperty left, DefinedProperty right )
+        {
+            int cmp = left.propertyKeyId - right.propertyKeyId;
+            if ( cmp == 0 )
+            {
+                return COMPARE_VALUES.compare( left.value(), right.value() );
+            }
+
+            // else
+            return cmp;
+        }
+    };
+
     @Override
     public boolean isDefined()
     {
@@ -110,49 +131,6 @@ public abstract class DefinedProperty extends Property implements SizeOfObject
         super( propertyKeyId );
     }
 
-    private static final long NON_DOUBLE_LONG = 0xFFE0_0000_0000_0000L; // doubles are exact integers up to 53 bits
-
-    static boolean numbersEqual( double fpn, long in )
-    {
-        if ( in < 0 )
-        {
-            if ( fpn < 0.0 )
-            {
-                if ( (NON_DOUBLE_LONG & in) == NON_DOUBLE_LONG ) // the high order bits are only sign bits
-                { // no loss of precision if converting the long to a double, so it's safe to compare as double
-                    return fpn == (double) in;
-                }
-                else if ( fpn < (double) Long.MIN_VALUE )
-                { // the double is too big to fit in a long, they cannot be equal
-                    return false;
-                }
-                else if ( (fpn == Math.floor( fpn )) && !Double.isInfinite( fpn ) ) // no decimals
-                { // safe to compare as long
-                    return in == (long) fpn;
-                }
-            }
-        }
-        else
-        {
-            if ( !(fpn < 0.0) )
-            {
-                if ( (NON_DOUBLE_LONG & in) == 0 ) // the high order bits are only sign bits
-                { // no loss of precision if converting the long to a double, so it's safe to compare as double
-                    return fpn == (double) in;
-                }
-                else if ( fpn > (double) Long.MAX_VALUE )
-                { // the double is too big to fit in a long, they cannot be equal
-                    return false;
-                }
-                else if ( (fpn == Math.floor( fpn )) && !Double.isInfinite( fpn ) )  // no decimals
-                { // safe to compare as long
-                    return in == (long) fpn;
-                }
-            }
-        }
-        return false;
-    }
-
     static boolean numbersEqual( ArrayValue.IntegralArray lhs, ArrayValue.IntegralArray rhs )
     {
         int length = lhs.length();
@@ -196,11 +174,26 @@ public abstract class DefinedProperty extends Property implements SizeOfObject
         }
         for ( int i = 0; i < length; i++ )
         {
-            if ( !numbersEqual( fps.doubleValue( i ), ins.longValue( i ) ) )
+            if ( !MathUtil.numbersEqual( fps.doubleValue( i ), ins.longValue( i ) ) )
             {
                 return false;
             }
         }
         return true;
+    }
+
+    public interface WithStringValue
+    {
+        String stringValue();
+    }
+
+    public interface WithDoubleValue
+    {
+        double doubleValue();
+    }
+
+    public interface WithLongValue
+    {
+        long longValue();
     }
 }

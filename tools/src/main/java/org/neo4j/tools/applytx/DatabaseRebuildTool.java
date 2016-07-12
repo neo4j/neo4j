@@ -38,9 +38,9 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.util.Listener;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.tools.console.input.ArgsCommand;
 import org.neo4j.tools.console.input.ConsoleInput;
 
@@ -169,7 +169,7 @@ public class DatabaseRebuildTool
         public Store( GraphDatabaseBuilder dbBuilder )
         {
             this.db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
-            this.access = new StoreAccess( db );
+            this.access = new StoreAccess( db ).initialize();
             this.storeDir = new File( db.getStoreDir() );
         }
 
@@ -217,9 +217,9 @@ public class DatabaseRebuildTool
                 store.get().shutdown();
                 try
                 {
-                    Result result = new ConsistencyCheckService().runFullConsistencyCheck( storeDir.getAbsolutePath(),
+                    Result result = new ConsistencyCheckService().runFullConsistencyCheck( storeDir,
                             new Config(), ProgressMonitorFactory.textual( out ),
-                            StringLogger.SYSTEM );
+                            FormattedLogProvider.toOutputStream( System.out ), false );
                     out.println( (result.isSuccessful() ? "consistent" : "INCONSISTENT") );
                 }
                 finally

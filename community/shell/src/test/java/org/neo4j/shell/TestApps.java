@@ -19,14 +19,15 @@
  */
 package org.neo4j.shell;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.junit.Ignore;
-import org.junit.Test;
 import org.neo4j.cypher.NodeStillHasRelationshipsException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
@@ -400,7 +401,7 @@ public class TestApps extends AbstractShellTest
     public void createNodeWithArrayProperty() throws Exception
     {
         executeCommand( "mknode --np \"{'values':[1,2,3,4]}\" --cd" );
-        assertThat( getCurrentNode(), inTx( db, hasProperty( "values" ).withValue( new int[] {1,2,3,4} ) ) );
+        assertThat( getCurrentNode(), inTx( db, hasProperty( "values" ).withValue( new int[]{1, 2, 3, 4} ) ) );
     }
 
     @Test
@@ -533,7 +534,7 @@ public class TestApps extends AbstractShellTest
     @Test
     public void startCypherQueryWithUnwind() throws Exception
     {
-        executeCommand( "unwind [1,2,3] as x return x;", "| x |", "| 1 |");
+        executeCommand( "unwind [1,2,3] as x return x;", "| x |", "| 1 |" );
     }
 
     @Test
@@ -573,7 +574,7 @@ public class TestApps extends AbstractShellTest
     public void canSetInitialSessionVariables() throws Exception
     {
         Map<String, Serializable> values = genericMap( "mykey", "myvalue",
-                                                       "my_other_key", "My other value" );
+                "my_other_key", "My other value" );
         ShellClient client = newShellClient( shellServer, values );
         String[] allStrings = new String[values.size()*2];
         int i = 0;
@@ -593,7 +594,8 @@ public class TestApps extends AbstractShellTest
         ShellClient client = new SameJvmClient( values, shellServer, out );
         client.shutdown();
         final String outString = out.asString();
-        assertEquals( "Shows welcome message: " + outString, false, outString.contains( "Welcome to the Neo4j Shell! Enter 'help' for a list of commands" ) );
+        assertEquals( "Shows welcome message: " + outString, false,
+                outString.contains( "Welcome to the Neo4j Shell! Enter 'help' for a list of commands" ) );
     }
 
     @Test
@@ -855,7 +857,7 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void canListConstraints() throws Exception
+    public void canListUniquePropertyConstraints() throws Exception
     {
         // GIVEN
         Label label = label( "Person" );
@@ -868,7 +870,7 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void canListConstraintsByLabel() throws Exception
+    public void canListUniquePropertyConstraintsByLabel() throws Exception
     {
         // GIVEN
         Label label1 = label( "Person" );
@@ -881,7 +883,7 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void canListConstraintsByLabelAndProperty() throws Exception
+    public void canListUniquePropertyConstraintsByLabelAndProperty() throws Exception
     {
         // GIVEN
         Label label1 = label( "Person" );
@@ -1133,6 +1135,12 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
+    public void allowsCypherToContainExclamationMarks() throws Exception
+    {
+        executeCommand( "RETURN \"a\"+\"!b\";", "a!b" );
+    }
+
+    @Test
     public void shouldAllowQueriesToStartWithOptionalMatch() throws Exception
     {
         executeCommand( "OPTIONAL MATCH (n) RETURN n;" );
@@ -1147,13 +1155,14 @@ public class TestApps extends AbstractShellTest
     @Test
     public void shouldAllowProfileAsStartForACypherQuery() throws Exception
     {
-        executeCommand( "PROFILE MATCH (n) RETURN n;", "DbHits" );
+        executeCommand( "PROFILE MATCH (n) RETURN n;", "DB Hits" );
     }
 
     @Test
     public void shouldAllowPlannerAsStartForACypherQuery() throws Exception
     {
-        executeCommand( "CYPHER planner=cost MATCH (n) RETURN n;");
+
+        executeCommand( "CYPHER planner=cost MATCH (n) RETURN n;" );
     }
 
     @Test
@@ -1203,6 +1212,19 @@ public class TestApps extends AbstractShellTest
         });
         thread.start();
 
-        executeCommandExpectingException("CYPHER 2.1 FOREACH(i IN range(0, 10000) | CREATE ());", "has been terminated" );
+        executeCommandExpectingException( "CYPHER 2.2 FOREACH(i IN range(0, 10000) | CREATE ());",
+                "has been terminated" );
+    }
+
+    @Test
+    public void canUseForeach() throws Exception
+    {
+        executeCommand( "FOREACH (x in range(0,10) | CREATE ()));" );
+    }
+
+    @Test
+    public void canUseCommandsWithoutSpaceBeforeLeftParenthesis() throws Exception
+    {
+        executeCommand( "FOREACH(x in range(0,10) | CREATE ()));" );
     }
 }

@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -32,6 +28,10 @@ import org.junit.runners.JUnit4;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -40,26 +40,23 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.subprocess.BreakpointTrigger;
-import org.neo4j.test.subprocess.EnabledBreakpoints;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
-import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 
 @RunWith(Suite.class)
 @SuiteClasses({IdGeneratorRebuildFailureEmulationTest.FailureBeforeRebuild.class})
@@ -69,26 +66,24 @@ public class IdGeneratorRebuildFailureEmulationTest
     public static final class FailureBeforeRebuild extends IdGeneratorRebuildFailureEmulationTest
     {
         @Override
-        protected void emulateFailureOnRebuildOf( NeoStore neostore )
+        protected void emulateFailureOnRebuildOf( NeoStores neoStores )
         {
             // emulate a failure during rebuild by not issuing this call:
-            // neostore.makeStoreOk();
+            // neostores.makeStoreOk();
         }
     }
 
-    @BreakpointTrigger
-    private void performTest() throws Exception
+    private void performTest( String neostoreFileName ) throws Exception
     {
-        String file = storeDir + File.separator + Thread.currentThread().getStackTrace()[2].getMethodName().replace(
-                '_', '.' );
+        File idFile = new File( storeDir, neostoreFileName + ".id" );
         // emulate the need for rebuilding id generators by deleting it
-        fs.deleteFile( new File( file + ".id") );
-        NeoStore neostore = null;
+        fs.deleteFile( idFile );
+        NeoStores neoStores = null;
         try
         {
-            neostore = factory.newNeoStore( false );
+            neoStores = factory.openAllNeoStores();
             // emulate a failure during rebuild:
-            emulateFailureOnRebuildOf( neostore );
+            emulateFailureOnRebuildOf( neoStores );
         }
         catch ( UnderlyingStorageException expected )
         {
@@ -98,21 +93,21 @@ public class IdGeneratorRebuildFailureEmulationTest
         {
             // we want close to not misbehave
             // (and for example truncate the file based on the wrong highId)
-            if ( neostore != null )
+            if ( neoStores != null )
             {
-                neostore.close();
+                neoStores.close();
             }
         }
     }
 
-    void emulateFailureOnRebuildOf( NeoStore neostore )
+    void emulateFailureOnRebuildOf( NeoStores neoStores )
     {
-        fail( "emulateFailureOnRebuildOf(NeoStore) must be overridden" );
+        fail( "emulateFailureOnRebuildOf(NeoStores) must be overridden" );
     }
 
     private FileSystem fs;
     private StoreFactory factory;
-    private final String storeDir = new File( "dir" ).getAbsolutePath();
+    private final File storeDir = new File( "dir" ).getAbsoluteFile();
 
     @Rule
     public PageCacheRule pageCacheRule = new PageCacheRule();
@@ -121,26 +116,20 @@ public class IdGeneratorRebuildFailureEmulationTest
     public void initialize()
     {
         fs = new FileSystem();
-        InternalAbstractGraphDatabase graphdb = new Database( storeDir );
+        GraphDatabaseService graphdb = new Database( storeDir );
         createInitialData( graphdb );
         graphdb.shutdown();
         Map<String, String> params = new HashMap<>();
         params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.FALSE );
-        Monitors monitors = new Monitors();
-        Config config = configForStoreDir( new Config( params, GraphDatabaseSettings.class ), new File( storeDir ) );
-        factory = new StoreFactory(
-                config,
-                new DefaultIdGeneratorFactory(),
-                pageCacheRule.getPageCache( fs ),
-                fs,
-                StringLogger.DEV_NULL,
-                monitors );
+        Config config = new Config( params, GraphDatabaseSettings.class );
+        factory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs ),
+                pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
     }
 
     @After
     public void verifyAndDispose() throws Exception
     {
-        InternalAbstractGraphDatabase graphdb = null;
+        GraphDatabaseService graphdb = null;
         try
         {
             graphdb = new Database( storeDir );
@@ -237,92 +226,91 @@ public class IdGeneratorRebuildFailureEmulationTest
     @SuppressWarnings("deprecation")
     private class Database extends ImpermanentGraphDatabase
     {
-        public Database( String storeDir )
+        public Database( File storeDir )
         {
             super( storeDir );
         }
 
         @Override
-        protected FileSystemAbstraction createFileSystemAbstraction()
+        protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
         {
-            return fs;
+            new CommunityFacadeFactory()
+            {
+                @Override
+                protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                {
+                    return new ImpermanentPlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
+                    {
+                        @Override
+                        protected FileSystemAbstraction createFileSystemAbstraction()
+                        {
+                            return fs;
+                        }
+                    };
+                }
+            }.newFacade( storeDir, params, dependencies, this );
         }
 
-        @Override
-        protected IdGeneratorFactory createIdGeneratorFactory()
-        {
-            return new DefaultIdGeneratorFactory();
-        }
     }
 
-    @EnabledBreakpoints("performTest")
     @Test
     public void neostore() throws Exception
     {
-        performTest();
+        performTest( MetaDataStore.DEFAULT_NAME );
     }
 
-    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_nodestore_db() throws Exception
     {
-        performTest();
+        performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.NODE_STORE_NAME );
     }
 
-    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_propertystore_db_arrays() throws Exception
     {
-        performTest();
+        performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.PROPERTY_ARRAYS_STORE_NAME );
     }
 
-    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_propertystore_db() throws Exception
     {
-        performTest();
+        performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.PROPERTY_STORE_NAME );
     }
 
-    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_propertystore_db_index() throws Exception
     {
-        performTest();
+        performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME );
     }
 
-    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_propertystore_db_index_keys() throws Exception
     {
-        performTest();
+        performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.PROPERTY_KEY_TOKEN_NAMES_STORE_NAME );
     }
 
-    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_propertystore_db_strings() throws Exception
     {
-        performTest();
+        performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.PROPERTY_STRINGS_STORE_NAME );
     }
 
-    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_relationshipstore_db() throws Exception
     {
-        performTest();
+        performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.RELATIONSHIP_STORE_NAME );
     }
 
-    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_relationshiptypestore_db() throws Exception
     {
-        performTest();
+        performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.RELATIONSHIP_TYPE_TOKEN_STORE_NAME );
     }
 
-    @EnabledBreakpoints("performTest")
     @Test
     public void neostore_relationshiptypestore_db_names() throws Exception
     {
-        performTest();
+        performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME );
     }
 
     private IdGeneratorRebuildFailureEmulationTest()

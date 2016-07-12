@@ -20,7 +20,14 @@
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 
+/**
+ * A cluster coordinator election vote. Each vote contains the id of the server and any credentials (see {@link
+ * ElectionCredentialsProvider} implementations for details).
+ * <p/>
+ * Votes are comparable so that they can be ordered to find winner. Credentials implement the comparison rules.
+ */
 public class Vote
         implements Comparable<Vote>
 {

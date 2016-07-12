@@ -27,7 +27,7 @@ public class DirectRecordReference<RECORD extends AbstractBaseRecord> implements
     final RECORD record;
     final RecordAccess records;
 
-    DirectRecordReference( RECORD record, RecordAccess records )
+    public DirectRecordReference( RECORD record, RecordAccess records )
     {
         this.record = record;
         this.records = records;

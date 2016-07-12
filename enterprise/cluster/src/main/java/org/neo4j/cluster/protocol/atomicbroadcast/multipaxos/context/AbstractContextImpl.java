@@ -31,41 +31,38 @@ import org.neo4j.cluster.protocol.LoggingContext;
 import org.neo4j.cluster.protocol.TimeoutsContext;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.collection.Iterables.limit;
 import static org.neo4j.helpers.collection.Iterables.toList;
 
+/**
+ * This serves as a base class for contexts of distributed state machines, and holds
+ * various generally useful information, and provides access to logging.
+ */
 class AbstractContextImpl
         implements TimeoutsContext, LoggingContext, ConfigurationContext
 {
     protected final org.neo4j.cluster.InstanceId me;
     protected final CommonContextState commonState;
-    protected final Logging logging;
+    protected final LogProvider logProvider;
     protected final Timeouts timeouts;
 
-    AbstractContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState,
-                         Logging logging,
-                         Timeouts timeouts )
+    AbstractContextImpl( InstanceId me, CommonContextState commonState,
+            LogProvider logProvider, Timeouts timeouts )
     {
         this.me = me;
         this.commonState = commonState;
-        this.logging = logging;
+        this.logProvider = logProvider;
         this.timeouts = timeouts;
     }
 
+    // LoggingContext
     @Override
-    public StringLogger getLogger( Class loggingClass )
+    public Log getLog( Class loggingClass )
     {
-        return logging.getMessagesLog( loggingClass );
-    }
-
-    @Override
-    public ConsoleLogger getConsoleLogger( Class loggingClass )
-    {
-        return logging.getConsoleLog( loggingClass );
+        return logProvider.getLog( loggingClass );
     }
 
     // TimeoutsContext
@@ -76,9 +73,15 @@ class AbstractContextImpl
     }
 
     @Override
-    public void cancelTimeout( Object key )
+    public long getTimeoutFor( Message<? extends MessageType> timeoutMessage )
     {
-        timeouts.cancelTimeout( key );
+        return timeouts.getTimeoutFor( timeoutMessage );
+    }
+
+    @Override
+    public Message<? extends MessageType> cancelTimeout( Object key )
+    {
+        return timeouts.cancelTimeout( key );
     }
 
     // ConfigurationContext

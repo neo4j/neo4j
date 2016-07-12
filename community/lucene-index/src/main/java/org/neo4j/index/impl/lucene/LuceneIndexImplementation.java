@@ -34,7 +34,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
+import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class LuceneIndexImplementation extends LifecycleAdapter implements IndexImplementation
@@ -55,13 +55,15 @@ public class LuceneIndexImplementation extends LifecycleAdapter implements Index
                     KEY_TO_LOWER_CASE, "true" ) );
 
     private LuceneDataSource dataSource;
+    private final File storeDir;
     private final Config config;
     private final IndexConfigStore indexStore;
     private final FileSystemAbstraction fileSystemAbstraction;
 
-    public LuceneIndexImplementation( Config config, IndexConfigStore indexStore,
+    public LuceneIndexImplementation( File storeDir, Config config, IndexConfigStore indexStore,
             FileSystemAbstraction fileSystemAbstraction )
     {
+        this.storeDir = storeDir;
         this.config = config;
         this.indexStore = indexStore;
         this.fileSystemAbstraction = fileSystemAbstraction;
@@ -70,7 +72,7 @@ public class LuceneIndexImplementation extends LifecycleAdapter implements Index
     @Override
     public void init() throws Throwable
     {
-        this.dataSource = new LuceneDataSource( config, indexStore, fileSystemAbstraction );
+        this.dataSource = new LuceneDataSource( storeDir, config, indexStore, fileSystemAbstraction );
         this.dataSource.init();
     }
 
@@ -162,7 +164,7 @@ public class LuceneIndexImplementation extends LifecycleAdapter implements Index
     }
 
     @Override
-    public NeoCommandHandler newApplier( boolean recovery )
+    public CommandHandler newApplier( boolean recovery )
     {
         return new LuceneCommandApplier( dataSource, recovery );
     }

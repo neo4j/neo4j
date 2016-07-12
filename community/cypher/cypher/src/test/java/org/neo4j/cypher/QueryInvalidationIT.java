@@ -27,8 +27,8 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.cypher.internal.compiler.v2_2.CypherCacheHitMonitor;
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement;
+import org.neo4j.cypher.internal.compiler.v2_3.CypherCacheHitMonitor;
+import org.neo4j.cypher.internal.frontend.v2_3.ast.Query;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
@@ -190,26 +190,26 @@ public class QueryInvalidationIT
         return ThreadLocalRandom.current().nextInt( max );
     }
 
-    private static class TestMonitor implements CypherCacheHitMonitor<Statement>
+    private static class TestMonitor implements CypherCacheHitMonitor<Query>
     {
         private final AtomicInteger hits = new AtomicInteger();
         private final AtomicInteger misses = new AtomicInteger();
         private final AtomicInteger discards = new AtomicInteger();
 
         @Override
-        public void cacheHit( Statement key )
+        public void cacheHit( Query key )
         {
             hits.incrementAndGet();
         }
 
         @Override
-        public void cacheMiss( Statement key )
+        public void cacheMiss( Query key )
         {
             misses.incrementAndGet();
         }
 
         @Override
-        public void cacheDiscard( Statement key )
+        public void cacheDiscard( Query key )
         {
             discards.incrementAndGet();
         }

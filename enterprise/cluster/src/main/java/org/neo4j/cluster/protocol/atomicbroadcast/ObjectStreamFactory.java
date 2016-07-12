@@ -25,6 +25,9 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
+/**
+ * Stream factory for serializing/deserializing messages.
+ */
 public class ObjectStreamFactory implements ObjectInputStreamFactory, ObjectOutputStreamFactory
 {
     private final VersionMapper versionMapper;

@@ -31,7 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Predicate;
 
 import static java.lang.reflect.Modifier.isPublic;
 import static java.lang.reflect.Modifier.isStatic;
@@ -72,7 +72,7 @@ public class DebugUtil
     {
         for ( StackTraceElement element : Thread.currentThread().getStackTrace() )
         {
-            if ( predicate.accept( element ) )
+            if ( predicate.test( element ) )
             {
                 return true;
             }
@@ -85,7 +85,7 @@ public class DebugUtil
         return new Predicate<StackTraceElement>()
         {
             @Override
-            public boolean accept( StackTraceElement item )
+            public boolean test( StackTraceElement item )
             {
                 return item.getClassName().equals( className );
             }
@@ -97,7 +97,7 @@ public class DebugUtil
         return new Predicate<StackTraceElement>()
         {
             @Override
-            public boolean accept( StackTraceElement item )
+            public boolean test( StackTraceElement item )
             {
                 return item.getClassName().contains( classNamePart );
             }
@@ -109,7 +109,7 @@ public class DebugUtil
         return new Predicate<StackTraceElement>()
         {
             @Override
-            public boolean accept( StackTraceElement item )
+            public boolean test( StackTraceElement item )
             {
                 return item.getClassName().equals( cls.getName() );
             }
@@ -122,7 +122,7 @@ public class DebugUtil
         return new Predicate<StackTraceElement>()
         {
             @Override
-            public boolean accept( StackTraceElement item )
+            public boolean test( StackTraceElement item )
             {
                 return item.getClassName().equals( className ) && item.getMethodName().equals( methodName );
             }
@@ -134,7 +134,7 @@ public class DebugUtil
         return new Predicate<StackTraceElement>()
         {
             @Override
-            public boolean accept( StackTraceElement item )
+            public boolean test( StackTraceElement item )
             {
                 return item.getClassName().equals( cls.getName() ) && item.getMethodName().equals( methodName );
             }
@@ -146,7 +146,11 @@ public class DebugUtil
         private final Map<Stack, AtomicInteger> uniqueStackTraces = new HashMap<>();
         private boolean considerMessages = true;
 
-        public void add( Throwable t )
+        /**
+         * Returns {@link AtomicInteger} for the unique stack trace provided. It gets updated
+         * as more are added.
+         */
+        public AtomicInteger add( Throwable t )
         {
             Stack key = new Stack( t, considerMessages );
             AtomicInteger count = uniqueStackTraces.get( key );
@@ -156,6 +160,7 @@ public class DebugUtil
                 uniqueStackTraces.put( key, count );
             }
             count.incrementAndGet();
+            return count;
         }
 
         public void print( PrintStream out, int interestThreshold )

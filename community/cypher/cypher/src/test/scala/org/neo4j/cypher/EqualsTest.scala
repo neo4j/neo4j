@@ -19,11 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-
-@RunWith(classOf[JUnitRunner])
-class EqualsTest extends ExecutionEngineFunSuite {
+class EqualsTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("should not throw semantic check error for number-typed integer comparison") {
     createNode()
@@ -37,7 +33,7 @@ class EqualsTest extends ExecutionEngineFunSuite {
         |WITH arr[0] as expected
         |MATCH (n) WHERE id(n)=expected
         |RETURN n""".stripMargin
-    val result = execute(queryWithInt, "parameter" -> "placeholder")
+    val result = executeWithAllPlanners(queryWithInt, "parameter" -> "placeholder")
 
     result.toList.length shouldBe 1
   }
@@ -54,7 +50,7 @@ class EqualsTest extends ExecutionEngineFunSuite {
         |WITH arr[0] as expected
         |MATCH (n) WHERE id(n)=expected
         |RETURN n""".stripMargin
-    val result = execute(queryWithFloat, "parameter" -> "placeholder")
+    val result = executeWithAllPlanners(queryWithFloat, "parameter" -> "placeholder")
 
     result.toList shouldBe empty
   }
@@ -71,7 +67,7 @@ class EqualsTest extends ExecutionEngineFunSuite {
         |WITH arr[0] as expected
         |MATCH (n) WHERE id(n)=expected
         |RETURN n""".stripMargin
-    val result = execute(queryWithString, "parameter" -> "placeholder")
+    val result = executeWithAllPlanners(queryWithString, "parameter" -> "placeholder")
 
     result.toList shouldBe empty
   }
@@ -80,18 +76,15 @@ class EqualsTest extends ExecutionEngineFunSuite {
     // given
     createLabeledNode("Person")
 
-    evaluating {
-      execute("MATCH (b) WHERE b = {param} RETURN b", "param" -> Map("name" -> "John Silver"))
-    } should produce[IncomparableValuesException]
+    intercept[IncomparableValuesException](executeWithAllPlanners("MATCH (b) WHERE b = {param} RETURN b",
+      "param" -> Map("name" -> "John Silver")))
   }
 
   test("should prohibit equals between parameter and node") {
     // given
     createLabeledNode("Person")
 
-    evaluating {
-      execute("MATCH (b) WHERE {param} = b RETURN b", "param" -> Map("name" -> "John Silver"))
-    } should produce[IncomparableValuesException]
+    intercept[IncomparableValuesException](executeWithAllPlanners("MATCH (b) WHERE {param} = b RETURN b", "param" -> Map("name" -> "John Silver")))
   }
 
   test("should allow equals between node and node") {
@@ -99,7 +92,7 @@ class EqualsTest extends ExecutionEngineFunSuite {
     createLabeledNode("Person")
 
     // when
-    val result = executeScalar[Number]("MATCH (a) WITH a MATCH (b) WHERE a = b RETURN count(b)")
+    val result = executeScalarWithAllPlanners[Number]("MATCH (a) WITH a MATCH (b) WHERE a = b RETURN count(b)")
 
     // then
     result should be (1)
@@ -109,9 +102,7 @@ class EqualsTest extends ExecutionEngineFunSuite {
     // given
     createLabeledNode(Map("val"->17), "Person")
 
-    evaluating {
-      execute("MATCH (a) WHERE a = a.val RETURN count(a)")
-    } should produce[IncomparableValuesException]
+    intercept[IncomparableValuesException](executeWithAllPlanners("MATCH (a) WHERE a = a.val RETURN count(a)"))
   }
 
 
@@ -120,7 +111,7 @@ class EqualsTest extends ExecutionEngineFunSuite {
     relate(createLabeledNode("Person"), createLabeledNode("Person"))
 
     // when
-    val result = executeScalar[Number]("MATCH ()-[a]->() WITH a MATCH ()-[b]->() WHERE a = b RETURN count(b)")
+    val result = executeScalarWithAllPlanners[Number]("MATCH ()-[a]->() WITH a MATCH ()-[b]->() WHERE a = b RETURN count(b)")
 
     // then
     result should be (1)
@@ -130,18 +121,39 @@ class EqualsTest extends ExecutionEngineFunSuite {
     // given
     relate(createLabeledNode("Person"), createLabeledNode("Person"))
 
-    evaluating {
-      execute("MATCH (a)-[b]->() RETURN a = b")
-    } should produce[IncomparableValuesException]
+    intercept[IncomparableValuesException](executeWithAllPlanners("MATCH (a)-[b]->() RETURN a = b"))
   }
 
   test("should reject equals between relationship and node") {
     // given
     relate(createLabeledNode("Person"), createLabeledNode("Person"))
 
-    evaluating {
-      execute("MATCH (a)-[b]->() RETURN b = a")
-    } should produce[IncomparableValuesException]
+    intercept[IncomparableValuesException](executeWithAllPlanners("MATCH (a)-[b]->() RETURN b = a"))
+  }
+
+  test("should be able to send in node via parameter") {
+    // given
+    val node = createLabeledNode("Person")
+
+    val result = executeWithAllPlanners("MATCH (b) WHERE b = {param} RETURN b", "param" -> node)
+    result.toList should equal(List(Map("b" -> node)))
+  }
+
+  test("should be able to send in relationship via parameter") {
+    // given
+    val rel = relate(createLabeledNode("Person"), createLabeledNode("Person"))
+
+    val result = executeWithAllPlanners("MATCH (:Person)-[r]->(:Person) WHERE r = {param} RETURN r", "param" -> rel)
+    result.toList should equal(List(Map("r" -> rel)))
+  }
+
+  test("should be able to compare two nodes") {
+    // given
+    val node = createLabeledNode("Person")
+    relate(node, node)
+
+    val result = executeWithAllPlanners("MATCH (a:Person)-->(b:Person) WHERE a = b RETURN a")
+    result.toList should equal(List(Map("a" -> node)))
   }
 
   test("should treat chars as strings in equality") {

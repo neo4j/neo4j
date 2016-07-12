@@ -23,9 +23,9 @@ import static org.neo4j.kernel.impl.locking.Locks.ResourceType;
 
 public interface Locking
 {
-    void acquireExclusive( ResourceType type, long ... id );
-    void acquireShared(    ResourceType type, long ... id );
+    void acquireExclusive( ResourceType type, long id );
+    void acquireShared(    ResourceType type, long id );
 
-    void releaseExclusive( ResourceType type, long ... id );
-    void releaseShared(    ResourceType type, long ... id );
+    void releaseExclusive( ResourceType type, long id );
+    void releaseShared(    ResourceType type, long id );
 }

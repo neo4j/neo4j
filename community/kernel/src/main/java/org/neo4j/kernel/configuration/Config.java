@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.configuration;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,10 +33,11 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
-import org.neo4j.kernel.logging.BufferingLogger;
+import org.neo4j.logging.BufferingLog;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.Logger;
 
 import static java.lang.Character.isDigit;
 import static java.util.Arrays.asList;
@@ -59,7 +61,8 @@ public class Config implements DiagnosticsProvider
 
     // Messages to this log get replayed into a real logger once logging has been
     // instantiated.
-    private StringLogger log = new BufferingLogger();
+    private final BufferingLog bufferedLog = new BufferingLog();
+    private Log log = bufferedLog;
 
     private Iterable<Class<?>> settingsClasses = emptyList();
     private ConfigurationMigrator migrator;
@@ -85,12 +88,6 @@ public class Config implements DiagnosticsProvider
         this.settingsFunction = Functions.map( params );
         this.params.putAll( inputParams );
         registerSettingsClasses( settingsClasses );
-    }
-
-    /** Add more settings classes */
-    public Config registerSettingsClasses( Class<?> ... settingsClasses )
-    {
-        return registerSettingsClasses( asList(settingsClasses) );
     }
 
     /** Add more settings classes. */
@@ -138,9 +135,22 @@ public class Config implements DiagnosticsProvider
     }
 
     /**
+     * Augment the existing config with new settings, overriding any conflicting settings, but keeping all old
+     * non-overlapping ones.
+     * @param changes settings to add and override
+     */
+    public Config augment( Map<String,String> changes )
+    {
+        Map<String,String> params = getParams();
+        params.putAll( changes );
+        applyChanges( params );
+        return this;
+    }
+
+    /**
      * Replace the current set of configuration parameters with another one.
      */
-    public synchronized void applyChanges( Map<String, String> newConfiguration )
+    public synchronized Config applyChanges( Map<String, String> newConfiguration )
     {
         newConfiguration = migrator.apply( newConfiguration, log );
 
@@ -172,7 +182,7 @@ public class Config implements DiagnosticsProvider
             if ( configurationChanges.isEmpty() )
             {
                 // Don't bother... nothing changed.
-                return;
+                return this;
             }
 
             // Make the change
@@ -194,6 +204,8 @@ public class Config implements DiagnosticsProvider
                 listener.notifyConfigurationChanges( configurationChanges );
             }
         }
+
+        return this;
     }
 
     public Iterable<Class<?>> getSettingsClasses()
@@ -201,11 +213,11 @@ public class Config implements DiagnosticsProvider
         return settingsClasses;
     }
 
-    public void setLogger( StringLogger log )
+    public void setLogger( Log log )
     {
-        if ( this.log instanceof BufferingLogger )
+        if ( this.log == bufferedLog )
         {
-            ((BufferingLogger) this.log).replayInto( log );
+            bufferedLog.replayInto( log );
         }
         this.log = log;
     }
@@ -233,19 +245,15 @@ public class Config implements DiagnosticsProvider
     }
 
     @Override
-    public void dump( DiagnosticsPhase phase, StringLogger log )
+    public void dump( DiagnosticsPhase phase, Logger logger )
     {
         if ( phase.isInitialization() || phase.isExplicitlyRequested() )
         {
-            log.logLongMessage( "Neo4j Kernel properties:", Iterables.map( new Function<Map.Entry<String, String>,
-                    String>()
+            logger.log( "Neo4j Kernel properties:" );
+            for ( Map.Entry<String, String> param : params.entrySet() )
             {
-                @Override
-                public String apply( Map.Entry<String, String> stringStringEntry )
-                {
-                    return stringStringEntry.getKey() + "=" + stringStringEntry.getValue();
-                }
-            }, params.entrySet() ) );
+                logger.log( "%s=%s", param.getKey(), param.getValue() );
+            }
         }
     }
 
@@ -321,5 +329,20 @@ public class Config implements DiagnosticsProvider
         Map<String, String> newParams = getParams(); // copy is returned
         newParams.putAll( additionalConfig );
         return new Config( newParams );
+    }
+
+    /**
+     * Looks at configured file {@code absoluteOrRelativeFile} and just returns it if absolute, otherwise
+     * returns a {@link File} with {@code baseDirectoryIfRelative} as parent.
+     *
+     * @param baseDirectoryIfRelative base directory to use as parent if {@code absoluteOrRelativeFile}
+     * is relative, otherwise unused.
+     * @param absoluteOrRelativeFile file to return as absolute or relative to {@code baseDirectoryIfRelative}.
+     */
+    public static File absoluteFileOrRelativeTo( File baseDirectoryIfRelative, File absoluteOrRelativeFile )
+    {
+        return absoluteOrRelativeFile.isAbsolute()
+                ? absoluteOrRelativeFile
+                : new File( baseDirectoryIfRelative, absoluteOrRelativeFile.getPath() );
     }
 }

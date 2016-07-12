@@ -19,34 +19,32 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.internal.InOrderImpl;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
+import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.JumpingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
+import static org.junit.Assert.assertFalse;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 public class PropertyStoreTest
 {
@@ -65,57 +63,56 @@ public class PropertyStoreTest
         path = new File( "/tmp/foobar" );
 
         fileSystemAbstraction.mkdir( path.getParentFile() );
-        fileSystemAbstraction.create( path );
     }
 
     @Test
     public void shouldWriteOutTheDynamicChainBeforeUpdatingThePropertyRecord() throws IOException
     {
         // given
-        PageCache pageCache = mock( PageCache.class );
-
-        PagedFile storeFile = mock( PagedFile.class );
-        when( pageCache.map( any( File.class ), anyInt() ) ).thenReturn( storeFile );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
+        Config config = new Config();
+        config.setProperty( PropertyStore.Configuration.rebuild_idgenerators_fast.name(), "true" );
 
         DynamicStringStore stringPropertyStore = mock( DynamicStringStore.class );
 
-        PageCursor cursor = mock( PageCursor.class );
-        when( cursor.next() ).thenReturn( true );
+        final PropertyStore store = new PropertyStore( path, config, new JumpingIdGeneratorFactory( 1 ), pageCache,
+                NullLogProvider.getInstance(), stringPropertyStore,
+                mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class )  );
+        store.initialise( true );
 
-        when( storeFile.io( anyInt(), anyInt() ) ).thenReturn( cursor );
-        when( storeFile.pageSize() ).thenReturn( 8 );
+        try
+        {
+            store.makeStoreOk();
+            final long propertyRecordId = store.nextId();
 
-        org.neo4j.kernel.configuration.Config config = mock( org.neo4j.kernel.configuration.Config.class );
-        when( config.get( PropertyStore.Configuration.rebuild_idgenerators_fast ) ).thenReturn( true );
+            PropertyRecord record = new PropertyRecord( propertyRecordId );
+            record.setInUse( true );
 
+            DynamicRecord dynamicRecord = dynamicRecord();
+            PropertyBlock propertyBlock = propertyBlockWith( dynamicRecord );
+            record.setPropertyBlock( propertyBlock );
 
-        PropertyStore store = new PropertyStore( path, config, new JumpingIdGeneratorFactory( 1 ), pageCache,
-                fileSystemAbstraction, StringLogger
-                .DEV_NULL, stringPropertyStore, mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class ),
-                null, null );
+            doAnswer( new Answer()
+            {
+                @Override
+                public Object answer( InvocationOnMock invocation ) throws Throwable
+                {
+                    PropertyRecord recordBeforeWrite = store.forceGetRecord( propertyRecordId );
+                    assertFalse( recordBeforeWrite.inUse() );
+                    return null;
+                }
+            } ).when( stringPropertyStore ).updateRecord( dynamicRecord );
 
-        store.makeStoreOk();
-        long l = store.nextId();
+            // when
+            store.updateRecord( record );
 
-        PropertyRecord record = new PropertyRecord( l );
-        record.setInUse( true );
-
-        DynamicRecord dynamicRecord = dynamicRecord();
-        PropertyBlock propertyBlock = propertyBlockWith( dynamicRecord );
-        record.setPropertyBlock( propertyBlock );
-
-        // when
-        store.updateRecord( record );
-
-        // then
-        InOrderImpl inOrder = new InOrderImpl( Arrays.<Object>asList(stringPropertyStore, cursor) );
-
-        inOrder.verify( stringPropertyStore ).updateRecord( dynamicRecord );
-
-        inOrder.verify( cursor ).putByte( (byte) 0 );
-        inOrder.verify( cursor, times( 2 ) ).putInt( -1 );
-        inOrder.verify( cursor ).putLong( propertyBlock.getValueBlocks()[0] );
-        inOrder.verify( cursor ).putLong( 0 );
+            // then verify that our mocked method above, with the assert, was actually called
+            verify( stringPropertyStore ).updateRecord( dynamicRecord );
+        }
+        finally
+        {
+            store.close();
+        }
     }
 
     private DynamicRecord dynamicRecord()
@@ -138,6 +135,4 @@ public class PropertyStoreTest
 
         return propertyBlock;
     }
-
-
 }

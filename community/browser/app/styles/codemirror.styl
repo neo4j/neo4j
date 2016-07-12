@@ -2,7 +2,7 @@
 @import 'mixins'
 @import 'nib'
 
-left-margin = 16px
+left-margin = 6px
 
 .code-style
   font-family: mono-font-family
@@ -73,7 +73,7 @@ left-margin = 16px
     transist top
 
   .prompt
-    absolute: top 24px left (left-margin + 9px)
+    absolute: top 24px left (left-margin + 22px)
     color: #93969b
     opacity: 0
 
@@ -86,3 +86,14 @@ left-margin = 16px
   .disable-highlighting
     .CodeMirror .CodeMirror-code *
       color: #7B7F89
+
+  .cypher-hints
+    width: .8em
+
+  .gutter-warning
+    color: color-warning-on-white
+    opacity: .6
+    font-size: 14px
+    line-height: 23px
+    display: inherit
+    cursor: pointer

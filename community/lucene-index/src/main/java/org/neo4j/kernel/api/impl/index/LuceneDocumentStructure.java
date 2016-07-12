@@ -24,8 +24,10 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Query;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.NumericUtils;
 
 import org.neo4j.kernel.api.index.ArrayEncoder;
@@ -70,7 +72,7 @@ public class LuceneDocumentStructure
             }
 
             @Override
-            Query encodeQuery( Object value )
+            TermQuery encodeQuery( Object value )
             {
                 String encodedString = NumericUtils.doubleToPrefixCoded( ((Number)value).doubleValue() );
                 return new TermQuery( new Term( key(), encodedString ) );
@@ -97,7 +99,7 @@ public class LuceneDocumentStructure
             }
 
             @Override
-            Query encodeQuery( Object value )
+            TermQuery encodeQuery( Object value )
             {
                 return new TermQuery( new Term( key(), ArrayEncoder.encode( value ) ) );
             }
@@ -123,7 +125,7 @@ public class LuceneDocumentStructure
             }
 
             @Override
-            Query encodeQuery( Object value )
+            TermQuery encodeQuery( Object value )
             {
                 return new TermQuery( new Term( key(), value.toString() ) );
             }
@@ -150,7 +152,7 @@ public class LuceneDocumentStructure
             }
 
             @Override
-            Query encodeQuery( Object value )
+            TermQuery encodeQuery( Object value )
             {
                 return new TermQuery( new Term( key(), value.toString() ) );
             }
@@ -160,7 +162,7 @@ public class LuceneDocumentStructure
 
         abstract boolean canEncode( Object value );
         abstract Fieldable encodeField( Object value );
-        abstract Query encodeQuery( Object value );
+        abstract TermQuery encodeQuery( Object value );
 
         public static ValueEncoding fromKey( String key )
         {
@@ -212,7 +214,12 @@ public class LuceneDocumentStructure
         return result;
     }
 
-    public Query newQuery( Object value )
+    public MatchAllDocsQuery newScanQuery()
+    {
+        return new MatchAllDocsQuery();
+    }
+
+    public TermQuery newSeekQuery( Object value )
     {
         for ( ValueEncoding encoding : ValueEncoding.values() )
         {
@@ -221,10 +228,66 @@ public class LuceneDocumentStructure
                 return encoding.encodeQuery( value );
             }
         }
-        throw new IllegalArgumentException( format( "Unable to create newQuery for %s", value ) );
+        throw new IllegalArgumentException( format( "Unable to create query for %s", value ) );
     }
 
-    public Term newQueryForChangeOrRemove( long nodeId )
+    /**
+     * Range queries are always inclusive, in order to do exclusive range queries the result must be filtered after the
+     * fact. The reason we can't do inclusive range queries is that longs are coerced to doubles in the index.
+     */
+    public TermRangeQuery newInclusiveNumericRangeSeekQuery( Number lower, Number upper )
+    {
+        String chosenLower = (lower == null) ? null : NumericUtils.doubleToPrefixCoded( lower.doubleValue() );
+        String chosenUpper = (upper == null) ? null : NumericUtils.doubleToPrefixCoded( upper.doubleValue() );
+
+        return new TermRangeQuery(
+                ValueEncoding.Number.key(),
+                chosenLower, chosenUpper,
+                true, true
+        );
+    }
+
+    public TermRangeQuery newRangeSeekByStringQuery( String lower, boolean includeLower,
+                                                     String upper, boolean upperInclusive )
+    {
+        String chosenLower, chosenUpper;
+        boolean includeChosenLower, includeChosenUpper;
+
+        if ( lower == null )
+        {
+            chosenLower = null;
+            includeChosenLower = true;
+        }
+        else
+        {
+            chosenLower = lower;
+            includeChosenLower = includeLower;
+        }
+
+        if ( upper == null )
+        {
+            chosenUpper = null;
+            includeChosenUpper = true;
+        }
+        else
+        {
+            chosenUpper = upper;
+            includeChosenUpper = upperInclusive;
+        }
+
+        return new TermRangeQuery(
+                ValueEncoding.String.key(),
+                chosenLower, chosenUpper,
+                includeChosenLower, includeChosenUpper
+        );
+    }
+
+    public PrefixQuery newRangeSeekByPrefixQuery( String prefix )
+    {
+        return new PrefixQuery( new Term( ValueEncoding.String.key(), prefix ) );
+    }
+
+    public Term newTermForChangeOrRemove( long nodeId )
     {
         return new Term( NODE_ID_KEY, "" + nodeId );
     }

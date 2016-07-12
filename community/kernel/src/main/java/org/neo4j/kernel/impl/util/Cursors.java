@@ -19,132 +19,197 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import java.io.IOException;
-import java.util.Collections;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.impl.transaction.log.IOCursor;
+import org.neo4j.function.ToIntFunction;
+import org.neo4j.graphdb.Resource;
 
 public class Cursors
 {
-    public static <T> ResourceIterable<T> iterable(final IOCursor<T> cursor)
+    private static Cursor<Object> EMPTY = new Cursor<Object>()
     {
-        return new ResourceIterable<T>()
-        {
-            @Override
-            public ResourceIterator<T> iterator()
-            {
-                try
-                {
-                    if (cursor.next())
-                    {
-                        final T first = cursor.get();
-
-                        return new ResourceIterator<T>()
-                        {
-                            T instance = first;
-
-                            @Override
-                            public boolean hasNext()
-                            {
-                                return instance != null;
-                            }
-
-                            @Override
-                            public T next()
-                            {
-                                try
-                                {
-                                    return instance;
-                                }
-                                finally
-                                {
-                                    try
-                                    {
-                                        if (cursor.next())
-                                        {
-                                            instance = cursor.get();
-                                        } else
-                                        {
-                                            cursor.close();
-                                            instance = null;
-                                        }
-                                    }
-                                    catch ( IOException e )
-                                    {
-                                        instance = null;
-                                    }
-                                }
-                            }
-
-                            @Override
-                            public void remove()
-                            {
-                                throw new UnsupportedOperationException(  );
-                            }
-
-                            @Override
-                            public void close()
-                            {
-                                try
-                                {
-                                    cursor.close();
-                                }
-                                catch ( IOException e )
-                                {
-                                    // Ignore
-                                }
-                            }
-                        };
-                    } else
-                    {
-                        cursor.close();
-                        return IteratorUtil.<T>asResourceIterator( Collections.<T>emptyIterator());
-                    }
-                }
-                catch ( IOException e )
-                {
-                    return IteratorUtil.<T>asResourceIterator( Collections.<T>emptyIterator());
-                }
-            }
-        };
-    }
-
-    public static Cursor countDownCursor( final int count )
-    {
-        return new CountDownCursor( count );
-    }
-
-    public static class CountDownCursor implements Cursor
-    {
-        private final int count;
-        private int current;
-
-        public CountDownCursor( int count )
-        {
-            this.count = count;
-            current = count;
-        }
-
         @Override
         public boolean next()
         {
-            return current-- > 0;
+            return false;
         }
 
         @Override
-        public void reset()
+        public Object get()
         {
-            current = count;
+            return null;
         }
 
         @Override
         public void close()
         {
-            current = 0;
+
+        }
+    };
+
+    @SuppressWarnings("unchecked")
+    public static <T> Cursor<T> empty()
+    {
+        return (Cursor<T>) EMPTY;
+    }
+
+    public static <T> Cursor<T> cursor( final T... items )
+    {
+        return new Cursor<T>()
+        {
+            int idx = 0;
+            T current;
+
+            @Override
+            public boolean next()
+            {
+                if ( idx < items.length )
+                {
+                    current = items[idx++];
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            @Override
+            public void close()
+            {
+                idx = 0;
+                current = null;
+            }
+
+            @Override
+            public T get()
+            {
+                if ( current == null )
+                {
+                    throw new IllegalStateException();
+                }
+
+                return current;
+            }
+        };
+    }
+
+    public static <T> Cursor<T> cursor( final Iterable<T> items )
+    {
+        return new Cursor<T>()
+        {
+            Iterator<T> iterator = items.iterator();
+
+            T current;
+
+            @Override
+            public boolean next()
+            {
+                if ( iterator.hasNext() )
+                {
+                    current = iterator.next();
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            @Override
+            public void close()
+            {
+                iterator = items.iterator();
+                current = null;
+            }
+
+            @Override
+            public T get()
+            {
+                if ( current == null )
+                {
+                    throw new IllegalStateException();
+                }
+
+                return current;
+            }
+        };
+    }
+
+    public static <T> PrimitiveIntIterator intIterator( final Cursor<T> resourceCursor, final ToIntFunction<T> map )
+    {
+        return new CursorPrimitiveIntIterator<>( resourceCursor, map );
+    }
+
+    private static class CursorPrimitiveIntIterator<T> implements PrimitiveIntIterator, Resource
+    {
+        private final ToIntFunction<T> map;
+        private Cursor<T> cursor;
+        private boolean hasNext;
+
+        public CursorPrimitiveIntIterator( Cursor<T> resourceCursor, ToIntFunction<T> map )
+        {
+            this.map = map;
+            cursor = resourceCursor;
+            hasNext = nextCursor();
+        }
+
+        private boolean nextCursor()
+        {
+            if ( cursor != null )
+            {
+                boolean hasNext = cursor.next();
+                if ( !hasNext )
+                {
+                    close();
+                }
+                return hasNext;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return hasNext;
+        }
+
+        @Override
+        public int next()
+        {
+            if ( hasNext )
+            {
+                try
+                {
+                    return map.apply( cursor.get() );
+                }
+                finally
+                {
+                    hasNext = nextCursor();
+                }
+            }
+            else
+            {
+                throw new NoSuchElementException();
+            }
+        }
+
+        @Override
+        public void close()
+        {
+            if ( cursor != null )
+            {
+                cursor.close();
+                cursor = null;
+            }
         }
     }
+
+
 }

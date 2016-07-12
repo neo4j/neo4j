@@ -21,6 +21,10 @@ package org.neo4j.cluster.com;
 
 import org.neo4j.cluster.BindingListener;
 
+/**
+ * Instances of this interface notify listeners when the cluster client has been bound to a particular network interface
+ * and port.
+ */
 public interface BindingNotifier
 {
     public void addBindingListener( BindingListener listener );

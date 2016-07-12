@@ -79,8 +79,7 @@ abstract class IndexKey implements CountsKey
             return false;
         }
 
-        org.neo4j.kernel.impl.store.counts.keys.IndexKey indexKey = (org.neo4j.kernel.impl.store.counts.keys.IndexKey) other;
+        IndexKey indexKey = (IndexKey) other;
         return labelId == indexKey.labelId && propertyKeyId == indexKey.propertyKeyId && type == indexKey.type;
-
     }
 }

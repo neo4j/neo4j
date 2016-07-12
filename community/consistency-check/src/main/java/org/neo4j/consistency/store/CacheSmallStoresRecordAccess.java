@@ -29,7 +29,7 @@ public class CacheSmallStoresRecordAccess extends DelegatingRecordAccess
     private final RelationshipTypeTokenRecord[] relationshipTypes;
     private final LabelTokenRecord[] labels;
 
-    public CacheSmallStoresRecordAccess( DiffRecordAccess delegate,
+    public CacheSmallStoresRecordAccess( RecordAccess delegate,
                                          PropertyKeyTokenRecord[] propertyKeys,
                                          RelationshipTypeTokenRecord[] relationshipTypes,
                                          LabelTokenRecord[] labels )

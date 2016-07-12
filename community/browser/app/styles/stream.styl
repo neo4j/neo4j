@@ -120,6 +120,8 @@
         minimum-height: middlebar-height
         background: #F8F9FB
         z-index: 10
+        pre
+          margin: 0
         &.fade
           transition: .6s all linear
           opacity: 1
@@ -130,6 +132,10 @@
           &.ng-hide-remove.ng-hide-remove-active, &.ng-hide-add
             opacity: 1
 
+        .warn
+          color: #666
+          font-size: 0.9em
+          padding-bottom: 4px
 
         .form-info
           font-size: 12px
@@ -145,6 +151,18 @@
             display: table
             width: 100%
             min-height: frame-min-height
+            svg
+              width: 100%
+            &.one-legend-row
+              svg
+                height: (svg-start-height - legend-row-height)
+              .frame-notifications
+                padding-top: legend-row-height
+            &.two-legend-rows
+              svg
+                height: (svg-start-height - legend-row-height*2)
+              .frame-notifications
+                padding-top: legend-row-height*2
             > *
               display: table-row
               > .cell
@@ -154,13 +172,7 @@
                 height: middlebar-height
                 line-height: middlebar-height
                 vertical-align: middle
-            svg
-              width: 100%
-              height: svg-start-height
-              &.one-legend-row
-                height: (svg-start-height - legend-row-height)
-              &.two-legend-rows
-                height: (svg-start-height - legend-row-height*2)
+
             a.fa-table
               font-size: 24px
               absolute: bottom 57px right horizontal-padding
@@ -189,7 +201,24 @@
             overflow: auto
             background: #fff
 
+        .view-result-raw
+          position: relative
+          max-height: frame-result-height
+          min-height: frame-min-height
+          .raw-holder
+            max-height: (frame-result-height - middlebar-height)
+            min-height: (frame-min-height - middlebar-height)
+            overflow: auto
+
         .view-result-error
+          &.with-frame-menu
+            max-height: frame-result-height
+            min-height: frame-min-height
+            .error-holder
+              max-height: (frame-result-height - middlebar-height)
+              min-height: (frame-min-height - middlebar-height)
+              overflow: auto
+              background: #fff
           pre
             font-family: mono-font-family
             font-size: 14px
@@ -198,6 +227,41 @@
             background: none
             border: none
 
+        .view-result-messages
+          max-height: frame-result-height
+          min-height: frame-min-height
+          .messages-holder
+            max-height: (frame-result-height - middlebar-height)
+            min-height: (frame-min-height - middlebar-height)
+            overflow: auto
+            background: #fff
+            pre
+              font-family: mono-font-family
+              font-size: 14px
+              padding: 12px 16px
+              margin: 0
+              border: none
+            h4
+              vertical-align: bottom
+          .cypher-messages
+            padding: 10px 0 10px 0
+            .cypher-message
+              display: inline-block
+              font-weight: bold
+              line-height: 1em
+              text-align: center
+              white-space: nowrap
+              vertical-align: baseline
+              user-select: none
+              font-size: 12px
+              margin-right: 5px
+              padding: 4px 7px 4px 5px
+              border-radius: 3px
+              &.cypher-message-warning
+                background-color: color-warning-on-white
+                color: #FFFFFF
+              &.cypher-message-error
+                background-color: color-error
         .view-result-loading
           .spinner
             height: 40px
@@ -208,6 +272,7 @@
             margin-left: auto
             margin-right: auto
             text-align: center
+
     footer
       position: relative
       padding: 0
@@ -223,6 +288,59 @@
         border-top: 1px solid #c8cbd2
         height: 39px
         line-height: 39px
+
+.frame-notifications
+  width: 30%
+  max-width: 355px
+  position: absolute
+  top: 0
+  right: 0
+  bottom: middlebar-height
+  pointer-events: none
+  z-index: 20
+  overflow: hidden
+  .repeater
+    margin: 10px 10px 0 0
+    .animation-layer
+      transition: max-height .7s
+      max-height: 180px
+      overflow: hidden
+      &.closing
+        max-height: 0
+      .table-wrapper
+        display: table
+        .frame-notification
+          cursor: pointer
+          position: relative
+          display: table-cell
+          vertical-align: middle
+          height: 100%
+          border-radius: 4px
+          width: 100%
+          background-color: #428BCA
+          pointer-events:all
+          p
+            line-height: 16px
+            padding: 10px 30px 0 10px
+            font-size: 13px
+            float: left
+            color: white
+          .close-notification
+            position: absolute
+            right: 10px
+            top: -5px
+            font-size: 16px
+            a
+              line-height: 40px
+              color: white
+              &:hover
+                color: #eeeeee
+          &.notif-default
+            background-color: #428BCA
+          &.notif-warning
+            background-color: #ff8400
+          &.notif-error
+            background-color: #E74C3C
 
 .code-bar
   background: #fff

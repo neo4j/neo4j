@@ -39,7 +39,7 @@ public class BatchEndpointIT
     @Rule
     public final Neo4jRule neo4j = new Neo4jRule()
             .withConfig( ServerSettings.http_logging_enabled, "true" )
-            .withConfig( ServerSettings.http_log_config_File, createDummyLogbackConfigFile() )
+            .withConfig( ServerSettings.http_log_config_file, createDummyLogbackConfigFile() )
             .withConfig( ServerSettings.auth_enabled, "false" );
 
     @Test

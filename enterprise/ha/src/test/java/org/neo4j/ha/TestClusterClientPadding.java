@@ -19,47 +19,33 @@
  */
 package org.neo4j.ha;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
+import org.neo4j.test.ha.ClusterRule;
+
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsJoined;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterWithAdditionalClients;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesMembers;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.impl.ha.ClusterManager;
-import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
-import org.neo4j.test.TargetDirectory;
-
-@Ignore("build failures make this block forever")
 public class TestClusterClientPadding
 {
-    private static TargetDirectory dir = TargetDirectory.forTest( TestClusterClientPadding.class );
-    private ClusterManager clusterManager;
+    @Rule
+    public ClusterRule clusterRule = new ClusterRule( getClass() );
     private ManagedCluster cluster;
-    
+
     @Before
-    public void before() throws Throwable
+    public void setUp() throws Throwable
     {
-        clusterManager = new ClusterManager( clusterWithAdditionalClients( 2, 1 ),
-                dir.cleanDirectory( "dbs" ), stringMap() );
-        clusterManager.start();
-        cluster = clusterManager.getDefaultCluster();
-        cluster.await( masterAvailable() );
-        cluster.await( masterSeesMembers( 3 ) );
-        cluster.await( allSeesAllAsJoined() );
+        cluster = clusterRule.withProvider( clusterWithAdditionalClients( 2, 1 ) )
+                .withAvailabilityChecks( masterAvailable(), masterSeesMembers( 3 ), allSeesAllAsJoined() )
+                .startCluster();
     }
 
-    @After
-    public void after() throws Throwable
-    {
-        clusterManager.shutdown();
-    }
-    
     @Test
     public void additionalClusterClientCanHelpBreakTiesWhenMasterIsShutDown() throws Throwable
     {
@@ -71,8 +57,7 @@ public class TestClusterClientPadding
     @Test
     public void additionalClusterClientCanHelpBreakTiesWhenMasterFails() throws Throwable
     {
-        HighlyAvailableGraphDatabase sittingMaster = null;
-        sittingMaster = cluster.getMaster();
+        HighlyAvailableGraphDatabase sittingMaster = cluster.getMaster();
         cluster.fail( sittingMaster );
         cluster.await( masterAvailable( sittingMaster ) );
     }

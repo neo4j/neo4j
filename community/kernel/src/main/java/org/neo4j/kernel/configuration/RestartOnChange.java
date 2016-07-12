@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.configuration;
 
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Predicate;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
@@ -39,11 +39,20 @@ public class RestartOnChange
         this( new Predicate<String>()
         {
             @Override
-            public boolean accept( String item )
+            public boolean test( String item )
             {
                 return item.startsWith( configurationNamePrefix );
             }
         }, life );
+    }
+
+    /**
+     * @deprecated use {@link #RestartOnChange(Predicate, Lifecycle)} instead
+     */
+    @Deprecated
+    public RestartOnChange( org.neo4j.helpers.Predicate<String> restartSpecification, Lifecycle life )
+    {
+        this( org.neo4j.helpers.Predicates.upgrade( restartSpecification ), life );
     }
 
     public RestartOnChange( Predicate<String> restartSpecification, Lifecycle life )
@@ -58,7 +67,7 @@ public class RestartOnChange
         boolean restart = false;
         for ( ConfigurationChange configurationChange : change )
         {
-            restart |= restartSpecification.accept( configurationChange.getName() );
+            restart |= restartSpecification.test( configurationChange.getName() );
         }
 
         if ( restart )

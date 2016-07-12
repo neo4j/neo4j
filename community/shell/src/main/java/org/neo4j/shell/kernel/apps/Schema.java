@@ -23,11 +23,13 @@ import java.rmi.RemoteException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.function.Function;
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -41,6 +43,7 @@ import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 
+import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.indexOf;
 import static org.neo4j.helpers.collection.Iterables.sort;
@@ -49,6 +52,8 @@ import static org.neo4j.shell.Continuation.INPUT_COMPLETE;
 
 public class Schema extends TransactionProvidingApp
 {
+    private static final String INDENT = "  ";
+
     private static final Function<IndexDefinition, String> LABEL_COMPARE_FUNCTION =
             new Function<IndexDefinition, String>()
             {
@@ -62,6 +67,8 @@ public class Schema extends TransactionProvidingApp
     {
         addOptionDefinition( "l", new OptionDefinition( OptionValueType.MUST,
                 "Specifies which label selected operation is about" ) );
+        addOptionDefinition( "r", new OptionDefinition( OptionValueType.MUST,
+                "Specifies which relationship type selected operation is about" ) );
         addOptionDefinition( "p", new OptionDefinition( OptionValueType.MUST,
                 "Specifies which property selected operation is about" ) );
         addOptionDefinition( "a", new OptionDefinition( OptionValueType.NONE,
@@ -79,10 +86,12 @@ public class Schema extends TransactionProvidingApp
                 "Listing indexes\n" +
                 "  schema ls\n" +
                 "  schema ls -l :Person\n" +
+                "  schema ls -r :KNOWS\n" +
                 "Sample indexes all indexes\n" +
                 "  schema sample -a\n" +
                 "Sample a specific index\n" +
                 "  schema sample -l :Person -p name\n" +
+                "  schema sample -r :KNOWS -p since\n" +
                 "Force a sampling of a specific index\n" +
                 "  schema sample -f -l :Person -p name\n" +
                 "Awaiting indexes to come online\n" +
@@ -95,6 +104,7 @@ public class Schema extends TransactionProvidingApp
         String action = parser.argumentWithDefault( 0, "ls" );
         org.neo4j.graphdb.schema.Schema schema = getServer().getDb().schema();
         Label[] labels = parseLabels( parser );
+        RelationshipType[] relTypes = parseRelTypes( parser );
         String property = parser.option( "p", null );
         boolean sampleAll = parser.options().containsKey( "a" );
         boolean forceSample = parser.options().containsKey( "f" );
@@ -102,14 +112,22 @@ public class Schema extends TransactionProvidingApp
 
         if ( action.equals( "await" ) )
         {
+            if ( relTypes.length > 0 )
+            {
+                throw new ShellException( "It is only possible to await nodes related index" );
+            }
             awaitIndexes( out, schema, labels, property );
         }
         else if ( action.equals( "ls" ) )
         {
-            listIndexesAndConstraints( out, schema, labels, property, verbose );
+            listIndexesAndConstraints( out, schema, labels, relTypes, property, verbose );
         }
         else if ( action.equals( "sample" ) )
         {
+            if ( relTypes.length > 0 )
+            {
+                throw new ShellException( "It is only possible to sample nodes related index" );
+            }
             sampleIndexes( labels, property, sampleAll, forceSample );
         }
         else
@@ -118,6 +136,23 @@ public class Schema extends TransactionProvidingApp
         }
 
         return INPUT_COMPLETE;
+    }
+
+    private void listIndexesAndConstraints( Output out, org.neo4j.graphdb.schema.Schema schema, Label[] labels,
+            RelationshipType[] relTypes, String property, boolean verbose ) throws RemoteException
+    {
+        if ( labels.length > 0 && relTypes.length == 0 )
+        {
+            listNodeIndexesAndConstraints( out, schema, labels, property, verbose );
+        }
+        else if ( relTypes.length > 0 && labels.length == 0 )
+        {
+            listRelationshipIndexesAndConstraints( out, schema, relTypes, property, verbose );
+        }
+        else
+        {
+            listAllIndexesAndConstraints( out, schema, labels, relTypes, property, verbose );
+        }
     }
 
     private void sampleIndexes( Label[] labels, String property, boolean sampleAll, boolean forceSample ) throws ShellException
@@ -203,18 +238,55 @@ public class Schema extends TransactionProvidingApp
         }
     }
 
-    private void listIndexesAndConstraints( Output out, org.neo4j.graphdb.schema.Schema schema, Label[] labels,
-                                            final String property, boolean verbose ) throws RemoteException
+    private void listNodeIndexesAndConstraints( Output out, org.neo4j.graphdb.schema.Schema schema, Label[] labels,
+            String property, boolean verbose ) throws RemoteException
     {
-        reportIndexes( out, schema, labels, property, verbose );
-        reportConstraints( out, schema, labels, property );
+        reportNodeIndexes( out, schema, labels, property, verbose );
+        reportNodeConstraints( out, schema, labels, property );
     }
 
-    private void reportConstraints( Output out, org.neo4j.graphdb.schema.Schema schema, Label[] labels, String
-            property ) throws RemoteException
+    private void listRelationshipIndexesAndConstraints( Output out, org.neo4j.graphdb.schema.Schema schema,
+            RelationshipType[] types, String property, boolean verbose ) throws RemoteException
+    {
+        // no relationship indexes atm
+        reportRelationshipConstraints( out, schema, types, property );
+    }
+
+    private void listAllIndexesAndConstraints( Output out, org.neo4j.graphdb.schema.Schema schema, Label[] labels,
+            RelationshipType[] types, String property, boolean verbose ) throws RemoteException
+    {
+        reportNodeIndexes( out, schema, labels, property, verbose );
+        reportAllConstraints( out, schema, labels, types, property );
+    }
+
+    private void reportNodeConstraints( Output out, org.neo4j.graphdb.schema.Schema schema,
+            Label[] labels, String property ) throws RemoteException
+    {
+        Iterable<ConstraintDefinition> nodeConstraints = constraintsByLabelAndProperty( schema, labels, property );
+        reportConstraints( out, nodeConstraints );
+    }
+
+    private void reportRelationshipConstraints( Output out, org.neo4j.graphdb.schema.Schema schema,
+            RelationshipType[] types, String property ) throws RemoteException
+    {
+        Iterable<ConstraintDefinition> relConstraints = constraintsByTypeAndProperty( schema, types, property );
+        reportConstraints( out, relConstraints );
+    }
+
+    private void reportAllConstraints( Output out, org.neo4j.graphdb.schema.Schema schema,
+            Label[] labels, RelationshipType[] types, String property ) throws RemoteException
+    {
+        Iterable<ConstraintDefinition> allConstraints = concat(
+                constraintsByLabelAndProperty( schema, labels, property ),
+                constraintsByTypeAndProperty( schema, types, property ) );
+
+        reportConstraints( out, allConstraints );
+    }
+
+    private void reportConstraints( Output out, Iterable<ConstraintDefinition> constraints ) throws RemoteException
     {
         int j = 0;
-        for ( ConstraintDefinition constraint : constraintsByLabelAndProperty( schema, labels, property ) )
+        for ( ConstraintDefinition constraint : constraints )
         {
             if ( j == 0 )
             {
@@ -222,10 +294,7 @@ public class Schema extends TransactionProvidingApp
                 out.println( "Constraints" );
             }
 
-            String labelName = constraint.getLabel().name();
-
-            out.println( String.format( "  ON (%s:%s) ASSERT %s", labelName.toLowerCase(), labelName,
-                    constraint.toString() ) );
+            out.println( indent( constraint.toString() ) );
             j++;
 
         }
@@ -236,10 +305,10 @@ public class Schema extends TransactionProvidingApp
         }
     }
 
-    private void reportIndexes( Output out, org.neo4j.graphdb.schema.Schema schema, Label[] labels, String property,
+    private void reportNodeIndexes( Output out, org.neo4j.graphdb.schema.Schema schema, Label[] labels, String property,
             boolean verbose ) throws RemoteException
     {
-        ColumnPrinter printer = new ColumnPrinter( "  ON ", "", "" );
+        ColumnPrinter printer = new ColumnPrinter( indent( "ON " ), "", "" );
         Iterable<IndexDefinition> indexes = indexesByLabelAndProperty( schema, labels, property );
         
         int i = 0;
@@ -301,7 +370,7 @@ public class Schema extends TransactionProvidingApp
             indexes = filter( new Predicate<IndexDefinition>()
             {
                 @Override
-                public boolean accept( IndexDefinition index )
+                public boolean test( IndexDefinition index )
                 {
                     return indexOf( property, index.getPropertyKeys() ) != -1;
                 }
@@ -317,9 +386,27 @@ public class Schema extends TransactionProvidingApp
         return filter( new Predicate<ConstraintDefinition>()
         {
             @Override
-            public boolean accept( ConstraintDefinition constraint )
+            public boolean test( ConstraintDefinition constraint )
             {
-                return hasLabel( constraint, labels ) && isMatchingConstraint( constraint, property );
+                return isNodeConstraint( constraint ) &&
+                       hasLabel( constraint, labels ) &&
+                       isMatchingConstraint( constraint, property );
+            }
+        }, schema.getConstraints() );
+    }
+
+    private Iterable<ConstraintDefinition> constraintsByTypeAndProperty( org.neo4j.graphdb.schema.Schema schema,
+            final RelationshipType[] types, final String property )
+    {
+
+        return filter( new Predicate<ConstraintDefinition>()
+        {
+            @Override
+            public boolean test( ConstraintDefinition constraint )
+            {
+                return isRelationshipConstraint( constraint ) &&
+                       hasType( constraint, types ) &&
+                       isMatchingConstraint( constraint, property );
             }
         }, schema.getConstraints() );
     }
@@ -342,6 +429,35 @@ public class Schema extends TransactionProvidingApp
         return false;
     }
 
+    private static boolean hasType( ConstraintDefinition constraint, RelationshipType[] types )
+    {
+        if ( types.length == 0 )
+        {
+            return true;
+        }
+
+        for ( RelationshipType type : types )
+        {
+            if ( constraint.getRelationshipType().name().equals( type.name() ) )
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean isNodeConstraint( ConstraintDefinition constraint )
+    {
+        return constraint.isConstraintType( ConstraintType.UNIQUENESS ) ||
+               constraint.isConstraintType( ConstraintType.NODE_PROPERTY_EXISTENCE );
+    }
+
+    private static boolean isRelationshipConstraint( ConstraintDefinition constraint )
+    {
+        return constraint.isConstraintType( ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE );
+    }
+
     private boolean isMatchingConstraint( ConstraintDefinition constraint, final String property )
     {
         if ( property == null )
@@ -360,12 +476,17 @@ public class Schema extends TransactionProvidingApp
             indexes = filter( new Predicate<IndexDefinition>()
             {
                 @Override
-                public boolean accept( IndexDefinition item )
+                public boolean test( IndexDefinition item )
                 {
                     return item.getLabel().name().equals( label.name() );
                 }
             }, indexes );
         }
         return indexes;
+    }
+
+    private static String indent( String str )
+    {
+        return INDENT + str;
     }
 }

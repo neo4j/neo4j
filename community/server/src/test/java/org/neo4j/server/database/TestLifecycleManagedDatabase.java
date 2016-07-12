@@ -21,7 +21,6 @@ package org.neo4j.server.database;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -29,17 +28,15 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
-import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.test.BufferingLogging;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.test.ImpermanentDatabaseRule;
-import org.neo4j.test.Mute;
+import org.neo4j.test.SuppressOutput;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
@@ -48,18 +45,19 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
-import static org.neo4j.test.Mute.muteAll;
+import static org.neo4j.test.SuppressOutput.suppressAll;
 
 public class TestLifecycleManagedDatabase
 {
     @Rule
-    public Mute mute = muteAll();
+    public SuppressOutput suppressOutput = suppressAll();
 
-    private final Logging logging = new BufferingLogging();
+    private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule( logging );
+    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule( logProvider );
 
     private File databaseDirectory;
     private Database theDatabase;
@@ -72,15 +70,15 @@ public class TestLifecycleManagedDatabase
         databaseDirectory = createTempDir();
 
         dbFactory = mock( LifecycleManagingDatabase.GraphFactory.class );
-        when(dbFactory.newGraphDatabase( any( String.class ), any( Map.class ), any( Dependencies.class ) ))
+        when(dbFactory.newGraphDatabase( any( Config.class ), any( GraphDatabaseFacadeFactory.Dependencies.class ) ))
                 .thenReturn( dbRule.getGraphDatabaseAPI() );
         theDatabase = newDatabase();
     }
 
     private LifecycleManagingDatabase newDatabase()
     {
-        Config dbConfig = new Config(stringMap( GraphDatabaseSettings.store_dir.name(), databaseDirectory.getAbsolutePath() ));
-        return new LifecycleManagingDatabase( dbConfig, dbFactory, GraphDatabaseDependencies.newDependencies().logging( logging ));
+        Config dbConfig = new Config(stringMap( ServerInternalSettings.legacy_db_location.name(), databaseDirectory.getAbsolutePath() ));
+        return new LifecycleManagingDatabase( dbConfig, dbFactory, GraphDatabaseDependencies.newDependencies().userLogProvider( logProvider ) );
     }
 
     @After
@@ -109,7 +107,9 @@ public class TestLifecycleManagedDatabase
     {
         theDatabase.start();
 
-        assertThat( logging.toString(), containsString( "Successfully started database" ) );
+        logProvider.assertAtLeastOnce(
+                inLog( LifecycleManagingDatabase.class ).info( "Successfully started database" )
+        );
     }
 
     @Test
@@ -118,7 +118,9 @@ public class TestLifecycleManagedDatabase
         theDatabase.start();
         theDatabase.stop();
 
-        assertThat( logging.toString(), containsString( "Successfully stopped database" ) );
+        logProvider.assertAtLeastOnce(
+                inLog( LifecycleManagingDatabase.class ).info( "Successfully stopped database" )
+        );
     }
 
     @Test

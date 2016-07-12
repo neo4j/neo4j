@@ -1,0 +1,52 @@
+[[query-create]]
+= Create
+
+[abstract]
+The `CREATE` clause is used to create graph elements -- nodes and relationships.
+
+[TIP]
+In the `CREATE` clause, patterns are used a lot.
+Read <<introduction-pattern>> for an introduction.
+
+== Create nodes ==
+
+:leveloffset: 3
+
+include::create-single-node.asciidoc[]
+
+include::create-multiple-nodes.asciidoc[]
+
+include::create-a-node-with-a-label.asciidoc[]
+
+include::create-a-node-with-multiple-labels.asciidoc[]
+
+include::create-node-and-add-labels-and-properties.asciidoc[]
+
+include::return-created-node.asciidoc[]
+
+:leveloffset: 2
+
+== Create relationships ==
+
+:leveloffset: 3
+
+include::create-a-relationship-between-two-nodes.asciidoc[]
+
+include::create-a-relationship-and-set-properties.asciidoc[]
+
+:leveloffset: 2
+
+include::create-a-full-path.asciidoc[]
+
+== Use parameters with CREATE ==
+
+:leveloffset: 3
+
+include::create-node-with-a-parameter-for-the-properties.asciidoc[]
+
+include::create-multiple-nodes-with-a-parameter-for-their-properties.asciidoc[]
+
+include::create-multiple-nodes-with-a-parameter-for-their-properties-using-old-syntax.asciidoc[]
+
+:leveloffset: 2
+

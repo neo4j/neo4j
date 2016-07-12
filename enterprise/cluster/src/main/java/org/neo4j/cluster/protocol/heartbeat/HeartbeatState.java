@@ -24,9 +24,11 @@ import java.net.URI;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
+import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerMessage;
 import org.neo4j.cluster.statemachine.State;
 
+import static java.lang.String.format;
 import static org.neo4j.cluster.com.message.Message.internal;
 import static org.neo4j.cluster.com.message.Message.timeout;
 import static org.neo4j.cluster.com.message.Message.to;
@@ -41,8 +43,8 @@ public enum HeartbeatState
             {
                 @Override
                 public HeartbeatState handle( HeartbeatContext context,
-                        Message<HeartbeatMessage> message,
-                        MessageHolder outgoing
+                                              Message<HeartbeatMessage> message,
+                                              MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -85,8 +87,8 @@ public enum HeartbeatState
             {
                 @Override
                 public HeartbeatState handle( HeartbeatContext context,
-                        Message<HeartbeatMessage> message,
-                        MessageHolder outgoing
+                                              Message<HeartbeatMessage> message,
+                                              MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -101,7 +103,6 @@ public enum HeartbeatState
                                 break;
                             }
 
-                            context.getLogger( HeartbeatState.class ).debug( "Received " + state );
 
                             if ( state.getServer() == null )
                             {
@@ -118,17 +119,13 @@ public enum HeartbeatState
                                         URI aliveServerUri =
                                                 context.getUriForId( aliveServer );
                                         outgoing.offer( Message.to( HeartbeatMessage.suspicions, aliveServerUri,
-                                                new HeartbeatMessage.SuspicionsState(
-                                                        context.getSuspicionsFor( context.getMyId() ) ) ) );
+                                                new HeartbeatMessage.SuspicionsState( context.getSuspicionsFor(
+                                                        context.getMyId() ) ) ) );
                                     }
                                 }
                             }
 
-                            context.cancelTimeout( HeartbeatMessage.i_am_alive + "-" +
-                                    state.getServer() );
-                            context.setTimeout( HeartbeatMessage.i_am_alive + "-" +
-                                    state.getServer(), timeout( HeartbeatMessage.timed_out, message, state
-                                    .getServer() ) );
+                            resetTimeout( context, message, state );
 
                             // Check if this server knows something that we don't
                             if ( message.hasHeader( "last-learned" ) )
@@ -156,9 +153,8 @@ public enum HeartbeatState
 
                         case timed_out:
                         {
-
                             InstanceId server = message.getPayload();
-                            context.getLogger( HeartbeatState.class )
+                            context.getLog( HeartbeatState.class )
                                     .debug( "Received timed out for server " + server );
                             // Check if this node is no longer a part of the cluster
                             if ( context.getMembers().containsKey( server ) )
@@ -173,8 +169,7 @@ public enum HeartbeatState
                                 {
                                     if ( !aliveServer.equals( context.getMyId() ) )
                                     {
-                                        URI sendTo = context.getUriForId(
-                                                aliveServer );
+                                        URI sendTo = context.getUriForId( aliveServer );
                                         outgoing.offer( Message.to( HeartbeatMessage.suspicions, sendTo,
                                                 new HeartbeatMessage.SuspicionsState( context.getSuspicionsFor(
                                                         context.getMyId() ) ) ) );
@@ -232,11 +227,12 @@ public enum HeartbeatState
                         case suspicions:
                         {
                             HeartbeatMessage.SuspicionsState suspicions = message.getPayload();
-                            context.getLogger( HeartbeatState.class )
-                                    .debug( "Received suspicions as " + suspicions );
 
                             InstanceId fromId = new InstanceId(
                                     Integer.parseInt( message.getHeader( Message.INSTANCE_ID ) ) );
+
+                            context.getLog( HeartbeatState.class )
+                                    .debug( format( "Received suspicions as %s from %s", suspicions, fromId ) );
 
                             /*
                              * Remove ourselves from the suspicions received - we just received a message,
@@ -251,7 +247,7 @@ public enum HeartbeatState
 
                         case leave:
                         {
-                            context.getLogger( HeartbeatState.class ).debug( "Received leave" );
+                            context.getLog( HeartbeatState.class ).debug( "Received leave" );
                             return start;
                         }
 
@@ -269,6 +265,25 @@ public enum HeartbeatState
                     }
 
                     return this;
+                }
+
+                private void resetTimeout( HeartbeatContext context, Message<HeartbeatMessage> message,
+                                           HeartbeatMessage.IAmAliveState state )
+                {
+                    String key = HeartbeatMessage.i_am_alive + "-" + state.getServer();
+                    Message<? extends MessageType> oldTimeout = context.cancelTimeout( key );
+                    if ( oldTimeout != null && oldTimeout.hasHeader( Message.TIMEOUT_COUNT ) )
+                    {
+                        int timeoutCount = Integer.parseInt( oldTimeout.getHeader( Message.TIMEOUT_COUNT ) );
+                        if ( timeoutCount > 0 )
+                        {
+                            long timeout = context.getTimeoutFor( oldTimeout );
+                            context.getLog( HeartbeatState.class ).debug(
+                                    "Received " + state + " after missing " + timeoutCount +
+                                            " (" + timeout * timeoutCount + "ms)" );
+                        }
+                    }
+                    context.setTimeout( key, timeout( HeartbeatMessage.timed_out, message, state.getServer() ) );
                 }
             }
 }

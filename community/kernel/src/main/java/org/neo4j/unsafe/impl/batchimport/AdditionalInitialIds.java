@@ -47,10 +47,14 @@ public interface AdditionalInitialIds
 
     long lastCommittedTransactionChecksum();
 
+    long lastCommittedTransactionLogVersion();
+
+    long lastCommittedTransactionLogByteOffset();
+
     /**
      * High ids of zero, useful when creating a completely new store with {@link ParallelBatchImporter}.
      */
-    public static final AdditionalInitialIds EMPTY = new AdditionalInitialIds()
+    AdditionalInitialIds EMPTY = new AdditionalInitialIds()
     {
         @Override
         public int highRelationshipTypeTokenId()
@@ -80,6 +84,18 @@ public interface AdditionalInitialIds
         public long lastCommittedTransactionChecksum()
         {
             return TransactionIdStore.BASE_TX_CHECKSUM;
+        }
+
+        @Override
+        public long lastCommittedTransactionLogVersion()
+        {
+            return TransactionIdStore.BASE_TX_LOG_VERSION;
+        }
+
+        @Override
+        public long lastCommittedTransactionLogByteOffset()
+        {
+            return TransactionIdStore.BASE_TX_LOG_BYTE_OFFSET;
         }
     };
 }

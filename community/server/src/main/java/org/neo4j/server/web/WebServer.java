@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+
 import javax.servlet.Filter;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -34,8 +35,6 @@ import org.neo4j.server.security.ssl.KeyStoreInformation;
 
 public interface WebServer
 {
-    void init();
-
     void setPort( int portNo );
 
     void setAddress( String addr );
@@ -50,7 +49,7 @@ public interface WebServer
 
     void setMaxThreads( int maxThreads );
 
-    void start();
+    void start() throws Exception;
 
     void stop();
 

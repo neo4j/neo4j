@@ -83,27 +83,43 @@ angular.module('neo4jApp.services')
 
       promiseResult = (promise) ->
         q = $q.defer()
-        promise.success(
-          (result) =>
-            if not result
-              q.reject()
-            else if result.errors && result.errors.length > 0
-              q.reject(result)
+
+        promise.then(
+          (r) =>
+            raw = {request: r.config, response: {headers: r.headers(), data: r.data}}
+            raw.request.status = r.status
+            if not r
+              q.reject({raw: raw})
+            else if r.data.errors && r.data.errors.length > 0
+              q.reject({errors: r.data.errors, raw: raw})
             else
               results = []
-              for r in result.results
-                results.push( new CypherResult(r) )
-              q.resolve( results[0] ) # TODO: handle multiple...
-        ).error(
-          (r) ->
-            q.reject r
+              partResult = new CypherResult(r.data.results[0] || {})
+              partResult.raw = raw
+              results.push partResult
+              q.resolve(results[0])
+        ,
+        (r) ->
+          raw = {request: r.config, response: {headers: r.headers(), data: r.data}}
+          raw.request.status = r.status
+          q.reject({errors: r.errors, raw: raw})
         )
         q.promise
 
       class CypherTransaction
         constructor: () ->
           @_reset()
+          @requests = []
           delegate = null
+
+        _requestDone: (promise) ->
+          that = @
+          promise.then(
+            (res) ->
+              that.requests.push res
+            (res) ->
+              that.requests.push res
+          )
 
         _onSuccess: () ->
 
@@ -116,7 +132,6 @@ angular.module('neo4jApp.services')
         #       if the id hasn't been assigned yet, but the request is still running.
         begin: (query) ->
           statements = if query then [{statement:query}] else []
-          q = $q.defer()
           rr = Server.transaction(
             path: ""
             statements: statements
@@ -124,19 +139,22 @@ angular.module('neo4jApp.services')
             (r) =>
               @id = parseId(r.commit)
               @delegate?.transactionStarted.call(@delegate, @id, @)
-              q.resolve(r)
-            (r) => q.reject(r)
+              r
           )
-          promiseResult rr
+          parsed_result = promiseResult rr
+          @_requestDone parsed_result
+          parsed_result
 
         execute: (query) ->
           return @begin(query) unless @id
-          promiseResult(Server.transaction(
+          parsed_result = promiseResult(Server.transaction(
             path: '/' + @id
             statements: [
               statement: query
             ]
           ))
+          @_requestDone parsed_result
+          parsed_result
 
         commit: (query) ->
           statements = if query then [{statement:query}] else []
@@ -159,6 +177,7 @@ angular.module('neo4jApp.services')
               -> UDC.increment('cypher_wins')
               -> UDC.increment('cypher_fails')
             )
+            @_requestDone res
             res
           else
             res = promiseResult(Server.transaction(
@@ -169,6 +188,7 @@ angular.module('neo4jApp.services')
               -> UDC.increment('cypher_wins')
               -> UDC.increment('cypher_fails')
             )
+            @_requestDone res
             res
 
         rollback: ->

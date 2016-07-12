@@ -34,7 +34,7 @@ public class ServerUtil
      */
     public static String getHostString( InetSocketAddress socketAddress )
     {
-        if (socketAddress.isUnresolved())
+        if ( socketAddress.isUnresolved() )
         {
             return socketAddress.getHostName();
         }

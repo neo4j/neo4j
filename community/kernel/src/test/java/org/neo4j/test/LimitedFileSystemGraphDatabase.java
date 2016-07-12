@@ -19,8 +19,15 @@
  */
 package org.neo4j.test;
 
+import java.io.File;
+import java.util.Map;
+
 import org.neo4j.graphdb.mockfs.LimitedFilesystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.PlatformModule;
 
 public class LimitedFileSystemGraphDatabase extends ImpermanentGraphDatabase
 {
@@ -28,14 +35,29 @@ public class LimitedFileSystemGraphDatabase extends ImpermanentGraphDatabase
 
     public LimitedFileSystemGraphDatabase( String storeDir )
     {
-        super( storeDir );
+        super( new File( storeDir ) );
     }
 
     @Override
-    protected FileSystemAbstraction createFileSystemAbstraction()
+    protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        return fs = new LimitedFilesystemAbstraction( super.createFileSystemAbstraction() );
+        new CommunityFacadeFactory()
+        {
+            @Override
+            protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+            {
+                return new ImpermanentPlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
+                {
+                    @Override
+                    protected FileSystemAbstraction createFileSystemAbstraction()
+                    {
+                        return fs = new LimitedFilesystemAbstraction( super.createFileSystemAbstraction() );
+                    }
+                };
+            }
+        }.newFacade( storeDir, params, dependencies, this );
     }
+
 
     public void runOutOfDiskSpaceNao()
     {

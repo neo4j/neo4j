@@ -1,9 +1,0 @@
-[[rest-api-auto-indexes]]
-== Legacy Automatic Indexes ==
-
-To enable automatic indexes, set up the database for that, see <<auto-indexing-config>>. With this feature enabled, you can then index and query nodes in these indexes.
-
-include::find-node-by-exact-match-from-an-automatic-index.asciidoc[]
-
-include::find-node-by-query-from-an-automatic-index.asciidoc[]
-

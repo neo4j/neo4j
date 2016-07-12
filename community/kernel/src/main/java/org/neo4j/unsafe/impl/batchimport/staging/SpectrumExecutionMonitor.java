@@ -30,8 +30,6 @@ import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
 import static java.lang.Math.pow;
 import static java.lang.Math.round;
-import static java.lang.String.format;
-
 import static org.neo4j.helpers.Format.duration;
 
 /**
@@ -53,7 +51,8 @@ import static org.neo4j.helpers.Format.duration;
 public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
 {
     public static final int DEFAULT_WIDTH = 100;
-    private static final char[] WEIGHTS = new char[] {' ', 'k', 'M', 'B', 'T'};
+    private static final int PROGRESS_WIDTH = 5;
+    private static final char[] WEIGHTS = new char[] {' ', 'K', 'M', 'B', 'T'};
 
     private final PrintStream out;
     private final int width;
@@ -116,7 +115,7 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
         long total = total( values );
 
         // reduce the width with the known extra characters we know we'll print in and around the spectrum
-        width -= 2/*'[]' chars*/ + 4/*progress chars*/;
+        width -= 2/*'[]' chars*/ + PROGRESS_WIDTH/*progress chars*/;
 
         Pair<Step<?>,Float> bottleNeck = execution.stepsOrderedBy( Keys.avg_processing_time, false ).iterator().next();
         QuantizedProjection projection = new QuantizedProjection( total, width );
@@ -163,18 +162,35 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
         }
 
         long progress = lastDoneBatches * execution.getConfig().batchSize();
-        builder.append( "]" ).append( fitInFour( progress ) );
+        builder.append( "]" ).append( fitInProgress( progress ) );
         return true;
     }
 
-    private static String fitInFour( long value )
+    private static String fitInProgress( long value )
     {
         int weight = weight( value );
 
-        String result = weight == 0
-                ? String.valueOf( value )
-                : format( "%d%s", (long)(value / pow( 1000, weight )), WEIGHTS[weight] );
-        return pad( result, 4, ' ' );
+        String progress;
+        if ( weight == 0 )
+        {
+            progress = String.valueOf( value );
+        }
+        else
+        {
+            double floatValue = value / pow( 1000, weight );
+            progress = String.valueOf( floatValue );
+            if ( progress.length() > PROGRESS_WIDTH-1 )
+            {
+                progress = progress.substring( 0, PROGRESS_WIDTH-1 );
+            }
+            if ( progress.endsWith( "." ) )
+            {
+                progress = progress.substring( 0, progress.length()-1 );
+            }
+            progress += WEIGHTS[weight];
+        }
+
+        return pad( progress, PROGRESS_WIDTH, ' ' );
     }
 
     private static String pad( String result, int length, char padChar )

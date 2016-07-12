@@ -18,16 +18,11 @@
  */
 package org.neo4j.examples.server;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import org.junit.Test;
 
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
 import org.neo4j.examples.server.plugins.DepthTwo;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Node;
@@ -35,6 +30,12 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription.Graph;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class DepthTwoDocIT extends AbstractPluginTestBase
 {
@@ -55,10 +56,7 @@ public class DepthTwoDocIT extends AbstractPluginTestBase
         assertTrue( map.keySet().size() > 0 );
     }
 
-    /**
-     * Get nodes at depth two.
-     */
-    @Documented
+    @Documented( "Get nodes at depth two." )
     @Test
     @Graph( { "I know you", "you know him" } )
     public void shouldReturnAllNodesAtDepthTwoOnPost() throws JsonParseException
@@ -75,10 +73,7 @@ public class DepthTwoDocIT extends AbstractPluginTestBase
         assertThat( map.get( "data" ).toString(), containsString( "him" ) );
     }
 
-    /**
-     * Get relationships at depth two.
-     */
-    @Documented
+    @Documented( "Get relationships at depth two." )
     @Test
     @Graph( { "I know you", "you know him" } )
     public void shouldReturnAllRelationshipsAtDepthTwoOnPost() throws JsonParseException
@@ -96,10 +91,7 @@ public class DepthTwoDocIT extends AbstractPluginTestBase
         assertThat( map.get( "type" ).toString(), containsString( "know" ) );
     }
 
-    /**
-     * Get paths at depth two.
-     */
-    @Documented
+    @Documented( "Get paths at depth two." )
     @Test
     @Graph( { "I know you", "you know him" } )
     public void shouldReturnAllPathsAtDepthTwoOnPost() throws JsonParseException

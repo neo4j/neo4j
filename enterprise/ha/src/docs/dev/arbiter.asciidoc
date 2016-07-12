@@ -19,6 +19,6 @@ To start an arbiter instance, call
 neo4j_home$ ./bin/neo4j-arbiter start
 ----
 
-You can also stop, install and remove it as a service and ask for it's status in exactly the same way as for Neo4j instances.
+You can also stop, install and remove it as a service and ask for its status in exactly the same way as for Neo4j instances.
 See also <<server-installation>>.
 

@@ -21,6 +21,7 @@ package org.neo4j.ha.upgrade;
 
 import org.junit.After;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -75,8 +76,8 @@ public class RollingUpgradeIT
     public static final RelationshipType type1 = DynamicRelationshipType.withName( "type1" );
     public static final RelationshipType type2 = DynamicRelationshipType.withName( "type2" );
 
-    private final TargetDirectory DIR = TargetDirectory.forTest( getClass() );
-    private final File DBS_DIR = DIR.cleanDirectory( "dbs" );
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     private LegacyDatabase[] legacyDbs;
     private GraphDatabaseAPI[] newDbs;
@@ -198,7 +199,7 @@ public class RollingUpgradeIT
         debug( "Downloading " + oldVersion + " package" );
         File oldVersionPackage = downloadAndUnpack(
                 "http://neo4j.com/customer/download/neo4j-enterprise-" + oldVersion + "-windows.zip",
-                DIR.cacheDirectory( "download" ), oldVersion + "-enterprise" );
+                testDirectory.directory( "download" ), oldVersion + "-enterprise" );
         String classpath = assembleClassPathFromPackage( oldVersionPackage );
         debug( "Starting " + oldVersion + " cluster in separate jvms" );
         List<Future<LegacyDatabase>> legacyDbFutures = new ArrayList<>( CLUSTER_SIZE );
@@ -235,7 +236,7 @@ public class RollingUpgradeIT
 
     private File storeDir( int serverId )
     {
-        return new File( DBS_DIR, "" + serverId );
+        return new File( testDirectory.directory( "dbs" ), "" + serverId );
     }
 
     private Map<String, String> config( int serverId ) throws UnknownHostException

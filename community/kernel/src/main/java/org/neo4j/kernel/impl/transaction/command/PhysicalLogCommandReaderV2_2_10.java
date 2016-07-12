@@ -67,7 +67,7 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bMap;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.shortToUnsignedInt;
 
-public class PhysicalLogCommandReaderV2_2_10 implements CommandReader, NeoCommandHandler
+public class PhysicalLogCommandReaderV2_2_10 implements CommandReader, CommandHandler
 {
     private ReadableLogChannel channel;
     private IndexCommandHeader indexCommandHeader;

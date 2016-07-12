@@ -1,0 +1,115 @@
+[[query-match]]
+= Match
+
+[abstract]
+The `MATCH` clause is used to search for the pattern described in it.
+
+== Introduction ==
+
+The `MATCH` clause allows you to specify the patterns Neo4j will search for in the database.
+This is the primary way of getting data into the current set of bindings.
+It is worth reading up more on the specification of the patterns themselves in <<introduction-pattern>>.
+
+`MATCH` is often coupled to a `WHERE` part which adds restrictions, or predicates, to the `MATCH` patterns, making them more specific.
+The predicates are part of the pattern description, not a filter applied after the matching is done.
+_This means that `WHERE` should always be put together with the `MATCH` clause it belongs to._
+
+`MATCH` can occur at the beginning of the query or later, possibly after a `WITH`.
+If it is the first clause, nothing will have been bound yet, and Neo4j will design a search to find the results matching the clause and any associated predicates specified in any `WHERE` part.
+This could involve a scan of the database, a search for nodes of a certain label, or a search of an index to find starting points for the pattern matching.
+Nodes and relationships found by this search are available as _bound pattern elements,_ and can be used for pattern matching of sub-graphs.
+They can also be used in any further `MATCH` clauses, where Neo4j will use the known elements, and from there find further unknown elements.
+
+Cypher is declarative, and so usually the query itself does not specify the algorithm to use to perform the search.
+Neo4j will automatically work out the best approach to finding start nodes and matching patterns.
+Predicates in `WHERE` parts can be evaluated before pattern matching, during pattern matching, or after finding matches.
+However, there are cases where you can influence the decisions taken by the query compiler.
+Read more about indexes in <<query-schema-index>>, and more about the specifying index hints to force Neo4j to use a specific index in <<query-using>>.
+
+[TIP]
+To understand more about the patterns used in the `MATCH` clause, read <<introduction-pattern>>.
+
+The following graph is used for the examples below:
+
+.Graph
+include::includes/cypher-match-graph.asciidoc[]
+
+== Basic node finding ==
+
+:leveloffset: 3
+
+include::get-all-nodes.asciidoc[]
+
+include::get-all-nodes-with-a-label.asciidoc[]
+
+include::related-nodes.asciidoc[]
+
+include::match-with-labels.asciidoc[]
+
+:leveloffset: 2
+
+== Relationship basics ==
+
+:leveloffset: 3
+
+include::outgoing-relationships.asciidoc[]
+
+include::directed-relationships-and-identifier.asciidoc[]
+
+include::match-by-relationship-type.asciidoc[]
+
+include::match-by-multiple-relationship-types.asciidoc[]
+
+include::match-by-relationship-type-and-use-an-identifier.asciidoc[]
+
+:leveloffset: 2
+
+== Relationships in depth ==
+
+[NOTE]
+Inside a single pattern, relationships will only be matched once.
+You can read more about this in <<cypherdoc-uniqueness>>.
+
+:leveloffset: 3
+
+include::relationship-types-with-uncommon-characters.asciidoc[]
+
+include::multiple-relationships.asciidoc[]
+
+include::variable-length-relationships.asciidoc[]
+
+include::relationship-identifier-in-variable-length-relationships.asciidoc[]
+
+include::match-with-properties-on-a-variable-length-path.asciidoc[]
+
+include::zero-length-paths.asciidoc[]
+
+include::named-path.asciidoc[]
+
+include::matching-on-a-bound-relationship.asciidoc[]
+
+:leveloffset: 2
+
+[[query-shortest-path]]
+== Shortest path ==
+
+:leveloffset: 3
+
+include::single-shortest-path.asciidoc[]
+
+include::all-shortest-paths.asciidoc[]
+
+:leveloffset: 2
+
+== Get node or relationship by id ==
+
+:leveloffset: 3
+
+include::node-by-id.asciidoc[]
+
+include::relationship-by-id.asciidoc[]
+
+include::multiple-nodes-by-id.asciidoc[]
+
+:leveloffset: 2
+

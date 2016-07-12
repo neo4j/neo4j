@@ -48,7 +48,7 @@ class SettingsDialog extends JDialog
 
     SettingsDialog( Frame owner, DesktopModel model )
     {
-        super( owner, "Neo4j Community - Options", true );
+        super( owner, "Neo4j Community Edition - Options", true );
         this.model = model;
 
         getContentPane().add( withSpacingBorder( withBoxLayout( BoxLayout.Y_AXIS, createPanel(

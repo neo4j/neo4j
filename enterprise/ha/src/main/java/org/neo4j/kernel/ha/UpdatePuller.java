@@ -32,13 +32,13 @@ package org.neo4j.kernel.ha;
  */
 public interface UpdatePuller
 {
-
     /**
      * Pull all available updates.
      *
      * @throws InterruptedException in case if interrupted while waiting for updates
      */
     void pullUpdates() throws InterruptedException;
+
 
     /**
      * Try to pull all updates

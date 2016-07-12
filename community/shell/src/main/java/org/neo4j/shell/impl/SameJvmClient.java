@@ -36,18 +36,13 @@ import org.neo4j.shell.ShellServer;
  */
 public class SameJvmClient extends AbstractClient
 {
-    private Output out;
-    private ShellServer server;
+    private final Output out;
+    private final ShellServer server;
 
     public SameJvmClient( Map<String, Serializable> initialSession, ShellServer server,
                           CtrlCHandler ctrlcHandler ) throws ShellException
     {
         this( initialSession, server, new SystemOutput(), ctrlcHandler );
-    }
-
-    public SameJvmClient( Map<String, Serializable> initialSession, ShellServer server ) throws ShellException
-    {
-        this( initialSession, server, new SystemOutput() );
     }
 
     public SameJvmClient( Map<String, Serializable> initialSession, ShellServer server,
@@ -78,11 +73,13 @@ public class SameJvmClient extends AbstractClient
         updateTimeForMostRecentConnection();
     }
 
+    @Override
     public Output getOutput()
     {
         return this.out;
     }
 
+    @Override
     public ShellServer getServer()
     {
         return this.server;

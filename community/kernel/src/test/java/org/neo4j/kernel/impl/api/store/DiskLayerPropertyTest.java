@@ -22,13 +22,18 @@ package org.neo4j.kernel.impl.api.store;
 import java.lang.reflect.Array;
 
 import org.junit.Test;
+
+import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 
 import static java.util.Collections.singletonMap;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.junit.Assert.fail;
 
 /**
  * Test read access to committed properties.
@@ -81,16 +86,36 @@ public class DiskLayerPropertyTest extends DiskLayerTest
                 array( 256, double.class ),
         };
 
+        int propKey = disk.propertyKeyGetOrCreateForName( "prop" );
+
+        StoreStatement statement = state.getStoreStatement();
         for ( Object value : properties )
         {
             // given
             long nodeId = createLabeledNode( db, singletonMap( "prop", value ), label1 ).getId();
 
             // when
-            Property property = single( disk.nodeGetAllProperties( nodeId ) );
+            try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( nodeId ) )
+            {
+                node.next();
 
-            //then
-            assertTrue( property + ".valueEquals(" + value + ")", property.valueEquals( value ) );
+                try ( Cursor<PropertyItem> props = node.get().property( propKey ) )
+                {
+                    if ( props.next() )
+                    {
+                        Object propVal = props.get().value();
+
+                        //then
+                        assertTrue( propVal + ".valueEquals(" + value + ")",
+                                Property.property( propKey, propVal ).valueEquals( value ) );
+                    }
+                    else
+                    {
+                        fail();
+                    }
+                }
+            }
+
         }
     }
 

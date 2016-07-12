@@ -19,8 +19,11 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, PropertyContainer}
+import org.neo4j.kernel.api.exceptions.Status
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.JavaConverters._
@@ -72,5 +75,37 @@ abstract class ExecutionEngineFunSuite
         s"Expected node to not have labels $expectedLabels, but it did."
       )
     }
+  }
+
+  def use(operators: String*): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
+    override def apply(result: InternalExecutionResult): MatchResult = {
+      val plan: InternalPlanDescription = result.executionPlanDescription()
+      MatchResult(
+        matches = operators.forall(plan.find(_).nonEmpty),
+        rawFailureMessage = s"Plan should use ${operators.mkString(",")}:\n$plan",
+        rawNegatedFailureMessage = s"Plan should not use ${operators.mkString(",")}:\n$plan")
+    }
+  }
+
+  def haveCount(count: Int): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
+    override def apply(result: InternalExecutionResult): MatchResult = {
+      MatchResult(
+        matches = count == result.toList.length,
+        rawFailureMessage = s"Result should have $count rows",
+        rawNegatedFailureMessage = s"Plan should not have $count rows")
+    }
+  }
+
+  def shouldHaveWarnings(result: ExtendedExecutionResult, statusCodes: List[Status]) {
+    val resultCodes = result.notifications.map(_.getCode)
+    statusCodes.foreach(statusCode => resultCodes should contain(statusCode.code.serialize()))
+  }
+
+  def shouldHaveWarning(result: ExtendedExecutionResult, notification: Status) {
+    shouldHaveWarnings(result, List(notification))
+  }
+
+  def shouldHaveNoWarnings(result: ExtendedExecutionResult) {
+    shouldHaveWarnings(result, List())
   }
 }

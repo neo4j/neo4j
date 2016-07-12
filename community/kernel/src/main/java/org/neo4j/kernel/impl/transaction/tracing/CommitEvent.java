@@ -53,20 +53,20 @@ public interface CommitEvent extends AutoCloseable
      * Mark the end of the commit process.
      */
     @Override
-    public void close();
+    void close();
 
     /**
      * Begin appending commands for the committing transaction, to the transaction log.
      */
-    public LogAppendEvent beginLogAppend();
+    LogAppendEvent beginLogAppend();
 
     /**
      * Begin applying the commands of the committed transaction to the stores.
      */
-    public StoreApplyEvent beginStoreApply();
+    StoreApplyEvent beginStoreApply();
 
     /**
      * Set the ID that was assigned to the transaction.
      */
-    public void setTransactionId( long transactionId );
+    void setTransactionId( long transactionId );
 }

@@ -22,8 +22,8 @@ package org.neo4j.server.rrd.sampler;
 import org.junit.Test;
 
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -71,12 +71,12 @@ public class DatabasePrimitivesSampleableBaseTest
 
         public TheDatabasePrimitivesSampleableBase( double sampleValue, AvailabilityGuard guard )
         {
-            super( mock( NeoStoreProvider.class ), guard );
+            super( mock( NeoStoresSupplier.class ), guard );
             this.sampleValue = sampleValue;
         }
 
         @Override
-        protected double readValue( NeoStore neoStore )
+        protected double readValue( NeoStores neoStore )
         {
             return sampleValue;
         }

@@ -23,12 +23,39 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 angular.module('neo4jApp.services')
   .service 'CypherParser', [
      'Utils'
-     (Utils) ->
+      'Cypher'
+     (Utils, Cypher) ->
         class CypherParser
+          constructor: () ->
+            @last_checked_query = ''
+
           isPeriodicCommit: (input)->
             pattern = /^\s*USING\sPERIODIC\sCOMMIT/i
             clean_input = Utils.stripComments input
             pattern.test clean_input
+
+          isProfileExplain: (input) ->
+            pattern = /^\s*(PROFILE|EXPLAIN)\s/i
+            clean_input = Utils.stripComments input
+            pattern.test clean_input
+
+          runHints: (editor, cb) ->
+            input = editor.getValue()
+            if not input then return editor.clearGutter 'cypher-hints'
+            return if input is @last_checked_query
+            return if @isPeriodicCommit(input) or @isProfileExplain(input)
+            @last_checked_query = input
+            that = @
+            p = Cypher.transaction().commit("EXPLAIN #{input}")
+            p.then(
+              (res) ->
+                cb null, res
+              ,
+              ->
+                cb yes, null
+                that.last_checked_query = ''
+            )
+
 
         new CypherParser()
   ]

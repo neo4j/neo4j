@@ -37,7 +37,7 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.function.Function;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.collection.Iterables.limit;
 import static org.neo4j.helpers.collection.Iterables.toList;
@@ -56,7 +56,7 @@ class ProposerContextImpl
     private HeartbeatContext heartbeatContext;
 
     ProposerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState,
-                         Logging logging,
+                         LogProvider logging,
                          Timeouts timeouts, PaxosInstanceStore paxosInstances,
                          HeartbeatContext heartbeatContext )
     {
@@ -67,7 +67,7 @@ class ProposerContextImpl
         bookedInstances = new HashMap<>();
     }
 
-    private ProposerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState, Logging logging,
+    private ProposerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState, LogProvider logging,
                                  Timeouts timeouts, Deque<Message> pendingValues,
                                  Map<InstanceId, Message> bookedInstances, PaxosInstanceStore paxosInstances,
                                  HeartbeatContext heartbeatContext)
@@ -198,7 +198,7 @@ class ProposerContextImpl
                 {
                     instance.getAcceptors().remove( commonState.configuration().getMembers().get( value.getJoin()));
 
-                    getLogger( ProposerContext.class ).debug( "For booked instance " + instance +
+                    getLog( ProposerContext.class ).debug( "For booked instance " + instance +
                             " removed gone member "
                             + commonState.configuration().getMembers().get( value.getJoin() )
                             + " added joining member " +
@@ -218,7 +218,7 @@ class ProposerContextImpl
                 PaxosInstance instance = paxosInstances.getPaxosInstance( instanceId );
                 if ( instance.getAcceptors() != null )
                 {
-                    getLogger( ProposerContext.class ).debug( "For booked instance " + instance +
+                    getLog( ProposerContext.class ).debug( "For booked instance " + instance +
                             " removed leaving member "
                             + value.getLeave() + " (at URI " +
                             commonState.configuration().getMembers().get( value.getLeave() )
@@ -229,7 +229,7 @@ class ProposerContextImpl
         }
     }
 
-    public ProposerContextImpl snapshot( CommonContextState commonStateSnapshot, Logging logging, Timeouts timeouts,
+    public ProposerContextImpl snapshot( CommonContextState commonStateSnapshot, LogProvider logging, Timeouts timeouts,
                                          PaxosInstanceStore paxosInstancesSnapshot, HeartbeatContext heartbeatContext )
     {
         return new ProposerContextImpl( me, commonStateSnapshot, logging, timeouts, new LinkedList<>( pendingValues ),

@@ -19,11 +19,14 @@
  */
 package org.neo4j.ha.upgrade;
 
-import java.io.IOException;
-import java.util.Random;
-
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
+import java.io.IOException;
+import java.util.Random;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
@@ -34,47 +37,49 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.com.monitor.RequestMonitor;
+import org.neo4j.com.storecopy.DefaultUnpackerDependencies;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
-import org.neo4j.function.Function;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.MasterClient214;
+import org.neo4j.kernel.ha.com.master.ConversationManager;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.master.MasterImpl.Monitor;
 import org.neo4j.kernel.ha.com.master.MasterImplTest;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.impl.api.BatchingTransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.log.Commitment;
+import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.StubbedCommitment;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
-import org.neo4j.kernel.impl.util.IdOrderingQueue;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.CleanupRule;
 
 import static java.util.Arrays.asList;
@@ -87,6 +92,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_RESPONSE_UNPACKER;
+import static org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.DEFAULT_BATCH_SIZE;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class MasterClientTest
@@ -98,6 +104,8 @@ public class MasterClientTest
 
     private static final int TX_LOG_COUNT = 10;
 
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
     @Rule
     public final CleanupRule cleanupRule = new CleanupRule();
     private final Monitors monitors = new Monitors();
@@ -127,49 +135,55 @@ public class MasterClientTest
 
         cleanupRule.add( newMasterServer( master ) );
 
-        DependencyResolver resolver = mock( DependencyResolver.class );
-        LogicalTransactionStore txStore = mock( LogicalTransactionStore.class );
-        final BatchingTransactionRepresentationStoreApplier txApplier =
-                mock( BatchingTransactionRepresentationStoreApplier.class );
-        TransactionIdStore txIdStore = mock( TransactionIdStore.class );
+        final TransactionIdStore txIdStore = mock( TransactionIdStore.class );
         TransactionAppender txAppender = mock( TransactionAppender.class );
         when( txAppender.append( any( TransactionRepresentation.class ), anyLong() ) )
-                .thenReturn( new StubbedCommitment() );
-        LogFile logFile = mock( LogFile.class );
-
-        when( resolver.resolveDependency( LogicalTransactionStore.class ) ).thenReturn( txStore );
-        when( resolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
-        when( resolver.resolveDependency( LogFile.class ) ).thenReturn( logFile );
-        when( resolver.resolveDependency( LogRotation.class ) ).thenReturn( mock(LogRotation.class) );
-        KernelHealth kernelHealth = mock( KernelHealth.class );
-        when( kernelHealth.isHealthy() ).thenReturn( true );
-        when( resolver.resolveDependency( KernelHealth.class ) ).thenReturn( kernelHealth );
-        when( resolver.resolveDependency( Logging.class ) ).thenReturn( DevNullLoggingService.DEV_NULL );
-        when( resolver.resolveDependency( IdOrderingQueue.class ) ).thenReturn( IdOrderingQueue.BYPASS );
-        when( txStore.getAppender() ).thenReturn( txAppender );
+                .thenAnswer( new Answer<Commitment>()
+                {
+                    @Override
+                    public Commitment answer( InvocationOnMock invocation ) throws Throwable
+                    {
+                        return new FakeCommitment( (Long) invocation.getArguments()[1], txIdStore );
+                    }
+                } );
+        final BatchingTransactionRepresentationStoreApplier txApplier =
+                mock( BatchingTransactionRepresentationStoreApplier.class );
         final IndexUpdatesValidator indexUpdatesValidator = mock( IndexUpdatesValidator.class );
         when( indexUpdatesValidator.validate( any( TransactionRepresentation.class ) ) )
                 .thenReturn( ValidatedIndexUpdates.NONE );
 
-        ResponseUnpacker unpacker = initAndStart(
-                new TransactionCommittingResponseUnpacker( resolver, 100,
-                        new Function<DependencyResolver,IndexUpdatesValidator>()
-                        {
-                            @Override
-                            public IndexUpdatesValidator apply( DependencyResolver from ) throws RuntimeException
-                            {
-                                return indexUpdatesValidator;
-                            }
-                        },
-                        new Function<DependencyResolver,BatchingTransactionRepresentationStoreApplier>()
-                        {
-                            @Override
-                            public BatchingTransactionRepresentationStoreApplier apply( DependencyResolver from )
-                                    throws RuntimeException
-                            {
-                                return txApplier;
-                            }
-                        } ) );
+        final Dependencies deps = new Dependencies();
+        KernelHealth health = mock( KernelHealth.class );
+        when( health.isHealthy() ).thenReturn( true );
+        deps.satisfyDependencies(
+                mock( LogicalTransactionStore.class ),
+                mock( LogFile.class ),
+                mock( LogRotation.class),
+                mock( KernelTransactions.class ),
+                health,
+                txAppender,
+                txApplier,
+                txIdStore,
+                indexUpdatesValidator,
+                NullLogService.getInstance()
+        );
+
+        TransactionCommittingResponseUnpacker.Dependencies dependencies = new DefaultUnpackerDependencies( deps, 0 )
+        {
+            @Override
+            public BatchingTransactionRepresentationStoreApplier transactionRepresentationStoreApplier()
+            {
+                return txApplier;
+            }
+
+            @Override
+            public IndexUpdatesValidator indexUpdatesValidator()
+            {
+                return indexUpdatesValidator;
+            }
+        };
+        ResponseUnpacker unpacker = initAndStart( new TransactionCommittingResponseUnpacker( dependencies,
+                DEFAULT_BATCH_SIZE) );
 
         MasterClient masterClient = cleanupRule.add( newMasterClient214( StoreId.DEFAULT, unpacker ) );
 
@@ -182,7 +196,7 @@ public class MasterClientTest
         verify( txApplier, times( TX_LOG_COUNT ) )
                 .apply( any( TransactionRepresentation.class ), any( ValidatedIndexUpdates.class ),
                         any( LockGroup.class ), anyLong(), any( TransactionApplicationMode.class ) );
-        verify( txIdStore, times( TX_LOG_COUNT ) ).transactionClosed( anyLong() );
+        verify( txIdStore, times( TX_LOG_COUNT ) ).transactionClosed( anyLong(), anyLong(), anyLong() );
     }
 
     private static MasterImpl.SPI mockMasterImplSpiWith( StoreId storeId )
@@ -192,42 +206,44 @@ public class MasterClientTest
 
     private MasterServer newMasterServer( MasterImpl.SPI masterImplSPI ) throws Throwable
     {
-        MasterImpl masterImpl = new MasterImpl( masterImplSPI, mock( Monitor.class ),
-                new DevNullLoggingService(), masterConfig() );
+        MasterImpl masterImpl = new MasterImpl( masterImplSPI, mock(
+                ConversationManager.class ), mock( Monitor.class ), masterConfig() );
 
         return newMasterServer( masterImpl );
     }
 
     private static MasterImpl newMasterImpl( MasterImpl.SPI masterImplSPI )
     {
-        return new MasterImpl( masterImplSPI, mock( Monitor.class ), new DevNullLoggingService(), masterConfig() );
+        return new MasterImpl( masterImplSPI, mock(
+                ConversationManager.class ), mock( Monitor.class ), masterConfig() );
     }
 
     private MasterServer newMasterServer( MasterImpl masterImpl ) throws Throwable
     {
-        return initAndStart( new MasterServer( masterImpl, new DevNullLoggingService(),
+        return initAndStart( new MasterServer( masterImpl, NullLogProvider.getInstance(),
                 masterServerConfiguration(),
                 mock( TxChecksumVerifier.class ),
                 monitors.newMonitor( ByteCounterMonitor.class, MasterClient.class ),
-                monitors.newMonitor( RequestMonitor.class, MasterClient.class ) ) );
+                monitors.newMonitor( RequestMonitor.class, MasterClient.class ), mock(
+                ConversationManager.class ) ) );
     }
 
     private MasterClient214 newMasterClient214( StoreId storeId ) throws Throwable
     {
         return initAndStart(
-                new MasterClient214( MASTER_SERVER_HOST, MASTER_SERVER_PORT, null, new DevNullLoggingService(),
-                        storeId, TIMEOUT, TIMEOUT, 1, CHUNK_SIZE, NO_OP_RESPONSE_UNPACKER,
-                        monitors.newMonitor( ByteCounterMonitor.class, MasterClient214.class ),
-                        monitors.newMonitor( RequestMonitor.class, MasterClient214.class ) ) );
+                new MasterClient214( MASTER_SERVER_HOST, MASTER_SERVER_PORT, null, NullLogProvider.getInstance(),
+                storeId, TIMEOUT, TIMEOUT, 1, CHUNK_SIZE, NO_OP_RESPONSE_UNPACKER,
+                monitors.newMonitor( ByteCounterMonitor.class, MasterClient214.class ),
+                monitors.newMonitor( RequestMonitor.class, MasterClient214.class ) ) );
     }
 
     private MasterClient214 newMasterClient214( StoreId storeId, ResponseUnpacker responseUnpacker ) throws Throwable
     {
         return initAndStart(
-                new MasterClient214( MASTER_SERVER_HOST, MASTER_SERVER_PORT, null, new DevNullLoggingService(),
-                        storeId, TIMEOUT, TIMEOUT, 1, CHUNK_SIZE, responseUnpacker,
-                        monitors.newMonitor( ByteCounterMonitor.class, MasterClient214.class ),
-                        monitors.newMonitor( RequestMonitor.class, MasterClient214.class ) ) );
+                new MasterClient214( MASTER_SERVER_HOST, MASTER_SERVER_PORT, null, NullLogProvider.getInstance(),
+                storeId, TIMEOUT, TIMEOUT, 1, CHUNK_SIZE, responseUnpacker,
+                monitors.newMonitor( ByteCounterMonitor.class, MasterClient214.class ),
+                monitors.newMonitor( RequestMonitor.class, MasterClient214.class ) ) );
     }
 
     private static Response<Void> voidResponseWithTransactionLogs()

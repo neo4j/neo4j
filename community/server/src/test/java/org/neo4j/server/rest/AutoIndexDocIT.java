@@ -19,13 +19,11 @@
  */
 package org.neo4j.server.rest;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.web.RestfulGraphDatabase;
@@ -33,27 +31,21 @@ import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
-import org.neo4j.test.TestData.Title;
 
+import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
 {
-    @Before
-    public void setup()
-    {
-        cleanDatabase();
-    }
-
     /**
      * Find node by query from an automatic index.
-     *
+     * <p/>
      * See Find node by query for the actual query syntax.
      */
-    @Documented
     @Test
-    @Graph( nodes = { @NODE( name = "I", setNameProperty = true ) }, autoIndexNodes = true )
+    @Graph( nodes = {@NODE( name = "I", setNameProperty = true )}, autoIndexNodes = true )
     public void shouldRetrieveFromAutoIndexByQuery()
     {
         data.get();
@@ -73,9 +65,8 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
      * Automatic index nodes can be found via exact lookups with normal Index
      * REST syntax.
      */
-    @Documented
     @Test
-    @Graph( nodes = { @NODE( name = "I", setNameProperty = true ) }, autoIndexNodes = true )
+    @Graph( nodes = {@NODE( name = "I", setNameProperty = true )}, autoIndexNodes = true )
     public void find_node_by_exact_match_from_an_automatic_index()
     {
         data.get();
@@ -90,9 +81,7 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
      * The automatic relationship index can not be removed.
      */
     @Test
-    @Documented
-    @Title( "Relationship AutoIndex is not removable" )
-    @Graph( nodes = { @NODE( name = "I", setNameProperty = true ) }, autoIndexNodes = true )
+    @Graph( nodes = {@NODE( name = "I", setNameProperty = true )}, autoIndexNodes = true )
     public void Relationship_AutoIndex_is_not_removable()
     {
         data.get();
@@ -107,9 +96,7 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
      * The automatic node index can not be removed.
      */
     @Test
-    @Documented
-    @Title( "Node AutoIndex is not removable" )
-    @Graph( nodes = { @NODE( name = "I", setNameProperty = true ) }, autoIndexNodes = true )
+    @Graph( nodes = {@NODE( name = "I", setNameProperty = true )}, autoIndexNodes = true )
     public void AutoIndex_is_not_removable()
     {
         gen.get()
@@ -123,9 +110,7 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
      * It is not allowed to add items manually to automatic indexes.
      */
     @Test
-    @Graph( nodes = { @NODE( name = "I", setNameProperty = true ) }, autoIndexNodes = true )
-    @Documented
-    @Title( "Items can not be added manually to an node AutoIndex" )
+    @Graph( nodes = {@NODE( name = "I", setNameProperty = true )}, autoIndexNodes = true )
     public void items_can_not_be_added_manually_to_an_AutoIndex() throws Exception
     {
         data.get();
@@ -155,9 +140,8 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
      * It is not allowed to add items manually to automatic indexes.
      */
     @Test
-    @Graph( nodes = { @NODE( name = "I" ), @NODE( name = "you" ) }, relationships = { @REL( start = "I", end = "you", type = "know", properties = { @PROP( key = "since", value = "today" ) } ) }, autoIndexRelationships = true )
-    @Documented
-    @Title( "Items can not be added manually to a relationship AutoIndex" )
+    @Graph( nodes = {@NODE( name = "I" ), @NODE( name = "you" )}, relationships = {@REL( start = "I", end = "you",
+            type = "know", properties = {@PROP( key = "since", value = "today" )} )}, autoIndexRelationships = true )
     public void items_can_not_be_added_manually_to_a_Relationship_AutoIndex() throws Exception
     {
         data.get();
@@ -186,9 +170,7 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
      * It is not allowed to remove entries manually from automatic indexes.
      */
     @Test
-    @Documented
-    @Graph( nodes = { @NODE( name = "I", setNameProperty = true ) }, autoIndexNodes = true )
-    @Title( "Automatically indexed nodes cannot be removed from the index manually" )
+    @Graph( nodes = {@NODE( name = "I", setNameProperty = true )}, autoIndexNodes = true )
     public void autoindexed_items_cannot_be_removed_manually()
     {
         long id = data.get()
@@ -221,9 +203,8 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
      * It is not allowed to remove entries manually from automatic indexes.
      */
     @Test
-    @Documented
-    @Graph( nodes = { @NODE( name = "I" ), @NODE( name = "you" ) }, relationships = { @REL( start = "I", end = "you", type = "know", properties = { @PROP( key = "since", value = "today" ) } ) }, autoIndexRelationships = true )
-    @Title( "Automatically indexed relationships cannot be removed from the index manually" )
+    @Graph( nodes = {@NODE( name = "I" ), @NODE( name = "you" )}, relationships = {@REL( start = "I", end = "you",
+            type = "know", properties = {@PROP( key = "since", value = "today" )} )}, autoIndexRelationships = true )
     public void autoindexed_relationships_cannot_be_removed_manually()
     {
         try ( Transaction tx = graphdb().beginTx() )
@@ -265,10 +246,9 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
     /**
      * See the example request.
      */
-    @Documented
-    @Title( "Find relationship by query from an automatic index" )
     @Test
-    @Graph( nodes = { @NODE( name = "I" ), @NODE( name = "you" ) }, relationships = { @REL( start = "I", end = "you", type = "know", properties = { @PROP( key = "since", value = "today" ) } ) }, autoIndexRelationships = true )
+    @Graph( nodes = {@NODE( name = "I" ), @NODE( name = "you" )}, relationships = {@REL( start = "I", end = "you",
+            type = "know", properties = {@PROP( key = "since", value = "today" )} )}, autoIndexRelationships = true )
     public void Find_relationship_by_query_from_an_automatic_index()
     {
         data.get();
@@ -282,10 +262,9 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
     /**
      * See the example request.
      */
-    @Documented
-    @Title( "Find relationship by exact match from an automatic index" )
     @Test
-    @Graph( nodes = { @NODE( name = "I" ), @NODE( name = "you" ) }, relationships = { @REL( start = "I", end = "you", type = "know", properties = { @PROP( key = "since", value = "today" ) } ) }, autoIndexRelationships = true )
+    @Graph( nodes = {@NODE( name = "I" ), @NODE( name = "you" )}, relationships = {@REL( start = "I", end = "you",
+            type = "know", properties = {@PROP( key = "since", value = "today" )} )}, autoIndexRelationships = true )
     public void Find_relationship_by_exact_match_from_an_automatic_index()
     {
         data.get();
@@ -300,26 +279,28 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
      * Get current status for autoindexing on nodes.
      */
     @Test
-    @Documented
-    public void getCurrentStatusForNodes() {
-        checkAndAssertAutoIndexerIsEnabled("node", false);
+    public void getCurrentStatusForNodes()
+    {
+        setEnabledAutoIndexingForType( "node", false );
+        checkAndAssertAutoIndexerIsEnabled( "node", false );
     }
 
     /**
      * Enable node autoindexing.
      */
     @Test
-    @Documented
-    public void enableNodeAutoIndexing() {
-        setEnabledAutoIndexingForType("node", true);
+    public void enableNodeAutoIndexing()
+    {
+        setEnabledAutoIndexingForType( "node", true );
+        checkAndAssertAutoIndexerIsEnabled( "node", true );
     }
 
     /**
      * Add a property for autoindexing on nodes.
      */
     @Test
-    @Documented
-    public void addAutoIndexingPropertyForNodes() {
+    public void addAutoIndexingPropertyForNodes()
+    {
         gen.get()
                 .noGraph()
                 .expectedStatus( 204 )
@@ -331,23 +312,25 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
      * Lookup list of properties being autoindexed.
      */
     @Test
-    @Documented
-    public void listAutoIndexingPropertiesForNodes() throws JsonParseException {
-        String propName = "some-property";
-        server().getDatabase().getGraph().index().getNodeAutoIndexer().startAutoIndexingProperty(propName);
+    public void listAutoIndexingPropertiesForNodes() throws JsonParseException
+    {
+        int initialPropertiesSize = getAutoIndexedPropertiesForType( "node" ).size();
 
-        List<String> properties = getAutoIndexedPropertiesForType("node");
+        String propName = "some-property" + System.currentTimeMillis();
+        server().getDatabase().getGraph().index().getNodeAutoIndexer().startAutoIndexingProperty( propName );
 
-        assertEquals(1, properties.size());
-        assertEquals(propName, properties.get(0));
+        List<String> properties = getAutoIndexedPropertiesForType( "node" );
+
+        assertEquals( initialPropertiesSize + 1, properties.size() );
+        assertThat( properties, hasItem( propName ) );
     }
 
     /**
      * Remove a property for autoindexing on nodes.
      */
     @Test
-    @Documented
-    public void removeAutoIndexingPropertyForNodes() {
+    public void removeAutoIndexingPropertyForNodes()
+    {
         gen.get()
                 .noGraph()
                 .expectedStatus( 204 )
@@ -355,23 +338,27 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void switchOnOffAutoIndexingForNodes() {
-        switchOnOffAutoIndexingForType("node");
+    public void switchOnOffAutoIndexingForNodes()
+    {
+        switchOnOffAutoIndexingForType( "node" );
     }
 
     @Test
-    public void switchOnOffAutoIndexingForRelationships() {
-        switchOnOffAutoIndexingForType("relationship");
+    public void switchOnOffAutoIndexingForRelationships()
+    {
+        switchOnOffAutoIndexingForType( "relationship" );
     }
 
     @Test
-    public void addRemoveAutoIndexedPropertyForNodes() throws JsonParseException {
-        addRemoveAutoIndexedPropertyForType("node");
+    public void addRemoveAutoIndexedPropertyForNodes() throws JsonParseException
+    {
+        addRemoveAutoIndexedPropertyForType( "node" );
     }
 
     @Test
-    public void addRemoveAutoIndexedPropertyForRelationships() throws JsonParseException {
-        addRemoveAutoIndexedPropertyForType("relationship");
+    public void addRemoveAutoIndexedPropertyForRelationships() throws JsonParseException
+    {
+        addRemoveAutoIndexedPropertyForType( "relationship" );
     }
 
     private String relationshipAutoIndexUri()
@@ -379,80 +366,82 @@ public class AutoIndexDocIT extends AbstractRestFunctionalTestBase
         return getDataUri() + "index/auto/relationship/";
     }
 
-    private void addRemoveAutoIndexedPropertyForType(String uriPartForType) throws JsonParseException {
-//      List<String> properties = getAutoIndexedPropertiesForType(uriPartForType);
-//      assertTrue(properties.isEmpty());
+    private void addRemoveAutoIndexedPropertyForType( String uriPartForType ) throws JsonParseException
+    {
+        int intialPropertiesSize = getAutoIndexedPropertiesForType( uriPartForType ).size();
+
+        long millis = System.currentTimeMillis();
+        String myProperty1 = uriPartForType + "-myProperty1-" + millis;
+        String myProperty2 = uriPartForType + "-myProperty2-" + millis;
 
         gen.get()
                 .noGraph()
                 .expectedStatus( 204 )
-                .payload( "myProperty1" )
-                .post(autoIndexURI(uriPartForType) + "/properties");
+                .payload( myProperty1 )
+                .post( autoIndexURI( uriPartForType ) + "/properties" );
         gen.get()
                 .noGraph()
                 .expectedStatus( 204 )
-                .payload( "myProperty2" )
-                .post(autoIndexURI(uriPartForType) + "/properties");
+                .payload( myProperty2 )
+                .post( autoIndexURI( uriPartForType ) + "/properties" );
 
-        List<String> properties = getAutoIndexedPropertiesForType(uriPartForType);
-        assertEquals(2, properties.size());
-        assertTrue(properties.contains("myProperty1"));
-        assertTrue(properties.contains("myProperty2"));
+        List<String> properties = getAutoIndexedPropertiesForType( uriPartForType );
+        assertEquals( intialPropertiesSize + 2, properties.size() );
+        assertTrue( properties.contains( myProperty1 ) );
+        assertTrue( properties.contains( myProperty2 ) );
 
         gen.get()
                 .noGraph()
-                .expectedStatus(204)
-                .payload(null)
-                .delete(autoIndexURI(uriPartForType)
-                        + "/properties/myProperty2");
+                .expectedStatus( 204 )
+                .payload( null )
+                .delete( autoIndexURI( uriPartForType )
+                         + "/properties/" + myProperty2 );
 
-        properties = getAutoIndexedPropertiesForType(uriPartForType);
-        assertEquals(1, properties.size());
-        assertTrue(properties.contains("myProperty1"));
+        properties = getAutoIndexedPropertiesForType( uriPartForType );
+        assertEquals( intialPropertiesSize + 1, properties.size() );
+        assertTrue( properties.contains( myProperty1 ) );
     }
 
     @SuppressWarnings( "unchecked" )
-    private List<String> getAutoIndexedPropertiesForType(String uriPartForType)
+    private List<String> getAutoIndexedPropertiesForType( String uriPartForType )
             throws JsonParseException
     {
         String result = gen.get()
                 .noGraph()
                 .expectedStatus( 200 )
-                .get(autoIndexURI(uriPartForType) + "/properties").entity();
-        return (List<String>) JsonHelper.readJson(result);
+                .get( autoIndexURI( uriPartForType ) + "/properties" ).entity();
+        return (List<String>) JsonHelper.readJson( result );
     }
 
-    private void switchOnOffAutoIndexingForType(String uriPartForType)
+    private void switchOnOffAutoIndexingForType( String uriPartForType )
     {
-        setEnabledAutoIndexingForType(uriPartForType, true);
-        checkAndAssertAutoIndexerIsEnabled(uriPartForType, true);
-        setEnabledAutoIndexingForType(uriPartForType, false);
-        checkAndAssertAutoIndexerIsEnabled(uriPartForType, false);
+        setEnabledAutoIndexingForType( uriPartForType, true );
+        checkAndAssertAutoIndexerIsEnabled( uriPartForType, true );
+        setEnabledAutoIndexingForType( uriPartForType, false );
+        checkAndAssertAutoIndexerIsEnabled( uriPartForType, false );
     }
 
-    private void setEnabledAutoIndexingForType(String uriPartForType,
-            boolean enabled)
+    private void setEnabledAutoIndexingForType( String uriPartForType, boolean enabled )
     {
         gen.get()
                 .noGraph()
                 .expectedStatus( 204 )
                 .payload( Boolean.toString( enabled ) )
-                .put(autoIndexURI(uriPartForType) + "/status");
+                .put( autoIndexURI( uriPartForType ) + "/status" );
     }
 
-    private void checkAndAssertAutoIndexerIsEnabled(String uriPartForType,
-            boolean enabled)
+    private void checkAndAssertAutoIndexerIsEnabled( String uriPartForType, boolean enabled )
     {
         String result = gen.get()
                 .noGraph()
                 .expectedStatus( 200 )
-                .get(autoIndexURI(uriPartForType) + "/status").entity();
-        assertEquals(enabled, Boolean.parseBoolean(result));
+                .get( autoIndexURI( uriPartForType ) + "/status" ).entity();
+        assertEquals( enabled, Boolean.parseBoolean( result ) );
     }
 
-    private String autoIndexURI(String type)
+    private String autoIndexURI( String type )
     {
         return getDataUri()
-                + RestfulGraphDatabase.PATH_AUTO_INDEX.replace("{type}", type);
+               + RestfulGraphDatabase.PATH_AUTO_INDEX.replace( "{type}", type );
     }
 }

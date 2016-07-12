@@ -39,21 +39,26 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
+import org.neo4j.kernel.impl.factory.CommunityEditionModule;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.EditionModule;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.impl.logging.StoreLogService;
+import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
-import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
-import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.DbRepresentation;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.subprocess.SubProcess;
@@ -79,6 +84,9 @@ public class TestBackup
 
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( TestBackup.class );
+
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Before
     public void before() throws Exception
@@ -150,9 +158,10 @@ public class TestBackup
             assertTrue( "Should be consistent", backup.isConsistent() );
             shutdownServer( server );
             server = null;
+            PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() );
 
-            long firstChecksum = lastTxChecksumOf( serverPath );
-            assertEquals( firstChecksum, lastTxChecksumOf( backupPath ) );
+            long firstChecksum = lastTxChecksumOf( serverPath, pageCache );
+            assertEquals( firstChecksum, lastTxChecksumOf( backupPath, pageCache ) );
 
             addMoreData( serverPath );
             server = startServer( serverPath );
@@ -161,8 +170,8 @@ public class TestBackup
             shutdownServer( server );
             server = null;
 
-            long secondChecksum = lastTxChecksumOf( serverPath );
-            assertEquals( secondChecksum, lastTxChecksumOf( backupPath ) );
+            long secondChecksum = lastTxChecksumOf( serverPath, pageCache );
+            assertEquals( secondChecksum, lastTxChecksumOf( backupPath, pageCache ) );
             assertTrue( firstChecksum != secondChecksum );
         }
         finally
@@ -286,7 +295,8 @@ public class TestBackup
             OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
             backup.full( backupPath.getPath() );
             assertTrue( "Should be consistent", backup.isConsistent() );
-            long lastCommittedTx = getLastCommittedTx( backupPath.getPath() );
+            PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() );
+            long lastCommittedTx = getLastCommittedTx( backupPath.getPath(), pageCache );
 
             for ( int i = 0; i < 5; i++ )
             {
@@ -298,7 +308,7 @@ public class TestBackup
                 }
                 backup = backup.incremental( backupPath.getPath() );
                 assertTrue( "Should be consistent", backup.isConsistent() );
-                assertEquals( lastCommittedTx + i + 1, getLastCommittedTx( backupPath.getPath() ) );
+                assertEquals( lastCommittedTx + i + 1, getLastCommittedTx( backupPath.getPath(), pageCache ) );
             }
         }
         finally
@@ -340,9 +350,10 @@ public class TestBackup
         }
     }
 
-    private long getLastCommittedTx( String path )
+    private long getLastCommittedTx( String path, PageCache pageCache ) throws IOException
     {
-        return new NeoStoreUtil( new File( path ) ).getLastCommittedTx();
+        File neoStore = new File( path, MetaDataStore.DEFAULT_NAME );
+        return MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
     }
 
     @Test
@@ -554,13 +565,13 @@ public class TestBackup
 
     private static boolean checkLogFileExistence( String directory )
     {
-        return new File( directory, StringLogger.DEFAULT_NAME ).exists();
+        return new File( directory, StoreLogService.INTERNAL_LOG_NAME ).exists();
     }
 
-    private long lastTxChecksumOf( File storeDir )
+    private long lastTxChecksumOf( File storeDir, PageCache pageCache ) throws IOException
     {
-        NeoStoreUtil neoStore = new NeoStoreUtil( storeDir );
-        return neoStore.getValue( Position.LAST_TRANSACTION_CHECKSUM );
+        File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        return MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
     }
 
     private ServerInterface startServer( File path ) throws Exception
@@ -597,32 +608,41 @@ public class TestBackup
         return representation;
     }
 
-    private GraphDatabaseService startGraphDatabase( File path, boolean withOnlineBackup )
+    private GraphDatabaseService startGraphDatabase( File storeDir, boolean withOnlineBackup )
     {
         GraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory()
         {
             @Override
-            protected GraphDatabaseService newDatabase( String path, Map<String,String> config,
-                    Dependencies dependencies )
+            protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config,
+                    GraphDatabaseFacadeFactory.Dependencies dependencies )
             {
-                return new EmbeddedGraphDatabase( path, config, dependencies )
+                return new CommunityFacadeFactory()
                 {
+
                     @Override
-                    protected TransactionHeaderInformationFactory createHeaderInformationFactory()
+                    protected EditionModule createEdition( PlatformModule platformModule )
                     {
-                        return new TransactionHeaderInformationFactory.WithRandomBytes()
+                        return new CommunityEditionModule( platformModule )
                         {
+
                             @Override
-                            protected TransactionHeaderInformation createUsing( byte[] additionalHeader )
+                            protected TransactionHeaderInformationFactory createHeaderInformationFactory()
                             {
-                                return new TransactionHeaderInformation( 1, 2, additionalHeader );
+                                return new TransactionHeaderInformationFactory.WithRandomBytes()
+                                {
+                                    @Override
+                                    protected TransactionHeaderInformation createUsing( byte[] additionalHeader )
+                                    {
+                                        return new TransactionHeaderInformation( 1, 2, additionalHeader );
+                                    }
+                                };
                             }
                         };
                     }
-                };
+                }.newFacade( storeDir, config, dependencies );
             }
         };
-        return dbFactory.newEmbeddedDatabaseBuilder( path.getPath() ).
+        return dbFactory.newEmbeddedDatabaseBuilder( storeDir ).
             setConfig( OnlineBackupSettings.online_backup_enabled, String.valueOf( withOnlineBackup ) ).
             setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE ).
             newGraphDatabase();

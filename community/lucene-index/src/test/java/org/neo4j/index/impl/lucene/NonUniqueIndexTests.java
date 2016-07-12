@@ -22,16 +22,18 @@ package org.neo4j.index.impl.lucene;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -40,22 +42,27 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TargetDirectory.TestDirectory;
 
-import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
+
+import static java.util.Collections.singletonList;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class NonUniqueIndexTests
 {
     @Rule
-    public final TestDirectory directory = TargetDirectory.forTest( getClass() ).testDirectory();
+    public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
 
     @Test
     public void concurrentIndexPopulationAndInsertsShouldNotProduceDuplicates() throws IOException
@@ -84,14 +91,30 @@ public class NonUniqueIndexTests
 
     private GraphDatabaseService newEmbeddedGraphDatabaseWithSlowJobScheduler()
     {
-        return new EmbeddedGraphDatabase( directory.absolutePath(), stringMap(), GraphDatabaseDependencies.newDependencies().logging(DevNullLoggingService.DEV_NULL))
+        GraphDatabaseFactoryState graphDatabaseFactoryState = new GraphDatabaseFactoryState();
+        graphDatabaseFactoryState.setUserLogProvider( NullLogService.getInstance().getUserLogProvider() );
+        return new CommunityFacadeFactory()
         {
             @Override
-            protected Neo4jJobScheduler createJobScheduler()
+            protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
             {
-                return newSlowJobScheduler();
+                return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
+                {
+                    @Override
+                    protected Neo4jJobScheduler createJobScheduler()
+                    {
+                        return newSlowJobScheduler();
+                    }
+
+                    @Override
+                    protected LogService createLogService( LogProvider userLogProvider )
+                    {
+                        return NullLogService.getInstance();
+                    }
+                };
             }
-        };
+        }.newFacade( directory.graphDbDir(), stringMap(),
+                graphDatabaseFactoryState.databaseDependencies() );
     }
 
     private static Neo4jJobScheduler newSlowJobScheduler()
@@ -102,6 +125,12 @@ public class NonUniqueIndexTests
             public JobHandle schedule( Group group, Runnable job )
             {
                 return super.schedule( group, slowRunnable( job ) );
+            }
+
+            @Override
+            public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
+            {
+                return super.schedule( group, slowRunnable(job), metadata );
             }
         };
     }
@@ -121,14 +150,15 @@ public class NonUniqueIndexTests
 
     private List<Long> nodeIdsInIndex( int indexId, String value ) throws IOException
     {
-        Config config = new Config( stringMap( store_dir.name(), directory.absolutePath() ) );
-        SchemaIndexProvider indexProvider = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, config );
+        Config config = new Config();
+        SchemaIndexProvider indexProvider = new LuceneSchemaIndexProvider( new DefaultFileSystemAbstraction(),
+                DirectoryFactory.PERSISTENT, directory.graphDbDir() );
         IndexConfiguration indexConfig = new IndexConfiguration( false );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId, indexConfig, samplingConfig );
               IndexReader reader = accessor.newReader() )
         {
-            return IteratorUtil.asList( reader.lookup( value ) );
+            return IteratorUtil.asList( reader.seek( value ) );
         }
     }
 }

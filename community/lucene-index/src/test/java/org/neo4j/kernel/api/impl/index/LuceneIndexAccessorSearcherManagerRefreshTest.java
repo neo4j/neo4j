@@ -33,13 +33,13 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
+
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 
 public class LuceneIndexAccessorSearcherManagerRefreshTest
 {
     private final LuceneDocumentStructure structure = mock( LuceneDocumentStructure.class );
     private final ReservingLuceneIndexWriter writer = mock( ReservingLuceneIndexWriter.class );
-    private final IndexWriterStatus status = mock( IndexWriterStatus.class );
     private final Directory directory = mock( Directory.class );
     private final File dir = mock( File.class );
 
@@ -193,9 +193,8 @@ public class LuceneIndexAccessorSearcherManagerRefreshTest
 
     private LuceneIndexAccessor createAccessor( LuceneIndexAccessor.LuceneReferenceManager<IndexSearcher> manager )
     {
-        return new LuceneIndexAccessor( structure, writer, manager, status, directory, dir, 42 )
+        return new LuceneIndexAccessor( structure, writer, manager, directory, dir, 42 )
         {
-
         };
     }
 

@@ -19,57 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
-import org.neo4j.kernel.impl.transaction.log.LogRotation;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.impl.transaction.log.LogRotation.PrintFormat;
-
-/**
- * This class listens for rotations and does log pruning.
- */
-public class LogPruning
-    implements LogRotation.Monitor
+public interface LogPruning
 {
-    private final Lock pruneLock = new ReentrantLock();
-    private final LogPruneStrategy pruneStrategy;
-    private final StringLogger msgLog;
-
-    public LogPruning( LogPruneStrategy pruneStrategy, Logging logging )
-    {
-        this.pruneStrategy = pruneStrategy;
-        msgLog = logging.getMessagesLog( getClass() );
-    }
-
-    @Override
-    public void startedRotating( long currentVersion )
-    {
-    }
-
-    @Override
-    public void finishedRotating( long currentVersion )
-    {
-        // Only one is allowed to do pruning at any given time,
-        // and it's OK to skip pruning if another one is doing so right now.
-        if ( pruneLock.tryLock() )
-        {
-            Thread thread = Thread.currentThread();
-            String threadStr = "[" + thread.getId() + ":" + thread.getName() + "]";
-
-            msgLog.info( PrintFormat.prefix( currentVersion ) + threadStr + " Starting log pruning." );
-
-            try
-            {
-                pruneStrategy.prune();
-            }
-            finally
-            {
-                pruneLock.unlock();
-            }
-
-            msgLog.info( PrintFormat.prefix( currentVersion ) + threadStr + " Log pruning complete." );
-        }
-    }
+    void pruneLogs( long currentVersion );
 }

@@ -35,18 +35,22 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
+import org.neo4j.cluster.protocol.cluster.ClusterState;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.Predicates.in;
 import static org.neo4j.helpers.Predicates.not;
 import static org.neo4j.helpers.Uris.parameter;
 import static org.neo4j.helpers.collection.Iterables.toList;
 
+/**
+ * Context for {@link ClusterState} state machine.
+ */
 class ClusterContextImpl
         extends AbstractContextImpl
         implements ClusterContext
@@ -70,7 +74,7 @@ class ClusterContextImpl
     private long electorVersion;
     private InstanceId lastElector;
 
-    ClusterContextImpl( InstanceId me, CommonContextState commonState, Logging logging,
+    ClusterContextImpl( InstanceId me, CommonContextState commonState, LogProvider logging,
                         Timeouts timeouts, Executor executor,
                         ObjectOutputStreamFactory objectOutputStreamFactory,
                         ObjectInputStreamFactory objectInputStreamFactory,
@@ -108,7 +112,7 @@ class ClusterContextImpl
         }
     }
 
-    private ClusterContextImpl( InstanceId me, CommonContextState commonState, Logging logging, Timeouts timeouts,
+    private ClusterContextImpl( InstanceId me, CommonContextState commonState, LogProvider logging, Timeouts timeouts,
                         Iterable<URI> joiningInstances, ClusterMessage.ConfigurationResponseState
             joinDeniedConfigurationResponseState, Executor executor,
                         ObjectOutputStreamFactory objectOutputStreamFactory,
@@ -167,7 +171,7 @@ class ClusterContextImpl
     @Override
     public void created( String name )
     {
-        commonState.setConfiguration( new ClusterConfiguration( name, logging.getMessagesLog( ClusterConfiguration.class ),
+        commonState.setConfiguration( new  ClusterConfiguration( name, logProvider,
                 Collections.singleton( commonState.boundAt() ) ) );
         joined();
     }
@@ -270,7 +274,7 @@ class ClusterContextImpl
         {
             if ( electorId.equals( getMyId() ) )
             {
-                getLogger( getClass() ).debug( "I elected instance " + instanceId + " for role "
+                getLog( getClass() ).debug( "I elected instance " + instanceId + " for role "
                         + roleName + " at version " + version );
                 if ( version < electorVersion )
                 {
@@ -279,14 +283,14 @@ class ClusterContextImpl
             }
             else if ( electorId.equals( lastElector ) && ( version < electorVersion && version > 1 ) )
             {
-                getLogger( getClass() ).warn( "Election result for role " + roleName +
+                getLog( getClass() ).warn( "Election result for role " + roleName +
                         " received from elector instance " + electorId + " with version " + version +
                         ". I had version " + electorVersion + " for elector " + lastElector );
                 return;
             }
             else
             {
-                getLogger( getClass() ).debug( "Setting elector to " + electorId + " and its version to " + version );
+                getLog( getClass() ).debug( "Setting elector to " + electorId + " and its version to " + version );
             }
 
             this.electorVersion = version;
@@ -458,7 +462,7 @@ class ClusterContextImpl
         return learnerContext.getLastDeliveredInstanceId();
     }
 
-    public ClusterContextImpl snapshot( CommonContextState commonStateSnapshot, Logging logging, Timeouts timeouts,
+    public ClusterContextImpl snapshot( CommonContextState commonStateSnapshot, LogProvider logging, Timeouts timeouts,
                                         Executor executor, ObjectOutputStreamFactory objectOutputStreamFactory,
                                         ObjectInputStreamFactory objectInputStreamFactory,
                                         LearnerContextImpl snapshotLearnerContext,

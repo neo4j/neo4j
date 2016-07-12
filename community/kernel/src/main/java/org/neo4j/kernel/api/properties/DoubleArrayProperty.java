@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
-import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
-import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
-
 class DoubleArrayProperty extends FloatingPointArrayProperty
 {
     private final double[] value;
@@ -50,11 +46,5 @@ class DoubleArrayProperty extends FloatingPointArrayProperty
     public double doubleValue( int index )
     {
         return value[index];
-    }
-
-    @Override
-    public int sizeOfObjectInBytesIncludingOverhead()
-    {
-        return withObjectOverhead( withReference( sizeOfArray( value ) ) );
     }
 }

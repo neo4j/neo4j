@@ -25,18 +25,19 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.guard.GuardOperationsCountException;
 import org.neo4j.kernel.guard.GuardTimeoutException;
+import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import static java.lang.Integer.MAX_VALUE;
-import static java.lang.Thread.sleep;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+
+import static java.lang.Integer.MAX_VALUE;
+import static java.lang.Thread.sleep;
 
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.SillyUtils.ignore;
@@ -44,7 +45,7 @@ import static org.neo4j.helpers.SillyUtils.ignore;
 @SuppressWarnings("deprecation"/*getGuard() is deprecated (GraphDatabaseAPI), and used all throughout this test*/)
 public class TestGuard
 {
-    @Test( expected = IllegalArgumentException.class )
+    @Test(expected = UnsatisfiedDependencyException.class)
     public void testGuardNotInsertedByDefault()
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
@@ -62,9 +63,9 @@ public class TestGuard
     public void testGuardInsertedByDefault()
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
-            newImpermanentDatabaseBuilder().
-            setConfig( GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE ).
-            newGraphDatabase();
+                newImpermanentDatabaseBuilder().
+                setConfig( GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE ).
+                newGraphDatabase();
         assertNotNull( getGuard( db ) );
         db.shutdown();
     }
@@ -73,9 +74,9 @@ public class TestGuard
     public void testGuardOnDifferentGraphOps()
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
-            newImpermanentDatabaseBuilder().
-            setConfig( GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE ).
-            newGraphDatabase();
+                newImpermanentDatabaseBuilder().
+                setConfig( GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE ).
+                newGraphDatabase();
 
         try ( Transaction ignored = db.beginTx() )
         {
@@ -94,17 +95,18 @@ public class TestGuard
             assertEquals( 3, ops2.getOpsCount() );
 
             getGuard( db ).startOperationsCount( MAX_VALUE );
-            n0.createRelationshipTo( n1, withName( "REL" ));
+            n0.createRelationshipTo( n1, withName( "REL" ) );
             Guard.OperationsCount ops3 = getGuard( db ).stop();
             assertEquals( 1, ops3.getOpsCount() );
 
             getGuard( db ).startOperationsCount( MAX_VALUE );
-            for ( Path position : Traversal.description().breadthFirst().relationships( withName( "REL" ) ).traverse( n0 ) )
+            for ( Path position : Traversal.description().breadthFirst().relationships( withName( "REL" ) ).
+                    traverse( n0 ) )
             {
                 ignore( position );
             }
             Guard.OperationsCount ops4 = getGuard( db ).stop();
-            assertEquals( 4, ops4.getOpsCount() );
+            assertEquals( 2, ops4.getOpsCount() );
         }
 
         db.shutdown();
@@ -114,9 +116,9 @@ public class TestGuard
     public void testOpsCountGuardFail()
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
-            newImpermanentDatabaseBuilder().
-            setConfig( GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE ).
-            newGraphDatabase();
+                newImpermanentDatabaseBuilder().
+                setConfig( GraphDatabaseSettings.execution_guard_enabled, Settings.TRUE ).
+                newGraphDatabase();
 
         Guard guard = getGuard( db );
         guard.startOperationsCount( 2 );
@@ -129,7 +131,8 @@ public class TestGuard
             {
                 db.createNode();
                 fail();
-            } catch ( GuardOperationsCountException e )
+            }
+            catch ( GuardOperationsCountException e )
             {
                 // expected
             }

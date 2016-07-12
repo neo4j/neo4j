@@ -28,12 +28,11 @@ import java.util.Map;
 public class Groups
 {
     private final Map<String,Group> byName = new HashMap<>();
-    private int nextId = 1;
+    private int nextId = 0;
     private Boolean globalMode;
 
     /**
      * @param name group name or {@code null} for a {@link Group#GLOBAL global group}.
-     * @param part name of the group, see {@link Group#partId()}
      * @return {@link Group} for the given name. If the group doesn't already exist it will be created
      * with a new id. If {@code name} is {@code null} then the {@link Group#GLOBAL global group} is returned.
      * This method also prevents mixing global and non-global groups, i.e. if first call is {@code null},

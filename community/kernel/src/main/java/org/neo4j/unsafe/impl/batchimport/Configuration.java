@@ -19,11 +19,13 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 
-import static java.lang.Math.max;
-import static java.lang.Math.round;
+import static java.lang.Math.min;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 
 /**
  * User controlled configuration for a {@link BatchImporter}.
@@ -35,111 +37,38 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
      * database directory of the imported database, i.e. <into>/bad.log.
      */
     String BAD_FILE_NAME = "bad.log";
+    long MAX_PAGE_CACHE_MEMORY = mebiBytes( 240 );
 
     /**
-     * Memory dedicated to buffering data to be written to each store file.
-     */
-    int fileChannelBufferSize();
-
-    /**
-     * Some files require a bigger buffer to avoid some performance culprits imposed by the OS.
-     * This is a multiplier for how many times bigger such buffers are compared to {@link #fileChannelBufferSize()}.
-     */
-    int bigFileChannelBufferSizeMultiplier();
-
-    /**
-     * The number of relationships threshold for considering a node dense.
+     * @return number of relationships threshold for considering a node dense.
      */
     int denseNodeThreshold();
 
     /**
-     * Max number of I/O threads doing file write operations. Optimal value for this setting is heavily
-     * dependent on hard drive. A spinning disk is most likely best off with 1, where an SSD may see
-     * better performance with a handful of threads writing to it simultaneously.
-     * This value eats into the cake of {@link #maxNumberOfProcessors()}. The total number of threads
-     * used by the importer at any given time is {@link #maxNumberOfProcessors()}, out of those
-     * a maximum number of I/O threads can be used.
-     *   "Processor" in the context of the batch importer is different from "thread" since when discovering
-     * how many processors are fully in use there's a calculation where one thread takes up 0 < fraction <= 1
-     * of a processor.
+     * @return amount of memory to reserve for the page cache. This should just be "enough" for it to be able
+     * to sequentially read and write a couple of stores at a time. If configured too high then there will
+     * be less memory available for other caches which are critical during the import. Optimal size is
+     * estimated to be 100-200 MiB. The importer will figure out an optimal page size from this value,
+     * with slightly bigger page size than "normal" random access use cases.
      */
-    int maxNumberOfIoProcessors();
-
-    /**
-     * Rough max number of processors (CPU cores) simultaneously used in total by importer at any given time.
-     * This value should be set including {@link #maxNumberOfIoProcessors()} in mind.
-     * Defaults to the value provided by the {@link Runtime#availableProcessors() jvm}. There's a discrete
-     * number of threads that needs to be used just to get the very basics of the import working,
-     * so for that reason there's no lower bound to this value.
-     *   "Processor" in the context of the batch importer is different from "thread" since when discovering
-     * how many processors are fully in use there's a calculation where one thread takes up 0 < fraction <= 1
-     * of a processor.
-     */
-    int maxNumberOfProcessors();
+    long pageCacheMemory();
 
     class Default
             extends org.neo4j.unsafe.impl.batchimport.staging.Configuration.Default
             implements Configuration
     {
-        private static final int OPTIMAL_FILE_CHANNEL_CHUNK_SIZE = 1024 * 4;
-
         @Override
-        public int batchSize()
+        public long pageCacheMemory()
         {
-            return 10_000;
-        }
-
-        @Override
-        public int fileChannelBufferSize()
-        {
-            // Do a little calculation here where the goal of the returned value is that if a file channel
-            // would be seen as a batch itself (think asynchronous writing) there would be created roughly
-            // as many as the other types of batches.
-            return roundToClosest( batchSize() * 40 /*some kind of record size average*/,
-                    OPTIMAL_FILE_CHANNEL_CHUNK_SIZE );
-        }
-
-        @Override
-        public int bigFileChannelBufferSizeMultiplier()
-        {
-            return 50;
-        }
-
-        private int roundToClosest( int value, int divisible )
-        {
-            double roughCount = (double) value / divisible;
-            int count = (int) round( roughCount );
-            return divisible*count;
-        }
-
-        @Override
-        public int workAheadSize()
-        {
-            return 20;
+            // Get the upper bound of what we can get from the default config calculation
+            // We even want to limit amount of memory a bit more since we don't need very much during import
+            return min( MAX_PAGE_CACHE_MEMORY, new Config().get( pagecache_memory ) );
         }
 
         @Override
         public int denseNodeThreshold()
         {
-            return Integer.parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() );
-        }
-
-        @Override
-        public int maxNumberOfIoProcessors()
-        {
-            return max( 2, Runtime.getRuntime().availableProcessors()/3 );
-        }
-
-        @Override
-        public int maxNumberOfProcessors()
-        {
-            return Runtime.getRuntime().availableProcessors();
-        }
-
-        @Override
-        public int movingAverageSize()
-        {
-            return 100;
+            return Integer.parseInt( dense_node_threshold.getDefaultValue() );
         }
     }
 
@@ -165,33 +94,15 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         }
 
         @Override
-        public int fileChannelBufferSize()
+        public long pageCacheMemory()
         {
-            return defaults.fileChannelBufferSize();
-        }
-
-        @Override
-        public int bigFileChannelBufferSizeMultiplier()
-        {
-            return defaults.bigFileChannelBufferSizeMultiplier();
+            return min( MAX_PAGE_CACHE_MEMORY, config.get( pagecache_memory ) );
         }
 
         @Override
         public int denseNodeThreshold()
         {
-            return config.get( GraphDatabaseSettings.dense_node_threshold );
-        }
-
-        @Override
-        public int maxNumberOfIoProcessors()
-        {
-            return defaults.maxNumberOfIoProcessors();
-        }
-
-        @Override
-        public int maxNumberOfProcessors()
-        {
-            return defaults.maxNumberOfProcessors();
+            return config.get( dense_node_threshold );
         }
 
         @Override

@@ -28,12 +28,13 @@ import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.RECOVERY;
 
-public class RecoveryVisitor implements CloseableVisitor<CommittedTransactionRepresentation,IOException>
+public class RecoveryVisitor implements CloseableVisitor<RecoverableTransaction,IOException>
 {
     public interface Monitor
     {
@@ -45,7 +46,9 @@ public class RecoveryVisitor implements CloseableVisitor<CommittedTransactionRep
     private final IndexUpdatesValidator indexUpdatesValidator;
     private final Monitor monitor;
     private long lastTransactionIdApplied = -1;
+    private long lastTransactionCommitTimestamp;
     private long lastTransactionChecksum;
+    private LogPosition lastTransactionLogPosition;
 
     public RecoveryVisitor( TransactionIdStore store,
                             TransactionRepresentationStoreApplier storeApplier,
@@ -59,10 +62,11 @@ public class RecoveryVisitor implements CloseableVisitor<CommittedTransactionRep
     }
 
     @Override
-    public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
+    public boolean visit( RecoverableTransaction transaction ) throws IOException
     {
-        long txId = transaction.getCommitEntry().getTxId();
-        TransactionRepresentation txRepresentation = transaction.getTransactionRepresentation();
+        CommittedTransactionRepresentation representation = transaction.representation();
+        long txId = representation.getCommitEntry().getTxId();
+        TransactionRepresentation txRepresentation = representation.getTransactionRepresentation();
 
         try ( LockGroup locks = new LockGroup();
               ValidatedIndexUpdates indexUpdates = prepareIndexUpdates( txRepresentation ) )
@@ -71,7 +75,9 @@ public class RecoveryVisitor implements CloseableVisitor<CommittedTransactionRep
         }
 
         lastTransactionIdApplied = txId;
-        lastTransactionChecksum = LogEntryStart.checksum( transaction.getStartEntry() );
+        lastTransactionCommitTimestamp = transaction.representation().getCommitEntry().getTimeWritten();
+        lastTransactionChecksum = LogEntryStart.checksum( representation.getStartEntry() );
+        lastTransactionLogPosition = transaction.positionAfterTx();
         monitor.transactionRecovered( txId );
         return false;
     }
@@ -81,7 +87,9 @@ public class RecoveryVisitor implements CloseableVisitor<CommittedTransactionRep
     {
         if ( lastTransactionIdApplied != -1 )
         {
-            store.setLastCommittedAndClosedTransactionId( lastTransactionIdApplied, lastTransactionChecksum );
+            store.setLastCommittedAndClosedTransactionId( lastTransactionIdApplied, lastTransactionChecksum,
+                    lastTransactionCommitTimestamp, lastTransactionLogPosition.getByteOffset(),
+                    lastTransactionLogPosition.getLogVersion() );
         }
     }
 

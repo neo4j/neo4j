@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -106,7 +105,7 @@ public class LruCache<K, E>
         {
             throw new IllegalArgumentException();
         }
-        return counter.count( cache.get( key ) );
+        return cache.get( key );
     }
 
     public synchronized void clear()
@@ -126,21 +125,6 @@ public class LruCache<K, E>
     public synchronized Set<K> keySet()
     {
         return cache.keySet();
-    }
-
-    public synchronized Collection<E> values()
-    {
-        return cache.values();
-    }
-
-    public synchronized Set<Map.Entry<K, E>> entrySet()
-    {
-        return cache.entrySet();
-    }
-
-    public synchronized void putAll( Map<K, E> map )
-    {
-        cache.putAll( map );
     }
 
     /**
@@ -185,17 +169,5 @@ public class LruCache<K, E>
 
     public void elementCleaned( E element )
     {
-    }
-
-    private final HitCounter counter = new HitCounter();
-
-    public long hitCount()
-    {
-        return counter.getHitsCount();
-    }
-
-    public long missCount()
-    {
-        return counter.getMissCount();
     }
 }

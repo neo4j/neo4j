@@ -22,13 +22,14 @@ package org.neo4j.kernel.impl.core;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.lang.System.currentTimeMillis;
@@ -38,16 +39,23 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     private final ThreadToStatementContextBridge threadToTransactionBridge;
     private final NodeProxy.NodeActions nodeActions;
     private final RelationshipProxy.RelationshipActions relationshipActions;
+    private final GraphPropertiesProxy.GraphPropertiesActions graphPropertiesActions;
 
     private final List<PropertyTracker<Node>> nodePropertyTrackers;
     private final List<PropertyTracker<Relationship>> relationshipPropertyTrackers;
     private long epoch;
+    private final GraphDatabaseService graphDatabaseService;
+    private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
 
-    public NodeManager( NodeProxy.NodeActions nodeActions, RelationshipProxy.RelationshipActions relationshipActions,
-            ThreadToStatementContextBridge threadToTransactionBridge )
+    public NodeManager( GraphDatabaseService graphDatabaseService,
+                        ThreadToStatementContextBridge threadToTransactionBridge, RelationshipTypeTokenHolder
+                        relationshipTypeTokenHolder )
     {
-        this.nodeActions = nodeActions;
-        this.relationshipActions = relationshipActions;
+        this.graphDatabaseService = graphDatabaseService;
+        this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
+        this.nodeActions = new NodeActionsImpl();
+        this.relationshipActions = new RelationshipActionsImpl();
+        this.graphPropertiesActions = new GraphPropertiesActionsImpl();
         this.threadToTransactionBridge = threadToTransactionBridge;
         // Trackers may be added and removed at runtime, e.g. via the REST interface in server,
         // so we use the thread-safe CopyOnWriteArrayList.
@@ -82,7 +90,7 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     /** Returns a fully initialized proxy. */
     public RelationshipProxy newRelationshipProxy( long id )
     {
-        try ( Statement statement = threadToTransactionBridge.instance() )
+        try ( Statement statement = threadToTransactionBridge.get() )
         {
             RelationshipProxy proxy = new RelationshipProxy( relationshipActions, id );
             statement.readOperations().relationshipVisit( id, proxy );
@@ -101,9 +109,9 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     }
 
     @Override
-    public GraphPropertiesImpl newGraphProperties()
+    public GraphProperties newGraphProperties()
     {
-        return new GraphPropertiesImpl( epoch, threadToTransactionBridge );
+        return new GraphPropertiesProxy( graphPropertiesActions );
     }
 
     public List<PropertyTracker<Node>> getNodePropertyTrackers()
@@ -136,19 +144,117 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
         relationshipPropertyTrackers.remove( relationshipPropertyTracker );
     }
 
-    // The following methods are needed only for compatibility for older versions of cypher compiler, i.e., 2.0
-
-    public boolean isDeleted( Node resource )
+    private class NodeActionsImpl implements NodeProxy.NodeActions
     {
-        KernelStatement statement = (KernelStatement)
-                threadToTransactionBridge.getKernelTransactionBoundToThisThread( true ).acquireStatement();
-        return statement.txState().nodeIsDeletedInThisTx( resource.getId() );
+        @Override
+        public Statement statement()
+        {
+            return threadToTransactionBridge.get();
+        }
+
+        @Override
+        public GraphDatabaseService getGraphDatabase()
+        {
+            // TODO This should be wrapped as well
+            return graphDatabaseService;
+        }
+
+        @Override
+        public void assertInUnterminatedTransaction()
+        {
+            threadToTransactionBridge.assertInUnterminatedTransaction();
+        }
+
+        @Override
+        public void failTransaction()
+        {
+            threadToTransactionBridge.getKernelTransactionBoundToThisThread( true ).failure();
+        }
+
+        @Override
+        public Relationship lazyRelationshipProxy( long id )
+        {
+            return NodeManager.this.newRelationshipProxyById( id );
+        }
+
+        @Override
+        public Relationship newRelationshipProxy( long id )
+        {
+            return NodeManager.this.newRelationshipProxy( id );
+        }
+
+        @Override
+        public Relationship newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId )
+        {
+            return NodeManager.this.newRelationshipProxy( id, startNodeId, typeId, endNodeId );
+        }
     }
 
-    public boolean isDeleted( Relationship resource )
+    private class RelationshipActionsImpl implements RelationshipProxy.RelationshipActions
     {
-        KernelStatement statement = (KernelStatement)
-                threadToTransactionBridge.getKernelTransactionBoundToThisThread( true ).acquireStatement();
-        return statement.txState().relationshipIsDeletedInThisTx( resource.getId() );
-    }
+        @Override
+        public GraphDatabaseService getGraphDatabaseService()
+        {
+            return graphDatabaseService;
+        }
+
+        @Override
+        public void failTransaction()
+        {
+            threadToTransactionBridge.getKernelTransactionBoundToThisThread( true ).failure();
+        }
+
+        @Override
+        public void assertInUnterminatedTransaction()
+        {
+            threadToTransactionBridge.assertInUnterminatedTransaction();
+        }
+
+        @Override
+        public Statement statement()
+        {
+            return threadToTransactionBridge.get();
+        }
+
+        @Override
+        public Node newNodeProxy( long nodeId )
+        {
+            // only used by relationship already checked as valid in cache
+            return NodeManager.this.newNodeProxyById( nodeId );
+        }
+
+        @Override
+        public RelationshipType getRelationshipTypeById( int type )
+        {
+            try
+            {
+                return relationshipTypeTokenHolder.getTokenById( type );
+            }
+            catch ( TokenNotFoundException e )
+            {
+                throw new NotFoundException( e );
+            }
+        }
+    };
+
+    private class GraphPropertiesActionsImpl implements GraphPropertiesProxy.GraphPropertiesActions
+    {
+        @Override
+        public GraphDatabaseService getGraphDatabaseService()
+        {
+            return graphDatabaseService;
+        }
+
+        @Override
+        public void failTransaction()
+        {
+            threadToTransactionBridge.getKernelTransactionBoundToThisThread( true ).failure();
+        }
+
+        @Override
+        public Statement statement()
+        {
+            return threadToTransactionBridge.get();
+        }
+    };
 }

@@ -19,8 +19,9 @@
  */
 package org.neo4j.desktop;
 
+import org.apache.commons.lang3.SystemUtils;
+
 import org.neo4j.desktop.config.Installation;
-import org.neo4j.desktop.config.OperatingSystemFamily;
 import org.neo4j.desktop.config.osx.DarwinInstallation;
 import org.neo4j.desktop.config.unix.UnixInstallation;
 import org.neo4j.desktop.config.windows.WindowsInstallation;
@@ -32,8 +33,9 @@ import org.neo4j.desktop.ui.PlatformUI;
 import static org.neo4j.desktop.ui.Components.alert;
 
 /**
- * The main class for starting the Neo4j desktop app window. The different components and wired up and started.
+ * The main class for starting the Neo4j desktop app window. The different components are wired up and started.
  */
+
 public final class Neo4jDesktop
 {
     public static void main( String[] args )
@@ -73,16 +75,18 @@ public final class Neo4jDesktop
 
     private Installation getInstallation() throws Exception
     {
-        switch ( OperatingSystemFamily.detect() )
+        if ( SystemUtils.IS_OS_WINDOWS )
         {
-            case WINDOWS:
-                return new WindowsInstallation();
-            case MAC_OS:
-                return new DarwinInstallation();
-            case UNIX:
-                return new UnixInstallation();
+            return new WindowsInstallation();
         }
-        return new UnixInstallation(); // This is the most generic one, presumably.
+        else if ( SystemUtils.IS_OS_MAC )
+        {
+            return new DarwinInstallation();
+        }
+        else
+        {
+            return new UnixInstallation();
+        }
     }
 
     protected void addShutdownHook( final DatabaseActions databaseActions )

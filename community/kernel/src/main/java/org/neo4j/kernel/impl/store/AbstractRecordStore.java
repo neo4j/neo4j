@@ -22,14 +22,12 @@ package org.neo4j.kernel.impl.store;
 import java.io.File;
 import java.util.Collection;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 import static java.util.Collections.singletonList;
 
@@ -42,25 +40,15 @@ public abstract class AbstractRecordStore<R extends AbstractBaseRecord> extends 
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger,
-            StoreVersionMismatchHandler versionMismatchHandler,
-            Monitors monitors )
+            LogProvider logProvider )
     {
-        super( fileName, conf, idType, idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger,
-                versionMismatchHandler );
+        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider );
     }
 
     @Override
     public Collection<R> getRecords( long id )
     {
         return singletonList( getRecord( id ) );
-    }
-
-    @Override
-    public Long getNextRecordReference( R record )
-    {
-        return null;
     }
 
     @Override

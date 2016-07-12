@@ -29,7 +29,6 @@ import java.util.Iterator;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -39,8 +38,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.Bits;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
@@ -50,7 +48,7 @@ import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArray
 /**
  * Implementation of the node store.
  */
-public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
+public class NodeStore extends AbstractRecordStore<NodeRecord>
 {
     public static Long readOwnerFromDynamicLabelsRecord( DynamicRecord record )
     {
@@ -77,21 +75,17 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
     // in_use(byte)+next_rel_id(int)+next_prop_id(int)+labels(5)+extra(byte)
     public static final int RECORD_SIZE = 15;
 
-    private DynamicArrayStore dynamicLabelStore;
+    private final DynamicArrayStore dynamicLabelStore;
 
     public NodeStore(
             File fileName,
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger,
-            DynamicArrayStore dynamicLabelStore,
-            StoreVersionMismatchHandler versionMismatchHandler,
-            Monitors monitors )
+            LogProvider logProvider,
+            DynamicArrayStore dynamicLabelStore )
     {
-        super( fileName, config, IdType.NODE, idGeneratorFactory, pageCache, fileSystemAbstraction,
-                stringLogger, versionMismatchHandler, monitors );
+        super( fileName, config, IdType.NODE, idGeneratorFactory, pageCache, logProvider );
         this.dynamicLabelStore = dynamicLabelStore;
     }
 
@@ -175,7 +169,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         return record;
     }
 
-    public NodeRecord loadRecord( long id, NodeRecord record )
+    public NodeRecord loadRecord( long id, NodeRecord record)
     {
         long pageId = pageIdForRecord( id );
         int offset = offsetForId( id );
@@ -218,18 +212,6 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         {
             throw new UnderlyingStorageException( e );
         }
-    }
-
-    @Override
-    public NodeRecord forceGetRaw( NodeRecord record )
-    {
-        return record;
-    }
-
-    @Override
-    public NodeRecord forceGetRaw( long id )
-    {
-        return forceGetRecord( id );
     }
 
     @Override
@@ -400,16 +382,6 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         return dynamicLabelStore;
     }
 
-    @Override
-    protected void closeStorage()
-    {
-        if ( dynamicLabelStore != null )
-        {
-            dynamicLabelStore.close();
-            dynamicLabelStore = null;
-        }
-    }
-
     public Collection<DynamicRecord> allocateRecordsForDynamicLabels( long nodeId, long[] labels,
             Iterator<DynamicRecord> useFirst )
     {
@@ -452,19 +424,5 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         {
             dynamicLabelStore.updateRecord( record );
         }
-    }
-
-    @Override
-    public void makeStoreOk()
-    {
-        dynamicLabelStore.makeStoreOk();
-        super.makeStoreOk();
-    }
-
-    @Override
-    public void visitStore( Visitor<CommonAbstractStore, RuntimeException> visitor )
-    {
-        dynamicLabelStore.visitStore( visitor );
-        visitor.visit( this );
     }
 }

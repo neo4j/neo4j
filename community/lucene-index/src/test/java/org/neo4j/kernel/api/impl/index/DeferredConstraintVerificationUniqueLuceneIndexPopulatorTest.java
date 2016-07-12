@@ -509,8 +509,8 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     {
         DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = new
                 DeferredConstraintVerificationUniqueLuceneIndexPopulator( new LuceneDocumentStructure(),
-                IndexWriterFactories.tracking(), searcherManagerFactory, new IndexWriterStatus(), directoryFactory,
-                indexDirectory, failureStorage, INDEX_ID, descriptor );
+                IndexWriterFactories.tracking(), searcherManagerFactory, directoryFactory, indexDirectory,
+                failureStorage, INDEX_ID, descriptor );
 
         populator.create();
 

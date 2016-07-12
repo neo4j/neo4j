@@ -19,9 +19,6 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonGenerator;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -30,12 +27,17 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonGenerator;
+
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.InputPosition;
+import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryStatistics;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.repr.util.RFC1123;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 
@@ -56,10 +58,10 @@ import static org.neo4j.server.rest.domain.JsonHelper.writeValue;
  */
 public class ExecutionResultSerializer
 {
-    public ExecutionResultSerializer( OutputStream output, URI baseUri, StringLogger log )
+    public ExecutionResultSerializer( OutputStream output, URI baseUri, LogProvider logProvider )
     {
         this.baseUri = baseUri;
-        this.log = log;
+        this.log = logProvider.getLog( getClass() );
         JsonGenerator generator = null;
         try
         {
@@ -125,6 +127,67 @@ public class ExecutionResultSerializer
             throw loggedIOException( e );
         }
     }
+
+    public void notifications( Iterable<Notification> notifications ) throws IOException
+    {
+        //don't add anything if notifications are empty
+        if ( !notifications.iterator().hasNext() ) return;
+
+        try
+        {
+            ensureResultsFieldClosed();
+
+            out.writeArrayFieldStart( "notifications" );
+            try
+            {
+                for ( Notification notification : notifications )
+                {
+                    out.writeStartObject();
+                    try
+                    {
+                        out.writeStringField( "code", notification.getCode() );
+                        out.writeStringField( "severity", notification.getSeverity().toString() );
+                        out.writeStringField( "title", notification.getTitle() );
+                        out.writeStringField( "description", notification.getDescription() );
+                        writePosition( notification.getPosition() );
+
+                    }
+                    finally
+                    {
+                        out.writeEndObject();
+                    }
+                }
+
+            }
+            finally
+            {
+                out.writeEndArray();
+            }
+        }
+        catch ( IOException e )
+        {
+            throw loggedIOException( e );
+        }
+    }
+
+    private void writePosition( InputPosition position ) throws IOException
+    {
+        //do not add position if empty
+        if ( position == InputPosition.empty ) return;
+
+        out.writeObjectFieldStart( "position" );
+        try
+        {
+            out.writeNumberField( "offset", position.getOffset() );
+            out.writeNumberField( "line", position.getLine() );
+            out.writeNumberField( "column", position.getColumn() );
+        }
+        finally
+        {
+            out.writeEndObject();
+        }
+    }
+
 
     private void writeStats( QueryStatistics stats ) throws IOException
     {
@@ -333,7 +396,7 @@ public class ExecutionResultSerializer
     private static final JsonFactory JSON_FACTORY = new JsonFactory( new Neo4jJsonCodec() ).disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
     private final JsonGenerator out;
     private final URI baseUri;
-    private final StringLogger log;
+    private final Log log;
 
     private void ensureDocumentOpen() throws IOException
     {
@@ -364,30 +427,33 @@ public class ExecutionResultSerializer
         }
     }
 
-    private void writeRows( Iterable<String> columns, ResourceIterator<Map<String, Object>> data,
-                            ResultDataContentWriter writer ) throws IOException
+    private void writeRows( final Iterable<String> columns, Result data, final ResultDataContentWriter writer )
+            throws IOException
     {
         out.writeArrayFieldStart( "data" );
         try
         {
-            while ( data.hasNext() )
+            data.accept( new Result.ResultVisitor<IOException>()
             {
-                Map<String, Object> row = data.next();
-                out.writeStartObject();
-                try
+                @Override
+                public boolean visit( Result.ResultRow row ) throws IOException
                 {
-                    writer.write( out, columns, row );
+                    out.writeStartObject();
+                    try
+                    {
+                        writer.write( out, columns, row );
+                    }
+                    finally
+                    {
+                        out.writeEndObject();
+                    }
+                    return true;
                 }
-                finally
-                {
-                    out.writeEndObject();
-                }
-            }
+            } );
         }
         finally
         {
             out.writeEndArray(); // </data>
-            data.close(); // free associated resources as early a possible
         }
     }
 

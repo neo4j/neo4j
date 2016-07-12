@@ -49,19 +49,19 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
 import org.neo4j.cluster.protocol.snapshot.SnapshotContext;
 import org.neo4j.cluster.protocol.snapshot.SnapshotMessage;
 import org.neo4j.cluster.statemachine.StateMachine;
-import org.neo4j.helpers.Function;
+import org.neo4j.function.Function;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.HighAvailabilityMemberInfoProvider;
 import org.neo4j.kernel.ha.cluster.DefaultElectionCredentialsProvider;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.impl.core.LastTxIdGetter;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 class ClusterInstance
 {
     private final Executor stateMachineExecutor;
-    private final Logging logging;
+    private final LogProvider logging;
     private final MultiPaxosServerFactory factory;
     private final ProtocolServer server;
     private final MultiPaxosContext ctx;
@@ -84,9 +84,11 @@ class ClusterInstance
 
     public static ClusterInstance newClusterInstance( InstanceId id, URI uri, Monitors monitors,
                                                       ClusterConfiguration configuration,
-                                                      int maxSurvivableFailedMembers, Logging logging )
+                                                      int maxSurvivableFailedMembers,
+                                                      LogProvider logging )
     {
-        MultiPaxosServerFactory factory = new MultiPaxosServerFactory( configuration, logging, monitors.newMonitor( StateMachines.Monitor.class ) );
+        MultiPaxosServerFactory factory = new MultiPaxosServerFactory( configuration,
+                logging, monitors.newMonitor( StateMachines.Monitor.class ) );
 
         ClusterInstanceInput input = new ClusterInstanceInput();
         ClusterInstanceOutput output = new ClusterInstanceOutput( uri );
@@ -101,7 +103,7 @@ class ClusterInstance
         final MultiPaxosContext context = new MultiPaxosContext( id,
                 maxSurvivableFailedMembers,
                 Iterables.<ElectionRole, ElectionRole>iterable( new ElectionRole( ClusterConfiguration.COORDINATOR ) ),
-                new ClusterConfiguration( configuration.getName(), logging.getMessagesLog( ClusterConfiguration.class ),
+                new ClusterConfiguration( configuration.getName(), logging,
                         configuration.getMemberURIs() ),
                 executor, logging, objStreamFactory, objStreamFactory, acceptorInstances, timeouts,
                 new DefaultElectionCredentialsProvider( id, new StateVerifierLastTxIdGetter(),
@@ -120,7 +122,7 @@ class ClusterInstance
                 input, output, uri );
     }
 
-    public ClusterInstance( Executor stateMachineExecutor, Logging logging, MultiPaxosServerFactory factory,
+    public ClusterInstance( Executor stateMachineExecutor, LogProvider logging, MultiPaxosServerFactory factory,
                             ProtocolServer server,
                             MultiPaxosContext ctx, InMemoryAcceptorInstanceStore acceptorInstanceStore,
                             ProverTimeouts timeouts, ClusterInstanceInput input, ClusterInstanceOutput output,
@@ -217,7 +219,7 @@ class ClusterInstance
         return toString().hashCode();
     }
 
-    private StateMachine snapshotStateMachine( Logging logging, MultiPaxosContext snapshotCtx, StateMachine
+    private StateMachine snapshotStateMachine( LogProvider logProvider, MultiPaxosContext snapshotCtx, StateMachine
             stateMachine )
     {
         // This is done this way because all the state machines are sharing one piece of global state
@@ -263,7 +265,7 @@ class ClusterInstance
         {
             throw new IllegalArgumentException( "I don't know how to snapshot this state machine: " + stateMachine );
         }
-        return new StateMachine( ctx, stateMachine.getMessageType(), stateMachine.getState(), logging );
+        return new StateMachine( ctx, stateMachine.getMessageType(), stateMachine.getState(), logProvider );
     }
 
     public ClusterInstance newCopy()

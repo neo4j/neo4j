@@ -19,16 +19,18 @@
  */
 package org.neo4j.server;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.server.configuration.ConfigurationBuilder;
-import org.neo4j.server.configuration.Configurator;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.database.LifecycleManagingDatabase.GraphFactory;
 import org.neo4j.server.modules.AuthorizationModule;
 import org.neo4j.server.modules.DBMSModule;
 import org.neo4j.server.modules.ManagementApiModule;
@@ -38,18 +40,14 @@ import org.neo4j.server.modules.SecurityRulesModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.modules.ThirdPartyJAXRSModule;
 import org.neo4j.server.modules.WebAdminModule;
-import org.neo4j.server.preflight.EnsurePreparedForHttpLogging;
-import org.neo4j.server.preflight.PerformRecoveryIfNecessary;
-import org.neo4j.server.preflight.PerformUpgradeIfNecessary;
-import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.rest.management.JmxService;
 import org.neo4j.server.rest.management.MonitorService;
 import org.neo4j.server.rest.management.console.ConsoleService;
 import org.neo4j.server.web.Jetty9WebServer;
+import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.WebServer;
 
-import static org.neo4j.server.database.LifecycleManagingDatabase.EMBEDDED;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
 /**
@@ -59,74 +57,53 @@ import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManag
 @Deprecated
 public class CommunityNeoServer extends AbstractNeoServer
 {
-    /**
-     * Should use the new constructor with {@link ConfigurationBuilder}
-     */
-    @Deprecated
-    public CommunityNeoServer( Configurator configurator, InternalAbstractGraphDatabase.Dependencies dependencies )
+    public static final GraphFactory COMMUNITY_FACTORY = new GraphFactory()
     {
-        this( configurator, lifecycleManagingDatabase( EMBEDDED ), dependencies );
+        @Override
+        public GraphDatabaseAPI newGraphDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies )
+        {
+            File storeDir = config.get( ServerInternalSettings.legacy_db_location );
+            return new CommunityFacadeFactory().newFacade( storeDir, config.getParams(), dependencies );
+        }
+    };
+
+    public CommunityNeoServer( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies,
+            LogProvider logProvider )
+    {
+        this( config, lifecycleManagingDatabase( COMMUNITY_FACTORY ), dependencies, logProvider );
     }
 
-    /**
-     * Should use the new constructor with {@link ConfigurationBuilder}
-     */
-    @Deprecated
-    public CommunityNeoServer( Configurator configurator, Database.Factory dbFactory, InternalAbstractGraphDatabase.Dependencies dependencies)
+    public CommunityNeoServer( Config config, Database.Factory dbFactory, GraphDatabaseFacadeFactory.Dependencies
+            dependencies, LogProvider logProvider )
     {
-        super( configurator, dbFactory, dependencies );
+        super( config, dbFactory, dependencies, logProvider );
     }
-
-    public CommunityNeoServer( ConfigurationBuilder configurator, InternalAbstractGraphDatabase.Dependencies dependencies )
-    {
-        this( configurator, lifecycleManagingDatabase( EMBEDDED ), dependencies );
-    }
-
-    public CommunityNeoServer( ConfigurationBuilder configurator, Database.Factory dbFactory, InternalAbstractGraphDatabase.Dependencies dependencies)
-    {
-        super( configurator, dbFactory, dependencies );
-    }
-
-    @Override
-    protected PreFlightTasks createPreflightTasks()
-    {
-        Logging logging = dependencies.logging();
-		return new PreFlightTasks( logging,
-				// TODO: Move the config check into bootstrapper
-				//new EnsureNeo4jPropertiesExist(configurator.configuration()),
-				new EnsurePreparedForHttpLogging(configurator.configuration()),
-				new PerformUpgradeIfNecessary(getConfig(),
-						configurator.getDatabaseTuningProperties(), logging, StoreUpgrader.NO_MONITOR),
-				new PerformRecoveryIfNecessary(getConfig(),
-						configurator.getDatabaseTuningProperties(), System.out, logging));
-	}
 
     @Override
     protected Iterable<ServerModule> createServerModules()
     {
-        Logging logging = dependencies.logging();
         return Arrays.asList(
                 new DBMSModule( webServer ),
-                new RESTApiModule( webServer, database, configurator.configuration(), logging ),
-                new ManagementApiModule( webServer, configurator.configuration() ),
-                new ThirdPartyJAXRSModule( webServer, configurator.configuration(), logging, this ),
-                new WebAdminModule( webServer, configurator.configuration() ),
+                new RESTApiModule( webServer, database, getConfig(), getDependencyResolver(), logProvider ),
+                new ManagementApiModule( webServer, getConfig() ),
+                new ThirdPartyJAXRSModule( webServer, getConfig(), logProvider, this ),
+                new WebAdminModule( webServer, getConfig() ),
                 new Neo4jBrowserModule( webServer ),
-                new AuthorizationModule( webServer, authManager, configurator.configuration(), logging ),
-                new SecurityRulesModule( webServer, configurator.configuration(), logging ) );
+                new AuthorizationModule( webServer, authManager, logProvider, getConfig(), getUriWhitelist() ),
+                new SecurityRulesModule( webServer, getConfig(), logProvider ) );
     }
 
     @Override
     protected WebServer createWebServer()
     {
-		return new Jetty9WebServer( dependencies.logging());
-	}
+		return new Jetty9WebServer( logProvider, getConfig() );
+    }
 
     @Override
     public Iterable<AdvertisableService> getServices()
     {
         List<AdvertisableService> toReturn = new ArrayList<>( 3 );
-        toReturn.add( new ConsoleService( null, null, dependencies.logging(), null ) );
+        toReturn.add( new ConsoleService( null, null, logProvider, null ) );
         toReturn.add( new JmxService( null, null ) );
         toReturn.add( new MonitorService( null, null ) );
 

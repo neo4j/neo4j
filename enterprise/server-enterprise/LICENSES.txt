@@ -4,6 +4,7 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
   Apache Commons Configuration
+  Apache Commons Lang
   Commons BeanUtils
   Commons Digester
   Commons IO
@@ -11,9 +12,10 @@ Apache Software License, Version 2.0
   Commons Logging
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
+  Ganglia Integration for Metrics
+  Graphite Integration for Metrics
   Jackson
   JAX-RS provider for JSON content type
-  JCL 1.1.1 implemented over SLF4J
   Jetty :: Http Utility
   Jetty :: IO Utility
   Jetty :: Security
@@ -23,7 +25,9 @@ Apache Software License, Version 2.0
   Jetty :: Webapp Application Support
   Jetty :: XML utilities
   Lucene Core
+  Metrics Core
   Netty
+  Netty/All-in-One
   opencsv
   parboiled-core
   parboiled-scala
@@ -277,9 +281,9 @@ SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
 BSD License
-  Commons Compiler
-  Janino
+  ASM Core
   Scala Compiler
+  scala-parser-combinators
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>
@@ -310,7 +314,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
 Bouncy Castle License
-  Legion of the Bouncy Castle Java Cryptography APIs
+  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
+  Bouncy Castle Provider
 ------------------------------------------------------------------------------
 
 Please note: our license is an adaptation of the MIT X11 License and should be
@@ -1305,6 +1310,7 @@ GNU Lesser General Public License, Version 2.1
   Logback Access Module
   Logback Classic Module
   Logback Core Module
+  Remote Tea Runtime
 ------------------------------------------------------------------------------
 
                    GNU LESSER GENERAL PUBLIC LICENSE
@@ -1813,6 +1819,7 @@ That's all there is to it!
 
 ------------------------------------------------------------------------------
 MIT License
+  gmetric4j
   SLF4J API Module
 ------------------------------------------------------------------------------
 

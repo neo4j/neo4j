@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,11 +29,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Test;
-
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -48,10 +48,11 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
+import org.neo4j.kernel.impl.transaction.command.CommandHandler;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.state.RecordChanges.RecordChange;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
@@ -63,53 +64,13 @@ public class WriteTransactionCommandOrderingTest
     private final RecordingRelationshipStore relationshipStore = new RecordingRelationshipStore( currentRecording );
     private final RecordingNodeStore nodeStore = new RecordingNodeStore( currentRecording );
     private final RecordingPropertyStore propertyStore = new RecordingPropertyStore( currentRecording );
-    private final NeoStore store = mock( NeoStore.class );
+    private final NeoStores store = mock( NeoStores.class );
 
     public WriteTransactionCommandOrderingTest()
     {
         when( store.getPropertyStore() ).thenReturn( propertyStore );
         when( store.getNodeStore() ).thenReturn( nodeStore );
         when( store.getRelationshipStore() ).thenReturn( relationshipStore );
-    }
-
-    private static RelationshipRecord missingRelationship()
-    {
-        return new RelationshipRecord( -1 );
-    }
-
-    private static RelationshipRecord createdRelationship()
-    {
-        RelationshipRecord record = new RelationshipRecord( 2 );
-        record.setInUse( true );
-        record.setCreated();
-        return record;
-    }
-
-    private static RelationshipRecord inUseRelationship()
-    {
-        RelationshipRecord record = new RelationshipRecord( 1 );
-        record.setInUse( true );
-        return record;
-    }
-
-    private static PropertyRecord missingProperty()
-    {
-        return new PropertyRecord( -1 );
-    }
-
-    private static PropertyRecord createdProperty()
-    {
-        PropertyRecord record = new PropertyRecord( 2 );
-        record.setInUse( true );
-        record.setCreated();
-        return record;
-    }
-
-    private static PropertyRecord inUseProperty()
-    {
-        PropertyRecord record = new PropertyRecord( 1 );
-        record.setInUse( true );
-        return record;
     }
 
     private static NodeRecord missingNode()
@@ -155,7 +116,7 @@ public class WriteTransactionCommandOrderingTest
         PhysicalTransactionRepresentation commands = transactionRepresentationOf( tx );
 
         // Then
-        commands.accept( new NeoCommandHandler.HandlerVisitor( new OrderVerifyingCommandHandler() ) );
+        commands.accept( new CommandHandler.HandlerVisitor( new OrderVerifyingCommandHandler() ) );
     }
 
     private PhysicalTransactionRepresentation transactionRepresentationOf( TransactionRecordState tx )
@@ -224,28 +185,7 @@ public class WriteTransactionCommandOrderingTest
         when( schemaRuleChanges.changes() ).thenReturn(
                 Collections.<RecordProxy<Long,Collection<DynamicRecord>,SchemaRule>>emptyList() );
 
-        return new TransactionRecordState( mock( NeoStore.class ), mock( IntegrityValidator.class ), context );
-
-//
-//        Command.PropertyCommand updatedProp = new Command.PropertyCommand();
-//        updatedProp.init( inUseProperty(), inUseProperty() );
-//        tx.injectCommand( updatedProp );
-//        Command.PropertyCommand deletedProp = new Command.PropertyCommand();
-//        deletedProp.init( inUseProperty(), missingProperty() );
-//        tx.injectCommand( deletedProp );
-//        Command.PropertyCommand createdProp = new Command.PropertyCommand();
-//        createdProp.init( missingProperty(), createdProperty() );
-//        tx.injectCommand( createdProp );
-//
-//        Command.RelationshipCommand updatedRel = new Command.RelationshipCommand();
-//        updatedRel.init( inUseRelationship() );
-//        tx.injectCommand( updatedRel );
-//        Command.RelationshipCommand deletedRel =new Command.RelationshipCommand();
-//        deletedRel.init( missingRelationship() );
-//        tx.injectCommand( deletedRel );
-//        Command.RelationshipCommand createdRel = new Command.RelationshipCommand();
-//        createdRel.init( createdRelationship() );
-//        tx.injectCommand( createdRel );
+        return new TransactionRecordState( mock( NeoStores.class ), mock( IntegrityValidator.class ), context );
     }
 
     private static class RecordingPropertyStore extends PropertyStore
@@ -254,7 +194,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingPropertyStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, new Config(), null, null, null, null, null, null, null, null, null );
+            super( null, new Config(), null, null, NullLogProvider.getInstance(), null, null, null );
             this.currentRecording = currentRecording;
         }
 
@@ -265,12 +205,7 @@ public class WriteTransactionCommandOrderingTest
         }
 
         @Override
-        protected void checkStorage()
-        {
-        }
-
-        @Override
-        protected void checkVersion()
+        protected void checkStorage( boolean createIfNotExists )
         {
         }
 
@@ -286,7 +221,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingNodeStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, new Config(), null, null, null, null, null, null, null );
+            super( null, new Config(), null, null, NullLogProvider.getInstance(), null );
             this.currentRecording = currentRecording;
         }
 
@@ -297,12 +232,7 @@ public class WriteTransactionCommandOrderingTest
         }
 
         @Override
-        protected void checkStorage()
-        {
-        }
-
-        @Override
-        protected void checkVersion()
+        protected void checkStorage( boolean createIfNotExists )
         {
         }
 
@@ -326,7 +256,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingRelationshipStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, new Config(), null, null, null, null, null, null );
+            super( null, new Config(), null, null, NullLogProvider.getInstance() );
             this.currentRecording = currentRecording;
         }
 
@@ -337,12 +267,7 @@ public class WriteTransactionCommandOrderingTest
         }
 
         @Override
-        protected void checkStorage()
-        {
-        }
-
-        @Override
-        protected void checkVersion()
+        protected void checkStorage( boolean createIfNotExists )
         {
         }
 
@@ -352,14 +277,11 @@ public class WriteTransactionCommandOrderingTest
         }
     }
 
-    private static class OrderVerifyingCommandHandler extends NeoCommandHandler.Adapter
+    private static class OrderVerifyingCommandHandler extends CommandHandler.Adapter
     {
         private boolean nodeVisited;
-        private boolean relationshipVisited;
-        private boolean propertyVisited;
 
         // Commands should appear in this order
-        private boolean created;
         private boolean updated;
         private boolean deleted;
 
@@ -368,18 +290,14 @@ public class WriteTransactionCommandOrderingTest
         {
             if ( !nodeVisited )
             {
-                created = false;
                 updated = false;
                 deleted = false;
             }
             nodeVisited = true;
-            assertFalse( relationshipVisited );
-            assertFalse( propertyVisited );
 
             switch ( command.getMode() )
             {
             case CREATE:
-                created = true;
                 assertFalse( updated );
                 assertFalse( deleted );
                 break;

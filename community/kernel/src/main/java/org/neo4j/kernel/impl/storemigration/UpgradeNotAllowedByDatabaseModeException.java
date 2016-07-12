@@ -23,6 +23,7 @@ public class UpgradeNotAllowedByDatabaseModeException extends UpgradeNotAllowedE
 {
     public UpgradeNotAllowedByDatabaseModeException()
     {
-        super( "Failed to start Neo4j HA with an older data store version." );
+        super( "Cannot perform upgrade when database is started in 'HA' mode. Please restart the database in " +
+                "stand-alone mode to safely upgrade the database files." );
     }
 }

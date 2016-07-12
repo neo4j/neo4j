@@ -42,9 +42,9 @@ import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.CappedLogger;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -115,6 +115,11 @@ import static java.lang.System.currentTimeMillis;
  */
 public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, UpdatePuller
 {
+    public interface Monitor
+    {
+        void pulledUpdates( long lastAppliedTxId );
+    }
+
     public static final int LOG_CAP = Integer.getInteger(
             "org.neo4j.kernel.ha.SlaveUpdatePuller.LOG_CAP", 10 );
     public static final long PARK_NANOS = TimeUnit.MILLISECONDS.toNanos( Integer.getInteger(
@@ -137,13 +142,14 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
     private final AtomicInteger currentTicket = new AtomicInteger();
     private final RequestContextFactory requestContextFactory;
     private final Master master;
-    private final StringLogger logger;
+    private final Log logger;
     private final CappedLogger invalidEpochCappedLogger;
     private final CappedLogger comExceptionCappedLogger;
     private final LastUpdateTime lastUpdateTime;
     private final InstanceId instanceId;
     private final AvailabilityGuard availabilityGuard;
     private InvalidEpochExceptionHandler invalidEpochHandler;
+    private final Monitor monitor;
     private final JobScheduler jobScheduler;
     private volatile Thread updatePullingThread;
     private volatile BinaryLatch shutdownLatch; // Store under synchronised(this), load in update puller thread
@@ -152,11 +158,12 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
             RequestContextFactory requestContextFactory,
             Master master,
             LastUpdateTime lastUpdateTime,
-            Logging logging,
+            LogProvider logging,
             InstanceId instanceId,
             AvailabilityGuard availabilityGuard,
             InvalidEpochExceptionHandler invalidEpochHandler,
-            JobScheduler jobScheduler )
+            JobScheduler jobScheduler,
+            Monitor monitor)
     {
         this.requestContextFactory = requestContextFactory;
         this.master = master;
@@ -165,7 +172,8 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
         this.availabilityGuard = availabilityGuard;
         this.invalidEpochHandler = invalidEpochHandler;
         this.jobScheduler = jobScheduler;
-        this.logger = logging.getMessagesLog( getClass() );
+        this.monitor = monitor;
+        this.logger = logging.getLog( getClass() );
         this.invalidEpochCappedLogger = new CappedLogger( logger ).setCountLimit( LOG_CAP );
         this.comExceptionCappedLogger = new CappedLogger( logger ).setCountLimit( LOG_CAP );
     }
@@ -213,7 +221,7 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
         }
 
         shutdownLatch = new BinaryLatch();
-        jobScheduler.schedule( JobScheduler.Group.pullUpdates, this );
+        jobScheduler.schedule( JobScheduler.Groups.pullUpdates, this );
     }
 
     @Override
@@ -338,6 +346,7 @@ public class SlaveUpdatePuller extends LifecycleAdapter implements Runnable, Upd
             try ( Response<Void> ignored = master.pullUpdates( context ) )
             {
                 // Updates would be applied as part of response processing
+                monitor.pulledUpdates( context.lastAppliedTransaction() );
             }
             invalidEpochCappedLogger.reset();
             comExceptionCappedLogger.reset();

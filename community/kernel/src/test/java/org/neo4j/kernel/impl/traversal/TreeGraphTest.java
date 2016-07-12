@@ -62,8 +62,7 @@ public class TreeGraphTest extends TraversalTestBase
     @Test
     public void nodesIteratorReturnAllNodes() throws Exception
     {
-        Transaction transaction = beginTx();
-        try
+        try ( Transaction transaction = beginTx() )
         {
             Traverser traverser = traversal().traverse( node( "1" ) );
             int count = 0;
@@ -75,17 +74,12 @@ public class TreeGraphTest extends TraversalTestBase
             }
             assertEquals( 13, count );
         }
-        finally
-        {
-            transaction.finish();
-        }
     }
 
     @Test
     public void relationshipsIteratorReturnAllNodes() throws Exception
     {
-        Transaction transaction = beginTx();
-        try
+        try ( Transaction transaction = beginTx() )
         {
             Traverser traverser = traversal().traverse( node( "1" ) );
             int count = 0;
@@ -98,17 +92,13 @@ public class TreeGraphTest extends TraversalTestBase
             }
             assertEquals( 12, count );
         }
-        finally
-        {
-            transaction.finish();
-        }
     }
 
     @Test
     public void pathsIteratorReturnAllNodes() throws Exception
     {
-        Transaction transaction = beginTx();
-        try
+
+        try ( Transaction transaction = beginTx() )
         {
             Traverser traverser = traversal().traverse( node( "1" ) );
             int count = 0;
@@ -120,31 +110,22 @@ public class TreeGraphTest extends TraversalTestBase
             }
             assertEquals( 13, count );
         }
-        finally
-        {
-            transaction.finish();
-        }
     }
 
     @Test
     public void testBreadthFirst() throws Exception
     {
         Traverser traverser = traversal().breadthFirst().traverse( node( "1" ) );
-        Stack<Set<String>> levels = new Stack<Set<String>>();
-        levels.push( new HashSet<String>( asList( "5", "6", "7", "8",
+        Stack<Set<String>> levels = new Stack<>();
+        levels.push( new HashSet<>( asList( "5", "6", "7", "8",
                 "9", "A", "B", "C", "D" ) ) );
-        levels.push( new HashSet<String>( asList( "2", "3", "4" ) ) );
-        levels.push( new HashSet<String>( asList( "1" ) ) );
+        levels.push( new HashSet<>( asList( "2", "3", "4" ) ) );
+        levels.push( new HashSet<>( asList( "1" ) ) );
 
-        Transaction tx = beginTx();
-        try
+        try (Transaction tx = beginTx();)
         {
             assertLevels( traverser, levels );
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
@@ -152,8 +133,8 @@ public class TreeGraphTest extends TraversalTestBase
     public void testDepthFirstTraversalReturnsNodesOnCorrectDepths()
             throws Exception
     {
-        Transaction transaction = beginTx();
-        try
+
+        try ( Transaction transaction = beginTx() )
         {
             Traverser traverser = traversal().depthFirst().traverse( node( "1" ) );
             int i = 0;
@@ -163,10 +144,6 @@ public class TreeGraphTest extends TraversalTestBase
             }
             assertEquals( 13, i );
         }
-        finally
-        {
-            transaction.finish();
-        }
     }
 
     @Test
@@ -174,15 +151,16 @@ public class TreeGraphTest extends TraversalTestBase
     {
         Traverser traverser = traversal().order( POSTORDER_DEPTH_FIRST ).traverse( node( "1" ) );
         int i = 0;
-        List<String> encounteredNodes = new ArrayList<String>();
-        Transaction tx = beginTx();
-        for ( Path pos : traverser )
+        List<String> encounteredNodes = new ArrayList<>();
+        try (Transaction tx = beginTx())
         {
-            encounteredNodes.add( (String) pos.endNode().getProperty( "name" ) );
-            assertEquals( expectedDepth( ( 12 - i++ ) ), pos.length() );
+            for ( Path pos : traverser )
+            {
+                encounteredNodes.add( (String) pos.endNode().getProperty( "name" ) );
+                assertEquals( expectedDepth( (12 - i++) ), pos.length() );
+            }
+            tx.success();
         }
-        tx.success();
-        tx.finish();
         assertEquals( 13, i );
 
         assertTrue( encounteredNodes.indexOf( "5" ) < encounteredNodes.indexOf( "2" ) );
@@ -208,15 +186,10 @@ public class TreeGraphTest extends TraversalTestBase
         levels.push( new HashSet<>( asList( "2", "3", "4" ) ) );
         levels.push( new HashSet<>( asList( "5", "6", "7", "8",
                 "9", "A", "B", "C", "D" ) ) );
-        Transaction tx = beginTx();
-        try
+        try ( Transaction tx = beginTx() )
         {
             assertLevels( traverser, levels );
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 

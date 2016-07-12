@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
@@ -35,19 +36,23 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
-import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.cache.SoftCacheProvider;
-import org.neo4j.kernel.impl.transaction.log.LogRotation;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
@@ -69,29 +74,40 @@ public class PartialTransactionFailureIT
                 "org.neo4j.kernel.impl.nioneo.xa.Command$RelationshipCommand" );
         adversary.disable();
 
-        String storeDir = dir.directory().getAbsolutePath();
-        final EmbeddedGraphDatabase db = new TestEmbeddedGraphDatabase( storeDir, stringMap() ) {
+        File storeDir = dir.graphDbDir();
+        final Map<String,String> params = stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
+        final EmbeddedGraphDatabase db = new TestEmbeddedGraphDatabase( storeDir, params )
+        {
             @Override
-            protected FileSystemAbstraction createFileSystemAbstraction()
+            protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
             {
-                return new AdversarialFileSystemAbstraction( adversary );
+                new CommunityFacadeFactory()
+                {
+                    @Override
+                    protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                    {
+                        return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
+                        {
+                            @Override
+                            protected FileSystemAbstraction createFileSystemAbstraction()
+                            {
+                                return new AdversarialFileSystemAbstraction( adversary );
+                            }
+                        };
+                    }
+                }.newFacade( storeDir, params, dependencies, this );
             }
         };
 
 
         Node a, b, c, d;
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             a = db.createNode();
             b = db.createNode();
             c = db.createNode();
             d = db.createNode();
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
 
         adversary.enable();
@@ -111,9 +127,8 @@ public class PartialTransactionFailureIT
         db.shutdown();
 
         // We should observe the store in a consistent state
-        EmbeddedGraphDatabase db2 = new TestEmbeddedGraphDatabase( storeDir, stringMap() );
-        tx = db2.beginTx();
-        try
+        EmbeddedGraphDatabase db2 = new TestEmbeddedGraphDatabase( storeDir, params );
+        try ( Transaction tx = db2.beginTx() )
         {
             Node x = db2.getNodeById( a.getId() );
             Node y = db2.getNodeById( b.getId() );
@@ -150,14 +165,7 @@ public class PartialTransactionFailureIT
         }
         finally
         {
-            try
-            {
-                tx.finish();
-            }
-            finally
-            {
-                db2.shutdown();
-            }
+            db2.shutdown();
         }
     }
 
@@ -172,14 +180,15 @@ public class PartialTransactionFailureIT
             @Override
             public void run()
             {
-                Transaction tx = db.beginTx();
-                try
+                try ( Transaction tx = db.beginTx() )
                 {
                     x.createRelationshipTo( y, DynamicRelationshipType.withName( "r" ) );
                     tx.success();
                     latch.await();
                     db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
-                    tx.finish();
+                    db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
+                            new SimpleTriggerInfo( "test" )
+                    );
                 }
                 catch ( Exception ignore )
                 {
@@ -192,20 +201,19 @@ public class PartialTransactionFailureIT
 
     private static class TestEmbeddedGraphDatabase extends EmbeddedGraphDatabase
     {
-        public TestEmbeddedGraphDatabase( String storeDir, Map<String, String> params )
+        public TestEmbeddedGraphDatabase( File storeDir, Map<String, String> params )
         {
             super( storeDir,
                     params,
                     dependencies() );
         }
 
-        private static Dependencies dependencies()
+        private static GraphDatabaseFacadeFactory.Dependencies dependencies()
         {
             GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();
-            state.addKernelExtensions( Arrays.asList(
+            state.setKernelExtensions( Arrays.asList(
                     new InMemoryIndexProviderFactory(),
                     new InMemoryLabelScanStoreExtension() ) );
-            state.setCacheProviders( Arrays.<CacheProvider>asList( new SoftCacheProvider() ) );
             return state.databaseDependencies();
         }
     }

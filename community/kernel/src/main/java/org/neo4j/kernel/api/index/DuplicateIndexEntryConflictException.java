@@ -48,11 +48,6 @@ public class DuplicateIndexEntryConflictException extends IndexEntryConflictExce
                 "  %s", labelName, propertyKey, quote( propertyValue ), asNodeList(conflictingNodeIds) );
     }
 
-    public Set<Long> getConflictingNodeIds()
-    {
-        return conflictingNodeIds;
-    }
-
     private static String asNodeList( Collection<Long> nodeIds )
     {
         TreeSet<Long> ids = new TreeSet<Long>( nodeIds );

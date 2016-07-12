@@ -22,10 +22,11 @@ package org.neo4j.visualization.graphviz;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.visualization.PropertyType;
 
 class DefaultStyleConfiguration implements StyleConfiguration
@@ -78,7 +79,7 @@ class DefaultStyleConfiguration implements StyleConfiguration
 
     boolean reverseOrder( Relationship edge )
     {
-        return reversedRelationshipOrder != null && reversedRelationshipOrder.accept( edge );
+        return reversedRelationshipOrder != null && reversedRelationshipOrder.test( edge );
     }
 
     void emitHeader( Appendable stream ) throws IOException
@@ -196,10 +197,15 @@ class DefaultStyleConfiguration implements StyleConfiguration
 		}
 	}
 
-    public void setRelationshipReverseOrderPredicate( Predicate<Relationship> reversed )
+    public void setRelationshipReverseOrderPredicate( org.neo4j.helpers.Predicate<Relationship> reversed )
     {
-        reversedRelationshipOrder = reversed;
+		setRelationshipReverseOrderPredicate( org.neo4j.helpers.Predicates.upgrade( reversed ) );
     }
+
+	public void setRelationshipReverseOrderPredicate( Predicate<Relationship> reversed )
+	{
+		reversedRelationshipOrder = reversed;
+	}
 
     public void setGraphProperty( String property, String value )
 	{

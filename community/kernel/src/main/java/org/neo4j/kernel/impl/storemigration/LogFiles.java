@@ -67,4 +67,5 @@ public class LogFiles
             FileOperation.MOVE.perform( fs, logFile.getName(), fromDirectory, false, toDirectory, false );
         }
     }
+
 }

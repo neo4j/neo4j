@@ -26,6 +26,8 @@ import org.neo4j.graphalgo.EstimateEvaluator;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphalgo.impl.util.BestFirstSelectorFactory;
+import org.neo4j.graphalgo.impl.util.PathInterest;
+import org.neo4j.graphalgo.impl.util.PathInterestFactory;
 import org.neo4j.graphalgo.impl.util.WeightedPathIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
@@ -36,9 +38,9 @@ import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.graphdb.traversal.Traverser;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.Uniqueness;
 
-import static org.neo4j.graphalgo.impl.util.BestFirstSelectorFactory.pathInterest;
 import static org.neo4j.graphdb.traversal.Evaluators.includeWhereEndNodeIs;
 import static org.neo4j.graphdb.traversal.InitialBranchState.NO_STATE;
 import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
@@ -109,7 +111,7 @@ public class TraversalAStar implements PathFinder<WeightedPath>
     @Override
     public Iterable<WeightedPath> findAllPaths( Node start, final Node end )
     {
-        return findPaths( start, end, true );
+        return IteratorUtil.asIterable( findSinglePath( start, end ) );
     }
 
     @Override
@@ -120,8 +122,17 @@ public class TraversalAStar implements PathFinder<WeightedPath>
 
     private Iterable<WeightedPath> findPaths( Node start, Node end, boolean multiplePaths )
     {
+        PathInterest interest;
+        if ( multiplePaths )
+        {
+            interest = stopAfterLowestWeight ? PathInterestFactory.allShortest() : PathInterestFactory.all();
+        }
+        else {
+            interest = PathInterestFactory.single();
+        }
+
         lastTraverser = traversalDescription.order(
-                new SelectorFactory( end, pathInterest( true, stopAfterLowestWeight ) ) )
+                new SelectorFactory( end, interest ) )
                 .evaluator( includeWhereEndNodeIs( end ) )
                 .traverse( start );
         return new Iterable<WeightedPath>()

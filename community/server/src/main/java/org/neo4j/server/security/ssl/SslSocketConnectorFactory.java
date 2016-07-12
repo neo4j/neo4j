@@ -23,12 +23,19 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.web.HttpConnectorFactory;
 import org.neo4j.server.web.JettyThreadCalculator;
 
 
 public class SslSocketConnectorFactory extends HttpConnectorFactory
 {
+    public SslSocketConnectorFactory( Config configuration )
+    {
+        super(configuration);
+    }
+
     @Override
     protected HttpConfiguration createHttpConfig()
     {
@@ -46,19 +53,17 @@ public class SslSocketConnectorFactory extends HttpConnectorFactory
 
     public ServerConnector createConnector( Server server, KeyStoreInformation config, String host, int port, JettyThreadCalculator jettyThreadCalculator )
     {
-
         SslConnectionFactory sslConnectionFactory = createSslConnectionFactory( config );
-
         return super.createConnector( server, host, port, jettyThreadCalculator, sslConnectionFactory, createHttpConnectionFactory() );
     }
 
-    private SslConnectionFactory createSslConnectionFactory( KeyStoreInformation config )
+    private SslConnectionFactory createSslConnectionFactory( KeyStoreInformation ksInfo )
     {
         SslContextFactory sslContextFactory = new SslContextFactory();
 
-        sslContextFactory.setKeyStorePath( config.getKeyStorePath() );
-        sslContextFactory.setKeyStorePassword( String.valueOf( config.getKeyStorePassword() ) );
-        sslContextFactory.setKeyManagerPassword( String.valueOf( config.getKeyPassword() ) );
+        sslContextFactory.setKeyStore( ksInfo.getKeyStore() );
+        sslContextFactory.setKeyStorePassword( String.valueOf( ksInfo.getKeyStorePassword() ) );
+        sslContextFactory.setKeyManagerPassword( String.valueOf( ksInfo.getKeyPassword() ) );
 
         return new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
     }

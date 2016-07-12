@@ -19,11 +19,6 @@
  */
 package org.neo4j.cluster.com.message;
 
-import org.junit.Test;
-import org.mockito.Matchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -31,25 +26,26 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.junit.Test;
+import org.mockito.Matchers;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.com.NetworkReceiver;
 import org.neo4j.cluster.com.NetworkSender;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.kernel.logging.LogMarker;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -92,7 +88,7 @@ public class NetworkSenderReceiverTest
 
         // then
 
-        latch.await( 5, TimeUnit.SECONDS );
+        assertTrue( latch.await( 5, TimeUnit.SECONDS ) );
 
         assertTrue( "server1 should have processed the message", server1.processedMessage() );
         assertTrue( "server2 should have processed the message", server2.processedMessage() );
@@ -120,9 +116,9 @@ public class NetworkSenderReceiverTest
         NetworkReceiver receiver = null;
         try
         {
-            Logging loggingMock = mock( Logging.class );
-            StringLogger loggerMock = mock( StringLogger.class );
-            when( loggingMock.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( loggerMock );
+            LogProvider logProviderMock = mock( LogProvider.class );
+            Log logMock = mock( Log.class );
+            when( logProviderMock.getLog( Matchers.<Class>any() ) ).thenReturn( logMock );
 
             final Semaphore sem = new Semaphore( 0 );
 
@@ -159,7 +155,7 @@ public class NetworkSenderReceiverTest
                     senderChannelClosed.set( true );
                     return null;
                 }
-            } ).when( loggerMock ).warn( anyString(), isNull( Throwable.class ), eq( false ), any( LogMarker.class ) );
+            } ).when( logMock ).warn( anyString() );
 
             receiver = new NetworkReceiver( mock( NetworkReceiver.Monitor.class ), new NetworkReceiver.Configuration()
             {
@@ -180,7 +176,7 @@ public class NetworkSenderReceiverTest
                 {
                     return null;
                 }
-            }, new DevNullLoggingService() )
+            }, NullLogProvider.getInstance() )
             {
                 @Override
                 public void stop() throws Throwable
@@ -203,7 +199,7 @@ public class NetworkSenderReceiverTest
                 {
                     return 5001;
                 }
-            }, receiver, loggingMock );
+            }, receiver, logProviderMock );
 
             sender.init();
             sender.start();
@@ -248,8 +244,6 @@ public class NetworkSenderReceiverTest
             sender.process( Message.to( TestMessage.helloWorld, URI.create( "cluster://127.0.0.1:1235" ),
                     "Hello World" ) );
 
-            sem.acquire(); // wait for the listeningAt trigger on receive (same as the previous but with real URI
-            // this time)
             sem.acquire(); // wait for process from the MessageProcessor
 
             receiver.stop();
@@ -338,7 +332,7 @@ public class NetworkSenderReceiverTest
                 {
                     return null;
                 }
-            }, new DevNullLoggingService() ) );
+            }, NullLogProvider.getInstance() ) );
 
             networkSender = life.add( new NetworkSender( mock( NetworkSender.Monitor.class ),
                     new NetworkSender.Configuration()
@@ -354,7 +348,7 @@ public class NetworkSenderReceiverTest
                 {
                     return conf.get( ClusterSettings.cluster_server ).getPort();
                 }
-            }, networkReceiver, new DevNullLoggingService() ) );
+            }, networkReceiver, NullLogProvider.getInstance() ) );
 
             life.add( new LifecycleAdapter()
             {

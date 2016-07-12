@@ -1,0 +1,20 @@
+[[query-schema-index]]
+= Indexes
+
+A database index is a redundant copy of information in the database for the purpose of making retrieving said data more efficient.
+This comes at the cost of additional storage space and slower writes, so deciding what to index and what not to index is an important and often non-trivial task.
+
+Cypher allows the creation of indexes over a property for all nodes that have a given label.
+Once an index has been created, it will automatically be managed and kept up to date by the database whenever the graph is changed.
+Neo4j will automatically pick up and start using the index once it has been created and brought online.
+
+:leveloffset: 2
+
+include::create-an-index.asciidoc[]
+include::drop-an-index.asciidoc[]
+include::use-index.asciidoc[]
+include::use-index-with-where-using-equality.asciidoc[]
+include::use-index-with-where-using-inequality.asciidoc[]
+include::use-index-with-in.asciidoc[]
+include::use-index-with-starts-with.asciidoc[]
+include::use-index-when-checking-for-the-existence-of-a-property.asciidoc[]

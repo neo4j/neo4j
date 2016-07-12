@@ -26,6 +26,7 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 
 /**
@@ -68,7 +69,8 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     {
         this.temp = new TempDirectory()
         {
-            private final TargetDirectory targetDirectory = TargetDirectory.forTest( testClass );
+            private final TargetDirectory targetDirectory =
+                    new TargetDirectory( new DefaultFileSystemAbstraction(), testClass );
             private File dbDir;
 
             @Override

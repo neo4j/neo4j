@@ -6,12 +6,13 @@ NOTE: Most of the monitoring features are only available in the Enterprise editi
 
 In order to be able to continuously get an overview of the health of a Neo4j database, there are different levels of monitoring facilities available.
 Most of these are exposed through http://www.oracle.com/technetwork/java/javase/tech/javamanagement-140525.html[JMX].
+Neo4j Enterprise also has the ability to automatically report _metrics_ to commonly used monitoring systems, like http://graphite.wikidot.com[Graphite] and http://ganglia.sourceforge.net[Ganglia].
 
 
 [[jmx-remote]]
 == Adjusting remote JMX access to the Neo4j Server ==
 
-Per default, the Neo4j Enterprise Server edition do not allow remote JMX connections, since the relevant options in the 'conf/neo4j-wrapper.conf' configuration file are commented out.
+Per default, the Neo4j Enterprise Server edition does not allow remote JMX connections, since the relevant options in the 'conf/neo4j-wrapper.conf' configuration file are commented out.
 To enable this feature, you have to remove the +#+ characters from the various +com.sun.management.jmxremote+ options there.
 
 When commented in, the default values are set up to allow remote JMX connections with certain roles, refer to the 'conf/jmx.password', 'conf/jmx.access' and 'conf/neo4j-wrapper.conf' files for details.
@@ -76,4 +77,9 @@ Once you have access to this information, you can use it to for instance expose 
 
 include::{importdir}/neo4j-ha-docs-jar/ops/jmx.asciidoc[]
 
+:leveloffset: 2
+
+include::{importdir}/neo4j-metrics-docs-jar/ops/metrics.asciidoc[]
+
+:leveloffset: 1
 

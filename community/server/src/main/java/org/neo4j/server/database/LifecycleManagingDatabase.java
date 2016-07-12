@@ -20,15 +20,13 @@
 package org.neo4j.server.database;
 
 import java.io.File;
-import java.util.Map;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.logging.Log;
+import org.neo4j.server.web.ServerInternalSettings;
 
 /**
  * Wraps a neo4j database in lifecycle management. This is intermediate, and will go away once we have an internal
@@ -36,18 +34,12 @@ import org.neo4j.kernel.logging.Logging;
  */
 public class LifecycleManagingDatabase implements Database
 {
-    public static final GraphFactory EMBEDDED = new GraphFactory()
-    {
-        @Override
-        public GraphDatabaseAPI newGraphDatabase( String storeDir, Map<String,String> params, Dependencies dependencies )
-        {
-            return new EmbeddedGraphDatabase( storeDir, params, dependencies );
-        }
-    };
+    static final String CYPHER_WARMUP_QUERY =
+            "MATCH (a:` Arbitrary label name that really doesn't matter `) RETURN a LIMIT 0";
 
     public interface GraphFactory
     {
-        GraphDatabaseAPI newGraphDatabase( String storeDir, Map<String,String> params, Dependencies dependencies );
+        GraphDatabaseAPI newGraphDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies );
     }
 
     public static Database.Factory lifecycleManagingDatabase( final GraphFactory graphDbFactory )
@@ -55,39 +47,34 @@ public class LifecycleManagingDatabase implements Database
         return new Factory()
         {
             @Override
-            public Database newDatabase(Config config, Dependencies dependencies)
+            public Database newDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies )
             {
                 return new LifecycleManagingDatabase( config, graphDbFactory, dependencies );
             }
         };
     }
 
-    private final Config dbConfig;
+    private final Config config;
     private final GraphFactory dbFactory;
-    private final Dependencies dependencies;
-    private final ConsoleLogger log;
+    private final GraphDatabaseFacadeFactory.Dependencies dependencies;
+    private final Log log;
 
     private boolean isRunning = false;
     private GraphDatabaseAPI graph;
 
-    public LifecycleManagingDatabase(Config dbConfig, GraphFactory dbFactory, Dependencies dependencies)
+    public LifecycleManagingDatabase( Config config, GraphFactory dbFactory,
+            GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        this.dbConfig = dbConfig;
+        this.config = config;
         this.dbFactory = dbFactory;
         this.dependencies = dependencies;
-        this.log = dependencies.logging().getConsoleLog( getClass() );
-    }
-
-    @Override
-    public Logging getLogging()
-    {
-        return dependencies.logging();
+        this.log = dependencies.userLogProvider().getLog( getClass() );
     }
 
     @Override
     public String getLocation()
     {
-        File file = dbConfig.get( GraphDatabaseSettings.store_dir );
+        File file = config.get( ServerInternalSettings.legacy_db_location );
         return file.getAbsolutePath();
     }
 
@@ -105,36 +92,26 @@ public class LifecycleManagingDatabase implements Database
     @Override
     public void start() throws Throwable
     {
-        try
+        this.graph = dbFactory.newGraphDatabase( config, dependencies );
+        // in order to speed up testing, they should not run the preload, but in production it pays to do it.
+        if ( !isInTestMode() )
         {
-            this.graph = dbFactory.newGraphDatabase( getLocation(), dbConfig.getParams(), dependencies );
-            isRunning = true;
-            log.log( "Successfully started database" );
+            preLoadCypherCompiler();
         }
-        catch ( Exception e )
-        {
-            log.error( "Failed to start database.", e );
-            throw e;
-        }
+
+        isRunning = true;
+        log.info( "Successfully started database" );
     }
 
     @Override
     public void stop() throws Throwable
     {
-        try
+        if ( graph != null )
         {
-            if ( graph != null )
-            {
-                graph.shutdown();
-                isRunning = false;
-                graph = null;
-                log.log( "Successfully stopped database" );
-            }
-        }
-        catch ( Exception e )
-        {
-            log.error( "Database did not stop cleanly. Reason [%s]", e.getMessage() );
-            throw e;
+            graph.shutdown();
+            isRunning = false;
+            graph = null;
+            log.info( "Successfully stopped database" );
         }
     }
 
@@ -147,5 +124,31 @@ public class LifecycleManagingDatabase implements Database
     public boolean isRunning()
     {
         return isRunning;
+    }
+
+    private void preLoadCypherCompiler()
+    {
+        // Execute a single Cypher query to pre-load the compiler to make the first user-query snappy
+        try
+        {
+            //noinspection EmptyTryBlock
+            try ( Result ignore = this.graph.execute( CYPHER_WARMUP_QUERY ) )
+            {
+                // empty by design
+            }
+        }
+        catch ( Exception ignore )
+        {
+            // This is only an attempt at warming up the database.
+            // It's not a critical failure.
+        }
+    }
+
+    protected boolean isInTestMode()
+    {
+        // The assumption here is that assertions are only enabled during testing.
+        boolean testing = false;
+        assert testing = true : "yes, this should be an assignment!";
+        return testing;
     }
 }

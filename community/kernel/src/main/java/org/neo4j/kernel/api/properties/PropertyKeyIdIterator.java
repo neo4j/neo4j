@@ -21,9 +21,9 @@ package org.neo4j.kernel.api.properties;
 
 import java.util.Iterator;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
 
-public class PropertyKeyIdIterator implements PrimitiveLongIterator
+public class PropertyKeyIdIterator implements PrimitiveIntIterator
 {
     private final Iterator<? extends Property> properties;
 
@@ -39,7 +39,7 @@ public class PropertyKeyIdIterator implements PrimitiveLongIterator
     }
 
     @Override
-    public long next()
+    public int next()
     {
         return properties.next().propertyKeyId;
     }

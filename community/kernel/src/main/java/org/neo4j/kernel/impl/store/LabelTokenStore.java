@@ -21,37 +21,33 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 /**
- * Implementation of the property store.
+ * Implementation of the label store.
  */
-public class LabelTokenStore extends TokenStore<LabelTokenRecord>
+public class LabelTokenStore extends TokenStore<LabelTokenRecord, Token>
 {
     public static final String TYPE_DESCRIPTOR = "LabelTokenStore";
     public static final int RECORD_SIZE = 1/*inUse*/ + 4/*nameId*/;
 
     public LabelTokenStore(
-            File fileName,
+            File file,
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger,
-            DynamicStringStore nameStore,
-            StoreVersionMismatchHandler versionMismatchHandler,
-            Monitors monitors )
+            LogProvider logProvider,
+            DynamicStringStore nameStore )
     {
-        super(fileName, config, IdType.LABEL_TOKEN, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler, monitors );
+        super( file, config, IdType.LABEL_TOKEN, idGeneratorFactory, pageCache,
+                logProvider, nameStore, new Token.Factory() );
     }
 
     @Override

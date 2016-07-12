@@ -44,32 +44,31 @@ public final class TimeUtil
             {
                 return DEFAULT_TIME_UNIT.toMillis( Integer.parseInt( timeWithOrWithoutUnit ) );
             }
+
+            int amount = Integer.parseInt( timeWithOrWithoutUnit.substring( 0, unitIndex ) );
+            String unit = timeWithOrWithoutUnit.substring( unitIndex ).toLowerCase();
+            TimeUnit timeUnit;
+            if ( unit.equals( "ms" ) )
+            {
+                timeUnit = TimeUnit.MILLISECONDS;
+            }
+            else if ( unit.equals( "s" ) )
+            {
+                timeUnit = TimeUnit.SECONDS;
+            }
+            else if ( unit.equals( "m" ) )
+            {
+                timeUnit = TimeUnit.MINUTES;
+            }
+            else if ( unit.equals( "h" ) )
+            {
+                timeUnit = TimeUnit.HOURS;
+            }
             else
             {
-                int amount = Integer.parseInt( timeWithOrWithoutUnit.substring( 0, unitIndex ) );
-                String unit = timeWithOrWithoutUnit.substring( unitIndex ).toLowerCase();
-                TimeUnit timeUnit = null;
-                int multiplyFactor = 1;
-                if ( unit.equals( "ms" ) )
-                {
-                    timeUnit = TimeUnit.MILLISECONDS;
-                }
-                else if ( unit.equals( "s" ) )
-                {
-                    timeUnit = TimeUnit.SECONDS;
-                }
-                else if ( unit.equals( "m" ) )
-                {
-                    // This is only for having to rely on 1.6
-                    timeUnit = TimeUnit.SECONDS;
-                    multiplyFactor = 60;
-                }
-                else
-                {
-                    throw new RuntimeException( "Unrecognized unit " + unit );
-                }
-                return timeUnit.toMillis( amount * multiplyFactor );
+                throw new RuntimeException( "Unrecognized unit " + unit );
             }
+            return timeUnit.toMillis( amount );
         }
     };
 

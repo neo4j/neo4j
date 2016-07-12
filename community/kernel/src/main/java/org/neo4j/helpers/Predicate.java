@@ -21,9 +21,11 @@ package org.neo4j.helpers;
 
 /**
  * Predicate useful for filtering.
- * 
+ *
  * @param <T> type of items
+ * @deprecated use {@link org.neo4j.function.Predicate} instead
  */
+@Deprecated
 public interface Predicate<T>
 {
     /**

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.neo4j.helpers.Provider;
+import org.neo4j.function.Supplier;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernel
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.exceptions.schema.UniquenessConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -43,11 +44,11 @@ import static java.util.Collections.singleton;
 public class ConstraintIndexCreator
 {
     private final IndexingService indexingService;
-    private final Provider<KernelAPI> kernel;
+    private final Supplier<KernelAPI> kernelSupplier;
 
-    public ConstraintIndexCreator( Provider<KernelAPI> kernelProvider, IndexingService indexingService )
+    public ConstraintIndexCreator( Supplier<KernelAPI> kernelSupplier, IndexingService indexingService )
     {
-        this.kernel = kernelProvider;
+        this.kernelSupplier = kernelSupplier;
         this.indexingService = indexingService;
     }
 
@@ -94,7 +95,7 @@ public class ConstraintIndexCreator
     public void dropUniquenessConstraintIndex( IndexDescriptor descriptor )
             throws TransactionFailureException, DropIndexFailureException
     {
-        try ( KernelTransaction transaction = kernel.instance().newTransaction();
+        try ( KernelTransaction transaction = kernelSupplier.get().newTransaction();
              Statement statement = transaction.acquireStatement() )
         {
             // NOTE: This creates the index (obviously) but it DOES NOT grab a schema
@@ -126,20 +127,19 @@ public class ConstraintIndexCreator
             Throwable cause = e.getCause();
             if ( cause instanceof IndexEntryConflictException )
             {
-                throw new ConstraintVerificationFailedKernelException( constraint, singleton(
-                        new ConstraintVerificationFailedKernelException.Evidence(
-                                (IndexEntryConflictException) cause ) ) );
+                throw new UniquenessConstraintVerificationFailedKernelException( constraint,
+                        singleton( (IndexEntryConflictException) cause ) );
             }
             else
             {
-                throw new ConstraintVerificationFailedKernelException( constraint, cause );
+                throw new UniquenessConstraintVerificationFailedKernelException( constraint, cause );
             }
         }
     }
 
     public IndexDescriptor createConstraintIndex( final int labelId, final int propertyKeyId )
     {
-        try ( KernelTransaction transaction = kernel.instance().newTransaction();
+        try ( KernelTransaction transaction = kernelSupplier.get().newTransaction();
               Statement statement = transaction.acquireStatement() )
         {
             // NOTE: This creates the index (obviously) but it DOES NOT grab a schema

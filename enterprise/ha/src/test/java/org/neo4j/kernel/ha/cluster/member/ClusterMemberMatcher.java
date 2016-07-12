@@ -34,12 +34,12 @@ import org.neo4j.management.ClusterMemberInfo;
 
 public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo>>
 {
-    private boolean trueForExactFalseForContains;
+    private boolean exactMatch;
     private ClusterMemberMatch[] expectedMembers;
 
-    public ClusterMemberMatcher( boolean trueForExactFalseForContains, ClusterMemberMatch[] expected )
+    public ClusterMemberMatcher( boolean exactMatch, ClusterMemberMatch[] expected )
     {
-        this.trueForExactFalseForContains = trueForExactFalseForContains;
+        this.exactMatch = exactMatch;
         this.expectedMembers = expected;
     }
 
@@ -56,22 +56,28 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
             @Override
             public boolean matches( Object instance )
             {
-                if (!(instance instanceof ClusterMember))
-                    return false;
+                if ( instance instanceof ClusterMember )
+                {
 
-                ClusterMember member = ClusterMember.class.cast( instance );
-                if (!member.getInstanceId().equals( clusterMember.getInstanceId() ))
-                    return false;
+                    ClusterMember member = ClusterMember.class.cast( instance );
+                    if ( !member.getInstanceId().equals( clusterMember.getInstanceId() ) )
+                    {
+                        return false;
+                    }
 
-                if (!member.isAlive()==clusterMember.isAlive())
-                    return false;
+                    if ( member.isAlive() != clusterMember.isAlive() )
+                    {
+                        return false;
+                    }
 
-                HashSet<URI> memberUris = new HashSet<URI>( Iterables.toList( member.getRoleURIs() ) );
-                HashSet<URI> clusterMemberUris = new HashSet<URI>( Iterables.toList( clusterMember.getRoleURIs() ) );
-                if (!memberUris.equals( clusterMemberUris ))
+                    HashSet<URI> memberUris = new HashSet<>( Iterables.toList( member.getRoleURIs() ) );
+                    HashSet<URI> clusterMemberUris = new HashSet<>( Iterables.toList( clusterMember.getRoleURIs() ) );
+                    return memberUris.equals( clusterMemberUris );
+                }
+                else
+                {
                     return false;
-
-                return true;
+                }
             }
 
             @Override
@@ -85,31 +91,38 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
     @Override
     public boolean matches( Object item )
     {
-        if ( !( item instanceof Iterable ) )
-            return false;
-        
-        @SuppressWarnings( "unchecked" )
-        Iterable<ClusterMemberInfo> other = (Iterable<ClusterMemberInfo>) item;
-        int foundCount = 0;
-        for ( ClusterMemberMatch expectedMember : expectedMembers )
+        if ( item instanceof Iterable )
         {
-            boolean found = false;
-            for ( ClusterMemberInfo member : other )
+            @SuppressWarnings( "unchecked" )
+            Iterable<ClusterMemberInfo> other = (Iterable<ClusterMemberInfo>) item;
+            int foundCount = 0;
+            for ( ClusterMemberMatch expectedMember : expectedMembers )
             {
-                if ( expectedMember.match( member ) )
+                boolean found = false;
+                for ( ClusterMemberInfo member : other )
                 {
-                    found = true;
-                    foundCount++;
-                    break;
+                    if ( expectedMember.match( member ) )
+                    {
+                        found = true;
+                        foundCount++;
+                        break;
+                    }
+                }
+                if ( !found )
+                {
+                    return false;
                 }
             }
-            if ( !found )
+
+            if ( exactMatch && foundCount != expectedMembers.length )
+            {
                 return false;
+            }
         }
-        
-        if ( trueForExactFalseForContains == true && foundCount != expectedMembers.length )
+        else
+        {
             return false;
-        
+        }
         return true;
     }
     
@@ -173,13 +186,21 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
         {
             StringBuilder builder = new StringBuilder( "Member[" + member );
             if ( available != null )
-                builder.append( ", available:" + available );
+            {
+                builder.append( ", available:" ).append( available );
+            }
             if ( alive != null )
-                builder.append( ", alive:" + alive );
+            {
+                builder.append( ", alive:").append( alive );
+            }
             if ( haRole != null )
-                builder.append( ", haRole:" + haRole );
+            {
+                builder.append( ", haRole:").append( haRole );
+            }
             if ( uris != null )
-                builder.append( ", uris:" + uris );
+            {
+                builder.append( ", uris:" ).append( uris );
+            }
             return builder.append( "]" ).toString();
         }
 
@@ -191,9 +212,11 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
         
         public ClusterMemberMatch uris( URI... uris )
         {
-            this.uris = new HashSet<String>();
+            this.uris = new HashSet<>();
             for ( URI uri : uris )
+            {
                 this.uris.add( uri.toString() );
+            }
             return this;
         }
     }

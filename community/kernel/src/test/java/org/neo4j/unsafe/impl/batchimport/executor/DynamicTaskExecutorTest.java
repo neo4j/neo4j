@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.util.concurrent.Future;
 
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.impl.transaction.log.ParkStrategy;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OtherThreadExecutor;

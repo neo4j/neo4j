@@ -5,13 +5,13 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.2.11-SNAPSHOT</version>
+    <version>2.3.6-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <groupId>org.neo4j.app</groupId>
   <artifactId>neo4j-browser</artifactId>
-  <version>2.2.11-SNAPSHOT</version>
+  <version>2.3.6-SNAPSHOT</version>
   <name>Neo4j - Browser</name>
   <description>Graph database client.</description>
 
@@ -59,6 +59,12 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -124,6 +130,10 @@
               <target name="hipster build">
 
                 <exec executable="npm" dir="${project.basedir}" osfamily="unix" failonerror="true">
+                  <arg line="--color=false config set registry http://registry.npmjs.org/" />
+                </exec>
+
+                <exec executable="npm" dir="${project.basedir}" osfamily="unix" failonerror="true">
                   <arg line="--color=false install" />
                 </exec>
 
@@ -177,9 +187,9 @@
               <execution>
                 <id>generate-dummy-javadocs-jar</id>
                 <phase>package</phase>
-		            <goals>
-		              <goal>jar</goal>
-		            </goals>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
                 <configuration>
                   <classifier>javadoc</classifier>
                   <excludes>

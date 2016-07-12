@@ -48,13 +48,13 @@ public abstract class AbstractModeSwitcher<T> implements ModeSwitcher, Lifecycle
     public void init() throws Throwable
     {
         life.init();
-        notifier.addModeSwitcher( this );
     }
 
     @Override
     public void start() throws Throwable
     {
         life.start();
+        notifier.addModeSwitcher( this );
     }
 
     @Override

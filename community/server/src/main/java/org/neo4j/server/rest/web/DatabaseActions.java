@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.rest.web;
 
+import com.sun.jersey.api.core.HttpContext;
+import org.apache.lucene.search.Sort;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -26,8 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.search.Sort;
-
+import org.neo4j.function.Function;
+import org.neo4j.function.Predicate;
+import org.neo4j.function.Predicates;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.GraphAlgoFactory;
@@ -45,6 +49,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
@@ -58,10 +63,7 @@ import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.index.lucene.QueryContext;
@@ -101,8 +103,6 @@ import org.neo4j.server.rest.repr.ValueRepresentation;
 import org.neo4j.server.rest.repr.WeightedPathRepresentation;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import com.sun.jersey.api.core.HttpContext;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -121,7 +121,6 @@ public class DatabaseActions
     private final LeaseManager leases;
 
     private final TraversalDescriptionBuilder traversalDescriptionBuilder;
-    private final boolean enableScriptSandboxing;
     private final PropertySettingStrategy propertySetter;
 
     public static class Provider extends InjectableProvider<DatabaseActions>
@@ -155,7 +154,6 @@ public class DatabaseActions
     {
         this.leases = leaseManager;
         this.graphDb = graphDatabaseAPI;
-        this.enableScriptSandboxing = enableScriptSandboxing;
         this.traversalDescriptionBuilder = new TraversalDescriptionBuilder( enableScriptSandboxing );
         this.propertySetter = new PropertySettingStrategy( graphDb );
     }
@@ -866,6 +864,8 @@ public class DatabaseActions
         return new ListRepresentation( RepresentationType.RELATIONSHIP, results );
     }
 
+
+
     public Pair<IndexedEntityRepresentation, Boolean> getOrCreateIndexedNode(
             String indexName, String key, String value, Long nodeOrNull, Map<String, Object> properties )
             throws BadInputException, NodeNotFoundException
@@ -1455,16 +1455,18 @@ public class DatabaseActions
         return new ListRepresentation( RepresentationType.NODE, nodeRepresentations );
     }
 
-    public ListRepresentation getAllLabels()
+    public ListRepresentation getAllLabels( boolean inUse )
     {
-        Collection<ValueRepresentation> labelNames = asSet( map( new Function<Label, ValueRepresentation>()
+        GlobalGraphOperations operations = GlobalGraphOperations.at( graphDb );
+        ResourceIterable<Label> labels = inUse ? operations.getAllLabelsInUse() : operations.getAllLabels();
+        Collection<ValueRepresentation> labelNames = asSet( map( new Function<Label,ValueRepresentation>()
         {
             @Override
             public ValueRepresentation apply( Label label )
             {
                 return ValueRepresentation.string( label.name() );
             }
-        }, GlobalGraphOperations.at( graphDb ).getAllLabels() ) );
+        }, labels ) );
 
 
         return new ListRepresentation( RepresentationType.STRING, labelNames );
@@ -1542,7 +1544,7 @@ public class DatabaseActions
     {
         final Set<String> propertyKeysSet = asSet( propertyKeys );
         ConstraintDefinition constraint =
-                singleOrNull( filteredConstraints( labelName, propertyUniquenessFilter( propertyKeysSet ) ) );
+                singleOrNull( filteredNodeConstraints( labelName, propertyUniquenessFilter( propertyKeysSet ) ) );
         if ( constraint != null )
         {
             constraint.drop();
@@ -1550,11 +1552,35 @@ public class DatabaseActions
         return constraint != null;
     }
 
-    public ListRepresentation getPropertyUniquenessConstraint( String labelName, Iterable<String> propertyKeys )
+    public boolean dropNodePropertyExistenceConstraint( String labelName, Iterable<String> propertyKeys )
+    {
+        final Set<String> propertyKeysSet = asSet( propertyKeys );
+        ConstraintDefinition constraint =
+                singleOrNull( filteredNodeConstraints( labelName, nodePropertyExistenceFilter( propertyKeysSet ) ) );
+        if ( constraint != null )
+        {
+            constraint.drop();
+        }
+        return constraint != null;
+    }
+
+    public boolean dropRelationshipPropertyExistenceConstraint( String typeName, Iterable<String> propertyKeys )
+    {
+        final Set<String> propertyKeysSet = asSet( propertyKeys );
+        ConstraintDefinition constraint = singleOrNull( filteredRelationshipConstraints( typeName,
+                relationshipPropertyExistenceFilter( propertyKeysSet ) ) );
+        if ( constraint != null )
+        {
+            constraint.drop();
+        }
+        return constraint != null;
+    }
+
+    public ListRepresentation getNodePropertyExistenceConstraint( String labelName, Iterable<String> propertyKeys )
     {
         Set<String> propertyKeysSet = asSet( propertyKeys );
         Iterable<ConstraintDefinition> constraints =
-                filteredConstraints( labelName, propertyUniquenessFilter( propertyKeysSet ) );
+                filteredNodeConstraints( labelName, nodePropertyExistenceFilter( propertyKeysSet ) );
         if ( constraints.iterator().hasNext() )
         {
             Iterable<Representation> representationIterable = map( CONSTRAINT_DEF_TO_REPRESENTATION, constraints );
@@ -1568,22 +1594,79 @@ public class DatabaseActions
         }
     }
 
-    private Iterable<ConstraintDefinition> filteredConstraints( String labelName,
-                                                                Predicate<ConstraintDefinition> filter )
+    public ListRepresentation getRelationshipPropertyExistenceConstraint( String typeName,
+            Iterable<String> propertyKeys )
+    {
+        Set<String> propertyKeysSet = asSet( propertyKeys );
+        Iterable<ConstraintDefinition> constraints =
+                filteredRelationshipConstraints( typeName, relationshipPropertyExistenceFilter( propertyKeysSet ) );
+        if ( constraints.iterator().hasNext() )
+        {
+            Iterable<Representation> representationIterable = map( CONSTRAINT_DEF_TO_REPRESENTATION, constraints );
+            return new ListRepresentation( CONSTRAINT_DEFINITION, representationIterable );
+        }
+        else
+        {
+            throw new IllegalArgumentException(
+                    String.format( "Constraint with relationship type %s for properties %s does not exist",
+                            typeName, propertyKeys ) );
+        }
+    }
+
+    public ListRepresentation getPropertyUniquenessConstraint( String labelName, Iterable<String> propertyKeys )
+    {
+        Set<String> propertyKeysSet = asSet( propertyKeys );
+        Iterable<ConstraintDefinition> constraints =
+                filteredNodeConstraints( labelName, propertyUniquenessFilter( propertyKeysSet ) );
+        if ( constraints.iterator().hasNext() )
+        {
+            Iterable<Representation> representationIterable = map( CONSTRAINT_DEF_TO_REPRESENTATION, constraints );
+            return new ListRepresentation( CONSTRAINT_DEFINITION, representationIterable );
+        }
+        else
+        {
+            throw new IllegalArgumentException(
+                    String.format( "Constraint with label %s for properties %s does not exist", labelName,
+                            propertyKeys ) );
+        }
+    }
+
+    private Iterable<ConstraintDefinition> filteredNodeConstraints( String labelName,
+                                                                    Predicate<ConstraintDefinition> filter )
     {
         Iterable<ConstraintDefinition> constraints = graphDb.schema().getConstraints( label( labelName ) );
         return filter( filter, constraints );
     }
 
-    private Iterable<ConstraintDefinition> filteredConstraints( String labelName, final ConstraintType type )
+    private Iterable<ConstraintDefinition> filteredRelationshipConstraints( String typeName,
+                                                                            Predicate<ConstraintDefinition> filter )
+    {
+        DynamicRelationshipType type = DynamicRelationshipType.withName( typeName );
+        Iterable<ConstraintDefinition> constraints = graphDb.schema().getConstraints( type );
+        return filter( filter, constraints );
+    }
+
+    private Iterable<ConstraintDefinition> filteredNodeConstraints( String labelName, final ConstraintType type )
     {
         return filter(new Predicate<ConstraintDefinition>(){
             @Override
-            public boolean accept( ConstraintDefinition item )
+            public boolean test( ConstraintDefinition item )
             {
                 return item.isConstraintType( type );
             }
         }, graphDb.schema().getConstraints( label( labelName ) ) );
+    }
+
+    private Iterable<ConstraintDefinition> filteredRelationshipConstraints( String typeName, final ConstraintType type )
+    {
+        return filter( new Predicate<ConstraintDefinition>()
+        {
+            @Override
+            public boolean test( ConstraintDefinition item )
+            {
+                return item.isConstraintType( type );
+            }
+        }, graphDb.schema().getConstraints( DynamicRelationshipType.withName( typeName ) ) );
     }
 
     private Predicate<ConstraintDefinition> propertyUniquenessFilter( final Set<String> propertyKeysSet )
@@ -1591,10 +1674,36 @@ public class DatabaseActions
         return new Predicate<ConstraintDefinition>()
         {
             @Override
-            public boolean accept( ConstraintDefinition item )
+            public boolean test( ConstraintDefinition item )
             {
                 return item.isConstraintType( ConstraintType.UNIQUENESS ) &&
                         propertyKeysSet.equals( asSet( item.getPropertyKeys() ) );
+            }
+        };
+    }
+
+    private Predicate<ConstraintDefinition> nodePropertyExistenceFilter( final Set<String> propertyKeysSet )
+    {
+        return new Predicate<ConstraintDefinition>()
+        {
+            @Override
+            public boolean test( ConstraintDefinition item )
+            {
+                return item.isConstraintType( ConstraintType.NODE_PROPERTY_EXISTENCE ) &&
+                       propertyKeysSet.equals( asSet( item.getPropertyKeys() ) );
+            }
+        };
+    }
+
+    private Predicate<ConstraintDefinition> relationshipPropertyExistenceFilter( final Set<String> propertyKeysSet )
+    {
+        return new Predicate<ConstraintDefinition>()
+        {
+            @Override
+            public boolean test( ConstraintDefinition item )
+            {
+                return item.isConstraintType( ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE ) &&
+                       propertyKeysSet.equals( asSet( item.getPropertyKeys() ) );
             }
         };
     }
@@ -1608,12 +1717,24 @@ public class DatabaseActions
     public ListRepresentation getLabelConstraints( String labelName )
     {
         return new ListRepresentation( CONSTRAINT_DEFINITION, map( CONSTRAINT_DEF_TO_REPRESENTATION,
-                filteredConstraints( labelName, Predicates.<ConstraintDefinition>TRUE() ) ) );
+                filteredNodeConstraints( labelName, Predicates.<ConstraintDefinition>alwaysTrue() ) ) );
     }
 
     public Representation getLabelUniquenessConstraints( String labelName )
     {
         return new ListRepresentation( CONSTRAINT_DEFINITION, map( CONSTRAINT_DEF_TO_REPRESENTATION,
-                filteredConstraints( labelName, ConstraintType.UNIQUENESS ) ) );
+                filteredNodeConstraints( labelName, ConstraintType.UNIQUENESS ) ) );
+    }
+
+    public Representation getLabelExistenceConstraints( String labelName )
+    {
+        return new ListRepresentation( CONSTRAINT_DEFINITION, map( CONSTRAINT_DEF_TO_REPRESENTATION,
+                filteredNodeConstraints( labelName, ConstraintType.NODE_PROPERTY_EXISTENCE ) ) );
+    }
+
+    public Representation getRelationshipTypeExistenceConstraints( String typeName )
+    {
+        return new ListRepresentation( CONSTRAINT_DEFINITION, map( CONSTRAINT_DEF_TO_REPRESENTATION,
+                filteredRelationshipConstraints( typeName, ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE ) ) );
     }
 }

@@ -19,39 +19,40 @@
  */
 package org.neo4j.server.webadmin.rest;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
-
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.helpers.Settings;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+
+import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.server.rest.management.console.ConsoleService;
+import org.neo4j.server.rest.management.console.ShellSession;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.webadmin.console.ConsoleSessionFactory;
 import org.neo4j.server.webadmin.console.ScriptSession;
-import org.neo4j.server.rest.management.console.ShellSession;
-import org.neo4j.server.rest.management.console.ConsoleService;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static java.lang.System.lineSeparator;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+
 public class Neo4jShellConsoleSessionDocTest implements ConsoleSessionFactory
 {
-    private static final String LN = System.getProperty( "line.separator" );
     private ConsoleService consoleService;
     private Database database;
     private final URI uri = URI.create( "http://peteriscool.com:6666/" );
@@ -59,14 +60,14 @@ public class Neo4jShellConsoleSessionDocTest implements ConsoleSessionFactory
     @Before
     public void setUp() throws Exception
     {
-        this.database = new WrappedDatabase( (InternalAbstractGraphDatabase) new TestGraphDatabaseFactory().
+        this.database = new WrappedDatabase( (GraphDatabaseAPI) new TestGraphDatabaseFactory().
                 newImpermanentDatabaseBuilder().
                 setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE ).
                 newGraphDatabase() );
         this.consoleService = new ConsoleService(
                 this,
                 database,
-                DEV_NULL,
+                NullLogProvider.getInstance(),
                 new OutputFormat( new JsonFormat(), uri, null ) );
     }
 
@@ -77,7 +78,7 @@ public class Neo4jShellConsoleSessionDocTest implements ConsoleSessionFactory
     }
 
     @Override
-    public ScriptSession createSession( String engineName, Database database )
+    public ScriptSession createSession( String engineName, Database database, LogProvider logProvider )
     {
         return new ShellSession( database.getGraph() );
     }
@@ -92,11 +93,11 @@ public class Neo4jShellConsoleSessionDocTest implements ConsoleSessionFactory
         assertEquals( 200, response.getStatus() );
         String result = decode( response ).get( 0 );
 
-        String expected = "+-----------+" + LN
-                + "| n         |" + LN
-                + "+-----------+" + LN
-                + "| Node[0]{} |" + LN
-                + "+-----------+" + LN
+        String expected = "+-----------+" + lineSeparator()
+                + "| n         |" + lineSeparator()
+                + "+-----------+" + lineSeparator()
+                + "| Node[0]{} |" + lineSeparator()
+                + "+-----------+" + lineSeparator()
                 + "1 row";
 
         assertThat( result, containsString( expected ) );

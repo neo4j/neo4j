@@ -24,10 +24,12 @@ public class RelationshipDataExtractor implements RelationshipVisitor<RuntimeExc
     private int type;
     private long startNode;
     private long endNode;
+    private long relId;
 
     @Override
     public void visit( long relId, int type, long startNode, long endNode )
     {
+        this.relId = relId;
         this.type = type;
         this.startNode = startNode;
         this.endNode = endNode;
@@ -46,5 +48,27 @@ public class RelationshipDataExtractor implements RelationshipVisitor<RuntimeExc
     public long endNode()
     {
         return endNode;
+    }
+
+    public long otherNode( long node )
+    {
+        if ( node == startNode )
+        {
+            return endNode;
+        }
+        else if ( node == endNode )
+        {
+            return startNode;
+        }
+        else
+        {
+            throw new IllegalArgumentException(
+                    "Node[" + node + "] is neither start nor end node of relationship[" + relId + "]" );
+        }
+    }
+
+    public long relationship()
+    {
+        return relId;
     }
 }

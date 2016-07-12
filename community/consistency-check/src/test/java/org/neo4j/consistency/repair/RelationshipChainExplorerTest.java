@@ -44,13 +44,12 @@ import static org.junit.Assert.assertEquals;
 
 public class RelationshipChainExplorerTest
 {
-    private static final TargetDirectory target = TargetDirectory.forTest( RelationshipChainExplorerTest.class );
     private static final int NDegreeTwoNodes = 10;
 
     @ClassRule
     public static PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
-    public TargetDirectory.TestDirectory storeLocation = target.testDirectory();
+    public TargetDirectory.TestDirectory storeLocation = TargetDirectory.testDirForTest( getClass() );
     private StoreAccess store;
 
     @Before
@@ -112,10 +111,10 @@ public class RelationshipChainExplorerTest
 
     private StoreAccess createStoreWithOneHighDegreeNodeAndSeveralDegreeTwoNodes( int nDegreeTwoNodes )
     {
-        File storeDirectory = storeLocation.directory();
-        GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDirectory.getPath() );
-        Transaction transaction = database.beginTx();
-        try
+        File storeDirectory = storeLocation.graphDbDir();
+        GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDirectory );
+
+        try ( Transaction transaction = database.beginTx() )
         {
             Node denseNode = database.createNode();
             for ( int i = 0; i < nDegreeTwoNodes; i++ )
@@ -134,12 +133,8 @@ public class RelationshipChainExplorerTest
             }
             transaction.success();
         }
-        finally
-        {
-            transaction.finish();
-        }
         database.shutdown();
         PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() );
-        return new StoreAccess( pageCache, storeDirectory.getPath() );
+        return new StoreAccess( pageCache, storeDirectory ).initialize();
     }
 }

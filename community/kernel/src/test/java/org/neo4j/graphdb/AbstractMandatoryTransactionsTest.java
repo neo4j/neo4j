@@ -21,7 +21,7 @@ package org.neo4j.graphdb;
 
 import org.junit.Rule;
 
-import org.neo4j.function.Function;
+import org.neo4j.function.Consumer;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.fail;
@@ -44,7 +44,7 @@ public abstract class AbstractMandatoryTransactionsTest<T>
         }
     }
 
-    public <R> R obtainEntityInTerminatedTransaction(Function<T, R> f)
+    public void obtainEntityInTerminatedTransaction( Consumer<T> f )
     {
         GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseService();
 
@@ -53,7 +53,7 @@ public abstract class AbstractMandatoryTransactionsTest<T>
             T result = obtainEntityInTransaction( graphDatabaseService );
             tx.terminate();
 
-            return f.apply(result);
+            f.accept(result);
         }
     }
 
@@ -80,10 +80,10 @@ public abstract class AbstractMandatoryTransactionsTest<T>
     {
         for ( final FacadeMethod<T> method : methods )
         {
-            obtainEntityInTerminatedTransaction(  new Function<T, Void>()
+            obtainEntityInTerminatedTransaction(  new Consumer<T>()
             {
                 @Override
-                public Void apply( T entity )
+                public void accept( T entity )
                 {
                     try
                     {
@@ -95,7 +95,6 @@ public abstract class AbstractMandatoryTransactionsTest<T>
                     {
                         // awesome
                     }
-                    return null;
                 }
             });
         }

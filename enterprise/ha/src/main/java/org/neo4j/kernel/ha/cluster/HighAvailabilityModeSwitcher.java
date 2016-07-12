@@ -32,20 +32,19 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.protocol.election.Election;
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.function.Supplier;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.ha.store.HighAvailabilityStoreFailureException;
 import org.neo4j.kernel.ha.store.UnableToCopyStoreFromOldMasterException;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
 
 import static org.neo4j.cluster.ClusterSettings.INSTANCE_ID;
 import static org.neo4j.helpers.Functions.withDefaults;
@@ -53,7 +52,7 @@ import static org.neo4j.helpers.NamedThreadFactory.named;
 import static org.neo4j.helpers.Uris.parameter;
 
 /**
- * Performs the internal switches from pending to slave/master, by listening for
+ * Performs the internal switches in various services from pending to slave/master, by listening for
  * {@link HighAvailabilityMemberChangeEvent}s. When finished it will invoke
  * {@link ClusterMemberAvailability#memberIsAvailable(String, URI, StoreId)} to announce it's new status to the
  * cluster.
@@ -86,11 +85,12 @@ public class HighAvailabilityModeSwitcher
     private SwitchToMaster switchToMaster;
     private final Election election;
     private final ClusterMemberAvailability clusterMemberAvailability;
+    private final ClusterClient clusterClient;
+    private final Supplier<StoreId> storeIdSupplier;
     private final InstanceId instanceId;
-    private final DependencyResolver dependencyResolver;
 
-    private final StringLogger msgLog;
-    private final ConsoleLogger consoleLog;
+    private final Log msgLog;
+    private final Log userLog;
 
     private LifeSupport haCommunicationLife;
 
@@ -105,20 +105,22 @@ public class HighAvailabilityModeSwitcher
                                          SwitchToMaster switchToMaster,
                                          Election election,
                                          ClusterMemberAvailability clusterMemberAvailability,
-                                         DependencyResolver dependencyResolver,
-                                         InstanceId instanceId, Logging logging,
+                                         ClusterClient clusterClient,
+                                         Supplier<StoreId> storeIdSupplier,
+                                         InstanceId instanceId, LogService logService,
                                          DataSourceManager neoStoreDataSourceSupplier )
     {
         this.switchToSlave = switchToSlave;
         this.switchToMaster = switchToMaster;
         this.election = election;
         this.clusterMemberAvailability = clusterMemberAvailability;
+        this.clusterClient = clusterClient;
+        this.storeIdSupplier = storeIdSupplier;
         this.instanceId = instanceId;
-        this.msgLog = logging.getMessagesLog( getClass() );
-        this.consoleLog = logging.getConsoleLog( getClass() );
+        this.msgLog = logService.getInternalLog( getClass() );
+        this.userLog = logService.getUserLog( getClass() );
         this.neoStoreDataSourceSupplier = neoStoreDataSourceSupplier;
         this.haCommunicationLife = new LifeSupport();
-        this.dependencyResolver = dependencyResolver;
     }
 
     @Override
@@ -166,7 +168,7 @@ public class HighAvailabilityModeSwitcher
     {
         if ( event.getNewState() == event.getOldState() && event.getOldState() == HighAvailabilityMemberState.MASTER )
         {
-            clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI, resolveStoreId() );
+            clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI, storeIdSupplier.get() );
         }
         else
         {
@@ -179,7 +181,7 @@ public class HighAvailabilityModeSwitcher
     {
         if ( event.getNewState() == event.getOldState() && event.getOldState() == HighAvailabilityMemberState.SLAVE )
         {
-            clusterMemberAvailability.memberIsAvailable( SLAVE, slaveHaURI, resolveStoreId() );
+            clusterMemberAvailability.memberIsAvailable( SLAVE, slaveHaURI, storeIdSupplier.get() );
         }
         else
         {
@@ -197,6 +199,12 @@ public class HighAvailabilityModeSwitcher
     public void instanceStops( HighAvailabilityMemberChangeEvent event )
     {
         stateChanged( event );
+    }
+
+    @Override
+    public void instanceDetached( HighAvailabilityMemberChangeEvent event )
+    {
+        switchToDetached();
     }
 
     @Override
@@ -387,14 +395,14 @@ public class HighAvailabilityModeSwitcher
                 }
                 catch ( HighAvailabilityStoreFailureException e )
                 {
-                    consoleLog.error( "UNABLE TO START UP AS SLAVE: " + e.getMessage() );
+                    userLog.error( "UNABLE TO START UP AS SLAVE: %s", e.getMessage() );
                     msgLog.error( "Unable to start up as slave", e );
 
                     clusterMemberAvailability.memberIsUnavailable( SLAVE );
-                    ClusterClient clusterClient = dependencyResolver.resolveDependency( ClusterClient.class );
+                    ClusterClient clusterClient = HighAvailabilityModeSwitcher.this.clusterClient;
                     try
                     {
-                        // TODO I doubt this actually works. Shuts down with no recovery or restart
+                        // TODO I doubt this actually works
                         clusterClient.leave();
                         clusterClient.stop();
                         haCommunicationLife.shutdown();
@@ -422,7 +430,7 @@ public class HighAvailabilityModeSwitcher
 
                     modeSwitcherFuture = modeSwitcherExecutor.schedule( this, wait.get(), TimeUnit.SECONDS );
 
-                    msgLog.info( "Attempting to switch to slave in " + wait.get() + "s" );
+                    msgLog.info( "Attempting to switch to slave in %ds", wait.get() );
                 }
             }
         }, cancellationHandle );
@@ -430,7 +438,7 @@ public class HighAvailabilityModeSwitcher
 
     private void switchToPending( final HighAvailabilityMemberState oldState )
     {
-        msgLog.info( "I am " + instanceId + ", moving to pending" );
+        msgLog.info( "I am %s, moving to pending", instanceId );
 
         startModeSwitching( new Runnable()
         {
@@ -470,7 +478,6 @@ public class HighAvailabilityModeSwitcher
 
                 haCommunicationLife.shutdown();
                 haCommunicationLife = new LifeSupport();
-
             }
         }, new CancellationHandle() );
 
@@ -478,8 +485,55 @@ public class HighAvailabilityModeSwitcher
         {
             modeSwitcherFuture.get( 10, TimeUnit.SECONDS );
         }
-        catch ( Exception ignored )
+        catch ( Exception e )
         {
+            msgLog.warn( "Exception received while waiting for switching to pending", e );
+        }
+    }
+
+    private void switchToDetached()
+    {
+        msgLog.info( "I am %s, moving to detached", instanceId );
+
+        startModeSwitching( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                if ( cancellationHandle.cancellationRequested() )
+                {
+                    msgLog.info( "Switch to pending cancelled on start." );
+                    return;
+                }
+
+                Listeners.notifyListeners( modeSwitchListeners, new Listeners.Notification<ModeSwitcher>()
+                {
+                    @Override
+                    public void notify( ModeSwitcher listener )
+                    {
+                        listener.switchToSlave();
+                    }
+                } );
+                neoStoreDataSourceSupplier.getDataSource().beforeModeSwitch();
+
+                if ( cancellationHandle.cancellationRequested() )
+                {
+                    msgLog.info( "Switch to pending cancelled before ha communication shutdown." );
+                    return;
+                }
+
+                haCommunicationLife.shutdown();
+                haCommunicationLife = new LifeSupport();
+            }
+        }, new CancellationHandle() );
+
+        try
+        {
+            modeSwitcherFuture.get( 10, TimeUnit.SECONDS );
+        }
+        catch ( Exception e )
+        {
+            msgLog.warn( "Exception received while waiting for switching to detached", e );
         }
     }
 
@@ -506,11 +560,6 @@ public class HighAvailabilityModeSwitcher
 
         this.cancellationHandle = cancellationHandle;
         modeSwitcherFuture = modeSwitcherExecutor.submit( switcher );
-    }
-
-    private StoreId resolveStoreId()
-    {
-        return dependencyResolver.resolveDependency( StoreId.class );
     }
 
     ScheduledExecutorService createExecutor()

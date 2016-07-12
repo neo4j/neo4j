@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
-
 /**
  * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
  * we don't extend a class that has fields.
  */
-final class CharProperty extends DefinedProperty
+final class CharProperty extends DefinedProperty implements DefinedProperty.WithStringValue
 {
     final char value;
 
@@ -82,8 +80,8 @@ final class CharProperty extends DefinedProperty
     }
 
     @Override
-    public int sizeOfObjectInBytesIncludingOverhead()
+    public String stringValue()
     {
-        return withObjectOverhead( 8 );
+        return Character.toString( value );
     }
 }

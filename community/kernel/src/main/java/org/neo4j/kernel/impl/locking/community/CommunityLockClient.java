@@ -19,16 +19,26 @@
  */
 package org.neo4j.kernel.impl.locking.community;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
+import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.impl.locking.LockClientStateHolder;
+import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.kernel.impl.locking.Locks;
 
 import static java.lang.String.format;
 
-public class CommunityLockClient implements Locks.Client, CommunityLockClientTermination
+
+// Please note. Except separate test cases for particular classes related to community locking
+// see also org.neo4j.kernel.impl.locking.community.CommunityLocksCompatibility test suite
+
+public class CommunityLockClient implements Locks.Client
 {
     private final LockManagerImpl manager;
     private final LockTransaction lockTransaction = new LockTransaction();
@@ -36,7 +46,13 @@ public class CommunityLockClient implements Locks.Client, CommunityLockClientTer
     private final PrimitiveIntObjectMap<PrimitiveLongObjectMap<LockResource>> sharedLocks = Primitive.intObjectMap();
     private final PrimitiveIntObjectMap<PrimitiveLongObjectMap<LockResource>> exclusiveLocks = Primitive.intObjectMap();
 
-    private volatile boolean markedForTermination;
+    // To be able to close Locks.Client instance properly we should be able to do couple of things:
+    //  - have a possibility to prevent new clients to come
+    //  - wake up all the waiters and let them go
+    //  - have a possibility to see how many clients are still using us and wait for them to finish
+    // We need to do all of that to prevent a situation when a closing client will get a lock that will never be
+    // closed and eventually will block other clients.
+    private final LockClientStateHolder stateHolder = new LockClientStateHolder();
 
     public CommunityLockClient( LockManagerImpl manager )
     {
@@ -44,165 +60,224 @@ public class CommunityLockClient implements Locks.Client, CommunityLockClientTer
     }
 
     @Override
-    public void acquireShared( Locks.ResourceType resourceType, long... resourceIds )
+    public void acquireShared( Locks.ResourceType resourceType, long resourceId )
     {
-        PrimitiveLongObjectMap<LockResource> localLocks = localShared( resourceType );
-        for ( long resourceId : resourceIds )
+        stateHolder.incrementActiveClients( this );
+        try
         {
+            PrimitiveLongObjectMap<LockResource> localLocks = localShared( resourceType );
             LockResource resource = localLocks.get( resourceId );
-            if( resource != null )
+            if ( resource != null )
             {
                 resource.acquireReference();
-                continue;
-            }
-
-            resource = new LockResource( resourceType, resourceId );
-            manager.getReadLock( resource, lockTransaction, this );
-            localLocks.put(resourceId, resource);
-        }
-    }
-
-    @Override
-    public void acquireExclusive( Locks.ResourceType resourceType, long... resourceIds )
-    {
-        PrimitiveLongObjectMap<LockResource> localLocks = localExclusive( resourceType );
-        for ( long resourceId : resourceIds )
-        {
-            LockResource resource = localLocks.get( resourceId );
-            if( resource != null )
-            {
-                resource.acquireReference();
-                continue;
-            }
-
-            resource = new LockResource( resourceType, resourceId );
-            manager.getWriteLock( resource, lockTransaction, this );
-            localLocks.put(resourceId, resource);
-        }
-    }
-
-    @Override
-    public boolean tryExclusiveLock( Locks.ResourceType resourceType, long... resourceIds )
-    {
-        PrimitiveLongObjectMap<LockResource> localLocks = localExclusive( resourceType );
-        for ( long resourceId : resourceIds )
-        {
-            LockResource resource = localLocks.get( resourceId );
-            if( resource != null )
-            {
-                resource.acquireReference();
-                continue;
-            }
-
-            resource = new LockResource( resourceType, resourceId );
-            if(manager.tryWriteLock( resource, lockTransaction ))
-            {
-                localLocks.put(resourceId, resource);
             }
             else
             {
-                return false;
+                resource = new LockResource( resourceType, resourceId );
+                if ( manager.getReadLock( resource, lockTransaction ) )
+                {
+                    localLocks.put( resourceId, resource );
+                }
+                else
+                {
+                    throw new LockClientStoppedException( this );
+                }
             }
         }
-        return true;
+        finally
+        {
+            stateHolder.decrementActiveClients();
+        }
     }
 
+
+
     @Override
-    public boolean trySharedLock( Locks.ResourceType resourceType, long... resourceIds )
+    public void acquireExclusive( Locks.ResourceType resourceType, long resourceId )
     {
-        PrimitiveLongObjectMap<LockResource> localLocks = localShared( resourceType );
-        for ( long resourceId : resourceIds )
+        stateHolder.incrementActiveClients( this );
+        try
         {
+            PrimitiveLongObjectMap<LockResource> localLocks = localExclusive( resourceType );
             LockResource resource = localLocks.get( resourceId );
-            if( resource != null )
+            if ( resource != null )
             {
                 resource.acquireReference();
-                continue;
-            }
-
-            resource = new LockResource( resourceType, resourceId );
-            if(manager.tryReadLock( resource, lockTransaction ))
-            {
-                localLocks.put(resourceId, resource);
             }
             else
             {
-                return false;
+                resource = new LockResource( resourceType, resourceId );
+                if ( manager.getWriteLock( resource, lockTransaction ) )
+                {
+                    localLocks.put( resourceId, resource );
+                }
+                else
+                {
+                    throw new LockClientStoppedException( this );
+                }
             }
         }
-        return true;
+        finally
+        {
+            stateHolder.decrementActiveClients();
+        }
     }
 
     @Override
-    public void releaseShared( Locks.ResourceType resourceType, long... resourceIds )
+    public boolean tryExclusiveLock( Locks.ResourceType resourceType, long resourceId )
     {
-        PrimitiveLongObjectMap<LockResource> localLocks = localShared( resourceType );
-        for ( long resourceId : resourceIds )
+        stateHolder.incrementActiveClients( this );
+        try
         {
+            PrimitiveLongObjectMap<LockResource> localLocks = localExclusive( resourceType );
             LockResource resource = localLocks.get( resourceId );
-            if( resource.releaseReference() != 0)
+            if ( resource != null )
             {
-                continue;
+                resource.acquireReference();
+                return true;
             }
+            else
+            {
+                resource = new LockResource( resourceType, resourceId );
+                if ( manager.tryWriteLock( resource, lockTransaction ) )
+                {
+                    localLocks.put( resourceId, resource );
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+        finally
+        {
+            stateHolder.decrementActiveClients();
+        }
+    }
+
+    @Override
+    public boolean trySharedLock( Locks.ResourceType resourceType, long resourceId )
+    {
+        stateHolder.incrementActiveClients( this );
+        try
+        {
+            PrimitiveLongObjectMap<LockResource> localLocks = localShared( resourceType );
+            LockResource resource = localLocks.get( resourceId );
+            if ( resource != null )
+            {
+                resource.acquireReference();
+                return true;
+            }
+            else
+            {
+                resource = new LockResource( resourceType, resourceId );
+                if ( manager.tryReadLock( resource, lockTransaction ) )
+                {
+                    localLocks.put( resourceId, resource );
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+        finally
+        {
+            stateHolder.decrementActiveClients();
+        }
+    }
+
+    @Override
+    public void releaseShared( Locks.ResourceType resourceType, long resourceId )
+    {
+        stateHolder.incrementActiveClients( this );
+        try
+        {
+            PrimitiveLongObjectMap<LockResource> localLocks = localShared( resourceType );
+            LockResource resource = localLocks.get( resourceId );
+            if ( resource.releaseReference() != 0 )
+            {
+                return;
+            }
+
             localLocks.remove( resourceId );
 
             manager.releaseReadLock( new LockResource( resourceType, resourceId ), lockTransaction );
         }
+        finally
+        {
+            stateHolder.decrementActiveClients();
+        }
     }
 
     @Override
-    public void releaseExclusive( Locks.ResourceType resourceType, long... resourceIds )
+    public void releaseExclusive( Locks.ResourceType resourceType, long resourceId )
     {
-        PrimitiveLongObjectMap<LockResource> localLocks = localExclusive( resourceType );
-        for ( long resourceId : resourceIds )
+        stateHolder.incrementActiveClients( this );
+        try
         {
+            PrimitiveLongObjectMap<LockResource> localLocks = localExclusive( resourceType );
             LockResource resource = localLocks.get( resourceId );
-            if( resource.releaseReference() != 0)
+            if ( resource.releaseReference() != 0 )
             {
-                continue;
+                return;
             }
             localLocks.remove( resourceId );
 
             manager.releaseWriteLock( new LockResource( resourceType, resourceId ), lockTransaction );
         }
-    }
-
-    private void releaseAllShared()
-    {
-        sharedLocks.visitEntries( typeReadReleaser );
-        sharedLocks.clear();
-    }
-
-    private void releaseAllExclusive()
-    {
-        exclusiveLocks.visitEntries( typeWriteReleaser );
-        exclusiveLocks.clear();
+        finally
+        {
+            stateHolder.decrementActiveClients();
+        }
     }
 
     @Override
-    public void releaseAll()
+    public void stop()
     {
-        releaseAllExclusive();
-        releaseAllShared();
-    }
-
-    @Override
-    public void markForTermination()
-    {
-        markedForTermination = true;
-    }
-
-    @Override
-    public boolean shouldBeTerminated()
-    {
-        return markedForTermination;
+        // closing client to prevent any new client to come
+        stateHolder.stopClient();
+        // wake up and terminate waiters
+        terminateAllWaiters();
+        // wait for all active clients to go and terminate latecomers
+        while ( stateHolder.hasActiveClients() )
+        {
+            terminateAllWaiters();
+            LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 20 ) );
+        }
     }
 
     @Override
     public void close()
     {
-        markedForTermination = false;
-        releaseAll();
+        stop();
+        // now we are only one who operate on this client
+        // safe to release all the locks
+        releaseLocks();
+    }
+
+    private void releaseLocks()
+    {
+        exclusiveLocks.visitEntries( typeWriteReleaser );
+        sharedLocks.visitEntries( typeReadReleaser );
+        exclusiveLocks.clear();
+        sharedLocks.clear();
+    }
+
+    // waking up and terminate all waiters that were waiting for any lock for current client
+    private void terminateAllWaiters()
+    {
+        manager.accept( new Visitor<RWLock,RuntimeException>()
+        {
+            @Override
+            public boolean visit( RWLock lock ) throws RuntimeException
+            {
+                lock.terminateLockRequestsForLockTransaction( lockTransaction );
+                return false;
+            }
+        } );
     }
 
     @Override

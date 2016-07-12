@@ -1,0 +1,64 @@
+[[query-load-csv]]
+= Load CSV
+
+[abstract]
+--
+`LOAD CSV` is used to import data from CSV files.
+--
+
+* The URL of the CSV file is specified by using `FROM` followed by an arbitrary expression evaluating to the URL in question.
+* It is required to specify an identifier for the CSV data using `AS`.
+* `LOAD CSV` supports resources compressed with _gzip_, _Deflate_, as well as _ZIP_ archives.
+* CSV files can be stored on the database server and are then accessible using a `file:///` URL.
+  Alternatively, `LOAD CSV` also supports accessing CSV files via _HTTPS_, _HTTP_, and _FTP_.
+* `LOAD CSV` will follow _HTTP_ redirects but for security reasons it will not follow redirects that changes the protocol, for example if the redirect is going from _HTTPS_ to _HTTP_.
+
+[NOTE]
+.Configuration settings for file URLs
+====
+<<config_allow_file_urls>>::
+This setting determines if Cypher will allow the use of `file:///` URLs when loading data using `LOAD CSV`.
+Such URLs identify files on the filesystem of the database server. Default is _true_.
+
+<<config_dbms.security.load_csv_file_url_root>>::
+Sets the root directory for `file:///` URLs used with the Cypher `LOAD CSV` clause.
+This must be set to a single directory on the filesystem of the database server, and will make all requests to load from `file:///` URLs relative to the specified directory (similar to how a unix chroot operates).
+By default, this setting is not configured.
++
+* When not set, file URLs will be resolved as relative to the root of the database server filesystem.
+  If this is the case, a file URL will typically look like `file:///home/username/myfile.csv` or `file:///C:/Users/username/myfile.csv`.
+  Using these URLs in `LOAD CSV` will read content from files on the database server filesystem, specifically `/home/username/myfile.csv` and `C:\Users\username\myfile.csv` respectively.
+  _For security reasons you may not want users to be able to load files located anywhere on the database server filesystem and should set `dbms.security.load_csv_file_url_root` to a safe directory to load files from._
+* When set, file URLs will be resolved as relative to the directory it's set to.
+  In this case a file URL will typically look like `file:///myfile.csv` or `file:///myproject/myfile.csv`.
+**  If set to `data/import` using the above URLs in `LOAD CSV` would read content from `data/import/myfile.csv` and `data/import/myproject/myfile.csv` respectively, where both are relative to the database install directory.
+**  If set to `/home/neo4j` using the above URLs in `LOAD CSV` would read content from `/home/neo4j/myfile.csv` and `/home/neo4j/myproject/myfile.csv` respectively.
+====
+
+See the examples below for further details.
+
+There is also a worked example, see <<cypherdoc-importing-csv-files-with-cypher>>.
+
+:leveloffset: 3
+
+include::csv-file-format.asciidoc[]
+
+:leveloffset: 2
+
+include::import-data-from-a-csv-file.asciidoc[]
+
+include::import-data-from-a-csv-file-containing-headers.asciidoc[]
+
+include::import-data-from-a-csv-file-with-a-custom-field-delimiter.asciidoc[]
+
+include::importing-large-amounts-of-data.asciidoc[]
+
+:leveloffset: 2
+
+include::setting-the-rate-of-periodic-commits.asciidoc[]
+
+:leveloffset: 2
+
+include::import-data-containing-escaped-characters.asciidoc[]
+
+

@@ -21,7 +21,9 @@ package org.neo4j.helpers;
 
 /**
  * Instances are operations that need two operands to execute
+ * @deprecated use {@link org.neo4j.function.BiConsumer} instead
  */
+@Deprecated
 public interface BiConsumer<T, U>
 {
     void accept( T first, U second );

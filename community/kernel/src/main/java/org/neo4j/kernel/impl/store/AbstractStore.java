@@ -21,16 +21,17 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
-import org.neo4j.helpers.UTF8;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.LogProvider;
 
 /**
  * An abstract representation of a store. A store is a file that contains
@@ -49,12 +50,9 @@ public abstract class AbstractStore extends CommonAbstractStore
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger,
-            StoreVersionMismatchHandler versionMismatchHandler )
+            LogProvider logProvider )
     {
-        super( fileName, conf, idType, idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger,
-                versionMismatchHandler );
+        super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider );
     }
 
     /**
@@ -65,38 +63,56 @@ public abstract class AbstractStore extends CommonAbstractStore
     public abstract int getRecordSize();
 
     @Override
-    protected int getEffectiveRecordSize()
-    {
-        return getRecordSize();
-    }
-
-    @Override
     protected void readAndVerifyBlockSize() throws IOException
     {
         // record size is fixed for non-dynamic stores, so nothing to do here
     }
 
     @Override
-    protected void verifyFileSizeAndTruncate() throws IOException
-    {
-        int expectedVersionLength = UTF8.encode( buildTypeDescriptorAndVersion( getTypeDescriptor() ) ).length;
-        long fileSize = getFileChannel().size();
-        if ( getRecordSize() != 0
-             && (fileSize - expectedVersionLength) % getRecordSize() != 0 )
-        {
-            setStoreNotOk( new IllegalStateException(
-                    "Misaligned file size " + fileSize + " for " + this + ", expected version length:" +
-                    expectedVersionLength ) );
-        }
-        if ( getStoreOk() )
-        {
-            getFileChannel().truncate( fileSize - expectedVersionLength );
-        }
-    }
-
-    @Override
     protected boolean isInUse( byte inUseByte )
     {
         return (inUseByte & 0x1) == Record.IN_USE.intValue();
+    }
+
+    @Override
+    protected void initialiseNewStoreFile( PagedFile file ) throws IOException
+    {
+
+        ByteBuffer headerRecord = createHeaderRecord();
+        if ( headerRecord != null )
+        {
+            try ( PageCursor pageCursor = file.io( 0, PagedFile.PF_EXCLUSIVE_LOCK ) )
+            {
+                if ( pageCursor.next() )
+                {
+                    do
+                    {
+                        pageCursor.setOffset( 0 );
+                        pageCursor.putBytes( headerRecord.array() );
+                    }
+                    while ( pageCursor.shouldRetry() );
+                }
+            }
+
+        }
+
+        File idFileName = new File( storageFileName.getPath() + ".id" );
+        idGeneratorFactory.create( idFileName, 0, true );
+        if ( headerRecord != null )
+        {
+            IdGenerator idGenerator = idGeneratorFactory.open( idFileName, 1, idType, 0 );
+            initialiseNewIdGenerator( idGenerator );
+            idGenerator.close();
+        }
+    }
+
+    protected void initialiseNewIdGenerator( IdGenerator idGenerator )
+    {
+        idGenerator.nextId(); // reserve first for blockSize
+    }
+
+    protected ByteBuffer createHeaderRecord()
+    {
+        return null;
     }
 }

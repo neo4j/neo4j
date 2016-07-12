@@ -21,19 +21,19 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.util.RelIdArray;
+import org.neo4j.kernel.impl.util.DirectionWrapper;
 
 public class DirectionIdentifier
 {
-    public static RelIdArray.DirectionWrapper wrapDirection( RelationshipRecord rel, NodeRecord startNode )
+    public static DirectionWrapper wrapDirection( RelationshipRecord rel, NodeRecord startNode )
     {
         boolean isOut = rel.getFirstNode() == startNode.getId();
         boolean isIn = rel.getSecondNode() == startNode.getId();
         assert isOut | isIn;
         if ( isOut & isIn )
         {
-            return RelIdArray.DirectionWrapper.BOTH;
+            return DirectionWrapper.BOTH;
         }
-        return isOut ? RelIdArray.DirectionWrapper.OUTGOING : RelIdArray.DirectionWrapper.INCOMING;
+        return isOut ? DirectionWrapper.OUTGOING : DirectionWrapper.INCOMING;
     }
 }

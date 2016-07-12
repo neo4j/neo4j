@@ -64,8 +64,7 @@ public class AncestorTestCase implements GraphHolder
         nodeSet.add( graph.get( "child1" ) );
         nodeSet.add( graph.get( "root" ) );
 
-        Transaction transaction = gdb.beginTx();
-        try
+        try ( Transaction transaction = gdb.beginTx() )
         {
             Node ancestor = AncestorsUtil.lowestCommonAncestor( nodeSet, expander);
             assertEquals(graph.get( "root" ), ancestor);
@@ -127,10 +126,6 @@ public class AncestorTestCase implements GraphHolder
             nodeSet.add( graph.get( "root" ) );
             ancestor = AncestorsUtil.lowestCommonAncestor( nodeSet, expander);
             assertEquals(graph.get( "root" ), ancestor);
-        }
-        finally
-        {
-            transaction.finish();
         }
     }
 

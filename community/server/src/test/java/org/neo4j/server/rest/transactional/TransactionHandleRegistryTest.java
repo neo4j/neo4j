@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 import org.neo4j.helpers.FakeClock;
-import org.neo4j.kernel.impl.util.TestLogger;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.rest.transactional.error.InvalidConcurrentTransactionAccess;
 import org.neo4j.server.rest.transactional.error.InvalidTransactionId;
 import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
@@ -37,8 +37,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class TransactionHandleRegistryTest
 {
@@ -46,8 +45,8 @@ public class TransactionHandleRegistryTest
     public void shouldGenerateTransactionId() throws Exception
     {
         // given
-        TestLogger log = new TestLogger();
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( new FakeClock(), 0, log );
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( new FakeClock(), 0, logProvider );
         TransactionHandle handle = mock( TransactionHandle.class );
 
         // when
@@ -56,15 +55,15 @@ public class TransactionHandleRegistryTest
 
         // then
         assertNotEquals( id1, id2 );
-        log.assertNoLoggingOccurred();
+        logProvider.assertNoLoggingOccurred();
     }
 
     @Test
     public void shouldStoreSuspendedTransaction() throws Exception
     {
         // Given
-        TestLogger log = new TestLogger();
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( new FakeClock(), 0, log );
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( new FakeClock(), 0, logProvider );
         TransactionHandle handle = mock( TransactionHandle.class );
 
         long id = registry.begin( handle );
@@ -75,15 +74,15 @@ public class TransactionHandleRegistryTest
 
         // Then
         assertSame( handle, acquiredHandle );
-        log.assertNoLoggingOccurred();
+        logProvider.assertNoLoggingOccurred();
     }
 
     @Test
     public void acquiringATransactionThatHasAlreadyBeenAcquiredShouldThrowInvalidConcurrentTransactionAccess() throws Exception
     {
         // Given
-        TestLogger log = new TestLogger();
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( new FakeClock(), 0, log );
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( new FakeClock(), 0, logProvider );
         TransactionHandle handle = mock( TransactionHandle.class );
 
         long id = registry.begin( handle );
@@ -102,15 +101,15 @@ public class TransactionHandleRegistryTest
         }
 
         // then
-        log.assertNoLoggingOccurred();
+        logProvider.assertNoLoggingOccurred();
     }
 
     @Test
     public void acquiringANonExistentTransactionShouldThrowErrorInvalidTransactionId() throws Exception
     {
         // Given
-        TestLogger log = new TestLogger();
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( new FakeClock(), 0, log );
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( new FakeClock(), 0, logProvider );
 
         long madeUpTransactionId = 1337;
 
@@ -126,7 +125,7 @@ public class TransactionHandleRegistryTest
         }
 
         // then
-        log.assertNoLoggingOccurred();
+        logProvider.assertNoLoggingOccurred();
     }
 
     @Test
@@ -134,8 +133,8 @@ public class TransactionHandleRegistryTest
     {
         // Given
         FakeClock clock = new FakeClock();
-        TestLogger log = new TestLogger();
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, 0, log );
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, 0, logProvider );
         TransactionHandle oldTx = mock( TransactionHandle.class );
         TransactionHandle newTx = mock( TransactionHandle.class );
         TransactionHandle handle = mock( TransactionHandle.class );
@@ -165,18 +164,20 @@ public class TransactionHandleRegistryTest
             // ok
         }
 
-        log.assertExactly( info( "Transaction with id 1 has been automatically rolled back." ) );
+        logProvider.assertExactly(
+                inLog( TransactionHandleRegistry.class ).info( "Transaction with id 1 has been automatically rolled back." )
+        );
     }
 
     @Test
     public void expiryTimeShouldBeSetToCurrentTimePlusTimeout() throws Exception
     {
         // Given
-        TestLogger log = new TestLogger();
+        AssertableLogProvider logProvider = new AssertableLogProvider();
         FakeClock clock = new FakeClock();
         int timeoutLength = 123;
 
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, timeoutLength, log );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, timeoutLength, logProvider );
         TransactionHandle handle = mock( TransactionHandle.class );
 
         long id = registry.begin( handle );
@@ -200,11 +201,11 @@ public class TransactionHandleRegistryTest
     public void shouldProvideInterruptHandlerForActiveTransaction() throws TransactionLifecycleException
     {
         // Given
-        TestLogger log = new TestLogger();
+        AssertableLogProvider logProvider = new AssertableLogProvider();
         FakeClock clock = new FakeClock();
         int timeoutLength = 123;
 
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, timeoutLength, log );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, timeoutLength, logProvider );
         TransactionHandle handle = mock( TransactionHandle.class );
 
         // Active Tx in Registry
@@ -222,11 +223,11 @@ public class TransactionHandleRegistryTest
     public void shouldProvideInterruptHandlerForSuspendedTransaction() throws TransactionLifecycleException
     {
         // Given
-        TestLogger log = new TestLogger();
+        AssertableLogProvider logProvider = new AssertableLogProvider();
         FakeClock clock = new FakeClock();
         int timeoutLength = 123;
 
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, timeoutLength, log );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, timeoutLength, logProvider );
         TransactionHandle handle = mock( TransactionHandle.class );
 
         // Suspended Tx in Registry
@@ -245,11 +246,11 @@ public class TransactionHandleRegistryTest
     public void gettingInterruptHandlerForUnknownIdShouldThrowErrorInvalidTransactionId() throws TransactionLifecycleException
     {
         // Given
-        TestLogger log = new TestLogger();
+        AssertableLogProvider logProvider = new AssertableLogProvider();
         FakeClock clock = new FakeClock();
         int timeoutLength = 123;
 
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, timeoutLength, log );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, timeoutLength, logProvider );
 
         // When
         registry.terminate( 456 );

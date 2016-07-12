@@ -30,44 +30,54 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.cluster.member.ObservedClusterMembers;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
+import static java.lang.String.format;
 import static org.neo4j.cluster.util.Quorums.isQuorum;
+import static org.neo4j.kernel.AvailabilityGuard.AvailabilityRequirement;
+import static org.neo4j.kernel.AvailabilityGuard.availabilityRequirement;
 
 /**
  * State machine that listens for global cluster events, and coordinates
- * the internal transitions between ClusterMemberStates. Internal services
- * that wants to know what is going on should register ClusterMemberListener implementations
+ * the internal transitions between {@link HighAvailabilityMemberState}. Internal services
+ * that wants to know what is going on should register {@link HighAvailabilityMemberListener} implementations
  * which will receive callbacks on state changes.
+ * <p>
+ * HA in Neo4j is built on top of the clustering functionality. So, this state machine essentially reacts to cluster
+ * events,
+ * and implements the rules for how HA roles should change, for example, the cluster coordinator should become the HA
+ * master.
  */
-public class HighAvailabilityMemberStateMachine extends LifecycleAdapter implements HighAvailability,
-        AvailabilityGuard.AvailabilityRequirement
+public class HighAvailabilityMemberStateMachine extends LifecycleAdapter implements HighAvailability
 {
+    public static final AvailabilityRequirement AVAILABILITY_REQUIREMENT =
+            availabilityRequirement( "High Availability member state not ready" );
     private final HighAvailabilityMemberContext context;
     private final AvailabilityGuard availabilityGuard;
     private final ClusterMemberEvents events;
-    private final StringLogger logger;
-    private final ObservedClusterMembers observedMembers;
-    private final Election election;
+    private Log log;
 
     private Iterable<HighAvailabilityMemberListener> memberListeners = Listeners.newListeners();
-    private StateMachineClusterEventListener eventsListener;
     private volatile HighAvailabilityMemberState state;
+    private StateMachineClusterEventListener eventsListener;
+    private final ObservedClusterMembers members;
+    private final Election election;
 
     public HighAvailabilityMemberStateMachine( HighAvailabilityMemberContext context,
                                                AvailabilityGuard availabilityGuard,
-                                               ObservedClusterMembers observedMembers,
+                                               ObservedClusterMembers members,
                                                ClusterMemberEvents events,
                                                Election election,
-                                               StringLogger logger )
+                                               LogProvider logProvider )
     {
         this.context = context;
         this.availabilityGuard = availabilityGuard;
-        this.observedMembers = observedMembers;
+        this.members = members;
         this.events = events;
         this.election = election;
-        this.logger = logger;
+        this.log = logProvider.getLog( getClass() );
         state = HighAvailabilityMemberState.PENDING;
     }
 
@@ -76,7 +86,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     {
         events.addClusterMemberListener( eventsListener = new StateMachineClusterEventListener() );
         // On initial startup, disallow database access
-        availabilityGuard.deny( this );
+        availabilityGuard.require( AVAILABILITY_REQUIREMENT );
     }
 
     @Override
@@ -96,10 +106,10 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
             }
         } );
 
-        // If we are in a state that allows access, we must deny now that we shut down.
+        // If we were previously in a state that allowed access, we must now deny access
         if ( oldState.isAccessAllowed() )
         {
-            availabilityGuard.deny( this );
+            availabilityGuard.require( AVAILABILITY_REQUIREMENT );
         }
 
         context.setAvailableHaMasterId( null );
@@ -122,12 +132,15 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         return state;
     }
 
-    @Override
-    public String description()
+    public boolean isMaster()
     {
-        return "Cluster state is '" + getCurrentState() + "'";
+        return getCurrentState() == HighAvailabilityMemberState.MASTER;
     }
 
+    /**
+     * This listener will get all events about cluster instances, and depending on the current state it will
+     * correctly transition to the next internal state and notify listeners of this change.
+     */
     private class StateMachineClusterEventListener implements ClusterMemberListener
     {
         @Override
@@ -138,34 +151,32 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                 HighAvailabilityMemberState oldState = state;
                 InstanceId previousElected = context.getElectedMasterId();
 
-                // Check if same coordinator was elected
-//                if ( !coordinatorId.equals( previousElected ) )
+                context.setAvailableHaMasterId( null );
+                if ( !acceptNewState( state.masterIsElected( context, coordinatorId ) ) )
                 {
-                    context.setAvailableHaMasterId( null );
-                    state = state.masterIsElected( context, coordinatorId );
-
-
-                    context.setElectedMasterId( coordinatorId );
-                    final HighAvailabilityMemberChangeEvent event =
-                            new HighAvailabilityMemberChangeEvent( oldState, state, coordinatorId, null );
-                    Listeners.notifyListeners( memberListeners,
-                            new Listeners.Notification<HighAvailabilityMemberListener>()
-                            {
-                                @Override
-                                public void notify( HighAvailabilityMemberListener listener )
-                                {
-                                    listener.masterIsElected( event );
-                                }
-                            } );
-
-                    if ( oldState.isAccessAllowed() && oldState != state )
-                    {
-                        availabilityGuard.deny(HighAvailabilityMemberStateMachine.this);
-                    }
-
-                    logger.debug( "Got masterIsElected(" + coordinatorId + "), moved to " + state + " from " + oldState
-                            + ". Previous elected master is " + previousElected );
+                    return;
                 }
+
+                context.setElectedMasterId( coordinatorId );
+                final HighAvailabilityMemberChangeEvent event =
+                        new HighAvailabilityMemberChangeEvent( oldState, state, coordinatorId, null );
+                Listeners.notifyListeners( memberListeners,
+                        new Listeners.Notification<HighAvailabilityMemberListener>()
+                        {
+                            @Override
+                            public void notify( HighAvailabilityMemberListener listener )
+                            {
+                                listener.masterIsElected( event );
+                            }
+                        } );
+
+                if ( oldState.isAccessAllowed() && oldState != state )
+                {
+                    availabilityGuard.require( AVAILABILITY_REQUIREMENT );
+                }
+
+                log.debug( "Got masterIsElected(" + coordinatorId + "), moved to " + state + " from " + oldState
+                        + ". Previous elected master is " + previousElected );
             }
             catch ( Throwable t )
             {
@@ -178,39 +189,45 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         {
             try
             {
+                /**
+                 * Do different things depending on whether the cluster member is in master or slave state
+                 */
                 if ( role.equals( HighAvailabilityModeSwitcher.MASTER ) )
                 {
-//                    if ( !roleUri.equals( context.getAvailableHaMaster() ) )
+                    HighAvailabilityMemberState oldState = state;
+                    context.setAvailableHaMasterId( roleUri );
+                    if ( !acceptNewState( state.masterIsAvailable( context, instanceId, roleUri ) ) )
                     {
-                        HighAvailabilityMemberState oldState = state;
-                        context.setAvailableHaMasterId( roleUri );
-                        state = state.masterIsAvailable( context, instanceId, roleUri );
-                        logger.debug( "Got masterIsAvailable(" + instanceId + "), moved to " + state + " from " +
-                                oldState );
-                        final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState,
-                                state, instanceId, roleUri );
-                        Listeners.notifyListeners( memberListeners,
-                                new Listeners.Notification<HighAvailabilityMemberListener>()
+                        return;
+                    }
+                    log.debug( "Got masterIsAvailable(" + instanceId + "), moved to " + state + " from " +
+                            oldState );
+                    final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState,
+                            state, instanceId, roleUri );
+                    Listeners.notifyListeners( memberListeners,
+                            new Listeners.Notification<HighAvailabilityMemberListener>()
+                            {
+                                @Override
+                                public void notify( HighAvailabilityMemberListener listener )
                                 {
-                                    @Override
-                                    public void notify( HighAvailabilityMemberListener listener )
-                                    {
-                                        listener.masterIsAvailable( event );
-                                    }
-                                } );
+                                    listener.masterIsAvailable( event );
+                                }
+                            } );
 
-                        if ( oldState == HighAvailabilityMemberState.TO_MASTER && state ==
-                                HighAvailabilityMemberState.MASTER )
-                        {
-                            availabilityGuard.grant( HighAvailabilityMemberStateMachine.this );
-                        }
+                    if ( oldState == HighAvailabilityMemberState.TO_MASTER && state ==
+                            HighAvailabilityMemberState.MASTER )
+                    {
+                        availabilityGuard.fulfill( AVAILABILITY_REQUIREMENT );
                     }
                 }
                 else if ( role.equals( HighAvailabilityModeSwitcher.SLAVE ) )
                 {
                     HighAvailabilityMemberState oldState = state;
-                    state = state.slaveIsAvailable( context, instanceId, roleUri );
-                    logger.debug( "Got slaveIsAvailable(" + instanceId + "), " +
+                    if ( !acceptNewState( state.slaveIsAvailable( context, instanceId, roleUri ) ) )
+                    {
+                        return;
+                    }
+                    log.debug( "Got slaveIsAvailable(" + instanceId + "), " +
                             "moved to " + state + " from " + oldState );
                     final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState,
                             state, instanceId, roleUri );
@@ -227,13 +244,13 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                     if ( oldState == HighAvailabilityMemberState.TO_SLAVE &&
                             state == HighAvailabilityMemberState.SLAVE )
                     {
-                        availabilityGuard.grant( HighAvailabilityMemberStateMachine.this );
+                        availabilityGuard.fulfill( AVAILABILITY_REQUIREMENT );
                     }
                 }
             }
             catch ( Throwable throwable )
             {
-                logger.warn( "Exception while receiving member availability notification", throwable );
+                log.warn( "Exception while receiving member availability notification", throwable );
             }
         }
 
@@ -241,39 +258,48 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         public void memberIsUnavailable( String role, InstanceId unavailableId )
         {
             if ( context.getMyId().equals( unavailableId ) &&
-                 HighAvailabilityModeSwitcher.SLAVE.equals( role ) &&
-                 state == HighAvailabilityMemberState.SLAVE )
+                    HighAvailabilityModeSwitcher.SLAVE.equals( role ) &&
+                    state == HighAvailabilityMemberState.SLAVE )
             {
                 HighAvailabilityMemberState oldState = state;
                 changeStateToPending();
-                logger.debug( "Got memberIsUnavailable(" + unavailableId + "), moved to " + state + " from " + oldState );
+                log.debug( "Got memberIsUnavailable(" + unavailableId + "), moved to " + state + " from " + oldState );
             }
             else
             {
-                logger.debug( "Got memberIsUnavailable(" + unavailableId + ")" );
+                log.debug( "Got memberIsUnavailable(" + unavailableId + ")" );
             }
         }
 
         @Override
         public void memberIsFailed( InstanceId instanceId )
         {
+            // If we don't have quorum anymore with the currently alive members, then go to pending
             if ( !isQuorum( getAliveCount(), getTotalCount() ) )
             {
                 HighAvailabilityMemberState oldState = state;
-                changeStateToPending();
-                logger.debug( "Got memberIsFailed(" + instanceId + ") and cluster lost quorum to continue, moved to "
-                        + state + " from " + oldState );
+                changeStateToDetached();
+                log.debug( "Got memberIsFailed(" + instanceId + ") and cluster lost quorum to continue, moved to "
+                        + state + " from " + oldState + ", while maintaining read only capability." );
+            }
+            else if ( instanceId.equals( context.getElectedMasterId() ) && state == HighAvailabilityMemberState.SLAVE )
+            {
+                HighAvailabilityMemberState oldState = state;
+                changeStateToDetached();
+                log.debug( "Got memberIsFailed(" + instanceId + ") which was the master and i am a slave, moved to "
+                        + state + " from " + oldState + ", while maintaining read only capability." );
             }
             else
             {
-                logger.debug( "Got memberIsFailed(" + instanceId + ")" );
+                log.debug( "Got memberIsFailed(" + instanceId + ")" );
             }
         }
 
         @Override
         public void memberIsAlive( InstanceId instanceId )
         {
-            if ( isQuorum(getAliveCount(), getTotalCount()) && state.equals( HighAvailabilityMemberState.PENDING ) )
+            // If we now have quorum and the previous state was pending, then ask for an election
+            if ( isQuorum( getAliveCount(), getTotalCount() ) && state.equals( HighAvailabilityMemberState.PENDING ) )
             {
                 election.performRoleElections();
             }
@@ -283,7 +309,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         {
             if ( state.isAccessAllowed() )
             {
-                availabilityGuard.deny( HighAvailabilityMemberStateMachine.this );
+                availabilityGuard.require( AVAILABILITY_REQUIREMENT );
             }
 
             final HighAvailabilityMemberChangeEvent event =
@@ -304,14 +330,60 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
             context.setElectedMasterId( null );
         }
 
+        private void changeStateToDetached()
+        {
+            state = HighAvailabilityMemberState.PENDING;
+            final HighAvailabilityMemberChangeEvent event =
+                    new HighAvailabilityMemberChangeEvent( state, HighAvailabilityMemberState.PENDING, null, null );
+            Listeners.notifyListeners( memberListeners, new Listeners.Notification<HighAvailabilityMemberListener>()
+            {
+                @Override
+                public void notify( HighAvailabilityMemberListener listener )
+                {
+                    listener.instanceDetached( event );
+                }
+            } );
+
+            context.setAvailableHaMasterId( null );
+            context.setElectedMasterId( null );
+        }
+
         private long getAliveCount()
         {
-            return Iterables.count( observedMembers.getAliveMembers() );
+            return Iterables.count( members.getAliveMembers() );
         }
 
         private long getTotalCount()
         {
-            return Iterables.count( observedMembers.getMembers() );
+            return Iterables.count( members.getMembers() );
+        }
+
+        /**
+         * Checks if the new state is ILLEGAL. If so, it sets the state to PENDING and issues a request for
+         * elections. Otherwise it sets the current state to newState.
+         * @return false iff the newState is illegal. true otherwise.
+         */
+        private boolean acceptNewState( HighAvailabilityMemberState newState )
+        {
+            if ( newState == HighAvailabilityMemberState.ILLEGAL )
+            {
+                log.warn( format( "Message received resulted in illegal state transition. I was in state %s, " +
+                        "context was %s. The error message is %s. This instance will now transition to PENDING state " +
+                        "and " +
+                        "ask for new elections. While this may fix the error, it may indicate that there is some " +
+                        "connectivity issue or some instability of cluster members.", state, context, newState
+                        .errorMessage() ) );
+                context.setElectedMasterId( null );
+                context.setAvailableHaMasterId( null );
+                changeStateToPending();
+                election.performRoleElections();
+                return false;
+            }
+            else
+            {
+                state = newState;
+            }
+            return true;
         }
     }
 }

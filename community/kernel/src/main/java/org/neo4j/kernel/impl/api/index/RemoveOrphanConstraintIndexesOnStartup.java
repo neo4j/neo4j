@@ -26,8 +26,8 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Used to assert that Indexes required by Uniqueness Constraints don't remain if the constraint never got created.
@@ -36,13 +36,13 @@ import org.neo4j.kernel.logging.Logging;
  */
 public class RemoveOrphanConstraintIndexesOnStartup
 {
-    private final StringLogger log;
+    private final Log log;
     private final KernelAPI kernel;
 
-    public RemoveOrphanConstraintIndexesOnStartup( KernelAPI kernel, Logging logging )
+    public RemoveOrphanConstraintIndexesOnStartup( KernelAPI kernel, LogProvider logProvider )
     {
         this.kernel = kernel;
-        this.log = logging.getMessagesLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
     }
 
     public void perform()

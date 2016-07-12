@@ -38,5 +38,5 @@ public interface LogForceEvent extends AutoCloseable
      * Marks the end of the force call on the transaction log file.
      */
     @Override
-    public void close();
+    void close();
 }

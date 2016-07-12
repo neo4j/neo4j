@@ -4,12 +4,12 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.2.11-SNAPSHOT</version>
+    <version>2.3.6-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
   <groupId>org.neo4j.doc</groupId>
   <artifactId>neo4j-manual-contents</artifactId>
-  <version>2.2.11-SNAPSHOT</version>
+  <version>2.3.6-SNAPSHOT</version>
 
   <name>Neo4j - Reference Manual Contents</name>
   <description>Neo4j Reference Manual Contents.</description>
@@ -24,6 +24,8 @@
     <neo4j.version>${project.version}</neo4j.version>
     <attach-docs-phase>none</attach-docs-phase>
     <attach-test-jar-phase>none</attach-test-jar-phase>
+    <bolt-attribute></bolt-attribute>
+    <additional-document-attributes>${bolt-attribute}</additional-document-attributes>
   </properties>
 
   <scm>
@@ -92,6 +94,13 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>docs</classifier>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-metrics</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
       <scope>provided</scope>
@@ -231,6 +240,8 @@
         <filtering>true</filtering>
         <includes>
           <include>version</include>
+          <!-- To allow injecting asciidoc attributes -->
+          <include>neo4j-manual.asciidoc</include>
         </includes>
       </resource>
       <resource>
@@ -238,6 +249,8 @@
         <filtering>false</filtering>
         <excludes>
           <exclude>version</exclude>
+          <!-- To allow injecting asciidoc attributes -->
+          <exclude>neo4j-manual.asciidoc</exclude>
         </excludes>
       </resource>
       <resource>
@@ -383,5 +396,18 @@
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>feature-bolt</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property> <name>feature.bolt</name> </property>
+      </activation>
+      <properties>
+        <!-- Line break is intentional -->
+        <bolt-attribute>:feature-bolt:</bolt-attribute>
+      </properties>
+    </profile>
+  </profiles>
 </project>
 

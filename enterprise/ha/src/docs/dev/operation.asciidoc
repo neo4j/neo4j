@@ -1,6 +1,5 @@
 [[ha-how]]
-How Neo4j HA operates
-=====================
+= How Neo4j HA operates
 
 A Neo4j HA cluster operates cooperatively -- each database instance contains the logic needed in order to coordinate with the other members of the cluster.
 On startup a Neo4j HA database instance will try to connect to an existing cluster specified by configuration.
@@ -17,7 +16,7 @@ On success the transaction will be pushed out to a configurable number of slaves
 This is done optimistically meaning if the push fails the transaction will still be successful.
 It's also possible to configure push factor to 0 for higher write performance when writing directly through the master, although increasing the risk of losing any transaction not yet pulled by another slave if the master goes down.   
 
-Slaves can also be configured to pull updates asynchronously by setting the +ha.pull_interval+ option.
+Slaves can also be configured to pull updates asynchronously by setting the <<config_ha.pull_interval>> option.
 
 Whenever a Neo4j database becomes unavailable, by means of for example hardware failure or network outages, the other database instances in the cluster will detect that and mark it as temporarily failed. 
 A database instance that becomes available after being unavailable will automatically catch up with the cluster.

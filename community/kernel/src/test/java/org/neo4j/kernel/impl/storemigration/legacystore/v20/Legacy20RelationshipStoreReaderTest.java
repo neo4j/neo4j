@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore.v20;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
-
-import org.junit.Test;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -37,10 +38,13 @@ public class Legacy20RelationshipStoreReaderTest
 {
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
     @Test
     public void shouldReadNodeRecords() throws IOException
     {
-        File storeDir = TargetDirectory.forTest( Legacy20NodeStoreReader.class ).makeGraphDbDir();
+        File storeDir = testDirectory.graphDbDir();
         MigrationTestUtils.find20FormatStoreDirectory( storeDir );
         Legacy20RelationshipStoreReader relStoreReader =
                 new Legacy20RelationshipStoreReader( fs, new File( storeDir, "neostore.relationshipstore.db" ) );

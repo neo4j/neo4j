@@ -25,37 +25,12 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Predicate;
 
-public interface ReadableDiffSets<T>
+public interface ReadableDiffSets<T> extends SuperReadableDiffSets<T,PrimitiveLongIterator>
 {
-    boolean isAdded( T elem );
-
-    boolean isRemoved( T elem );
-
-    Set<T> getAdded();
-
-    Set<T> getRemoved();
-
-    boolean isEmpty();
-
-    Iterator<T> apply( Iterator<T> source );
-
-    int delta();
-
-    PrimitiveLongIterator augment( PrimitiveLongIterator source );
-
-    PrimitiveIntIterator augment( PrimitiveIntIterator source );
-
-    PrimitiveLongIterator augmentWithRemovals( PrimitiveLongIterator source );
-
-    PrimitiveLongIterator augmentWithAdditions( PrimitiveLongIterator source );
-
+    @Override
     ReadableDiffSets<T> filterAdded( Predicate<T> addedFilter );
-
-    ReadableDiffSets<T> filter( Predicate<T> filter );
-
-    void accept( DiffSetsVisitor<T> visitor );
 
     static final class Empty<T> implements ReadableDiffSets<T>
     {
@@ -138,19 +113,7 @@ public interface ReadableDiffSets<T>
         }
 
         @Override
-        public PrimitiveLongIterator augmentWithAdditions( PrimitiveLongIterator source )
-        {
-            return source;
-        }
-
-        @Override
         public ReadableDiffSets<T> filterAdded( Predicate<T> addedFilter )
-        {
-            return this;
-        }
-
-        @Override
-        public ReadableDiffSets<T> filter( Predicate<T> filter )
         {
             return this;
         }

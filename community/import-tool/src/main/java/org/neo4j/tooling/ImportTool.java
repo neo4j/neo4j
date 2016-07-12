@@ -31,8 +31,9 @@ import java.util.Collection;
 import java.util.Map.Entry;
 
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
+import org.neo4j.function.BiFunction;
 import org.neo4j.function.Function;
-import org.neo4j.function.Function2;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Args.Option;
 import org.neo4j.helpers.ArrayUtil;
@@ -40,43 +41,44 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.util.Converters;
+import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.ClassicLoggingService;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputIdException;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
+import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.input.MissingRelationshipDataException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
 import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactory;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
-import static java.lang.System.out;
 import static java.nio.charset.Charset.defaultCharset;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Strings.TAB;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
-import static org.neo4j.unsafe.impl.batchimport.cache.AvailableMemoryCalculator.RUNTIME;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.collect;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
@@ -133,6 +135,12 @@ public class ImportTool
         MULTILINE_FIELDS( "multiline-fields", org.neo4j.csv.reader.Configuration.DEFAULT.multilineFields(),
                 "<true/false>",
                 "Whether or not fields from input source can span multiple lines, i.e. contain newline characters." ),
+
+        INPUT_ENCODING( "input-encoding", null,
+                "<character set>",
+                "Character set that input data is encoded in. Provided value must be one out of the available "
+                        + "character sets in the JVM, as provided by Charset#availableCharsets(). "
+                        + "If no input encoding is provided, the default character set of the JVM will be used." ),
         IGNORE_EMPTY_STRINGS( "ignore-empty-strings", org.neo4j.csv.reader.Configuration.DEFAULT.emptyQuotedStringsAsNull(),
                 "<true/false>",
                 "Whether or not empty string fields, i.e. \"\" from input source are ignored, i.e. treated as null." ),
@@ -160,13 +168,6 @@ public class ImportTool
                 "Number of bad entries before the import is considered failed. This tolerance threshold is "
                         + "about relationships refering to missing nodes. Format errors in input data are "
                         + "still treated as errors" ),
-
-        INPUT_ENCODING( "input-encoding", null,
-                "<character set>",
-                "Character set that input data is encoded in. Provided value must be one out of the available "
-                        + "character sets in the JVM, as provided by Charset#availableCharsets(). "
-                        + "If no input encoding is provided, the default character set of the JVM will be used." ),
-
         SKIP_BAD_RELATIONSHIPS( "skip-bad-relationships", Boolean.TRUE,
                 "<true/false>",
                 "Whether or not to skip importing relationships that refers to missing node ids, i.e. either "
@@ -185,7 +186,16 @@ public class ImportTool
                 "<true/false>",
                 "Whether or not to ignore extra columns in the data not specified by the header. "
                         + "Skipped columns will be logged, containing at most number of entities specified by "
-                        + BAD_TOLERANCE.key() + "." );
+                        + BAD_TOLERANCE.key() + "." ),
+        DATABASE_CONFIG( "db-config", null,
+                "<path/to/neo4j.properties>",
+                "(advanced) File specifying database-specific configuration. For more information consult "
+                        + "manual about available configuration options for a neo4j configuration file. "
+                        + "Only configuration affecting store at time of creation will be read. "
+                        + "Examples of supported config are:\n"
+                        + GraphDatabaseSettings.dense_node_threshold.name() + "\n"
+                        + GraphDatabaseSettings.string_block_size.name() + "\n"
+                        + GraphDatabaseSettings.array_block_size.name() );
 
         private final String key;
         private final Object defaultValue;
@@ -238,9 +248,9 @@ public class ImportTool
             {
                 if ( !result.endsWith( "." ) )
                 {
-                    result += ". ";
+                    result += ".";
                 }
-                result += "Default value: " + defaultValue;
+                result += " Default value: " + defaultValue;
             }
             return result;
         }
@@ -250,6 +260,11 @@ public class ImportTool
             String filteredDescription = descriptionWithDefaultValue().replace( availableProcessorsHint(), "" );
             String usageString = (usage.length() > 0) ? spaceInBetweenArgumentAndUsage() + usage : "";
             return "*" + argument() + usageString + "*::\n" + filteredDescription + "\n\n";
+        }
+
+        String manualEntry()
+        {
+            return "[[import-tool-option-" + key() + "]]\n" + manPageEntry() + "//^\n\n";
         }
 
         Object defaultValue()
@@ -273,7 +288,7 @@ public class ImportTool
      *
      * @param incomingArguments arguments for specifying input and configuration for the import.
      */
-    public static void main( String[] incomingArguments )
+    public static void main( String[] incomingArguments ) throws IOException
     {
         main( incomingArguments, false );
     }
@@ -285,7 +300,7 @@ public class ImportTool
      * @param defaultSettingsSuitableForTests default configuration geared towards unit/integration
      * test environments, for example lower default buffer sizes.
      */
-    public static void main( String[] incomingArguments, boolean defaultSettingsSuitableForTests )
+    public static void main( String[] incomingArguments, boolean defaultSettingsSuitableForTests ) throws IOException
     {
         Args args = Args.parse( incomingArguments );
         if ( ArrayUtil.isEmpty( incomingArguments ) || asksForUsage( args ) )
@@ -303,14 +318,17 @@ public class ImportTool
         int badTolerance;
         Charset inputEncoding;
         boolean skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns;
+        Config dbConfig;
+        OutputStream badOutput = null;
 
+        boolean success = false;
         try
         {
             storeDir = args.interpretOption( Options.STORE_DIR.key(), Converters.<File>mandatory(),
                     Converters.toFile(), Validators.DIRECTORY_IS_WRITABLE, Validators.CONTAINS_NO_EXISTING_DATABASE );
 
             File badFile = new File( storeDir, BAD_FILE_NAME );
-            OutputStream badOutput = new BufferedOutputStream( fs.openAsOutputStream( badFile, false ) );
+            badOutput = new BufferedOutputStream( fs.openAsOutputStream( badFile, false ) );
             nodesFiles = INPUT_FILES_EXTRACTOR.apply( args, Options.NODE_DATA.key() );
             relationshipsFiles = INPUT_FILES_EXTRACTOR.apply( args, Options.RELATIONSHIP_DATA.key() );
             validateInputFiles( nodesFiles, relationshipsFiles );
@@ -334,6 +352,9 @@ public class ImportTool
             input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
                     relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
                     idType, csvConfiguration( args, defaultSettingsSuitableForTests ), badCollector );
+            dbConfig = loadDbConfig( args.interpretOption( Options.DATABASE_CONFIG.key(), Converters.<File>optional(),
+                    Converters.toFile(), Validators.REGEX_FILE_EXISTS ) );
+            success = true;
         }
         catch ( IllegalArgumentException e )
         {
@@ -343,19 +364,28 @@ public class ImportTool
         {
             throw andPrintError( "File error", e, false );
         }
+        finally
+        {
+            if ( !success && badOutput != null )
+            {
+                badOutput.close();
+            }
+        }
 
         LifeSupport life = new LifeSupport();
-        Logging logging = life.add( new ClassicLoggingService(
-                new Config( stringMap( store_dir.name(), storeDir.getAbsolutePath() ) ) ) );
+
+        LogService logService = life.add( StoreLogService.inStoreDirectory( fs, storeDir ) );
+
         life.start();
-        org.neo4j.unsafe.impl.batchimport.Configuration config =
-                importConfiguration( processors, defaultSettingsSuitableForTests );
-        BatchImporter importer = new ParallelBatchImporter( storeDir.getPath(),
-                config,
-                logging,
-                ExecutionMonitors.defaultVisible() );
+        org.neo4j.unsafe.impl.batchimport.Configuration configuration =
+                importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig );
+        BatchImporter importer = new ParallelBatchImporter( storeDir,
+                configuration,
+                logService,
+                ExecutionMonitors.defaultVisible(),
+                dbConfig );
         printOverview( storeDir, nodesFiles, relationshipsFiles );
-        boolean success = false;
+        success = false;
         try
         {
             importer.doImport( input );
@@ -368,13 +398,14 @@ public class ImportTool
         finally
         {
             input.badCollector().close();
+            badOutput.close();
 
             if ( input.badCollector().badEntries() > 0 )
             {
                 File badFile = new File( storeDir, BAD_FILE_NAME );
                 if ( badFile.exists() )
                 {
-                    out.println(
+                    System.out.println(
                             "There were bad entries which were skipped and logged into " + badFile.getAbsolutePath() );
                 }
             }
@@ -400,6 +431,11 @@ public class ImportTool
         }
     }
 
+    private static Config loadDbConfig( File file ) throws IOException
+    {
+        return file != null && file.exists() ? new Config( MapUtil.load( file ) ) : new Config();
+    }
+
     private static void printOverview( File storeDir, Collection<Option<File[]>> nodesFiles,
             Collection<Option<File[]>> relationshipsFiles )
     {
@@ -409,7 +445,7 @@ public class ImportTool
         printInputFiles( "Relationships", relationshipsFiles );
         System.out.println();
         System.out.println( "Available memory:" );
-        printIndented( "Free machine memory: " + bytes( RUNTIME.availableOffHeapMemory() ) );
+        printIndented( "Free machine memory: " + bytes( OsBeanUtil.getFreePhysicalMemory() ) );
         printIndented( "Max heap memory : " + bytes( Runtime.getRuntime().maxMemory() ) );
         System.out.println();
     }
@@ -459,10 +495,16 @@ public class ImportTool
     }
 
     private static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration( final Number processors,
-            final boolean defaultSettingsSuitableForTests )
+            final boolean defaultSettingsSuitableForTests, final Config dbConfig )
     {
         return new org.neo4j.unsafe.impl.batchimport.Configuration.Default()
         {
+            @Override
+            public long pageCacheMemory()
+            {
+                return defaultSettingsSuitableForTests ? mebiBytes( 8 ) : super.pageCacheMemory();
+            }
+
             @Override
             public int maxNumberOfProcessors()
             {
@@ -470,16 +512,16 @@ public class ImportTool
             }
 
             @Override
-            public int bigFileChannelBufferSizeMultiplier()
+            public int denseNodeThreshold()
             {
-                return defaultSettingsSuitableForTests ? 1 : super.bigFileChannelBufferSizeMultiplier();
+                return dbConfig.get( GraphDatabaseSettings.dense_node_threshold );
             }
         };
     }
 
-    private static String manualReference( String page )
+    private static String manualReference( ManualPage page, Anchor anchor )
     {
-        return " http://neo4j.com/docs/" + Version.getKernel().getVersion() + "/" + page;
+        return " http://neo4j.com/docs/" + Version.getKernel().getReleaseVersion() + "/" + page.getReference( anchor );
     }
 
     /**
@@ -489,11 +531,18 @@ public class ImportTool
     private static RuntimeException andPrintError( String typeOfError, Exception e, boolean stackTrace )
     {
         // List of common errors that can be explained to the user
-        if ( e.getClass().equals( DuplicateInputIdException.class ) )
+        if ( DuplicateInputIdException.class.equals( e.getClass() ) )
         {
-            printErrorMessage( "Duplicate input ids that would otherwise clash can be put into separate id space," +
-                    " read more about how to use id spaces in the manual:" +
-                    manualReference( "import-tool-header-format.html#_id_spaces" ), e, stackTrace );
+            printErrorMessage( "Duplicate input ids that would otherwise clash can be put into separate id space, " +
+                               "read more about how to use id spaces in the manual:" +
+                               manualReference( ManualPage.IMPORT_TOOL_FORMAT, Anchor.ID_SPACES ), e, stackTrace );
+        }
+        else if ( MissingRelationshipDataException.class.equals( e.getClass() ) )
+        {
+            printErrorMessage( "Relationship missing mandatory field '" +
+                               ((MissingRelationshipDataException) e).getFieldType() + "', read more about " +
+                               "relationship format in the manual: " +
+                               manualReference( ManualPage.IMPORT_TOOL_FORMAT, Anchor.RELATIONSHIP ), e, stackTrace );
         }
         // This type of exception is wrapped since our input code throws InputException consistently,
         // and so IllegalMultilineFieldException comes from the csv component, which has no access to InputException
@@ -501,8 +550,13 @@ public class ImportTool
         else if ( Exceptions.contains( e, IllegalMultilineFieldException.class ) )
         {
             printErrorMessage( "Detected field which spanned multiple lines for an import where " +
-                    Options.MULTILINE_FIELDS.argument() + "=false. If you know that your input data include " +
-                    "fields containing new-line characters then import with this option set to true.", e, stackTrace );
+                               Options.MULTILINE_FIELDS.argument() + "=false. If you know that your input data " +
+                               "include fields containing new-line characters then import with this option set to " +
+                               "true.", e, stackTrace );
+        }
+        else if ( Exceptions.contains( e, InputException.class ) )
+        {
+            printErrorMessage( "Error in input data", e, stackTrace );
         }
         // Fallback to printing generic error and stack trace
         else
@@ -568,11 +622,12 @@ public class ImportTool
     {
         out.println( "Neo4j Import Tool" );
         for ( String line : Args.splitLongLine( "neo4j-import is used to create a new Neo4j database "
-                + "from data in CSV files. "
-                + "See the chapter \"Import Tool\" in the Neo4j Manual for details on the CSV file format "
-                + "- a special kind of header is required.", 80 ) )
+                                                + "from data in CSV files. "
+                                                +
+                                                "See the chapter \"Import Tool\" in the Neo4j Manual for details on the CSV file format "
+                                                + "- a special kind of header is required.", 80 ) )
         {
-            out.println( TAB + line );
+            out.println( "\t" + line );
         }
         out.println( "Usage:" );
         for ( Options option : Options.values() )
@@ -685,8 +740,8 @@ public class ImportTool
 
     private static final Function<String,Character> CHARACTER_CONVERTER = new CharacterConverter();
 
-    private static final Function2<Args,String,Collection<Option<File[]>>> INPUT_FILES_EXTRACTOR =
-            new Function2<Args,String,Collection<Option<File[]>>>()
+    private static final BiFunction<Args,String,Collection<Option<File[]>>> INPUT_FILES_EXTRACTOR =
+            new BiFunction<Args,String,Collection<Option<File[]>>>()
     {
         @Override
         public Collection<Option<File[]>> apply( Args args, String key )
@@ -718,5 +773,35 @@ public class ImportTool
     static void warn( String warning )
     {
         System.err.println( warning );
+    }
+
+    private enum ManualPage
+    {
+        IMPORT_TOOL_FORMAT( "import-tool-header-format.html" );
+
+        private final String page;
+
+        ManualPage( String page )
+        {
+            this.page = page;
+        }
+
+        public String getReference( Anchor anchor )
+        {
+            return page + "#" + anchor.anchor;
+        }
+    }
+
+    private enum Anchor
+    {
+        ID_SPACES( "import-tool-id-spaces" ),
+        RELATIONSHIP( "import-tool-header-format-rels" );
+
+        private final String anchor;
+
+        Anchor( String anchor )
+        {
+            this.anchor = anchor;
+        }
     }
 }

@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 
@@ -45,7 +45,7 @@ public class IndexProxySetup
     private final UpdateableSchemaState updateableSchemaState;
     private final TokenNameLookup tokenNameLookup;
     private final JobScheduler scheduler;
-    private final Logging logging;
+    private final LogProvider logProvider;
 
     public IndexProxySetup( IndexSamplingConfig samplingConfig,
                             IndexStoreView storeView,
@@ -53,7 +53,7 @@ public class IndexProxySetup
                             UpdateableSchemaState updateableSchemaState,
                             TokenNameLookup tokenNameLookup,
                             JobScheduler scheduler,
-                            Logging logging )
+                            LogProvider logProvider )
     {
         this.samplingConfig = samplingConfig;
         this.storeView = storeView;
@@ -61,7 +61,7 @@ public class IndexProxySetup
         this.updateableSchemaState = updateableSchemaState;
         this.tokenNameLookup = tokenNameLookup;
         this.scheduler = scheduler;
-        this.logging = logging;
+        this.logProvider = logProvider;
     }
 
     public IndexProxy createPopulatingIndexProxy( final long ruleId,
@@ -85,12 +85,12 @@ public class IndexProxySetup
                 populator,
                 indexUserDescription,
                 IndexCountsRemover.Factory.create( storeView, descriptor ),
-                logging.getMessagesLog( getClass() )
+                logProvider
         );
 
         PopulatingIndexProxy populatingIndex =
                 new PopulatingIndexProxy( scheduler, descriptor, config, failureDelegateFactory, populator, flipper,
-                        storeView, updateableSchemaState, logging, indexUserDescription, providerDescriptor, monitor );
+                        storeView, updateableSchemaState, logProvider, indexUserDescription, providerDescriptor, monitor );
         flipper.flipTo( populatingIndex );
 
         // Prepare for flipping to online mode
@@ -174,7 +174,7 @@ public class IndexProxySetup
                 indexPopulator,
                 populationFailure,
                 IndexCountsRemover.Factory.create( storeView, descriptor ),
-                logging.getMessagesLog( getClass() )
+                logProvider
         );
         proxy = new ContractCheckingIndexProxy( proxy, true );
         return proxy;

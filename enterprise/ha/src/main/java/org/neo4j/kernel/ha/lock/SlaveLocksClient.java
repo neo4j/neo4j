@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.ha.lock;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,12 +26,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
-import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.TransientDatabaseFailureException;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.AvailabilityGuard.UnavailableException;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
+import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 
@@ -42,7 +43,7 @@ import static org.neo4j.kernel.impl.locking.LockType.WRITE;
 /**
  * The slave locks client is responsible for managing locks on behalf of some actor on a slave machine. An actor
  * could be a transaction or some other job that runs in the database.
- *
+ * <p/>
  * The client maintains a local "real" lock client, backed by some regular Locks implementation, but it also coordinates
  * with the master for certain types of locks. If you grab a lock on a node, for instance, this class will grab a
  * cluster-global lock by talking to the master machine, and then grab that same lock locally before returning.
@@ -54,12 +55,13 @@ class SlaveLocksClient implements Locks.Client
     private final Locks localLockManager;
     private final RequestContextFactory requestContextFactory;
     private final AvailabilityGuard availabilityGuard;
-    private final long availabilityTimeoutMillis;
 
     // Using atomic ints to avoid creating garbage through boxing.
     private final Map<Locks.ResourceType, Map<Long, AtomicInteger>> sharedLocks;
     private final Map<Locks.ResourceType, Map<Long, AtomicInteger>> exclusiveLocks;
-    private boolean initialized = false;
+    private final boolean txTerminationAwareLocks;
+    private boolean initialized;
+    private volatile boolean stopped;
 
     public SlaveLocksClient(
             Master master,
@@ -67,14 +69,14 @@ class SlaveLocksClient implements Locks.Client
             Locks localLockManager,
             RequestContextFactory requestContextFactory,
             AvailabilityGuard availabilityGuard,
-            long availabilityTimeoutMillis )
+            boolean txTerminationAwareLocks )
     {
         this.master = master;
         this.client = local;
         this.localLockManager = localLockManager;
         this.requestContextFactory = requestContextFactory;
         this.availabilityGuard = availabilityGuard;
-        this.availabilityTimeoutMillis = availabilityTimeoutMillis;
+        this.txTerminationAwareLocks = txTerminationAwareLocks;
         sharedLocks = new HashMap<>();
         exclusiveLocks = new HashMap<>();
     }
@@ -93,180 +95,163 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
-    public void acquireShared( Locks.ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
+    public void acquireShared( Locks.ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException
     {
+        assertNotStopped();
+
         Map<Long, AtomicInteger> lockMap = getLockMap( sharedLocks, resourceType );
-        long[] untakenIds = incrementAndRemoveAlreadyTakenLocks( lockMap, resourceIds );
-        if ( untakenIds.length > 0 && getReadLockOnMaster( resourceType, untakenIds ) )
+        AtomicInteger preExistingLock = lockMap.get( resourceId );
+        if ( preExistingLock != null )
         {
-            if ( client.trySharedLock( resourceType, untakenIds ) )
+            // We already hold this lock, just increment the local reference count
+            preExistingLock.incrementAndGet();
+        }
+        else if ( getReadLockOnMaster( resourceType, resourceId ) )
+        {
+            if ( client.trySharedLock( resourceType, resourceId ) )
             {
-                for ( int i = 0; i < untakenIds.length; i++ )
-                {
-                    lockMap.put( untakenIds[i], new AtomicInteger( 1 ) );
-                }
+                lockMap.put( resourceId, new AtomicInteger( 1 ) );
             }
             else
             {
-                throw new LocalDeadlockDetectedException( client, localLockManager, resourceType, resourceIds, READ );
+                throw new LocalDeadlockDetectedException( client, localLockManager, resourceType, resourceId, READ );
 
             }
         }
     }
 
     @Override
-    public void acquireExclusive( Locks.ResourceType resourceType, long... resourceIds ) throws
+    public void acquireExclusive( Locks.ResourceType resourceType, long resourceId ) throws
             AcquireLockTimeoutException
     {
+        assertNotStopped();
+
         Map<Long, AtomicInteger> lockMap = getLockMap( exclusiveLocks, resourceType );
-        long[] untakenIds = incrementAndRemoveAlreadyTakenLocks( lockMap, resourceIds );
-        if ( untakenIds.length > 0 && acquireExclusiveOnMaster( resourceType, untakenIds ) )
-        {
-            if ( client.tryExclusiveLock( resourceType, untakenIds ) )
-            {
-                for ( int i = 0; i < untakenIds.length; i++ )
-                {
-                    lockMap.put( untakenIds[i], new AtomicInteger( 1 ) );
-                }
-            }
-            else
-            {
-                throw new LocalDeadlockDetectedException( client, localLockManager, resourceType, resourceIds, WRITE );
-            }
-        }
-    }
 
-    private long[] incrementAndRemoveAlreadyTakenLocks( Map<Long,AtomicInteger> takenLocks,
-            long[] resourceIds )
-    {
-        ArrayList<Long> untakenIds = new ArrayList<>();
-        for ( int i = 0; i < resourceIds.length; i++ )
+        AtomicInteger preExistingLock = lockMap.get( resourceId );
+        if ( preExistingLock != null )
         {
-            long id = resourceIds[i];
-            AtomicInteger counter = takenLocks.get( id );
-            if ( counter != null )
+            // We already hold this lock, just increment the local reference count
+            preExistingLock.incrementAndGet();
+        }
+        else if ( acquireExclusiveOnMaster( resourceType, resourceId ) )
+        {
+            if ( client.tryExclusiveLock( resourceType, resourceId ) )
             {
-                counter.incrementAndGet();
+                lockMap.put( resourceId, new AtomicInteger( 1 ) );
             }
             else
             {
-                untakenIds.add( id );
+                throw new LocalDeadlockDetectedException( client, localLockManager, resourceType, resourceId, WRITE );
             }
         }
-        long[] untaken = new long[untakenIds.size()];
-        for ( int i = 0; i < untaken.length; i++ )
-        {
-            long id = untakenIds.get( i );
-            untaken[i] = id;
-        }
-        return untaken;
     }
 
     @Override
-    public boolean tryExclusiveLock( Locks.ResourceType resourceType, long... resourceIds )
+    public boolean tryExclusiveLock( Locks.ResourceType resourceType, long resourceId )
     {
         throw newUnsupportedDirectTryLockUsageException();
     }
 
     @Override
-    public boolean trySharedLock( Locks.ResourceType resourceType, long... resourceIds )
+    public boolean trySharedLock( Locks.ResourceType resourceType, long resourceId )
     {
         throw newUnsupportedDirectTryLockUsageException();
     }
 
     @Override
-    public void releaseShared( Locks.ResourceType resourceType, long... resourceIds )
+    public void releaseShared( Locks.ResourceType resourceType, long resourceId )
     {
-        Map<Long,AtomicInteger> lockMap = getLockMap( sharedLocks, resourceType );
-        for ( long resourceId : resourceIds )
+        assertNotStopped();
+
+        Map<Long, AtomicInteger> lockMap = getLockMap( sharedLocks, resourceType );
+        AtomicInteger counter = lockMap.get( resourceId );
+        if ( counter == null )
         {
-            AtomicInteger counter = lockMap.get( resourceId );
-            if ( counter == null )
-            {
-                throw new IllegalStateException( this + " cannot release lock it does not hold: SHARED " +
-                                                 resourceType + "[" + resourceId + "]" );
-            }
-            if ( counter.decrementAndGet() == 0 )
-            {
-                lockMap.remove( resourceId );
-                client.releaseShared( resourceType, resourceId );
-            }
+            throw new IllegalStateException( this + " cannot release lock it does not hold: SHARED " +
+                    resourceType + "[" + resourceId + "]" );
+        }
+        if ( counter.decrementAndGet() == 0 )
+        {
+            lockMap.remove( resourceId );
+            client.releaseShared( resourceType, resourceId );
         }
     }
 
     @Override
-    public void releaseExclusive( Locks.ResourceType resourceType, long... resourceIds )
+    public void releaseExclusive( Locks.ResourceType resourceType, long resourceId )
     {
-        Map<Long,AtomicInteger> lockMap = getLockMap( exclusiveLocks, resourceType );
-        for ( long resourceId : resourceIds )
+        assertNotStopped();
+
+        Map<Long, AtomicInteger> lockMap = getLockMap( exclusiveLocks, resourceType );
+        AtomicInteger counter = lockMap.get( resourceId );
+        if ( counter == null )
         {
-            AtomicInteger counter = lockMap.get( resourceId );
-            if ( counter == null )
-            {
-                throw new IllegalStateException( this + " cannot release lock it does not hold: EXCLUSIVE " +
-                                                 resourceType + "[" + resourceId + "]" );
-            }
-            if ( counter.decrementAndGet() == 0 )
-            {
-                lockMap.remove( resourceId );
-                client.releaseExclusive( resourceType, resourceId );
-            }
+            throw new IllegalStateException( this + " cannot release lock it does not hold: EXCLUSIVE " +
+                    resourceType + "[" + resourceId + "]" );
+        }
+        if ( counter.decrementAndGet() == 0 )
+        {
+            lockMap.remove( resourceId );
+            client.releaseExclusive( resourceType, resourceId );
         }
     }
 
     @Override
-    public void releaseAll()
+    public void stop()
     {
+        if ( txTerminationAwareLocks )
+        {
+            client.stop();
+            endLockSessionOnMaster( false );
+            stopped = true;
+        }
+    }
+
+    @Override
+    public void close()
+    {
+        client.close();
         sharedLocks.clear();
         exclusiveLocks.clear();
-        client.releaseAll();
         if ( initialized )
         {
-            try ( Response<Void> ignored = master.endLockSession( newRequestContextFor( client ), true ) )
+            if ( !stopped )
             {
-                // Lock session is closed on master at this point
-            }
-            catch ( ComException e )
-            {
-                throw new DistributedLockFailureException(
-                        "Failed to end the lock session on the master (which implies releasing all held locks)",
-                        master, e );
+                endLockSessionOnMaster( true );
+                stopped = false;
             }
             initialized = false;
         }
     }
 
     @Override
-    public void markForTermination()
-    {
-        client.markForTermination();
-    }
-
-    @Override
-    public void close()
-    {
-        try
-        {
-            releaseAll();
-        }
-        finally
-        {
-            client.close();
-        }
-    }
-
-    @Override
     public int getLockSessionId()
     {
+        assertNotStopped();
         return initialized ? client.getLockSessionId() : -1;
     }
 
-    private boolean getReadLockOnMaster( Locks.ResourceType resourceType, long ... resourceId )
+    private void endLockSessionOnMaster( boolean success )
+    {
+        try ( Response<Void> ignored = master.endLockSession( newRequestContextFor( client ), success ) )
+        {
+            // Lock session is closed on master at this point
+        }
+        catch ( ComException e )
+        {
+            throw new DistributedLockFailureException(
+                    "Failed to end the lock session on the master (which implies releasing all held locks)",
+                    master, e );
+        }
+    }
+
+    private boolean getReadLockOnMaster( Locks.ResourceType resourceType, long resourceId )
     {
         if ( resourceType == ResourceTypes.NODE
-            || resourceType == ResourceTypes.RELATIONSHIP
-            || resourceType == ResourceTypes.GRAPH_PROPS
-            || resourceType == ResourceTypes.LEGACY_INDEX )
+                || resourceType == ResourceTypes.RELATIONSHIP
+                || resourceType == ResourceTypes.GRAPH_PROPS
+                || resourceType == ResourceTypes.LEGACY_INDEX )
         {
             makeSureTxHasBeenInitialized();
 
@@ -286,7 +271,7 @@ class SlaveLocksClient implements Locks.Client
         }
     }
 
-    private boolean acquireExclusiveOnMaster( Locks.ResourceType resourceType, long... resourceId )
+    private boolean acquireExclusiveOnMaster( Locks.ResourceType resourceType, long resourceId )
     {
         makeSureTxHasBeenInitialized();
         RequestContext requestContext = newRequestContextFor( this );
@@ -321,7 +306,15 @@ class SlaveLocksClient implements Locks.Client
 
     private void makeSureTxHasBeenInitialized()
     {
-        availabilityGuard.checkAvailability( availabilityTimeoutMillis, TransactionFailureException.class );
+        try
+        {
+            availabilityGuard.checkAvailable();
+        }
+        catch ( UnavailableException e )
+        {
+            throw new TransientDatabaseFailureException( "Database not available", e );
+        }
+
         if ( !initialized )
         {
             try ( Response<Void> ignored = master.newLockSession( newRequestContextFor( client ) ) )
@@ -356,5 +349,13 @@ class SlaveLocksClient implements Locks.Client
     {
         return new UnsupportedOperationException(
                 "Distributed tryLocks are not supported. They only work with local lock managers." );
+    }
+
+    private void assertNotStopped()
+    {
+        if ( stopped )
+        {
+            throw new LockClientStoppedException( this );
+        }
     }
 }

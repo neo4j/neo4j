@@ -37,11 +37,11 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -116,12 +116,12 @@ public class DeferredIndexedConflictResolutionTest
         }
 
         DependencyResolver resolver = api.getDependencyResolver();
-        NeoStoreProvider neoStoreProvider = resolver.resolveDependency( NeoStoreProvider.class );
-        NeoStore neoStore = neoStoreProvider.evaluate();
-        nodeStore = neoStore.getNodeStore();
-        propertyStore = neoStore.getPropertyStore();
+        NeoStoresSupplier neoStoresSupplier = resolver.resolveDependency( NeoStoresSupplier.class );
+        NeoStores neoStores = neoStoresSupplier.get();
+        nodeStore = neoStores.getNodeStore();
+        propertyStore = neoStores.getPropertyStore();
         Map<String,Integer> propertyKeys =
-                PropertyDeduplicatorTestUtil.indexPropertyKeys( neoStore.getPropertyKeyTokenStore() );
+                PropertyDeduplicatorTestUtil.indexPropertyKeys( neoStores.getPropertyKeyTokenStore() );
 
         nodeRecord = nodeStore.getRecord( nodeId );
         int propertyKeyId = propertyKeys.get( propertyKey );

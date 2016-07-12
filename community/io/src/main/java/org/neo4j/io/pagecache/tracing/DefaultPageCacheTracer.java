@@ -29,6 +29,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.pagecache.PageSwapper;
 
+import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.packageFlag;
+
 /**
  * The default PageCacheTracer implementation, that just increments counters.
  */
@@ -41,8 +43,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         try
         {
             // A hidden setting to have pin/unpin monitoring enabled from the start by default.
-            boolean alwaysEnabled = Boolean.getBoolean(
-                    "org.neo4j.io.pagecache.tracing.tracePinUnpin" );
+            boolean alwaysEnabled = packageFlag( DefaultPageCacheTracer.class, "tracePinUnpin", false );
 
             MethodType type = MethodType.methodType( PinEvent.class );
             MethodHandles.Lookup lookup = MethodHandles.lookup();
@@ -94,7 +95,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     private final FlushEvent flushEvent = new FlushEvent()
     {
         @Override
-        public void addBytesWritten( int bytes )
+        public void addBytesWritten( long bytes )
         {
             bytesWritten.getAndAdd( bytes );
         }
@@ -109,6 +110,11 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         public void done( IOException exception )
         {
             done();
+        }
+
+        @Override
+        public void addPagesFlushed( int pageCount )
+        {
         }
     };
 
@@ -174,7 +180,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     private final PageFaultEvent pageFaultEvent = new PageFaultEvent()
     {
         @Override
-        public void addBytesRead( int bytes )
+        public void addBytesRead( long bytes )
         {
             bytesRead.getAndAdd( bytes );
         }
@@ -192,12 +198,13 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         }
 
         @Override
-        public void setCachePageId( int cachePageId )
+        public EvictionEvent beginEviction()
         {
+            return evictionEvent;
         }
 
         @Override
-        public void setParked( boolean parked )
+        public void setCachePageId( int cachePageId )
         {
         }
     };

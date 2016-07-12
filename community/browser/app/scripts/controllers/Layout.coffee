@@ -46,9 +46,17 @@ angular.module('neo4jApp.controllers')
         keyboard: yes
         size: 'lg'
 
+      $scope.theme = Settings.theme
+      $scope.$on('settings:saved', () ->
+        $scope.theme = Settings.theme
+      )
+
       $scope.toggleMessenger = () ->
         UsageDataCollectionService.toggleMessenger()
 
+      $scope.showMessenger = () ->
+        UsageDataCollectionService.showMessenger()
+        
       $scope.suggestionPlaceholder = 'I want to X, tried Y, suggest Z'
 
       $scope.newMessage = (suggestion) ->
@@ -69,6 +77,7 @@ angular.module('neo4jApp.controllers')
       $scope.codemirrorLoaded = (_editor) ->
         _codeMirror = _editor
         _codeMirror.focus()
+
 
         _codeMirror.on "change", (cm) ->
           $scope.editorChanged(cm)
@@ -91,6 +100,7 @@ angular.module('neo4jApp.controllers')
       $scope.editorChanged = (codeMirror) ->
         $scope.editorOneLine = codeMirror.lineCount() == 1 and !Editor.document
         $scope.disableHighlighting = codeMirror.getValue().trim()[0] == ':'
+        checkCypherContent(codeMirror)
 
       $scope.isDrawerShown = false
       $scope.whichDrawer = ""
@@ -153,6 +163,11 @@ angular.module('neo4jApp.controllers')
             'top': $('.view-editor').height() + $('.file-bar').height()
           $scope.$emit 'layout.changed'
       , 100)
+
+      checkCypherContent = Utils.debounce(
+        (codeMirror) ->
+          $scope.editor.checkCypherContent codeMirror
+      , 200)
 
       $(window).resize(resizeStream)
 

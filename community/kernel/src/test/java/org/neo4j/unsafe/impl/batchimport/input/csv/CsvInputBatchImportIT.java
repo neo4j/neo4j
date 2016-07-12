@@ -48,12 +48,13 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.Token;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TokenStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.kernel.impl.util.AutoCreatingHashMap;
-import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -86,8 +87,8 @@ public class CsvInputBatchImportIT
     public void shouldImportDataComingFromCsvFiles() throws Exception
     {
         // GIVEN
-        BatchImporter importer = new ParallelBatchImporter( directory.absolutePath(),
-                smallBatchSizeConfig(), new DevNullLoggingService(), invisible() );
+        BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(),
+                smallBatchSizeConfig(), NullLogService.getInstance(), invisible(), new Config() );
         List<InputNode> nodeData = randomNodeData();
         List<InputRelationship> relationshipData = randomRelationshipData( nodeData );
 
@@ -256,7 +257,7 @@ public class CsvInputBatchImportIT
                 expectedNodeCounts, expectedRelationshipCounts );
 
         // Do the verification
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.graphDbDir() );
         try ( Transaction tx = db.beginTx() )
         {
             // Verify nodes
@@ -294,28 +295,28 @@ public class CsvInputBatchImportIT
             assertEquals( 0, expectedRelationships.size() );
 
             // Verify counts, TODO how to get counts store other than this way?
-            NeoStore neoStore = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency(
-                    NeoStoreProvider.class ).evaluate();
+            NeoStores neoStores = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency(
+                    NeoStoresSupplier.class ).get();
             Function<String, Integer> labelTranslationTable =
-                    translationTable( neoStore.getLabelTokenStore(), ReadOperations.ANY_LABEL );
+                    translationTable( neoStores.getLabelTokenStore(), ReadOperations.ANY_LABEL );
             for ( Pair<Integer,Long> count : allNodeCounts( labelTranslationTable, expectedNodeCounts ) )
             {
                 assertEquals( "Label count mismatch for label " + count.first(),
                         count.other().longValue(),
-                        neoStore.getCounts()
+                        neoStores.getCounts()
                                 .nodeCount( count.first().intValue(), newDoubleLongRegister() )
                                 .readSecond() );
             }
 
             Function<String, Integer> relationshipTypeTranslationTable =
-                    translationTable( neoStore.getRelationshipTypeTokenStore(), ReadOperations.ANY_RELATIONSHIP_TYPE );
+                    translationTable( neoStores.getRelationshipTypeTokenStore(), ReadOperations.ANY_RELATIONSHIP_TYPE );
             for ( Pair<RelationshipCountKey,Long> count : allRelationshipCounts( labelTranslationTable,
                     relationshipTypeTranslationTable, expectedRelationshipCounts ) )
             {
                 RelationshipCountKey key = count.first();
                 assertEquals( "Label count mismatch for label " + key,
                         count.other().longValue(),
-                        neoStore.getCounts()
+                        neoStores.getCounts()
                                 .relationshipCount( key.startLabel, key.type, key.endLabel, newDoubleLongRegister() )
                                 .readSecond() );
             }
@@ -383,7 +384,7 @@ public class CsvInputBatchImportIT
         return result;
     }
 
-    private Function<String, Integer> translationTable( TokenStore<?> tokenStore, final int anyValue )
+    private Function<String, Integer> translationTable( TokenStore<?, ?> tokenStore, final int anyValue )
     {
         final Map<String, Integer> translationTable = new HashMap<>();
         for ( Token token : tokenStore.getTokens( Integer.MAX_VALUE ) )

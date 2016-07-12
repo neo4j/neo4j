@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.index.CorruptIndexException;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.EOFException;
@@ -27,19 +28,22 @@ import java.io.File;
 import java.io.FileNotFoundException;
 
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.any;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.TargetDirectory.forTest;
 
 public class LuceneSchemaIndexCorruptionTest
 {
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+
     @Test
     public void shouldMarkIndexAsFailedIfIndexIsCorrupt() throws Exception
     {
@@ -49,9 +53,7 @@ public class LuceneSchemaIndexCorruptionTest
         // This isn't quite correct, but it will trigger the correct code paths in our code
         when(dirFactory.open( any(File.class) )).thenThrow(new CorruptIndexException( "It's borken." ));
 
-        LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( dirFactory,
-                new Config( stringMap( "store_dir", forTest( getClass() ).makeGraphDbDir().getAbsolutePath() ) )
-        );
+        LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( fs.get(), dirFactory, testDirectory.graphDbDir() );
 
         // When
         InternalIndexState initialState = p.getInitialState( 1l );
@@ -70,9 +72,7 @@ public class LuceneSchemaIndexCorruptionTest
         FileNotFoundException toThrow = new FileNotFoundException( "/some/path/somewhere" );
         when(dirFactory.open( any(File.class) )).thenThrow( toThrow );
 
-        LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( dirFactory,
-                new Config( stringMap( "store_dir", forTest( getClass() ).makeGraphDbDir().getAbsolutePath() ) )
-        );
+        LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( fs.get(), dirFactory, testDirectory.graphDbDir() );
 
         // When
         InternalIndexState initialState = p.getInitialState( 1l );
@@ -92,9 +92,7 @@ public class LuceneSchemaIndexCorruptionTest
         EOFException toThrow = new EOFException( "/some/path/somewhere" );
         when(dirFactory.open( any(File.class) )).thenThrow( toThrow );
 
-        LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( dirFactory,
-                new Config( stringMap( "store_dir", forTest( getClass() ).makeGraphDbDir().getAbsolutePath() ) )
-        );
+        LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( fs.get(), dirFactory, testDirectory.graphDbDir() );
 
         // When
         InternalIndexState initialState = p.getInitialState( 1l );
@@ -115,9 +113,7 @@ public class LuceneSchemaIndexCorruptionTest
         EOFException toThrow = new EOFException( "/some/path/somewhere" );
         when(dirFactory.open( any(File.class) )).thenThrow( toThrow );
 
-        LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( dirFactory,
-                new Config( stringMap( "store_dir", forTest( getClass() ).makeGraphDbDir().getAbsolutePath() ) )
-        );
+        LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( fs.get(), dirFactory, testDirectory.graphDbDir() );
 
         // When
         InternalIndexState initialState = p.getInitialState( 1l );

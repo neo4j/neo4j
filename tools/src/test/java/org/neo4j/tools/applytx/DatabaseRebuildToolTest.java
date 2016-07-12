@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 
@@ -35,8 +36,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.store.NeoStore.Position;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
@@ -49,6 +49,7 @@ import static java.lang.String.format;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.tools.console.input.ConsoleUtil.NULL_PRINT_STREAM;
 
 public class DatabaseRebuildToolTest
@@ -167,8 +168,16 @@ public class DatabaseRebuildToolTest
 
     private long lastAppliedTx( File storeDir )
     {
-        return NeoStore.getRecord( new DefaultFileSystemAbstraction(), new File( storeDir, NeoStore.DEFAULT_NAME ),
-                Position.LAST_TRANSACTION_ID );
+        try
+        {
+            return MetaDataStore.getRecord( createPageCache( new DefaultFileSystemAbstraction() ),
+                    new File( storeDir, MetaDataStore.DEFAULT_NAME ),
+                    MetaDataStore.Position.LAST_TRANSACTION_ID );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     private InputStream input( String... strings )

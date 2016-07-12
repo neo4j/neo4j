@@ -37,9 +37,9 @@ import static org.neo4j.kernel.Traversal.traversal;
 
 public class TestEvaluators extends TraversalTestBase
 {
-    private static enum Types implements RelationshipType
+    private enum Types implements RelationshipType
     {
-        A,B,C;
+        A,B,C
     }
 
     private Transaction tx;
@@ -65,7 +65,7 @@ public class TestEvaluators extends TraversalTestBase
     @After
     public void tearDown()
     {
-        tx.finish();
+        tx.close();
     }
     
     @Test

@@ -19,6 +19,10 @@
  */
 package org.neo4j.helpers;
 
+/**
+ * @deprecated use {@link org.neo4j.function.Supplier} instead
+ */
+@Deprecated
 public interface ValueGetter<T>
 {
     T get();

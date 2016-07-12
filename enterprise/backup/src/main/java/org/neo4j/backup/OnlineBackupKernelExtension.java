@@ -32,27 +32,30 @@ import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreCopyServer;
-import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.helpers.Provider;
+import org.neo4j.function.Supplier;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
-import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.backup.OnlineBackupSettings.online_backup_server;
 
 public class OnlineBackupKernelExtension implements Lifecycle
 {
+
+    private Object startBindingListener;
+    private Object bindingListener;
+
     public interface BackupProvider
     {
         TheBackupInterface newBackup();
@@ -65,53 +68,52 @@ public class OnlineBackupKernelExtension implements Lifecycle
 
     private final Config config;
     private final GraphDatabaseAPI graphDatabaseAPI;
-    private final Logging logging;
+    private final LogProvider logProvider;
     private final Monitors monitors;
     private BackupServer server;
     private final BackupProvider backupProvider;
     private volatile URI me;
 
-    public OnlineBackupKernelExtension( Config config, final GraphDatabaseAPI graphDatabaseAPI,
-                                        final KernelPanicEventGenerator kpeg, final Logging logging,
-                                        final Monitors monitors )
+    public OnlineBackupKernelExtension( Config config, final GraphDatabaseAPI graphDatabaseAPI, final LogProvider logProvider,
+                                        final Monitors monitors, final NeoStoreDataSource neoStoreDataSource,
+                                        final Supplier<CheckPointer> checkPointerSupplier,
+                                        final Supplier<TransactionIdStore> transactionIdStoreSupplier,
+                                        final Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
+                                        final Supplier<LogFileInformation> logFileInformationSupplier,
+                                        final FileSystemAbstraction fileSystemAbstraction)
     {
         this( config, graphDatabaseAPI, new BackupProvider()
         {
             @Override
             public TheBackupInterface newBackup()
             {
-                DependencyResolver resolver = graphDatabaseAPI.getDependencyResolver();
-                TransactionIdStore transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
-                StoreCopyServer copier = new StoreCopyServer(
-                        transactionIdStore,
-                        resolver.resolveDependency( DataSourceManager.class ).getDataSource(),
-                        resolver.resolveDependency( LogRotationControl.class ),
-                        resolver.resolveDependency( FileSystemAbstraction.class ),
-                        new File( graphDatabaseAPI.getStoreDir() ),
+                TransactionIdStore transactionIdStore = transactionIdStoreSupplier.get();
+                StoreCopyServer copier = new StoreCopyServer( neoStoreDataSource, checkPointerSupplier.get(),
+                        fileSystemAbstraction, new File( graphDatabaseAPI.getStoreDir() ),
                         monitors.newMonitor( StoreCopyServer.Monitor.class ) );
-                LogicalTransactionStore logicalTransactionStore = resolver.resolveDependency( LogicalTransactionStore.class );
-                LogFileInformation logFileInformation = resolver.resolveDependency( LogFileInformation.class );
-                return new BackupImpl( copier, monitors, logicalTransactionStore, transactionIdStore,
-                        logFileInformation, new Provider<StoreId>()
+                LogicalTransactionStore logicalTransactionStore = logicalTransactionStoreSupplier.get();
+                LogFileInformation logFileInformation = logFileInformationSupplier.get();
+                return new BackupImpl( copier, monitors,
+                        logicalTransactionStore, transactionIdStore, logFileInformation, new Supplier<StoreId>()
                         {
                             @Override
-                            public StoreId instance()
+                            public StoreId get()
                             {
                                 return graphDatabaseAPI.storeId();
                             }
-                        }, logging );
+                        }, logProvider );
             }
-        }, monitors, logging );
+        }, monitors, logProvider );
     }
 
     public OnlineBackupKernelExtension( Config config, GraphDatabaseAPI graphDatabaseAPI, BackupProvider provider,
-                                        Monitors monitors, Logging logging )
+                                        Monitors monitors, LogProvider logProvider )
     {
         this.config = config;
         this.graphDatabaseAPI = graphDatabaseAPI;
         this.backupProvider = provider;
         this.monitors = monitors;
-        this.logging = logging;
+        this.logProvider = logProvider;
     }
 
     @Override
@@ -127,25 +129,29 @@ public class OnlineBackupKernelExtension implements Lifecycle
             try
             {
                 server = new BackupServer( backupProvider.newBackup(), config.get( online_backup_server ),
-                        logging, monitors.newMonitor( ByteCounterMonitor.class, BackupServer.class ), monitors.newMonitor( RequestMonitor.class, BackupServer.class ) );
+                        logProvider, monitors.newMonitor( ByteCounterMonitor.class, BackupServer.class ),
+                        monitors.newMonitor( RequestMonitor.class, BackupServer.class ) );
                 server.init();
                 server.start();
 
                 try
                 {
+                    startBindingListener = new StartBindingListener();
                     graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberEvents.class).addClusterMemberListener(
-                            new StartBindingListener() );
+                            (ClusterMemberListener) startBindingListener );
 
-                    graphDatabaseAPI.getDependencyResolver().resolveDependency( BindingNotifier.class ).addBindingListener( new BindingListener()
-                            {
-                                @Override
-                                public void listeningAt( URI myUri )
-                                {
-                                    me = myUri;
-                                }
-                            } );
+                    bindingListener = new BindingListener()
+                    {
+                        @Override
+                        public void listeningAt( URI myUri )
+                        {
+                            me = myUri;
+                        }
+                    };
+                    graphDatabaseAPI.getDependencyResolver().resolveDependency( BindingNotifier.class ).addBindingListener(
+                            (BindingListener) bindingListener );
                 }
-                catch ( NoClassDefFoundError | IllegalArgumentException e )
+                catch ( NoClassDefFoundError | UnsatisfiedDependencyException e )
                 {
                     // Not running HA
                 }
@@ -168,10 +174,15 @@ public class OnlineBackupKernelExtension implements Lifecycle
 
             try
             {
+                graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberEvents.class).removeClusterMemberListener(
+                        (ClusterMemberListener) startBindingListener );
+                graphDatabaseAPI.getDependencyResolver().resolveDependency( BindingNotifier.class ).removeBindingListener(
+                        (BindingListener) bindingListener );
+
                 ClusterMemberAvailability client = getClusterMemberAvailability();
                 client.memberIsUnavailable( BACKUP );
             }
-            catch ( NoClassDefFoundError | IllegalArgumentException e )
+            catch ( NoClassDefFoundError | UnsatisfiedDependencyException e )
             {
                 // Not running HA
             }

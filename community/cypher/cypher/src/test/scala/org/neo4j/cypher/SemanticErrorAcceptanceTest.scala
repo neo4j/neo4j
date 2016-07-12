@@ -354,9 +354,11 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   test("should fail if using an hint with property equality comparison") {
     executeAndEnsureError(
       "match (n:Person)-->(m:Person) using index n:Person(name) where n.name = m.name return n",
-      "Cannot use index hint in this context. Index hints require using an equality comparison or IN condition in " +
-        "WHERE (either directly or as part of a top-level AND). The comparison cannot be between two property " +
-        "values. Note that the label and property comparison must be specified on a non-optional node (line 1, " +
+      "Cannot use index hint in this context. Index hints are only supported for the following "+
+        "predicates in WHERE (either directly or as part of a top-level AND): equality comparison, " +
+        "inequality (range) comparison, STARTS WITH, IN condition or checking property " +
+        "existence. The comparison cannot be performed between two property values. Note that the " +
+        "label and property comparison must be specified on a non-optional node (line 1, " +
         "column 31 (offset: 30))"
     )
   }
@@ -485,13 +487,18 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   test("should reject unicode versions of hyphens") {
     executeAndEnsureError(
       "RETURN 42 — 41",
-      "Invalid input '—': expected whitespace, comment, '.', node labels, '[', \"=~\", IN, IS, '^', '*', '/', '%', '+', '-', '<', '>', \"<=\", \">=\", '=', \"<>\", \"!=\", AND, XOR, OR, AS, ',', ORDER, SKIP, LIMIT, LOAD CSV, START, MATCH, UNWIND, MERGE, CREATE, SET, DELETE, REMOVE, FOREACH, WITH, RETURN, UNION, ';' or end of input (line 1, column 11 (offset: 10))")
+      """Invalid input '—': expected whitespace, comment, '.', node labels, '[', "=~", IN, STARTS, ENDS, CONTAINS, IS, '^', '*', '/', '%', '+', '-', '=', "<>", "!=", '<', '>', "<=", ">=", AND, XOR, OR, AS, ',', ORDER, SKIP, LIMIT, LOAD CSV, START, MATCH, UNWIND, MERGE, CREATE, SET, DELETE, REMOVE, FOREACH, WITH, RETURN, UNION, ';' or end of input (line 1, column 11 (offset: 10))""")
   }
 
   test("fail when parsing larger than 64 bit integers") {
     executeAndEnsureError(
       "RETURN toInt('10508455564958384115')",
       "integer, 10508455564958384115, is too large")
+  }
+
+  test("Should fail when calling size on a path") {
+    executeAndEnsureError("match p=(a)-[*]->(b) return size(p)",
+                          "Type mismatch: expected String or Collection<T> but was Path (line 1, column 34 (offset: 33))")
   }
 
   test("aggregation inside looping queries is not allowed") {
@@ -548,13 +555,28 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
   }
 
-  test("position should be correct when using cypher options on general syntax exceptions") {
-    executeAndEnsureError("CYPHER planner=cost REXTURN 1",
-                          "Invalid input 'X': expected 'm/M' or 't/T' (line 1, column 23 (offset: 22))")
-  }
+  test("not allowed to refer to identifiers in SKIP")(
+    executeAndEnsureError("MATCH n RETURN n SKIP n.count",
+                          "It is not allowed to refer to identifiers in SKIP (line 1, column 23 (offset: 22))")
+  )
+
+  test("only allowed to use positive integer literals in SKIP") (
+    executeAndEnsureError("MATCH n RETURN n SKIP -1",
+                          "Invalid input '-1' is not a valid value, must be a positive integer (line 1, column 23 (offset: 22))")
+  )
+
+  test("not allowed to refer to identifiers in LIMIT")(
+    executeAndEnsureError("MATCH n RETURN n LIMIT n.count",
+                          "It is not allowed to refer to identifiers in LIMIT (line 1, column 24 (offset: 23))")
+  )
+
+  test("only allowed to use positive integer literals in LIMIT") (
+    executeAndEnsureError("MATCH n RETURN n LIMIT 1.7",
+                          "Invalid input '1.7' is not a valid value, must be a positive integer (line 1, column 24 (offset: 23))")
+  )
 
   def executeAndEnsureError(query: String, expected: String) {
-    import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper._
+    import org.neo4j.cypher.internal.frontend.v2_3.helpers.StringHelper._
 
     val fixedExpected = expected.fixPosition
     try {

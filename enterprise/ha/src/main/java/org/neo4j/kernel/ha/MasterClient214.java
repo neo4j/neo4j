@@ -25,7 +25,7 @@ import org.neo4j.com.ProtocolVersion;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 import static org.neo4j.com.ProtocolVersion.INTERNAL_PROTOCOL_VERSION;
@@ -35,13 +35,13 @@ public class MasterClient214 extends MasterClient210
     public static final ProtocolVersion PROTOCOL_VERSION = new ProtocolVersion( (byte) 8, INTERNAL_PROTOCOL_VERSION );
 
     public MasterClient214( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
-            Logging logging, StoreId storeId, long readTimeoutSeconds, long lockReadTimeout, int maxConcurrentChannels,
-            int chunkSize, ResponseUnpacker unpacker, ByteCounterMonitor byteCounterMonitor,
-            RequestMonitor requestMonitor )
+                            LogProvider logProvider, StoreId storeId, long readTimeoutSeconds,
+                            long lockReadTimeout, int maxConcurrentChannels, int chunkSize, ResponseUnpacker unpacker,
+                            ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
-        super( destinationHostNameOrIp, destinationPort, originHostNameOrIp, logging, storeId,
-                readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize, PROTOCOL_VERSION, unpacker,
-                byteCounterMonitor, requestMonitor );
+        super( destinationHostNameOrIp, destinationPort, originHostNameOrIp, logProvider, storeId, readTimeoutSeconds,
+                lockReadTimeout, maxConcurrentChannels, chunkSize, PROTOCOL_VERSION, unpacker, byteCounterMonitor,
+                requestMonitor );
     }
 
     @Override

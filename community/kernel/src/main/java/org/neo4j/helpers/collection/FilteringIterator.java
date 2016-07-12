@@ -21,11 +21,12 @@ package org.neo4j.helpers.collection;
 
 import java.util.Iterator;
 
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Predicate;
+import org.neo4j.function.Predicates;
 
 /**
  * An iterator which filters another iterator, only letting items with certain
- * criterias pass through. All iteration/filtering is done lazily.
+ * criteria pass through. All iteration/filtering is done lazily.
  * 
  * @param <T> the type of items in the iteration.
  */
@@ -33,7 +34,18 @@ public class FilteringIterator<T> extends PrefetchingIterator<T>
 {
 	private final Iterator<T> source;
 	private final Predicate<T> predicate;
-	
+
+	/**
+     * @deprecated use {@link #FilteringIterator( Iterator, Predicate )} instead
+     * @param source the iterator to fetch items from
+     * @param predicate the filter to use
+     */
+	@Deprecated
+	public FilteringIterator( Iterator<T> source, org.neo4j.helpers.Predicate<T> predicate )
+	{
+		this( source, org.neo4j.helpers.Predicates.upgrade( predicate ) );
+	}
+
 	public FilteringIterator( Iterator<T> source, Predicate<T> predicate )
 	{
 		this.source = source;
@@ -46,7 +58,7 @@ public class FilteringIterator<T> extends PrefetchingIterator<T>
 		while ( source.hasNext() )
 		{
 			T testItem = source.next();
-			if ( predicate.accept( testItem ) )
+			if ( predicate.test( testItem ) )
 			{
 				return testItem;
 			}
@@ -56,11 +68,11 @@ public class FilteringIterator<T> extends PrefetchingIterator<T>
 
     public static <T> Iterator<T> notNull( Iterator<T> source )
     {
-        return new FilteringIterator<T>( source, FilteringIterable.<T>notNullPredicate() );
+        return new FilteringIterator<>( source, Predicates.<T>notNull() );
     }
     
     public static <T> Iterator<T> noDuplicates( Iterator<T> source )
     {
-        return new FilteringIterator<T>( source, FilteringIterable.<T>noDuplicatesPredicate() );
+        return new FilteringIterator<>( source, Predicates.<T>noDuplicates() );
     }
 }

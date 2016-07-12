@@ -25,17 +25,18 @@ import org.neo4j.helpers.collection.CloseableVisitor;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.state.RecoverableTransaction;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
 
 public class LogFileRecoverer implements Visitor<LogVersionedStoreChannel,IOException>
 {
-    private final LogEntryReader<ReadableVersionableLogChannel> logEntryReader;
-    private final CloseableVisitor<CommittedTransactionRepresentation,IOException> visitor;
+    private final LogEntryReader<ReadableLogChannel> logEntryReader;
+    private final CloseableVisitor<RecoverableTransaction,IOException> visitor;
 
-    public LogFileRecoverer( LogEntryReader<ReadableVersionableLogChannel> logEntryReader,
-                             CloseableVisitor<CommittedTransactionRepresentation,IOException> visitor )
+    public LogFileRecoverer( LogEntryReader<ReadableLogChannel> logEntryReader,
+            CloseableVisitor<RecoverableTransaction,IOException> visitor )
     {
         this.logEntryReader = logEntryReader;
         this.visitor = visitor;
@@ -44,23 +45,42 @@ public class LogFileRecoverer implements Visitor<LogVersionedStoreChannel,IOExce
     @Override
     public boolean visit( LogVersionedStoreChannel channel ) throws IOException
     {
-        ReadableVersionableLogChannel recoveredDataChannel =
+        final ReadableVersionableLogChannel recoveredDataChannel =
                 new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
 
-        try ( PhysicalTransactionCursor<ReadableVersionableLogChannel> physicalTransactionCursor =
-                new PhysicalTransactionCursor<>( recoveredDataChannel, logEntryReader ) )
+        try ( final PhysicalTransactionCursor<ReadableLogChannel> physicalTransactionCursor =
+                      new PhysicalTransactionCursor<>( recoveredDataChannel, logEntryReader ) )
         {
-            long lastKnownGoodPosition = channel.position();
-            while ( physicalTransactionCursor.next() && !visitor.visit( physicalTransactionCursor.get() ) )
+            RecoverableTransaction recoverableTransaction = new RecoverableTransaction()
             {
-                lastKnownGoodPosition = channel.position();
+                @Override
+                public CommittedTransactionRepresentation representation()
+                {
+                    return physicalTransactionCursor.get();
+                }
+
+                @Override
+                public LogPosition positionAfterTx()
+                {
+                    long version = recoveredDataChannel.getVersion();
+                    long byteOffset = physicalTransactionCursor.lastKnownGoodPosition();
+                    return new LogPosition( version, byteOffset );
+                }
+            };
+
+            while ( physicalTransactionCursor.next() && !visitor.visit( recoverableTransaction ) )
+            {
             }
 
             // Now that all ok transactions have been read, if needed truncate the position to cut
             // off any potentially broken transactions
-            if (channel.position() > lastKnownGoodPosition)
+            long lastKnownGoodPosition = physicalTransactionCursor.lastKnownGoodPosition();
+            if ( channel.position() > lastKnownGoodPosition )
+            {
                 channel.truncate( lastKnownGoodPosition );
+            }
         }
+
         visitor.close();
         return true;
     }

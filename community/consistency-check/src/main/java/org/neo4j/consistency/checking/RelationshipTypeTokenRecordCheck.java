@@ -25,7 +25,7 @@ import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
-class RelationshipTypeTokenRecordCheck
+public class RelationshipTypeTokenRecordCheck
     extends TokenRecordCheck<RelationshipTypeTokenRecord,ConsistencyReport.RelationshipTypeConsistencyReport>
 {
     @Override

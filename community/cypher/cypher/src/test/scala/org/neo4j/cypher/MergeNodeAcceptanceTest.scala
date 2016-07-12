@@ -20,7 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.graphdb.Node
-import org.neo4j.kernel.api.exceptions.schema.UniqueConstraintViolationKernelException
+import org.neo4j.kernel.api.exceptions.schema.{UniquePropertyConstraintViolationKernelException}
 
 class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
 
@@ -533,7 +533,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
     val result = intercept[CypherExecutionException](execute("merge (test:L:B {prop : 42}) return labels(test) as labels"))
 
-    result.getCause shouldBe a [UniqueConstraintViolationKernelException]
+    result.getCause shouldBe a [UniquePropertyConstraintViolationKernelException]
     result.getMessage should equal(s"""Node ${node.getId} already exists with label L and property "prop"=[42]""")
   }
 }

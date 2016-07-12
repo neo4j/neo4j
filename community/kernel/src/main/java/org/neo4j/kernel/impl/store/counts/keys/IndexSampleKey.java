@@ -37,10 +37,9 @@ public final class IndexSampleKey extends IndexKey
     @Override
     public int compareTo( CountsKey other )
     {
-        if ( other instanceof org.neo4j.kernel.impl.store.counts.keys.IndexSampleKey )
+        if ( other instanceof IndexSampleKey )
         {
-            org.neo4j.kernel.impl.store.counts.keys.IndexSampleKey
-                    that = (org.neo4j.kernel.impl.store.counts.keys.IndexSampleKey) other;
+            IndexSampleKey that = (IndexSampleKey) other;
             int cmp = this.labelId() - that.labelId();
             if ( cmp == 0 )
             {
@@ -48,9 +47,6 @@ public final class IndexSampleKey extends IndexKey
             }
             return cmp;
         }
-        else
-        {
-            return recordType().ordinal() - other.recordType().ordinal();
-        }
+        return recordType().ordinal() - other.recordType().ordinal();
     }
 }

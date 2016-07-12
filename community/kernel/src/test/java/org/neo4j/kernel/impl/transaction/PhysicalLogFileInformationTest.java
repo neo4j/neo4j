@@ -39,13 +39,14 @@ public class PhysicalLogFileInformationTest
     private PhysicalLogFiles logFiles = mock( PhysicalLogFiles.class );
     private TransactionMetadataCache transactionMetadataCache = mock( TransactionMetadataCache.class );
     private TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-    private PhysicalLogFileInformation.SPI spi = mock( PhysicalLogFileInformation.SPI.class );
+    private PhysicalLogFileInformation.LogVersionToTimestamp
+            logVersionToTimestamp = mock( PhysicalLogFileInformation.LogVersionToTimestamp.class );
 
     @Test
     public void shouldReadAndCacheFirstCommittedTransactionIdForAGivenVersionWhenNotCached() throws Exception
     {
         PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles,
-                transactionMetadataCache, transactionIdStore, spi );
+                transactionMetadataCache, transactionIdStore, logVersionToTimestamp );
         long expected = 5;
 
         long version = 10l;
@@ -64,7 +65,7 @@ public class PhysicalLogFileInformationTest
     public void shouldReadFirstCommittedTransactionIdForAGivenVersionWhenCached() throws Exception
     {
         PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles,
-                transactionMetadataCache, transactionIdStore, spi );
+                transactionMetadataCache, transactionIdStore, logVersionToTimestamp );
         long expected = 5;
 
         long version = 10l;
@@ -78,7 +79,7 @@ public class PhysicalLogFileInformationTest
     public void shouldReadAndCacheFirstCommittedTransactionIdWhenNotCached() throws Exception
     {
         PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles,
-                transactionMetadataCache, transactionIdStore, spi );
+                transactionMetadataCache, transactionIdStore, logVersionToTimestamp );
         long expected = 5;
 
         long version = 10l;
@@ -99,7 +100,7 @@ public class PhysicalLogFileInformationTest
     public void shouldReadFirstCommittedTransactionIdWhenCached() throws Exception
     {
         PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles,
-                transactionMetadataCache, transactionIdStore, spi );
+                transactionMetadataCache, transactionIdStore, logVersionToTimestamp );
         long expected = 5;
 
         long version = 10l;
@@ -116,7 +117,7 @@ public class PhysicalLogFileInformationTest
     public void shouldReturnNothingWhenThereAreNoTransactions() throws Exception
     {
         PhysicalLogFileInformation info = new PhysicalLogFileInformation( logFiles,
-                transactionMetadataCache, transactionIdStore, spi );
+                transactionMetadataCache, transactionIdStore, logVersionToTimestamp );
 
         long version = 10l;
         when( logFiles.getHighestLogVersion() ).thenReturn( version );

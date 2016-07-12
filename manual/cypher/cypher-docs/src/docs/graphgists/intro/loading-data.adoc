@@ -1,0 +1,121 @@
+= Loading Data
+
+//file:movies.csv
+//file:roles.csv
+//file:persons.csv
+//file:movie_actor_roles.csv
+
+As you've seen you can not only query data expressively but also create data with Cypher statements.
+
+Naturally in most cases you wouldn't want to write or generate huge statements to generate your data but instead use an existing data source that you pass into your statement and which is used to drive the graph generation process.
+
+That process not only includes creating completely new data but also integrating with existing structures and updating your graph.
+
+[[cypher-intro-load-parameters]]
+== Parameters
+
+In general we recommend passing in varying literal values from the outside as named parameters.
+This allows Cypher to reuse existing execution plans for the statements.
+
+Of course you can also pass in parameters for data to be imported.
+Those can be scalar values, maps, lists or even lists of maps.
+
+In your Cypher statement you can then iterate over those values (e.g. with `UNWIND`) to create your graph structures.
+
+For instance to create a movie graph from JSON data structures pulled from an API you could use:
+
+[source,json,role=parameters]
+----
+{
+ "movies": [{"title":"Stardust", "released":2007, "cast": [{"actor":{"name":"Robert de Niro", "born":1943}, "characters":["Captain Shakespeare"]},
+                                          {"actor":{"name":"Michelle Pfeiffer","born":1958},"characters":["Lamia"]}]}
+]
+}
+----
+
+[source,cypher,hideexec=true]
+----
+UNWIND {movies} as movie
+MERGE (m:Movie {title:movie.title}) ON CREATE SET m.released = movie.released
+FOREACH (role IN movie.cast |
+   MERGE (a:Person {name:role.actor.name}) ON CREATE SET a.born = role.actor.born
+   MERGE (a)-[:ACTED_IN {roles:role.characters}]->(m)
+)
+----
+
+[[cypher-intro-importing-csv]]
+== Importing CSV
+
+Cypher provides an elegant built-in way to import tabular CSV data into graph structures.
+
+The `LOAD CSV` clause parses a local or remote file into a stream of rows which represent maps (with headers) or lists.
+Then you can use whatever Cypher operations you want to apply to either create nodes or relationships or to merge with existing graph structures.
+
+As CSV files usually represent either node- or relationship-lists, you run multiple passes to create nodes and relationships separately.
+
+For more details, see <<query-load-csv>>.
+
+.movies.csv
+[source]
+----
+include::../../graphgists/intro/movies.csv[]
+----
+
+[source,cypher]
+----
+LOAD CSV WITH HEADERS FROM "movies.csv" AS line
+CREATE (m:Movie {id:line.id,title:line.title, released:toInt(line.year)});
+----
+
+.persons.csv
+[source]
+----
+include::../../graphgists/intro/persons.csv[]
+----
+
+[source,cypher]
+----
+LOAD CSV WITH HEADERS FROM "persons.csv" AS line
+MERGE (a:Person {id:line.id}) ON CREATE SET a.name=line.name;
+----
+
+.roles.csv
+[source]
+----
+include::../../graphgists/intro/roles.csv[]
+----
+
+[source,cypher]
+----
+LOAD CSV WITH HEADERS FROM "roles.csv" AS line
+MATCH (m:Movie {id:line.movieId})
+MATCH (a:Person {id:line.personId})
+CREATE (a)-[:ACTED_IN {roles:[line.role]}]->(m);
+----
+
+//graph
+
+If your file contains denormalized data, you can either run the same file with multiple passes and simple operations as shown above or you might have to use MERGE to create entities uniquely.
+
+For our use-case we can import the data using a CSV structure like this:
+
+.movie_actor_roles.csv
+[source]
+----
+include::../../graphgists/intro/movie_actor_roles.csv[]
+----
+
+[source,cypher]
+----
+LOAD CSV WITH HEADERS FROM "movie_actor_roles.csv" AS line FIELDTERMINATOR ";"
+MERGE (m:Movie {title:line.title}) ON CREATE SET m.released = toInt(line.released)
+MERGE (a:Person {name:line.actor}) ON CREATE SET a.born = toInt(line.born)
+MERGE (a)-[:ACTED_IN {roles:split(line.characters,",") }]->(m)
+----
+
+//graph
+
+If you import a large amount of data (more than 10000 rows), it is recommended to prefix your `LOAD CSV` clause with a `PERIODIC COMMIT` hint.
+This allows Neo4j to regularly commit the import transactions to avoid memory churn for large transaction-states.
+
+

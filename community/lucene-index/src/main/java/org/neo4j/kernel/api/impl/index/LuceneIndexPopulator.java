@@ -33,7 +33,6 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
 {
     protected final LuceneDocumentStructure documentStructure;
     private final IndexWriterFactory<LuceneIndexWriter> indexWriterFactory;
-    private final IndexWriterStatus writerStatus;
     private final DirectoryFactory dirFactory;
     private final File dirFile;
     private final FailureStorage failureStorage;
@@ -44,12 +43,10 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
 
     LuceneIndexPopulator(
             LuceneDocumentStructure documentStructure, IndexWriterFactory<LuceneIndexWriter> indexWriterFactory,
-            IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile,
-            FailureStorage failureStorage, long indexId )
+            DirectoryFactory dirFactory, File dirFile, FailureStorage failureStorage, long indexId )
     {
         this.documentStructure = documentStructure;
         this.indexWriterFactory = indexWriterFactory;
-        this.writerStatus = writerStatus;
         this.dirFactory = dirFactory;
         this.dirFile = dirFile;
         this.failureStorage = failureStorage;
@@ -70,7 +67,7 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
     {
         if ( writer != null )
         {
-            writerStatus.close( writer );
+            writer.close();
         }
 
         try
@@ -99,14 +96,14 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
             if ( populationCompletedSuccessfully )
             {
                 flush();
-                writerStatus.commitAsOnline( writer );
+                writer.commitAsOnline();
             }
         }
         finally
         {
             if ( writer != null )
             {
-                writerStatus.close( writer );
+                writer.close();
             }
             if ( directory != null )
             {

@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -31,13 +31,12 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 
-public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGroupRecord> implements Store
+public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGroupRecord>
 {
     /* Record layout
      *
@@ -55,13 +54,19 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger,
-            StoreVersionMismatchHandler versionMismatchHandler,
-            Monitors monitors )
+            LogProvider logProvider )
     {
-        super( fileName, config, IdType.RELATIONSHIP_GROUP, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
+        super( fileName, config, IdType.RELATIONSHIP_GROUP, idGeneratorFactory, pageCache, logProvider );
+    }
+
+    @Override
+    protected ByteBuffer createHeaderRecord()
+    {
+        int denseNodeThreshold = configuration.get( GraphDatabaseSettings.dense_node_threshold );
+        ByteBuffer headerRecord = ByteBuffer.allocate( RelationshipGroupStore.RECORD_SIZE ).putInt( denseNodeThreshold );
+        headerRecord.flip();
+        headerRecord.limit( headerRecord.capacity() );
+        return headerRecord;
     }
 
     @Override
@@ -90,6 +95,30 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
         }
     }
 
+    public RelationshipGroupRecord forceGetRecord( long id, RelationshipGroupRecord record )
+    {
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
+        {
+            if ( cursor.next() )
+            {
+                do
+                {
+                    readRecord( id, cursor, record );
+                }
+                while ( cursor.shouldRetry() );
+            }
+            else
+            {
+                record.setInUse( false );
+            }
+            return record;
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
+
     @Override
     public int getNumberOfReservedLowIds()
     {
@@ -99,20 +128,17 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     @Override
     protected void readAndVerifyBlockSize() throws IOException
     {
-        // Read dense node threshold from the first record in the store (reserved for this threshold)
-        ByteBuffer buffer = ByteBuffer.allocate( 4 );
-        getFileChannel().position( 0 );
-        getFileChannel().read( buffer );
-        buffer.flip();
-        denseNodeThreshold = buffer.getInt();
-        if ( denseNodeThreshold < 0 )
-        {
-            throw new InvalidRecordException( "Illegal block size: " + denseNodeThreshold
-                    + " in " + getStorageFileName() );
-        }
+        denseNodeThreshold = getHeaderRecord();
     }
 
     private RelationshipGroupRecord getRecord( long id, PageCursor cursor )
+    {
+        RelationshipGroupRecord record = new RelationshipGroupRecord( -1, -1 );
+        readRecord( id, cursor, record );
+        return record;
+    }
+
+    private void readRecord( long id, PageCursor cursor, RelationshipGroupRecord record )
     {
         cursor.setOffset( offsetForId( id ) );
 
@@ -121,10 +147,6 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
         // [ xxx,    ] high firstOut bits
         long inUseByte = cursor.getByte();
         boolean inUse = (inUseByte&0x1) > 0;
-        if ( !inUse )
-        {
-            return null;
-        }
 
         // [    ,xxx ] high firstIn bits
         // [ xxx,    ] high firstLoop bits
@@ -142,14 +164,14 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
         long nextInMod = (highByte & 0xE) << 31;
         long nextLoopMod = (highByte & 0x70) << 28;
 
-        RelationshipGroupRecord record = new RelationshipGroupRecord( id, type );
+        record.setId( id );
+        record.setType( type );
         record.setInUse( inUse );
         record.setNext( longFromIntAndMod( nextLowBits, nextMod ) );
         record.setFirstOut( longFromIntAndMod( nextOutLowBits, nextOutMod ) );
         record.setFirstIn( longFromIntAndMod( nextInLowBits, nextInMod ) );
         record.setFirstLoop( longFromIntAndMod( nextLoopLowBits, nextLoopMod ) );
         record.setOwningNode( owningNode );
-        return record;
     }
 
     @Override
@@ -212,31 +234,20 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     {
         try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
         {
+            RelationshipGroupRecord record = new RelationshipGroupRecord( id, -1 );
             if ( cursor.next() )
             {
-                RelationshipGroupRecord record;
                 do
                 {
-                    record = getRecord( id, cursor );
+                    readRecord( id, cursor, record );
                 } while ( cursor.shouldRetry() );
-
-                if ( record != null )
-                {
-                    return record;
-                }
             }
-            return new RelationshipGroupRecord( id, -1 );
+            return record;
         }
         catch ( IOException e )
         {
-            return new RelationshipGroupRecord( id, -1 );
+            throw new UnderlyingStorageException( e );
         }
-    }
-
-    @Override
-    public RelationshipGroupRecord forceGetRaw( long id )
-    {
-        return forceGetRecord( id );
     }
 
     @Override
@@ -256,12 +267,6 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
         {
             throw new UnderlyingStorageException( e );
         }
-    }
-
-    @Override
-    public RelationshipGroupRecord forceGetRaw( RelationshipGroupRecord record )
-    {
-        return record;
     }
 
     @Override

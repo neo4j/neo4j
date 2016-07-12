@@ -19,10 +19,47 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import org.neo4j.function.Predicate;
+import org.neo4j.function.Predicates;
+import org.neo4j.graphdb.Path;
+
 /**
  * Copied from kernel package so that we can hide kernel from the public API.
  */
 public interface BranchCollisionPolicy
 {
+    @Deprecated
     BranchCollisionDetector create( Evaluator evaluator );
+
+    BranchCollisionDetector create( Evaluator evaluator, Predicate<Path> pathPredicate );
+
+    abstract class CollisionPolicyAdapter implements BranchCollisionPolicy
+    {
+        @Override
+        public BranchCollisionDetector create( Evaluator evaluator )
+        {
+            return create( evaluator, Predicates.<Path>alwaysTrue() );
+        }
+    }
+
+    class CollisionPolicyWrapper implements BranchCollisionPolicy
+    {
+        private BranchCollisionPolicy policy;
+
+        public CollisionPolicyWrapper( BranchCollisionPolicy policy )
+        {
+            this.policy = policy;
+        }
+
+        @Override
+        public BranchCollisionDetector create( Evaluator evaluator )
+        {
+            return policy.create( evaluator );
+        }
+
+        public BranchCollisionDetector create( Evaluator evaluator, Predicate<Path> pathPredicate )
+        {
+            return create( evaluator );
+        }
+    }
 }

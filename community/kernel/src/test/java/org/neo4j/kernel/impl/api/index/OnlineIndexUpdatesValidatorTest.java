@@ -33,7 +33,7 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
@@ -68,7 +68,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
 public class OnlineIndexUpdatesValidatorTest
 {
-    private final NeoStore neoStore = mock( NeoStore.class );
+    private final NeoStores neoStores = mock( NeoStores.class );
 
     private final IndexingService indexingService = mock( IndexingService.class );
     private final NodeStore nodeStore = mock( NodeStore.class );
@@ -237,9 +237,9 @@ public class OnlineIndexUpdatesValidatorTest
 
     private IndexUpdatesValidator newIndexUpdatesValidatorWithMockedDependencies()
     {
-        when( neoStore.getNodeStore() ).thenReturn( nodeStore );
-        when( neoStore.getPropertyStore() ).thenReturn( propertyStore );
-        return new OnlineIndexUpdatesValidator( neoStore, null, propertyLoader, indexingService, ONLINE );
+        when( neoStores.getNodeStore() ).thenReturn( nodeStore );
+        when( neoStores.getPropertyStore() ).thenReturn( propertyStore );
+        return new OnlineIndexUpdatesValidator( neoStores, null, propertyLoader, indexingService, ONLINE );
     }
 
     private static NodePropertyCommands createNodeWithLabelAndPropertyCommands( long nodeId, int label, int property )

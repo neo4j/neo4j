@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.store.paging;
 
+
 public class StubPageReplacementStrategy implements PageReplacementStrategy
 {
     @Override

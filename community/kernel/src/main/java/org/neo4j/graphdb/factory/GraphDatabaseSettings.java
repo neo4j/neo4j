@@ -19,45 +19,46 @@
  */
 package org.neo4j.graphdb.factory;
 
+import org.apache.commons.lang3.SystemUtils;
+
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.Service;
-import org.neo4j.helpers.Settings;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
 import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.configuration.Migrator;
 import org.neo4j.kernel.configuration.Obsoleted;
 import org.neo4j.kernel.configuration.Title;
-import org.neo4j.kernel.impl.api.store.CacheLayer;
-import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MonitorGc;
+import org.neo4j.logging.Level;
 
-import static org.neo4j.helpers.Settings.ANY;
-import static org.neo4j.helpers.Settings.BOOLEAN;
-import static org.neo4j.helpers.Settings.BYTES;
-import static org.neo4j.helpers.Settings.DOUBLE;
-import static org.neo4j.helpers.Settings.DURATION;
-import static org.neo4j.helpers.Settings.FALSE;
-import static org.neo4j.helpers.Settings.INTEGER;
-import static org.neo4j.helpers.Settings.NO_DEFAULT;
-import static org.neo4j.helpers.Settings.PATH;
-import static org.neo4j.helpers.Settings.STRING;
-import static org.neo4j.helpers.Settings.TRUE;
-import static org.neo4j.helpers.Settings.basePath;
-import static org.neo4j.helpers.Settings.illegalValueMessage;
-import static org.neo4j.helpers.Settings.matches;
-import static org.neo4j.helpers.Settings.max;
-import static org.neo4j.helpers.Settings.min;
-import static org.neo4j.helpers.Settings.options;
-import static org.neo4j.helpers.Settings.port;
-import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.kernel.configuration.Settings.ANY;
+import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.BYTES;
+import static org.neo4j.kernel.configuration.Settings.DEFAULT;
+import static org.neo4j.kernel.configuration.Settings.DOUBLE;
+import static org.neo4j.kernel.configuration.Settings.DURATION;
+import static org.neo4j.kernel.configuration.Settings.FALSE;
+import static org.neo4j.kernel.configuration.Settings.INTEGER;
+import static org.neo4j.kernel.configuration.Settings.LONG;
+import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
+import static org.neo4j.kernel.configuration.Settings.PATH;
+import static org.neo4j.kernel.configuration.Settings.STRING;
+import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.kernel.configuration.Settings.basePath;
+import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
+import static org.neo4j.kernel.configuration.Settings.list;
+import static org.neo4j.kernel.configuration.Settings.matches;
+import static org.neo4j.kernel.configuration.Settings.max;
+import static org.neo4j.kernel.configuration.Settings.min;
+import static org.neo4j.kernel.configuration.Settings.options;
+import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
  * Settings for Neo4j. Use this with {@link GraphDatabaseBuilder}.
@@ -68,14 +69,15 @@ public abstract class GraphDatabaseSettings
     private static final ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
 
     @Title("Read only database")
-    @Description("Only allow read operations from this Neo4j instance. "
-            + "This mode still requires write access to the directory for lock purposes.")
+    @Description("Only allow read operations from this Neo4j instance. " +
+                 "This mode still requires write access to the directory for lock purposes.")
     public static final Setting<Boolean> read_only = setting( "read_only", BOOLEAN, FALSE );
 
-    @Description("The type of cache to use for nodes and relationships. "
-                  + "Note that the Neo4j Enterprise Edition has the additional `hpc` cache type (High-Performance Cache). "
-            + "See the chapter on caches in the manual for more information.")
-    public static final Setting<String> cache_type = setting( "cache_type", options( availableCaches() ), availableCaches()[0] );
+    @Deprecated
+    @Description( "The type of cache to use for nodes and relationships. " +
+                  "This configuration setting is no longer applicable from Neo4j 2.3. " +
+                  "Configuration has been simplified to only require tuning of the page cache." )
+    public static final Setting<String> cache_type = setting( "cache_type", STRING, "deprecated" );
 
     @Description("Print out the effective Neo4j configuration after startup.")
     public static final Setting<Boolean> dump_configuration = setting("dump_configuration", BOOLEAN, FALSE );
@@ -95,15 +97,29 @@ public abstract class GraphDatabaseSettings
 
     // Cypher settings
     // TODO: These should live with cypher
-    @Description( "Set this to specify the default parser." )
+    @Description( "Set this to specify the default parser (language version)." )
     public static final Setting<String> cypher_parser_version = setting(
             "cypher_parser_version",
-            options( "1.9", "2.0", "2.1", "2.2"), NO_DEFAULT );
+            options( "1.9", "2.2", "2.3", DEFAULT ), DEFAULT );
 
-    @Description( "Set this to specify the default planner." )
+    @Description( "Set this to specify the default planner for the default language version." )
     public static final Setting<String> cypher_planner = setting(
             "dbms.cypher.planner",
-            options( "COST", "RULE"), NO_DEFAULT );
+            options( "COST", "RULE", DEFAULT ), DEFAULT );
+
+    @Description( "Set this to specify the behavior when Cypher planner or runtime hints cannot be fulfilled. "
+            + "If true, then non-conformance will result in an error, otherwise only a warning is generated." )
+    public static final Setting<Boolean> cypher_hints_error = setting( "dbms.cypher.hints.error", BOOLEAN, FALSE );
+
+    @Description( "Set this to specify the default runtime for the default language version." )
+    @Internal
+    public static final Setting<String> cypher_runtime = setting(
+            "dbms.cypher.runtime",
+            options( "INTERPRETED", DEFAULT ), DEFAULT );
+
+    @Description( "Enable tracing of compilation in cypher." )
+    @Internal
+    public static final Setting<Boolean> cypher_compiler_tracing = setting( "dbms.cypher.compiler_tracing", BOOLEAN, FALSE );
 
     @Description( "The number of Cypher query execution plans that are cached." )
     public static Setting<Integer> query_cache_size = setting( "query_cache_size", INTEGER, "1000", min( 0 ) );
@@ -112,7 +128,29 @@ public abstract class GraphDatabaseSettings
                   " statistics used to create the plan has changed more than this value, " +
                   "the plan is considered stale and will be replanned. " +
                   "A value of 0 means always replan, and 1 means never replan." )
-    public static Setting<Double> query_statistics_divergence_threshold = setting( "dbms.cypher.statistics_divergence_threshold", DOUBLE, "0.5", min( 0.0 ), max( 1.0 ) );
+    public static Setting<Double> query_statistics_divergence_threshold = setting(
+            "dbms.cypher.statistics_divergence_threshold", DOUBLE, "0.5", min( 0.0 ), max(
+                    1.0 ) );
+
+    @Description( "The threshold when a warning is generated if a label scan is done after a load csv " +
+                  "where the label has no index" )
+    @Internal
+    public static Setting<Long> query_non_indexed_label_warning_threshold = setting(
+            "dbms.cypher.non_indexed_label_warning_threshold", LONG, "10000" );
+
+    @Description( "To improve IDP query planning time, we can restrict the internal planning table size, " +
+                  "triggering compaction of candidate plans. The smaller the threshold the faster the planning, " +
+                  "but the higher the risk of sub-optimal plans." )
+    @Internal
+    public static Setting<Integer> cypher_idp_solver_table_threshold = setting(
+            "dbms.cypher.idp_solver_table_threshold", INTEGER, "128", min( 16 ) );
+
+    @Description( "To improve IDP query planning time, we can restrict the internal planning loop duration, " +
+                  "triggering more frequent compaction of candidate plans. The smaller the threshold the " +
+                  "faster the planning, but the higher the risk of sub-optimal plans." )
+    @Internal
+    public static Setting<Long> cypher_idp_solver_duration_threshold = setting(
+            "dbms.cypher.idp_solver_duration_threshold", LONG, "1000", min( 10L ) );
 
     @Description("The minimum lifetime of a query plan before a query is considered for replanning")
     public static Setting<Long> cypher_min_replan_interval = setting( "dbms.cypher.min_replan_interval", DURATION, "1s" );
@@ -121,7 +159,12 @@ public abstract class GraphDatabaseSettings
                   + "value to `false` will cause Neo4j to fail `LOAD CSV` clauses that load data from the file system." )
     public static Setting<Boolean> allow_file_urls = setting( "allow_file_urls", BOOLEAN, TRUE );
 
-    // Store files
+    @Description( "Sets the root directory for file URLs used with the Cypher `LOAD CSV` clause. This must be set to a single "
+                  + "directory, restricting access to only those files within that directory and its subdirectories." )
+    public static Setting<File> load_csv_file_url_root = setting( "dbms.security.load_csv_file_url_root", PATH, NO_DEFAULT );
+
+    @Deprecated
+    @Obsoleted( "This is no longer used" )
     @Description("The directory where the database files are located.")
     public static final Setting<File> store_dir = setting("store_dir", PATH, NO_DEFAULT );
 
@@ -131,44 +174,81 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Long> transaction_start_timeout =
             setting( "transaction_start_timeout", DURATION, "1s" );
 
-    @Description("The base name for the Neo4j Store files, either an absolute path or relative to the store_dir " +
-            "setting. This should generally not be changed.")
+    @Description("The location of the internal diagnostics log.")
     @Internal
-    public static final Setting<File> neo_store = setting("neo_store", PATH, "neostore", basePath(store_dir) );
+    public static final Setting<File> store_internal_log_location = setting("store.internal_log.location", PATH, NO_DEFAULT );
 
-    // Remote logging
-    @Description("Whether to enable logging to a remote server or not.")
-    public static final Setting<Boolean> remote_logging_enabled = setting("remote_logging_enabled", BOOLEAN, FALSE );
+    @Description( "Threshold for rotation of the internal log." )
+    public static final Setting<Long> store_internal_log_rotation_threshold = setting("store.internal_log.rotation_threshold", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
 
-    @Description( "Host for remote logging using Logback SocketAppender." )
-    public static final Setting<String> remote_logging_host = setting("remote_logging_host", STRING, "127.0.0.1", illegalValueMessage( "must be a valid hostname", matches( ANY ) ) );
+    @Description( "Internal log contexts that should output debug level logging" )
+    @Internal
+    public static final Setting<List<String>> store_internal_debug_contexts = setting( "store.internal_log.debug_contexts",
+            list( ",", STRING ), "org.neo4j.diagnostics,org.neo4j.cluster.protocol,org.neo4j.kernel.ha" );
 
-    @Description( "Port for remote logging using Logback SocketAppender." )
-    public static final Setting<Integer> remote_logging_port = setting("remote_logging_port", INTEGER, "4560", port );
+    @Description("Log level threshold.")
+    public static final Setting<Level> store_internal_log_level = setting( "store.internal_log.level",
+            options( Level.class ), "INFO" );
 
     @Description( "Maximum time interval for log rotation to wait for active transaction completion" )
     @Internal
     public static final Setting<Long> store_interval_log_rotation_wait_time =
             setting( "store.interval.log.rotation", DURATION, "10m" );
 
-    // Indexing
+    @Description( "Minimum time interval after last rotation of the internal log before it may be rotated again." )
+    public static final Setting<Long> store_internal_log_rotation_delay =
+            setting("store.internal_log.rotation_delay", DURATION, "300s" );
+
+    @Description( "Maximum number of history files for the internal log." )
+    public static final Setting<Integer> store_internal_log_max_archives = setting("store.internal_log.max_archives", INTEGER, "7", min(1) );
+
+    @Description( "Configures the transaction interval between check-points. The database will not check-point more " +
+                  "often  than this (unless check pointing is triggered by a different event), but might check-point " +
+                  "less often than this interval, if performing a check-point takes longer time than the configured " +
+                  "interval. A check-point is a point in the transaction logs, from which recovery would start from. " +
+                  "Longer check-point intervals typically means that recovery will take longer to complete in case " +
+                  "of a crash. On the other hand, a longer check-point interval can also reduce the I/O load that " +
+                  "the database places on the system, as each check-point implies a flushing and forcing of all the " +
+                  "store files.  The default is '100000' for a check-point every 100000 transactions." )
+    public static final Setting<Integer> check_point_interval_tx = setting( "dbms.checkpoint.interval.tx", INTEGER, "100000", min(1) );
+
+    @Description( "Configures the time interval between check-points. The database will not check-point more often " +
+                  "than this (unless check pointing is triggered by a different event), but might check-point less " +
+                  "often than this interval, if performing a check-point takes longer time than the configured " +
+                  "interval. A check-point is a point in the transaction logs, from which recovery would start from. " +
+                  "Longer check-point intervals typically means that recovery will take longer to complete in case " +
+                  "of a crash. On the other hand, a longer check-point interval can also reduce the I/O load that " +
+                  "the database places on the system, as each check-point implies a flushing and forcing of all the " +
+                  "store files. The default is '5m' for a check-point every 5 minutes. Other supported units are 's' " +
+                  "for seconds, and 'ms' for milliseconds." )
+    public static final Setting<Long> check_point_interval_time = setting( "dbms.checkpoint.interval.time", DURATION, "5m" );
+
+    // Auto Indexing
     @Description("Controls the auto indexing feature for nodes. Setting it to `false` shuts it down, " +
             "while `true` enables it by default for properties "
             + "listed in the node_keys_indexable setting.")
+    @Internal
+    @Deprecated
     public static final Setting<Boolean> node_auto_indexing = setting("node_auto_indexing", BOOLEAN, FALSE);
 
     @Description("A list of property names (comma separated) that will be indexed by default. This applies to _nodes_ " +
             "only.")
+    @Internal
+    @Deprecated
     public static final Setting<String> node_keys_indexable = setting("node_keys_indexable", STRING, NO_DEFAULT, illegalValueMessage( "must be a comma-separated list of keys to be indexed", matches( ANY ) ) );
 
     @Description("Controls the auto indexing feature for relationships. Setting it to `false` shuts it down, " +
             "while `true` enables it by default for properties "
             + "listed in the relationship_keys_indexable setting.")
+    @Internal
+    @Deprecated
     public static final Setting<Boolean> relationship_auto_indexing =
             setting("relationship_auto_indexing", BOOLEAN, FALSE );
 
     @Description("A list of property names (comma separated) that will be indexed by default. This applies to " +
             "_relationships_ only." )
+    @Internal
+    @Deprecated
     public static final Setting<String> relationship_keys_indexable = setting("relationship_keys_indexable", STRING, NO_DEFAULT, illegalValueMessage( "must be a comma-separated list of keys to be indexed", matches( ANY ) ) );
 
     // Index sampling
@@ -189,7 +269,7 @@ public abstract class GraphDatabaseSettings
     @Description( "The maximum number of open Lucene index searchers." )
     public static Setting<Integer> lucene_searcher_cache_size = setting("lucene_searcher_cache_size",INTEGER, Integer.toString( Integer.MAX_VALUE ), min( 1 ));
 
-    // NeoStore settings
+    // Store settings
     @Description("Make Neo4j keep the logical transaction logs for being able to backup the database. " +
             "Can be used for specifying the threshold to prune logical logs after. For example \"10 days\" will " +
             "prune logical logs that only contains transactions older than 10 days from the current time, " +
@@ -207,18 +287,19 @@ public abstract class GraphDatabaseSettings
     @Internal
     public static final Setting<Boolean> rebuild_idgenerators_fast = setting("rebuild_idgenerators_fast", BOOLEAN, TRUE );
 
-    // NeoStore memory settings
+    // Store memory settings
     /**
      * @deprecated This configuration has been obsoleted. Neo4j no longer relies on the memory-mapping capabilities of the operating system.
      */
     @Deprecated
     @Obsoleted( "This setting has been obsoleted. Neo4j no longer relies on the memory-mapping capabilities of the operating system." )
     @Description( "Use memory mapped buffers for accessing the native storage layer." )
-    public static final Setting<Boolean> use_memory_mapped_buffers = setting( "use_memory_mapped_buffers", BOOLEAN, Boolean.toString(!Settings.osIsWindows()));
+    public static final Setting<Boolean> use_memory_mapped_buffers = setting( "use_memory_mapped_buffers", BOOLEAN, Boolean.toString(!SystemUtils.IS_OS_WINDOWS));
 
-    @Description("Target size for pages of mapped memory.")
+    @Description("Target size for pages of mapped memory. If set to 0, then a reasonable default is chosen, " +
+                 "depending on the storage device used.")
     @Internal
-    public static final Setting<Long> mapped_memory_page_size = setting( "dbms.pagecache.pagesize", BYTES, "8192" );
+    public static final Setting<Long> mapped_memory_page_size = setting( "dbms.pagecache.pagesize", BYTES, "0" );
 
     @SuppressWarnings( "unchecked" )
     @Description( "The amount of memory to use for mapping the store files, in bytes (or kilobytes with the 'k' " +
@@ -226,9 +307,9 @@ public abstract class GraphDatabaseSettings
                   "then it is generally recommended to leave about 2-4 gigabytes for the operating system, give the " +
                   "JVM enough heap to hold all your transaction state and query context, and then leave the rest for " +
                   "the page cache. The default page cache memory assumes the machine is dedicated to running " +
-                  "Neo4j, and is heuristically set to 75% of RAM minus the max Java heap size." )
+                  "Neo4j, and is heuristically set to 50% of RAM minus the max Java heap size." )
     public static final Setting<Long> pagecache_memory =
-            setting( "dbms.pagecache.memory", BYTES, defaultPageCacheMemory(), min( 8192 * 2L ) );
+            setting( "dbms.pagecache.memory", BYTES, defaultPageCacheMemory(), min( 8192 * 30L ) );
 
     private static String defaultPageCacheMemory()
     {
@@ -239,7 +320,14 @@ public abstract class GraphDatabaseSettings
             return defaultMemoryOverride;
         }
 
-        // Try to compute (RAM - maxheap) * 0.75 if we can get reliable numbers...
+        double ratioOfFreeMem = 0.50;
+        String defaultMemoryRatioOverride = System.getProperty( "dbms.pagecache.memory.ratio.default.override" );
+        if ( defaultMemoryRatioOverride != null )
+        {
+            ratioOfFreeMem = Double.parseDouble( defaultMemoryRatioOverride );
+        }
+
+        // Try to compute (RAM - maxheap) * 0.50 if we can get reliable numbers...
         long maxHeapMemory = Runtime.getRuntime().maxMemory();
         if ( 0 < maxHeapMemory && maxHeapMemory < Long.MAX_VALUE )
         {
@@ -251,9 +339,9 @@ public abstract class GraphDatabaseSettings
                 long physicalMemory = (long) getTotalPhysicalMemorySize.invoke( os );
                 if ( 0 < physicalMemory && physicalMemory < Long.MAX_VALUE && maxHeapMemory < physicalMemory )
                 {
-                    long heuristic = (long) ((physicalMemory - maxHeapMemory) * 0.75);
-                    long min = 32 * 1024 * 1024; // We'd like at least 32 MiBs.
-                    long max = 1024 * 1024 * 1024 * 1024L; // Don't heuristically take more than 1 TiB.
+                    long heuristic = (long) ((physicalMemory - maxHeapMemory) * ratioOfFreeMem);
+                    long min = ByteUnit.mebiBytes( 32 ); // We'd like at least 32 MiBs.
+                    long max = ByteUnit.tebiBytes( 1 ); // Don't heuristically take more than 1 TiB.
                     long memory = Math.min( max, Math.max( min, heuristic ) );
                     return String.valueOf( memory );
                 }
@@ -265,6 +353,11 @@ public abstract class GraphDatabaseSettings
         // ... otherwise we just go with 2 GiBs.
         return "2g";
     }
+
+    @Description( "Specify which page swapper to use for doing paged IO. " +
+                  "This is only used when integrating with proprietary storage technology." )
+    public static final Setting<String> pagecache_swapper =
+            setting( "dbms.pagecache.swapper", STRING, (String) null );
 
     @Deprecated
     @Obsoleted( "This is no longer used" )
@@ -392,52 +485,32 @@ public abstract class GraphDatabaseSettings
     @Obsoleted( "Write batching can no longer be turned off" )
     public static final Setting<Boolean> batched_writes = setting( "batched_writes", BOOLEAN, Boolean.TRUE.toString() );
 
-    @Description("The location of the internal diagnostics log.")
-    @Internal
-    public static final Setting<File> internal_log_location = setting("store.internal_log.location", PATH, NO_DEFAULT );
-
-    @Description( "Log executed queries that takes longer than the configured threshold." )
+    @Description( "Log executed queries that takes longer than the configured threshold. "
+            + "_NOTE: This feature is only available in the Neo4j Enterprise Edition_." )
     public static final Setting<Boolean> log_queries = setting("dbms.querylog.enabled", BOOLEAN, FALSE );
+
+    @Description( "Log executed queries that take longer than the configured threshold" )
+    public static final Setting<File> log_queries_filename = setting("dbms.querylog.filename", PATH, NO_DEFAULT );
 
     @Description( "Log parameters for executed queries that took longer than the configured threshold." )
     public static final Setting<Boolean> log_queries_parameter_logging_enabled = setting( "dbms.querylog.parameter_logging_enabled", BOOLEAN, TRUE );
 
-    @Description( "The file where queries will be recorded." )
-    public static final Setting<File> log_queries_filename = setting("dbms.querylog.filename", PATH, NO_DEFAULT );
-
     @Description("If the execution of query takes more time than this threshold, the query is logged - " +
-            "provided query logging is enabled. Defaults to 0 seconds, that is all queries are logged.")
+                 "provided query logging is enabled. Defaults to 0 seconds, that is all queries are logged.")
     public static final Setting<Long> log_queries_threshold = setting("dbms.querylog.threshold", DURATION, "0s");
 
-    @Description( "Specifies at which file size the query log will auto-rotate. ")
+    @Description( "Specifies at which file size the query log will auto-rotate. " +
+                  "`0` means that no rotation will automatically occur based on file size." )
     public static final Setting<Long> log_queries_rotation_threshold = setting("dbms.querylog.rotation.threshold",
-            BYTES, "20m", min( 1024 * 1024L ), max( Long.MAX_VALUE ) );
+            BYTES, "20m",  min( 0L ), max( Long.MAX_VALUE ) );
+
+    @Description( "Maximum number of history files for the query log." )
+    public static final Setting<Integer> log_queries_max_archives = setting( "dbms.querylog.max_archives", INTEGER,
+            "7", min( 1 ) );
 
     @Description( "Specifies number of operations that batch inserter will try to group into one batch before " +
                   "flushing data into underlying storage.")
     @Internal
     public static final Setting<Integer> batch_inserter_batch_size = setting( "batch_inserter_batch_size", INTEGER,
             "10000" );
-
-    private static String[] availableCaches()
-    {
-        List<String> available = new ArrayList<>();
-        for ( CacheProvider cacheProvider : Service.load( CacheProvider.class ) )
-        {
-            available.add( cacheProvider.getName() );
-        }
-
-        // Temporary hidden config to turn off cache layer entirely
-        available.add( CacheLayer.EXPERIMENTAL_OFF );
-
-                                           // --- higher prio ---->
-        for ( String prioritized : new String[] { "soft", "hpc" } )
-        {
-            if ( available.remove( prioritized ) )
-            {
-                available.add( 0, prioritized );
-            }
-        }
-        return available.toArray( new String[available.size()] );
-    }
 }

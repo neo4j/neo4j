@@ -1,0 +1,27 @@
+[[query-order]]
+= Order by
+
+[abstract]
+`ORDER BY` is a sub-clause following `RETURN` or `WITH`, and it specifies that the output should be sorted and how.
+
+Note that you can not sort on nodes or relationships, just on properties on these.
+`ORDER BY` relies on comparisons to sort the output, see <<cypher-ordering>>.
+
+In terms of scope of identifiers, `ORDER BY` follows special rules, depending on if the projecting `RETURN` or `WITH` clause is either aggregating or `DISTINCT`.
+If it is an aggregating or `DISTINCT` projection, only the identifiers available in the projection are available.
+If the projection does not alter the output cardinality (which aggregation and `DISTINCT` do), identifiers available from before the projecting clause are also available.
+When the projection clause shadows already existing identifiers, only the new identifiers are available.
+
+Lastly, it is not allowed to use aggregating expressions in the `ORDER BY` sub-clause if they are not also listed in the projecting clause.
+This last rule is to make sure that `ORDER BY` does not change the results, only the order of them.
+
+.Graph
+include::includes/cypher-orderby-graph.asciidoc[]
+
+include::order-nodes-by-property.asciidoc[]
+
+include::order-nodes-by-multiple-properties.asciidoc[]
+
+include::order-nodes-in-descending-order.asciidoc[]
+
+include::ordering-null.asciidoc[]

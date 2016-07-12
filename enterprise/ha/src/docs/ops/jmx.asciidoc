@@ -7,10 +7,6 @@ please see <<property-value-types>> in <<graphdb-neo4j-properties>>.
 
 include::jmx-branched-store.asciidoc[]
 
-include::jmx-cache-nodecache.asciidoc[]
-
-include::jmx-cache-relationshipcache.asciidoc[]
-
 include::jmx-configuration.asciidoc[]
 
 include::jmx-diagnostics.asciidoc[]

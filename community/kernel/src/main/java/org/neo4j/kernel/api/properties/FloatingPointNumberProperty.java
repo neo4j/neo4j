@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.api.properties;
 
-abstract class FloatingPointNumberProperty extends DefinedProperty
+import org.neo4j.helpers.MathUtil;
+
+abstract class FloatingPointNumberProperty extends NumberProperty
 {
     FloatingPointNumberProperty( int propertyKeyId )
     {
         super( propertyKeyId );
     }
-
-    abstract double doubleValue();
 
     @Override
     final int valueHash()
@@ -47,7 +47,7 @@ abstract class FloatingPointNumberProperty extends DefinedProperty
             }
             else
             {
-                return numbersEqual( this.doubleValue(), that.longValue() );
+                return MathUtil.numbersEqual( this.doubleValue(), that.longValue() );
             }
         }
         return false;
@@ -64,7 +64,7 @@ abstract class FloatingPointNumberProperty extends DefinedProperty
         else if ( other instanceof IntegralNumberProperty )
         {
             IntegralNumberProperty that = (IntegralNumberProperty) other;
-            return numbersEqual( this.doubleValue(), that.longValue() );
+            return MathUtil.numbersEqual( this.doubleValue(), that.longValue() );
         }
         else
         {

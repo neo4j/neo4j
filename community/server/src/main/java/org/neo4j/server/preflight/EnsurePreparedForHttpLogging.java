@@ -50,7 +50,7 @@ public class EnsurePreparedForHttpLogging implements PreflightTask
             return true;
         }
 
-        File configFile = config.get( ServerSettings.http_log_config_File );
+        File configFile = config.get( ServerSettings.http_log_config_file );
         if ( configFile == null )
         {
             failureMessage = "HTTP logging configuration file is not specified";

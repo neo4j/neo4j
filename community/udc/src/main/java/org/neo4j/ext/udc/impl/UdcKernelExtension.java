@@ -23,10 +23,12 @@ import java.util.Timer;
 
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.KernelData;
+import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.StartupStatistics;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.udc.UsageData;
 
 /**
  * Kernel extension for UDC, the Usage Data Collector. The UDC runs as a background
@@ -40,15 +42,20 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 public class UdcKernelExtension implements Lifecycle
 {
     private Timer timer;
+    private IdGeneratorFactory idGeneratorFactory;
+    private StartupStatistics startupStats;
+    private final UsageData usageData;
     private final Config config;
     private final DataSourceManager xadsm;
-    private final KernelData kernelData;
 
-    public UdcKernelExtension( Config config, DataSourceManager xadsm, KernelData kernelData, Timer timer )
+    public UdcKernelExtension( Config config, DataSourceManager xadsm, IdGeneratorFactory idGeneratorFactory,
+            StartupStatistics startupStats, UsageData usageData, Timer timer )
     {
         this.config = config;
         this.xadsm = xadsm;
-        this.kernelData = kernelData;
+        this.idGeneratorFactory = idGeneratorFactory;
+        this.startupStats = startupStats;
+        this.usageData = usageData;
         this.timer = timer;
     }
 
@@ -69,7 +76,8 @@ public class UdcKernelExtension implements Lifecycle
         int interval = config.get( UdcSettings.interval );
         HostnamePort hostAddress = config.get(UdcSettings.udc_host);
 
-        UdcInformationCollector collector = new DefaultUdcInformationCollector( config, xadsm, kernelData );
+        UdcInformationCollector collector = new DefaultUdcInformationCollector( config, xadsm, idGeneratorFactory,
+                startupStats, usageData );
         UdcTimerTask task = new UdcTimerTask( hostAddress, collector );
 
         timer.scheduleAtFixedRate( task, firstDelay, interval );

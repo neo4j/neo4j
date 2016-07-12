@@ -70,14 +70,15 @@ public class TestMultiPruneEvaluators extends TraversalTestBase
                 .evaluator( toDepth( 1 ) ).evaluator( lessThanThreeRels );
         Set<String> expectedNodes = new HashSet<String>(
                 asList( "a", "b", "c", "d", "e" ) );
-        Transaction tx = beginTx();
-        for ( Path position : description.traverse( node( "a" ) ) )
+        try ( Transaction tx = beginTx() )
         {
-            String name = (String) position.endNode().getProperty( "name" );
-            assertTrue( name + " shouldn't have been returned", expectedNodes.remove( name ) );
+            for ( Path position : description.traverse( node( "a" ) ) )
+            {
+                String name = (String) position.endNode().getProperty( "name" );
+                assertTrue( name + " shouldn't have been returned", expectedNodes.remove( name ) );
+            }
+            tx.success();
         }
-        tx.success();
-        tx.finish();
         assertTrue( expectedNodes.isEmpty() );
     }
 }

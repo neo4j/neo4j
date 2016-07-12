@@ -25,7 +25,7 @@ import org.neo4j.server.rest.dbms.UserService;
 import org.neo4j.server.rest.discovery.DiscoveryService;
 import org.neo4j.server.web.WebServer;
 
-import static org.neo4j.server.JAXRSHelper.listFrom;
+import static java.util.Arrays.asList;
 
 /**
  * Mounts the DBMS REST API.
@@ -49,9 +49,9 @@ public class DBMSModule implements ServerModule
 
     private List<String> getClassNames()
     {
-        return listFrom(
+        return asList(
                 DiscoveryService.class.getName(),
-                UserService.class.getName());
+                UserService.class.getName() );
     }
 
     @Override

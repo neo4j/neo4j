@@ -35,7 +35,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadRule;
 
@@ -81,7 +80,7 @@ public class RelationshipIT extends KernelIntegrationTest
             assertRels( statement.nodeGetRelationships( refNode, BOTH ),
                         fromRefToOther1, fromRefToOther2, fromRefToRef, fromRefToThird, fromOtherToRef);
 
-            assertRels( statement.nodeGetRelationships( refNode, BOTH, relType1 ),
+            assertRels( statement.nodeGetRelationships( refNode, BOTH, new int[]{relType1} ),
                     fromRefToOther1, fromOtherToRef);
 
             assertRels( statement.nodeGetRelationships( refNode, BOTH, new int[]{relType1, relType2} ),
@@ -90,7 +89,7 @@ public class RelationshipIT extends KernelIntegrationTest
 
             assertRels( statement.nodeGetRelationships( refNode, INCOMING ), fromOtherToRef );
 
-            assertRels( statement.nodeGetRelationships( refNode, INCOMING, relType1 ) /* none */);
+            assertRels( statement.nodeGetRelationships( refNode, INCOMING, new int[]{relType1} ) /* none */);
 
             assertRels( statement.nodeGetRelationships( refNode, OUTGOING, new int[]{relType1, relType2} ),
                     fromRefToOther1, fromRefToOther2, fromRefToThird, fromRefToRef);
@@ -105,7 +104,7 @@ public class RelationshipIT extends KernelIntegrationTest
             assertRels( statement.nodeGetRelationships( refNode, BOTH ),
                     fromRefToOther1, fromRefToOther2, fromRefToRef, fromRefToThird, fromOtherToRef);
 
-            assertRels( statement.nodeGetRelationships( refNode, BOTH, relType1 ),
+            assertRels( statement.nodeGetRelationships( refNode, BOTH, new int[]{relType1}),
                     fromRefToOther1, fromOtherToRef);
 
             assertRels( statement.nodeGetRelationships( refNode, BOTH, new int[]{relType1, relType2} ),
@@ -113,7 +112,7 @@ public class RelationshipIT extends KernelIntegrationTest
 
             assertRels( statement.nodeGetRelationships( refNode, INCOMING ), fromOtherToRef );
 
-            assertRels( statement.nodeGetRelationships( refNode, INCOMING, relType1 ) /* none */);
+            assertRels( statement.nodeGetRelationships( refNode, INCOMING, new int[]{relType1} ) /* none */);
 
             assertRels( statement.nodeGetRelationships( refNode, OUTGOING, new int[]{relType1, relType2} ),
                     fromRefToOther1, fromRefToOther2, fromRefToThird, fromRefToRef);
@@ -198,7 +197,7 @@ public class RelationshipIT extends KernelIntegrationTest
             long otherNode = statement.nodeCreate();
             theRel = statement.relationshipCreate( relType1, refNode, otherNode );
 
-            assertRels( statement.nodeGetRelationships( refNode, Direction.OUTGOING, relType2, relType1 ), theRel );
+            assertRels( statement.nodeGetRelationships( refNode, Direction.OUTGOING, new int[]{relType2, relType1} ), theRel );
 
             commit();
         }
@@ -227,17 +226,14 @@ public class RelationshipIT extends KernelIntegrationTest
             commit();
         }
 
-        // Given the cache is empty
-        this.db.getDependencyResolver().resolveDependency( Caches.class ).clear();
-
         {
             ReadOperations stmt = readOperationsInNewTransaction();
 
             // When I've asked for rels that the node does not have
-            assertRels( stmt.nodeGetRelationships(refNode, Direction.INCOMING, relTypeTheNodeDoesNotUse) );
+            assertRels( stmt.nodeGetRelationships(refNode, Direction.INCOMING, new int[]{relTypeTheNodeDoesNotUse}) );
 
             // Then the node should still load the real rels
-            assertRels( stmt.nodeGetRelationships(refNode, Direction.BOTH, relTypeTheNodeDoesUse), rels );
+            assertRels( stmt.nodeGetRelationships(refNode, Direction.BOTH, new int[]{relTypeTheNodeDoesUse}), rels );
         }
     }
 
@@ -273,14 +269,11 @@ public class RelationshipIT extends KernelIntegrationTest
             commit();
         }
 
-        // Given the cache is empty
-        this.db.getDependencyResolver().resolveDependency( Caches.class ).clear();
-
         {
             ReadOperations stmt = readOperationsInNewTransaction();
 
             // When I exhaust up to the grab size
-            PrimitiveLongIterator iter = stmt.nodeGetRelationships( refNode, Direction.BOTH, largeGroupType );
+            PrimitiveLongIterator iter = stmt.nodeGetRelationships( refNode, Direction.BOTH, new int[]{largeGroupType} );
             for ( int i = 0; i < grabSize - 1; i++ )
             {
                 assertTrue(iter.hasNext());
@@ -288,9 +281,9 @@ public class RelationshipIT extends KernelIntegrationTest
             }
 
             // Then both the small rel group, the remaining rels in the iterator should work
-            assertRels( stmt.nodeGetRelationships( refNode, Direction.BOTH, smallGroupType ) );
+            assertRels( stmt.nodeGetRelationships( refNode, Direction.BOTH, new int[]{smallGroupType} ) );
             assertThat( count( toJavaIterator( iter ) ), equalTo(2) );
-            assertRels( stmt.nodeGetRelationships( refNode, Direction.BOTH, largeGroupType ), largeRelGroup );
+            assertRels( stmt.nodeGetRelationships( refNode, Direction.BOTH, new int[]{largeGroupType} ), largeRelGroup );
         }
     }
 
@@ -304,7 +297,7 @@ public class RelationshipIT extends KernelIntegrationTest
             {
                 try ( Transaction tx = db.beginTx() )
                 {
-                    ReadOperations stmt = statementContextProvider.instance().readOperations();
+                    ReadOperations stmt = statementContextSupplier.get().readOperations();
                     assertRels( stmt.nodeGetRelationships( refNode, both ), longs );
                 }
                 return true;

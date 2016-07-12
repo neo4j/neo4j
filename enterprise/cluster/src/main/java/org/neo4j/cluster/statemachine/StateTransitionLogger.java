@@ -19,10 +19,12 @@
  */
 package org.neo4j.cluster.statemachine;
 
+import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
+import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatState;
 import org.neo4j.helpers.Strings;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.cluster.com.message.Message.CONVERSATION_ID;
 import static org.neo4j.cluster.com.message.Message.FROM;
@@ -34,22 +36,24 @@ import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.I
 public class StateTransitionLogger
         implements StateTransitionListener
 {
-    private final Logging logging;
+    private final LogProvider logProvider;
+    private AtomicBroadcastSerializer atomicBroadcastSerializer;
 
     /** Throttle so don't flood occurrences of the same message over and over */
     private String lastLogMessage = "";
 
-    public StateTransitionLogger( Logging logging )
+    public StateTransitionLogger( LogProvider logProvider, AtomicBroadcastSerializer atomicBroadcastSerializer )
     {
-        this.logging = logging;
+        this.logProvider = logProvider;
+        this.atomicBroadcastSerializer = atomicBroadcastSerializer;
     }
 
     @Override
     public void stateTransition( StateTransition transition )
     {
-        StringLogger logger = logging.getMessagesLog( transition.getOldState().getClass() );
+        Log log = logProvider.getLog( transition.getOldState().getClass() );
 
-        if ( logger.isDebugEnabled() )
+        if ( log.isDebugEnabled() )
         {
             if ( transition.getOldState() == HeartbeatState.heartbeat )
             {
@@ -79,6 +83,18 @@ public class StateTransitionLogger
             Object payload = transition.getMessage().getPayload();
             if ( payload != null )
             {
+                if (payload instanceof Payload )
+                {
+                    try
+                    {
+                        payload = atomicBroadcastSerializer.receive( (Payload) payload);
+                    }
+                    catch ( Throwable e )
+                    {
+                        // Ignore
+                    }
+                }
+
                 line.append( " payload:" ).append( Strings.prettyPrint( payload ) );
             }
 
@@ -90,7 +106,7 @@ public class StateTransitionLogger
             }
 
             // Log it
-            logger.debug( line.toString() );
+            log.debug( line.toString() );
             lastLogMessage = msg;
         }
     }

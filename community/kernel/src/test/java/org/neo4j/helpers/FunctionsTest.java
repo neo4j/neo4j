@@ -21,8 +21,10 @@ package org.neo4j.helpers;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
+import org.neo4j.function.BiFunction;
 import org.neo4j.function.Function;
 import org.neo4j.function.Functions;
+import org.neo4j.kernel.configuration.Settings;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
@@ -60,7 +62,7 @@ public class FunctionsTest
     @Test
     public void testCompose2() throws Exception
     {
-        Function2<Integer, Integer, Integer> add = new Function2<Integer, Integer, Integer>()
+        BiFunction<Integer, Integer, Integer> add = new BiFunction<Integer, Integer, Integer>()
         {
             @Override
             public Integer apply( Integer from1, Integer from2 )
@@ -69,7 +71,7 @@ public class FunctionsTest
             }
         };
 
-        Function2<Integer, Integer, Integer> mult = new Function2<Integer, Integer, Integer>()
+        BiFunction<Integer, Integer, Integer> mult = new BiFunction<Integer, Integer, Integer>()
         {
             @Override
             public Integer apply( Integer from1, Integer from2 )

@@ -37,7 +37,8 @@ import java.util.zip.ZipFile;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.function.IOFunction;
-import org.neo4j.function.RawFunction;
+import org.neo4j.function.IOFunctions;
+import org.neo4j.function.ThrowingFunction;
 
 /**
  * Means of instantiating common {@link CharReadable} instances.
@@ -250,15 +251,6 @@ public class Readables
                name.contains( "/." );
     }
 
-    private static final IOFunction<Reader, Reader> IDENTITY = new IOFunction<Reader, Reader>()
-    {
-        @Override
-        public Reader apply( Reader in )
-        {
-            return in;
-        }
-    };
-
     public static CharReadable files( Charset charset, File... files ) throws IOException
     {
         IOFunction<File,Reader> opener = new FromFile( charset );
@@ -272,7 +264,7 @@ public class Readables
 
     public static CharReadable sources( Reader... sources ) throws IOException
     {
-        return new MultiReadable( iterator( sources, IDENTITY ) );
+        return new MultiReadable( iterator( sources, IOFunctions.<Reader>identity() ) );
     }
 
     public static CharReadable sources( RawIterator<Reader,IOException> sources ) throws IOException
@@ -281,7 +273,7 @@ public class Readables
     }
 
     private static <IN,OUT> RawIterator<OUT,IOException> iterator( final IN[] items,
-            final RawFunction<IN,OUT,IOException> converter )
+            final ThrowingFunction<IN,OUT,IOException> converter )
     {
         if ( items.length == 0 )
         {

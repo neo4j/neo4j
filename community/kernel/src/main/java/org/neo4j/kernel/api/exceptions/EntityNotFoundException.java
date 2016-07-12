@@ -26,25 +26,11 @@ public class EntityNotFoundException extends KernelException
     private final EntityType entityType;
     private final long entityId;
 
-    public EntityNotFoundException( EntityType entityType, long entityId, Throwable cause )
-    {
-        super( Status.Statement.EntityNotFound, cause, "Unable to load %s with id %s.", entityType.name(), entityId );
-        this.entityType = entityType;
-        this.entityId = entityId;
-    }
-
     public EntityNotFoundException( EntityType entityType, long entityId )
     {
         super( Status.Statement.EntityNotFound, "Unable to load %s with id %s.", entityType.name(), entityId );
         this.entityType = entityType;
         this.entityId = entityId;
-    }
-
-    public EntityNotFoundException( String msg )
-    {
-        super( Status.Statement.EntityNotFound, msg );
-        this.entityType = null;
-        this.entityId = -1;
     }
 
     public EntityType entityType()

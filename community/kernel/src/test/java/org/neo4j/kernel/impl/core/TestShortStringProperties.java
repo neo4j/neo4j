@@ -19,17 +19,17 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.lang.reflect.Field;
-
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.lang.reflect.Field;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.impl.store.AbstractDynamicStore;
+import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.TestShortString;
 import org.neo4j.test.DatabaseRule;
@@ -56,7 +56,6 @@ public class TestShortStringProperties extends TestShortString
     public void commit()
     {
         tx.success();
-        graphdb.clearCache();
     }
 
     public void newTx()
@@ -208,7 +207,6 @@ public class TestShortStringProperties extends TestShortString
         {
             assertTrue( recordCount < dynamicRecordsInUse() );
         }
-        graphdb.clearCache();
         assertEquals( string, node.getProperty( "key" ) );
     }
 
@@ -230,23 +228,16 @@ public class TestShortStringProperties extends TestShortString
 
     private long propertyRecordsInUse()
     {
-        return propertyStore().getNumberOfIdsInUse();
+        return AbstractNeo4jTestCase.numberOfRecordsInUse( propertyStore() );
     }
 
     private long dynamicRecordsInUse()
     {
-        try
-        {
-            return ( (AbstractDynamicStore) storeField.get( propertyStore() ) ).getNumberOfIdsInUse();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
+        return AbstractNeo4jTestCase.numberOfRecordsInUse( propertyStore().getStringStore() );
     }
 
     private PropertyStore propertyStore()
     {
-        return graphdb.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NeoStoreDataSource.class).getNeoStore().getPropertyStore();
+        return graphdb.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NeoStoreDataSource.class).getNeoStores().getPropertyStore();
     }
 }

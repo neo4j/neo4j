@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cluster.com.NetworkReceiver;
 import org.neo4j.cluster.com.NetworkSender;
+import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
@@ -39,7 +40,7 @@ import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 
 /**
  * TODO
@@ -51,14 +52,14 @@ public class NetworkedServerFactory
     private TimeoutStrategy timeoutStrategy;
     private final NetworkReceiver.Monitor networkReceiverMonitor;
     private final NetworkSender.Monitor networkSenderMonitor;
-    private Logging logging;
+    private LogProvider logProvider;
     private ObjectInputStreamFactory objectInputStreamFactory;
     private ObjectOutputStreamFactory objectOutputStreamFactory;
     private final NamedThreadFactory.Monitor namedThreadFactoryMonitor;
 
     public NetworkedServerFactory( LifeSupport life, ProtocolServerFactory protocolServerFactory,
                                    TimeoutStrategy timeoutStrategy,
-                                   Logging logging,
+                                   LogProvider logProvider,
                                    ObjectInputStreamFactory objectInputStreamFactory,
                                    ObjectOutputStreamFactory objectOutputStreamFactory,
                                    NetworkReceiver.Monitor networkReceiverMonitor,
@@ -70,7 +71,7 @@ public class NetworkedServerFactory
         this.timeoutStrategy = timeoutStrategy;
         this.networkReceiverMonitor = networkReceiverMonitor;
         this.networkSenderMonitor = networkSenderMonitor;
-        this.logging = logging;
+        this.logProvider = logProvider;
         this.objectInputStreamFactory = objectInputStreamFactory;
         this.objectOutputStreamFactory = objectOutputStreamFactory;
         this.namedThreadFactoryMonitor = namedThreadFactoryMonitor;
@@ -99,7 +100,7 @@ public class NetworkedServerFactory
             {
                 return null;
             }
-        }, logging );
+        }, logProvider );
 
         final NetworkSender sender = new NetworkSender(networkSenderMonitor,
                 new NetworkSender.Configuration()
@@ -115,7 +116,7 @@ public class NetworkedServerFactory
             {
                 return config.get( ClusterSettings.cluster_server ).getPort();
             }
-        }, receiver, logging );
+        }, receiver, logProvider );
 
         ExecutorLifecycleAdapter stateMachineExecutor = new ExecutorLifecycleAdapter( new Factory<ExecutorService>()
         {
@@ -141,7 +142,8 @@ public class NetworkedServerFactory
                 protocolServer.listeningAt( me );
                 if ( logger == null )
                 {
-                    logger = new StateTransitionLogger( logging );
+                    logger = new StateTransitionLogger(  logProvider,
+                            new AtomicBroadcastSerializer(objectInputStreamFactory, objectOutputStreamFactory));
                     protocolServer.addStateTransitionListener( logger );
                 }
             }

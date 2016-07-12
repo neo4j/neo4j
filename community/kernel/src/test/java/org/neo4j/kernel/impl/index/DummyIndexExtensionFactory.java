@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.index;
 
 import org.neo4j.graphdb.index.IndexProviders;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -30,7 +29,6 @@ public class DummyIndexExtensionFactory extends
 {
     public static final String IDENTIFIER = "test-dummy-neo-index";
     public static final String KEY_FAIL_ON_MUTATE = "fail_on_mutate";
-    private InternalAbstractGraphDatabase db;
 
     public DummyIndexExtensionFactory()
     {
@@ -39,15 +37,12 @@ public class DummyIndexExtensionFactory extends
 
     public interface Dependencies
     {
-        InternalAbstractGraphDatabase getDatabase();
-
         IndexProviders getIndexProviders();
     }
 
     @Override
     public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
     {
-        db = dependencies.getDatabase();
         IndexProviders indexProviders = dependencies.getIndexProviders();
         return new Extension( indexProviders );
     }

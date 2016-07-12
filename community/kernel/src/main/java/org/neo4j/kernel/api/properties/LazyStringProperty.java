@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.properties;
 
 import java.util.concurrent.Callable;
 
-class LazyStringProperty extends LazyProperty<String>
+class LazyStringProperty extends LazyProperty<String> implements DefinedProperty.WithStringValue
 {
     LazyStringProperty( int propertyKeyId, Callable<String> producer )
     {
@@ -38,5 +38,11 @@ class LazyStringProperty extends LazyProperty<String>
     int valueHash()
     {
         return value().hashCode();
+    }
+
+    @Override
+    public String stringValue()
+    {
+        return value();
     }
 }

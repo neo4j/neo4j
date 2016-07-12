@@ -110,11 +110,11 @@ public class LazySingleReferenceTest
                 return initCalls.incrementAndGet();
             }
         };
-        assertEquals( "First evaluation", 1, ref.instance().intValue() );
+        assertEquals( "First evaluation", 1, ref.get().intValue() );
         
         // WHEN
         ref.invalidate();
-        int e2 = ref.instance();
+        int e2 = ref.get();
         
         // THEN
         assertEquals( "Second evaluation", 2, e2 );
@@ -135,11 +135,11 @@ public class LazySingleReferenceTest
         
         // WHEN
         boolean firstResult = ref.isCreated();
-        ref.instance();
+        ref.get();
         boolean secondResult = ref.isCreated();
         ref.invalidate();
         boolean thirdResult = ref.isCreated();
-        ref.instance();
+        ref.get();
         boolean fourthResult = ref.isCreated();
         
         // THEN
@@ -172,7 +172,7 @@ public class LazySingleReferenceTest
             @Override
             public Integer doWork( Void state ) throws Exception
             {
-                return ref.instance();
+                return ref.get();
             }
         };
     }

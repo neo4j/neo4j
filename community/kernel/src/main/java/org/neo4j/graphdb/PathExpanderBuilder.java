@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.function.Predicate;
 import org.neo4j.kernel.StandardExpander;
 
 import static org.neo4j.graphdb.Direction.BOTH;
@@ -34,7 +35,7 @@ public class PathExpanderBuilder
      * A {@link PathExpanderBuilder} that follows no relationships. You start with this and use
      * {@link #add(RelationshipType, Direction)} to form a restrictive PathExpander with just a few expansion rules
      * in it.
-     * 
+     *
      * @return a {@link PathExpanderBuilder} that follows no relationships
      */
     public static PathExpanderBuilder empty()
@@ -46,7 +47,7 @@ public class PathExpanderBuilder
      * A {@link PathExpanderBuilder} that is seeded with all possible relationship types in {@link Direction#BOTH both
      * directions}. You start with this and {@link #remove(RelationshipType) remove types} to form a permissive
      * {@link PathExpander} with just a few exceptions in it.
-     * 
+     *
      * @return a {@link PathExpanderBuilder} that is seeded with all possible relationship types in {@link Direction#BOTH both
      * directions}
      */
@@ -70,7 +71,7 @@ public class PathExpanderBuilder
 
     /**
      * Add a pair of {@code type} and {@link Direction#BOTH} to the PathExpander configuration.
-     * 
+     *
      * @param type the type to add for expansion in both directions
      * @return a {@link PathExpanderBuilder} with the added expansion of {@code type} relationships in both directions
      */
@@ -81,7 +82,7 @@ public class PathExpanderBuilder
 
     /**
      * Add a pair of {@code type} and {@code direction} to the PathExpander configuration.
-     * 
+     *
      * @param type the type to add for expansion
      * @param direction the direction to restrict the expansion to
      * @return a {@link PathExpanderBuilder} with the added expansion of {@code type} relationships in the given direction
@@ -97,7 +98,7 @@ public class PathExpanderBuilder
      * Example: {@code PathExpanderBuilder.allTypesAndDirections().remove(type).add(type, Direction.INCOMING)}
      * would restrict the {@link PathExpander} to only follow {@code Direction.INCOMING} relationships for {@code
      * type} while following any other relationship type in either direction.
-     * 
+     *
      * @param type the type to remove from expansion
      * @return a {@link PathExpanderBuilder} with expansion of {@code type} relationships removed
      */
@@ -107,8 +108,30 @@ public class PathExpanderBuilder
     }
 
     /**
+     * Adds a {@link Node} filter.
+     *
+     * @param filter a Predicate for filtering nodes.
+     * @return a {@link PathExpanderBuilder} with the added node filter.
+     */
+    public PathExpanderBuilder addNodeFilter( Predicate<? super Node> filter )
+    {
+        return new PathExpanderBuilder( expander.addNodeFilter( filter ) );
+    }
+
+    /**
+     * Adds a {@link Relationship} filter.
+     *
+     * @param filter a Predicate for filtering relationships.
+     * @return a {@link PathExpanderBuilder} with the added relationship filter.
+     */
+    public PathExpanderBuilder addRelationshipFilter( Predicate<? super Relationship> filter )
+    {
+        return new PathExpanderBuilder( expander.addRelationshipFilter( filter ) );
+    }
+
+    /**
      * Produce a {@link PathExpander} from the configuration you have built up.
-     * 
+     *
      * @param <STATE> the type of the object holding the state
      * @return a PathExpander produced from the configuration you have built up
      */

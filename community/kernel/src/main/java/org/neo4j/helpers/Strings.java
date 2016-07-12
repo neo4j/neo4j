@@ -34,6 +34,10 @@ public final class Strings
     {
     }
 
+    /**
+     * @deprecated This field will be removed in the next major release.
+     */
+    @Deprecated
     public static final Function<String,String> decamelize = new Function<String,String>()
     {
         @Override
@@ -60,6 +64,10 @@ public final class Strings
         }
     };
 
+    /**
+     * @deprecated This method will be removed in the next major release.
+     */
+    @Deprecated
     public static boolean isBlank( String str )
     {
         if ( str == null || str.isEmpty() )
@@ -76,6 +84,10 @@ public final class Strings
         return true;
     }
 
+    /**
+     * @deprecated This method will be removed in the next major release.
+     */
+    @Deprecated
     public static String defaultIfBlank( String str, String defaultStr )
     {
         return isBlank( str ) ? defaultStr : str;
@@ -164,7 +176,6 @@ public final class Strings
         return result.toString();
     }
 
-
     public static void escape( Appendable output, String arg ) throws IOException
     {
         int len = arg.length();
@@ -209,5 +220,35 @@ public final class Strings
                     break;
             }
         }
+    }
+
+    /**
+     * Use this to standardize the width of some text output to all be left-justified and space-padded
+     * on the right side to fill up the given column width.
+     *
+     * @param str the text to format
+     * @param columnWidth the column width
+     * @return the left-justified space-padded text
+     * @deprecated This method will be removed in the next major release.
+     */
+    @Deprecated
+    public static String ljust( String str, int columnWidth )
+    {
+        return String.format( "%-" + columnWidth + "s", str );
+    }
+
+    /**
+     * Use this to standardize the width of some text output to all be right-justified and space-padded
+     * on the left side to fill up the given column width.
+     *
+     * @param str the text to format
+     * @param columnWidth the column width
+     * @return the right-justified space-padded text
+     * @deprecated This method will be removed in the next major release.
+     */
+    @Deprecated
+    public static String rjust( String str, int columnWidth )
+    {
+        return String.format( "%" + columnWidth + "s", str );
     }
 }

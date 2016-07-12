@@ -1,0 +1,25 @@
+[[cypher-compatibility]]
+= Compatibility
+
+Cypher is still changing rather rapidly.
+Parts of the changes are internal -- we add new pattern matchers, aggregators and optimizations or write new <<query-tuning,query planners>>, which hopefully makes your queries run faster.
+
+Other changes are directly visible to our users -- the syntax is still changing.
+New concepts are being added and old ones changed to fit into new possibilities.
+To guard you from having to keep up with our syntax changes, Neo4j allows you to use an older parser, but still gain speed from new optimizations.
+
+There are two ways you can select which parser to use.
+You can configure your database with the configuration parameter `cypher_parser_version`, and enter which parser you'd like to use (see <<cypher-versions>>)).
+Any Cypher query that doesn't explicitly say anything else, will get the parser you have configured, or the latest parser if none is configured.
+
+The other way is on a query by query basis.
+By simply putting `CYPHER 2.2` at the beginning, that particular query will be parsed with the 2.2 version of the parser.
+Below is an example using the `START` clause to access a legacy index:
+
+[source,cypher]
+----
+CYPHER 2.2
+START n=node:nodes(name = "A")
+RETURN n
+----
+

@@ -21,89 +21,48 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
-import org.neo4j.helpers.UTF8;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;
 
 public class StoreVersionCheck
 {
-    private final FileSystemAbstraction fs;
+    private final PageCache pageCache;
 
-    public StoreVersionCheck( FileSystemAbstraction fs )
+    public StoreVersionCheck( PageCache pageCache )
     {
-        this.fs = fs;
+        this.pageCache = pageCache;
     }
 
-    public Result hasVersion( File storeFile, String expectedVersion )
+    public Result hasVersion( File neostoreFile, String expectedVersion )
     {
-        StoreChannel fileChannel = null;
-        String storeFilename = storeFile.getName();
-        byte[] expectedVersionBytes = UTF8.encode( expectedVersion );
+        long record;
+
         try
         {
-            if ( !fs.fileExists( storeFile ) )
-            {
-                return new Result( Outcome.missingStoreFile, null, storeFilename );
-            }
-
-            fileChannel = fs.open( storeFile, "r" );
-            if ( fileChannel.size() < expectedVersionBytes.length )
-            {
-                return new Result( Outcome.storeVersionNotFound, null, storeFilename );
-            }
-
-            String actualVersion = readVersion( fileChannel, expectedVersionBytes.length );
-            if ( !actualVersion.startsWith( typeDescriptor( expectedVersion ) ) )
-            {
-                return new Result( Outcome.storeVersionNotFound, actualVersion, storeFilename );
-            }
-
-            if ( !expectedVersion.equals( actualVersion ) )
-            {
-                return new Result( Outcome.unexpectedUpgradingStoreVersion, actualVersion, storeFilename );
-            }
+            record = MetaDataStore.getRecord( pageCache, neostoreFile, STORE_VERSION );
         }
-        catch ( IOException e )
+        catch ( IOException ex )
         {
-            throw new RuntimeException( e );
+            // since we cannot read let's assume the file is not there
+            return new Result( Outcome.missingStoreFile, null, neostoreFile.getName() );
         }
-        finally
-        {
-            if ( fileChannel != null )
-            {
-                try
-                {
-                    fileChannel.close();
-                }
-                catch ( IOException e )
-                {
-                    // Ignore exception on close
-                }
-            }
-        }
-        return new Result( Outcome.ok, null, storeFilename );
-    }
 
-    private String typeDescriptor( String expectedVersion )
-    {
-        int spaceIndex = expectedVersion.indexOf( ' ' );
-        if ( spaceIndex == -1 )
+        if ( record == MetaDataStore.FIELD_NOT_PRESENT )
         {
-            throw new IllegalArgumentException( "Unexpected version " + expectedVersion );
+            return new Result( Outcome.storeVersionNotFound, null, neostoreFile.getName() );
         }
-        return expectedVersion.substring( 0, spaceIndex );
-    }
 
-    private String readVersion( StoreChannel fileChannel, int bytesToRead ) throws IOException
-    {
-        fileChannel.position( fileChannel.size() - bytesToRead );
-        byte[] foundVersionBytes = new byte[bytesToRead];
-        fileChannel.read( ByteBuffer.wrap( foundVersionBytes ) );
-        return UTF8.decode( foundVersionBytes );
+        String storeVersion = MetaDataStore.versionLongToString( record );
+        if ( !expectedVersion.equals( storeVersion ) )
+        {
+            return new Result( Outcome.unexpectedUpgradingStoreVersion, storeVersion, expectedVersion );
+        }
+
+        return new Result( Outcome.ok, null, neostoreFile.getName() );
     }
 
     public static class Result
@@ -119,7 +78,7 @@ public class StoreVersionCheck
             this.storeFilename = storeFilename;
         }
 
-        public static enum Outcome
+        public enum Outcome
         {
             ok( true ),
             missingStoreFile( false ),
@@ -128,7 +87,7 @@ public class StoreVersionCheck
 
             private final boolean success;
 
-            private Outcome( boolean success )
+            Outcome( boolean success )
             {
                 this.success = success;
             }

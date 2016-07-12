@@ -19,14 +19,16 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.locking.Locks.Client;
 
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
-@Ignore("Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite.")
+@Ignore( "Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite." )
 public class CloseCompatibility extends LockingCompatibilityTestSuite.Compatibility
 {
     public CloseCompatibility( LockingCompatibilityTestSuite suite )
@@ -57,5 +59,59 @@ public class CloseCompatibility extends LockingCompatibilityTestSuite.Compatibil
         {
             // Good
         }
+    }
+
+    @Test
+    public void closeShouldWaitAllOperationToFinish()
+    {
+        // given
+        clientA.acquireShared( NODE, 1L );
+        clientA.acquireShared( NODE, 3L );
+        clientB.acquireShared( NODE, 1L );
+        acquireShared( clientC, NODE, 2L );
+        acquireExclusive( clientB, NODE, 1L ).callAndAssertWaiting();
+        acquireExclusive( clientC, NODE, 1L ).callAndAssertWaiting();
+
+        // when
+        clientB.close();
+        clientC.close();
+        clientA.close();
+
+        // all locks should be closed at this point regardless of
+        // reader/writer waiter in any threads
+        // those should be gracefully finish and client should be closed
+
+        LockCountVisitor lockCountVisitor = new LockCountVisitor();
+        locks.accept( lockCountVisitor );
+        Assert.assertEquals( 0, lockCountVisitor.getLockCount() );
+
+    }
+
+    @Test( expected = LockClientStoppedException.class )
+    public void shouldNotBeAbleToAcquireSharedLockFromClosedClient()
+    {
+        clientA.close();
+        clientA.acquireShared( NODE, 1l );
+    }
+
+    @Test( expected = LockClientStoppedException.class )
+    public void shouldNotBeAbleToAcquireExclusiveLockFromClosedClient()
+    {
+        clientA.close();
+        clientA.acquireExclusive( NODE, 1l );
+    }
+
+    @Test( expected = LockClientStoppedException.class )
+    public void shouldNotBeAbleToTryAcquireSharedLockFromClosedClient()
+    {
+        clientA.close();
+        clientA.trySharedLock( NODE, 1L );
+    }
+
+    @Test( expected = LockClientStoppedException.class )
+    public void shouldNotBeAbleToTryAcquireExclusiveLockFromClosedClient()
+    {
+        clientA.close();
+        clientA.tryExclusiveLock( NODE, 1L );
     }
 }

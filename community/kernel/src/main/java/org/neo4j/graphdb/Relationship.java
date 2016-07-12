@@ -83,7 +83,7 @@ public interface Relationship extends PropertyContainer
     /**
      * Deletes this relationship. Invoking any methods on this relationship
      * after <code>delete()</code> has returned is invalid and will lead to
-     * unspecified behavior.
+     * {@link NotFoundException} being thrown.
      */
      void delete();
 

@@ -34,7 +34,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -48,13 +48,15 @@ public class IncrementalBackupTests
 
     @Rule
     public TestName testName = new TestName();
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
     private ServerInterface server;
     private GraphDatabaseService db;
 
     @Before
     public void before() throws Exception
     {
-        File base = TargetDirectory.forTest( getClass() ).cleanDirectory( testName.getMethodName() );
+        File base = testDirectory.directory( testName.getMethodName() );
         serverPath = new File( base, "server" );
         backupPath = new File( base, "backup" );
     }
@@ -145,17 +147,18 @@ public class IncrementalBackupTests
     private DbRepresentation createInitialDataSet( File path )
     {
         db = startGraphDatabase( path );
-        Transaction tx = db.beginTx();
-        db.createNode().setProperty( "name", "Goofy" );
-        Node donald = db.createNode();
-        donald.setProperty( "name", "Donald" );
-        Node daisy = db.createNode();
-        daisy.setProperty( "name", "Daisy" );
-        Relationship knows = donald.createRelationshipTo( daisy,
-                DynamicRelationshipType.withName( "LOVES" ) );
-        knows.setProperty( "since", 1940 );
-        tx.success();
-        tx.finish();
+        try (Transaction tx = db.beginTx())
+        {
+            db.createNode().setProperty( "name", "Goofy" );
+            Node donald = db.createNode();
+            donald.setProperty( "name", "Donald" );
+            Node daisy = db.createNode();
+            daisy.setProperty( "name", "Daisy" );
+            Relationship knows = donald.createRelationshipTo( daisy,
+                    DynamicRelationshipType.withName( "LOVES" ) );
+            knows.setProperty( "since", 1940 );
+            tx.success();
+        }
         DbRepresentation result = DbRepresentation.of( db );
         db.shutdown();
         return result;
@@ -164,15 +167,16 @@ public class IncrementalBackupTests
     private DbRepresentation addMoreData2( File path )
     {
         db = startGraphDatabase( path );
-        Transaction tx = db.beginTx();
-        Node donald = db.getNodeById( 2 );
-        Node gladstone = db.createNode();
-        gladstone.setProperty( "name", "Gladstone" );
-        Relationship hates = donald.createRelationshipTo( gladstone,
-                DynamicRelationshipType.withName( "HATES" ) );
-        hates.setProperty( "since", 1948 );
-        tx.success();
-        tx.finish();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node donald = db.getNodeById( 2 );
+            Node gladstone = db.createNode();
+            gladstone.setProperty( "name", "Gladstone" );
+            Relationship hates = donald.createRelationshipTo( gladstone,
+                    DynamicRelationshipType.withName( "HATES" ) );
+            hates.setProperty( "since", 1948 );
+            tx.success();
+        }
         DbRepresentation result = DbRepresentation.of( db );
         db.shutdown();
         return result;

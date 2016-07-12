@@ -19,15 +19,15 @@
  */
 package org.neo4j.com;
 
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 public class LoggingResourcePoolMonitor extends ResourcePool.Monitor.Adapter<ChannelContext>
 {
-    private final StringLogger msgLog;
+    private final Log msgLog;
     private int lastCurrentPeakSize = -1;
     private int lastTargetSize = -1;
 
-    public LoggingResourcePoolMonitor( StringLogger msgLog )
+    public LoggingResourcePoolMonitor( Log msgLog )
     {
         this.msgLog = msgLog;
     }

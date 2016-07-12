@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverhead;
-import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
-import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
-
 class IntArrayProperty extends IntegralArrayProperty
 {
     private final int[] value;
@@ -50,11 +46,5 @@ class IntArrayProperty extends IntegralArrayProperty
     public long longValue( int index )
     {
         return value[index];
-    }
-
-    @Override
-    public int sizeOfObjectInBytesIncludingOverhead()
-    {
-        return withObjectOverhead( withReference( withArrayOverhead( value.length * 4 ) ) );
     }
 }

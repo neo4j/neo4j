@@ -8,4 +8,4 @@ div()
     .frame.frame-in(
       ng-repeat = 'frame in frames.items | orderBy:["-pinTime", "-startTime"]'
     )
-      div(ng-include='frame.templateUrl', ng-controller="FrameCtrl")
+      div(ng-include='frame.templateUrl', ng-controller="FrameCtrl", scroll-to-top='stream')

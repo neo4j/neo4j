@@ -28,29 +28,41 @@ import static java.lang.String.format;
 public class StoreIdIterator implements PrimitiveLongIterator
 {
     private final RecordStore<?> store;
-    private long highId, id;
+    private long targetId, id;
+    private final boolean forward;
 
     public StoreIdIterator( RecordStore<?> store )
     {
+        this( store, true );
+    }
+
+    public StoreIdIterator( RecordStore<?> store, boolean forward )
+    {
         this.store = store;
-        this.id = store.getNumberOfReservedLowIds();
+        this.id = forward ? store.getNumberOfReservedLowIds() : store.getHighId();
+        this.forward = forward;
     }
 
     @Override
     public String toString()
     {
-        return format( "%s[id=%s/%s; store=%s]", getClass().getSimpleName(), id, highId, store );
+        return format( "%s[id=%s/%s; store=%s]", getClass().getSimpleName(), id, targetId, store );
     }
 
     @Override
     public boolean hasNext()
     {
-        if ( id < highId )
+        if ( forward )
         {
-            return true;
+            if ( id < targetId )
+            {
+                return true;
+            }
+            targetId = store.getHighId();
+            return id < targetId;
         }
-        highId = store.getHighId();
-        return id < highId;
+
+        return id > 0;
     }
 
     @Override
@@ -58,9 +70,17 @@ public class StoreIdIterator implements PrimitiveLongIterator
     {
         if ( !hasNext() )
         {
-            throw new NoSuchElementException(
-                    format( "ID [%s] has exceeded the high ID [%s] of %s.", id, highId, store ) );
+            throw new NoSuchElementException( forward
+                    ? format( "ID [%s] has exceeded the high ID [%s] of %s.", id, targetId, store )
+                    : format( "ID [%s] has exceeded the low ID [%s] of %s.", id, targetId, store ) );
         }
-        return id++;
+        try
+        {
+            return id;
+        }
+        finally
+        {
+            id += (forward ? 1 : -1);
+        }
     }
 }

@@ -19,101 +19,71 @@
  */
 package org.neo4j.ha;
 
-import java.io.File;
-import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
-import org.junit.Test;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
+import org.neo4j.function.IntFunction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
+import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
+import org.neo4j.test.ha.ClusterRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 
 public class TestSlaveOnlyCluster
 {
-    private final TargetDirectory directory = TargetDirectory.forTest( getClass() );
+    @ClassRule
+    public static ClusterRule clusterRule = new ClusterRule( TestSlaveOnlyCluster.class )
+            .withInstanceSetting( HaSettings.slave_only, new IntFunction<String>()
+            {
+                @Override
+                public String apply( int value )
+                {
+                    return value == 1 || value == 2 ? Settings.TRUE : Settings.FALSE;
+                }
+            } );
     private static final String PROPERTY = "foo";
     private static final String VALUE = "bar";
 
     @Test
     public void testMasterElectionAfterMasterRecoversInSlaveOnlyCluster() throws Throwable
     {
-        final ClusterManager clusterManager = createCluster( "masterrecovery", 1, 2 );
+        ManagedCluster cluster = clusterRule.startCluster();
+        assertThat( cluster.getServerId( cluster.getMaster() ), equalTo( new InstanceId( 3 ) ) );
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        CountDownLatch masterFailedLatch = createMasterFailLatch( cluster );
+        RepairKit repairKit = cluster.fail( master );
         try
         {
-            clusterManager.start();
-
-            final ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
-            cluster.await( allSeesAllAsAvailable() );
-
-            final HighlyAvailableGraphDatabase master = cluster.getMaster();
-            final CountDownLatch masterFailedLatch = createMasterFailLatch( cluster );
-
-            final ClusterManager.RepairKit repairKit = cluster.fail( master );
-
-            masterFailedLatch.await( 60, TimeUnit.SECONDS );
-
+            assertTrue( masterFailedLatch.await( 60, TimeUnit.SECONDS ) );
+        }
+        finally
+        {
             repairKit.repair();
-
-            cluster.await( allSeesAllAsAvailable() );
-
-            long nodeId = createNodeWithPropertyOn( cluster.getAnySlave(), PROPERTY, VALUE );
-
-            try ( Transaction ignore = master.beginTx() )
-            {
-                assertThat( (String) master.getNodeById( nodeId ).getProperty( PROPERTY ), equalTo( VALUE ) );
-            }
         }
-        finally
+
+        cluster.await( allSeesAllAsAvailable() );
+        long nodeId = createNodeWithPropertyOn( cluster.getAnySlave(), PROPERTY, VALUE );
+
+        try ( Transaction ignore = master.beginTx() )
         {
-            clusterManager.stop();
+            assertThat( (String) master.getNodeById( nodeId ).getProperty( PROPERTY ), equalTo( VALUE ) );
         }
-    }
-
-    @Test
-    public void testMasterElectionAfterSlaveOnlyInstancesStartFirst() throws Throwable
-    {
-        final ClusterManager clusterManager = createCluster( "slaveonly", 1, 2 );
-
-        try
-        {
-            clusterManager.start();
-            ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
-            cluster.await( allSeesAllAsAvailable() );
-
-            assertThat( cluster.getServerId( cluster.getMaster() ), equalTo( new InstanceId( 3 ) ) );
-        }
-        finally
-        {
-            clusterManager.stop();
-        }
-    }
-
-    private ClusterManager createCluster( String dirname, int... slaveIds ) throws URISyntaxException
-    {
-        final File dir = directory.cleanDirectory( dirname );
-        final ClusterManager.Provider provider = ClusterManager.clusterOfSize( 3 );
-        final Map<Integer, Map<String, String>> instanceConfig = new HashMap<>( slaveIds.length );
-        for ( int slaveId : slaveIds )
-        {
-            instanceConfig.put( slaveId, MapUtil.stringMap( HaSettings.slave_only.name(), "true" ) );
-        }
-
-        return new ClusterManager( provider, dir, MapUtil.stringMap(), instanceConfig );
     }
 
     private long createNodeWithPropertyOn( HighlyAvailableGraphDatabase db, String property, String value )

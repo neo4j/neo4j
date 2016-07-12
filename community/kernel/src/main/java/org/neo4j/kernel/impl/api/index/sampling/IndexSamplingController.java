@@ -20,10 +20,11 @@
 package org.neo4j.kernel.impl.api.index.sampling;
 
 import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Predicate;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.index.IndexMap;
@@ -34,7 +35,7 @@ import org.neo4j.kernel.impl.util.JobScheduler.JobHandle;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.BACKGROUND_REBUILD_UPDATED;
-import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexSamplingController;
+import static org.neo4j.kernel.impl.util.JobScheduler.Groups.indexSamplingController;
 
 public class IndexSamplingController
 {
@@ -91,7 +92,7 @@ public class IndexSamplingController
             while ( descriptors.hasNext() )
             {
                 IndexDescriptor descriptor = descriptors.next();
-                if ( indexRecoveryCondition.accept( descriptor ) )
+                if ( indexRecoveryCondition.test( descriptor ) )
                 {
                     sampleIndexOnCurrentThread( indexMap, descriptor );
                 }
@@ -216,6 +217,11 @@ public class IndexSamplingController
             };
             backgroundSamplingHandle = scheduler.scheduleRecurring( indexSamplingController, samplingRunner, 10, SECONDS );
         }
+    }
+
+    public void awaitSamplingCompleted( long time, TimeUnit unit ) throws InterruptedException
+    {
+        jobTracker.awaitAllJobs( time, unit );
     }
 
     public void stop()

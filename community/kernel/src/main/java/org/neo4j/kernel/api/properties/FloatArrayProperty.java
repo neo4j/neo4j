@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
-import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
-import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
-
 class FloatArrayProperty extends FloatingPointArrayProperty
 {
     private final float[] value;
@@ -50,11 +46,5 @@ class FloatArrayProperty extends FloatingPointArrayProperty
     public float[] value()
     {
         return value.clone();
-    }
-
-    @Override
-    public int sizeOfObjectInBytesIncludingOverhead()
-    {
-        return withObjectOverhead( 4 + withReference( sizeOfArray( value ) ) );
     }
 }

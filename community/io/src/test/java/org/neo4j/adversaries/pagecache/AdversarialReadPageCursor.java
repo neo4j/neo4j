@@ -72,6 +72,7 @@ class AdversarialReadPageCursor implements PageCursor
         this.adversary = Objects.requireNonNull( adversary );
     }
 
+
     @Override
     public byte getByte()
     {
@@ -105,6 +106,12 @@ class AdversarialReadPageCursor implements PageCursor
 
     private void inconsistently( byte[] data )
     {
+        inconsistently( data, 0, data.length );
+    }
+
+
+    private void inconsistently( byte[] data, int from, int to )
+    {
         if ( currentReadIsPreparingInconsistent )
         {
             callCounter++;
@@ -112,7 +119,7 @@ class AdversarialReadPageCursor implements PageCursor
         else if ( currentReadIsInconsistent )
         {
             ThreadLocalRandom.current().nextBytes( data );
-            inconsistentReadHistory.add( Arrays.copyOf( data, data.length ) );
+            inconsistentReadHistory.add( Arrays.copyOfRange( data, from, to ) );
         }
     }
 
@@ -199,6 +206,19 @@ class AdversarialReadPageCursor implements PageCursor
     {
         delegate.getBytes( data );
         inconsistently( data );
+    }
+
+    @Override
+    public void getBytes( byte[] data, int arrayOffset, int length )
+    {
+        delegate.getBytes( data, arrayOffset, length );
+        inconsistently( data, arrayOffset, length );
+    }
+
+    @Override
+    public void putBytes( byte[] data, int arrayOffset, int length )
+    {
+        throw new IllegalStateException( "Cannot write using read cursor" );
     }
 
     @Override

@@ -20,9 +20,9 @@
 // START SNIPPET: _sampleDocumentation
 package org.neo4j.examples;
 
-import java.io.IOException;
-
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -34,83 +34,82 @@ import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippe
 
 public class TraversalDocTest extends ImpermanentGraphJavaDocTestBase
 {
-    /**
-     * A
-     * link:javadocs/org/neo4j/graphdb/traversal/TraversalDescription.html[traversal description] is built using a
-     * fluent interface and such a description can then spawn
-     * link:javadocs/org/neo4j/graphdb/traversal/Traverser.html[traversers].
-     *
-     * @@graph
-     *
-     * With the definition of the +RelationshipTypes+ as
-     *
-     * @@sourceRels
-     *
-     * The graph can be traversed with for example the following traverser, starting at the ``Joe'' node:
-     *
-     * @@knowslikestraverser
-     *
-     * The traversal will output:
-     *
-     * @@knowslikesoutput
-     *
-     * Since link:javadocs/org/neo4j/graphdb/traversal/TraversalDescription.html[+TraversalDescription+]s
-     * are immutable it is also useful to create template descriptions which holds common
-     * settings shared by different traversals. For example, let's start with this traverser:
-     *
-     * @@basetraverser
-     *
-     * This traverser would yield the following output (we will keep starting from the ``Joe'' node):
-     *
-     * @@baseoutput
-     *
-     * Now let's create a new traverser from it, restricting depth to three:
-     *
-     * @@depth3
-     *
-     * This will give us the following result:
-     *
-     * @@output3
-     *
-     * Or how about from depth two to four?
-     * That's done like this:
-     *
-     * @@depth4
-     *
-     * This traversal gives us:
-     *
-     * @@output4
-     *
-     * For various useful evaluators, see the
-     * link:javadocs/org/neo4j/graphdb/traversal/Evaluators.html[Evaluators] Java API
-     * or simply implement the
-     * link:javadocs/org/neo4j/graphdb/traversal/Evaluator.html[Evaluator] interface yourself.
-     *
-     * If you're not interested in the link:javadocs/org/neo4j/graphdb/Path.html[+Path+]s,
-     * but the link:javadocs/org/neo4j/graphdb/Node.html[+Node+]s
-     * you can transform the traverser into an iterable of link:javadocs/org/neo4j/graphdb/traversal/Traverser.html#nodes()[nodes]
-     * like this:
-     *
-     * @@nodes
-     *
-     * In this case we use it to retrieve the names:
-     *
-     * @@nodeoutput
-     *
-     * link:javadocs/org/neo4j/graphdb/traversal/Traverser.html#relationships()[Relationships]
-     * are fine as well, here's how to get them:
-     *
-     * @@relationships
-     *
-     * Here the relationship types are written, and we get:
-     *
-     * @@relationshipoutput
-     *
-     * TIP: The source code for the traversers in this example is available at:
-     * @@github
-     */
+    private static final String TRAVERSAL_DOC =
+            "A\n" +
+            "link:javadocs/org/neo4j/graphdb/traversal/TraversalDescription.html[traversal description] is built using a\n" +
+            "fluent interface and such a description can then spawn\n" +
+            "link:javadocs/org/neo4j/graphdb/traversal/Traverser.html[traversers].\n" +
+            "\n" +
+            "@@graph\n" +
+            "\n" +
+            "With the definition of the +RelationshipTypes+ as\n" +
+            "\n" +
+            "@@sourceRels\n" +
+            "\n" +
+            "The graph can be traversed with for example the following traverser, starting at the ``Joe'' node:\n" +
+            "\n" +
+            "@@knowslikestraverser\n" +
+            "\n" +
+            "The traversal will output:\n" +
+            "\n" +
+            "@@knowslikesoutput\n" +
+            "\n" +
+            "Since link:javadocs/org/neo4j/graphdb/traversal/TraversalDescription.html[+TraversalDescription+]s\n" +
+            "are immutable it is also useful to create template descriptions which holds common\n" +
+            "settings shared by different traversals. For example, let's start with this traverser:\n" +
+            "\n" +
+            "@@basetraverser\n" +
+            "\n" +
+            "This traverser would yield the following output (we will keep starting from the ``Joe'' node):\n" +
+            "\n" +
+            "@@baseoutput\n" +
+            "\n" +
+            "Now let's create a new traverser from it, restricting depth to three:\n" +
+            "\n" +
+            "@@depth3\n" +
+            "\n" +
+            "This will give us the following result:\n" +
+            "\n" +
+            "@@output3\n" +
+            "\n" +
+            "Or how about from depth two to four?\n" +
+            "That's done like this:\n" +
+            "\n" +
+            "@@depth4\n" +
+            "\n" +
+            "This traversal gives us:\n" +
+            "\n" +
+            "@@output4\n" +
+            "\n" +
+            "For various useful evaluators, see the\n" +
+            "link:javadocs/org/neo4j/graphdb/traversal/Evaluators.html[Evaluators] Java API\n" +
+            "or simply implement the\n" +
+            "link:javadocs/org/neo4j/graphdb/traversal/Evaluator.html[Evaluator] interface yourself.\n" +
+            "\n" +
+            "If you're not interested in the link:javadocs/org/neo4j/graphdb/Path.html[+Path+]s,\n" +
+            "but the link:javadocs/org/neo4j/graphdb/Node.html[+Node+]s\n" +
+            "you can transform the traverser into an iterable of link:javadocs/org/neo4j/graphdb/traversal/Traverser.html#nodes()[nodes]\n" +
+            "like this:\n" +
+            "\n" +
+            "@@nodes\n" +
+            "\n" +
+            "In this case we use it to retrieve the names:\n" +
+            "\n" +
+            "@@nodeoutput\n" +
+            "\n" +
+            "link:javadocs/org/neo4j/graphdb/traversal/Traverser.html#relationships()[Relationships]\n" +
+            "are fine as well, here's how to get them:\n" +
+            "\n" +
+            "@@relationships\n" +
+            "\n" +
+            "Here the relationship types are written, and we get:\n" +
+            "\n" +
+            "@@relationshipoutput\n" +
+            "\n" +
+            "TIP: The source code for the traversers in this example is available at:\n" +
+            "@@github";
     @Test
-    @Documented
+    @Documented( TRAVERSAL_DOC )
     @Graph( { "Joe KNOWS Sara", "Lisa LIKES Joe", "Peter KNOWS Sara",
             "Dirk KNOWS Peter", "Lars KNOWS Dirk", "Ed KNOWS Lars",
             "Lisa KNOWS Lars" } )

@@ -61,7 +61,7 @@ import org.neo4j.cluster.statemachine.StateMachineRules;
 import org.neo4j.cluster.timeout.TimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.cluster.com.message.Message.internal;
 
@@ -72,10 +72,10 @@ public class MultiPaxosServerFactory
         implements ProtocolServerFactory
 {
     private final ClusterConfiguration initialConfig;
-    private final Logging logging;
+    private final LogProvider logging;
     private StateMachines.Monitor stateMachinesMonitor;
 
-    public MultiPaxosServerFactory( ClusterConfiguration initialConfig, Logging logging, StateMachines.Monitor stateMachinesMonitor )
+    public MultiPaxosServerFactory( ClusterConfiguration initialConfig, LogProvider logging, StateMachines.Monitor stateMachinesMonitor )
     {
         this.initialConfig = initialConfig;
         this.logging = logging;
@@ -98,7 +98,7 @@ public class MultiPaxosServerFactory
 
         final MultiPaxosContext context = new MultiPaxosContext( me, maxAcceptors,
                 Iterables.<ElectionRole, ElectionRole>iterable( new ElectionRole( ClusterConfiguration.COORDINATOR ) ),
-                new ClusterConfiguration( initialConfig.getName(), logging.getMessagesLog( ClusterConfiguration.class ),
+                new ClusterConfiguration( initialConfig.getName(), logging,
                         initialConfig.getMemberURIs() ),
                 executor, logging, objectInputStreamFactory, objectOutputStreamFactory, acceptorInstanceStore, timeouts,
                 electionCredentialsProvider
@@ -149,7 +149,7 @@ public class MultiPaxosServerFactory
                                                                 final MultiPaxosContext context,
                                                                 StateMachine[] machines )
     {
-        StateMachines stateMachines = new StateMachines( stateMachinesMonitor, input,
+        StateMachines stateMachines = new StateMachines( logging, stateMachinesMonitor, input,
                 output, timeouts, executor, stateMachineExecutor, me );
 
         for ( StateMachine machine : machines )
@@ -178,10 +178,10 @@ public class MultiPaxosServerFactory
         cluster.addClusterListener( new HeartbeatLeftListener( context.getHeartbeatContext(), logging ) );
 
         context.getHeartbeatContext().addHeartbeatListener( new HeartbeatReelectionListener(
-                server.newClient( Election.class ), logging.getMessagesLog( HeartbeatReelectionListener.class ) ) );
+                server.newClient( Election.class ), logging ) );
         context.getClusterContext().addClusterListener( new ClusterLeaveReelectionListener( server.newClient(
                 Election.class ),
-                logging.getMessagesLog( ClusterLeaveReelectionListener.class )
+                logging
         ) );
 
         StateMachineRules rules = new StateMachineRules( stateMachines.getOutgoing() )

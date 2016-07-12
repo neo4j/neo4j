@@ -19,18 +19,18 @@
  */
 package org.neo4j.backup;
 
-import java.io.PrintStream;
-import java.util.List;
-
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.File;
+import java.io.PrintStream;
+import java.util.List;
+
 import org.neo4j.kernel.configuration.Config;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -94,8 +94,8 @@ public class BackupToolUrisTest
             verify( backupService ).doIncrementalBackupOrFallbackToFull(
                     eq( host ),
                     eq( port ),
-                    eq( "/var/backup/graph" ),
-                    eq( true ),
+                    eq( new File( "/var/backup/graph" ) ),
+                    eq( ConsistencyCheck.DEFAULT ),
                     any( Config.class ),
                     eq( BackupClient.BIG_READ_TIMEOUT ),
                     eq( false )
@@ -198,8 +198,8 @@ public class BackupToolUrisTest
             verify( backupService ).doIncrementalBackupOrFallbackToFull(
                     eq( host ),
                     eq( port ),
-                    eq( "/var/backup/graph" ),
-                    eq( true ),
+                    eq( new File( "/var/backup/graph" ) ),
+                    eq( ConsistencyCheck.DEFAULT ),
                     any( Config.class ),
                     eq( BackupClient.BIG_READ_TIMEOUT ),
                     eq( false )

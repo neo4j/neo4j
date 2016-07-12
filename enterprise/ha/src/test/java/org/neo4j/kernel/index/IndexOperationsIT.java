@@ -20,7 +20,7 @@
 package org.neo4j.kernel.index;
 
 import org.junit.Before;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -36,10 +36,10 @@ import org.neo4j.ha.FinishTx;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.impl.ha.ClusterManager;
+import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.ha.ClusterRule;
-import org.neo4j.test.ha.RetryOnGcRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -48,13 +48,10 @@ import static org.junit.Assert.assertTrue;
 
 public class IndexOperationsIT
 {
-    @Rule
-    public ClusterRule clusterRule = new ClusterRule(getClass());
+    @ClassRule
+    public static ClusterRule clusterRule = new ClusterRule( IndexOperationsIT.class );
 
     protected ClusterManager.ManagedCluster cluster;
-
-    @Rule
-    public RetryOnGcRule retryRule = new RetryOnGcRule();
 
     @Before
     public void setup() throws Exception
@@ -85,7 +82,7 @@ public class IndexOperationsIT
     }
 
     @Test
-    public void index_objects_can_be_reused_after_role_switch() throws Exception
+    public void index_objects_can_be_reused_after_role_switch() throws Throwable
     {
         // GIVEN
         // -- an existing index
@@ -98,22 +95,17 @@ public class IndexOperationsIT
         Map<HighlyAvailableGraphDatabase,Index<Node>> indexes = new HashMap<>();
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
-            Transaction transaction = db.beginTx();
-            try
+            try ( Transaction transaction = db.beginTx() )
             {
                 indexManagers.put( db, db.index() );
                 indexes.put( db, db.index().forNodes( key ) );
                 transaction.success();
             }
-            finally
-            {
-                transaction.finish();
-            }
         }
 
         // WHEN
         // -- there's a master switch
-        cluster.shutdown( master );
+        RepairKit repair = cluster.shutdown( master );
         indexManagers.remove( master );
         indexes.remove( master );
 
@@ -122,36 +114,27 @@ public class IndexOperationsIT
 
         // THEN
         // -- the index instances should still be viable to use
-        for ( Map.Entry<HighlyAvailableGraphDatabase, IndexManager> entry : indexManagers.entrySet() )
+        for ( Map.Entry<HighlyAvailableGraphDatabase,IndexManager> entry : indexManagers.entrySet() )
         {
             HighlyAvailableGraphDatabase db = entry.getKey();
-            Transaction transaction = db.beginTx();
-            try
+            try ( Transaction transaction = db.beginTx() )
             {
                 IndexManager indexManager = entry.getValue();
                 assertTrue( indexManager.existsForNodes( key ) );
                 assertEquals( nodeId, indexManager.forNodes( key ).get( key, value ).getSingle().getId() );
             }
-            finally
-            {
-                transaction.finish();
-            }
         }
 
-        for ( Map.Entry<HighlyAvailableGraphDatabase, Index<Node>> entry : indexes.entrySet() )
+        for ( Map.Entry<HighlyAvailableGraphDatabase,Index<Node>> entry : indexes.entrySet() )
         {
             HighlyAvailableGraphDatabase db = entry.getKey();
-            Transaction transaction = db.beginTx();
-            try
+            try ( Transaction transaction = db.beginTx() )
             {
                 Index<Node> index = entry.getValue();
                 assertEquals( nodeId, index.get( key, value ).getSingle().getId() );
             }
-            finally
-            {
-                transaction.finish();
-            }
         }
+        repair.repair();
     }
 
     @Test
@@ -159,7 +142,7 @@ public class IndexOperationsIT
     {
         // GIVEN
         // -- two instances, each begin a transaction
-        String key = "key", value = "value";
+        String key = "key2", value = "value2";
         HighlyAvailableGraphDatabase db1 = cluster.getMaster(), db2 = cluster.getAnySlave();
         long node = createNode( db1, key, value, false );
         cluster.sync();
@@ -177,7 +160,7 @@ public class IndexOperationsIT
         // -- second instance completes tx
         w2.execute( new FinishTx( tx2, true ) );
         tx2.success();
-        tx2.finish();
+        tx2.close();
 
         // THEN
         // -- first instance can complete the future with a non-null result
@@ -195,44 +178,35 @@ public class IndexOperationsIT
 
     private long createNode( HighlyAvailableGraphDatabase author, String key, Object value, boolean index )
     {
-        Transaction tx = author.beginTx();
-        try
+
+        try ( Transaction tx = author.beginTx() )
         {
             Node node = author.createNode();
             node.setProperty( key, value );
             if ( index )
-                author.index().forNodes( key ).add( node, key, value );
+            { author.index().forNodes( key ).add( node, key, value ); }
             tx.success();
             return node.getId();
         }
-        catch( Exception e)
+        catch ( Exception e )
         {
             e.printStackTrace( System.err );
             throw e;
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
     private void assertNodeAndIndexingExists( HighlyAvailableGraphDatabase db, long nodeId, String key, Object value )
     {
-        Transaction transaction = db.beginTx();
-        try
+        try ( Transaction transaction = db.beginTx() )
         {
             Node node = db.getNodeById( nodeId );
             assertEquals( value, node.getProperty( key ) );
             assertTrue( db.index().existsForNodes( key ) );
             assertEquals( node, db.index().forNodes( key ).get( key, value ).getSingle() );
         }
-        finally
-        {
-            transaction.finish();
-        }
     }
 
-    private static class PutIfAbsent implements WorkerCommand<HighlyAvailableGraphDatabase, Node>
+    private static class PutIfAbsent implements WorkerCommand<HighlyAvailableGraphDatabase,Node>
     {
         private final long node;
         private final String key;

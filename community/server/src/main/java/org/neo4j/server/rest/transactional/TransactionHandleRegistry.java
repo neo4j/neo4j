@@ -25,10 +25,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.function.Predicate;
+import org.neo4j.function.Predicates;
 import org.neo4j.helpers.Clock;
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.Predicates;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.transactional.error.InvalidConcurrentTransactionAccess;
 import org.neo4j.server.rest.transactional.error.InvalidTransactionId;
 import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
@@ -42,14 +43,14 @@ public class TransactionHandleRegistry implements TransactionRegistry
 
     private final Clock clock;
 
-    private final StringLogger log;
+    private final Log log;
     private final long timeoutMillis;
 
-    public TransactionHandleRegistry( Clock clock, long timeoutMillis, StringLogger log )
+    public TransactionHandleRegistry( Clock clock, long timeoutMillis, LogProvider logProvider )
     {
         this.clock = clock;
         this.timeoutMillis = timeoutMillis;
-        this.log = log;
+        this.log = logProvider.getLog( getClass() );
     }
 
     private static abstract class TransactionMarker
@@ -241,7 +242,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
     @Override
     public void rollbackAllSuspendedTransactions()
     {
-        rollbackSuspended( Predicates.<TransactionMarker>TRUE() );
+        rollbackSuspended( Predicates.<TransactionMarker>alwaysTrue() );
     }
 
     public void rollbackSuspendedTransactionsIdleSince( final long oldestLastActiveTime )
@@ -249,7 +250,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
         rollbackSuspended( new Predicate<TransactionMarker>()
         {
             @Override
-            public boolean accept( TransactionMarker item )
+            public boolean test( TransactionMarker item )
             {
                 try
                 {
@@ -271,7 +272,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
         for ( Map.Entry<Long, TransactionMarker> entry : registry.entrySet() )
         {
             TransactionMarker marker = entry.getValue();
-            if (marker.isSuspended() && predicate.accept(marker))
+            if (marker.isSuspended() && predicate.test(marker))
             {
                 candidateTransactionIdsToRollback.add( entry.getKey() );
             }

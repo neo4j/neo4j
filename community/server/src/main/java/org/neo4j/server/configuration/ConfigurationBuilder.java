@@ -19,39 +19,40 @@
  */
 package org.neo4j.server.configuration;
 
+import org.apache.commons.configuration.Configuration;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.configuration.Configuration;
-
-import org.neo4j.helpers.Settings;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.Config;
 
 /**
- *  Used by the server to load server and database properties.
- *
+ * Used by the server to load server and database properties.
+ * @deprecated this is no longer supported, public programmatic access to Neo4j Server is deprecated, internal
+ *             config should use {@link Config}. This will be removed in the next major version of Neo4j.
  */
+@Deprecated
 public interface ConfigurationBuilder
 {
     /**
      * @return the configuration to access server properties.
      */
-    public Config configuration();
+    Config configuration();
 
     /**
-     * @return the properties that are used by {@link InternalAbstractGraphDatabase a graph database} to build database properties.
+     * @return the properties that are used by {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory a graph database} to build database properties.
      */
-    public Map<String, String> getDatabaseTuningProperties();
+    Map<String, String> getDatabaseTuningProperties();
 
     /*
      * The wrapping classes are only used for support legacy code.
      * Once we are ready to move the deprecated classes in the server package into an internal package,
      * we should also then remove these wrapping classes too.
      */
-    public class ConfiguratorWrappingConfigurationBuilder implements ConfigurationBuilder
+    class ConfiguratorWrappingConfigurationBuilder implements ConfigurationBuilder
     {
         private final Config serverConfig;
         private final Map<String, String> dbProperties;
@@ -69,8 +70,8 @@ public interface ConfigurationBuilder
             }
             serverProperties.put( ServerSettings.third_party_packages.name(),
                     toStringForThirdPartyPackageProperty( configurator.getThirdpartyJaxRsPackages() ) );
-            this.serverConfig = new Config( serverProperties );
 
+            this.serverConfig = new Config( serverProperties, BaseServerConfigLoader.getDefaultSettingsClasses() );
             // use the db properties directly
             this.dbProperties = configurator.getDatabaseTuningProperties();
         }
@@ -109,32 +110,31 @@ public interface ConfigurationBuilder
         }
     }
 
-    public class ConfigurationBuilderWrappingConfigurator extends Configurator.Adapter
+    class ConfigWrappingConfigurator extends Configurator.Adapter
     {
+        private Config config;
 
-        private final ConfigurationBuilder builder;
-
-        public ConfigurationBuilderWrappingConfigurator( ConfigurationBuilder builder )
+        public ConfigWrappingConfigurator( Config config )
         {
-            this.builder = builder;
+            this.config = config;
         }
 
         @Override
         public Configuration configuration()
         {
-            return new ConfigWrappingConfiguration( builder.configuration() );
+            return new ConfigWrappingConfiguration( config );
         }
 
         @Override
         public Map<String,String> getDatabaseTuningProperties()
         {
-            return builder.getDatabaseTuningProperties();
+            return config.getParams();
         }
 
         @Override
         public List<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages()
         {
-            return builder.configuration().get( ServerSettings.third_party_packages );
+            return config.get( ServerSettings.third_party_packages );
         }
 
     }

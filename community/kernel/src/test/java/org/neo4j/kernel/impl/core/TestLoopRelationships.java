@@ -71,11 +71,11 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         txCreateRel( node );
         txCreateLoop( node );
 
-        node.delete();
         for ( Relationship rel : node.getRelationships() )
         {
             rel.delete();
         }
+        node.delete();
 
         commit();
     }
@@ -99,8 +99,6 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         node.createRelationshipTo( node, TEST );
 
         newTransaction();
-
-        clearCache();
 
         for ( Direction dir : Direction.values() )
         {
@@ -262,8 +260,8 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
                     newTransaction();
                 }
                 verifyRelationships( String.format(
-                        "loop on %s of %s, delete %s", i, size,
-                        Arrays.toString( delete ) ), root,
+                                "loop on %s of %s, delete %s", i, size,
+                                Arrays.toString( delete ) ), root,
                         i, relationships );
             }
         }
@@ -300,7 +298,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
                             boolean[] result = new boolean[size];
                             for ( int i = 0; i < size; i++ )
                             {
-                                result[i] = ( cur & 1 ) == 1;
+                                result[i] = (cur & 1) == 1;
                                 cur >>= 1;
                             }
                             return result;
@@ -344,7 +342,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         boolean[] loops = new boolean[relationships.length];
         for ( int i = 0; i < relationships.length; i++ )
         {
-            loops[i] = ( i == loop );
+            loops[i] = (i == loop);
         }
         verifyRelationships( message, root, loops, relationships );
     }
@@ -352,15 +350,13 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
     private void verifyRelationships( String message, Node root,
             boolean[] loop, Relationship... relationships )
     {
-        clearCache();
-
         for ( Direction dir : Direction.values() )
         {
             Set<Relationship> expected = new HashSet<Relationship>();
             for ( int i = 0; i < relationships.length; i++ )
             {
                 if ( relationships[i] != null
-                     && ( dir != Direction.INCOMING || loop[i] ) )
+                        && (dir != Direction.INCOMING || loop[i]) )
                 {
                     expected.add( relationships[i] );
                 }
@@ -372,7 +368,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
                         expected.remove( rel ) );
             }
             assertTrue( message + ": expected relationships not seen "
-                        + expected,
+                            + expected,
                     expected.isEmpty() );
         }
     }

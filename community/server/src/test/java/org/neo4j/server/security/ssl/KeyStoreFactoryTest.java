@@ -19,57 +19,52 @@
  */
 package org.neo4j.server.security.ssl;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
 import java.io.File;
-import java.io.FileInputStream;
 import java.net.URL;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 
-import org.junit.Test;
-import org.neo4j.server.security.ssl.KeyStoreFactory;
-import org.neo4j.server.security.ssl.KeyStoreInformation;
-import org.neo4j.server.security.ssl.SslCertificateFactory;
-
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertNotNull;
 
 public class KeyStoreFactoryTest
 {
+    @Rule
+    public TemporaryFolder dir = new TemporaryFolder();
+
     @Test
     public void shouldCreateKeyStoreForGivenKeyPair() throws Exception
     {
         // given
-        File certificatePath = File.createTempFile( "cert", "test" );
-        File privateKeyPath = File.createTempFile( "privatekey", "test" );
-        File keyStorePath = File.createTempFile( "keyStore", "test" );
+        File certificatePath = new File(dir.getRoot(), "cert" );
+        File privateKeyPath =  new File(dir.getRoot(), "key" );
 
-        new SslCertificateFactory().createSelfSignedCertificate( certificatePath, privateKeyPath, "some-hostname" );
+        new Certificates().createSelfSignedCertificate( certificatePath, privateKeyPath, "some-hostname" );
 
         // when
-        KeyStoreInformation ks = new KeyStoreFactory().createKeyStore( keyStorePath, privateKeyPath, certificatePath );
+        KeyStoreInformation ks = new KeyStoreFactory().createKeyStore( privateKeyPath, certificatePath );
 
         // then
-        assertThat( new File( ks.getKeyStorePath() ).exists(), is( true ) );
+        assertNotNull( ks.getKeyStore() );
     }
 
     @Test
     public void shouldImportSingleCertificateWhenNotInAChain() throws Exception
     {
         // given
-        File certificatePath = File.createTempFile( "cert", "test" );
-        File privateKeyPath = File.createTempFile( "privatekey", "test" );
-        File keyStorePath = File.createTempFile( "keyStore", "test" );
+        File certificatePath = new File(dir.getRoot(), "cert" );
+        File privateKeyPath = new File(dir.getRoot(),"key" );
 
-        new SslCertificateFactory().createSelfSignedCertificate( certificatePath, privateKeyPath, "some-hostname" );
+        new Certificates().createSelfSignedCertificate( certificatePath, privateKeyPath, "some-hostname" );
 
-        KeyStoreInformation keyStoreInformation = new KeyStoreFactory().createKeyStore( keyStorePath, privateKeyPath,
+        KeyStoreInformation keyStoreInformation = new KeyStoreFactory().createKeyStore( privateKeyPath,
                 certificatePath );
 
-
-        KeyStore keyStore = KeyStore.getInstance( "JKS" );
-        keyStore.load( new FileInputStream( keyStoreInformation.getKeyStorePath() ),
-                keyStoreInformation.getKeyStorePassword() );
+        KeyStore keyStore = keyStoreInformation.getKeyStore();
 
         // when
         Certificate[] chain = keyStore.getCertificateChain( "key" );
@@ -82,15 +77,12 @@ public class KeyStoreFactoryTest
     public void shouldImportAllCertificatesInAChain() throws Exception
     {
         // given
-        File keyStorePath = File.createTempFile( "keyStore", "test" );
         File privateKeyPath = fileFromResources( "/certificates/chained_key.der" );
         File certificatePath = fileFromResources( "/certificates/combined.pem" );
-        KeyStoreInformation keyStoreInformation = new KeyStoreFactory().createKeyStore( keyStorePath, privateKeyPath,
+        KeyStoreInformation keyStoreInformation = new KeyStoreFactory().createKeyStore( privateKeyPath,
                 certificatePath );
 
-        KeyStore keyStore = KeyStore.getInstance( "JKS" );
-        keyStore.load( new FileInputStream( keyStoreInformation.getKeyStorePath() ),
-                keyStoreInformation.getKeyStorePassword() );
+        KeyStore keyStore = keyStoreInformation.getKeyStore();
 
         // when
         Certificate[] chain = keyStore.getCertificateChain( "key" );

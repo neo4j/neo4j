@@ -37,7 +37,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -46,13 +45,13 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
@@ -80,7 +79,7 @@ public class UpgradeStoreIT
 
     private File path( int i )
     {
-        return new File( PATH, "" + i );
+        return new File( PATH, "" + i ).getAbsoluteFile();
     }
 
     @Test
@@ -250,7 +249,7 @@ public class UpgradeStoreIT
 
         try
         {
-            BatchInserters.inserter( path.getPath(), stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE ) );
+            BatchInserters.inserter( path, stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE ) );
             fail( "Shouldn't be able to upgrade with batch inserter" );
         }
         catch ( IllegalArgumentException e )
@@ -317,7 +316,7 @@ public class UpgradeStoreIT
     private void setOlderNeoStoreVersion( File path ) throws IOException
     {
         String oldVersion = "NeoStore v0.9.6";
-        FileChannel channel = new RandomAccessFile( new File( path, NeoStore.DEFAULT_NAME ), "rw" ).getChannel();
+        FileChannel channel = new RandomAccessFile( new File( path, MetaDataStore.DEFAULT_NAME ), "rw" ).getChannel();
         channel.position( channel.size() - UTF8.encode( oldVersion ).length );
         ByteBuffer buffer = ByteBuffer.wrap( UTF8.encode( oldVersion ) );
         channel.write( buffer );
@@ -342,22 +341,14 @@ public class UpgradeStoreIT
     private void createManyRelationshipTypes( File path, int numberOfTypes )
     {
         File fileName = new File( path, "neostore.relationshiptypestore.db" );
-        Monitors monitors = new Monitors();
         Config config = new Config();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        DynamicStringStore stringStore = new DynamicStringStore(
-                new File( fileName.getPath() + ".names"),
-                config,
-                IdType.RELATIONSHIP_TYPE_TOKEN_NAME,
-                new DefaultIdGeneratorFactory(),
-                pageCache,
-                fs,
-                StringLogger.DEV_NULL,
-                StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
-                monitors );
-        RelationshipTypeTokenStore store = new RelationshipTypeTokenStoreWithOneOlderVersion(
-                fileName, stringStore, monitors, fs, pageCache );
+        DynamicStringStore stringStore = new DynamicStringStore( new File( fileName.getPath() + ".names" ), config,
+                IdType.RELATIONSHIP_TYPE_TOKEN_NAME, new DefaultIdGeneratorFactory( fs ), pageCache,
+                NullLogProvider.getInstance(), TokenStore.NAME_STORE_BLOCK_SIZE );
+        RelationshipTypeTokenStore store =
+                new RelationshipTypeTokenStoreWithOneOlderVersion( fileName, stringStore, fs, pageCache );
         for ( int i = 0; i < numberOfTypes; i++ )
         {
             String name = "type" + i;
@@ -381,19 +372,11 @@ public class UpgradeStoreIT
         public RelationshipTypeTokenStoreWithOneOlderVersion(
                 File fileName,
                 DynamicStringStore stringStore,
-                Monitors monitors,
                 FileSystemAbstraction fs,
                 PageCache pageCache )
         {
-            super( fileName,
-                    config,
-                    new NoLimitIdGeneratorFactory(),
-                    pageCache,
-                    fs,
-                    StringLogger.DEV_NULL,
-                    stringStore,
-                    StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
-                    monitors );
+            super( fileName, config, new NoLimitIdGeneratorFactory( fs ), pageCache, NullLogProvider.getInstance(),
+                    stringStore );
         }
 
         @Override
@@ -419,9 +402,21 @@ public class UpgradeStoreIT
     private static class NoLimitIdGeneratorFactory implements IdGeneratorFactory
     {
         private final Map<IdType, IdGenerator> generators = new HashMap<>();
+        private final FileSystemAbstraction fs;
+
+        public NoLimitIdGeneratorFactory( FileSystemAbstraction fs )
+        {
+            this.fs = fs;
+        }
 
         @Override
-        public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType, long highId )
+        public IdGenerator open( File filename, IdType idType, long highId )
+        {
+            return open( filename, 0, idType, highId );
+        }
+
+        @Override
+        public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
         {
             IdGenerator generator = new IdGeneratorImpl( fs, fileName, grabSize, Long.MAX_VALUE, false, highId );
             generators.put( idType, generator );
@@ -435,9 +430,9 @@ public class UpgradeStoreIT
         }
 
         @Override
-        public void create( FileSystemAbstraction fs, File fileName, long highId )
+        public void create( File fileName, long highId, boolean throwIfFileExists )
         {
-            IdGeneratorImpl.createGenerator( fs, fileName, highId );
+            IdGeneratorImpl.createGenerator( fs, fileName, highId, throwIfFileExists );
         }
     }
 }

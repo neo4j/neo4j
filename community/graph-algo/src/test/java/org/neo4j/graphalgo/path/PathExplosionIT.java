@@ -113,8 +113,7 @@ public class PathExplosionIT
                    int warmUpRuns )
     {
         long runTime = -1;
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             Node startNode = db.getNodeById( startId );
             Node endNode = db.getNodeById( endId );
@@ -127,12 +126,7 @@ public class PathExplosionIT
         }
         catch ( Exception e )
         {
-            tx.failure();
             throw new RuntimeException(e);
-        }
-        finally
-        {
-            tx.finish();
         }
         return runTime;
     }
@@ -157,8 +151,7 @@ public class PathExplosionIT
     {
         long startId = -1;
         long endId = -1;
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             Node startNode = null;
             Node endNode = db.createNode();
@@ -174,10 +167,6 @@ public class PathExplosionIT
             }
             endId = endNode.getId();
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
         return new long[] { startId, endId };
     }

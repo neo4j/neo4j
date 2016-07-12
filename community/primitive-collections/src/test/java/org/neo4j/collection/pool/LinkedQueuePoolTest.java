@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Test;
 
 import org.neo4j.function.Factory;
-import org.neo4j.function.primitive.LongSupplier;
+import org.neo4j.function.LongSupplier;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;

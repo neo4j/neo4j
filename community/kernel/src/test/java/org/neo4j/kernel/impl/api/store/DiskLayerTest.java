@@ -24,13 +24,18 @@ import org.junit.Before;
 
 import java.util.Map;
 
+import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
@@ -39,44 +44,63 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.kernel.impl.util.Providers.singletonProvider;
 
 /**
  * Base class for disk layer tests, which test read-access to committed data.
  */
 public class DiskLayerTest
 {
-    @SuppressWarnings("deprecation") protected GraphDatabaseAPI db;
-    protected final Label label1 = label( "first-label" ), label2 = label( "second-label" );
+    @SuppressWarnings( "deprecation" )
+    protected GraphDatabaseAPI db;
+    protected final Label label1 = label( "FirstLabel" );
+    protected final Label label2 = label( "SecondLabel" );
+    protected final RelationshipType relType1 = DynamicRelationshipType.withName( "type1" );
+    protected final RelationshipType relType2 = DynamicRelationshipType.withName( "type2" );
     protected final String propertyKey = "name";
+    protected final String otherPropertyKey = "age";
     protected KernelStatement state;
     protected DiskLayer disk;
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings( "deprecation" )
     @Before
     public void before()
     {
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        db = (GraphDatabaseAPI) createGraphDatabase();
         DependencyResolver resolver = db.getDependencyResolver();
         IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
-        NeoStore neoStore = resolver.resolveDependency( NeoStoreProvider.class ).evaluate();
+        final NeoStores neoStores = resolver.resolveDependency( NeoStoresSupplier.class ).get();
         this.disk = new DiskLayer(
                 resolver.resolveDependency( PropertyKeyTokenHolder.class ),
                 resolver.resolveDependency( LabelTokenHolder.class ),
                 resolver.resolveDependency( RelationshipTypeTokenHolder.class ),
-                new SchemaStorage( neoStore.getSchemaStore() ),
-                singletonProvider( neoStore ),
-                indexingService );
+                new SchemaStorage( neoStores.getSchemaStore() ),
+                neoStores,
+                indexingService, new Factory<StoreStatement>()
+                {
+                    @Override
+                    public StoreStatement newInstance()
+                    {
+                        return new StoreStatement( neoStores, LockService.NO_LOCK_SERVICE );
+                    }
+                } );
         this.state = new KernelStatement( null, new IndexReaderFactory.Caching( indexingService ),
                 resolver.resolveDependency( LabelScanStore.class ), null,
-                null, null );
+                null, null, disk.acquireStatement() );
+    }
+
+    protected GraphDatabaseService createGraphDatabase()
+    {
+        return new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @After
@@ -85,12 +109,12 @@ public class DiskLayerTest
         db.shutdown();
     }
 
-    protected static Node createLabeledNode( GraphDatabaseService db, Map<String, Object> properties, Label... labels )
+    protected static Node createLabeledNode( GraphDatabaseService db, Map<String,Object> properties, Label... labels )
     {
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( labels );
-            for ( Map.Entry<String, Object> property : properties.entrySet() )
+            for ( Map.Entry<String,Object> property : properties.entrySet() )
             {
                 node.setProperty( property.getKey(), property.getValue() );
             }
@@ -114,5 +138,36 @@ public class DiskLayerTest
             return disk.indexesGetForLabelAndPropertyKey( disk.labelGetForName( label.name() ),
                     disk.propertyKeyGetForName( propertyKey ) );
         }
+    }
+
+    protected int labelId( Label label )
+    {
+        try ( Transaction ignored = db.beginTx() )
+        {
+            return readOps().labelGetForName( label.name() );
+        }
+    }
+
+    protected int relationshipTypeId( RelationshipType type )
+    {
+        try ( Transaction ignored = db.beginTx() )
+        {
+            return readOps().relationshipTypeGetForName( type.name() );
+        }
+    }
+
+    protected int propertyKeyId( String propertyKey )
+    {
+        try ( Transaction ignored = db.beginTx() )
+        {
+            return readOps().propertyKeyGetForName( propertyKey );
+        }
+    }
+
+    protected ReadOperations readOps()
+    {
+        DependencyResolver dependencyResolver = db.getDependencyResolver();
+        Statement statement = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ).get();
+        return statement.readOperations();
     }
 }

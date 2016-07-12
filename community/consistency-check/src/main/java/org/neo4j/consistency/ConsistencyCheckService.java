@@ -21,21 +21,29 @@ package org.neo4j.consistency;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
+import org.neo4j.consistency.statistics.AccessStatistics;
+import org.neo4j.consistency.statistics.AccessStatsKeepingStoreAccess;
+import org.neo4j.consistency.statistics.DefaultCounts;
+import org.neo4j.consistency.statistics.Statistics;
+import org.neo4j.consistency.statistics.VerboseStatistics;
+import org.neo4j.function.Supplier;
+import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
@@ -44,13 +52,14 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.DuplicatingLog;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
+import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
 public class ConsistencyCheckService
 {
@@ -66,21 +75,27 @@ public class ConsistencyCheckService
         this.timestamp = timestamp;
     }
 
-    public Result runFullConsistencyCheck( String storeDir,
-                                                  Config tuningConfiguration,
-                                                  ProgressMonitorFactory progressFactory,
-                                           StringLogger logger ) throws ConsistencyCheckIncompleteException
+    public Result runFullConsistencyCheck( File storeDir, Config tuningConfiguration,
+            ProgressMonitorFactory progressFactory, LogProvider logProvider, boolean verbose )
+            throws ConsistencyCheckIncompleteException, IOException
     {
-        DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        tuningConfiguration = configForStoreDir( tuningConfiguration, new File( storeDir ) );
+        return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider,
+                new DefaultFileSystemAbstraction(), verbose );
+    }
+
+    public Result runFullConsistencyCheck( File storeDir, Config tuningConfiguration,
+            ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem,
+            boolean verbose ) throws ConsistencyCheckIncompleteException, IOException
+    {
+        Log log = logProvider.getLog( getClass() );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
-                fileSystem, tuningConfiguration, PageCacheTracer.NULL );
+                fileSystem, tuningConfiguration, PageCacheTracer.NULL, logProvider.getLog( PageCache.class ) );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         try
         {
             return runFullConsistencyCheck(
-                    storeDir, tuningConfiguration, progressFactory, logger, fileSystem, pageCache );
+                    storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem, pageCache, verbose );
         }
         finally
         {
@@ -90,49 +105,70 @@ public class ConsistencyCheckService
             }
             catch ( IOException e )
             {
-                logger.error( "Failure during shutdown of the page cache", e );
+                log.error( "Failure during shutdown of the page cache", e );
             }
         }
     }
 
-    public Result runFullConsistencyCheck( String storeDir, Config tuningConfiguration,
-                                           ProgressMonitorFactory progressFactory,
-                                           StringLogger logger,
-                                           FileSystemAbstraction fileSystem,
-                                           PageCache pageCache )
+    public Result runFullConsistencyCheck( final File storeDir, Config tuningConfiguration,
+            ProgressMonitorFactory progressFactory, final LogProvider logProvider,
+            final FileSystemAbstraction fileSystem, final PageCache pageCache, final boolean verbose )
             throws ConsistencyCheckIncompleteException
     {
-        Monitors monitors = new Monitors();
+        Log log = logProvider.getLog( getClass() );
         Config consistencyCheckerConfig = tuningConfiguration.with(
                 MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
-
-        StoreFactory factory = new StoreFactory(
-                consistencyCheckerConfig,
-                new DefaultIdGeneratorFactory(),
-                pageCache, fileSystem, logger,
-                monitors
-        );
+        StoreFactory factory = new StoreFactory( storeDir, consistencyCheckerConfig,
+                new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider );
 
         ConsistencySummaryStatistics summary;
-        File reportFile = chooseReportPath( tuningConfiguration );
-        StringLogger report = StringLogger.lazyLogger( reportFile );
-
-        try ( NeoStore neoStore = factory.newNeoStore( false ) )
+        final File reportFile = chooseReportPath( storeDir, tuningConfiguration );
+        Log reportLog = new ConsistencyReportLog( Suppliers.lazySingleton( new Supplier<PrintWriter>()
         {
-            neoStore.makeStoreOk();
-            StoreAccess store = new StoreAccess( neoStore );
+            @Override
+            public PrintWriter get()
+            {
+                try
+                {
+                    return new PrintWriter( createOrOpenAsOuputStream( fileSystem, reportFile, true ) );
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+        } ) );
+
+        try ( NeoStores neoStores = factory.openAllNeoStores() )
+        {
             LabelScanStore labelScanStore = null;
             try
             {
-
                 labelScanStore = new LuceneLabelScanStoreBuilder(
-                        storeDir, store.getRawNeoStore(), fileSystem, logger ).build();
+                        storeDir, neoStores, fileSystem, logProvider ).build();
                 SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
+                        fileSystem,
                         DirectoryFactory.PERSISTENT,
-                        tuningConfiguration );
-                DirectStoreAccess stores = new DirectStoreAccess( store, labelScanStore, indexes );
-                FullCheck check = new FullCheck( tuningConfiguration, progressFactory );
-                summary = check.execute( stores, StringLogger.tee( logger, report ) );
+                        storeDir );
+
+                int numberOfThreads = defaultConsistencyCheckThreadsNumber();
+                Statistics statistics;
+                StoreAccess storeAccess;
+                AccessStatistics stats = new AccessStatistics();
+                if ( verbose )
+                {
+                    statistics = new VerboseStatistics( stats, new DefaultCounts( numberOfThreads ), log );
+                    storeAccess = new AccessStatsKeepingStoreAccess( neoStores, stats );
+                }
+                else
+                {
+                    statistics = Statistics.NONE;
+                    storeAccess = new StoreAccess( neoStores );
+                }
+                storeAccess.initialize();
+                DirectStoreAccess stores = new DirectStoreAccess( storeAccess, labelScanStore, indexes );
+                FullCheck check = new FullCheck( tuningConfiguration, progressFactory, statistics, numberOfThreads );
+                summary = check.execute( stores, new DuplicatingLog( log, reportLog ) );
             }
             finally
             {
@@ -145,31 +181,25 @@ public class ConsistencyCheckService
                 }
                 catch ( IOException e )
                 {
-                    logger.error( "Failure during shutdown of label scan store", e );
+                    log.error( "Failure during shutdown of label scan store", e );
                 }
             }
-        }
-        finally
-        {
-            report.close();
         }
 
         if ( !summary.isConsistent() )
         {
-            logger.info( String.format( "See '%s' for a detailed consistency report.", reportFile.getPath() ) );
+            log.warn( "See '%s' for a detailed consistency report.", reportFile.getPath() );
             return Result.FAILURE;
         }
-
         return Result.SUCCESS;
     }
 
-    private File chooseReportPath( Config tuningConfiguration )
+    private File chooseReportPath( File storeDir, Config tuningConfiguration )
     {
         final File reportPath = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_report_file );
         if ( reportPath == null )
         {
-            return new File( tuningConfiguration.get( GraphDatabaseSettings.store_dir ),
-                    defaultLogFileName( timestamp ) );
+            return new File( storeDir, defaultLogFileName( timestamp ) );
         }
 
         if ( reportPath.isDirectory() )
@@ -201,5 +231,10 @@ public class ConsistencyCheckService
         {
             return this.successful;
         }
+    }
+
+    public static int defaultConsistencyCheckThreadsNumber()
+    {
+        return Math.max( 1, Runtime.getRuntime().availableProcessors() - 1 );
     }
 }

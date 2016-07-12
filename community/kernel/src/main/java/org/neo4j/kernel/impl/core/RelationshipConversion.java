@@ -21,16 +21,16 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.NoSuchElementException;
 
-import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 
 public class RelationshipConversion implements RelationshipVisitor<RuntimeException>, ResourceIterator<Relationship>
 {
     private final NodeProxy.NodeActions actions;
-    Cursor cursor;
+    RelationshipIterator iterator;
     Statement statement;
     private Relationship next;
 
@@ -48,7 +48,7 @@ public class RelationshipConversion implements RelationshipVisitor<RuntimeExcept
     @Override
     public boolean hasNext()
     {
-        return next != null || cursor.next();
+        return iterator.hasNext();
     }
 
     @Override
@@ -58,6 +58,7 @@ public class RelationshipConversion implements RelationshipVisitor<RuntimeExcept
         {
             throw new NoSuchElementException();
         }
+        iterator.relationshipVisit( iterator.next(), this );
         Relationship current = next;
         next = null;
         return current;
@@ -72,7 +73,6 @@ public class RelationshipConversion implements RelationshipVisitor<RuntimeExcept
     @Override
     public void close()
     {
-        cursor.close();
         statement.close();
     }
 }

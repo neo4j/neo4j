@@ -98,8 +98,7 @@ public abstract class AbstractTestBase
     protected static <T> void expect( Iterable<? extends T> items,
             Representation<T> representation, Set<String> expected )
     {
-        Transaction tx = beginTx();
-        try
+        try ( Transaction tx = beginTx() )
         {
             for ( T item : items )
             {
@@ -107,10 +106,6 @@ public abstract class AbstractTestBase
                 assertTrue( repr + " not expected ", expected.remove( repr ) );
             }
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
 
         if ( !expected.isEmpty() )

@@ -32,14 +32,17 @@ import java.io.IOException;
 import java.util.Properties;
 
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.configuration.Configurator.DEFAULT_WEBSERVER_PORT;
@@ -70,11 +73,77 @@ public class EnterpriseServerIT
             server.start();
             server.getDatabase();
 
-            assertThat( server.getDatabase().getGraph(), is( HighlyAvailableGraphDatabase.class ) );
+            assertThat( server.getDatabase().getGraph(), is( instanceOf(HighlyAvailableGraphDatabase.class) ) );
 
             Client client = Client.create();
             ClientResponse r = client.resource( "http://localhost:" + DEFAULT_WEBSERVER_PORT +
                     "/db/manage/server/ha" ).accept( APPLICATION_JSON ).get( ClientResponse.class );
+            assertEquals( 200, r.getStatus() );
+            assertThat( r.getEntity( String.class ), containsString( "master" ) );
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
+
+    @Test
+    public void shouldRequireAuthorizationForHAStatusEndpoints() throws Exception
+    {
+        // Given
+        File tuningFile = createNeo4jProperties();
+
+        NeoServer server = EnterpriseServerBuilder.server()
+                .withProperty( ServerSettings.auth_enabled.name(), "true" )
+                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .withProperty( mode.name(), "HA" )
+                .withProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, tuningFile.getAbsolutePath() )
+                .persistent()
+                .build();
+
+        try
+        {
+            server.start();
+            server.getDatabase();
+
+            assertThat( server.getDatabase().getGraph(), is( instanceOf(HighlyAvailableGraphDatabase.class) ) );
+
+            Client client = Client.create();
+            ClientResponse r = client.resource( "http://localhost:" + DEFAULT_WEBSERVER_PORT +
+                                                "/db/manage/server/ha" ).accept( APPLICATION_JSON ).get( ClientResponse.class );
+            assertEquals( 401, r.getStatus() );
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
+
+    @Test
+    public void shouldAllowDisablingAuthorizationOnHAStatusEndpoints() throws Exception
+    {
+        // Given
+        File tuningFile = createNeo4jProperties();
+
+        NeoServer server = EnterpriseServerBuilder.server()
+                .withProperty( ServerSettings.auth_enabled.name(), "true" )
+                .withProperty( HaSettings.ha_status_auth_enabled.name(), "false" )
+                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .withProperty( mode.name(), "HA" )
+                .withProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, tuningFile.getAbsolutePath() )
+                .persistent()
+                .build();
+
+        try
+        {
+            server.start();
+            server.getDatabase();
+
+            assertThat( server.getDatabase().getGraph(), is( instanceOf(HighlyAvailableGraphDatabase.class) ) );
+
+            Client client = Client.create();
+            ClientResponse r = client.resource( "http://localhost:" + DEFAULT_WEBSERVER_PORT +
+                                                "/db/manage/server/ha" ).accept( APPLICATION_JSON ).get( ClientResponse.class );
             assertEquals( 200, r.getStatus() );
             assertThat( r.getEntity( String.class ), containsString( "master" ) );
         }

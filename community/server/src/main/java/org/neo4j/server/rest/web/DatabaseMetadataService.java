@@ -19,9 +19,11 @@
  */
 package org.neo4j.server.rest.web;
 
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -44,11 +46,14 @@ public class DatabaseMetadataService
 
     @GET
     @Produces( MediaType.APPLICATION_JSON )
-    public Response getRelationshipTypes()
+    public Response getRelationshipTypes( @QueryParam( "in_use" ) @DefaultValue( "true" ) boolean inUse )
     {
         try
         {
-            Iterable<RelationshipType> relationshipTypes = GlobalGraphOperations.at( database.getGraph() ).getAllRelationshipTypes();
+            GlobalGraphOperations operations = GlobalGraphOperations.at( database.getGraph() );
+            Iterable<RelationshipType> relationshipTypes = inUse
+                                                           ? operations.getAllRelationshipTypesInUse()
+                                                           : operations.getAllRelationshipTypes();
             return Response.ok()
                     .type( MediaType.APPLICATION_JSON )
                     .entity( generateJsonRepresentation( relationshipTypes ) )

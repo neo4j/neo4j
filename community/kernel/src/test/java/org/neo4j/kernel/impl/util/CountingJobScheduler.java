@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -34,9 +37,15 @@ public class CountingJobScheduler implements JobScheduler
     }
 
     @Override
-    public void init()
+    public Executor executor( Group group )
     {
-        delegate.init();
+        return delegate.executor( group );
+    }
+
+    @Override
+    public ThreadFactory threadFactory( Group group )
+    {
+        return delegate.threadFactory( group );
     }
 
     @Override
@@ -44,6 +53,20 @@ public class CountingJobScheduler implements JobScheduler
     {
         counter.getAndIncrement();
         return delegate.schedule( group, job );
+    }
+
+    @Override
+    public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
+    {
+        counter.getAndIncrement();
+        return delegate.schedule( group, job, metadata );
+    }
+
+    @Override
+    public JobHandle schedule( Group group, Runnable runnable, long initialDelay, TimeUnit timeUnit )
+    {
+        counter.getAndIncrement();
+        return delegate.schedule( group, runnable, initialDelay, timeUnit );
     }
 
     @Override
@@ -63,9 +86,9 @@ public class CountingJobScheduler implements JobScheduler
     }
 
     @Override
-    public void shutdown()
+    public void init()
     {
-        delegate.shutdown();
+        delegate.init();
     }
 
     @Override
@@ -78,5 +101,11 @@ public class CountingJobScheduler implements JobScheduler
     public void stop() throws Throwable
     {
         delegate.stop();
+    }
+
+    @Override
+    public void shutdown()
+    {
+        delegate.shutdown();
     }
 }

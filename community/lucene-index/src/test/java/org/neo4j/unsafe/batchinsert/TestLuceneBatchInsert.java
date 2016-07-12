@@ -21,14 +21,17 @@ package org.neo4j.unsafe.batchinsert;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -39,14 +42,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Service;
 import org.neo4j.index.impl.lucene.LuceneBatchInserterIndexProviderNewImpl;
 import org.neo4j.index.impl.lucene.LuceneIndexImplementation;
 import org.neo4j.index.impl.lucene.MyStandardAnalyzer;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.index.lucene.unsafe.batchinsert.LuceneBatchInserterIndexProvider;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
@@ -70,7 +71,6 @@ import static org.neo4j.index.impl.lucene.Contains.contains;
 import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
 import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.EXACT_CONFIG;
 import static org.neo4j.index.lucene.ValueContext.numeric;
-import static org.neo4j.unsafe.batchinsert.BatchInserters.inserter;
 
 public class TestLuceneBatchInsert
 {
@@ -511,7 +511,10 @@ public class TestLuceneBatchInsert
         }
     }
 
-    private final String storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir().getAbsolutePath();
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
+    private File storeDir;
     private BatchInserter inserter;
     private GraphDatabaseService db;
 
@@ -519,10 +522,10 @@ public class TestLuceneBatchInsert
     @Before
     public void startInserter() throws Exception
     {
+        storeDir = testDirectory.graphDbDir();
         Iterable filteredKernelExtensions = filter( onlyRealLuceneExtensions(),
                 Service.load( KernelExtensionFactory.class ) );
-        inserter = inserter( storeDir, new DefaultFileSystemAbstraction(), stringMap(),
-                filteredKernelExtensions );
+        inserter = BatchInserters.inserter( storeDir, stringMap(), filteredKernelExtensions );
     }
 
     @SuppressWarnings( "rawtypes" )
@@ -531,7 +534,7 @@ public class TestLuceneBatchInsert
         return new Predicate<KernelExtensionFactory>()
         {
             @Override
-            public boolean accept( KernelExtensionFactory extension )
+            public boolean test( KernelExtensionFactory extension )
             {
                 if ( extension instanceof InMemoryLabelScanStoreExtension ||
                         extension instanceof InMemoryIndexProviderFactory )

@@ -1,0 +1,14 @@
+[[cypher-versions]]
+= Supported Language Versions
+
+Neo4j 2.3 supports the following versions of the Cypher language:
+
+* Neo4j Cypher 2.3
+* Neo4j Cypher 2.2
+* Neo4j Cypher 1.9
+
+[TIP]
+Each release of Neo4j supports a limited number of old Cypher Language Versions.
+When you upgrade to a new release of Neo4j, please make sure that it supports the Cypher language version you need.
+If not, you may need to modify your queries to work with a newer Cypher language version.
+

@@ -21,8 +21,13 @@ package org.neo4j.test;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.Map;
 
+import org.neo4j.function.Consumer;
+import org.neo4j.function.Function;
+import org.neo4j.function.Functions;
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -44,22 +49,20 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Provider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.security.URLAccessValidationError;
 
 public abstract class DatabaseRule extends ExternalResource implements GraphDatabaseAPI
 {
     GraphDatabaseBuilder databaseBuilder;
     GraphDatabaseAPI database;
     private String storeDir;
-    private Provider<Statement> statementProvider;
+    private Supplier<Statement> statementSupplier;
     private boolean startEagerly = true;
 
     /**
@@ -75,6 +78,11 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     public <T> T when( Function<GraphDatabaseService, T> function )
     {
         return function.apply( getGraphDatabaseService() );
+    }
+
+    public void executeAndCommit( Consumer<? super GraphDatabaseService> consumer )
+    {
+        transaction( Functions.fromConsumer( consumer ), true );
     }
 
     public <T> T executeAndCommit( Function<? super GraphDatabaseService, T> function )
@@ -102,6 +110,12 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
                         return function.apply( from );
                     }
                 } );
+            }
+
+            @Override
+            public String toString()
+            {
+                return "tx( " + function + " )";
             }
         };
     }
@@ -261,7 +275,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         {
             database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
             storeDir = database.getStoreDir();
-            statementProvider = resolveDependency( ThreadToStatementContextBridge.class );
+            statementSupplier = resolveDependency( ThreadToStatementContextBridge.class );
         }
     }
 
@@ -301,7 +315,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
 
     private void shutdown( boolean deleteResources )
     {
-        statementProvider = null;
+        statementSupplier = null;
         try
         {
             if ( database != null )
@@ -325,17 +339,8 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         {
             database.shutdown();
             database = null;
-            statementProvider = null;
+            statementSupplier = null;
         }
-    }
-
-    public void clearCache()
-    {
-        NeoStoreDataSource dataSource =
-                getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
-
-        dataSource.getNodeCache().clear();
-        dataSource.getRelationshipCache().clear();
     }
 
     public <T> T resolveDependency( Class<T> type )
@@ -346,7 +351,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     public Statement statement()
     {
         ensureStarted();
-        return statementProvider.instance();
+        return statementSupplier.get();
     }
 
     @Override
@@ -370,6 +375,17 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     public String getStoreDirAbsolutePath()
     {
         return new File( getStoreDir() ).getAbsolutePath();
+    }
+
+    public File getStoreDirFile()
+    {
+        return new File( getStoreDir() );
+    }
+
+    @Override
+    public URL validateURLAccess( URL url ) throws URLAccessValidationError
+    {
+        return database.validateURLAccess( url );
     }
 
     @Override

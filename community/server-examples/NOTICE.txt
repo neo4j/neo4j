@@ -27,23 +27,13 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Apache Commons Configuration
+  Apache Commons Lang
   Commons BeanUtils
   Commons Digester
   Commons Lang
   Commons Logging
-  ConcurrentLinkedHashMap
   Data Mapper for Jackson
   Jackson
-  Lucene Core
-  opencsv
-  parboiled-core
-  parboiled-scala
-
-BSD - Scala License
-  Scala Library
-
-BSD License
-  Scala Compiler
 
 Common Development and Distribution License Version 1.1
   jersey-client

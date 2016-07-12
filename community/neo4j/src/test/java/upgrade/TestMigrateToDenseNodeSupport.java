@@ -21,6 +21,7 @@ package upgrade;
 
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -36,9 +37,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -57,7 +58,7 @@ public class TestMigrateToDenseNodeSupport
 {
     private static final Label referenceNode = label( "ReferenceNode" );
 
-    private static enum Types implements RelationshipType
+    private enum Types implements RelationshipType
     {
         DENSE,
         SPARSE,
@@ -65,10 +66,10 @@ public class TestMigrateToDenseNodeSupport
         FOURTH
     }
 
-    private static enum Properties
+    private enum Properties
     {
-        BYTE( (byte)10 ),
-        SHORT( (short)345 ),
+        BYTE( (byte) 10 ),
+        SHORT( (short) 345 ),
         INT( 123456 ),
         LONG( 12345678901L ),
         CHAR( 'N' ),
@@ -76,26 +77,26 @@ public class TestMigrateToDenseNodeSupport
         DOUBLE( 123.456789D ),
         SHORT_STRING( "short" ),
         LONG_STRING( "super-duper long string that will have to spill over into a dynamic record !#¤%&/()=," ),
-        INT_ARRAY( new int[] {12345, 67890, 123456789, 1, 2, 3, 4, 5} )
-        {
-            @Override
-            public void assertValueEquals( Object otherValue )
-            {
-                assertArrayEquals( (int[]) value, (int[]) otherValue );
-            }
-        },
-        STRING_ARRAY( new String[] { "First", "Second", "Third", "Fourth" } )
-        {
-            @Override
-            public void assertValueEquals( Object otherValue )
-            {
-                assertArrayEquals( (Object[]) value, (Object[]) otherValue );
-            }
-        };
+        INT_ARRAY( new int[]{12345, 67890, 123456789, 1, 2, 3, 4, 5} )
+                {
+                    @Override
+                    public void assertValueEquals( Object otherValue )
+                    {
+                        assertArrayEquals( (int[]) value, (int[]) otherValue );
+                    }
+                },
+        STRING_ARRAY( new String[]{"First", "Second", "Third", "Fourth"} )
+                {
+                    @Override
+                    public void assertValueEquals( Object otherValue )
+                    {
+                        assertArrayEquals( (Object[]) value, (Object[]) otherValue );
+                    }
+                };
 
         protected final Object value;
 
-        private Properties( Object value )
+        Properties( Object value )
         {
             this.value = value;
         }
@@ -111,20 +112,21 @@ public class TestMigrateToDenseNodeSupport
         }
     }
 
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
     private File dir;
 
     @Before
     public void before() throws Exception
     {
-        dir = AbstractNeo4jTestCase.unzip( getClass(), "0.A.1-db.zip" );
+        dir = AbstractNeo4jTestCase.unzip( testDir.graphDbDir(), getClass(), "0.A.1-db.zip" );
     }
 
     @Test
     @Ignore( "Used for creating the dataset, using the previous store version" )
     public void createDb()
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase(
-                TargetDirectory.forTest( getClass() ).makeGraphDbDir().getPath() );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( testDir.graphDbDir() );
         try
         {
             try ( Transaction tx = db.beginTx() )
@@ -153,15 +155,14 @@ public class TestMigrateToDenseNodeSupport
     public void migrateDbWithDenseNodes() throws Exception
     {
         // migrate
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir.getAbsolutePath() )
-                .setConfig( allow_store_upgrade, "true" ).newGraphDatabase();
-        db.shutdown();
+        new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir )
+                .setConfig( allow_store_upgrade, "true" ).newGraphDatabase().shutdown();
 
         // check consistency
         assertConsistentStore( dir );
 
         // open again to do extra checks
-        db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir.getAbsolutePath() ).newGraphDatabase();
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir ).newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             ResourceIterator<Node> allNodesWithLabel = db.findNodes( referenceNode );
@@ -217,9 +218,9 @@ public class TestMigrateToDenseNodeSupport
 
     private void verifyDenseRepresentation( GraphDatabaseService db, Node node, boolean dense )
     {
-        NeoStore neoStore = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(
-                NeoStoreProvider.class ).evaluate();
-        NodeRecord record = neoStore.getNodeStore().getRecord( node.getId() );
+        NeoStores neoStores = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(
+                NeoStoresSupplier.class ).get();
+        NodeRecord record = neoStores.getNodeStore().getRecord( node.getId() );
         assertEquals( dense, record.isDense() );
     }
 

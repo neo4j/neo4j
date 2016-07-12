@@ -153,7 +153,7 @@ public enum AtomicBroadcastState
                             }
                             else
                             {
-                                context.getLogger( AtomicBroadcastState.class )
+                                context.getLog( AtomicBroadcastState.class )
                                        .warn( "No quorum and therefor dropping broadcast msg: " + message.getPayload() );
                             }
                             break;

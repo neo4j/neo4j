@@ -28,7 +28,6 @@ import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
@@ -36,10 +35,10 @@ import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
+
 import static org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates.NONE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
-import static org.neo4j.kernel.impl.util.Providers.singletonProvider;
 
 public class IndexTransactionApplierTest
 {
@@ -51,8 +50,7 @@ public class IndexTransactionApplierTest
         LabelScanWriter writer = new OrderVerifyingLabelScanWriter( 10, 15, 20 );
         WorkSync<Provider<LabelScanWriter>,IndexTransactionApplier.LabelUpdateWork> labelScanSync =
                 new WorkSync<>( singletonProvider( writer ) );
-        try ( IndexTransactionApplier applier = new IndexTransactionApplier( indexing, NONE,
-                labelScanSync, mock( CacheAccessBackDoor.class ) ) )
+        try ( IndexTransactionApplier applier = new IndexTransactionApplier( indexing, NONE, labelScanSync ) )
         {
             // WHEN
             applier.visitNodeCommand( node( 15 ) );
@@ -61,6 +59,18 @@ public class IndexTransactionApplierTest
             applier.apply();
         }
         // THEN all assertions happen inside the LabelScanWriter#write and #close
+    }
+
+    private Provider<LabelScanWriter> singletonProvider( final LabelScanWriter writer )
+    {
+        return new Provider<LabelScanWriter>()
+        {
+            @Override
+            public LabelScanWriter instance()
+            {
+                return writer;
+            }
+        };
     }
 
     private NodeCommand node( long nodeId )

@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.graphdb.QueryExecutionType
+import org.neo4j.graphdb.Result.ResultVisitor
+import org.neo4j.graphdb._
 
 /**
   * @deprecated See { @link org.neo4j.graphdb.Result}, and use
@@ -29,4 +30,6 @@ import org.neo4j.graphdb.QueryExecutionType
 trait ExtendedExecutionResult extends ExecutionResult {
   def planDescriptionRequested: Boolean
   def executionType: QueryExecutionType
+  def notifications: Iterable[Notification]
+  def accept[EX <: Exception](visitor: ResultVisitor[EX])
 }

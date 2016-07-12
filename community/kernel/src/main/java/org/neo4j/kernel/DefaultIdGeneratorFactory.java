@@ -30,16 +30,41 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 /**
  * @deprecated This will be moved to internal packages in the next major release.
  */
+// TODO 3.0: Move to org.neo4j.kernel.impl.store.id package
 @Deprecated
-public class DefaultIdGeneratorFactory
-    implements IdGeneratorFactory
+public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 {
     private final Map<IdType, IdGenerator> generators = new HashMap<>();
+    private final FileSystemAbstraction fs;
+    private final IdTypeConfigurationProvider idTypeConfigurationProvider;
 
-    public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType, long highId )
+    public DefaultIdGeneratorFactory( FileSystemAbstraction fs )
+    {
+        this( fs, new CommunityIdTypeConfigurationProvider() );
+    }
+
+    public DefaultIdGeneratorFactory( FileSystemAbstraction fs, IdTypeConfigurationProvider idTypeConfigurationProvider)
+    {
+        this.fs = fs;
+        this.idTypeConfigurationProvider = idTypeConfigurationProvider;
+    }
+
+    @Override
+    public IdGenerator open( File filename, IdType idType, long highId )
+    {
+        IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
+        return open( filename, idTypeConfiguration.getGrabSize(), idType, idTypeConfiguration.allowAggressiveReuse(), highId );
+    }
+
+    public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
+    {
+        IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
+        return open( fileName, grabSize, idType, idTypeConfiguration.allowAggressiveReuse(), highId );
+    }
+
+    private IdGenerator open( File fileName, int grabSize, IdType idType, boolean aggressiveReuse, long highId )
     {
         long maxValue = idType.getMaxValue();
-        boolean aggressiveReuse = idType.allowAggressiveReuse();
         IdGenerator generator = new IdGeneratorImpl( fs, fileName, grabSize, maxValue,
                 aggressiveReuse, highId );
         generators.put( idType, generator );
@@ -51,8 +76,8 @@ public class DefaultIdGeneratorFactory
         return generators.get( idType );
     }
 
-    public void create( FileSystemAbstraction fs, File fileName, long highId )
+    public void create( File fileName, long highId, boolean throwIfFileExists )
     {
-        IdGeneratorImpl.createGenerator( fs, fileName, highId );
+        IdGeneratorImpl.createGenerator( fs, fileName, highId, throwIfFileExists );
     }
 }

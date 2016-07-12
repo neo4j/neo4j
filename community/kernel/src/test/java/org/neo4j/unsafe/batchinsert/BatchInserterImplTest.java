@@ -19,18 +19,18 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.StoreLocker;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.test.ReflectionUtil;
 import org.neo4j.test.TargetDirectory;
 
@@ -42,20 +42,27 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class BatchInserterImplTest
 {
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
     @Test
     public void testHonorsPassedInParams() throws Exception
     {
-        int mappedMemoryTotalSize = createInserterAndGetMemoryMappingConfig( stringMap(
-                GraphDatabaseSettings.pagecache_memory.name(), "16K",
+        BatchInserter inserter = BatchInserters.inserter( testDirectory.graphDbDir(), stringMap(
+                GraphDatabaseSettings.pagecache_memory.name(), "280K",
                 GraphDatabaseSettings.mapped_memory_page_size.name(), "1K" ) );
-        assertThat( "memory mapped config is active", mappedMemoryTotalSize, is( 16 * 1024 ) );
+        NeoStores neoStores = ReflectionUtil.getPrivateField( inserter, "neoStores", NeoStores.class );
+        PageCache pageCache = ReflectionUtil.getPrivateField( neoStores, "pageCache", PageCache.class );
+        inserter.shutdown();
+        int mappedMemoryTotalSize = pageCache.maxCachedPages() * pageCache.pageSize();
+        assertThat( "memory mapped config is active", mappedMemoryTotalSize, is( 280 * 1024 ) );
     }
 
     @Test
-    public void testCreatesStoreLockFile()
+    public void testCreatesStoreLockFile() throws Exception
     {
         // Given
-        File file = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
+        File file = testDirectory.graphDbDir();
 
         // When
         BatchInserter inserter = BatchInserters.inserter( file.getAbsolutePath() );
@@ -69,7 +76,7 @@ public class BatchInserterImplTest
     public void testFailsOnExistingStoreLockFile() throws IOException
     {
         // Given
-        File parent = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
+        File parent = testDirectory.graphDbDir();
         StoreLocker lock = new StoreLocker( new DefaultFileSystemAbstraction() );
         lock.checkLock( parent );
 
@@ -89,15 +96,5 @@ public class BatchInserterImplTest
         {
             lock.release();
         }
-    }
-    
-    private int createInserterAndGetMemoryMappingConfig( Map<String, String> initialConfig ) throws Exception
-    {
-        BatchInserter inserter = BatchInserters.inserter(
-                TargetDirectory.forTest( getClass() ).makeGraphDbDir().getAbsolutePath(), initialConfig );
-        NeoStore neoStore = ReflectionUtil.getPrivateField( inserter, "neoStore", NeoStore.class );
-        PageCache pageCache = ReflectionUtil.getPrivateField( neoStore, "pageCache", PageCache.class );
-        inserter.shutdown();
-        return pageCache.maxCachedPages() * pageCache.pageSize();
     }
 }

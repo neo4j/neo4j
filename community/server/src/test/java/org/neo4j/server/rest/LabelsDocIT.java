@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Test;
+
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.Test;
-
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.Node;
-import org.neo4j.helpers.Function;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.web.PropertyValueException;
@@ -37,12 +37,10 @@ import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabel;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabels;
@@ -57,10 +55,7 @@ import static org.neo4j.test.GraphDescription.PropType.STRING;
 public class LabelsDocIT extends AbstractRestFunctionalTestBase
 {
 
-    /**
-     * Adding a label to a node.
-     */
-    @Documented
+    @Documented( "Adding a label to a node." )
     @Test
     @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", setNameProperty = true ) } )
     public void adding_a_label_to_a_node() throws PropertyValueException
@@ -69,15 +64,13 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
         String nodeUri = getNodeUri( nodes.get( "Clint Eastwood" ) );
 
         gen.get()
+            .description( startGraph( "adding a label to a node" ) )
             .expectedStatus( 204 )
             .payload( createJsonFrom( "Person" ) )
             .post( nodeUri + "/labels"  );
     }
 
-    /**
-     * Adding multiple labels to a node.
-     */
-    @Documented
+    @Documented( "Adding multiple labels to a node." )
     @Test
     @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", setNameProperty = true ) } )
     public void adding_multiple_labels_to_a_node() throws PropertyValueException
@@ -86,6 +79,7 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
         String nodeUri = getNodeUri( nodes.get( "Clint Eastwood" ) );
 
         gen.get()
+                .description( startGraph( "adding multiple labels to a node" ) )
                 .expectedStatus( 204 )
                 .payload( createJsonFrom( new String[]{"Person", "Actor"} ) )
                 .post( nodeUri + "/labels"  );
@@ -94,13 +88,10 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
         assertThat( nodes.get( "Clint Eastwood" ), inTx( graphdb(), hasLabels( "Person", "Actor" ) ) );
     }
 
-    /**
-     * Adding a label with an invalid name.
-     *
-     * Labels with empty names are not allowed, however, all other valid strings are accepted as label names.
-     * Adding an invalid label to a node will lead to a HTTP 400 response.
-     */
-    @Documented
+    @Documented( "Adding a label with an invalid name.\n" +
+                 "\n" +
+                 "Labels with empty names are not allowed, however, all other valid strings are accepted as label names.\n" +
+                 "Adding an invalid label to a node will lead to a HTTP 400 response." )
     @Test
     @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", setNameProperty = true ) } )
     public void adding_an_invalid_label_to_a_node() throws PropertyValueException
@@ -109,18 +100,16 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
         String nodeUri = getNodeUri( nodes.get( "Clint Eastwood" ) );
 
         gen.get()
+            .noGraph()
             .expectedStatus( 400 )
             .payload( createJsonFrom( "" ) )
             .post( nodeUri + "/labels"  );
     }
 
-    /**
-     * Replacing labels on a node.
-     *
-     * This removes any labels currently on a node, and replaces them with the labels passed in as the
-     * request body.
-     */
-    @Documented
+    @Documented( "Replacing labels on a node.\n" +
+                 "\n" +
+                 "This removes any labels currently on a node, and replaces them with the labels passed in as the\n" +
+                 "request body." )
     @Test
     @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", setNameProperty = true,
                                               labels = { @LABEL( "Person" ) }) } )
@@ -131,6 +120,7 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
 
         // When
         gen.get()
+                .description( startGraph( "replacing labels on a node" ) )
                 .expectedStatus( 204 )
                 .payload( createJsonFrom( new String[]{"Actor", "Director"}) )
                 .put( nodeUri + "/labels" );
@@ -139,10 +129,7 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
         assertThat( nodes.get( "Clint Eastwood" ), inTx(graphdb(), hasLabels("Actor", "Director")) );
     }
 
-    /**
-     * Listing labels for a node.
-     */
-    @Documented
+    @Documented( "Listing labels for a node." )
     @Test
     @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", labels = { @LABEL( "Actor" ), @LABEL( "Director" ) }, setNameProperty = true ) } )
     public void listing_node_labels() throws JsonParseException
@@ -159,10 +146,7 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
         assertEquals( asSet( "Actor", "Director" ), asSet( labels ) );
     }
 
-    /**
-     * Removing a label from a node.
-     */
-    @Documented
+    @Documented( "Removing a label from a node." )
     @Test
     @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", setNameProperty = true, labels = { @LABEL( "Person" ) } ) } )
     public void removing_a_label_from_a_node() throws PropertyValueException
@@ -173,16 +157,14 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
 
         String labelName = "Person";
         gen.get()
+            .description( startGraph( "removing a label from a node" ) )
             .expectedStatus( 204 )
             .delete( nodeUri + "/labels/" + labelName );
 
         assertThat( node, inTx( graphdb(), not( hasLabel( label( labelName ) ) ) ) );
     }
 
-    /**
-     * Removing a non-existent label from a node.
-     */
-    @Documented
+    @Documented( "Removing a non-existent label from a node." )
     @Test
     @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", setNameProperty = true ) } )
     public void removing_a_non_existent_label_from_a_node() throws PropertyValueException
@@ -193,16 +175,14 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
 
         String labelName = "Person";
         gen.get()
+            .description( startGraph( "removing a non-existent label from a node" ) )
             .expectedStatus( 204 )
             .delete( nodeUri + "/labels/" + labelName );
 
         assertThat( node, inTx( graphdb(), not( hasLabel( label( labelName ) ) ) ) );
     }
-    
-    /**
-     * Get all nodes with a label.
-     */
-    @Documented
+
+    @Documented( "Get all nodes with a label." )
     @Test
     @GraphDescription.Graph( nodes = {
             @NODE( name = "Clint Eastwood", setNameProperty = true, labels = { @LABEL( "Actor" ), @LABEL( "Director" ) } ),
@@ -222,19 +202,16 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
         assertEquals( asSet( "Clint Eastwood", "Donald Sutherland" ), asSet( map( getProperty( "name", String.class ), parsed ) ) );
     }
 
-    /**
-     * Get nodes by label and property.
-     *
-     * You can retrieve all nodes with a given label and property by passing one property as a query parameter.
-     * Notice that the property value is JSON-encoded and then URL-encoded.
-     *
-     * If there is an index available on the label/property combination you send, that index will be used. If no
-     * index is available, all nodes with the given label will be filtered through to find matching nodes.
-     *
-     * Currently, it is not possible to search using multiple properties.
-     */
     @Test
-    @Documented
+    @Documented( "Get nodes by label and property.\n" +
+                 "\n" +
+                 "You can retrieve all nodes with a given label and property by passing one property as a query parameter.\n" +
+                 "Notice that the property value is JSON-encoded and then URL-encoded.\n" +
+                 "\n" +
+                 "If there is an index available on the label/property combination you send, that index will be used. If no\n" +
+                 "index is available, all nodes with the given label will be filtered through to find matching nodes.\n" +
+                 "\n" +
+                 "Currently, it is not possible to search using multiple properties." )
     @GraphDescription.Graph( nodes = {
             @NODE( name = "Donald Sutherland",   labels={ @LABEL( "Person" )} ),
             @NODE( name = "Clint Eastwood", labels={ @LABEL( "Person" )}, properties = { @PROP( key = "name", value = "Clint Eastwood" )}),
@@ -254,10 +231,8 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
         assertEquals( asSet( "Clint Eastwood" ), asSet( map( getProperty( "name", String.class ), parsed ) ) );
     }
 
-    /**
-     * Get nodes by label and array property.
-     */
     @Test
+    @Documented( "Get nodes by label and array property." )
     @GraphDescription.Graph( nodes = {
             @NODE(name = "Donald Sutherland", labels = {@LABEL("Person")}),
             @NODE(name = "Clint Eastwood", labels = {@LABEL("Person")}, properties =
@@ -285,11 +260,11 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
                 asSet( map( getProperty( "names", List.class ), parsed ) ) );
     }
 
-    /**
-     * List all labels.
-     */
     @Test
-    @Documented
+    @Documented( "List all labels.\n" +
+                 " \n" +
+                 "By default, the server will return labels in use only. If you also want to return labels not in use,\n" +
+                 "append the \"in_use=0\" query parameter." )
     @GraphDescription.Graph( nodes = {
             @NODE( name = "Clint Eastwood", setNameProperty = true, labels = { @LABEL( "Person" ), @LABEL( "Actor" ), @LABEL( "Director" ) } ),
             @NODE( name = "Donald Sutherland", setNameProperty = true, labels = { @LABEL( "Person" ), @LABEL( "Actor" ) } ),
@@ -300,6 +275,7 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
         data.get();
         String uri = getLabelsUri();
         String body = gen.get()
+                .noGraph()
                 .expectedStatus( 200 )
                 .get( uri )
                 .entity();

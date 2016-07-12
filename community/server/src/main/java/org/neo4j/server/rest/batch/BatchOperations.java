@@ -19,6 +19,13 @@
  */
 package org.neo4j.server.rest.batch;
 
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.JsonParser;
+import org.codehaus.jackson.JsonToken;
+import org.codehaus.jackson.map.ObjectMapper;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
@@ -27,18 +34,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriInfo;
 
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonToken;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.neo4j.server.rest.web.InternalJettyServletRequest;
 import org.neo4j.server.rest.web.InternalJettyServletResponse;
 import org.neo4j.server.web.WebServer;
@@ -106,7 +106,7 @@ public abstract class BatchOperations
     }
 
 
-    private final static Pattern PLACHOLDER_PATTERN=Pattern.compile("\\{(\\d+)\\}");
+    private final static Pattern PLACHOLDER_PATTERN=Pattern.compile("\\{(\\d{1,10})\\}");
 
     protected String replaceLocationPlaceholders( String str,
                                                   Map<Integer, String> locations )
@@ -117,9 +117,19 @@ public abstract class BatchOperations
         }
         Matcher matcher = PLACHOLDER_PATTERN.matcher(str);
         StringBuffer sb=new StringBuffer();
+        String replacement = null;
         while (matcher.find()) {
             String id = matcher.group(1);
-            String replacement = locations.get(Integer.valueOf(id));
+            try
+            {
+                replacement = locations.get(Integer.valueOf(id));
+            }
+            catch( NumberFormatException e )
+            {
+                // The body contained a value that happened to match our regex, but is not a valid integer.
+                // Specifically, the digits inside the brackets must have been > 2^31-1.
+                // Simply ignore this, since we don't support non-integer placeholders, this is not a valid placeholder
+            }
             if (replacement!=null)
             {
                 matcher.appendReplacement(sb,replacement);

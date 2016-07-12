@@ -19,17 +19,18 @@
  */
 package org.neo4j.kernel.extension;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
+import org.neo4j.function.Function;
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.impl.util.DependenciesProxy;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -39,18 +40,20 @@ import static org.neo4j.helpers.collection.Iterables.map;
 
 public class KernelExtensions extends DependencyResolver.Adapter implements Lifecycle
 {
+    private final KernelContext kernelContext;
     private final List<KernelExtensionFactory<?>> kernelExtensionFactories;
-    private final DependencyResolver dependencyResolver;
+    private final Dependencies dependencies;
     private final LifeSupport life = new LifeSupport();
     private final UnsatisfiedDependencyStrategy unsatisfiedDepencyStrategy;
 
-    public KernelExtensions( Iterable<KernelExtensionFactory<?>> kernelExtensionFactories,
-            DependencyResolver dependencyResolver, UnsatisfiedDependencyStrategy unsatisfiedDepencyStrategy )
+    public KernelExtensions( KernelContext kernelContext, Iterable<KernelExtensionFactory<?>> kernelExtensionFactories,
+                             Dependencies dependencies, UnsatisfiedDependencyStrategy unsatisfiedDependencyStrategy )
     {
-        this.unsatisfiedDepencyStrategy = unsatisfiedDepencyStrategy;
+        this.kernelContext = kernelContext;
+        this.unsatisfiedDepencyStrategy = unsatisfiedDependencyStrategy;
         this.kernelExtensionFactories = Iterables.addAll( new ArrayList<KernelExtensionFactory<?>>(),
                 kernelExtensionFactories );
-        this.dependencyResolver = dependencyResolver;
+        this.dependencies = dependencies;
     }
 
     @Override
@@ -59,11 +62,14 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
 
         for ( KernelExtensionFactory kernelExtensionFactory : kernelExtensionFactories )
         {
-            Object configuration = getKernelExtensionDependencies( kernelExtensionFactory );
+            Object kernelExtensionDependencies = getKernelExtensionDependencies( kernelExtensionFactory );
 
             try
             {
-                life.add( kernelExtensionFactory.newKernelExtension( configuration) );
+                Lifecycle dependency = kernelExtensionFactory.newInstance( kernelContext, kernelExtensionDependencies );
+                Objects.requireNonNull( dependency, kernelExtensionFactory.toString() + " returned a null " +
+                        "KernelExtension" );
+                life.add( dependencies.satisfyDependency( dependency ) );
             }
             catch ( UnsatisfiedDependencyException e )
             {
@@ -116,8 +122,7 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
     {
         Class configurationClass = (Class) ((ParameterizedType) factory.getClass().getGenericSuperclass())
                 .getActualTypeArguments()[0];
-        return Proxy.newProxyInstance( configurationClass.getClassLoader(), new Class[]{configurationClass},
-                new KernelExtensionHandler() );
+        return DependenciesProxy.dependencies(dependencies, configurationClass);
     }
 
     public Iterable<KernelExtensionFactory<?>> listFactories()
@@ -135,26 +140,9 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
         }
 
         @Override
-        public boolean accept( Object extension )
+        public boolean test( Object extension )
         {
             return type.isInstance( extension );
-        }
-    }
-
-    private class KernelExtensionHandler
-            implements InvocationHandler
-    {
-        @Override
-        public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable
-        {
-            try
-            {
-                return dependencyResolver.resolveDependency( method.getReturnType() );
-            }
-            catch ( IllegalArgumentException e )
-            {
-                throw new UnsatisfiedDependencyException( e );
-            }
         }
     }
 

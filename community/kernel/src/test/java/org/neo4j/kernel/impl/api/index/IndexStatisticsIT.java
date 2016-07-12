@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -39,21 +39,17 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.util.TestLogger;
-import org.neo4j.kernel.impl.util.TestLogging;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static java.lang.String.format;
-
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_background_sampling_enabled;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.warn;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class IndexStatisticsIT
@@ -83,7 +79,7 @@ public class IndexStatisticsIT
         restart();
 
         // then we should have re-sampled the index
-        CountsTracker tracker = neoStore().getCounts();
+        CountsTracker tracker = neoStores().getCounts();
         assertEqualRegisters(
                 "Unexpected updates and size for the index",
                 newDoubleLongRegister( 0, 32 ),
@@ -95,7 +91,7 @@ public class IndexStatisticsIT
         );
 
         // and also
-        assertLogExistsForRecoveryOn( labelId, pkId );
+        assertLogExistsForRecoveryOn( ":Alien(specimen)" );
     }
 
     private void assertEqualRegisters( String message, DoubleLongRegister expected, DoubleLongRegister actual )
@@ -104,12 +100,11 @@ public class IndexStatisticsIT
         assertEquals( message + " (second part of register)", expected.readSecond(), actual.readSecond() );
     }
 
-    private void assertLogExistsForRecoveryOn( int label, int property )
+    private void assertLogExistsForRecoveryOn( String labelAndProperty )
     {
-        TestLogger logger = logging.getMessagesLog( IndexSamplingController.class );
-        logger.assertAtLeastOnce( warn(
-                format( "Recovering index sampling for index :Alien(specimen)", label, property )
-        ) );
+        logProvider.assertAtLeastOnce(
+                inLog( IndexSamplingController.class ).warn( "Recovering index sampling for index %s", labelAndProperty )
+        );
     }
 
     private int labelId( Label alien )
@@ -132,7 +127,7 @@ public class IndexStatisticsIT
     {
         return ( (GraphDatabaseAPI) db ).getDependencyResolver()
                                         .resolveDependency( ThreadToStatementContextBridge.class )
-                                        .instance();
+                                        .get();
     }
 
     private void createAliens()
@@ -169,22 +164,22 @@ public class IndexStatisticsIT
 
     private void resetIndexCounts( int labelId, int pkId )
     {
-        try ( CountsAccessor.IndexStatsUpdater updater = neoStore().getCounts().updateIndexCounts() )
+        try ( CountsAccessor.IndexStatsUpdater updater = neoStores().getCounts().updateIndexCounts() )
         {
             updater.replaceIndexSample( labelId, pkId, 0, 0 );
             updater.replaceIndexUpdateAndSize( labelId, pkId, 0, 0 );
         }
     }
 
-    private NeoStore neoStore()
+    private NeoStores neoStores()
     {
-        return ( (GraphDatabaseAPI) db ).getDependencyResolver().resolveDependency( NeoStore.class );
+        return ( (GraphDatabaseAPI) db ).getDependencyResolver().resolveDependency( NeoStores.class );
     }
 
     @Rule
     public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private final InMemoryIndexProvider indexProvider = new InMemoryIndexProvider( 100 );
-    private final TestLogging logging = new TestLogging();
+    private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private GraphDatabaseService db;
 
     @Before
@@ -195,9 +190,9 @@ public class IndexStatisticsIT
 
     private void setupDb( EphemeralFileSystemAbstraction fs )
     {
-        db = new TestGraphDatabaseFactory().setFileSystem( fs )
+        db = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider )
+                                           .setFileSystem( fs )
                                            .addKernelExtension( new InMemoryIndexProviderFactory( indexProvider ) )
-                                           .setLogging( logging )
                                            .newImpermanentDatabaseBuilder()
                                            .setConfig( index_background_sampling_enabled, "false" )
                                            .newGraphDatabase();

@@ -68,6 +68,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
 
         public SwitchableBufferedOutputStream()
         {
+            //noinspection ConstantConditions
             super( null ); // No output target by default. This is changed in printHistory.
         }
 
@@ -298,6 +299,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
     {
         private long filePageId;
         private int cachePageId;
+        private int pageCount;
         private File file;
         private int bytesWritten;
         private IOException exception;
@@ -306,11 +308,12 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         {
             this.filePageId = filePageId;
             this.cachePageId = cachePageId;
+            this.pageCount = 1;
             this.file = swapper.file();
         }
 
         @Override
-        public void addBytesWritten( int bytes )
+        public void addBytesWritten( long bytes )
         {
             bytesWritten += bytes;
         }
@@ -329,12 +332,20 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         }
 
         @Override
+        public void addPagesFlushed( int pageCount )
+        {
+            this.pageCount = pageCount;
+        }
+
+        @Override
         void printBody( PrintStream out, String exceptionLinePrefix )
         {
             out.print( ", filePageId:" );
             out.print( filePageId );
             out.print( ", cachePageId:" );
             out.print( cachePageId );
+            out.print( ", pageCount:" );
+            out.print( pageCount );
             print( out, file );
             out.print( ", bytesWritten:" );
             out.print( bytesWritten );
@@ -391,11 +402,11 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
     {
         private int bytesRead;
         private int cachePageId;
-        private boolean parked;
+        private boolean pageEvictedByFaulter;
         private Throwable exception;
 
         @Override
-        public void addBytesRead( int bytes )
+        public void addBytesRead( long bytes )
         {
             bytesRead += bytes;
         }
@@ -404,12 +415,6 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         public void setCachePageId( int cachePageId )
         {
             this.cachePageId = cachePageId;
-        }
-
-        @Override
-        public void setParked( boolean parked )
-        {
-            this.parked = parked;
         }
 
         @Override
@@ -426,14 +431,21 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         }
 
         @Override
+        public EvictionEvent beginEviction()
+        {
+            pageEvictedByFaulter = true;
+            return add( new EvictionHEvent() );
+        }
+
+        @Override
         void printBody( PrintStream out, String exceptionLinePrefix )
         {
             out.print( ", cachePageId:" );
             out.print( cachePageId );
             out.print( ", bytesRead:" );
             out.print( bytesRead );
-            out.print( ", parked:" );
-            out.print( parked );
+            out.print( ", pageEvictedByFaulter:" );
+            out.print( pageEvictedByFaulter );
             print( out, exception, exceptionLinePrefix );
         }
     }

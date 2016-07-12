@@ -25,10 +25,10 @@ import org.neo4j.kernel.impl.cache.LruCache;
 class RecentlyUnique extends AbstractUniquenessFilter
 {
     private static final Object PLACE_HOLDER = new Object();
-    private static final int DEFAULT_RECENT_SIZE = 10000; 
-    
+    private static final int DEFAULT_RECENT_SIZE = 10000;
+
     private final LruCache<Long, Object> recentlyVisited;
-    
+
     RecentlyUnique( PrimitiveTypeFetcher type, Object parameter )
     {
         super( type );
@@ -37,6 +37,7 @@ class RecentlyUnique extends AbstractUniquenessFilter
                 ((Number) parameter).intValue() );
     }
 
+    @Override
     public boolean check( TraversalBranch branch )
     {
         long id = type.getId( branch );
@@ -47,7 +48,7 @@ class RecentlyUnique extends AbstractUniquenessFilter
         }
         return add;
     }
-    
+
     @Override
     public boolean checkFull( Path path )
     {

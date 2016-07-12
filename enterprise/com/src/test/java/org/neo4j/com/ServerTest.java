@@ -27,12 +27,13 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.TickingClock;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 import static junit.framework.TestCase.fail;
@@ -128,11 +129,11 @@ public class ServerTest
     {
         Server.Configuration conf = mock( Server.Configuration.class );
         when( conf.getServerAddress() ).thenReturn( new HostnamePort( "aa", -1667 ) );
-        Server<Object,Object> server = new Server<Object,Object>( null, conf, new
-                DevNullLoggingService(),
+        Server<Object,Object> server = new Server<Object,Object>( null, conf,
+                NullLogProvider.getInstance(),
                 Protocol.DEFAULT_FRAME_LENGTH,
                 new ProtocolVersion( ((byte) 0), ProtocolVersion.INTERNAL_PROTOCOL_VERSION ),
-                checksumVerifier, new TickingClock( 0, 1 ),
+                checksumVerifier, new TickingClock( 0, 1, TimeUnit.MILLISECONDS ),
                 mock( ByteCounterMonitor.class ), mock( RequestMonitor.class ) )
         {
             @Override
@@ -142,7 +143,7 @@ public class ServerTest
             }
 
             @Override
-            protected void finishOffChannel( Channel channel, RequestContext context )
+            protected void stopConversation( RequestContext context )
             {
             }
         };

@@ -74,7 +74,7 @@ public enum ClusterState
                         case create:
                         {
                             String name = message.getPayload();
-                            context.getLogger( ClusterState.class ).info( "Creating cluster: " + name );
+                            context.getLog( ClusterState.class ).info( "Creating cluster: " + name );
                             context.created( name );
                             return entered;
                         }
@@ -134,10 +134,10 @@ public enum ClusterState
 
                             ClusterMessage.ConfigurationResponseState state = message.getPayload();
 
-                            context.getLogger( ClusterState.class ).info( "Joining cluster " + state.getClusterName() );
+                            context.getLog( ClusterState.class ).info( "Joining cluster " + state.getClusterName() );
                             if ( !context.getConfiguration().getName().equals( state.getClusterName() ) )
                             {
-                                context.getLogger( ClusterState.class ).warn( "Joined cluster name is different than " +
+                                context.getLog( ClusterState.class ).warn( "Joined cluster name is different than " +
                                         "the one configured. Expected " + context.getConfiguration().getName() +
                                         ", got " + state.getClusterName() + "." );
                             }
@@ -150,7 +150,7 @@ public enum ClusterState
                             if ( !memberList.containsKey( context.getMyId() ) ||
                                     !memberList.get( context.getMyId() ).equals( context.boundAt() ) )
                             {
-                                context.getLogger( ClusterState.class ).info( String.format( "%s joining:%s, " +
+                                context.getLog( ClusterState.class ).info( String.format( "%s joining:%s, " +
                                         "last delivered:%d", context.getMyId().toString(),
                                         context.getConfiguration().toString(),
                                         state.getLatestReceivedInstanceId().getId() ) );
@@ -171,7 +171,7 @@ public enum ClusterState
                                             Message.FROM ) ), newState ) );
                                 }
 
-                                context.getLogger( ClusterState.class ).debug( "Setup join timeout for " + message
+                                context.getLog( ClusterState.class ).debug( "Setup join timeout for " + message
                                         .getHeader( Message.CONVERSATION_ID ) );
                                 context.setTimeout( "join", timeout( ClusterMessage.joiningTimeout, message,
                                         new URI( message.getHeader( Message.FROM ) ) ) );
@@ -299,11 +299,12 @@ public enum ClusterState
                                     if ( discoveredInstance.getJoiningId().equals( configurationRequested.getJoiningId() ) )
                                     {
                                         // we are done
-                                        StringBuffer errorMessage = new StringBuffer( "Failed to join cluster because I saw two instances with the same ServerId" );
-                                        errorMessage.append( "One is " ).append( discoveredInstance.getJoiningId() );
-                                        errorMessage.append( " The other is " ).append( configurationRequested );
                                         outgoing.offer( internal( ClusterMessage.joinFailure,
-                                                new IllegalStateException( errorMessage.toString() ) ) );
+                                                new IllegalStateException( String.format(
+                                                        "Failed to join cluster because I saw two instances with the " +
+                                                                "same ServerId. " +
+                                                                "One is %s. The other is %s", discoveredInstance,
+                                                        configurationRequested ) ) ) );
                                         return start;
                                     }
                                 }
@@ -358,7 +359,7 @@ public enum ClusterState
 
                         case joiningTimeout:
                         {
-                            context.getLogger( ClusterState.class ).info( "Join timeout for " + message.getHeader(
+                            context.getLog( ClusterState.class ).info( "Join timeout for " + message.getHeader(
                                     Message.CONVERSATION_ID ) );
 
                             if ( context.hasJoinBeenDenied() )
@@ -439,11 +440,11 @@ public enum ClusterState
                             {
                                 if(otherInstanceJoiningWithSameId)
                                 {
-                                    context.getLogger( ClusterState.class ).info( "Denying entry to instance " + joiningId + " because another instance is currently joining with the same id.");
+                                    context.getLog( ClusterState.class ).info( "Denying entry to instance " + joiningId + " because another instance is currently joining with the same id.");
                                 }
                                 else
                                 {
-                                    context.getLogger( ClusterState.class ).info( "Denying entry to instance " + joiningId + " because that instance is already in the cluster.");
+                                    context.getLog( ClusterState.class ).info( "Denying entry to instance " + joiningId + " because that instance is already in the cluster.");
                                 }
                                 outgoing.offer( message.copyHeadersTo( respond( ClusterMessage.joinDenied, message,
                                         new ClusterMessage.ConfigurationResponseState( context.getConfiguration()
@@ -476,7 +477,7 @@ public enum ClusterState
                             List<URI> nodeList = new ArrayList<URI>( context.getConfiguration().getMemberURIs() );
                             if ( nodeList.size() == 1 )
                             {
-                                context.getLogger( ClusterState.class ).info( "Shutting down cluster: " + context
+                                context.getLog( ClusterState.class ).info( "Shutting down cluster: " + context
                                         .getConfiguration().getName() );
                                 context.left();
 
@@ -485,7 +486,7 @@ public enum ClusterState
                             }
                             else
                             {
-                                context.getLogger( ClusterState.class ).info( "Leaving:" + nodeList );
+                                context.getLog( ClusterState.class ).info( "Leaving:" + nodeList );
 
                                 ClusterMessage.ConfigurationChangeState newState = new ClusterMessage
                                         .ConfigurationChangeState();
@@ -535,7 +536,7 @@ public enum ClusterState
 
                         case leaveTimedout:
                         {
-                            context.getLogger( ClusterState.class ).warn( "Failed to leave. Cluster may consider this" +
+                            context.getLog( ClusterState.class ).warn( "Failed to leave. Cluster may consider this" +
                                     " instance still a member" );
                             context.left();
                             return start;

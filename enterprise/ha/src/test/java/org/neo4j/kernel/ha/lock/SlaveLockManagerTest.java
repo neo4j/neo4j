@@ -22,13 +22,15 @@ package org.neo4j.kernel.ha.lock;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.logging.NullLog;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertNotNull;
@@ -36,21 +38,20 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.function.Suppliers.singleton;
 
 public class SlaveLockManagerTest
 {
     private RequestContextFactory requestContextFactory;
     private Master master;
     private AvailabilityGuard availabilityGuard;
-    private long availabilityTimeoutMillis;
 
     @Before
     public void setUp()
     {
-        requestContextFactory = new RequestContextFactory( 1, mock( DependencyResolver.class ) );
+        requestContextFactory = new RequestContextFactory( 1, singleton( mock( TransactionIdStore.class ) ) );
         master = mock( Master.class );
-        availabilityGuard = new AvailabilityGuard( Clock.SYSTEM_CLOCK );
-        availabilityTimeoutMillis = 1000;
+        availabilityGuard = new AvailabilityGuard( Clock.SYSTEM_CLOCK, NullLog.getInstance() );
     }
 
     @Test
@@ -86,8 +87,6 @@ public class SlaveLockManagerTest
 
     private SlaveLockManager newSlaveLockManager( Locks localLocks )
     {
-        return new SlaveLockManager( localLocks, requestContextFactory,
-                master, availabilityGuard,
-                availabilityTimeoutMillis );
+        return new SlaveLockManager( localLocks, requestContextFactory, master, availabilityGuard, new Config() );
     }
 }

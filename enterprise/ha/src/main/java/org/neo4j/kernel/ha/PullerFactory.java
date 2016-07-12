@@ -27,9 +27,11 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Helper factory that provide more convenient way of construction and dependency management for update pulling
@@ -40,7 +42,7 @@ public class PullerFactory
     private final RequestContextFactory requestContextFactory;
     private final Master master;
     private final LastUpdateTime lastUpdateTime;
-    private final Logging logging;
+    private final LogProvider logging;
     private final InstanceId serverId;
     private final InvalidEpochExceptionHandler invalidEpochHandler;
     private final long pullInterval;
@@ -48,12 +50,13 @@ public class PullerFactory
     private final DependencyResolver dependencyResolver;
     private final AvailabilityGuard availabilityGuard;
     private final HighAvailabilityMemberStateMachine memberStateMachine;
+    private final Monitors monitors;
 
     public PullerFactory( RequestContextFactory requestContextFactory, Master master,
-            LastUpdateTime lastUpdateTime, Logging logging, InstanceId serverId,
+            LastUpdateTime lastUpdateTime, LogProvider logging, InstanceId serverId,
             InvalidEpochExceptionHandler invalidEpochHandler, long pullInterval,
             JobScheduler jobScheduler, DependencyResolver dependencyResolver, AvailabilityGuard availabilityGuard,
-            HighAvailabilityMemberStateMachine memberStateMachine )
+            HighAvailabilityMemberStateMachine memberStateMachine, Monitors monitors )
     {
 
         this.requestContextFactory = requestContextFactory;
@@ -67,22 +70,24 @@ public class PullerFactory
         this.dependencyResolver = dependencyResolver;
         this.availabilityGuard = availabilityGuard;
         this.memberStateMachine = memberStateMachine;
+        this.monitors = monitors;
     }
 
     public UpdatePuller createUpdatePuller( LifeSupport life )
     {
         return life.add( new SlaveUpdatePuller( requestContextFactory, master, lastUpdateTime, logging, serverId,
-                availabilityGuard, invalidEpochHandler, jobScheduler ) );
+                availabilityGuard, invalidEpochHandler, jobScheduler,
+                monitors.newMonitor( SlaveUpdatePuller.Monitor.class ) ) );
     }
 
     public TransactionObligationFulfiller createObligationFulfiller( LifeSupport life, UpdatePuller updatePuller )
     {
-        return life.add( new UpdatePullingTransactionObligationFulfiller(
-                updatePuller, memberStateMachine, serverId, dependencyResolver ) );
+        return life.add( new UpdatePullingTransactionObligationFulfiller( updatePuller, memberStateMachine, serverId,
+                dependencyResolver.provideDependency( TransactionIdStore.class ) ) );
     }
 
-    public UpdatePullerScheduler createUpdatePullerScheduler(UpdatePuller updatePuller)
+    public UpdatePullerScheduler createUpdatePullerScheduler( UpdatePuller updatePuller )
     {
-        return new UpdatePullerScheduler( updatePuller, jobScheduler, logging, pullInterval );
+        return new UpdatePullerScheduler( jobScheduler, logging, updatePuller, pullInterval );
     }
 }

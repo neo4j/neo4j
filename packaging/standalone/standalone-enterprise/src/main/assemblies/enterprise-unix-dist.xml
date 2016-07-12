@@ -30,7 +30,7 @@
     <!-- filter plain text -->
     <fileSet>
       <directory>src/main/distribution/text/enterprise</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <lineEnding>keep</lineEnding>
       <filtered>true</filtered>
       <excludes>
@@ -42,7 +42,7 @@
     <!-- password files -->
     <fileSet>
       <directory>src/main/distribution/text/enterprise</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <lineEnding>unix</lineEnding>
       <filtered>true</filtered>
       <includes>
@@ -53,7 +53,7 @@
     <!-- non-maven jars -->
     <fileSet>
       <directory>src/main/distribution/binary</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <includes>
         <include>system/lib/*.jar</include>
         <include>lib/*.jar</include>
@@ -63,32 +63,21 @@
     <!-- filter and chmod 755 shell scripts -->
     <fileSet>
       <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <lineEnding>unix</lineEnding>
       <fileMode>0755</fileMode>
       <excludes>
-        <exclude>bin/neo4j</exclude>
-        <exclude>bin/neo4j-*</exclude>
         <exclude>**/*.bat</exclude>
+        <exclude>**/*.psd1</exclude>
+        <exclude>**/*.psm1</exclude>
+        <exclude>**/*.ps1</exclude>
       </excludes>
       <filtered>true</filtered>
-    </fileSet>
-    <!-- treat the neo4j script as special so we don't filter shell variables -->
-    <fileSet>
-      <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
-      <outputDirectory>/</outputDirectory>
-      <lineEnding>unix</lineEnding>
-      <fileMode>0755</fileMode>
-      <includes>
-        <include>**/neo4j</include>
-        <include>**/neo4j-*</include>
-      </includes>
-      <filtered>false</filtered>
     </fileSet>
     <!--add MacOS *.plist installer files -->
     <fileSet>
       <directory>${project.parent.basedir}/src/main/distribution/resources</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <lineEnding>unix</lineEnding>
       <fileMode>0755</fileMode>
       <filtered>true</filtered>
@@ -96,7 +85,7 @@
     <!-- upgrade text file -->
     <fileSet>
       <directory>target/upgrade</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory></outputDirectory>
       <fileMode>0644</fileMode>
       <includes>
         <include>UPGRADE.txt</include>
@@ -114,14 +103,19 @@
       <useStrictFiltering>true</useStrictFiltering>
       <includes>
         <include>org.neo4j:*</include>
-        <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</include>
+        <include>jline:jline</include>
         <include>org.apache.lucene:lucene-core</include>
         <include>io.netty:netty</include>
-        <include>org.slf4j:slf4j-api</include>
-        <include>org.scala-lang:scala-library</include>
+        <include>org.scala-lang:*</include>
+        <include>org.scala-lang.modules:*</include>
         <include>org.parboiled:*</include>
         <include>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</include>
         <include>net.sf.opencsv:opencsv</include>
+        <include>org.apache.commons:commons-lang3</include>
+        <include>io.dropwizard.metrics:*</include>
+        <include>info.ganglia.gmetric4j:gmetric4j</include>
+        <include>org.acplt:oncrpc</include>
+        <include>org.slf4j:slf4j-api</include>
       </includes>
       <excludes>
         <exclude>*:pom:*</exclude>
@@ -140,15 +134,20 @@
       <excludes>
         <exclude>org.neo4j:*</exclude>
         <exclude>org.neo4j.doc:*</exclude>
-        <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</exclude>
+        <exclude>jline:jline</exclude>
         <exclude>org.apache.lucene:lucene-core</exclude>
         <exclude>io.netty:netty</exclude>
-        <exclude>org.slf4j:slf4j-api</exclude>
-        <exclude>org.scala-lang:scala-library</exclude>
+        <exclude>org.scala-lang:*</exclude>
+        <exclude>org.scala-lang.modules:*</exclude>
         <exclude>org.parboiled:*</exclude>
         <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
         <exclude>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</exclude>
         <exclude>net.sf.opencsv:opencsv</exclude>
+        <exclude>org.apache.commons:commons-lang3</exclude>
+        <exclude>io.dropwizard.metrics:*</exclude>
+        <exclude>info.ganglia.gmetric4j:gmetric4j</exclude>
+        <exclude>org.acplt:oncrpc</exclude>
+        <exclude>org.slf4j:slf4j-api</exclude>
       </excludes>
     </dependencySet>
  </dependencySets>

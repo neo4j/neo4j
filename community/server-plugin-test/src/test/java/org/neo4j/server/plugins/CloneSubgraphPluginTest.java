@@ -91,8 +91,7 @@ public class CloneSubgraphPluginTest extends ExclusiveServerTestBase
 
     private void createASocialNetwork( GraphDatabaseService db )
     {
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             jw = db.createNode();
             jw.setProperty( "name", "jim" );
@@ -150,11 +149,6 @@ public class CloneSubgraphPluginTest extends ExclusiveServerTestBase
             th.setProperty( "hobby", "fishing" );
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
-
     }
 
     @Test
@@ -195,8 +189,7 @@ public class CloneSubgraphPluginTest extends ExclusiveServerTestBase
 
     private int nodeCount()
     {
-        Transaction tx = server.getDatabase().getGraph().beginTx();
-        try
+        try ( Transaction tx = server.getDatabase().getGraph().beginTx() )
         {
             int count = 0;
             for ( @SuppressWarnings("unused") Node node : GlobalGraphOperations.at( server.getDatabase().getGraph() )
@@ -205,10 +198,6 @@ public class CloneSubgraphPluginTest extends ExclusiveServerTestBase
                 count++;
             }
             return count;
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 }

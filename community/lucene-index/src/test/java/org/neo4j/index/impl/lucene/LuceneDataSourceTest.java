@@ -72,7 +72,7 @@ public class LuceneDataSourceTest
     public void testShouldReturnIndexWriterFromLRUCache() throws Throwable
     {
         Config config = new Config( config(), GraphDatabaseSettings.class );
-        dataSource = life.add( new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction() ) );
+        dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), config, indexStore, new DefaultFileSystemAbstraction() ) );
         IndexIdentifier identifier = identifier( "foo" );
         IndexWriter writer = dataSource.getIndexSearcher( identifier ).getWriter();
         assertSame( writer, dataSource.getIndexSearcher( identifier ).getWriter() );
@@ -82,7 +82,7 @@ public class LuceneDataSourceTest
     public void testShouldReturnIndexSearcherFromLRUCache() throws Throwable
     {
         Config config = new Config( config(), GraphDatabaseSettings.class );
-        dataSource = life.add( new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction() ) );
+        dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), config, indexStore, new DefaultFileSystemAbstraction() ) );
         IndexIdentifier identifier = identifier( "foo" );
         IndexReference searcher = dataSource.getIndexSearcher( identifier );
         assertSame( searcher, dataSource.getIndexSearcher( identifier ) );
@@ -97,7 +97,7 @@ public class LuceneDataSourceTest
         Map<String, String> configMap = config();
         configMap.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" );
         Config config = new Config( configMap, GraphDatabaseSettings.class );
-        dataSource = life.add( new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction() ) );
+        dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), config, indexStore, new DefaultFileSystemAbstraction() ) );
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
         IndexIdentifier bazIdentifier = identifier( "baz" );
@@ -116,7 +116,7 @@ public class LuceneDataSourceTest
         Map<String, String> configMap = config();
         configMap.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" );
         Config config = new Config( configMap, GraphDatabaseSettings.class );
-        dataSource = life.add( new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction() ) );
+        dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), config, indexStore, new DefaultFileSystemAbstraction() ) );
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
         IndexIdentifier bazIdentifier = identifier( "baz" );
@@ -137,7 +137,7 @@ public class LuceneDataSourceTest
         Map<String, String> configMap = config();
         configMap.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" );
         Config config = new Config( configMap, GraphDatabaseSettings.class );
-        dataSource = life.add( new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction() ) );
+        dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), config, indexStore, new DefaultFileSystemAbstraction() ) );
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
         IndexIdentifier bazIdentifier = identifier( "baz" );
@@ -161,7 +161,7 @@ public class LuceneDataSourceTest
         Map<String, String> configMap = config();
         configMap.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" );
         Config config = new Config( configMap, GraphDatabaseSettings.class );
-        dataSource = life.add( new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction() ) );
+        dataSource = life.add( new LuceneDataSource( directory.graphDbDir(), config, indexStore, new DefaultFileSystemAbstraction() ) );
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
         IndexIdentifier bazIdentifier = identifier( "baz" );

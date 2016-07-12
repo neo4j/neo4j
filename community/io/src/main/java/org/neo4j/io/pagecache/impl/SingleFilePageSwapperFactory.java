@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageEvictionCallback;
@@ -34,9 +35,10 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
  */
 public class SingleFilePageSwapperFactory implements PageSwapperFactory
 {
-    private final FileSystemAbstraction fs;
+    private FileSystemAbstraction fs;
 
-    public SingleFilePageSwapperFactory( FileSystemAbstraction fs )
+    @Override
+    public void setFileSystemAbstraction( FileSystemAbstraction fs )
     {
         this.fs = fs;
     }
@@ -45,8 +47,50 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
     public PageSwapper createPageSwapper(
             File file,
             int filePageSize,
-            PageEvictionCallback onEviction ) throws IOException
+            PageEvictionCallback onEviction,
+            boolean createIfNotExist ) throws IOException
     {
+        if ( !fs.fileExists( file ) )
+        {
+            if ( createIfNotExist )
+            {
+                fs.create( file ).close();
+            }
+            else
+            {
+                throw new NoSuchFileException( file.getPath(), null, "Cannot map non-existing file" );
+            }
+        }
         return new SingleFilePageSwapper( file, fs, filePageSize, onEviction );
+    }
+
+    @Override
+    public void syncDevice()
+    {
+        // Nothing do to, since we `fsync` files individually in `force()`.
+    }
+
+    @Override
+    public String implementationName()
+    {
+        return "single";
+    }
+
+    @Override
+    public int getCachePageSizeHint()
+    {
+        return 8192;
+    }
+
+    @Override
+    public boolean isCachePageSizeHintStrict()
+    {
+        return false;
+    }
+
+    @Override
+    public long getRequiredBufferAlignment()
+    {
+        return 1;
     }
 }

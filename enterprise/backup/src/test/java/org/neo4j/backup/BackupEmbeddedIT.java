@@ -20,7 +20,9 @@
 package org.neo4j.backup;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -34,88 +36,90 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.ProcessStreamHandler;
+import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 
-import static org.neo4j.helpers.Settings.osIsWindows;
-import static org.neo4j.test.TargetDirectory.forTest;
-
 public class BackupEmbeddedIT
 {
-    public static final File PATH = forTest( BackupEmbeddedIT.class ).cleanDirectory( "db" );
-    public static final File BACKUP_PATH = forTest( BackupEmbeddedIT.class ).cleanDirectory( "backup-db" );
+    @ClassRule
+    public static TargetDirectory.TestDirectory testDirectory =
+            TargetDirectory.testDirForTest( BackupEmbeddedIT.class );
+
+    public final File backupPath = testDirectory.directory( "backup-db" );
 
     @Rule
-    public EmbeddedDatabaseRule db = new EmbeddedDatabaseRule( PATH ).startLazily();
+    public EmbeddedDatabaseRule db = new EmbeddedDatabaseRule( testDirectory.directory( "db" ) ).startLazily();
     private String ip;
 
     @Before
     public void before() throws Exception
     {
-        if ( osIsWindows() ) return;
-        FileUtils.deleteDirectory( BACKUP_PATH  );
+        if ( SystemUtils.IS_OS_WINDOWS ) return;
+        FileUtils.deleteDirectory( backupPath );
         ip = InetAddress.getLocalHost().getHostAddress();
     }
 
     @SuppressWarnings("deprecation")
     public static DbRepresentation createSomeData( GraphDatabaseService db )
     {
-        Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        node.setProperty( "name", "Neo" );
-        db.createNode().createRelationshipTo( node, DynamicRelationshipType.withName( "KNOWS" ) );
-        tx.success();
-        tx.finish();
+        try (Transaction tx = db.beginTx())
+        {
+            Node node = db.createNode();
+            node.setProperty( "name", "Neo" );
+            db.createNode().createRelationshipTo( node, DynamicRelationshipType.withName( "KNOWS" ) );
+            tx.success();
+        }
         return DbRepresentation.of( db );
     }
 
     @Test
     public void makeSureBackupCanBePerformedWithDefaultPort() throws Exception
     {
-        if ( osIsWindows() ) return;
+        if ( SystemUtils.IS_OS_WINDOWS ) return;
         startDb( null );
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "-from",
-                        BackupTool.DEFAULT_SCHEME + "://"+ ip, "-to",
-                        BACKUP_PATH.getPath() ) );
-        assertEquals( DbRepresentation.of( db ), DbRepresentation.of( BACKUP_PATH ) );
+                        BackupTool.DEFAULT_SCHEME + "://" + ip, "-to",
+                        backupPath.getPath() ) );
+        assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
         createSomeData( db );
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "-from", BackupTool.DEFAULT_SCHEME + "://"+ ip,
-                        "-to", BACKUP_PATH.getPath() ) );
-        assertEquals( DbRepresentation.of( db ), DbRepresentation.of( BACKUP_PATH ) );
+                        "-to", backupPath.getPath() ) );
+        assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
     }
 
     @Test
     public void makeSureBackupCanBePerformedWithCustomPort() throws Exception
     {
-        if ( osIsWindows() ) return;
+        if ( SystemUtils.IS_OS_WINDOWS ) return;
         int port = 4445;
         startDb( "" + port );
         assertEquals(
                 1,
                 runBackupToolFromOtherJvmToGetExitCode( "-from",
                         BackupTool.DEFAULT_SCHEME + "://" + ip, "-to",
-                        BACKUP_PATH.getPath() ) );
+                        backupPath.getPath() ) );
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "-from",
-                        BackupTool.DEFAULT_SCHEME + "://"+ ip +":" + port,
-                        "-to", BACKUP_PATH.getPath() ) );
-        assertEquals( DbRepresentation.of( db ), DbRepresentation.of( BACKUP_PATH ) );
+                        BackupTool.DEFAULT_SCHEME + "://" + ip + ":" + port,
+                        "-to", backupPath.getPath() ) );
+        assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
         createSomeData( db );
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "-from", BackupTool.DEFAULT_SCHEME + "://"+ ip +":"
                                  + port, "-to",
-                        BACKUP_PATH.getPath() ) );
-        assertEquals( DbRepresentation.of( db ), DbRepresentation.of( BACKUP_PATH ) );
+                        backupPath.getPath() ) );
+        assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
     }
 
     private void startDb( String backupPort )

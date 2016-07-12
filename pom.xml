@@ -5,21 +5,19 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>41</version>
+    <version>42</version>
     <relativePath/>
   </parent>
 
   <groupId>org.neo4j</groupId>
   <artifactId>parent</artifactId>
-  <version>2.2.11-SNAPSHOT</version>
+  <version>2.3.6-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Neo4j</name>
   <description>Neo4j Graph Database</description>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>1.7</maven.compiler.source>
-    <maven.compiler.target>1.7</maven.compiler.target>
     <jta.groupId>org.apache.geronimo.specs</jta.groupId>
     <jta.artifactId>geronimo-jta_1.1_spec</jta.artifactId>
     <jta.version>1.1.1</jta.version>
@@ -28,14 +26,12 @@
     <licensing.phase>compile</licensing.phase>
     <lucene.version>3.6.2</lucene.version>
     <powermock.version>1.5.5</powermock.version>
-    <slf4j-api.version>1.7.7</slf4j-api.version>
     <logback-classic.version>1.1.2</logback-classic.version>
+    <bouncycastle.version>1.52</bouncycastle.version>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
     <hsqldb.version>2.3.2</hsqldb.version>
-    <test.runner.jvm.settings>-Xmx1G -XX:MaxPermSize=128M -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data -XX:-OmitStackTraceInFastThrow</test.runner.jvm.settings>
+    <test.runner.jvm.settings>-Xmx1G -XX:MaxPermSize=128M -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.DIRTY_MEMORY=true -XX:-OmitStackTraceInFastThrow</test.runner.jvm.settings>
     <doclint-groups>reference</doclint-groups>
-    <git.commit.id.branch>unknown-branch-${project.version}</git.commit.id.branch>
-    <git.commit.id>unknown-commit</git.commit.id>
   </properties>
 
   <modules>
@@ -60,65 +56,6 @@
         <configuration>
           <argLine>${test.runner.jvm.settings}</argLine>
         </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>generate-version</id>
-            <phase>generate-sources</phase>
-            <configuration>
-              <target if="version-package">
-                <macrodef name="generate-version">
-                  <attribute name="package" />
-                  <sequential>
-                    <local name="the-package" />
-                    <local name="version-dir" />
-                    <property name="the-package" value="@{package}" />
-                    <loadresource property="version-dir">
-                      <propertyresource name="the-package"/>
-                      <filterchain>
-                        <tokenfilter>
-                          <filetokenizer/>
-                          <replacestring from="." to="/"/>
-                        </tokenfilter>
-                      </filterchain>
-                    </loadresource>
-                    <mkdir dir="target/generated-sources/version/org/neo4j/${version-dir}/" />
-                    <property name="build.number" value="${env.BUILD_NUMBER}" />
-                    <property name="git.branch" value="${git.commit.id.branch}" />
-                    <property name="git.commit" value="${git.commit.id}" />
-                    <echo file="target/generated-sources/version/org/neo4j/${version-dir}/ComponentVersion.java">package org.neo4j.${the-package};
-
-import org.neo4j.kernel.Version;
-import org.neo4j.helpers.Service;
-
-@Service.Implementation(Version.class)
-@SuppressWarnings("deprecation")
-public class ComponentVersion extends Version
-{
-    public ComponentVersion() { super("${project.artifactId}", "${project.version}"); }
-    public @Override String getReleaseVersion() { return "${project.version}"; }
-    protected @Override String getBuildNumber() { return "${build.number}"; }
-    protected @Override String getCommitId() { return "${git.commit}"; }
-    protected @Override String getBranchName() { return "${git.branch}"; }
-}
-</echo>
-                  </sequential>
-                </macrodef>
-                <generate-version package="${version-package}" />
-              </target>
-            </configuration>
-            <goals><goal>run</goal></goals>
-          </execution>
-        </executions>
-        <dependencies>
-          <dependency>
-            <groupId>org.apache.ant</groupId>
-            <artifactId>ant-launcher</artifactId>
-            <version>1.8.4</version>
-          </dependency>
-        </dependencies>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
@@ -156,7 +93,7 @@ public class ComponentVersion extends Version
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
-          <version>1.3.2</version>
+          <version>1.4.0</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
@@ -168,6 +105,11 @@ public class ComponentVersion extends Version
           <artifactId>maven-shade-plugin</artifactId>
           <version>2.1</version>
           <!-- 2.1 ? Yes, 2.0 has maven3 issues -->
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>2.5.4</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -194,7 +136,7 @@ public class ComponentVersion extends Version
             <plainTextReport>true</plainTextReport>
             <prependText>${licensing.prepend.text}</prependText>
             <excludedGroups>
-              ^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.browser){1}|(org.neo4j.doc){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1}|(org.neo4j.build){1}|(org.neo4j.examples){1})$
+              ^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.browser){1}|(org.neo4j.doc){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1}|(org.neo4j.bolt){1}|(org.neo4j.build){1}|(org.neo4j.examples){1})$
             </excludedGroups>
             <includedScopes>compile</includedScopes>
           </configuration>
@@ -254,6 +196,34 @@ public class ComponentVersion extends Version
               <version>${project.version}</version>
             </dependency>
           </dependencies>
+        </plugin>
+        <plugin>
+          <groupId>org.eclipse.m2e</groupId>
+          <artifactId>lifecycle-mapping</artifactId>
+          <version>1.0.0</version>
+          <configuration>
+            <lifecycleMappingMetadata>
+              <pluginExecutions>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>net.alchim31.maven</groupId>
+                    <artifactId>scala-maven-plugin</artifactId>
+                    <versionRange>[3.1.0,)</versionRange>
+                    <goals>
+                      <goal>add-source</goal>
+                      <goal>compile</goal>
+                      <goal>testCompile</goal>
+                      <goal>doc</goal>
+                      <goal>doc-jar</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <ignore />
+                  </action>
+                </pluginExecution>
+              </pluginExecutions>
+            </lifecycleMappingMetadata>
+          </configuration>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -433,42 +403,6 @@ public class ComponentVersion extends Version
         </plugins>
       </build>
     </profile>
-    <profile><!-- used for testing -->
-      <id>unix-dependency-tools.jar</id>
-      <activation>
-        <file>
-          <exists>${java.home}/../lib/tools.jar</exists>
-        </file>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>com.sun.tools</groupId>
-          <artifactId>tools</artifactId>
-          <version>${sun.tools.version}</version>
-          <scope>system</scope>
-          <systemPath>${java.home}/../lib/tools.jar</systemPath>
-          <optional>true</optional>
-        </dependency>
-      </dependencies>
-    </profile>
-    <profile><!-- used for testing -->
-      <id>Windows-dependency-tools.jar</id>
-      <activation>
-        <os>
-          <family>Windows</family>
-        </os>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>com.sun.tools</groupId>
-          <artifactId>tools</artifactId>
-          <version>${sun.tools.version}</version>
-          <scope>system</scope>
-          <systemPath>${java.home}\\..\\lib\\tools.jar</systemPath>
-          <optional>true</optional>
-        </dependency>
-      </dependencies>
-    </profile>
     <profile>
       <id>java8-set-javadoc-doclint</id>
       <activation>
@@ -526,17 +460,47 @@ public class ComponentVersion extends Version
         <version>${pico.version}</version>
         <scope>test</scope>
       </dependency>
+
+      <!-- The JUnit-Hamcrest-Mockito combo -->
       <dependency>
-        <groupId>org.hamcrest</groupId>
-        <artifactId>hamcrest-core</artifactId>
-        <version>1.3</version>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.11</version>
+        <scope>test</scope>
       </dependency>
+      <dependency>
+          <groupId>org.hamcrest</groupId>
+          <artifactId>hamcrest-core</artifactId>
+          <version>1.3</version>
+          <scope>test</scope>
+      </dependency>
+      <dependency>
+          <groupId>org.hamcrest</groupId>
+          <artifactId>hamcrest-library</artifactId>
+          <version>1.3</version>
+          <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-core</artifactId>
+        <version>1.9.5</version>
+        <scope>test</scope>
+      </dependency>
+
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-all</artifactId>
         <version>1.9.5</version>
         <scope>test</scope>
       </dependency>
+      <dependency>
+          <groupId>org.objenesis</groupId>
+          <artifactId>objenesis</artifactId>
+          <version>1.3</version>
+          <scope>test</scope>
+      </dependency>
+
       <dependency>
         <groupId>org.powermock</groupId>
         <artifactId>powermock-module-junit4</artifactId>
@@ -548,6 +512,12 @@ public class ComponentVersion extends Version
         <artifactId>powermock-api-mockito</artifactId>
         <version>${powermock.version}</version>
         <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>geronimo-spec</groupId>
@@ -564,18 +534,6 @@ public class ComponentVersion extends Version
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
         <version>1.9</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.hamcrest</groupId>
-        <artifactId>hamcrest-library</artifactId>
-        <version>1.3</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.hamcrest</groupId>
-        <artifactId>hamcrest-all</artifactId>
-        <version>1.3</version>
         <scope>test</scope>
       </dependency>
 
@@ -616,11 +574,25 @@ public class ComponentVersion extends Version
         <artifactId>commons-lang3</artifactId>
         <version>3.3.2</version>
       </dependency>
+
+      <!-- Netty is used by three components: Com, Cluster and Bolt Socket Transport.
+           Netty 4 is a significant improvement over Netty 3, in that it introduces
+           buffer pooling (among lots of other improvements), and thus we want to move
+           to Netty 4 to reduce GC overhead. Netty 4 (io.netty:netty-all) can co-exist
+           with Netty 3 (io.netty:netty) because they have different modules and different
+           package structure. As such, the two netty dependencies represents the in-between
+           state while we move all remaining Netty 3 uses over to Netty 4 -->
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty</artifactId>
         <version>3.9.9.Final</version>
       </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-all</artifactId>
+        <version>4.0.28.Final</version>
+      </dependency>
+
       <dependency>
         <groupId>log4j</groupId>
         <artifactId>log4j</artifactId>
@@ -642,16 +614,6 @@ public class ComponentVersion extends Version
         <version>${logback-classic.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-api</artifactId>
-        <version>${slf4j-api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>jcl-over-slf4j</artifactId>
-        <version>${slf4j-api.version}</version>
-      </dependency>
-      <dependency>
         <groupId>org.codehaus.janino</groupId>
         <artifactId>janino</artifactId>
         <version>2.6.1</version>
@@ -659,26 +621,12 @@ public class ComponentVersion extends Version
       <dependency>
         <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
         <artifactId>concurrentlinkedhashmap-lru</artifactId>
-        <version>1.4</version>
+        <version>1.4.2</version>
       </dependency>
       <dependency>
         <groupId>net.sf.opencsv</groupId>
         <artifactId>opencsv</artifactId>
         <version>2.3</version>
-      </dependency>
-      <dependency>
-        <groupId>org.osgi</groupId>
-        <artifactId>osgi_R4_core</artifactId>
-        <version>1.0</version>
-        <scope>provided</scope>
-        <optional>true</optional>
-      </dependency>
-      <dependency>
-        <groupId>org.osgi</groupId>
-        <artifactId>osgi_R4_compendium</artifactId>
-        <version>1.0</version>
-        <scope>provided</scope>
-        <optional>true</optional>
       </dependency>
       <dependency>
         <groupId>com.sun.jersey</groupId>
@@ -734,6 +682,11 @@ public class ComponentVersion extends Version
         <version>1.9.13</version>
       </dependency>
       <dependency>
+        <groupId>org.eclipse.jetty.websocket</groupId>
+        <artifactId>websocket-client</artifactId>
+        <version>9.2.10.v20150310</version>
+      </dependency>
+      <dependency>
         <groupId>org.rrd4j</groupId>
         <artifactId>rrd4j</artifactId>
         <version>2.2</version>
@@ -744,14 +697,52 @@ public class ComponentVersion extends Version
         <version>1.7R4</version>
       </dependency>
       <dependency>
-        <groupId>bouncycastle</groupId>
-        <artifactId>bcprov-jdk16</artifactId>
-        <version>140</version>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcprov-jdk15on</artifactId>
+        <version>${bouncycastle.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcpkix-jdk15on</artifactId>
+        <version>${bouncycastle.version}</version>
       </dependency>
       <dependency>
         <groupId>org.neo4j.3rdparty.javax.ws.rs</groupId>
         <artifactId>jsr311-api</artifactId>
         <version>1.1.2.r612</version>
+      </dependency>
+      <dependency>
+        <groupId>org.asciidoctor</groupId>
+        <artifactId>asciidoctorj</artifactId>
+        <version>1.5.2</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.jruby</groupId>
+        <artifactId>jruby-complete</artifactId>
+        <version>1.7.20</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.jsoup</groupId>
+        <artifactId>jsoup</artifactId>
+        <version>1.8.1</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.dropwizard.metrics</groupId>
+        <artifactId>metrics-core</artifactId>
+        <version>3.1.2</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dropwizard.metrics</groupId>
+        <artifactId>metrics-graphite</artifactId>
+        <version>3.1.2</version>
+      </dependency>
+      <dependency>
+        <groupId>io.dropwizard.metrics</groupId>
+        <artifactId>metrics-ganglia</artifactId>
+        <version>3.1.2</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

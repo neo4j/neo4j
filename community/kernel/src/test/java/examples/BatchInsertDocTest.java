@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -55,7 +56,8 @@ public class BatchInsertDocTest
     public void insert() throws Exception
     {
         // Make sure our scratch directory is clean
-        FileUtils.deleteRecursively( new File( "target/batchinserter-example" ) );
+        File tempStoreDir = new File( "target/batchinserter-example" ).getAbsoluteFile();
+        FileUtils.deleteRecursively( tempStoreDir );
 
         // START SNIPPET: insert
         BatchInserter inserter = null;
@@ -93,6 +95,10 @@ public class BatchInsertDocTest
                     new File("target/batchinserter-example").getAbsolutePath() );
         try ( Transaction tx = db.beginTx() )
         {
+            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
             Label personLabelForTesting = DynamicLabel.label( "Person" );
             Node mNode = db.findNode( personLabelForTesting, "name", "Mattias" );
             Node cNode = mNode.getSingleRelationship( DynamicRelationshipType.withName( "KNOWS" ), Direction.OUTGOING ).getEndNode();
@@ -109,7 +115,7 @@ public class BatchInsertDocTest
     }
 
     @Test
-    public void insertWithConfig()
+    public void insertWithConfig() throws IOException
     {
         // START SNIPPET: configuredInsert
         Map<String, String> config = new HashMap<>();

@@ -148,4 +148,10 @@ public class LimitedFileChannel implements StoreChannel
     {
         inner.close();
     }
+
+    @Override
+    public void flush() throws IOException
+    {
+        inner.flush();
+    }
 }

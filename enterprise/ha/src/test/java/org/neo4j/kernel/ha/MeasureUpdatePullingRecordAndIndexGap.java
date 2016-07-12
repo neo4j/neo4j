@@ -51,7 +51,7 @@ public class MeasureUpdatePullingRecordAndIndexGap
 
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() )
-            .config( HaSettings.tx_push_factor, "0" );
+            .withSharedSetting( HaSettings.tx_push_factor, "0" );
 
     @Test
     public void shouldMeasureThatGap() throws Exception

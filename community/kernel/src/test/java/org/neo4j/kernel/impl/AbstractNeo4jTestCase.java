@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.impl;
 
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -31,17 +39,8 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.lang.reflect.Field;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -49,14 +48,13 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.store.AbstractDynamicStore;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 @AbstractNeo4jTestCase.RequiresPersistentGraphDatabase( false )
@@ -78,8 +76,8 @@ public abstract class AbstractNeo4jTestCase
         public Statement apply( Statement base, Description description )
         {
             tearDownDb();
-            setupGraphDatabase(description.getTestClass().getName(),
-                             description.getTestClass().getAnnotation( RequiresPersistentGraphDatabase.class ).value());
+            setupGraphDatabase( description.getTestClass().getName(),
+                    description.getTestClass().getAnnotation( RequiresPersistentGraphDatabase.class ).value() );
             return base;
         }
     };
@@ -110,7 +108,7 @@ public abstract class AbstractNeo4jTestCase
         {
             try
             {
-                FileUtils.deleteRecursively( new File( getStorePath( "neo-test" ) ) );
+                FileUtils.deleteRecursively( getStorePath( "neo-test" ) );
             }
             catch ( IOException e )
             {
@@ -119,8 +117,9 @@ public abstract class AbstractNeo4jTestCase
         }
 
         threadLocalGraphDb.set( (GraphDatabaseAPI) (requiresPersistentGraphDatabase ?
-                new TestGraphDatabaseFactory().newEmbeddedDatabase( getStorePath( "neo-test" ) ) :
-                new TestGraphDatabaseFactory().newImpermanentDatabase()) );
+                                                    new TestGraphDatabaseFactory().newEmbeddedDatabase( getStorePath(
+                                                            "neo-test" ) ) :
+                                                    new TestGraphDatabaseFactory().newImpermanentDatabase()) );
     }
 
     public GraphDatabaseAPI getGraphDbAPI()
@@ -138,9 +137,9 @@ public abstract class AbstractNeo4jTestCase
         return tx;
     }
 
-    public static String getStorePath( String endPath )
+    public static File getStorePath( String endPath )
     {
-        return new File( NEO4J_BASE_DIR, currentTestClassName.get() + "-" + endPath ).getAbsolutePath();
+        return new File( NEO4J_BASE_DIR, currentTestClassName.get() + "-" + endPath ).getAbsoluteFile();
     }
 
     @Before
@@ -148,7 +147,7 @@ public abstract class AbstractNeo4jTestCase
     {
         if ( restartGraphDbBetweenTests() && graphDb == null )
         {
-            setupGraphDatabase( currentTestClassName.get(), requiresPersistentGraphDatabase.get());
+            setupGraphDatabase( currentTestClassName.get(), requiresPersistentGraphDatabase.get() );
             graphDb = threadLocalGraphDb.get();
         }
         tx = graphDb.beginTx();
@@ -159,7 +158,7 @@ public abstract class AbstractNeo4jTestCase
     {
         if ( tx != null )
         {
-            tx.finish();
+            tx.close();
         }
 
         if ( restartGraphDbBetweenTests() )
@@ -194,7 +193,7 @@ public abstract class AbstractNeo4jTestCase
         if ( tx != null )
         {
             tx.success();
-            tx.finish();
+            tx.close();
         }
         tx = graphDb.beginTx();
         return tx;
@@ -207,7 +206,7 @@ public abstract class AbstractNeo4jTestCase
             try
             {
                 tx.success();
-                tx.finish();
+                tx.close();
             }
             finally
             {
@@ -222,7 +221,7 @@ public abstract class AbstractNeo4jTestCase
         {
             try
             {
-                tx.finish();
+                tx.close();
             }
             finally
             {
@@ -238,7 +237,7 @@ public abstract class AbstractNeo4jTestCase
             try
             {
                 tx.failure();
-                tx.finish();
+                tx.close();
             }
             finally
             {
@@ -282,49 +281,43 @@ public abstract class AbstractNeo4jTestCase
         }
     }
 
-    protected void clearCache()
-    {
-        getGraphDbAPI().getDependencyResolver().resolveDependency( Caches.class ).clear();
-    }
-
     protected long propertyRecordsInUse()
     {
-        return propertyStore().getNumberOfIdsInUse();
+        return numberOfRecordsInUse( propertyStore() );
+    }
+
+    public static <RECORD extends AbstractBaseRecord> int numberOfRecordsInUse( RecordStore<RECORD> store )
+    {
+        int inUse = 0;
+        for ( long id = store.getNumberOfReservedLowIds(); id < store.getHighId(); id++ )
+        {
+            RECORD record = store.forceGetRecord( id );
+            if ( record.inUse() )
+            {
+                inUse++;
+            }
+        }
+        return inUse;
     }
 
     protected long dynamicStringRecordsInUse()
     {
-        return dynamicRecordsInUse( "stringPropertyStore" );
+        return numberOfRecordsInUse( propertyStore().getStringStore() );
     }
 
     protected long dynamicArrayRecordsInUse()
     {
-        return dynamicRecordsInUse( "arrayPropertyStore" );
-    }
-
-    private long dynamicRecordsInUse( String fieldName )
-    {
-        try
-        {
-            Field storeField = PropertyStore.class.getDeclaredField( fieldName );
-            storeField.setAccessible( true );
-            return ( (AbstractDynamicStore) storeField.get( propertyStore() ) ).getNumberOfIdsInUse();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
+        return numberOfRecordsInUse( propertyStore().getArrayStore() );
     }
 
     protected PropertyStore propertyStore()
     {
-        NeoStore neoStore = graphDb.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate();
-        return neoStore.getPropertyStore();
+        NeoStores neoStores = graphDb.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get();
+        return neoStores.getPropertyStore();
     }
 
-    public static File unzip( Class<?> testClass, String resource ) throws IOException
+    public static File unzip( File targetDir, Class<?> testClass, String resource ) throws IOException
     {
-        File dir = TargetDirectory.forTest( testClass ).makeGraphDbDir();
         try ( InputStream source = testClass.getResourceAsStream( resource ) )
         {
             if ( source == null )
@@ -338,12 +331,13 @@ public abstract class AbstractNeo4jTestCase
             {
                 if ( entry.isDirectory() )
                 {
-                    new File( dir, entry.getName() ).mkdirs();
+                    new File( targetDir, entry.getName() ).mkdirs();
                 }
                 else
                 {
                     try ( OutputStream file =
-                                  new BufferedOutputStream( new FileOutputStream( new File( dir, entry.getName() ) ) ) )
+                                  new BufferedOutputStream(
+                                          new FileOutputStream( new File( targetDir, entry.getName() ) ) ) )
                     {
                         long toCopy = entry.getSize();
                         while ( toCopy > 0 )
@@ -357,6 +351,6 @@ public abstract class AbstractNeo4jTestCase
                 zipStream.closeEntry();
             }
         }
-        return dir;
+        return targetDir;
     }
 }

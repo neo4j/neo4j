@@ -32,7 +32,6 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -41,12 +40,17 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.TriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
 
@@ -160,14 +164,13 @@ public class TestLogPruning
         // and the log gets rotated, which means we have a new one with no txs in it
         db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
         /*
-         * if we hadn't rotated after the txs went though, we would need to change the assertion to be at least 1 tx
+         * if we hadn't rotated after the txs went through, we would need to change the assertion to be at least 1 tx
          * instead of exactly one.
          */
 
         // Then
         // the database must have kept at least one tx (in our case exactly one, because we rotated the log)
-        assertEquals( 1, transactionCount() );
-
+        assertThat( transactionCount(), greaterThanOrEqualTo( 1 ) );
     }
 
     private GraphDatabaseAPI newDb( String logPruning, int rotateEveryNTransactions )
@@ -197,6 +200,13 @@ public class TestLogPruning
             node.setProperty( "name", "a somewhat lengthy string of some sort, right?" );
             tx.success();
         }
+        checkPoint();
+    }
+
+    private void checkPoint() throws IOException
+    {
+        TriggerInfo triggerInfo = new SimpleTriggerInfo( "test" );
+        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint( triggerInfo );
     }
 
     private int figureOutSampleTransactionSizeBytes() throws IOException

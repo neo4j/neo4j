@@ -1,0 +1,86 @@
+[[metrics-extension]]
+= Metrics Reporting
+
+NOTE: Metrics reporting is only available in the Neo4j Enterprise Edition.
+
+[[metrics-introduction]]
+== Introducing Metrics ==
+
+Neo4j Enterprise can be configured to continuously export Neo4j-specific metrics to Graphite, Ganglia, or CSV files.
+This makes it easy to monitor the health of running Neo4j instances.
+
+Neo4j Enterprise can expose metrics for the following parts of the database, and does so by default:
+
+[source,properties]
+----
+// default setting for enabling all supported metrics
+metrics.enabled=true
+
+// default setting for enabling all Neo4j specific metrics
+metrics.neo4j.enabled=true
+
+// setting for exposing metrics about transactions; number of transactions started, committed, etc.
+metrics.neo4j.tx.enabled=true
+
+// setting for exposing metrics about the Neo4j page cache; page faults, evictions, flushes and exceptions, etc.
+metrics.neo4j.pagecache.enabled=true
+
+// setting for exposing metrics about approximately entities are in the database; nodes, relationships, properties, etc.
+metrics.neo4j.counts.enabled=true
+
+// setting for exposing metrics about the network usage of the HA cluster component
+metrics.neo4j.network.enabled=true
+----
+
+[[metrics-graphite]]
+== Graphite Configuration ==
+
+For Graphite integration add the following settings to _neo4j.properties:_
+
+[source,properties]
+----
+metrics.graphite.enabled=true // default is 'false'
+metrics.graphite.server=<ip>:2003
+metrics.graphite.interval=<how often to send data, defaults to 3s>
+metrics.prefix=<Neo4j instance name, e.g. wwwneo1>
+----
+
+Start the Neo4j Server and connect to Graphite via a web browser in order to monitor your Neo4j metrics.
+
+[[metrics-ganglia]]
+== Ganglia Configuration ==
+
+For Ganglia integration add the following settings to _neo4j.properties:_
+
+[source,properties]
+----
+metrics.ganglia.enabled=true // default is 'false'
+metrics.ganglia.server=<ip>:8469
+metrics.ganglia.interval=<how often to send data, defaults to 3s>
+metrics.prefix=<Neo4j instance name, e.g. wwwneo1>
+----
+
+[[metrics-csv]]
+== Export to CSV Configuration ==
+
+For storing metrics in local CSV files add the following settings to _neo4j.properties:_
+
+[source,properties]
+----
+metrics.csv.enabled=true // default is 'false'
+metrics.csv.path=<file or directory path, defaults to "metrics/" in the store directory>
+metrics.csv.file=<single/split, if split then each metric gets its own file in given directory>
+metrics.csv.interval=<how often to store data, defaults to 3s>
+----
+
+NOTE: The CSV exporter does not automatically rotate the output files, so it is recommended to also set up a CRON job to periodically archive the files.
+
+[[metrics-config-reference]]
+== Configuration Settings Reference for Metrics
+
+include::configuration-attributes.asciidoc[]
+
+[[available-metrics]]
+== Available Metrics
+
+include::available-metrics.asciidoc[]

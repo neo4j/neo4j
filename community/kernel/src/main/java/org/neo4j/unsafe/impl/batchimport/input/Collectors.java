@@ -29,11 +29,13 @@ import org.neo4j.function.Function;
  */
 public class Collectors
 {
-    public static Collector silentBadCollector( int tolerance ) {
+    public static Collector silentBadCollector( int tolerance )
+    {
         return silentBadCollector( tolerance, BadCollector.COLLECT_ALL );
     }
 
-    public static Collector silentBadCollector( int tolerance, int collect ) {
+    public static Collector silentBadCollector( int tolerance, int collect )
+    {
         return badCollector( new OutputStream()
         {
             @Override

@@ -94,7 +94,7 @@ public class TestIndexDeletion
             {
                 tx.success();
             }
-            tx.finish();
+            tx.close();
             tx = null;
         }
     }
@@ -261,10 +261,11 @@ public class TestIndexDeletion
         firstTx.beginTransaction();
         firstTx.removeFromIndex( key, value );
 
-        Transaction transaction = graphDb.beginTx();
-        IndexHits<Node> indexHits = index.get( key, value );
-        assertThat( indexHits, contains( node ) );
-        transaction.finish();
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            IndexHits<Node> indexHits = index.get( key, value );
+            assertThat( indexHits, contains( node ) );
+        }
 
         firstTx.rollback();
     }

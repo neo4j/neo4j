@@ -40,8 +40,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.helpers.ProcessFailureException;
-import org.neo4j.test.Mute;
+import org.neo4j.test.SuppressOutput;
 
+import static java.lang.System.lineSeparator;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -61,8 +62,6 @@ import static org.mockito.Mockito.when;
 
 public class ProgressMonitorTest
 {
-
-    public static final String LINE_SEPARATOR = System.getProperty( "line.separator" );
 
     @Test
     public void shouldReportProgressInTheSpecifiedIntervals() throws Exception
@@ -309,7 +308,7 @@ public class ProgressMonitorTest
         }
 
         // then
-        assertEquals( testName.getMethodName() + LINE_SEPARATOR + EXPECTED_TEXTUAL_OUTPUT,
+        assertEquals( testName.getMethodName() + lineSeparator() + EXPECTED_TEXTUAL_OUTPUT,
                       stream.toString( Charset.defaultCharset().name() ) );
     }
 
@@ -328,7 +327,7 @@ public class ProgressMonitorTest
         }
 
         // then
-        assertEquals( testName.getMethodName() + LINE_SEPARATOR + EXPECTED_TEXTUAL_OUTPUT,
+        assertEquals( testName.getMethodName() + lineSeparator() + EXPECTED_TEXTUAL_OUTPUT,
                       writer.toString() );
     }
 
@@ -604,7 +603,7 @@ public class ProgressMonitorTest
     @Rule
     public final TestName testName = new TestName();
     @Rule
-    public Mute mute = Mute.muteAll();
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
     public final SingleIndicator factory = new SingleIndicator();
 
@@ -635,7 +634,7 @@ public class ProgressMonitorTest
             return factory;
         }
 
-        private final Map<ProgressMonitorFactory,Boolean> factoryMocks = new HashMap<ProgressMonitorFactory,Boolean>();
+        private final Map<ProgressMonitorFactory,Boolean> factoryMocks = new HashMap<>();
 
         @Override
         public Statement apply( final Statement base, Description description )

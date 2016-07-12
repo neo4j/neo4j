@@ -19,9 +19,10 @@
  */
 package org.neo4j.server.modules;
 
+import java.util.regex.Pattern;
+
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.dbms.AuthorizationFilter;
 import org.neo4j.server.security.auth.AuthManager;
@@ -32,14 +33,16 @@ public class AuthorizationModule implements ServerModule
     private final WebServer webServer;
     private final Config config;
     private final AuthManager authManager;
-    private final ConsoleLogger log;
+    private final LogProvider logProvider;
+    private final Pattern[] uriWhitelist;
 
-    public AuthorizationModule( WebServer webServer, AuthManager authManager, Config config, Logging logging )
+    public AuthorizationModule( WebServer webServer, AuthManager authManager, LogProvider logProvider, Config config, Pattern[] uriWhitelist )
     {
         this.webServer = webServer;
         this.config = config;
         this.authManager = authManager;
-        this.log = logging.getConsoleLog( getClass() );
+        this.logProvider = logProvider;
+        this.uriWhitelist = uriWhitelist;
     }
 
     @Override
@@ -47,7 +50,8 @@ public class AuthorizationModule implements ServerModule
     {
         if ( config.get( ServerSettings.auth_enabled ) )
         {
-            webServer.addFilter( new AuthorizationFilter( authManager, log ), "/*" );
+            final AuthorizationFilter authorizationFilter = new AuthorizationFilter( authManager, logProvider, uriWhitelist );
+            webServer.addFilter( authorizationFilter, "/*" );
         }
     }
 

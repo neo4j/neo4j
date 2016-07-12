@@ -19,16 +19,6 @@
  */
 package org.neo4j.cluster.com;
 
-import java.net.ConnectException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.UnknownHostException;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelException;
@@ -47,15 +37,23 @@ import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
 
+import java.net.ConnectException;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.com.message.MessageSource;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
 
@@ -67,7 +65,7 @@ public class NetworkReceiver
         implements MessageSource, Lifecycle
 {
     public interface Monitor
-            extends NamedThreadFactory.Monitor
+        extends NamedThreadFactory.Monitor
     {
         void receivedMessage( Message message );
 
@@ -103,22 +101,23 @@ public class NetworkReceiver
     private ServerBootstrap serverBootstrap;
     private Iterable<MessageProcessor> processors = Listeners.newListeners();
 
-    private Monitor monitor;
-    private Configuration config;
-    private StringLogger msgLog;
+    private final Monitor monitor;
+    private final Configuration config;
+    private final Log msgLog;
 
-    private Map<URI, Channel> connections = new ConcurrentHashMap<URI, Channel>();
+    private final Map<URI, Channel> connections = new ConcurrentHashMap<>();
     private Iterable<NetworkChannelsListener> listeners = Listeners.newListeners();
 
     volatile boolean bindingDetected = false;
 
     private volatile boolean paused;
+    private int port;
 
-    public NetworkReceiver( Monitor monitor, Configuration config, Logging logging )
+    public NetworkReceiver( Monitor monitor, Configuration config, LogProvider logProvider )
     {
         this.monitor = monitor;
         this.config = config;
-        this.msgLog = logging.getMessagesLog( getClass() );
+        this.msgLog = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -148,14 +147,16 @@ public class NetworkReceiver
         int maxPort = ports.length == 2 ? ports[1] : minPort;
 
         // Try all ports in the given range
-        listen( minPort, maxPort );
+        port = listen( minPort, maxPort );
+
+        msgLog.debug( "Started NetworkReceiver at " + config.clusterServer().getHost() + ":" + port );
     }
 
     @Override
     public void stop()
             throws Throwable
     {
-        msgLog.debug( "Shutting down NetworkReceiver" );
+        msgLog.debug( "Shutting down NetworkReceiver at " + config.clusterServer().getHost() + ":" + port );
 
         channels.close().awaitUninterruptibly();
         serverBootstrap.releaseExternalResources();
@@ -168,30 +169,29 @@ public class NetworkReceiver
     {
     }
 
-    public void setPaused( boolean paused )
+    public void setPaused(boolean paused)
     {
         this.paused = paused;
     }
 
-    private void listen( int minPort, int maxPort )
-            throws URISyntaxException, ChannelException, UnknownHostException
+    private int listen( int minPort, int maxPort )
+            throws URISyntaxException, ChannelException
     {
         ChannelException ex = null;
         for ( int checkPort = minPort; checkPort <= maxPort; checkPort++ )
         {
             try
             {
-                InetAddress host;
                 String address = config.clusterServer().getHost();
                 InetSocketAddress localAddress;
-                if ( address == null || address.equals( INADDR_ANY ) )
+                if ( address == null || address.equals( INADDR_ANY ))
                 {
                     localAddress = new InetSocketAddress( checkPort );
                 }
                 else
                 {
-                    host = InetAddress.getByName( address );
-                    localAddress = new InetSocketAddress( host, checkPort );
+                    localAddress = new InetSocketAddress( address, checkPort );
+                    bindingDetected = true;
                 }
 
                 Channel listenChannel = serverBootstrap.bind( localAddress );
@@ -199,7 +199,7 @@ public class NetworkReceiver
                 listeningAt( getURI( localAddress ) );
 
                 channels.add( listenChannel );
-                return;
+                return checkPort;
             }
             catch ( ChannelException e )
             {
@@ -212,6 +212,7 @@ public class NetworkReceiver
     }
 
     // MessageSource implementation
+    @Override
     public void addMessageProcessor( MessageProcessor processor )
     {
         processors = Listeners.addListener( processor, processors );
@@ -219,48 +220,44 @@ public class NetworkReceiver
 
     public void receive( Message message )
     {
-        if ( paused )
+        if (!paused)
         {
-            return;
-        }
-
-        for ( MessageProcessor processor : processors )
-        {
-            try
+            for ( MessageProcessor processor : processors )
             {
-                if ( !processor.process( message ) )
+                try
                 {
-                    break;
+                    if ( !processor.process( message ) )
+                    {
+                        break;
+                    }
+                }
+                catch ( Exception e )
+                {
+                    // Ignore
                 }
             }
-            catch ( Exception e )
-            {
-                // Ignore
-            }
-        }
 
-        monitor.processedMessage( message );
+            monitor.processedMessage( message );
+        }
     }
 
-    private URI getURI( InetSocketAddress address ) throws URISyntaxException
+    URI getURI( InetSocketAddress address )
     {
         String uri;
 
+        // Socket.toString() already prepends a /
         if ( address.getAddress().getHostAddress().startsWith( "0" ) )
         {
-            uri = CLUSTER_SCHEME + "://0.0.0.0:" + address.getPort(); // Socket.toString() already prepends a /
+            uri = CLUSTER_SCHEME + "://0.0.0.0:" + address.getPort();
         }
         else
         {
-            uri = CLUSTER_SCHEME + "://" + address.getAddress().getHostAddress() + ":" + address.getPort(); // Socket
+            uri = CLUSTER_SCHEME + "://" + address.getAddress().getHostAddress() + ":" + address.getPort();
         }
-            // .toString() already prepends a /
 
         // Add name if given
-        if ( config.name() != null )
-        {
-            uri += "/?name=" + config.name();
-        }
+        if (config.name() != null)
+            uri += "/?name="+config.name();
 
         return URI.create( uri );
     }
@@ -321,14 +318,13 @@ public class NetworkReceiver
         public ChannelPipeline getPipeline() throws Exception
         {
             ChannelPipeline pipeline = Channels.pipeline();
-            pipeline.addLast( "frameDecoder",
-                    new ObjectDecoder( 1024 * 1000, NetworkNodePipelineFactory.this.getClass().getClassLoader() ) );
+            pipeline.addLast( "frameDecoder",new ObjectDecoder( 1024 * 1000, NetworkNodePipelineFactory.this.getClass().getClassLoader() ) );
             pipeline.addLast( "serverHandler", new MessageReceiver() );
             return pipeline;
         }
     }
 
-    private class MessageReceiver
+    class MessageReceiver
             extends SimpleChannelHandler
     {
         @Override
@@ -342,9 +338,9 @@ public class NetworkReceiver
         @Override
         public void messageReceived( ChannelHandlerContext ctx, MessageEvent event ) throws Exception
         {
-            if ( !bindingDetected )
+            if (!bindingDetected)
             {
-                InetSocketAddress local = ((InetSocketAddress) event.getChannel().getLocalAddress());
+                InetSocketAddress local = ((InetSocketAddress)event.getChannel().getLocalAddress());
                 bindingDetected = true;
                 listeningAt( getURI( local ) );
             }
@@ -355,7 +351,7 @@ public class NetworkReceiver
             InetSocketAddress remote = (InetSocketAddress) ctx.getChannel().getRemoteAddress();
             String remoteAddress = remote.getAddress().getHostAddress();
             URI fromHeader = URI.create( message.getHeader( Message.FROM ) );
-            fromHeader = URI.create( fromHeader.getScheme() + "://" + remoteAddress + ":" + fromHeader.getPort() );
+            fromHeader = URI.create(fromHeader.getScheme()+"://"+remoteAddress + ":" + fromHeader.getPort());
             message.setHeader( Message.FROM, fromHeader.toASCIIString() );
 
             msgLog.debug( "Received:" + message );

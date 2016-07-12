@@ -19,70 +19,62 @@
  */
 package org.neo4j.kernel.api.constraints;
 
+import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.ConstraintType;
+import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
+import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
 
-// TODO: When we add other types of constraints, we will either want to create a hierarchy, or...
-// TODO: ...rename this to "Constraint" and add a "type" enum (or something like that).
-public class UniquenessConstraint
+public class UniquenessConstraint extends NodePropertyConstraint
 {
-    private final int labelId;
-    private final int propertyKeyId;
-
     public UniquenessConstraint( int labelId, int propertyKeyId )
     {
-        this.labelId = labelId;
-        this.propertyKeyId = propertyKeyId;
+        super( labelId, propertyKeyId );
     }
 
     @Override
-    public boolean equals( Object obj )
+    public void added( ChangeVisitor visitor )
     {
-        if ( this == obj )
-        {
-            return true;
-        }
-        if ( obj != null && getClass() == obj.getClass() )
-        {
-            UniquenessConstraint that = (UniquenessConstraint) obj;
-            return this.equals( that.labelId, that.propertyKeyId );
-        }
-        return false;
+        visitor.visitAddedUniquePropertyConstraint( this );
     }
 
     @Override
-    public int hashCode()
+    public void removed( ChangeVisitor visitor )
     {
-        int result = labelId;
-        result = 31 * result + propertyKeyId;
-        return result;
+        visitor.visitRemovedUniquePropertyConstraint( this );
     }
 
-    public int label()
+    @Override
+    public ConstraintDefinition asConstraintDefinition( InternalSchemaActions schemaActions, ReadOperations readOps )
     {
-        return labelId;
+        StatementTokenNameLookup lookup = new StatementTokenNameLookup( readOps );
+        return new UniquenessConstraintDefinition( schemaActions,
+                DynamicLabel.label( lookup.labelGetName( labelId ) ),
+                lookup.propertyKeyGetName( propertyKeyId ) );
     }
 
-    public int propertyKeyId()
+    @Override
+    public ConstraintType type()
     {
-        return propertyKeyId;
+        return ConstraintType.UNIQUENESS;
     }
 
-    public boolean equals( int labelId, int propertyKeyId )
+    @Override
+    public String userDescription( TokenNameLookup tokenNameLookup )
     {
-        return this.labelId == labelId && this.propertyKeyId == propertyKeyId;
+        String labelName = tokenNameLookup.labelGetName( labelId );
+        String boundIdentifier = labelName.toLowerCase();
+        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT %s.%s IS UNIQUE",
+                boundIdentifier, labelName, boundIdentifier, tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
     }
 
     @Override
     public String toString()
     {
-        return String.format( "CONSTRAINT ON ( n:label[%s] ) ASSERT n.property[%s] IS UNIQUE", labelId, propertyKeyId );
-    }
-
-    public String userDescription( TokenNameLookup tokenNameLookup )
-    {
-        String labelName = tokenNameLookup.labelGetName( labelId );
-        String boundIdentifier = labelName.toLowerCase();
-        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT %s.%s IS UNIQUE", boundIdentifier, labelName,
-                boundIdentifier, tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
+        return String.format( "CONSTRAINT ON ( n:label[%s] ) ASSERT n.property[%s] IS UNIQUE",
+                labelId, propertyKeyId );
     }
 }

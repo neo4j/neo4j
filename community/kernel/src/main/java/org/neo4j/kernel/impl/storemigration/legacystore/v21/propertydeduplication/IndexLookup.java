@@ -136,7 +136,7 @@ class IndexLookup implements AutoCloseable
             @Override
             public boolean contains( long nodeId, Object propertyValue )
             {
-                return reader.getIndexedCount( nodeId, propertyValue ) > 0;
+                return reader.countIndexedNodes( nodeId, propertyValue ) > 0;
             }
         };
     }

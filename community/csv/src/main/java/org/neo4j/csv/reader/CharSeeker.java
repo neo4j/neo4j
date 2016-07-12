@@ -81,38 +81,4 @@ public interface CharSeeker extends Closeable, SourceTraceability
      * returning {@code false} would be if the data to extract was empty.
      */
     boolean tryExtract( Mark mark, Extractor<?> extractor );
-
-    public static class Empty extends SourceTraceability.Adapter implements CharSeeker
-    {
-        @Override
-        public boolean seek( Mark mark, int untilChar )
-        {
-            return false;
-        }
-
-        @Override
-        public <EXTRACTOR extends org.neo4j.csv.reader.Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor )
-        {
-            throw new IllegalStateException( "Nothing to extract" );
-        }
-
-        @Override
-        public boolean tryExtract( Mark mark, Extractor<?> extractor )
-        {
-            return false;
-        }
-
-        @Override
-        public void close()
-        {   // Nothing to close
-        }
-
-        @Override
-        public String sourceDescription()
-        {
-            return Readables.EMPTY.sourceDescription();
-        }
-    }
-
-    public static final CharSeeker EMPTY = new Empty();
 }

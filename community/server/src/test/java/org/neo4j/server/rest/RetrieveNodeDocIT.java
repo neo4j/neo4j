@@ -46,7 +46,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class RetrieveNodeDocIT extends AbstractRestFunctionalTestBase
+public class RetrieveNodeDocIT extends AbstractRestFunctionalDocTestBase
 {
     private URI nodeUri;
     private static FunctionalTestHelper functionalTestHelper;
@@ -108,13 +108,10 @@ public class RetrieveNodeDocIT extends AbstractRestFunctionalTestBase
         }
     }
 
-    /**
-     * Get node.
-     *
-     * Note that the response contains URI/templates for the available
-     * operations for getting properties and relationships.
-     */
-    @Documented
+    @Documented( "Get node.\n" +
+                 "\n" +
+                 "Note that the response contains URI/templates for the available\n" +
+                 "operations for getting properties and relationships." )
     @Test
     public void shouldGet200WhenRetrievingNode() throws Exception
     {
@@ -124,13 +121,10 @@ public class RetrieveNodeDocIT extends AbstractRestFunctionalTestBase
                 .get( uri );
     }
 
-    /**
-     * Get node -- compact.
-     *
-     * Specifying the subformat in the requests media type yields a more compact
-     * JSON response without metadata and templates.
-     */
-    @Documented
+    @Documented( "Get node -- compact.\n" +
+                 "\n" +
+                 "Specifying the subformat in the requests media type yields a more compact\n" +
+                 "JSON response without metadata and templates." )
     @Test
     public void shouldGet200WhenRetrievingNodeCompact()
     {
@@ -170,10 +164,7 @@ public class RetrieveNodeDocIT extends AbstractRestFunctionalTestBase
         response.close();
     }
 
-    /**
-     * Get non-existent node.
-     */
-    @Documented
+    @Documented( "Get non-existent node." )
     @Test
     public void shouldGet404WhenRetrievingNonExistentNode() throws Exception
     {

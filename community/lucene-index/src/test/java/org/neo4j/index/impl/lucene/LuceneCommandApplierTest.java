@@ -26,7 +26,7 @@ import java.io.File;
 import java.util.Map;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
@@ -57,8 +57,7 @@ public class LuceneCommandApplierTest
         String indexName = "name", key = "key";
         IndexConfigStore configStore = new IndexConfigStore( dir, fs.get() );
         configStore.set( Node.class, indexName, EXACT_CONFIG );
-        LuceneDataSource dataSource = life.add( spy( new LuceneDataSource( new Config( stringMap(
-                LuceneDataSource.Configuration.store_dir.name(), dir.getAbsolutePath(),
+        LuceneDataSource dataSource = life.add( spy( new LuceneDataSource( dir, new Config( stringMap(
                 LuceneDataSource.Configuration.ephemeral.name(), Settings.TRUE ) ),
                 configStore, fs.get() ) ) );
 

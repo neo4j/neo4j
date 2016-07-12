@@ -24,22 +24,25 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.info.DiagnosticsManager;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.logging.SingleLoggingService;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.helpers.Settings.TRUE;
-import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration.ephemeral;
+import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
+import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.ephemeral;
 import static org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent;
 
 /**
@@ -54,7 +57,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     private static boolean TRACK_UNCLOSED_DATABASE_INSTANCES = false;
     private static final Map<File, Exception> startedButNotYetClosed = new ConcurrentHashMap<>();
 
-    protected static final String PATH = "target/test-data/impermanent-db";
+    protected static final File PATH = new File( "target/test-data/impermanent-db" );
 
     /**
      * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
@@ -74,9 +77,9 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
      * since an ImpermanentGraphDatabase should not have any mention of a store directory in
      * any case.
      */
-    public ImpermanentGraphDatabase( String storeDir )
+    public ImpermanentGraphDatabase( File storeDir )
     {
-        this( storeDir, withForcedInMemoryConfiguration( new HashMap<String, String>() ) );
+        this( storeDir, new HashMap<String, String>() );
     }
 
     /**
@@ -85,20 +88,18 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     @Deprecated
     public ImpermanentGraphDatabase( Map<String, String> params )
     {
-        this( PATH, withForcedInMemoryConfiguration( params ) );
+        this( PATH, params );
     }
 
     /**
      * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
      */
     @Deprecated
-    public ImpermanentGraphDatabase( String storeDir, Map<String, String> params )
+    public ImpermanentGraphDatabase( File storeDir, Map<String, String> params )
     {
-        this( storeDir, withForcedInMemoryConfiguration( params ),
+        this( storeDir, params,
                 Iterables.<KernelExtensionFactory<?>, KernelExtensionFactory>cast( Service.load(
-                        KernelExtensionFactory.class ) ),
-                Service.load( CacheProvider.class )
-        );
+                        KernelExtensionFactory.class ) ) );
     }
 
     /**
@@ -106,82 +107,57 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
      */
     @Deprecated
     public ImpermanentGraphDatabase( Map<String, String> params,
-                                     Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                     Iterable<CacheProvider> cacheProviders )
+                                     Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
-        this( PATH, params, kernelExtensions, cacheProviders );
+        this( PATH, params, kernelExtensions );
     }
 
     /**
      * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
      */
     @Deprecated
-    public ImpermanentGraphDatabase( String storeDir, Map<String, String> params,
-                                     Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                     Iterable<CacheProvider> cacheProviders )
+    public ImpermanentGraphDatabase( File storeDir, Map<String, String> params,
+                                     Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
-        this( storeDir, withForcedInMemoryConfiguration( params ),
-                getDependencies( kernelExtensions, cacheProviders ) );
+        this( storeDir, params, getDependencies( kernelExtensions ) );
     }
 
-    private static Dependencies getDependencies(
-            Iterable<KernelExtensionFactory<?>> kernelExtensions,
-            Iterable<CacheProvider> cacheProviders )
+    private static GraphDatabaseFacadeFactory.Dependencies getDependencies( Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
-        GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();
-        state.setKernelExtensions( kernelExtensions );
-        state.setCacheProviders( cacheProviders );
-        return state.databaseDependencies();
+        return newDependencies().kernelExtensions( kernelExtensions );
     }
 
-    public ImpermanentGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
+    public ImpermanentGraphDatabase( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        super( storeDir, withForcedInMemoryConfiguration( params ), dependencies );
+        super( storeDir, params, dependencies );
+
         trackUnclosedUse( storeDir );
     }
 
-    private void trackUnclosedUse( String path )
+    @Override
+    protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
+    {
+        new CommunityFacadeFactory()
+        {
+            @Override
+            protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+            {
+                return new ImpermanentPlatformModule( storeDir, params, dependencies, graphDatabaseFacade );
+            }
+        }.newFacade( storeDir, new HashMap<>( params ), dependencies, this );
+    }
+
+    private void trackUnclosedUse( File storeDir )
     {
         if ( TRACK_UNCLOSED_DATABASE_INSTANCES )
         {
-            Exception testThatDidNotCloseDb = startedButNotYetClosed.put( new File( path ),
+            Exception testThatDidNotCloseDb = startedButNotYetClosed.put( storeDir,
                     new Exception( "Unclosed database instance" ) );
             if ( testThatDidNotCloseDb != null )
             {
                 testThatDidNotCloseDb.printStackTrace();
             }
         }
-    }
-
-    @Override
-    protected DiagnosticsManager createDiagnosticsManager()
-    {
-        return new DiagnosticsManager( StringLogger.DEV_NULL )
-        {
-            @Override
-            public void init() throws Throwable
-            {
-                // Do nothing
-            }
-
-            @Override
-            public void start()
-            {
-                // Do nothing
-            }
-
-            @Override
-            public void stop() throws Throwable
-            {
-                // Do nothing
-            }
-
-            @Override
-            public void shutdown()
-            {
-                // Do nothing
-            }
-        };
     }
 
     @Override
@@ -193,12 +169,6 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         }
 
         super.shutdown();
-    }
-
-    @Override
-    protected FileSystemAbstraction createFileSystemAbstraction()
-    {
-        return new EphemeralFileSystemAbstraction();
     }
 
     private static Map<String, String> withForcedInMemoryConfiguration( Map<String, String> params )
@@ -213,14 +183,30 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         return result;
     }
 
-    @Override
-    protected Logging createLogging()
-    {
-        return life.add( new SingleLoggingService( StringLogger.loggerDirectory( fileSystem, storeDir ) ) );
-    }
-
     public void cleanContent()
     {
         cleanDatabaseContent( this );
+    }
+
+    protected static class ImpermanentPlatformModule extends PlatformModule
+    {
+        public ImpermanentPlatformModule( File storeDir, Map<String, String> params,
+                                          GraphDatabaseFacadeFactory.Dependencies dependencies,
+                                          GraphDatabaseFacade graphDatabaseFacade )
+        {
+            super( storeDir, withForcedInMemoryConfiguration(params), dependencies, graphDatabaseFacade );
+        }
+
+        @Override
+        protected FileSystemAbstraction createFileSystemAbstraction()
+        {
+            return new EphemeralFileSystemAbstraction();
+        }
+
+        @Override
+        protected LogService createLogService( LogProvider userLogProvider )
+        {
+            return new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
+        }
     }
 }

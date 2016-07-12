@@ -22,20 +22,24 @@ package org.neo4j.kernel.impl.api.store;
 import java.util.HashSet;
 
 import org.junit.Test;
+
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.asList;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.getPropertyKeys;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -61,7 +65,9 @@ public class DiskLayerLabelTest extends DiskLayerTest
         }
 
         // THEN
-        PrimitiveIntIterator readLabels = disk.nodeGetLabels( nodeId );
+        Cursor<NodeItem> node = disk.acquireStatement().acquireSingleNodeCursor( nodeId );
+        node.next();
+        PrimitiveIntIterator readLabels = node.get().getLabels();
         assertEquals( new HashSet<>( asList( labelId1, labelId2 ) ),
                 addToCollection( readLabels, new HashSet<Integer>() ) );
     }
@@ -82,14 +88,13 @@ public class DiskLayerLabelTest extends DiskLayerTest
 
     /*
      * This test doesn't really belong here, but OTOH it does, as it has to do with this specific
-     * store solution. It creates its own IGD with cache_type:none to try reproduce to trigger the problem.
+     * store solution. It creates its own IGD to try reproduce to trigger the problem.
      */
     @Test
     public void labels_should_not_leak_out_as_properties() throws Exception
     {
         // GIVEN
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( cache_type, "none" ).newGraphDatabase();
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
         Node node = createLabeledNode( db, map( "name", "Node" ), label1 );
 
         // WHEN THEN

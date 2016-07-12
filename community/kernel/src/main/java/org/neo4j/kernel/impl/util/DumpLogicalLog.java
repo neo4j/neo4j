@@ -36,7 +36,7 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.log.FilteringIOCursor;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
@@ -144,7 +144,7 @@ public class DumpLogicalLog
     protected static boolean isAGraphDatabaseDirectory( String fileName )
     {
         File file = new File( fileName );
-        return file.isDirectory() && new File( file, NeoStore.DEFAULT_NAME ).exists();
+        return file.isDirectory() && new File( file, MetaDataStore.DEFAULT_NAME ).exists();
     }
 
     /**

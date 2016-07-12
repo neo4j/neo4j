@@ -24,13 +24,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.helpers.Provider;
 
 @SuppressWarnings( "rawtypes" )
 public class Dependencies extends DependencyResolver.Adapter implements DependencySatisfier
 {
-    private final Provider<DependencyResolver> parent;
+    private final Supplier<DependencyResolver> parent;
     private final Map<Class<?>, List<?>> typeDependencies = new HashMap<>();
 
     public Dependencies()
@@ -40,17 +40,17 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
 
     public Dependencies( final DependencyResolver parent )
     {
-        this.parent = new Provider<DependencyResolver>()
+        this.parent = new Supplier<DependencyResolver>()
         {
             @Override
-            public DependencyResolver instance()
+            public DependencyResolver get()
             {
                 return parent;
             }
         };
     }
 
-    public Dependencies( Provider<DependencyResolver> parent )
+    public Dependencies( Supplier<DependencyResolver> parent )
     {
         this.parent = parent;
     }
@@ -68,32 +68,34 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
         // Try parent
         if (parent != null)
         {
-            return parent.instance().resolveDependency( type, selector );
+            DependencyResolver dependencyResolver = parent.get();
+
+            if (dependencyResolver !=null)
+                return dependencyResolver.resolveDependency( type, selector );
         }
 
         // Out of options
-        throw new IllegalArgumentException(
-                "Weird exception nesting here, but anyways, I couldn't find any dependency for " + type );
+        throw new UnsatisfiedDependencyException( type );
     }
 
-    public <T> Provider<T> provideDependency( final Class<T> type, final SelectionStrategy selector)
+    public <T> Supplier<T> provideDependency( final Class<T> type, final SelectionStrategy selector)
     {
-        return new Provider<T>()
+        return new Supplier<T>()
         {
             @Override
-            public T instance()
+            public T get()
             {
                 return resolveDependency( type, selector );
             }
         };
     }
 
-    public <T> Provider<T> provideDependency( final Class<T> type )
+    public <T> Supplier<T> provideDependency( final Class<T> type )
     {
-        return new Provider<T>()
+        return new Supplier<T>()
         {
             @Override
-            public T instance()
+            public T get()
             {
                 return resolveDependency( type );
             }
@@ -123,6 +125,14 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
         } while (type != null);
 
         return dependency;
+    }
+
+    public void satisfyDependencies(Object... dependencies)
+    {
+        for ( Object dependency : dependencies )
+        {
+            satisfyDependency( dependency );
+        }
     }
 
     private <T> void addInterfaces( Class[] interfaces, T dependency )

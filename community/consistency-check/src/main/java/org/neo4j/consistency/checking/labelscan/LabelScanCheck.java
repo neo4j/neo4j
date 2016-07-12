@@ -23,7 +23,6 @@ import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.checking.full.NodeInUseWithCorrectLabelsCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.kernel.api.direct.NodeLabelRange;
@@ -40,13 +39,5 @@ public class LabelScanCheck implements RecordCheck<LabelScanDocument, Consistenc
             engine.comparativeCheck( records.node( nodeId ), new NodeInUseWithCorrectLabelsCheck<LabelScanDocument,ConsistencyReport.LabelScanConsistencyReport>(
                     record.getNodeLabelRange().labels( nodeId ) ) );
         }
-    }
-
-    @Override
-    public void checkChange( LabelScanDocument oldRecord, LabelScanDocument newRecord,
-                             CheckerEngine<LabelScanDocument,
-                                     ConsistencyReport.LabelScanConsistencyReport> engine, DiffRecordAccess records )
-    {
-        check( newRecord, engine, records );
     }
 }

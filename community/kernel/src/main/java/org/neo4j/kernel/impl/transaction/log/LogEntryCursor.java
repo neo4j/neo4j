@@ -30,17 +30,16 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
  */
 public class LogEntryCursor implements IOCursor<LogEntry>
 {
-    private final LogEntryReader<ReadableVersionableLogChannel> logEntryReader;
-    private final ReadableVersionableLogChannel channel;
+    private final LogEntryReader<ReadableLogChannel> logEntryReader;
+    private final ReadableLogChannel channel;
     private LogEntry entry;
 
-    public LogEntryCursor( ReadableVersionableLogChannel channel )
+    public LogEntryCursor( ReadableLogChannel channel )
     {
-        this( new VersionAwareLogEntryReader<ReadableVersionableLogChannel>(), channel );
+        this( new VersionAwareLogEntryReader<>(), channel );
     }
 
-    public LogEntryCursor( LogEntryReader<ReadableVersionableLogChannel> logEntryReader,
-            ReadableVersionableLogChannel channel )
+    public LogEntryCursor( LogEntryReader<ReadableLogChannel> logEntryReader, ReadableLogChannel channel )
     {
         this.logEntryReader = logEntryReader;
         this.channel = channel;
@@ -53,7 +52,7 @@ public class LogEntryCursor implements IOCursor<LogEntry>
     }
 
     @Override
-    public boolean next( ) throws IOException
+    public boolean next() throws IOException
     {
         entry = logEntryReader.readLogEntry( channel );
 

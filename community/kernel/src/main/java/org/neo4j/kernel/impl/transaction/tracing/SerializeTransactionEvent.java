@@ -36,5 +36,5 @@ public interface SerializeTransactionEvent extends AutoCloseable
      * Marks the end of the process of serializing the transaction commands.
      */
     @Override
-    public void close();
+    void close();
 }

@@ -36,46 +36,35 @@ import static org.neo4j.register.Register.DoubleLong;
  */
 public interface IndexReader extends Resource
 {
-    PrimitiveLongIterator lookup( Object value );
+    /**
+     * Index seek by value
+     */
+    PrimitiveLongIterator seek( Object value );
 
-    IndexReader EMPTY = new IndexReader()
-    {
-        @Override
-        public PrimitiveLongIterator lookup( Object value )
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
+    /**
+     * Inclusive numerical range query by index seek
+     */
+    PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper );
 
-        // Used for checking index correctness
-        @Override
-        public int getIndexedCount( long nodeId, Object propertyValue )
-        {
-            return 0;
-        }
+    /**
+     * String range query by index seek
+     */
+    PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower, String upper, boolean includeUpper );
 
-        @Override
-        public Set<Class> valueTypesInIndex()
-        {
-            return Collections.emptySet();
-        }
+    /**
+     * Prefix search by index seek
+     */
+    PrimitiveLongIterator rangeSeekByPrefix( String prefix );
 
-        @Override
-        public long sampleIndex( DoubleLong.Out result )
-        {
-            result.write( 0l, 0l );
-            return 0;
-        }
-
-        @Override
-        public void close()
-        {
-        }
-    };
+    /**
+     * Return all indexed nodes by an index scan
+     */
+    PrimitiveLongIterator scan();
 
     /**
      * Number of nodes indexed by the given property
      */
-    int getIndexedCount( long nodeId, Object propertyValue );
+    int countIndexedNodes( long nodeId, Object propertyValue );
 
     /**
      *
@@ -89,7 +78,7 @@ public interface IndexReader extends Resource
      * @return the index size
      * @throws IndexNotFoundKernelException if the index is dropped while sampling
      */
-    public long sampleIndex( DoubleLong.Out result ) throws IndexNotFoundKernelException;
+    long sampleIndex( DoubleLong.Out result ) throws IndexNotFoundKernelException;
 
     class Delegator implements IndexReader
     {
@@ -101,15 +90,40 @@ public interface IndexReader extends Resource
         }
 
         @Override
-        public PrimitiveLongIterator lookup( Object value )
+        public PrimitiveLongIterator seek( Object value )
         {
-            return delegate.lookup( value );
+            return delegate.seek( value );
         }
 
         @Override
-        public int getIndexedCount( long nodeId, Object propertyValue )
+        public PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
         {
-            return delegate.getIndexedCount( nodeId, propertyValue );
+            return delegate.rangeSeekByNumberInclusive( lower, upper );
+        }
+
+        @Override
+        public PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
+                                                        String upper, boolean includeUpper )
+        {
+            return delegate.rangeSeekByString( lower, includeLower, upper, includeUpper );
+        }
+
+        @Override
+        public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
+        {
+            return delegate.rangeSeekByPrefix( prefix );
+        }
+
+        @Override
+        public PrimitiveLongIterator scan()
+        {
+            return delegate.scan();
+        }
+
+        @Override
+        public int countIndexedNodes( long nodeId, Object propertyValue )
+        {
+            return delegate.countIndexedNodes( nodeId, propertyValue );
         }
 
         @Override
@@ -136,4 +150,63 @@ public interface IndexReader extends Resource
             return delegate.toString();
         }
     }
+
+    IndexReader EMPTY = new IndexReader()
+    {
+        @Override
+        public PrimitiveLongIterator seek( Object value )
+        {
+            return PrimitiveLongCollections.emptyIterator();
+        }
+
+        @Override
+        public PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
+        {
+            return PrimitiveLongCollections.emptyIterator();
+        }
+
+        @Override
+        public PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
+                                                        String upper, boolean includeUpper )
+        {
+            return PrimitiveLongCollections.emptyIterator();
+        }
+
+        @Override
+        public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
+        {
+            return PrimitiveLongCollections.emptyIterator();
+        }
+
+        @Override
+        public PrimitiveLongIterator scan()
+        {
+            return PrimitiveLongCollections.emptyIterator();
+        }
+
+        // Used for checking index correctness
+        @Override
+        public int countIndexedNodes( long nodeId, Object propertyValue )
+        {
+            return 0;
+        }
+
+        @Override
+        public Set<Class> valueTypesInIndex()
+        {
+            return Collections.emptySet();
+        }
+
+        @Override
+        public long sampleIndex( DoubleLong.Out result )
+        {
+            result.write( 0l, 0l );
+            return 0;
+        }
+
+        @Override
+        public void close()
+        {
+        }
+    };
 }

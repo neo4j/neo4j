@@ -50,6 +50,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import common.Neo4jAlgoTestCase;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -60,6 +61,42 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
 @RunWith( Parameterized.class )
 public class TestAStar extends Neo4jAlgoTestCase
 {
+
+    @Test
+    public void pathToSelfReturnsZero()
+    {
+        // GIVEN
+        Node start = graph.makeNode( "start", "x", 0d, "y", 0d );
+
+        // WHEN
+        WeightedPath path = finder.findSinglePath( start, start );
+
+        // THEN
+        assertNotNull( path );
+        assertEquals( start, path.startNode() );
+        assertEquals( start, path.endNode() );
+        assertEquals( 0, path.length() );
+    }
+
+    @Test
+    public void allPathsToSelfReturnsZero()
+    {
+        // GIVEN
+        Node start = graph.makeNode( "start", "x", 0d, "y", 0d );
+
+        // WHEN
+        Iterable<WeightedPath> paths = finder.findAllPaths( start, start );
+
+        // THEN
+        for ( WeightedPath path : paths )
+        {
+            assertNotNull( path );
+            assertEquals( start, path.startNode() );
+            assertEquals( start, path.endNode() );
+            assertEquals( 0, path.length() );
+        }
+    }
+
     @Test
     public void wikipediaExample() throws Exception
     {
@@ -105,7 +142,7 @@ public class TestAStar extends Neo4jAlgoTestCase
      *   01234567
      *  +-------->x  A - C: 10
      * 0|A      C    A - B:  2 (x2)
-     * 1|  B         B - C:  6
+     * 1|  B         B - C:  3
      *  V
      *  y
      * </pre>
@@ -242,7 +279,23 @@ public class TestAStar extends Neo4jAlgoTestCase
     {
         // This test doesn't use the predefined finder, which only means an unnecessary instantiation
         // if such an object. And this test will be run twice (once for each finder type in data()).
-
+        /**
+         * <pre>
+         *   012345    A - B:  2
+         *  +------>y  A - B:  2
+         * 0|A         B - C:  3
+         * 1|          A - C:  10
+         * 2| B
+         * 3|
+         * 4|
+         * 5|
+         * 6|
+         * 7|C
+         *  V
+         *  x
+         *
+         * </pre>
+         */
         Node nodeA = graph.makeNode( "A", "x", 0d, "y", 0d );
         Node nodeB = graph.makeNode( "B", "x", 2d, "y", 1d );
         Node nodeC = graph.makeNode( "C", "x", 7d, "y", 0d );

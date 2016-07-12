@@ -19,19 +19,52 @@
  */
 package org.neo4j.io.pagecache.impl;
 
-import java.io.IOException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Field;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.Page;
 
 /** A page backed by a simple byte buffer. */
 public class ByteBufferPage implements Page
 {
+    private static final MethodHandle addressOfMH = addressOfMH();
+
+    private static MethodHandle addressOfMH()
+    {
+        try
+        {
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+            Field addressField = Buffer.class.getDeclaredField( "address" );
+            addressField.setAccessible( true );
+            return lookup.unreflectGetter( addressField );
+        }
+        catch ( Exception e )
+        {
+            throw new AssertionError( e );
+        }
+    }
+
+    private static long addressOf( Buffer buffer )
+    {
+        try
+        {
+            return (long) addressOfMH.invokeExact( buffer );
+        }
+        catch ( Throwable throwable )
+        {
+            throw new AssertionError( throwable );
+        }
+    }
+
     protected ByteBuffer buffer;
 
     public ByteBufferPage( ByteBuffer buffer )
     {
+        assert addressOf( buffer ) != 0:
+                "Probably not a DirectByteBuffer: " + buffer + " (address = " + addressOf( buffer ) + ")";
         this.buffer = buffer;
     }
 
@@ -60,19 +93,19 @@ public class ByteBufferPage implements Page
         buffer.putInt( offset, value );
     }
 
-    public void getBytes( byte[] data, int offset )
+    public void getBytes( byte[] data, int pageOffset, int arrayOffset, int length )
     {
-        for (int i = 0; i < data.length; i++)
+        for (int i = 0; i < length; i++)
         {
-            data[i] = getByte( i + offset );
+            data[arrayOffset + i] = getByte( pageOffset + i );
         }
     }
 
-    public void putBytes( byte[] data, int offset )
+    public void putBytes( byte[] data, int pageOffset, int arrayOffset, int length )
     {
-        for (int i = 0; i < data.length; i++)
+        for (int i = 0; i < length; i++)
         {
-            putByte( data[i], offset + i );
+            putByte( data[arrayOffset + i], pageOffset + i );
         }
     }
 
@@ -92,34 +125,14 @@ public class ByteBufferPage implements Page
     }
 
     @Override
-    public int swapIn( StoreChannel channel, long offset, int length ) throws IOException
+    public int size()
     {
-        buffer.clear();
-        buffer.limit( length );
-        int bytesRead = 0;
-        int read;
-        do {
-            read = channel.read( buffer, offset + bytesRead );
-        } while ( read != -1 && (bytesRead += read) < length );
-
-        // zero-fill the rest
-        while ( buffer.position() < buffer.limit() )
-        {
-            buffer.put( (byte) 0 );
-        }
-        return bytesRead;
+        return buffer.capacity();
     }
 
     @Override
-    public void swapOut( StoreChannel channel, long offset, int length ) throws IOException
+    public long address()
     {
-        // We duplicate the buffer here, so that our thread gets its own
-        // position and limit to play with.
-        // This is important because swapping out, unlike swapping in,
-        // can happen concurrently to the same page.
-        ByteBuffer duplicate = buffer.duplicate();
-        duplicate.position( 0 );
-        duplicate.limit( length );
-        channel.writeAll( duplicate, offset );
+        return addressOf( buffer );
     }
 }

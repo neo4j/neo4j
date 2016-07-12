@@ -21,12 +21,19 @@ package org.neo4j.kernel.impl.api.state;
 
 import java.util.Iterator;
 
+import org.neo4j.cursor.Cursor;
+import org.neo4j.function.Predicate;
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.CombiningIterator;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.EntityType;
+import org.neo4j.kernel.api.cursor.PropertyItem;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.impl.api.cursor.TxAllPropertyCursor;
+import org.neo4j.kernel.impl.api.cursor.TxSinglePropertyCursor;
 import org.neo4j.kernel.impl.util.VersionedHashMap;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
@@ -39,7 +46,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
  * <li>{@linkplain #changedProperties() changed property values}.</li>
  * </ul>
  */
-interface PropertyContainerState
+public interface PropertyContainerState
 {
     Iterator<DefinedProperty> addedProperties();
 
@@ -51,18 +58,25 @@ interface PropertyContainerState
 
     Iterator<DefinedProperty> augmentProperties( Iterator<DefinedProperty> iterator );
 
-    void accept( Visitor visitor );
+    void accept( Visitor visitor ) throws ConstraintValidationKernelException;
+
+    Cursor<PropertyItem> augmentPropertyCursor( Supplier<TxAllPropertyCursor> propertyCursor,
+            Cursor<PropertyItem> cursor );
+
+    Cursor<PropertyItem> augmentSinglePropertyCursor( Supplier<TxSinglePropertyCursor> propertyCursor,
+            Cursor<PropertyItem> cursor, int propertyKeyId );
 
     interface Visitor
     {
         void visitPropertyChanges( long entityId, Iterator<DefinedProperty> added,
-                                   Iterator<DefinedProperty> changed,
-                                   Iterator<Integer> removed );
+                Iterator<DefinedProperty> changed,
+                Iterator<Integer> removed ) throws ConstraintValidationKernelException;
     }
 
     class Mutable implements PropertyContainerState
     {
         private final long id;
+        private final EntityType entityType;
         private static final ResourceIterator<DefinedProperty> NO_PROPERTIES = emptyIterator();
 
         private VersionedHashMap<Integer, DefinedProperty> addedProperties;
@@ -72,17 +86,18 @@ interface PropertyContainerState
         private final Predicate<DefinedProperty> excludePropertiesWeKnowAbout = new Predicate<DefinedProperty>()
         {
             @Override
-            public boolean accept( DefinedProperty item )
+            public boolean test( DefinedProperty item )
             {
                 return (removedProperties == null || !removedProperties.containsKey( item.propertyKeyId() ))
-                       && (addedProperties == null || !addedProperties.containsKey( item.propertyKeyId() ))
-                       && (changedProperties == null || !changedProperties.containsKey( item.propertyKeyId() ));
+                        && (addedProperties == null || !addedProperties.containsKey( item.propertyKeyId() ))
+                        && (changedProperties == null || !changedProperties.containsKey( item.propertyKeyId() ));
             }
         };
 
-        Mutable( long id )
+        Mutable( long id, EntityType entityType )
         {
             this.id = id;
+            this.entityType = entityType;
         }
 
         public long getId()
@@ -92,9 +107,18 @@ interface PropertyContainerState
 
         public void clear()
         {
-            if ( changedProperties != null ) changedProperties.clear();
-            if ( addedProperties != null ) addedProperties.clear();
-            if ( removedProperties != null ) removedProperties.clear();
+            if ( changedProperties != null )
+            {
+                changedProperties.clear();
+            }
+            if ( addedProperties != null )
+            {
+                addedProperties.clear();
+            }
+            if ( removedProperties != null )
+            {
+                removedProperties.clear();
+            }
         }
 
         public void changeProperty( DefinedProperty property )
@@ -175,7 +199,7 @@ interface PropertyContainerState
         public Iterator<Integer> removedProperties()
         {
             return removedProperties != null ? removedProperties.keySet().iterator()
-                                             : IteratorUtil.<Integer>emptyIterator();
+                    : IteratorUtil.<Integer>emptyIterator();
         }
 
         @Override
@@ -202,6 +226,35 @@ interface PropertyContainerState
         }
 
         @Override
+        public Cursor<PropertyItem> augmentPropertyCursor( Supplier<TxAllPropertyCursor> propertyCursorCache,
+                Cursor<PropertyItem> cursor )
+        {
+            if ( removedProperties != null || addedProperties != null || changedProperties != null )
+            {
+                return propertyCursorCache.get().init( cursor, addedProperties, changedProperties, removedProperties );
+            }
+            else
+            {
+                return cursor;
+            }
+        }
+
+        @Override
+        public Cursor<PropertyItem> augmentSinglePropertyCursor( Supplier<TxSinglePropertyCursor> propertyCursorCache,
+                Cursor<PropertyItem> cursor, int propertyKeyId )
+        {
+            if ( removedProperties != null || addedProperties != null || changedProperties != null )
+            {
+                return propertyCursorCache.get().init( cursor, addedProperties, changedProperties, removedProperties,
+                        propertyKeyId );
+            }
+            else
+            {
+                return cursor;
+            }
+        }
+
+        @Override
         public Iterator<DefinedProperty> augmentProperties( Iterator<DefinedProperty> iterator )
         {
             if ( removedProperties != null || addedProperties != null || changedProperties != null )
@@ -224,7 +277,7 @@ interface PropertyContainerState
         }
 
         @Override
-        public void accept( Visitor visitor )
+        public void accept( Visitor visitor ) throws ConstraintValidationKernelException
         {
             if ( addedProperties != null || removedProperties != null || changedProperties != null )
             {

@@ -121,7 +121,8 @@ class UniqueInMemoryIndex extends InMemoryIndex
                     }
                 }
             } );
-        } catch ( PreexistingIndexEntryConflictException e )
+        }
+        catch ( PreexistingIndexEntryConflictException e )
         {
             throw e;
         }

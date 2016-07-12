@@ -41,7 +41,7 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
  */
 public class RelationshipEncoderStep extends ProcessorStep<Batch<InputRelationship,RelationshipRecord>>
 {
-    private final BatchingTokenRepository<?> relationshipTypeRepository;
+    private final BatchingTokenRepository<?, ?> relationshipTypeRepository;
     private final NodeRelationshipCache cache;
     private final ParallelizationCoordinator parallelization = new ParallelizationCoordinator();
 
@@ -54,7 +54,7 @@ public class RelationshipEncoderStep extends ProcessorStep<Batch<InputRelationsh
 
     public RelationshipEncoderStep( StageControl control,
             Configuration config,
-            BatchingTokenRepository<?> relationshipTypeRepository,
+            BatchingTokenRepository<?, ?> relationshipTypeRepository,
             NodeRelationshipCache cache,
             boolean specificIds )
     {

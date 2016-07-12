@@ -19,6 +19,12 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.TermQuery;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -29,11 +35,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.TermQuery;
-import org.junit.Ignore;
-import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -134,9 +135,7 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
     {
         commitTx();
 
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase(TargetDirectory.forTest( getClass() ).cleanDirectory( "filesClosedProperty"
-
-        ).getAbsolutePath() );
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase(testDirectory.directory( "filesClosedProperty" ) );
         final Index<Node> index = nodeIndex( "open-files", LuceneIndexImplementation.EXACT_CONFIG );
         final long time = System.currentTimeMillis();
         final CountDownLatch latch = new CountDownLatch( 30 );
@@ -193,8 +192,7 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
                         }
                         else
                         {
-                            Transaction tx = graphDb.beginTx();
-                            try
+                            try ( Transaction tx = graphDb.beginTx() )
                             {
                                 for ( int ii = 0; ii < 20; ii++ )
                                 {
@@ -202,10 +200,6 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
                                     index.add( node, "key", "value" + ii );
                                 }
                                 tx.success();
-                            }
-                            finally
-                            {
-                                tx.finish();
                             }
                         }
                     }
@@ -244,8 +238,7 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
                         for ( int i = 0; i < count; i+=group )
                         {
                             if ( halt.get() ) break;
-                            Transaction tx = graphDb.beginTx();
-                            try
+                            try ( Transaction tx = graphDb.beginTx() )
                             {
                                 for ( int ii = 0; ii < group; ii++ )
                                 {
@@ -254,10 +247,6 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
                                     index.add( node, "key", "value" + id.getAndIncrement() );
                                 }
                                 tx.success();
-                            }
-                            finally
-                            {
-                                tx.finish();
                             }
                             if ( i%100 == 0 ) System.out.println( threadId + ": " + i );
                         }
@@ -299,4 +288,7 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
 
         System.out.println( t1 + ", " + (double)t1/(double)count );
     }
+
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 }

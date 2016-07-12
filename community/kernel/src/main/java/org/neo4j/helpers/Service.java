@@ -35,6 +35,8 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
+import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
+
 /**
  * A utility for locating services. This implements the same functionality as <a
  * href="http://java.sun.com/javase/6/docs/api/java/util/ServiceLoader.html">
@@ -117,7 +119,7 @@ public abstract class Service
      * Enabling this is useful for debugging why services aren't loaded where you would expect them to.
      */
     private static final boolean printServiceLoaderStackTraces =
-            Boolean.getBoolean( "org.neo4j.helpers.Service.printServiceLoaderStackTraces" );
+            flag( Service.class, "printServiceLoaderStackTraces", false );
 
     /**
      * Designates that a class implements the specified service and should be
@@ -316,20 +318,27 @@ public abstract class Service
     {
         try
         {
-            Iterable<T> contextClassLoaderServices = ServiceLoader.load( type );
-            // Jboss 7 does not export content of META-INF/services to context
-            // class loader,
-            // so this call adds implementations defined in Neo4j libraries from
-            // the same module.
-            Iterable<T> currentClassLoaderServices =
-                    ServiceLoader.load( type, Service.class.getClassLoader() );
-            // Combine services loaded by both context and module classloaders.
-            // Service instances compared by full class name ( we cannot use
-            // equals for instances or classes because they can came from
-            // different classloaders ).
             HashMap<String, T> services = new HashMap<>();
-            putAllInstancesToMap( currentClassLoaderServices, services );
-            // Services from context class loader have higher precedence
+            ClassLoader currentCL = Service.class.getClassLoader();
+            ClassLoader contextCL = Thread.currentThread().getContextClassLoader();
+
+            Iterable<T> contextClassLoaderServices = ServiceLoader.load( type, contextCL );
+
+            if ( currentCL != contextCL )
+            {
+                // JBoss 7 does not export content of META-INF/services to context
+                // class loader, so this call adds implementations defined in Neo4j
+                // libraries from the same module.
+                Iterable<T> currentClassLoaderServices = ServiceLoader.load( type, currentCL );
+                // Combine services loaded by both context and module class loaders.
+                // Service instances compared by full class name ( we cannot use
+                // equals for instances or classes because they can came from
+                // different class loaders ).
+                putAllInstancesToMap( currentClassLoaderServices, services );
+                // Services from context class loader have higher precedence,
+                // so we load those later.
+            }
+
             putAllInstancesToMap( contextClassLoaderServices, services );
             return services.values();
         }

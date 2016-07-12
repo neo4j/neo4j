@@ -57,6 +57,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 
 import static org.apache.lucene.search.NumericRangeQuery.newIntRange;
@@ -1595,9 +1596,10 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         t1.close();
         t2.close();
 
-        Transaction transaction = graphDb.beginTx();
-        assertEquals( node, index.get( key, value ).getSingle() );
-        transaction.finish();
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            assertEquals( node, index.get( key, value ).getSingle() );
+        }
     }
 
     @Test
@@ -1622,10 +1624,11 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         t1.close();
         t2.close();
 
-        Transaction transaction = graphDb.beginTx();
-        assertEquals( node, index.get( key, value ).getSingle() );
-        assertEquals( node, index.get( key, otherValue ).getSingle() );
-        transaction.finish();
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            assertEquals( node, index.get( key, value ).getSingle() );
+            assertEquals( node, index.get( key, otherValue ).getSingle() );
+        }
     }
 
     @Test
@@ -1649,10 +1652,11 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         t1.close();
         t2.close();
 
-        Transaction transaction = graphDb.beginTx();
-        assertEquals( node, index.get( key, value ).getSingle() );
-        assertEquals( node, index.get( otherKey, value ).getSingle() );
-        transaction.finish();
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            assertEquals( node, index.get( key, value ).getSingle() );
+            assertEquals( node, index.get( otherKey, value ).getSingle() );
+        }
     }
 
     @Test
@@ -1881,5 +1885,65 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         hits = index.get( "Type", type.name(), start, end );
         assertEquals( 0, count( (Iterator<Relationship>)hits ) );
         assertEquals( 0, hits.size() );
+    }
+
+    @Test
+    public void shouldNotBeAbleToAddNullValuesToNodeIndex() throws Exception
+    {
+        // GIVEN
+        Index<Node> index = nodeIndex( EXACT_CONFIG );
+
+        // WHEN single null
+        try
+        {
+            index.add( graphDb.createNode(), "key", null );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN Good
+        }
+
+        // WHEN null in array
+        try
+        {
+            index.add( graphDb.createNode(), "key", new String[] {"a", null, "c"} );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN Good
+        }
+    }
+
+    @Test
+    public void shouldNotBeAbleToAddNullValuesToRelationshipIndex() throws Exception
+    {
+        // GIVEN
+        RelationshipIndex index = relationshipIndex( EXACT_CONFIG );
+
+        // WHEN single null
+        try
+        {
+            index.add( graphDb.createNode().createRelationshipTo( graphDb.createNode(), MyRelTypes.TEST ), "key",
+                    null );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN Good
+        }
+
+        // WHEN null in array
+        try
+        {
+            index.add( graphDb.createNode().createRelationshipTo( graphDb.createNode(), MyRelTypes.TEST ), "key",
+                    new String[] {"a", null, "c"} );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN Good
+        }
     }
 }

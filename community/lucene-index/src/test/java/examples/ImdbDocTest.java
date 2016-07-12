@@ -45,7 +45,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
@@ -55,9 +54,7 @@ import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.index.lucene.unsafe.batchinsert.LuceneBatchInserterIndexProvider;
-import org.neo4j.kernel.impl.cache.WeakCacheProvider;
 import org.neo4j.test.AsciiDocGenerator;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
@@ -98,8 +95,7 @@ public class ImdbDocTest
     @BeforeClass
     public static void setUpDb()
     {
-        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( GraphDatabaseSettings
-                .cache_type, WeakCacheProvider.NAME ).newGraphDatabase();
+        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
         try ( Transaction tx = graphDb.beginTx() )
         {
             // START SNIPPET: createIndexes
@@ -207,8 +203,7 @@ public class ImdbDocTest
     @Test
     public void deleteIndex()
     {
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase( TargetDirectory.forTest(
-                getClass() ).cleanDirectory( "delete" ).getAbsolutePath() );
+        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
         try ( Transaction tx = graphDb.beginTx() )
         {
             // START SNIPPET: delete
@@ -579,7 +574,7 @@ public class ImdbDocTest
         // Note that to use a compound query, we can't combine committed
         // and uncommitted index entries, so we'll commit before querying:
         tx.success();
-        tx.finish();
+        tx.close();
 
         // and now we can search for it:
         try ( Transaction tx = graphDb.beginTx() )
@@ -617,7 +612,7 @@ public class ImdbDocTest
     }
 
     @Test
-    public void batchInsert()
+    public void batchInsert() throws Exception
     {
         Neo4jTestCase.deleteFileOrDirectory( new File(
                 "target/neo4jdb-batchinsert" ) );

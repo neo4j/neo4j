@@ -41,30 +41,8 @@ After startup, UDC waits for ten minutes before sending the first ping. It does 
 
 == How to disable UDC ==
 
-We've tried to make it extremely easy to disable UDC. In fact, the code for UDC is not even included in the kernel jar but as a completely separate component.
-
-There are three ways you can disable UDC:
-
-. The easiest way is to just remove the neo4j-udc-*.jar file. By doing this, the kernel will not load UDC, and no pings will be sent.
-
-. If you are using Maven, and want to make sure that UDC is never installed in your system, a dependency element like this will do that:
-+
-["source","xml","unnumbered","2",presubs="attributes"]
---------------------
- <dependency>
-   <groupId>org.neo4j</groupId>
-   <artifactId>neo4j</artifactId>
-   <version>{neo4j-version}</version>
-   <exclusions>
-     <exclusion>
-       <groupId>org.neo4j</groupId>
-       <artifactId>neo4j-udc</artifactId>
-     </exclusion>
-   </exclusions>
- </dependency>
---------------------
-
-. Lastly, if you are using a packaged version of Neo4j, and do not want to make any change to the jars, see below for the setting to use in _conf/neo4j.properties_ to disable UDC.
+UDC is easily turned off by disabling it in the database configuration.
+In _conf/neo4j.properties_ for Neo4j server or in the configuration passed to the database in embedded mode.
 
 include::{importdir}/neo4j-udc-docs-jar/ops/configuration-attributes.asciidoc[]
 

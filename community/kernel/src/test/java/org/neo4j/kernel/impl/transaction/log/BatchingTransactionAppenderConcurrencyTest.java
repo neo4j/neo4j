@@ -22,8 +22,10 @@ package org.neo4j.kernel.impl.transaction.log;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.Flushable;
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -33,9 +35,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 
 import org.neo4j.kernel.KernelHealth;
-import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
+import org.neo4j.kernel.lifecycle.LifeRule;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -47,7 +51,7 @@ import static org.neo4j.test.ThreadTestUtils.fork;
 
 public class BatchingTransactionAppenderConcurrencyTest
 {
-    private static enum ChannelCommand
+    private enum ChannelCommand
     {
         emptyBufferIntoChannelAndClearIt,
         force,
@@ -69,32 +73,42 @@ public class BatchingTransactionAppenderConcurrencyTest
         executor = null;
     }
 
+
+    @Rule
+    public final LifeRule life = new LifeRule();
+
     private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
-    private LogFile logFile;
-    private LogRotation logRotation;
-    private TransactionMetadataCache transactionMetadataCache;
-    private TransactionIdStore transactionIdStore;
-    private IdOrderingQueue legacyindexTransactionOrdering;
-    private KernelHealth kernelHealth;
-    private WritableLogChannel channel;
-    private BlockingQueue<ChannelCommand> channelCommandQueue;
-    private Semaphore forceSemaphore;
+    private final LogFile logFile = mock( LogFile.class );
+    private final LogRotation logRotation = LogRotation.NO_ROTATION;
+    private final TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 10, 10 );
+    private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore();
+    private final IdOrderingQueue legacyIndexTransactionOrdering = IdOrderingQueue.BYPASS;
+    private final KernelHealth kernelHealth= mock( KernelHealth.class );
+    private final Semaphore forceSemaphore = new Semaphore( 0 );
+
+    private final BlockingQueue<ChannelCommand> channelCommandQueue = new LinkedBlockingQueue<>( 2 );
 
     @Before
     public void setUp()
     {
-        logFile = mock( LogFile.class );
-        logRotation = LogRotation.NO_ROTATION;
-        transactionMetadataCache = new TransactionMetadataCache( 10, 10 );
-        transactionIdStore = new DeadSimpleTransactionIdStore();
-        legacyindexTransactionOrdering = IdOrderingQueue.BYPASS;
-        kernelHealth = mock( KernelHealth.class );
-        channelCommandQueue = new LinkedBlockingQueue<>();
-        forceSemaphore = new Semaphore( 0 );
-        channel = new InMemoryLogChannel()
+        class Channel extends InMemoryLogChannel implements Flushable
         {
             @Override
-            public void force() throws IOException
+            public Flushable emptyBufferIntoChannelAndClearIt()
+            {
+                try
+                {
+                    channelCommandQueue.put( ChannelCommand.emptyBufferIntoChannelAndClearIt );
+                }
+                catch ( InterruptedException e )
+                {
+                    throw new RuntimeException( e );
+                }
+                return this;
+            }
+
+            @Override
+            public void flush() throws IOException
             {
                 try
                 {
@@ -106,22 +120,9 @@ public class BatchingTransactionAppenderConcurrencyTest
                     throw new IOException( e );
                 }
             }
-
-            @Override
-            public void emptyBufferIntoChannelAndClearIt()
-            {
-                try
-                {
-                    channelCommandQueue.put( ChannelCommand.emptyBufferIntoChannelAndClearIt );
-                }
-                catch ( InterruptedException e )
-                {
-                    throw new RuntimeException( e );
-                }
-            }
         };
 
-        when( logFile.getWriter() ).thenReturn( channel );
+        when( logFile.getWriter() ).thenReturn( new Channel() );
     }
 
     private Runnable createForceAfterAppendRunnable( final BatchingTransactionAppender appender )
@@ -144,10 +145,11 @@ public class BatchingTransactionAppenderConcurrencyTest
     }
 
     @Test
-    public void shouldForceLogChannel() throws Exception
+    public void shouldForceLogChannel() throws Throwable
     {
-        BatchingTransactionAppender appender = new BatchingTransactionAppender( logFile, logRotation,
-                transactionMetadataCache, transactionIdStore, legacyindexTransactionOrdering, kernelHealth );
+        BatchingTransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, logRotation,
+                transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering, kernelHealth ) );
+        life.start();
 
         appender.forceAfterAppend( logAppendEvent );
 
@@ -157,16 +159,16 @@ public class BatchingTransactionAppenderConcurrencyTest
     }
 
     @Test
-    public void shouldWaitForOngoingForceToCompleteBeforeForcingAgain() throws Exception
+    public void shouldWaitForOngoingForceToCompleteBeforeForcingAgain() throws Throwable
     {
-        channelCommandQueue = new LinkedBlockingQueue<>( 2 );
         channelCommandQueue.put( ChannelCommand.dummy );
 
         // The 'emptyBuffer...' command will be put into the queue, and then it'll block on 'force' because the queue
         // will be at capacity.
 
-        final BatchingTransactionAppender appender = new BatchingTransactionAppender( logFile, logRotation,
-                transactionMetadataCache, transactionIdStore, legacyindexTransactionOrdering, kernelHealth );
+        final BatchingTransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, logRotation,
+                transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering, kernelHealth ) );
+        life.start();
 
         Runnable runnable = createForceAfterAppendRunnable( appender );
         Future<?> future = executor.submit( runnable );
@@ -187,16 +189,16 @@ public class BatchingTransactionAppenderConcurrencyTest
     }
 
     @Test
-    public void shouldBatchUpMultipleWaitingForceRequests() throws Exception
+    public void shouldBatchUpMultipleWaitingForceRequests() throws Throwable
     {
-        channelCommandQueue = new LinkedBlockingQueue<>( 2 );
         channelCommandQueue.put( ChannelCommand.dummy );
 
         // The 'emptyBuffer...' command will be put into the queue, and then it'll block on 'force' because the queue
         // will be at capacity.
 
-        final BatchingTransactionAppender appender = new BatchingTransactionAppender( logFile, logRotation,
-                transactionMetadataCache, transactionIdStore, legacyindexTransactionOrdering, kernelHealth );
+        final BatchingTransactionAppender appender = life.add( new BatchingTransactionAppender( logFile, logRotation,
+                transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering, kernelHealth ) );
+        life.start();
 
         Runnable runnable = createForceAfterAppendRunnable( appender );
         Future<?> future = executor.submit( runnable );

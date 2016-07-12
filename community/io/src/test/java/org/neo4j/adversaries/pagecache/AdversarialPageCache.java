@@ -19,9 +19,13 @@
  */
 package org.neo4j.adversaries.pagecache;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
 import org.neo4j.adversaries.Adversary;
@@ -48,10 +52,17 @@ public class AdversarialPageCache implements PageCache
     }
 
     @Override
-    public PagedFile map( File file, int pageSize ) throws IOException
+    public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
     {
-        adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
-        PagedFile pagedFile = delegate.map( file, pageSize );
+        if ( ArrayUtils.contains( openOptions, StandardOpenOption.CREATE ) )
+        {
+            adversary.injectFailure( IOException.class, SecurityException.class );
+        }
+        else
+        {
+            adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
+        }
+        PagedFile pagedFile = delegate.map( file, pageSize, openOptions );
         return new AdversarialPagedFile( pagedFile, adversary );
     }
 

@@ -80,7 +80,7 @@ public abstract class Neo4jTestCase
         {
             tx.success();
         }
-        tx.finish();
+        tx.close();
         tx = null;
     }
     

@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.rest.repr;
 
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
-import org.neo4j.helpers.Function;
 
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.server.rest.repr.RepresentationType.CONSTRAINT_DEFINITION;
@@ -39,7 +39,18 @@ public class ConstraintDefinitionRepresentation extends MappingRepresentation
     @Override
     protected void serialize( MappingSerializer serializer )
     {
-        serializer.putString( "label", constraintDefinition.getLabel().name() );
+        switch ( constraintDefinition.getConstraintType() )
+        {
+        case UNIQUENESS:
+        case NODE_PROPERTY_EXISTENCE:
+            serializer.putString( "label", constraintDefinition.getLabel().name() );
+            break;
+        case RELATIONSHIP_PROPERTY_EXISTENCE:
+            serializer.putString( "relationshipType", constraintDefinition.getRelationshipType().name() );
+            break;
+        default:
+            throw new IllegalStateException( "Unknown constraint type:" + constraintDefinition.getConstraintType() );
+        }
 
         ConstraintType type = constraintDefinition.getConstraintType();
         serializer.putString( "type", type.name() );

@@ -19,31 +19,23 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import java.util.List;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.junit.runners.Suite;
 
-import org.neo4j.consistency.store.DiffRecordAccess;
+import java.util.List;
+
+import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
-import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-
-import static org.neo4j.consistency.store.RecordReference.SkippingReference.skipReference;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
@@ -56,53 +48,16 @@ import static org.neo4j.consistency.store.RecordReference.SkippingReference.skip
 public abstract class MultiPassStoreTest
 {
     @Test
-    public void createsListOfFiltersWhichEachSkipRecordsOutsideOfARangeOfMappableIds() throws Exception
-    {
-        // given
-        StoreAccess storeAccess = storeAccess( 1000L, 9 );
-        DiffRecordAccess recordAccess = mock( DiffRecordAccess.class );
-
-        long memoryPerPass = 900L;
-
-        // when
-        List<DiffRecordAccess> filters = multiPassStore().multiPassFilters(
-                memoryPerPass, storeAccess, recordAccess, MultiPassStore.values() );
-
-        // then
-        assertEquals( 11, filters.size() );
-        assertFinds( record( filters.get( 0 ), 0 ) );
-        assertFinds( record( filters.get( 0 ), 99 ) );
-        assertFinds( record( filters.get( 1 ), 100 ) );
-        assertFinds( record( filters.get( 1 ), 199 ) );
-        assertFinds( record( filters.get( 2 ), 200 ) );
-        assertFinds( record( filters.get( 2 ), 299 ) );
-        assertFinds( record( filters.get( 10 ), 1000 ) );
-
-        assertSkips( record( filters.get( 1 ), 0 ) );
-        assertSkips( record( filters.get( 1 ), 99 ) );
-        assertSkips( record( filters.get( 2 ), 100 ) );
-        assertSkips( record( filters.get( 2 ), 199 ) );
-        assertSkips( record( filters.get( 0 ), 100 ) );
-        assertSkips( record( filters.get( 0 ), 199 ) );
-        assertSkips( record( filters.get( 1 ), 200 ) );
-        assertSkips( record( filters.get( 1 ), 299 ) );
-    }
-
-    @Test
     public void shouldSkipOtherKindsOfRecords() throws Exception
     {
         // given
-        StoreAccess storeAccess = storeAccess( 1000L, 9 );
-        DiffRecordAccess recordAccess = mock( DiffRecordAccess.class );
-
-        long memoryPerPass = 900L;
+        RecordAccess recordAccess = mock( RecordAccess.class );
 
         // when
-        List<DiffRecordAccess> filters = multiPassStore().multiPassFilters(
-                memoryPerPass, storeAccess, recordAccess, MultiPassStore.values() );
+        List<RecordAccess> filters = multiPassStore().multiPassFilters( recordAccess, MultiPassStore.values() );
 
         // then
-        for ( DiffRecordAccess filter : filters )
+        for ( RecordAccess filter : filters )
         {
             for ( long id : new long[] {0, 100, 200, 300, 400, 500, 600, 700, 800, 900} )
             {
@@ -113,32 +68,11 @@ public abstract class MultiPassStoreTest
         verifyZeroInteractions( recordAccess );
     }
 
-    private static <RECORD extends AbstractBaseRecord> void assertSkips( RecordReference<RECORD> recordReference )
-    {
-        assertSame( skipReference(), recordReference );
-    }
-
-    private static <RECORD extends AbstractBaseRecord> void assertFinds( RecordReference<RECORD> recordReference )
-    {
-        assertNotSame( skipReference(), recordReference );
-    }
-
-    @SuppressWarnings("unchecked")
-    private StoreAccess storeAccess( long highId, int recordSize )
-    {
-        StoreAccess storeAccess = mock( StoreAccess.class );
-        RecordStore recordStore = mock( RecordStore.class );
-        when( multiPassStore().getRecordStore( storeAccess ) ).thenReturn( recordStore );
-        when( recordStore.getHighId() ).thenReturn( highId );
-        when( recordStore.getRecordSize() ).thenReturn( recordSize );
-        return storeAccess;
-    }
-
     protected abstract MultiPassStore multiPassStore();
 
-    protected abstract RecordReference<? extends AbstractBaseRecord> record( DiffRecordAccess filter, long id );
+    protected abstract RecordReference<? extends AbstractBaseRecord> record( RecordAccess filter, long id );
 
-    protected abstract void otherRecords( DiffRecordAccess filter, long id );
+    protected abstract void otherRecords( RecordAccess filter, long id );
 
     @RunWith(JUnit4.class)
     public static class Nodes extends MultiPassStoreTest
@@ -150,12 +84,13 @@ public abstract class MultiPassStoreTest
         }
 
         @Override
-        protected RecordReference<NodeRecord> record( DiffRecordAccess filter, long id )
+        protected RecordReference<NodeRecord> record( RecordAccess filter, long id )
         {
             return filter.node( id );
         }
 
-        protected void otherRecords( DiffRecordAccess filter, long id )
+        @Override
+        protected void otherRecords( RecordAccess filter, long id )
         {
             filter.relationship( id );
             filter.property( id );
@@ -174,12 +109,13 @@ public abstract class MultiPassStoreTest
         }
 
         @Override
-        protected RecordReference<RelationshipRecord> record( DiffRecordAccess filter, long id )
+        protected RecordReference<RelationshipRecord> record( RecordAccess filter, long id )
         {
             return filter.relationship( id );
         }
 
-        protected void otherRecords( DiffRecordAccess filter, long id )
+        @Override
+        protected void otherRecords( RecordAccess filter, long id )
         {
             filter.node( id );
             filter.property( id );
@@ -198,12 +134,13 @@ public abstract class MultiPassStoreTest
         }
 
         @Override
-        protected RecordReference<PropertyRecord> record( DiffRecordAccess filter, long id )
+        protected RecordReference<PropertyRecord> record( RecordAccess filter, long id )
         {
             return filter.property( id );
         }
 
-        protected void otherRecords( DiffRecordAccess filter, long id )
+        @Override
+        protected void otherRecords( RecordAccess filter, long id )
         {
             filter.node( id );
             filter.relationship( id );
@@ -222,12 +159,13 @@ public abstract class MultiPassStoreTest
         }
 
         @Override
-        protected RecordReference<DynamicRecord> record( DiffRecordAccess filter, long id )
+        protected RecordReference<DynamicRecord> record( RecordAccess filter, long id )
         {
             return filter.string( id );
         }
 
-        protected void otherRecords( DiffRecordAccess filter, long id )
+        @Override
+        protected void otherRecords( RecordAccess filter, long id )
         {
             filter.node( id );
             filter.relationship( id );
@@ -246,12 +184,13 @@ public abstract class MultiPassStoreTest
         }
 
         @Override
-        protected RecordReference<DynamicRecord> record( DiffRecordAccess filter, long id )
+        protected RecordReference<DynamicRecord> record( RecordAccess filter, long id )
         {
             return filter.array( id );
         }
 
-        protected void otherRecords( DiffRecordAccess filter, long id )
+        @Override
+        protected void otherRecords( RecordAccess filter, long id )
         {
             filter.node( id );
             filter.relationship( id );

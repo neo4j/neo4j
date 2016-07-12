@@ -29,9 +29,6 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageProcessor;
@@ -41,6 +38,8 @@ import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.statemachine.StateMachine;
 import org.neo4j.cluster.statemachine.StateTransitionListener;
 import org.neo4j.cluster.timeout.Timeouts;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.cluster.com.message.Message.CONVERSATION_ID;
 import static org.neo4j.cluster.com.message.Message.CREATED_BY;
@@ -62,7 +61,7 @@ public class StateMachines
         void finishedProcessing( Message message );
     }
 
-    private final Logger logger = LoggerFactory.getLogger( StateMachines.class );
+    private final Log log;
 
     private final Monitor monitor;
     private final MessageSender sender;
@@ -78,11 +77,12 @@ public class StateMachines
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock( true );
     private final String instanceIdHeaderValue;
 
-    public StateMachines( Monitor monitor, MessageSource source,
+    public StateMachines( LogProvider logProvider, Monitor monitor, MessageSource source,
                           final MessageSender sender,
                           Timeouts timeouts,
                           DelayedDirectExecutor executor, Executor stateMachineExecutor, InstanceId instanceId )
     {
+        this.log = logProvider.getLog( getClass() );
         this.monitor = monitor;
         this.sender = sender;
         this.executor = executor;
@@ -151,17 +151,12 @@ public class StateMachines
                             return; // No StateMachine registered for this MessageType type - Ignore this
                         }
 
-                        stateMachine.handle( message, temporaryOutgoing );
-                        Message<? extends MessageType> tempMessage;
-                        while ( (tempMessage = temporaryOutgoing.nextOutgoingMessage()) != null )
-                        {
-                            outgoing.offer( tempMessage );
-                        }
+                        handleMessage( stateMachine, message );
 
                         // Process and send messages
                         // Allow state machines to send messages to each other as well in this loop
                         Message<? extends MessageType> outgoingMessage;
-                        List<Message<? extends MessageType>> toSend = new LinkedList<Message<? extends MessageType>>();
+                        List<Message<? extends MessageType>> toSend = new LinkedList<>();
                         try
                         {
                             while ( (outgoingMessage = outgoing.nextOutgoingMessage()) != null )
@@ -179,7 +174,7 @@ public class StateMachines
                                     }
                                     catch ( Throwable e )
                                     {
-                                        logger.warn( "Outgoing message processor threw exception", e );
+                                        log.warn( "Outgoing message processor threw exception", e );
                                     }
                                 }
 
@@ -196,11 +191,7 @@ public class StateMachines
                                             .getClass() );
                                     if ( internalStatemachine != null )
                                     {
-                                        internalStatemachine.handle( (Message) outgoingMessage, temporaryOutgoing );
-                                        while ( (tempMessage = temporaryOutgoing.nextOutgoingMessage()) != null )
-                                        {
-                                            outgoing.offer( tempMessage );
-                                        }
+                                        handleMessage( internalStatemachine, outgoingMessage );
                                     }
                                 }
                             }
@@ -211,7 +202,7 @@ public class StateMachines
                         }
                         catch ( Exception e )
                         {
-                            logger.warn( "Error processing message " + message, e );
+                            log.warn( "Error processing message " + message, e );
                         }
                     }
                 }
@@ -224,6 +215,15 @@ public class StateMachines
                 // This will effectively trigger all notifications created by contexts
                 executor.drain();
                 monitor.finishedProcessing( message );
+            }
+
+            private void handleMessage( StateMachine stateMachine, Message<? extends MessageType> message )
+            {
+                stateMachine.handle( message, temporaryOutgoing );
+                for ( Message<? extends MessageType> next; (next = temporaryOutgoing.nextOutgoingMessage()) != null; )
+                {
+                    outgoing.offer( next );
+                }
             }
         } );
         return true;

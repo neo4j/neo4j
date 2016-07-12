@@ -19,6 +19,8 @@
  */
 package org.neo4j.collection.primitive;
 
+import java.util.NoSuchElementException;
+
 import static java.util.Arrays.copyOf;
 
 /**
@@ -30,6 +32,11 @@ public class PrimitiveIntStack implements PrimitiveIntCollection
 {
     private int[] array;
     private int cursor = -1; // where the top most item lives
+
+    public PrimitiveIntStack( )
+    {
+        this(16);
+    }
 
     public PrimitiveIntStack( int initialSize )
     {
@@ -62,7 +69,24 @@ public class PrimitiveIntStack implements PrimitiveIntCollection
     @Override
     public PrimitiveIntIterator iterator()
     {
-        throw new UnsupportedOperationException( "Please implement" );
+        return new PrimitiveIntIterator()
+        {
+            int idx = 0;
+
+            @Override
+            public boolean hasNext()
+            {
+                return idx <= cursor;
+            }
+
+            @Override
+            public int next()
+            {
+                if( !hasNext() ) throw new NoSuchElementException();
+
+                return array[idx++];
+            }
+        };
     }
 
     @Override

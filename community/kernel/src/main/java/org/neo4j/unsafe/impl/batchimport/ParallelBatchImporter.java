@@ -22,15 +22,14 @@ package org.neo4j.unsafe.impl.batchimport;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.function.Function;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Format;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.Log;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
@@ -44,16 +43,14 @@ import org.neo4j.unsafe.impl.batchimport.staging.DynamicProcessorAssigner;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStore;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 import static java.lang.System.currentTimeMillis;
 
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
-import static org.neo4j.unsafe.impl.batchimport.WriterFactories.parallel;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
-import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
+import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseExecution;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 
 /**
@@ -71,32 +68,28 @@ public class ParallelBatchImporter implements BatchImporter
     private final File storeDir;
     private final FileSystemAbstraction fileSystem;
     private final Configuration config;
-    private final IoMonitor writeMonitor;
-    private final Logging logging;
-    private final StringLogger logger;
+    private final LogService logService;
+    private final Log log;
     private final ExecutionMonitor executionMonitor;
-    private final Monitors monitors;
-    private final WriterFactory writerFactory;
     private final AdditionalInitialIds additionalInitialIds;
+    private final Config dbConfig;
 
     /**
      * Advanced usage of the parallel batch importer, for special and very specific cases. Please use
      * a constructor with fewer arguments instead.
      */
-    public ParallelBatchImporter( String storeDir, FileSystemAbstraction fileSystem, Configuration config,
-            Logging logging, ExecutionMonitor executionMonitor, Function<Configuration,WriterFactory> writerFactory,
-            AdditionalInitialIds additionalInitialIds )
+    public ParallelBatchImporter( File storeDir, FileSystemAbstraction fileSystem, Configuration config,
+            LogService logService, ExecutionMonitor executionMonitor,
+            AdditionalInitialIds additionalInitialIds, Config dbConfig )
     {
-        this.storeDir = new File( storeDir );
+        this.storeDir = storeDir;
         this.fileSystem = fileSystem;
         this.config = config;
-        this.logging = logging;
+        this.logService = logService;
+        this.dbConfig = dbConfig;
+        this.log = logService.getInternalLogProvider().getLog( getClass() );
         this.executionMonitor = executionMonitor;
         this.additionalInitialIds = additionalInitialIds;
-        this.logger = logging.getMessagesLog( getClass() );
-        this.monitors = new Monitors();
-        this.writeMonitor = new IoMonitor();
-        this.writerFactory = writerFactory.apply( config );
     }
 
     /**
@@ -104,17 +97,17 @@ public class ParallelBatchImporter implements BatchImporter
      * The provided {@link ExecutionMonitor} will be decorated with {@link DynamicProcessorAssigner} for
      * optimal assignment of processors to bottleneck steps over time.
      */
-    public ParallelBatchImporter( String storeDir, Configuration config, Logging logging,
-            ExecutionMonitor executionMonitor )
+    public ParallelBatchImporter( File storeDir, Configuration config, LogService logService,
+            ExecutionMonitor executionMonitor, Config dbConfig )
     {
-        this( storeDir, new DefaultFileSystemAbstraction(), config, logging,
-                withDynamicProcessorAssignment( executionMonitor, config ), parallel(), EMPTY );
+        this( storeDir, new DefaultFileSystemAbstraction(), config, logService,
+                withDynamicProcessorAssignment( executionMonitor, config ), EMPTY, dbConfig );
     }
 
     @Override
     public void doImport( Input input ) throws IOException
     {
-        logger.info( "Import starting" );
+        log.info( "Import starting" );
 
         // Things that we need to close later. The reason they're not in the try-with-resource statement
         // is that we need to close, and set to null, at specific points preferably. So use good ol' finally block.
@@ -124,14 +117,15 @@ public class ParallelBatchImporter implements BatchImporter
         boolean hasBadEntries = false;
         File badFile = new File( storeDir, Configuration.BAD_FILE_NAME );
         CountingStoreUpdateMonitor storeUpdateMonitor = new CountingStoreUpdateMonitor();
-        try ( BatchingNeoStore neoStore = new BatchingNeoStore( fileSystem, storeDir, config,
-                writeMonitor, logging, monitors, writerFactory, additionalInitialIds );
-                CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(
-                      neoStore.getLastCommittedTransactionId() );
+        try ( BatchingNeoStores neoStore =
+                      new BatchingNeoStores( fileSystem, storeDir, config, logService, additionalInitialIds, dbConfig );
+              CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(
+                    neoStore.getLastCommittedTransactionId() );
               InputCache inputCache = new InputCache( fileSystem, storeDir ) )
         {
             Collector badCollector = input.badCollector();
             // Some temporary caches and indexes in the import
+            IoMonitor writeMonitor = new IoMonitor( neoStore.getIoTracer() );
             IdMapper idMapper = input.idMapper();
             IdGenerator idGenerator = input.idGenerator();
             nodeRelationshipCache = new NodeRelationshipCache( AUTO, config.denseNodeThreshold() );
@@ -140,7 +134,7 @@ public class ParallelBatchImporter implements BatchImporter
             InputIterable<InputRelationship> relationships = input.relationships();
 
             // Stage 1 -- nodes, properties, labels
-            NodeStage nodeStage = new NodeStage( config, writeMonitor, writerFactory,
+            NodeStage nodeStage = new NodeStage( config, writeMonitor,
                     nodes, idMapper, idGenerator, neoStore, inputCache, neoStore.getLabelScanStore(),
                     storeUpdateMonitor, memoryUsageStats );
 
@@ -166,15 +160,11 @@ public class ParallelBatchImporter implements BatchImporter
             nodeRelationshipCache.fixateNodes();
 
             // Stage 3 -- relationships, properties
-            final RelationshipStage relationshipStage = new RelationshipStage( config, writeMonitor, writerFactory,
+            final RelationshipStage relationshipStage = new RelationshipStage( config, writeMonitor,
                     relationships.supportsMultiplePasses() ? relationships : inputCache.relationships(),
                     idMapper, neoStore, nodeRelationshipCache, input.specificRelationshipIds(), storeUpdateMonitor );
             executeStages( relationshipStage );
             nodeRelationshipCache.fixateGroups();
-
-            // Prepare for updating
-            neoStore.flush();
-            writerFactory.awaitEverythingWritten();
 
             // Stage 4 -- set node nextRel fields
             executeStages( new NodeFirstRelationshipStage( config, neoStore.getNodeStore(),
@@ -200,25 +190,23 @@ public class ParallelBatchImporter implements BatchImporter
                     neoStore.getRelationshipTypeRepository().getHighId(), countsUpdater, AUTO ) );
 
             // We're done, do some final logging about it
-            writerFactory.awaitEverythingWritten();
             long totalTimeMillis = currentTimeMillis() - startTime;
             executionMonitor.done( totalTimeMillis, storeUpdateMonitor.toString() );
-            logger.info( "IMPORT DONE in " + Format.duration( totalTimeMillis ) + ". " + storeUpdateMonitor );
+            log.info( "Import completed, took " + Format.duration( totalTimeMillis ) + ". " + storeUpdateMonitor );
             hasBadEntries = badCollector.badEntries() > 0;
             if ( hasBadEntries )
             {
-                logger.warn( "There were " + badCollector.badEntries() + " bad entries which were skipped " +
+                log.warn( "There were " + badCollector.badEntries() + " bad entries which were skipped " +
                              "and logged into " + badFile.getAbsolutePath() );
             }
         }
         catch ( Throwable t )
         {
-            logger.error( "Error during import", t );
+            log.error( "Error during import", t );
             throw Exceptions.launderedException( IOException.class, t );
         }
         finally
         {
-            writerFactory.shutdown();
             if ( nodeRelationshipCache != null )
             {
                 nodeRelationshipCache.close();
@@ -236,6 +224,6 @@ public class ParallelBatchImporter implements BatchImporter
 
     private void executeStages( Stage... stages )
     {
-        superviseDynamicExecution( executionMonitor, config, stages );
+        superviseExecution( executionMonitor, config, stages );
     }
 }

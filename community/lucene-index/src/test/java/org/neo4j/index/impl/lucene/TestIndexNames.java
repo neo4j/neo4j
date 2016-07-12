@@ -66,7 +66,7 @@ public class TestIndexNames
             {
                 tx.success();
             }
-            tx.finish();
+            tx.close();
             tx = null;
         }
     }

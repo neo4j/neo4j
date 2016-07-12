@@ -23,6 +23,5 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 
 public interface TokenCreator
 {
-    int getOrCreate( String name )
-            throws KernelException;
+    int getOrCreate( String name ) throws KernelException;
 }

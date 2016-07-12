@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.ha.lock;
 
-import java.util.Arrays;
+import java.io.StringWriter;
 
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.DumpLocksVisitor;
 import org.neo4j.kernel.impl.locking.LockType;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.util.StringBuilderStringLogger;
+import org.neo4j.logging.FormattedLog;
 
 import static java.lang.String.format;
 
@@ -35,27 +35,29 @@ import static java.lang.String.format;
  * deadlock exceptions and retry. This exception is thrown instead of awaiting a lock locally on a slave
  * after it was acquired on the master, since applying a lock locally after master granted it should succeed,
  * or fail; it cannot wait for another condition.
- * 
+ *
  * While this work-around is in place there is more breathing room to figure out the real problem preventing
  * some local locks to be grabbed.
- * 
+ *
  * @author Mattias Persson
  */
 public class LocalDeadlockDetectedException extends DeadlockDetectedException
 {
-    public LocalDeadlockDetectedException( Locks.Client lockClient, Locks lockManager, Locks.ResourceType resourceType, long[] resourceIds,
+    public LocalDeadlockDetectedException( Locks.Client lockClient, Locks lockManager, Locks.ResourceType resourceType, long resourceId,
             LockType type )
     {
-        super( constructHelpfulDiagnosticsMessage( lockClient, lockManager, resourceType, resourceIds, type ) );
+        super( constructHelpfulDiagnosticsMessage( lockClient, lockManager, resourceType, resourceId, type ) );
     }
 
     private static String constructHelpfulDiagnosticsMessage( Locks.Client client, Locks lockManager,
-                                                  Locks.ResourceType resourceType, long[] resourceIds, LockType type )
+                                                  Locks.ResourceType resourceType, long resourceId, LockType type )
     {
-        StringBuilder builder = new StringBuilder( format(
+        StringWriter stringWriter = new StringWriter();
+        stringWriter.append( format(
                 "%s tried to apply local %s lock on %s(%s) after acquired on master. Currently these locks exist:%n",
-                client, type, resourceType, Arrays.toString(resourceIds) ) );
-        lockManager.accept( new DumpLocksVisitor(new StringBuilderStringLogger(builder)) );
-        return builder.toString();
+                client, type, resourceType, resourceId ) );
+
+        lockManager.accept( new DumpLocksVisitor( FormattedLog.withUTCTimeZone().toWriter( stringWriter ) ) );
+        return stringWriter.toString();
     }
 }

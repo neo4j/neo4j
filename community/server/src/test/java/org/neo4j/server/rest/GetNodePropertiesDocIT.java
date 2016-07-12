@@ -40,7 +40,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class GetNodePropertiesDocIT extends AbstractRestFunctionalTestBase
+public class GetNodePropertiesDocIT extends AbstractRestFunctionalDocTestBase
 {
     private static FunctionalTestHelper functionalTestHelper;
     private RestRequest req = RestRequest.req();
@@ -51,10 +51,7 @@ public class GetNodePropertiesDocIT extends AbstractRestFunctionalTestBase
         functionalTestHelper = new FunctionalTestHelper( server() );
     }
 
-    /**
-     * Get properties for node.
-     */
-    @Documented
+    @Documented( "Get properties for node." )
     @Test
     public void shouldGet200ForProperties() throws JsonParseException {
         String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
@@ -130,12 +127,9 @@ public class GetNodePropertiesDocIT extends AbstractRestFunctionalTestBase
         assertEquals(404, response.getStatus());
     }
 
-    /**
-     * Get property for node.
-     *
-     * Get a single node property from a node.
-     */
-    @Documented
+    @Documented( "Get property for node.\n" +
+                 "\n" +
+                 "Get a single node property from a node." )
     @Test
     public void shouldGet200ForProperty() throws JsonParseException
     {

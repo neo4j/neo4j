@@ -21,29 +21,22 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Implementation of the relationship type store. Uses a dynamic store to store
  * relationship type names.
  */
-public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeTokenRecord>
+public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeTokenRecord, RelationshipTypeToken>
 {
-    public static abstract class Configuration
-        extends TokenStore.Configuration
-    {
-
-    }
-
     public static final String TYPE_DESCRIPTOR = "RelationshipTypeStore";
     public static final int RECORD_SIZE = 1/*inUse*/ + 4/*nameId*/;
 
@@ -52,18 +45,16 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
             Config config,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger,
-            DynamicStringStore nameStore,
-            StoreVersionMismatchHandler versionMismatchHandler,
-            Monitors monitors )
+            LogProvider logProvider,
+            DynamicStringStore nameStore )
     {
-        super( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler, monitors );
+        super( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore,
+                new RelationshipTypeToken.Factory() );
     }
 
     @Override
-    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, RelationshipTypeTokenRecord record ) throws FAILURE
+    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, RelationshipTypeTokenRecord record )
+            throws FAILURE
     {
         processor.processRelationshipTypeToken( this, record );
     }

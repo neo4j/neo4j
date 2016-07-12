@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.info;
 
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 public enum DiagnosticsPhase
 {
@@ -41,22 +41,22 @@ public enum DiagnosticsPhase
         this.initial = initial;
     }
 
-    void emitStart( StringLogger log )
+    void emitStart( Log log )
     {
         log.info( "--- " + this + " START ---" );
     }
 
-    void emitDone( StringLogger log )
+    void emitDone( Log log )
     {
         log.info( "--- " + this + " END ---" );
     }
 
-    void emitStart( StringLogger log, DiagnosticsProvider provider )
+    void emitStart( Log log, DiagnosticsProvider provider )
     {
         log.info( "--- " + this + " for " + provider.getDiagnosticsIdentifier() + " START ---" );
     }
 
-    void emitDone( StringLogger log, DiagnosticsProvider provider )
+    void emitDone( Log log, DiagnosticsProvider provider )
     {
         log.info( "--- " + this + " for " + provider.getDiagnosticsIdentifier() + " END ---" );
     }

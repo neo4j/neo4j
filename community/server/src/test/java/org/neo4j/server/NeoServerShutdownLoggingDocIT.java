@@ -25,24 +25,21 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.helpers.ServerHelper;
-import org.neo4j.test.BufferingLogging;
 import org.neo4j.test.server.ExclusiveServerTestBase;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
 
 public class NeoServerShutdownLoggingDocIT extends ExclusiveServerTestBase
 {
-    private Logging logging;
+    private AssertableLogProvider logProvider;
     private NeoServer server;
 
     @Before
     public void setupServer() throws IOException
     {
-        logging = new BufferingLogging();
-        server = ServerHelper.createNonPersistentServer( logging );
+        logProvider = new AssertableLogProvider();
+        server = ServerHelper.createNonPersistentServer( logProvider );
+        ServerHelper.cleanTheDatabase( server );
     }
 
     @After
@@ -58,6 +55,6 @@ public class NeoServerShutdownLoggingDocIT extends ExclusiveServerTestBase
     public void shouldLogShutdown() throws Exception
     {
         server.stop();
-        assertThat( logging.toString(), containsString( "Successfully shutdown database." ) );
+        logProvider.assertContainsMessageContaining( "Successfully shutdown database" );
     }
 }

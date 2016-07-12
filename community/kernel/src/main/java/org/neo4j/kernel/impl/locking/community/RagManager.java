@@ -27,10 +27,8 @@ import java.util.Map;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
 
 /**
  * The Resource Allocation Graph manager is used for deadlock detection. It
@@ -54,7 +52,7 @@ import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
  * to the tx ( T1 wants to wait on R1 and R1->T2->R2->T3->R8->T1 <==>
  * deadlock!).
  */
-public class RagManager implements Visitor<LineLogger, RuntimeException>
+public class RagManager
 {
     // if a runtime exception is thrown from any method it means that the
     // RWLock class hasn't kept the contract to the RagManager
@@ -240,58 +238,5 @@ public class RagManager implements Visitor<LineLogger, RuntimeException>
             }
             graphStack.pop();
         }
-    }
-
-    @Override
-    public synchronized boolean visit( LineLogger logger )
-    {
-        logger.logLine( "Waiting list: " );
-        Iterator<Object> transactions = waitingTxMap.keySet().iterator();
-        if ( !transactions.hasNext() )
-        {
-            logger.logLine( "No transactions waiting on resources" );
-        }
-        else
-        {
-            logger.logLine( "" ); // new line
-        }
-        while ( transactions.hasNext() )
-        {
-            Object tx = transactions.next();
-            logger.logLine( "" + tx + "->" + waitingTxMap.get( tx ) );
-        }
-        logger.logLine( "Resource lock list: " );
-        Iterator<?> resources = resourceMap.keySet().iterator();
-        if ( !resources.hasNext() )
-        {
-            logger.logLine( "No locked resources found" );
-        }
-        else
-        {
-            logger.logLine( "" );
-        }
-        while ( resources.hasNext() )
-        {
-            Object resource = resources.next();
-            logger.logLine( "" + resource + "->" );
-            Iterator<Object> itr = resourceMap.get( resource ).iterator();
-            if ( !itr.hasNext() )
-            {
-                logger.logLine( " Error empty list found" );
-            }
-            while ( itr.hasNext() )
-            {
-                logger.logLine( "" + itr.next() );
-                if ( itr.hasNext() )
-                {
-                    logger.logLine( "," );
-                }
-                else
-                {
-                    logger.logLine( "" );
-                }
-            }
-        }
-        return true;
     }
 }

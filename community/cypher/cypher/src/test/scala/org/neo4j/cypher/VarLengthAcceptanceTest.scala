@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_2.commands.NoneInCollection
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.LegacyExpression
+import org.neo4j.cypher.internal.compiler.v2_3.commands.NoneInCollection
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.LegacyExpression
 import org.neo4j.graphdb.{Direction, Node}
 import org.neo4j.graphdb.Direction._
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -322,6 +322,26 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     result should haveNoneRelFilter
     result.columnAs("c").toSet should be(generation(5))
   }
+
+  test("should use variable of already matched rel in a varlenght path") {
+    eengine.execute("""create
+                      |(_0:`Node` ),
+                      |(_1:`Node` ),
+                      |(_2:`Node` ),
+                      |(_3:`Node` ),
+                      |_0-[:EDGE]->_1,
+                      |_1-[:EDGE]->_2,
+                      |_2-[:EDGE]->_3""".stripMargin)
+
+    val result = executeWithAllPlanners("""MATCH ()-[r:`EDGE`]-()
+                                          |WITH r
+                                          |MATCH p=(n)-[*0..1]-()-[r]-()-[*0..1]-(m)
+                                          |RETURN count(p) as c""".stripMargin)
+
+    result.columnAs[Long]("c").toList should equal(List(32))
+    result.close()
+  }
+
 
   def haveNoneRelFilter: Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
     override def apply(result: InternalExecutionResult): MatchResult = {

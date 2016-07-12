@@ -19,66 +19,66 @@
  */
 package org.neo4j.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import org.junit.After;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Map;
 
-import org.junit.Ignore;
-import org.junit.Test;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.helpers.CommunityServerBuilder;
-import org.neo4j.test.BufferingLogging;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+
+import static org.junit.Assert.assertEquals;
 
 public class DatabaseTuningDocIT extends ExclusiveServerTestBase
 {
-    @Ignore("Relies on internal config, which is bad")
+    private CommunityNeoServer server;
+
     @Test
     public void shouldLoadAKnownGoodPropertyFile() throws IOException
     {
-        CommunityNeoServer server = CommunityServerBuilder.server()
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+        // given
+        server = CommunityServerBuilder.server()
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .withDefaultDatabaseTuning()
                 .build();
+
+        // when
         server.start();
-        Map<Object, Object> params = null; // TODO This relies on internal stuff,
-        // which is no good: server.getDatabase().graph.getConfig().getParams();
 
+        // then
+        Map<String,String> params = server.getConfig().getParams();
 
-        assertTrue( propertyAndValuePresentIn( "neostore.nodestore.db.mapped_memory", "25M", params ) );
-        assertTrue( propertyAndValuePresentIn( "neostore.relationshipstore.db.mapped_memory", "50M", params ) );
-        assertTrue( propertyAndValuePresentIn( "neostore.propertystore.db.mapped_memory", "90M", params ) );
-        assertTrue( propertyAndValuePresentIn( "neostore.propertystore.db.strings.mapped_memory", "130M", params ) );
-        assertTrue( propertyAndValuePresentIn( "neostore.propertystore.db.arrays.mapped_memory", "130M", params ) );
-
-        server.stop();
-    }
-
-    private boolean propertyAndValuePresentIn( String name, String value, Map<Object, Object> params )
-    {
-        Object paramValue = params.get( name );
-        return paramValue != null && paramValue.toString().equals( value );
+        for ( Map.Entry<String, String> entry : CommunityServerBuilder.good_tuning_file_properties.entrySet() )
+        {
+            assertEquals( entry.getValue(), params.get( entry.getKey() ) );
+        }
     }
 
     @Test
     public void shouldLogWarningAndContinueIfTuningFilePropertyDoesNotResolve() throws IOException
     {
-        Logging logging = new BufferingLogging();
-        NeoServer server = CommunityServerBuilder.server()
-                .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+        // given
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        server = CommunityServerBuilder.server( logProvider )
+                .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .withNonResolvableTuningFile()
-                .withLogging( logging )
                 .build();
+
+        // when
         server.start();
 
-        String logDump = logging.toString();
-        assertThat( logDump,
-                containsString( String.format( "The specified file for database performance tuning properties [" ) ) );
-        assertThat( logDump, containsString( String.format( "] does not exist." ) ) );
+        // then
+        logProvider.assertContainsMessageContaining( "Config file [%s] does not exist." );
+    }
 
-        server.stop();
+    @After
+    public void cleanup()
+    {
+        if( server != null )
+        {
+            server.stop();
+        }
     }
 }

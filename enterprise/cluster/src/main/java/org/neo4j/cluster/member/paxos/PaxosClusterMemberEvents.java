@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import sun.misc.BASE64Encoder;
+
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
@@ -45,14 +47,14 @@ import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.protocol.snapshot.Snapshot;
 import org.neo4j.cluster.protocol.snapshot.SnapshotProvider;
+import org.neo4j.function.Predicate;
 import org.neo4j.helpers.Function2;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.Predicates.in;
 import static org.neo4j.helpers.Predicates.not;
@@ -66,7 +68,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
 {
     private Cluster cluster;
     private AtomicBroadcast atomicBroadcast;
-    private StringLogger logger;
+    private Log log;
     protected AtomicBroadcastSerializer serializer;
     protected Iterable<ClusterMemberListener> listeners = Listeners.newListeners();
     private ClusterMembersSnapshot clusterMembersSnapshot;
@@ -82,7 +84,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
     private final NamedThreadFactory.Monitor namedThreadFactoryMonitor;
 
     public PaxosClusterMemberEvents( final Snapshot snapshot, Cluster cluster, Heartbeat heartbeat,
-                                    AtomicBroadcast atomicBroadcast, Logging logging,
+                                    AtomicBroadcast atomicBroadcast, LogProvider logProvider,
                                     Predicate<ClusterMembersSnapshot> validator,
                                     Function2<Iterable<MemberIsAvailable>, MemberIsAvailable,
                                     Iterable<MemberIsAvailable>> snapshotFilter,
@@ -97,7 +99,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
         this.lenientObjectInputStream = lenientObjectInputStream;
         this.lenientObjectOutputStream = lenientObjectOutputStream;
         this.namedThreadFactoryMonitor = namedThreadFactoryMonitor;
-        this.logger = logging.getMessagesLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
 
         clusterListener = new ClusterListenerImpl();
 
@@ -181,7 +183,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
         {
             clusterMembersSnapshot = ClusterMembersSnapshot.class.cast( input.readObject() );
 
-            if ( !snapshotValidator.accept( clusterMembersSnapshot ) )
+            if ( !snapshotValidator.test( clusterMembersSnapshot ) )
             {
                 executor.submit( new Runnable()
                 {
@@ -221,7 +223,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
             return Iterables.append( newMessage, Iterables.filter( new Predicate<MemberIsAvailable>()
             {
                 @Override
-                public boolean accept( MemberIsAvailable item )
+                public boolean test( MemberIsAvailable item )
                 {
                     return not( in( newMessage.getInstanceId() ) ).accept( item.getInstanceId() );
                 }
@@ -253,7 +255,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
             availableMembers = toList( filter( new Predicate<MemberIsAvailable>()
             {
                 @Override
-                public boolean accept( MemberIsAvailable item )
+                public boolean test( MemberIsAvailable item )
                 {
                     return !item.getInstanceId().equals( member );
                 }
@@ -265,7 +267,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
             availableMembers = toList( filter( new Predicate<MemberIsAvailable>()
             {
                 @Override
-                public boolean accept( MemberIsAvailable item )
+                public boolean test( MemberIsAvailable item )
                 {
                     boolean matchByUriOrId = item.getClusterUri().equals( member ) || item.getInstanceId().equals( id );
                     boolean matchByRole = item.getRole().equals( role );
@@ -285,7 +287,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
             return toList( Iterables.filter( new Predicate<MemberIsAvailable>()
             {
                 @Override
-                public boolean accept( MemberIsAvailable item )
+                public boolean test( MemberIsAvailable item )
                 {
                     return item.getInstanceId().equals( memberId );
                 }
@@ -360,7 +362,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
                     // Update snapshot
                     clusterMembersSnapshot.availableMember( memberIsAvailable );
 
-                    logger.info( "Snapshot:" + clusterMembersSnapshot.getCurrentAvailableMembers() );
+                    log.info( "Snapshot:" + clusterMembersSnapshot.getCurrentAvailableMembers() );
 
                     Listeners.notifyListeners( listeners, new Listeners.Notification<ClusterMemberListener>()
                     {
@@ -395,7 +397,9 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
             }
             catch ( Throwable t )
             {
-                logger.error( "Could not handle cluster member available message", t );
+
+                log.error( String.format( "Could not handle cluster member available message: %s (%d)",
+                        new BASE64Encoder().encode( payload.getBuf() ), payload.getLen() ), t );
             }
         }
     }

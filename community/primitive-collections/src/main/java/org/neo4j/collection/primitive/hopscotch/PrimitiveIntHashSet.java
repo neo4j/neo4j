@@ -62,6 +62,18 @@ public class PrimitiveIntHashSet extends AbstractIntHopScotchCollection<Object> 
         return HopScotchHashingAlgorithm.get( table, monitor, DEFAULT_HASHING, value ) == valueMarker;
     }
 
+    /**
+     * Prefer using {@link #contains(int)} - this method is identical and required by the {@link org.neo4j.function.IntPredicate} interface
+     *
+     * @param value the input argument
+     * @return true if the input argument matches the predicate, otherwise false
+     */
+    @Override
+    public boolean test( int value )
+    {
+        return HopScotchHashingAlgorithm.get( table, monitor, DEFAULT_HASHING, value ) == valueMarker;
+    }
+
     @Override
     public boolean accept( int value )
     {
@@ -90,7 +102,7 @@ public class PrimitiveIntHashSet extends AbstractIntHopScotchCollection<Object> 
 
     private static class IntKeyEquality implements PrimitiveIntVisitor<RuntimeException>
     {
-        private PrimitiveIntHashSet other;
+        private final PrimitiveIntHashSet other;
         private boolean equal = true;
 
         public IntKeyEquality( PrimitiveIntHashSet that )
@@ -135,5 +147,26 @@ public class PrimitiveIntHashSet extends AbstractIntHopScotchCollection<Object> 
         {
             return hash;
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        final StringBuilder builder = new StringBuilder( "{" );
+        visitKeys( new PrimitiveIntVisitor<RuntimeException>()
+        {
+            private int count;
+            @Override
+            public boolean visited( int value ) throws RuntimeException
+            {
+                if ( count++ > 0 )
+                {
+                    builder.append( "," );
+                }
+                builder.append( value );
+                return false;
+            }
+        } );
+        return builder.append( "}" ).toString();
     }
 }

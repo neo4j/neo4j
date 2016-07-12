@@ -161,7 +161,7 @@ public class BatchInsertionIT
 
     @Ignore
     @Test
-    public void testInsertionSpeed()
+    public void testInsertionSpeed() throws Exception
     {
         BatchInserter inserter = BatchInserters.inserter( dbRule.getStoreDirAbsolutePath() );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );

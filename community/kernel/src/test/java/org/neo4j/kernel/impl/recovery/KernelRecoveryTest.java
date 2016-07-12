@@ -19,27 +19,24 @@
  */
 package org.neo4j.kernel.impl.recovery;
 
-import java.io.File;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-
+import static org.neo4j.kernel.impl.transaction.LogMatchers.checkPoint;
 import static org.neo4j.kernel.impl.transaction.LogMatchers.commandEntry;
 import static org.neo4j.kernel.impl.transaction.LogMatchers.commitEntry;
 import static org.neo4j.kernel.impl.transaction.LogMatchers.containsExactly;
@@ -84,52 +81,12 @@ public class KernelRecoveryTest
                     startEntry( -1, -1 ),
                     commandEntry( node2, NodeCommand.class ),
                     commandEntry( ReadOperations.ANY_LABEL, NodeCountsCommand.class ),
-                    commitEntry( 3 )
+                    commitEntry( 3 ),
+
+                    // checkpoint
+                    checkPoint( new LogPosition(0, 250) )
                 )
         );
-    }
-
-    @Test
-    public void shouldBeAbleToApplyRecoveredTransactionsEvenIfIdGeneratorOpenedFine() throws Exception
-    {
-        // GIVEN
-        EphemeralFileSystemAbstraction fs = fsRule.get();
-        GraphDatabaseService db = newDB( fs );
-        long node1 = createNode( db );
-        long node2 = createNode( db );
-        deleteNode( db, node2 );
-        EphemeralFileSystemAbstraction crashedFs = fs.snapshot();
-        db.shutdown();
-        repairIdGenerator( crashedFs,
-                new File( storeDir, NeoStore.DEFAULT_NAME + StoreFactory.NODE_STORE_NAME + ".id" ) );
-
-        // WHEN
-        db = newDB( crashedFs );
-        try ( Transaction tx = db.beginTx() )
-        {
-            // THEN we have this silly check, although the actual assertion is that recovery didn't blow up
-            db.getNodeById( node1 );
-            tx.success();
-        }
-        finally
-        {
-            db.shutdown();
-        }
-    }
-
-    private void deleteNode( GraphDatabaseService db, long node )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.getNodeById( node ).delete();
-            tx.success();
-        }
-    }
-
-    private void repairIdGenerator( FileSystemAbstraction fs, File file )
-    {
-        fs.deleteFile( file );
-        IdGeneratorImpl.createGenerator( fs, file, 1 );
     }
 
     private GraphDatabaseService newDB( EphemeralFileSystemAbstraction fs )
@@ -137,7 +94,7 @@ public class KernelRecoveryTest
         fs.mkdirs( storeDir );
         return new TestGraphDatabaseFactory()
                     .setFileSystem( fs )
-                    .newImpermanentDatabase( storeDir.getAbsolutePath() );
+                    .newImpermanentDatabase( storeDir );
     }
 
     private long createNode( GraphDatabaseService db )

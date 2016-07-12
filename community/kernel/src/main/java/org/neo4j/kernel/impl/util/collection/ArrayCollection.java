@@ -211,4 +211,12 @@ public class ArrayCollection<T> implements Collection<T>
         }
         size = 0;
     }
+
+    @Override
+    public String toString()
+    {
+        return "ArrayCollection{" +
+               "array=" + Arrays.toString( array ) +
+               '}';
+    }
 }

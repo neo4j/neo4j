@@ -22,9 +22,10 @@ package org.neo4j.kernel.ha;
 import java.io.IOException;
 
 import org.neo4j.com.TxChecksumVerifier;
-import org.neo4j.function.primitive.FunctionFromPrimitiveLongToPrimitiveLong;
+import org.neo4j.function.ThrowingLongUnaryOperator;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Used on the master to verify that slaves are using the same logical database as the master is running. This is done
@@ -32,13 +33,13 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class BranchDetectingTxVerifier implements TxChecksumVerifier
 {
-    private final StringLogger logger;
-    private final FunctionFromPrimitiveLongToPrimitiveLong<IOException> txChecksumLookup;
+    private final Log log;
+    private final ThrowingLongUnaryOperator<IOException> txChecksumLookup;
 
-    public BranchDetectingTxVerifier( StringLogger logger,
-            FunctionFromPrimitiveLongToPrimitiveLong<IOException> txChecksumLookup )
+    public BranchDetectingTxVerifier( LogProvider logProvider,
+                                      ThrowingLongUnaryOperator<IOException> txChecksumLookup )
     {
-        this.logger = logger;
+        this.log = logProvider.getLog( getClass() );
         this.txChecksumLookup = txChecksumLookup;
     }
 
@@ -52,7 +53,7 @@ public class BranchDetectingTxVerifier implements TxChecksumVerifier
         long readChecksum;
         try
         {
-            readChecksum = txChecksumLookup.apply( txId );
+            readChecksum = txChecksumLookup.applyAsLong( txId );
         }
         catch ( NoSuchTransactionException e )
         {
@@ -66,7 +67,7 @@ public class BranchDetectingTxVerifier implements TxChecksumVerifier
         }
         catch ( IOException e )
         {
-            logger.error( "Couldn't verify checksum for " + stringify( txId, checksum ), e );
+            log.error( "Couldn't verify checksum for " + stringify( txId, checksum ), e );
             throw new BranchedDataException( "Unable to perform a mandatory sanity check due to an IO error.", e );
         }
 

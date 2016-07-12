@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+
+import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -33,7 +34,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 
@@ -42,6 +42,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -317,8 +318,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         try
         {
             getTransaction().success();
-            //noinspection deprecation
-            getTransaction().finish();
+            getTransaction().close();
             fail( "deleting node with relationship should not commit." );
         }
         catch ( Exception e )
@@ -435,7 +435,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         // test remove property
         assertEquals( int1, rel1.removeProperty( key1 ) );
         assertEquals( string1, rel2.removeProperty( key1 ) );
-        // test remove of non exsisting property
+        // test remove of non existing property
         try
         {
             if ( rel2.removeProperty( key1 ) != null )
@@ -559,6 +559,42 @@ public class TestRelationship extends AbstractNeo4jTestCase
         assertTrue( rel1.hasProperty( key1 ) );
         assertTrue( rel1.hasProperty( key2 ) );
         assertTrue( rel1.hasProperty( key3 ) );
+
+        Map<String, Object> properties = rel1.getAllProperties();
+        assertTrue( properties.get( key1 ).equals( int1 ) );
+        assertTrue( properties.get( key2 ).equals( int2 ) );
+        assertTrue( properties.get( key3 ).equals( string ) );
+        properties = rel1.getProperties( key1, key2 );
+        assertTrue( properties.get( key1 ).equals( int1 ) );
+        assertTrue( properties.get( key2 ).equals( int2 ) );
+        assertFalse( properties.containsKey( key3 ) );
+
+
+        properties = node1.getProperties();
+        assertTrue( properties.isEmpty() );
+
+        try
+        {
+            String[] names = null;
+            node1.getProperties( names );
+            fail();
+        }
+        catch ( NullPointerException e )
+        {
+            // Ok
+        }
+
+        try
+        {
+            String[] names = new String[]{null};
+            node1.getProperties( names );
+            fail();
+        }
+        catch ( NullPointerException e )
+        {
+            // Ok
+        }
+
         try
         {
             rel1.removeProperty( key3 );
@@ -626,8 +662,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         node1.delete();
         rel1.delete();
         getTransaction().failure();
-        //noinspection deprecation
-        getTransaction().finish();
+        getTransaction().close();
         setTransaction( getGraphDb().beginTx() );
         node1.delete();
         node2.delete();
@@ -639,7 +674,6 @@ public class TestRelationship extends AbstractNeo4jTestCase
     {
         Node n1 = getGraphDb().createNode();
         newTransaction();
-        clearCache();
         n1 = getGraphDb().getNodeById( n1.getId() );
         Node n2 = getGraphDb().createNode();
         n1.createRelationshipTo( n2, MyRelTypes.TEST );
@@ -778,7 +812,6 @@ public class TestRelationship extends AbstractNeo4jTestCase
             neighbor.createRelationshipTo( hub, innie );
         }
         commit();
-        clearCache();
 
         newTransaction();
         hub = graphDB.getNodeById( hub.getId() );
@@ -813,7 +846,6 @@ public class TestRelationship extends AbstractNeo4jTestCase
             expectedCount++;
         }
         newTransaction();
-        clearCache();
         for ( int i = 0; i < 50; i++ )
         {
             node1.createRelationshipTo( node2, TEST );
@@ -836,7 +868,6 @@ public class TestRelationship extends AbstractNeo4jTestCase
             node.createRelationshipTo( otherNode, types[i%types.length] );
         }
         newTransaction();
-        clearCache();
         int delCount = 0;
         int loopCount = 0;
         while ( delCount < count )
@@ -885,9 +916,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     public void createAndClearCacheBeforeCommit()
     {
         Node node = getGraphDb().createNode();
-        clearCache();
         node.createRelationshipTo( getGraphDb().createNode(), TEST );
-        clearCache();
         assertEquals( 1, IteratorUtil.count( node.getRelationships() ) );
     }
 
@@ -895,9 +924,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     public void setPropertyAndClearCacheBeforeCommit() throws Exception
     {
         Node node = getGraphDb().createNode();
-        clearCache();
         node.setProperty( "name", "Test" );
-        clearCache();
         assertEquals( "Test", node.getProperty( "name" ) );
     }
 
@@ -919,7 +946,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     public void shouldLoadAllRelationships() throws Exception
     {
         // GIVEN
-        GraphDatabaseAPI db = getGraphDbAPI();
+        GraphDatabaseService db = getGraphDbAPI();
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
@@ -932,7 +959,6 @@ public class TestRelationship extends AbstractNeo4jTestCase
             tx.success();
         }
         // WHEN
-        clearCache();
         int one, two;
         try ( Transaction tx = db.beginTx() )
         {
@@ -984,7 +1010,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         }
     }
 
-    @Test( expected = IllegalStateException.class )
+    @Test(expected = NotFoundException.class)
     public void deletionOfAlreadyDeletedRelationshipShouldThrow()
     {
         // Given
@@ -1005,7 +1031,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         // When
         try ( Transaction tx = db.beginTx() )
         {
-            relationship.delete(); // should throw IllegalStateException as this relationship is already deleted
+            relationship.delete();
             tx.success();
         }
     }

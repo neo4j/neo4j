@@ -20,17 +20,22 @@
 package org.neo4j.server.web.logging;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.SystemUtils;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
-import org.neo4j.kernel.impl.util.Charsets;
+import org.neo4j.function.ThrowingSupplier;
+import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.util.Charsets;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.ServerStartupException;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.helpers.FunctionalTestHelper;
@@ -43,27 +48,25 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.Settings.osIsWindows;
+import static org.junit.Assume.assumeThat;
 import static org.neo4j.io.fs.FileUtils.readTextFile;
-import static org.neo4j.test.AssertEventually.Condition;
-import static org.neo4j.test.AssertEventually.assertEventually;
+import static org.neo4j.test.Assert.assertEventually;
 import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 
 public class HTTPLoggingDocIT extends ExclusiveServerTestBase
 {
+    @Rule public ExpectedException exception = ExpectedException.none();
+
     @Test
     public void givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses() throws Exception
     {
         // given
-        File logDirectory = TargetDirectory.forTest( this.getClass() ).cleanDirectory(
+        File logDirectory = testDirectory.directory(
                 "givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses-logdir" );
         FileUtils.forceMkdir( logDirectory );
-        final File confDir = TargetDirectory.forTest( this.getClass() ).cleanDirectory(
+        final File confDir = testDirectory.directory(
                 "givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses-confdir" );
         FileUtils.forceMkdir( confDir );
 
@@ -73,7 +76,7 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
         NeoServer server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
                 .withProperty( Configurator.HTTP_LOGGING, "false" )
                 .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
-                .usingDatabaseDir( TargetDirectory.forTest( this.getClass() ).cleanDirectory(
+                .usingDatabaseDir( testDirectory.directory(
                         "givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses-dbdir"
                 ).getAbsolutePath() )
                 .build();
@@ -83,13 +86,14 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
             FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server );
 
             // when
-            String query = "?implicitlyDisabled" + UUID.randomUUID().toString();
+            String query = "?implicitlyDisabled" + randomString();
             JaxRsResponse response = new RestRequest().get( functionalTestHelper.webAdminUri() + query );
-            assertEquals( 200, response.getStatus() );
+            assertThat( response.getStatus(), is( 200 ) );
             response.close();
 
             // then
-            assertFalse( occursIn( query, new File( logDirectory, "http.log" ) ) );
+            File httpLog = new File( logDirectory, "http.log" );
+            assertThat( httpLog.exists(), is( false ) );
         }
         finally
         {
@@ -101,22 +105,22 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
     public void givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess() throws Exception
     {
         // given
-        final File logDirectory = TargetDirectory.forTest( this.getClass() ).cleanDirectory(
-                "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-logdir" );
+        final File logDirectory =
+                testDirectory.directory( "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-logdir" );
         FileUtils.forceMkdir( logDirectory );
-        final File confDir = TargetDirectory.forTest( this.getClass() ).cleanDirectory(
-                "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-confdir" );
+        final File confDir =
+                testDirectory.directory( "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-confdir" );
         FileUtils.forceMkdir( confDir );
 
         final File configFile = HTTPLoggingPreparednessRuleTest.createConfigFile(
                 HTTPLoggingPreparednessRuleTest.createLogbackConfigXml( logDirectory ), confDir );
 
-        final String query = "?explicitlyEnabled=" + UUID.randomUUID().toString();
+        final String query = "?explicitlyEnabled=" + randomString();
 
         NeoServer server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
                 .withProperty( Configurator.HTTP_LOGGING, "true" )
                 .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
-                .usingDatabaseDir( TargetDirectory.forTest( this.getClass() ).cleanDirectory(
+                .usingDatabaseDir( testDirectory.directory(
                         "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-dbdir"
                 ).getAbsolutePath() )
                 .build();
@@ -128,11 +132,12 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
 
             // when
             JaxRsResponse response = new RestRequest().get( functionalTestHelper.webAdminUri() + query );
-            assertEquals( 200, response.getStatus() );
+            assertThat( response.getStatus(), is( 200 ) );
             response.close();
 
             // then
-            assertEventually( "request appears in log", 5, logContains( logDirectory, query ) );
+            File httpLog = new File( logDirectory, "http.log" );
+            assertEventually( "request appears in log", fileContentSupplier( httpLog ), containsString( query ), 5, TimeUnit.SECONDS );
         }
         finally
         {
@@ -144,11 +149,9 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
     public void givenDebugContentLoggingEnabledShouldLogContent() throws Exception
     {
         // given
-        final File logDirectory = TargetDirectory.forTest( this.getClass() ).cleanDirectory(
-                "givenDebugContentLoggingEnabledShouldLogContent-logdir" );
+        final File logDirectory = testDirectory.directory( "givenDebugContentLoggingEnabledShouldLogContent-logdir" );
         FileUtils.forceMkdir( logDirectory );
-        final File confDir = TargetDirectory.forTest( this.getClass() ).cleanDirectory(
-                "givenDebugContentLoggingEnabledShouldLogContent-confdir" );
+        final File confDir = testDirectory.directory( "givenDebugContentLoggingEnabledShouldLogContent-confdir" );
         FileUtils.forceMkdir( confDir );
 
         final File configFile = HTTPLoggingPreparednessRuleTest.createConfigFile(
@@ -158,9 +161,8 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
                 .withProperty( Configurator.HTTP_LOGGING, "true" )
                 .withProperty( Configurator.HTTP_CONTENT_LOGGING, "true" )
                 .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
-                .usingDatabaseDir( TargetDirectory.forTest( this.getClass() ).cleanDirectory(
-                        "givenDebugContentLoggingEnabledShouldLogContent-dbdir"
-                ).getAbsolutePath() )
+                .usingDatabaseDir( testDirectory.directory( "givenDebugContentLoggingEnabledShouldLogContent-dbdir" )
+                        .getAbsolutePath() )
                 .build();
 
         try
@@ -169,11 +171,12 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
 
             // when
             HTTP.Response req = HTTP.POST( server.baseUri().resolve( "/db/data/node" ).toString(), rawPayload( "{\"name\":\"Hello, world!\"}" ) );
-            assertEquals( 201, req.status() );
+            assertThat( req.status(), is( 201 ) );
 
             // then
-            assertEventually( "request appears in log", 5, logContains( logDirectory, "Hello, world!" ) );
-            assertEventually( "request appears in log", 5, logContains( logDirectory, "metadata" ) );
+            File httpLog = new File( logDirectory, "http.log" );
+            assertEventually( "request appears in log", fileContentSupplier( httpLog ), containsString( "Hello, world!" ), 5, TimeUnit.SECONDS );
+            assertEventually( "request appears in log", fileContentSupplier( httpLog ), containsString( "metadata" ), 5, TimeUnit.SECONDS );
         }
         finally
         {
@@ -185,7 +188,7 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
     public void givenConfigurationWithUnwritableLogDirectoryShouldFailToStartServer() throws Exception
     {
         // given
-        final File confDir = TargetDirectory.forTest( this.getClass() ).cleanDirectory( "confdir" );
+        final File confDir = testDirectory.directory( "confdir" );
         final File unwritableLogDir = createUnwritableDirectory();
 
         final File configFile = HTTPLoggingPreparednessRuleTest.createConfigFile(
@@ -195,40 +198,29 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
                 Configurator.HTTP_LOGGING, "true",
                 Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() ) );
 
+        // expect
+        exception.expect( InvalidSettingException.class );
+
+        // when
         NeoServer server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
                 .withPreflightTasks( new EnsurePreparedForHttpLogging( config ) )
                 .withProperty( Configurator.HTTP_LOGGING, "true" )
                 .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
                 .usingDatabaseDir( confDir.getAbsolutePath() )
                 .build();
-
-        // when
-        try
-        {
-            server.start();
-            fail( "should have thrown exception" );
-        }
-        catch ( ServerStartupException e )
-        {
-            // then
-            assertThat( e.getMessage(),
-                    containsString( String.format( "HTTP log directory [%s]",
-                            unwritableLogDir.getAbsolutePath() ) ) );
-        }
-        finally
-        {
-            server.stop();
-        }
     }
 
-    private Condition logContains( final File logDirectory, final String query )
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
+    private ThrowingSupplier<String, IOException> fileContentSupplier( final File file )
     {
-        return new Condition()
+        return new ThrowingSupplier<String, IOException>()
         {
             @Override
-            public boolean evaluate()
+            public String get() throws IOException
             {
-                return occursIn( query, new File( logDirectory, "http.log" ) );
+                return readTextFile( file, Charsets.UTF_8 );
             }
         };
     }
@@ -236,40 +228,26 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
     private File createUnwritableDirectory()
     {
         File file;
-        if ( osIsWindows() )
+        if ( SystemUtils.IS_OS_WINDOWS )
         {
-            file = new File( "\\\\" + UUID.randomUUID().toString() + "\\http.log" );
+            file = new File( "\\\\" + randomString() + "\\http.log" );
         }
         else
         {
-            TargetDirectory targetDirectory = TargetDirectory.forTest( this.getClass() );
+            file = testDirectory.file( "unwritable-" + randomString() );
+            assertThat( "create directory to be unwritable", file.mkdirs(), is( true ) );
 
-            file = targetDirectory.file( "unwritable-" + System.currentTimeMillis() );
-            assertTrue( "create directory to be unwritable", file.mkdirs() );
-            assertTrue( "mark directory as unwritable", file.setWritable( false, false ) );
+            // Assume that we can change the file permissions, and that permissions are respected.
+            // If these checks fail, then we cannot use the current file system for this test, so we bail.
+            assumeThat( "mark directory as unwritable", file.setWritable( false, false ), is( true ) );
+            assumeThat( "directory permissions are respected", file.canWrite(), is( false ) );
         }
 
         return file;
     }
 
-    private boolean occursIn( String lookFor, File file )
+    private String randomString()
     {
-        if ( !file.exists() )
-        {
-            return false;
-        }
-
-        try
-        {
-            String s = readTextFile( file, Charsets.UTF_8 );
-            System.out.println(s);
-            System.out.println();
-            System.out.println("Does not contain: " + lookFor);
-            return s.contains( lookFor );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        return UUID.randomUUID().toString();
     }
 }

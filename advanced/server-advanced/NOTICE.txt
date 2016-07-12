@@ -26,6 +26,7 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Apache Commons Configuration
+  Apache Commons Lang
   Commons BeanUtils
   Commons Digester
   Commons IO
@@ -44,6 +45,7 @@ Apache Software License, Version 2.0
   Jetty :: Webapp Application Support
   Jetty :: XML utilities
   Lucene Core
+  Netty/All-in-One
   opencsv
   parboiled-core
   parboiled-scala
@@ -53,12 +55,13 @@ BSD - Scala License
   Scala Library
 
 BSD License
-  Commons Compiler
-  Janino
+  ASM Core
   Scala Compiler
+  scala-parser-combinators
 
 Bouncy Castle License
-  Legion of the Bouncy Castle Java Cryptography APIs
+  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
+  Bouncy Castle Provider
 
 Common Development and Distribution License Version 1.1
   Java Servlet API

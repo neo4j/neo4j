@@ -19,11 +19,11 @@
  */
 package org.neo4j.consistency.checking;
 
-import java.util.ArrayList;
-import java.util.Collection;
-
 import org.junit.Ignore;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Collection;
 
 import org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
 import org.neo4j.kernel.impl.store.PreAllocatedRecords;
@@ -45,7 +45,7 @@ public class NodeDynamicLabelOrphanChainStartCheckTest
 
     public NodeDynamicLabelOrphanChainStartCheckTest()
     {
-        super( new NodeDynamicLabelOrphanChainStartCheck(),  DynamicLabelConsistencyReport.class );
+        super( new NodeDynamicLabelOrphanChainStartCheck(), DynamicLabelConsistencyReport.class, new int[0] );
     }
 
     @Test @Ignore("2013-07-17 Revisit once we store sorted label ids")

@@ -25,7 +25,7 @@ import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 
-class LabelTokenRecordCheck
+public class LabelTokenRecordCheck
     extends TokenRecordCheck<LabelTokenRecord,ConsistencyReport.LabelTokenConsistencyReport>
 {
     @Override

@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb;
 
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -27,19 +28,21 @@ import java.io.IOException;
 
 import org.neo4j.test.LimitedFileSystemGraphDatabase;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.test.CleanupRule;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class RunOutOfDiskSpaceIT
 {
+    public final @Rule CleanupRule cleanup = new CleanupRule();
+
     @Test
     public void shouldPropagateIOExceptions() throws Exception
     {
@@ -55,42 +58,45 @@ public class RunOutOfDiskSpaceIT
             tx.success();
         }
 
-        long logVersion = db.getDependencyResolver().resolveDependency( NeoStore.class ).getCurrentLogVersion();
+        long logVersion = db.getDependencyResolver().resolveDependency( NeoStores.class ).getMetaDataStore()
+                            .getCurrentLogVersion();
 
         db.runOutOfDiskSpaceNao();
 
         // When
-        Transaction tx = db.beginTx();
-        db.createNode();
-        tx.success();
-
-        try
+        try ( Transaction tx = db.beginTx() )
         {
-            tx.close();
-            fail( "Expected tx finish to throw TransactionFailureException when filesystem is full." );
+            db.createNode();
+            tx.success();
         }
         catch ( TransactionFailureException e )
         {
             exceptionThrown = e;
         }
-
-        // Then
-        assertTrue( Exceptions.contains( exceptionThrown, IOException.class ) );
+        finally
+        {
+            Assert.assertNotNull( "Expected tx finish to throw TransactionFailureException when filesystem is full.",
+                    exceptionThrown );
+            assertTrue( Exceptions.contains( exceptionThrown, IOException.class ) );
+        }
 
         db.somehowGainMoreDiskSpace(); // to help shutting down the db
         db.shutdown();
 
-        assertEquals( logVersion, new NeoStoreUtil( new File( storeDir ), db.getFileSystem() ).getLogVersion() );
+        PageCache pageCache = pageCacheRule.getPageCache( db.getFileSystem() );
+        File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        assertEquals( logVersion, MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION ) );
     }
 
     @Test
     public void shouldStopDatabaseWhenOutOfDiskSpace() throws Exception
     {
         // Given
-        TransactionFailureException errorCaught = null;
-
+        TransactionFailureException expectedCommitException = null;
+        TransactionFailureException expectedStartException = null;
         String storeDir = testDirectory.absolutePath();
-        LimitedFileSystemGraphDatabase db = new LimitedFileSystemGraphDatabase( storeDir );
+        LimitedFileSystemGraphDatabase db = cleanup.add( new LimitedFileSystemGraphDatabase( storeDir ) );
+
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -98,43 +104,52 @@ public class RunOutOfDiskSpaceIT
             tx.success();
         }
 
-        long logVersion = db.getDependencyResolver().resolveDependency( NeoStore.class ).getCurrentLogVersion();
+        long logVersion = db.getDependencyResolver().resolveDependency( NeoStores.class ).getMetaDataStore()
+                            .getCurrentLogVersion();
 
         db.runOutOfDiskSpaceNao();
 
-        Transaction tx = db.beginTx();
-        db.createNode();
-        tx.success();
-
-        try
+        try ( Transaction tx = db.beginTx() )
         {
-            tx.close();
-            fail( "Expected tx finish to throw TransactionFailureException when filesystem is full." );
+            db.createNode();
+            tx.success();
         }
         catch ( TransactionFailureException e )
         {
-            // Expected
+            expectedCommitException = e;
+        }
+        finally
+        {
+            Assert.assertNotNull( "Expected tx finish to throw TransactionFailureException when filesystem is full.",
+                    expectedCommitException );
         }
 
         // When
-        try
+        try ( Transaction transaction = db.beginTx() )
         {
-            db.beginTx();
             fail( "Expected tx begin to throw TransactionFailureException when tx manager breaks." );
         }
         catch ( TransactionFailureException e )
         {
-            errorCaught = e;
+            expectedStartException = e;
+        }
+        finally
+        {
+            Assert.assertNotNull( "Expected tx begin to throw TransactionFailureException when tx manager breaks.",
+                    expectedStartException );
         }
 
         // Then
-        assertThat( errorCaught.getCause(), is( instanceOf( org.neo4j.kernel.api.exceptions.TransactionFailureException.class ) ) );
-
         db.somehowGainMoreDiskSpace(); // to help shutting down the db
         db.shutdown();
 
-        assertEquals( logVersion, new NeoStoreUtil( new File( storeDir ), db.getFileSystem() ).getLogVersion() );
+        PageCache pageCache = pageCacheRule.getPageCache( db.getFileSystem() );
+        File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        assertEquals( logVersion, MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION ) );
     }
 
-    public final @Rule TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
 }

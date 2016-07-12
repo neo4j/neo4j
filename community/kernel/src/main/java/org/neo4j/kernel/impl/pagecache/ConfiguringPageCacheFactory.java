@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import java.lang.management.ManagementFactory;
-import java.lang.reflect.Method;
-
+import org.neo4j.kernel.impl.util.OsBeanUtil;
+import org.neo4j.helpers.Service;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
@@ -29,24 +29,53 @@ import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_swapper;
 
 public class ConfiguringPageCacheFactory
 {
     private final PageSwapperFactory swapperFactory;
     private final Config config;
     private final PageCacheTracer tracer;
+    private final Log log;
     private PageCache pageCache;
 
     public ConfiguringPageCacheFactory(
-            FileSystemAbstraction fs, Config config, PageCacheTracer tracer )
+            FileSystemAbstraction fs, Config config, PageCacheTracer tracer, Log log )
     {
-        this.swapperFactory = new SingleFilePageSwapperFactory( fs );
+        this.swapperFactory = createAndConfigureSwapperFactory( fs, config );
         this.config = config;
         this.tracer = tracer;
+        this.log = log;
+    }
+
+    private PageSwapperFactory createAndConfigureSwapperFactory( FileSystemAbstraction fs, Config config )
+    {
+        String desiredImplementation = config.get( pagecache_swapper );
+
+        if ( desiredImplementation != null )
+        {
+            for ( PageSwapperFactory factory : Service.load( PageSwapperFactory.class ) )
+            {
+                if ( factory.implementationName().equals( desiredImplementation ) )
+                {
+                    factory.setFileSystemAbstraction( fs );
+                    if ( factory instanceof ConfigurablePageSwapperFactory )
+                    {
+                        ConfigurablePageSwapperFactory configurableFactory = (ConfigurablePageSwapperFactory) factory;
+                        configurableFactory.configure( config );
+                    }
+                    return factory;
+                }
+            }
+        }
+
+        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
+        factory.setFileSystemAbstraction( fs );
+        return factory;
     }
 
     public synchronized PageCache getOrCreatePageCache()
@@ -60,54 +89,53 @@ public class ConfiguringPageCacheFactory
 
     protected PageCache createPageCache()
     {
+        int cachePageSize = calculatePageSize( config, swapperFactory );
+        int maxPages = calculateMaxPages( config, cachePageSize );
         return new MuninnPageCache(
                 swapperFactory,
-                calculateMaxPages( config ),
-                calculatePageSize( config ),
+                maxPages,
+                cachePageSize,
                 tracer );
     }
 
-    public int calculateMaxPages( Config config )
+    public int calculateMaxPages( Config config, int cachePageSize )
     {
-        long availableMemory = config.get( pagecache_memory );
-        long pageSize = config.get( mapped_memory_page_size );
-        long pageCount = availableMemory / pageSize;
-        return (int) Math.min( Integer.MAX_VALUE, pageCount );
+        long pageCacheMemory = config.get( pagecache_memory );
+        long maxHeap = Runtime.getRuntime().maxMemory();
+        if ( pageCacheMemory / maxHeap > 100 )
+        {
+            log.warn( "The memory configuration looks unbalanced. It is generally recommended to have at least " +
+                      "10 KiB of heap memory, for every 1 MiB of page cache memory. The current configuration is " +
+                      "allocating %s bytes for the page cache, and %s bytes for the heap.", pageCacheMemory, maxHeap );
+        }
+        long pageCount = pageCacheMemory / cachePageSize;
+        return (int) Math.min( Integer.MAX_VALUE - 2000, pageCount );
     }
 
-    public int calculatePageSize( Config config )
+    public int calculatePageSize( Config config, PageSwapperFactory swapperFactory )
     {
-        return config.get( mapped_memory_page_size ).intValue();
+        int pageSwappersPageSizeHint = swapperFactory.getCachePageSizeHint();
+        int configuredPageSize = config.get( mapped_memory_page_size ).intValue();
+        if ( configuredPageSize == 0 || swapperFactory.isCachePageSizeHintStrict() )
+        {
+            return pageSwappersPageSizeHint;
+        }
+        return configuredPageSize;
     }
 
-    public void dumpConfiguration( StringLogger messagesLog )
+    public void dumpConfiguration()
     {
-        long totalPhysicalMemory = totalPhysicalMemory();
-        String totalPhysicalMemMb = totalPhysicalMemory == -1? "?" : "" + totalPhysicalMemory / 1024 / 1024;
-        long maxVmUsageMb = Runtime.getRuntime().maxMemory() / 1024 / 1024;
-        long maxPages = calculateMaxPages( config );
-        long pageSize = calculatePageSize( config );
-        long pageCacheMb = (maxPages * pageSize) / 1024 / 1024;
+        int cachePageSize = calculatePageSize( config, swapperFactory );
+        long maxPages = calculateMaxPages( config, cachePageSize );
+        long totalPhysicalMemory = OsBeanUtil.getTotalPhysicalMemory();
+        String totalPhysicalMemMb = (totalPhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE)
+                                    ? "?" : "" + ByteUnit.Byte.toMebiBytes( totalPhysicalMemory );
+        long maxVmUsageMb = ByteUnit.Byte.toMebiBytes( Runtime.getRuntime().maxMemory() );
+        long pageCacheMb = ByteUnit.Byte.toMebiBytes(maxPages * cachePageSize);
         String msg = "Physical mem: " + totalPhysicalMemMb + " MiB," +
                      " Heap size: " + maxVmUsageMb + " MiB," +
                      " Page cache size: " + pageCacheMb + " MiB.";
 
-        messagesLog.info( msg );
-    }
-
-    public long totalPhysicalMemory()
-    {
-        try
-        {
-            Class<?> beanClass = Thread.currentThread().getContextClassLoader().loadClass(
-                    "com.sun.management.OperatingSystemMXBean" );
-            Method method = beanClass.getMethod( "getTotalPhysicalMemorySize" );
-            return (long) method.invoke( ManagementFactory.getOperatingSystemMXBean() );
-        }
-        catch ( Exception | LinkageError e )
-        {
-            // We tried, but at this point we actually have no idea.
-            return -1;
-        }
+        log.info( msg );
     }
 }

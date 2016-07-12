@@ -24,27 +24,32 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.InvalidTransactionTypeException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.helpers.Function;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -71,13 +76,13 @@ import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 public class SchemaImpl implements Schema
 {
-    private final ThreadToStatementContextBridge statementContextProvider;
+    private final ThreadToStatementContextBridge statementContextSupplier;
     private final InternalSchemaActions actions;
 
-    public SchemaImpl( ThreadToStatementContextBridge statementContextProvider )
+    public SchemaImpl( ThreadToStatementContextBridge statementContextSupplier )
     {
-        this.statementContextProvider = statementContextProvider;
-        this.actions = new GDBSchemaActions( statementContextProvider );
+        this.statementContextSupplier = statementContextSupplier;
+        this.actions = new GDBSchemaActions( statementContextSupplier );
     }
 
     @Override
@@ -93,7 +98,7 @@ public class SchemaImpl implements Schema
     {
         assertInUnterminatedTransaction();
 
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = statementContextSupplier.get() )
         {
             List<IndexDefinition> definitions = new ArrayList<>();
             int labelId = statement.readOperations().labelGetForName( label.name() );
@@ -112,7 +117,7 @@ public class SchemaImpl implements Schema
     {
         assertInUnterminatedTransaction();
 
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = statementContextSupplier.get() )
         {
             List<IndexDefinition> definitions = new ArrayList<>();
             addDefinitions( definitions, statement.readOperations(), statement.readOperations().indexesGetAll(), false );
@@ -124,7 +129,7 @@ public class SchemaImpl implements Schema
     private void addDefinitions( List<IndexDefinition> definitions, final ReadOperations statement,
                                  Iterator<IndexDescriptor> indexes, final boolean constraintIndex )
     {
-        addToCollection( map( new Function<IndexDescriptor, IndexDefinition>()
+        addToCollection( map( new Function<IndexDescriptor,IndexDefinition>()
         {
             @Override
             public IndexDefinition apply( IndexDescriptor rule )
@@ -204,7 +209,7 @@ public class SchemaImpl implements Schema
         assertInUnterminatedTransaction();
 
         String propertyKey = single( index.getPropertyKeys() );
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = statementContextSupplier.get() )
         {
             int labelId = statement.readOperations().labelGetForName( index.getLabel().name() );
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
@@ -246,7 +251,7 @@ public class SchemaImpl implements Schema
         assertInUnterminatedTransaction();
 
         String propertyKey = single( index.getPropertyKeys() );
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = statementContextSupplier.get() )
         {
             int labelId = statement.readOperations().labelGetForName( index.getLabel().name() );
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
@@ -276,7 +281,7 @@ public class SchemaImpl implements Schema
     {
         assertInUnterminatedTransaction();
 
-        return new BaseConstraintCreator( actions, label );
+        return new BaseNodeConstraintCreator( actions, label );
     }
 
     @Override
@@ -284,10 +289,10 @@ public class SchemaImpl implements Schema
     {
         assertInUnterminatedTransaction();
 
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = statementContextSupplier.get() )
         {
-            Iterator<UniquenessConstraint> constraints = statement.readOperations().constraintsGetAll();
-            return asConstraintDefinitions( statement.readOperations(), constraints );
+            Iterator<PropertyConstraint> constraints = statement.readOperations().constraintsGetAll();
+            return asConstraintDefinitions( constraints, statement.readOperations() );
         }
     }
 
@@ -296,65 +301,63 @@ public class SchemaImpl implements Schema
     {
         assertInUnterminatedTransaction();
 
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = statementContextSupplier.get() )
         {
             int labelId = statement.readOperations().labelGetForName( label.name() );
             if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
             {
                 return emptyList();
             }
-            Iterator<UniquenessConstraint> constraints = statement.readOperations().constraintsGetForLabel( labelId );
-            return asConstraintDefinitions( statement.readOperations(), constraints );
+            Iterator<NodePropertyConstraint> constraints = statement.readOperations().constraintsGetForLabel( labelId );
+            return asConstraintDefinitions( constraints, statement.readOperations() );
         }
     }
 
-    private Iterable<ConstraintDefinition> asConstraintDefinitions(
-            final ReadOperations readOperations, Iterator<UniquenessConstraint> constraints )
+    @Override
+    public Iterable<ConstraintDefinition> getConstraints( RelationshipType type )
     {
-        Iterator<ConstraintDefinition> definitions =
-                map( new Function<UniquenessConstraint, ConstraintDefinition>()
-                {
-                    @Override
-                    public ConstraintDefinition apply( UniquenessConstraint constraint )
-                    {
-                        int labelId = constraint.label();
-                        try
-                        {
-                            Label label = label( readOperations.labelGetName( labelId ) );
-                            return new PropertyUniqueConstraintDefinition( actions, label,
-                                    readOperations.propertyKeyGetName( constraint.propertyKeyId() ) );
-                        }
-                        catch ( PropertyKeyIdNotFoundKernelException e )
-                        {
-                            throw new ThisShouldNotHappenError( "Mattias", "Couldn't find property name for " +
-                                                                           constraint.propertyKeyId(), e );
-                        }
-                        catch ( LabelNotFoundKernelException e )
-                        {
-                            throw new ThisShouldNotHappenError( "Stefan",
-                                                                "Couldn't find label name for label id " +
-                                                                labelId, e );
-                        }
-                    }
-                }, constraints );
+        assertInUnterminatedTransaction();
 
-        // Intentionally iterator over it so that we can close the statement context within this method
-        return asCollection( definitions );
+        try ( Statement statement = statementContextSupplier.get() )
+        {
+            int typeId = statement.readOperations().relationshipTypeGetForName( type.name() );
+            if ( typeId == KeyReadOperations.NO_SUCH_RELATIONSHIP_TYPE )
+            {
+                return emptyList();
+            }
+            Iterator<RelationshipPropertyConstraint> constraints =
+                    statement.readOperations().constraintsGetForRelationshipType( typeId );
+            return asConstraintDefinitions( constraints, statement.readOperations() );
+        }
+    }
+
+    private Iterable<ConstraintDefinition> asConstraintDefinitions( Iterator<? extends PropertyConstraint> constraints,
+            ReadOperations readOperations )
+    {
+        // Intentionally create an eager list so that used statement can be closed
+        List<ConstraintDefinition> definitions = new ArrayList<>();
+
+        while ( constraints.hasNext() )
+        {
+            PropertyConstraint constraint = constraints.next();
+            definitions.add( constraint.asConstraintDefinition( actions, readOperations ) );
+        }
+
+        return definitions;
     }
 
     private static class GDBSchemaActions implements InternalSchemaActions
     {
-
-        private final ThreadToStatementContextBridge ctxProvider;
-        public GDBSchemaActions( ThreadToStatementContextBridge ctxProvider )
+        private final ThreadToStatementContextBridge ctxSupplier;
+        public GDBSchemaActions( ThreadToStatementContextBridge ctxSupplier )
         {
-            this.ctxProvider = ctxProvider;
+            this.ctxSupplier = ctxSupplier;
         }
 
         @Override
         public IndexDefinition createIndexDefinition( Label label, String propertyKey )
         {
-            try ( Statement statement = ctxProvider.instance() )
+            try ( Statement statement = ctxSupplier.get() )
             {
                 try
                 {
@@ -363,17 +366,7 @@ public class SchemaImpl implements Schema
                     statement.schemaWriteOperations().indexCreate( labelId, propertyKeyId );
                     return new IndexDefinitionImpl( this, label, propertyKey, false );
                 }
-                catch ( AlreadyIndexedException e )
-                {
-                    throw new ConstraintViolationException(
-                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
-                }
-                catch ( AlreadyConstrainedException e )
-                {
-                    throw new ConstraintViolationException(
-                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
-                }
-                catch ( AddIndexFailureException e )
+                catch ( AlreadyIndexedException | AlreadyConstrainedException e )
                 {
                     throw new ConstraintViolationException(
                             e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
@@ -396,7 +389,7 @@ public class SchemaImpl implements Schema
         @Override
         public void dropIndexDefinitions( Label label, String propertyKey )
         {
-            try ( Statement statement = ctxProvider.instance() )
+            try ( Statement statement = ctxSupplier.get() )
             {
                 try
                 {
@@ -425,26 +418,16 @@ public class SchemaImpl implements Schema
         @Override
         public ConstraintDefinition createPropertyUniquenessConstraint( Label label, String propertyKey )
         {
-            try ( Statement statement = ctxProvider.instance() )
+            try ( Statement statement = ctxSupplier.get() )
             {
                 try
                 {
                     int labelId = statement.schemaWriteOperations().labelGetOrCreateForName( label.name() );
                     int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
-                    statement.schemaWriteOperations().uniquenessConstraintCreate( labelId, propertyKeyId );
-                    return new PropertyUniqueConstraintDefinition( this, label, propertyKey );
+                    statement.schemaWriteOperations().uniquePropertyConstraintCreate( labelId, propertyKeyId );
+                    return new UniquenessConstraintDefinition( this, label, propertyKey );
                 }
-                catch ( AlreadyConstrainedException e )
-                {
-                    throw new ConstraintViolationException(
-                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
-                }
-                catch ( CreateConstraintFailureException e )
-                {
-                    throw new ConstraintViolationException(
-                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
-                }
-                catch ( AlreadyIndexedException e )
+                catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException e )
                 {
                     throw new ConstraintViolationException(
                             e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
@@ -465,18 +448,129 @@ public class SchemaImpl implements Schema
         }
 
         @Override
-        public void dropPropertyUniquenessConstraint( Label label, String propertyKey )
+        public ConstraintDefinition createPropertyExistenceConstraint( Label label, String propertyKey )
         {
-            try ( Statement statement = ctxProvider.instance() )
+            try ( Statement statement = ctxSupplier.get() )
             {
                 try
                 {
                     int labelId = statement.schemaWriteOperations().labelGetOrCreateForName( label.name() );
                     int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
-                    UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
+                    statement.schemaWriteOperations().nodePropertyExistenceConstraintCreate( labelId, propertyKeyId );
+                    return new NodePropertyExistenceConstraintDefinition( this, label, propertyKey );
+                }
+                catch ( AlreadyConstrainedException | CreateConstraintFailureException e )
+                {
+                    throw new ConstraintViolationException(
+                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+                }
+                catch ( IllegalTokenNameException e )
+                {
+                    throw new IllegalArgumentException( e );
+                }
+                catch ( TooManyLabelsException e )
+                {
+                    throw new IllegalStateException( e );
+                }
+                catch ( InvalidTransactionTypeKernelException e )
+                {
+                    throw new InvalidTransactionTypeException( e.getMessage(), e );
+                }
+            }
+        }
+
+        @Override
+        public ConstraintDefinition createPropertyExistenceConstraint( RelationshipType type, String propertyKey )
+                throws CreateConstraintFailureException, AlreadyConstrainedException
+        {
+            try ( Statement statement = ctxSupplier.get() )
+            {
+                try
+                {
+                    int typeId = statement.schemaWriteOperations().relationshipTypeGetOrCreateForName( type.name() );
+                    int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
+                    statement.schemaWriteOperations().relationshipPropertyExistenceConstraintCreate( typeId,
+                            propertyKeyId );
+                    return new RelationshipPropertyExistenceConstraintDefinition( this, type, propertyKey );
+                }
+                catch ( AlreadyConstrainedException | CreateConstraintFailureException e )
+                {
+                    throw new ConstraintViolationException(
+                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+                }
+                catch ( IllegalTokenNameException e )
+                {
+                    throw new IllegalArgumentException( e );
+                }
+                catch ( InvalidTransactionTypeKernelException e )
+                {
+                    throw new InvalidTransactionTypeException( e.getMessage(), e );
+                }
+            }
+        }
+
+        @Override
+        public void dropPropertyUniquenessConstraint( Label label, String propertyKey )
+        {
+            try ( Statement statement = ctxSupplier.get() )
+            {
+                try
+                {
+                    int labelId = statement.schemaWriteOperations().labelGetForName( label.name() );
+                    int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetForName( propertyKey );
+                    NodePropertyConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
                     statement.schemaWriteOperations().constraintDrop( constraint );
                 }
-                catch ( IllegalTokenNameException | TooManyLabelsException | DropConstraintFailureException e )
+                catch ( DropConstraintFailureException e )
+                {
+                    throw new ConstraintViolationException(
+                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+                }
+                catch ( InvalidTransactionTypeKernelException e )
+                {
+                    throw new ConstraintViolationException( e.getMessage(), e );
+                }
+            }
+        }
+
+        @Override
+        public void dropNodePropertyExistenceConstraint( Label label, String propertyKey )
+        {
+            try ( Statement statement = ctxSupplier.get() )
+            {
+                try
+                {
+                    int labelId = statement.schemaWriteOperations().labelGetForName( label.name() );
+                    int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetForName( propertyKey );
+                    NodePropertyConstraint constraint = new NodePropertyExistenceConstraint( labelId, propertyKeyId );
+                    statement.schemaWriteOperations().constraintDrop( constraint );
+                }
+                catch ( DropConstraintFailureException e )
+                {
+                    throw new ConstraintViolationException(
+                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+                }
+                catch ( InvalidTransactionTypeKernelException e )
+                {
+                    throw new ConstraintViolationException( e.getMessage(), e );
+                }
+            }
+        }
+
+        @Override
+        public void dropRelationshipPropertyExistenceConstraint( RelationshipType type, String propertyKey )
+        {
+            try ( Statement statement = ctxSupplier.get() )
+            {
+                try
+                {
+                    int typeId = statement.schemaWriteOperations().relationshipTypeGetForName( type.name() );
+                    int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetForName( propertyKey );
+                    RelationshipPropertyConstraint constraint = new RelationshipPropertyExistenceConstraint( typeId,
+                            propertyKeyId );
+                    statement.schemaWriteOperations().constraintDrop( constraint );
+                }
+                catch ( DropConstraintFailureException e )
                 {
                     throw new ConstraintViolationException(
                             e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
@@ -491,7 +585,7 @@ public class SchemaImpl implements Schema
         @Override
         public String getUserMessage( KernelException e )
         {
-            try ( Statement statement = ctxProvider.instance() )
+            try ( Statement statement = ctxSupplier.get() )
             {
                 return e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) );
             }
@@ -500,12 +594,12 @@ public class SchemaImpl implements Schema
         @Override
         public void assertInUnterminatedTransaction()
         {
-            ctxProvider.assertInUnterminatedTransaction();
+            ctxSupplier.assertInUnterminatedTransaction();
         }
-
     }
+
     private void assertInUnterminatedTransaction()
     {
-        statementContextProvider.assertInUnterminatedTransaction();
+        statementContextSupplier.assertInUnterminatedTransaction();
     }
 }

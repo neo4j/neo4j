@@ -25,52 +25,44 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 
-import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.core.TokenFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.kernel.impl.store.PropertyStore.decodeString;
 
-public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordStore<T> implements Store
+public abstract class TokenStore<RECORD extends TokenRecord, TOKEN extends Token> extends AbstractRecordStore<RECORD>
 {
-    public static abstract class Configuration
-        extends AbstractStore.Configuration
-    {
-
-    }
-
     public static final int NAME_STORE_BLOCK_SIZE = 30;
 
-    private DynamicStringStore nameStore;
+    private final DynamicStringStore nameStore;
+    private final TokenFactory<TOKEN> tokenFactory;
 
     public TokenStore(
-            File fileName,
+            File file,
             Config configuration,
             IdType idType,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger,
+            LogProvider logProvider,
             DynamicStringStore nameStore,
-            StoreVersionMismatchHandler versionMismatchHandler,
-            Monitors monitors )
+            TokenFactory<TOKEN> tokenFactory )
     {
-        super( fileName, configuration, idType, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
+        super( file, configuration, idType, idGeneratorFactory, pageCache, logProvider);
         this.nameStore = nameStore;
+        this.tokenFactory = tokenFactory;
     }
 
     public DynamicStringStore getNameStore()
@@ -85,48 +77,19 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     }
 
     @Override
-    public void makeStoreOk()
-    {
-        nameStore.makeStoreOk();
-        super.makeStoreOk();
-    }
-
-    @Override
-    public void visitStore( Visitor<CommonAbstractStore, RuntimeException> visitor )
-    {
-        nameStore.visitStore( visitor );
-        visitor.visit( this );
-    }
-
-    public void freeId( int id )
-    {
-        nameStore.freeId( id );
-    }
-
-    @Override
-    protected void closeStorage()
-    {
-        if ( nameStore != null )
-        {
-            nameStore.close();
-            nameStore = null;
-        }
-    }
-
-    @Override
     protected boolean doFastIdGeneratorRebuild()
     {
         return false;
     }
 
-    public Token[] getTokens( int maxCount )
+    public List<TOKEN> getTokens( int maxCount )
     {
-        LinkedList<Token> recordList = new LinkedList<>();
+        LinkedList<TOKEN> records = new LinkedList<>();
         long maxIdInUse = getHighestPossibleIdInUse();
         int found = 0;
         for ( int i = 0; i <= maxIdInUse && found < maxCount; i++ )
         {
-            T record;
+            RECORD record;
             try
             {
                 record = getRecord( i );
@@ -138,22 +101,22 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
             found++;
             if ( record != null && record.inUse() && record.getNameId() != Record.RESERVED.intValue() )
             {
-                String name = getStringFor( record );
-                recordList.add( new Token( name, i ) );
+                records.add( tokenFactory.newToken( getStringFor( record ), i ) );
             }
         }
-        return recordList.toArray( new Token[recordList.size()] );
+
+        return records;
     }
 
-    public Token getToken( int id )
+    public TOKEN getToken( int id )
     {
-        T record = getRecord( id );
-        return new Token( getStringFor( record ), record.getId() );
+        RECORD record = getRecord( id );
+        return tokenFactory.newToken( getStringFor( record ), record.getId() );
     }
 
-    public T getRecord( int id )
+    public RECORD getRecord( int id )
     {
-        T record = newRecord( id );
+        RECORD record = newRecord( id );
         byte inUseByte = Record.NOT_IN_USE.byteValue();
 
         try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
@@ -184,26 +147,24 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     }
 
     @Override
-    public T getRecord( long id )
+    public RECORD getRecord( long id )
     {
         return getRecord( (int) id );
     }
 
     @Override
-    public T forceGetRecord( long id )
+    public RECORD forceGetRecord( long id )
     {
         try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
         {
             if ( cursor.next() )
             {
-                T record = newRecord( (int) id );
-                byte inUseByte;
+                RECORD record = newRecord( (int) id );
                 do
                 {
-                    inUseByte = getRecord( (int) id, record, cursor );
-                } while ( cursor.shouldRetry() );
-
-                checkInUseByteValidity( id, inUseByte );
+                    getRecord( (int) id, record, cursor );
+                }
+                while ( cursor.shouldRetry() );
 
                 record.setIsLight( true );
                 return record;
@@ -227,18 +188,6 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
         }
     }
 
-    @Override
-    public T forceGetRaw( T record )
-    {
-        return record;
-    }
-
-    @Override
-    public T forceGetRaw( long id )
-    {
-        return forceGetRecord( id );
-    }
-
     public Collection<DynamicRecord> allocateNameRecords( byte[] chars )
     {
         Collection<DynamicRecord> records = new ArrayList<>();
@@ -247,7 +196,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     }
 
     @Override
-    public void updateRecord( T record )
+    public void updateRecord( RECORD record )
     {
         forceUpdateRecord( record );
         if ( !record.isLight() )
@@ -260,7 +209,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     }
 
     @Override
-    public void forceUpdateRecord( T record )
+    public void forceUpdateRecord( RECORD record )
     {
         try ( PageCursor cursor = storeFile.io( pageIdForRecord( record.getId() ), PF_EXCLUSIVE_LOCK ) )
         {
@@ -278,9 +227,9 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
         }
     }
 
-    protected abstract T newRecord( int id );
+    protected abstract RECORD newRecord( int id );
 
-    protected byte getRecord( int id, T record, PageCursor cursor )
+    protected byte getRecord( int id, RECORD record, PageCursor cursor )
     {
         cursor.setOffset( offsetForId( id ) );
         byte inUseByte = cursor.getByte();
@@ -294,12 +243,12 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
         return inUseByte;
     }
 
-    protected void readRecord( T record, PageCursor cursor )
+    protected void readRecord( RECORD record, PageCursor cursor )
     {
         record.setNameId( cursor.getInt() );
     }
 
-    protected void updateRecord( T record, PageCursor cursor )
+    protected void updateRecord( RECORD record, PageCursor cursor )
     {
         int id = record.getId();
         cursor.setOffset( offsetForId( id ) );
@@ -315,12 +264,12 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
         }
     }
 
-    protected void writeRecord( T record, PageCursor cursor )
+    protected void writeRecord( RECORD record, PageCursor cursor )
     {
         cursor.putInt( record.getNameId() );
     }
 
-    public void ensureHeavy( T record )
+    public void ensureHeavy( RECORD record )
     {
         if (!record.isLight())
         {
@@ -331,7 +280,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
         record.addNameRecords( nameStore.getRecords( record.getNameId() ) );
     }
 
-    public String getStringFor( T nameRecord )
+    public String getStringFor( RECORD nameRecord )
     {
         int recordToFind = nameRecord.getNameId();
         Iterator<DynamicRecord> records = nameRecord.getNameRecords().iterator();

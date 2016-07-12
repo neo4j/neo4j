@@ -37,21 +37,6 @@ public final class RelationshipKey implements CountsKey
         this.endLabelId = endLabelId;
     }
 
-    public int startLabelId()
-    {
-        return startLabelId;
-    }
-
-    public int typeId()
-    {
-        return typeId;
-    }
-
-    public int endLabelId()
-    {
-        return endLabelId;
-    }
-
     @Override
     public String toString()
     {
@@ -88,10 +73,9 @@ public final class RelationshipKey implements CountsKey
         {
             return true;
         }
-        if ( (o instanceof org.neo4j.kernel.impl.store.counts.keys.RelationshipKey) )
+        if ( (o instanceof RelationshipKey) )
         {
-            org.neo4j.kernel.impl.store.counts.keys.RelationshipKey
-                    that = (org.neo4j.kernel.impl.store.counts.keys.RelationshipKey) o;
+            RelationshipKey that = (RelationshipKey) o;
             return endLabelId == that.endLabelId && startLabelId == that.startLabelId && typeId == that.typeId;
         }
         return false;
@@ -100,10 +84,9 @@ public final class RelationshipKey implements CountsKey
     @Override
     public int compareTo( CountsKey other )
     {
-        if ( other instanceof org.neo4j.kernel.impl.store.counts.keys.RelationshipKey )
+        if ( other instanceof RelationshipKey )
         {
-            org.neo4j.kernel.impl.store.counts.keys.RelationshipKey
-                    that = (org.neo4j.kernel.impl.store.counts.keys.RelationshipKey) other;
+            RelationshipKey that = (RelationshipKey) other;
             if ( this.typeId != that.typeId )
             {
                 return this.typeId - that.typeId;
@@ -114,9 +97,6 @@ public final class RelationshipKey implements CountsKey
             }
             return this.endLabelId - that.endLabelId;
         }
-        else
-        {
-            return recordType().ordinal() - other.recordType().ordinal();
-        }
+        return recordType().ordinal() - other.recordType().ordinal();
     }
 }

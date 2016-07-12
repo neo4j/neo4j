@@ -107,6 +107,46 @@ public class TestPriorityMap
         assertEntry( map.pop(), entity, 5d );
     }
 
+    @Test
+    public void inCaseSaveAllPrioritiesShouldHandleNewEntryWithWorsePrio()
+    {
+        // GIVEN
+        int first = 1;
+        int second = 2;
+        PriorityMap<Integer, Integer, Double> map = PriorityMap.<Integer, Double>withSelfKeyNaturalOrder( false, false);
+
+        // WHEN
+        assertTrue( map.put( first, 1d) );
+        assertTrue( map.put( second, 2d) );
+        assertTrue( map.put( first, 3d ) );
+
+        // THEN
+        assertEntry( map.pop(), first, 1d );
+        assertEntry( map.pop(), second, 2d );
+        assertEntry( map.pop(), first, 3d );
+        assertNull( map.peek() );
+    }
+
+    @Test
+    public void inCaseSaveAllPrioritiesShouldHandleNewEntryWithBetterPrio()
+    {
+        // GIVEN
+        int first = 1;
+        int second = 2;
+        PriorityMap<Integer, Integer, Double> map = PriorityMap.<Integer, Double>withSelfKeyNaturalOrder( false, false);
+
+        // WHEN
+        assertTrue( map.put( first, 3d) );
+        assertTrue( map.put( second, 2d) );
+        assertTrue( map.put( first, 1d ) );
+
+        // THEN
+        assertEntry( map.pop(), first, 1d );
+        assertEntry( map.pop(), second, 2d );
+        assertEntry( map.pop(), first, 3d );
+        assertNull( map.peek() );
+    }
+
     private void assertEntry( Entry<Integer, Double> entry, Integer entity, Double priority )
     {
         assertNotNull( entry );

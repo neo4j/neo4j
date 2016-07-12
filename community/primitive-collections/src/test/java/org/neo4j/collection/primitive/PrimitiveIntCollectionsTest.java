@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 
-import org.neo4j.function.primitive.PrimitiveIntPredicate;
+import org.neo4j.function.IntPredicate;
 
 import static java.util.Arrays.asList;
 
@@ -113,10 +113,10 @@ public class PrimitiveIntCollectionsTest
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
 
         // WHEN
-        PrimitiveIntIterator filtered = PrimitiveIntCollections.filter( items, new PrimitiveIntPredicate()
+        PrimitiveIntIterator filtered = PrimitiveIntCollections.filter( items, new IntPredicate()
         {
             @Override
-            public boolean accept( int item )
+            public boolean test( int item )
             {
                 return item != 2;
             }

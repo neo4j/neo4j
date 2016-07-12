@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.transaction.state;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.neo4j.kernel.impl.core.RelationshipTypeToken;
+import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
@@ -220,7 +222,7 @@ public class Loaders
     }
 
     public static Loader<Integer,PropertyKeyTokenRecord,Void> propertyKeyTokenLoader(
-            final TokenStore<PropertyKeyTokenRecord> store )
+            final TokenStore<PropertyKeyTokenRecord, Token> store )
     {
         return new Loader<Integer, PropertyKeyTokenRecord, Void>()
         {
@@ -251,7 +253,7 @@ public class Loaders
     }
 
     public static Loader<Integer,LabelTokenRecord,Void> labelTokenLoader(
-            final TokenStore<LabelTokenRecord> store )
+            final TokenStore<LabelTokenRecord, Token> store )
     {
         return new Loader<Integer, LabelTokenRecord, Void>()
         {
@@ -282,7 +284,7 @@ public class Loaders
     }
 
     public static Loader<Integer,RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader(
-            final TokenStore<RelationshipTypeTokenRecord> store )
+            final TokenStore<RelationshipTypeTokenRecord, RelationshipTypeToken> store )
     {
         return new Loader<Integer, RelationshipTypeTokenRecord, Void>()
         {

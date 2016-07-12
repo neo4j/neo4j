@@ -30,24 +30,25 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
     private volatile int version;
     // These don't need to be volatile, reading them is "guarded" by version access
     private long highestGapFreeNumber;
-    private long highestGapFreeMeta;
+    private long[] highestGapFreeMeta;
     private final SequenceArray outOfOrderQueue;
-    private final long[] metaArray = new long[1];
+    private long[] metaArray;
 
-    public ArrayQueueOutOfOrderSequence( long startingNumber, int initialArraySize )
+    public ArrayQueueOutOfOrderSequence( long startingNumber, int initialArraySize, long[] initialMeta )
     {
         this.highestGapFreeNumber = startingNumber;
-        this.outOfOrderQueue = new SequenceArray( 2, initialArraySize );
+        this.highestGapFreeMeta = this.metaArray = initialMeta;
+        this.outOfOrderQueue = new SequenceArray( initialMeta.length + 1, initialArraySize );
     }
 
     @Override
-    public synchronized boolean offer( long number, long meta )
+    public synchronized boolean offer( long number, long[] meta )
     {
         if ( highestGapFreeNumber + 1 == number )
         {
             version++;
             highestGapFreeNumber = outOfOrderQueue.pollHighestGapFree( number, metaArray );
-            highestGapFreeMeta = highestGapFreeNumber == number ? meta : metaArray[0];
+            highestGapFreeMeta = highestGapFreeNumber == number ? meta : metaArray;
             version++;
             return true;
         }
@@ -56,16 +57,16 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
         return false;
     }
 
-    private long[] pack( long meta )
+    private long[] pack( long[] meta )
     {
-        metaArray[0] = meta;
+        metaArray = meta;
         return metaArray;
     }
 
     @Override
     public long[] get()
     {
-        long number = 0, meta = 0;
+        long number; long[] meta;
         while ( true )
         {
             int versionBefore = version;
@@ -82,7 +83,15 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
             }
         }
 
-        return new long[] {number, meta};
+        return createResult( number, meta );
+    }
+
+    private long[] createResult( long number, long[] meta )
+    {
+        long[] result = new long[meta.length + 1];
+        result[0] = number;
+        System.arraycopy( meta, 0, result, 1, meta.length );
+        return result;
     }
 
     @Override
@@ -92,7 +101,7 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
     }
 
     @Override
-    public synchronized boolean seen( long number, long meta )
+    public synchronized boolean seen( long number, long[] meta )
     {
         if ( number < highestGapFreeNumber )
         {
@@ -105,12 +114,12 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
             return highestGapFreeMeta == meta;
         }
 
-        return outOfOrderQueue.seen( highestGapFreeNumber, number, new long[]{meta} );
+        return outOfOrderQueue.seen( highestGapFreeNumber, number, meta );
 
     }
 
     @Override
-    public synchronized void set( long number, long meta )
+    public synchronized void set( long number, long[] meta )
     {
         highestGapFreeNumber = number;
         highestGapFreeMeta = meta;

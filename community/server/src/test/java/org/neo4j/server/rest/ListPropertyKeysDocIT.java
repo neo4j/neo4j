@@ -19,25 +19,23 @@
  */
 package org.neo4j.server.rest;
 
+import org.junit.Test;
+
 import java.util.List;
 import java.util.Set;
 
-import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 
 public class ListPropertyKeysDocIT extends AbstractRestFunctionalTestBase
 {
-    /**
-     * List all property keys.
-     */
     @Test
-    @Documented
+    @Documented( "List all property keys." )
     @GraphDescription.Graph( nodes = {
             @GraphDescription.NODE( name = "a", setNameProperty = true ),
             @GraphDescription.NODE( name = "b", setNameProperty = true ),

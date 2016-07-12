@@ -36,7 +36,7 @@ import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Context that implements all the context interfaces used by the Paxos state machines.
@@ -61,7 +61,7 @@ public class MultiPaxosContext
                               Iterable<ElectionRole> roles,
                               ClusterConfiguration configuration,
                               Executor executor,
-                              Logging logging,
+                              LogProvider logging,
                               ObjectInputStreamFactory objectInputStreamFactory,
                               ObjectOutputStreamFactory objectOutputStreamFactory,
                               AcceptorInstanceStore instanceStore,
@@ -136,13 +136,13 @@ public class MultiPaxosContext
 
     /** Create a state snapshot. The snapshot will not duplicate services, and expects the caller to duplicate
      * {@link AcceptorInstanceStore}, since that is externally provided.  */
-    public MultiPaxosContext snapshot(Logging logging, Timeouts timeouts, Executor executor,
+    public MultiPaxosContext snapshot(LogProvider logging, Timeouts timeouts, Executor executor,
                                       AcceptorInstanceStore instanceStore,
                                       ObjectInputStreamFactory objectInputStreamFactory,
                                       ObjectOutputStreamFactory objectOutputStreamFactory,
                                       ElectionCredentialsProvider electionCredentialsProvider)
     {
-        CommonContextState commonStateSnapshot = commonState.snapshot(logging.getMessagesLog( ClusterConfiguration.class ) );
+        CommonContextState commonStateSnapshot = commonState.snapshot( logging.getLog( ClusterConfiguration.class ) );
         PaxosInstanceStore paxosInstancesSnapshot = paxosInstances.snapshot();
 
         HeartbeatContextImpl snapshotHeartbeatContext =

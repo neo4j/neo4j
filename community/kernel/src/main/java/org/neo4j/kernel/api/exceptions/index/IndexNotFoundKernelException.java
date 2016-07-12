@@ -24,11 +24,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 
 public class IndexNotFoundKernelException extends KernelException
 {
-    public IndexNotFoundKernelException( String message, Throwable cause )
-    {
-        super( Status.Schema.NoSuchIndex, cause, message );
-    }
-
     public IndexNotFoundKernelException( String msg )
     {
         super( Status.Schema.NoSuchIndex, msg );

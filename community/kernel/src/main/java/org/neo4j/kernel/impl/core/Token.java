@@ -61,4 +61,13 @@ public class Token
     {
         return getClass().getSimpleName() + "[name:" + name + ", id:" + id + "]";
     }
+
+    public static class Factory implements TokenFactory<Token>
+    {
+        @Override
+        public Token newToken( String name, int id )
+        {
+            return new Token( name, id );
+        }
+    }
 }

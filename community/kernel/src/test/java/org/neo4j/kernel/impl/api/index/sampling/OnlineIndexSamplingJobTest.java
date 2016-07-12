@@ -30,7 +30,8 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -48,7 +49,7 @@ public class OnlineIndexSamplingJobTest
     public void shouldSampleTheIndexAndStoreTheValueWhenTheIndexIsOnline()
     {
         // given
-        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexProxy, indexStoreView, "Foo", logging );
+        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexProxy, indexStoreView, "Foo", logProvider );
         when( indexProxy.getState() ).thenReturn( ONLINE );
 
         // when
@@ -63,7 +64,7 @@ public class OnlineIndexSamplingJobTest
     public void shouldSampleTheIndexButDoNotStoreTheValuesIfTheIndexIsNotOnline()
     {
         // given
-        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexProxy, indexStoreView, "Foo", logging );
+        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexProxy, indexStoreView, "Foo", logProvider );
         when( indexProxy.getState() ).thenReturn( FAILED );
 
         // when
@@ -73,7 +74,7 @@ public class OnlineIndexSamplingJobTest
         verifyNoMoreInteractions( indexStoreView );
     }
 
-    private final DevNullLoggingService logging = new DevNullLoggingService();
+    private final LogProvider logProvider = NullLogProvider.getInstance();
     private final IndexProxy indexProxy = mock( IndexProxy.class );
     private final IndexStoreView indexStoreView = mock( IndexStoreView.class );
     private final IndexDescriptor indexDescriptor = new IndexDescriptor( 1, 2 );

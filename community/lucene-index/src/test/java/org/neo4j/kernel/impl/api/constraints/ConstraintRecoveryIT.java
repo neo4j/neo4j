@@ -36,7 +36,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -59,7 +59,7 @@ public class ConstraintRecoveryIT
         // given
         final EphemeralFileSystemAbstraction fs = fileSystemRule.get();
         fs.mkdir( new File("/tmp") );
-        String pathToDb = "/tmp/bar2";
+        File pathToDb = new File( "/tmp/bar2" );
 
         TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
         dbFactory.setFileSystem( fs );
@@ -74,7 +74,7 @@ public class ConstraintRecoveryIT
             public void verifyDeferredConstraints()
             {
                 monitorCalled.set( true );
-                db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate().getSchemaStore().flush();
+                db.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get().getSchemaStore().flush();
                 storeInNeedOfRecovery[0] = fs.snapshot();
             }
         } );

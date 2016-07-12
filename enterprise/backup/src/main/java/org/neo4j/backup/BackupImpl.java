@@ -24,37 +24,39 @@ import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.ResponsePacker;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.helpers.Provider;
+import org.neo4j.function.Supplier;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.Logger;
 
 import static org.neo4j.com.RequestContext.anonymous;
 
 class BackupImpl implements TheBackupInterface
 {
+    static final String FULL_BACKUP_CHECKPOINT_TRIGGER = "full backup";
+
     private final StoreCopyServer storeCopyServer;
     private final ResponsePacker incrementalResponsePacker;
     private final LogicalTransactionStore logicalTransactionStore;
-    private final Provider<StoreId> storeId;
+    private final Supplier<StoreId> storeId;
     private final TransactionIdStore transactionIdStore;
     private final LogFileInformation logFileInformation;
-    private final ConsoleLogger logger;
+    private final Logger logger;
 
     public BackupImpl( StoreCopyServer storeCopyServer, Monitors monitors,
             LogicalTransactionStore logicalTransactionStore, TransactionIdStore transactionIdStore,
-            LogFileInformation logFileInformation, Provider<StoreId> storeId, Logging logging )
+            LogFileInformation logFileInformation, Supplier<StoreId> storeId, LogProvider logProvider )
     {
         this.storeCopyServer = storeCopyServer;
         this.logicalTransactionStore = logicalTransactionStore;
         this.transactionIdStore = transactionIdStore;
         this.logFileInformation = logFileInformation;
         this.storeId = storeId;
-        this.logger = logging.getConsoleLog( getClass() );
+        this.logger = logProvider.getLog( getClass() ).infoLogger();
         this.incrementalResponsePacker = new ResponsePacker( logicalTransactionStore, transactionIdStore, storeId );
     }
 
@@ -64,7 +66,8 @@ class BackupImpl implements TheBackupInterface
         try ( StoreWriter storeWriter = writer )
         {
             logger.log( "Full backup started..." );
-            RequestContext copyStartContext = storeCopyServer.flushStoresAndStreamStoreFiles( storeWriter, forensics );
+            RequestContext copyStartContext = storeCopyServer.flushStoresAndStreamStoreFiles(
+                    FULL_BACKUP_CHECKPOINT_TRIGGER, storeWriter, forensics );
             ResponsePacker responsePacker = new StoreCopyResponsePacker( logicalTransactionStore,
                     transactionIdStore, logFileInformation, storeId,
                     copyStartContext.lastAppliedTransaction() + 1, storeCopyServer.monitor() ); // mandatory transaction id

@@ -19,34 +19,38 @@
  */
 package org.neo4j.server.enterprise;
 
+import org.jboss.netty.channel.ChannelException;
+
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import org.jboss.netty.channel.ChannelException;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
-import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
+import org.neo4j.cluster.client.ClusterClientModule;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Args;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.StoreLogService;
+import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
-import org.neo4j.kernel.logging.LogbackWeakDependency;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.FormattedLogProvider;
 
-import static org.neo4j.cluster.client.ClusterClient.adapt;
-import static org.neo4j.helpers.Exceptions.exceptionsOfType;
 import static org.neo4j.helpers.Exceptions.peel;
 import static org.neo4j.helpers.collection.MapUtil.loadStrictly;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 import static org.neo4j.server.configuration.Configurator.DB_TUNING_PROPERTY_FILE_KEY;
 import static org.neo4j.server.configuration.Configurator.NEO_SERVER_CONFIG_FILE_KEY;
 
@@ -66,13 +70,12 @@ import static org.neo4j.server.configuration.Configurator.NEO_SERVER_CONFIG_FILE
  */
 public class StandaloneClusterClient
 {
-    private final LifeSupport life = new LifeSupport();
+    private final LifeSupport life;
     private final Timer timer;
 
-    private StandaloneClusterClient( Logging logging, ClusterClient clusterClient )
+    private StandaloneClusterClient( LifeSupport life )
     {
-        life.add( logging );
-        life.add( clusterClient );
+        this.life = life;
         timer = new Timer( true );
         addShutdownHook();
         life.start();
@@ -103,7 +106,7 @@ public class StandaloneClusterClient
     }
 
 
-    public static void main( String[] args )
+    public static void main( String[] args ) throws IOException
     {
         String propertiesFile = System.getProperty( NEO_SERVER_CONFIG_FILE_KEY );
         File dbProperties = extractDbTuningProperties( propertiesFile );
@@ -120,16 +123,20 @@ public class StandaloneClusterClient
         verifyConfig( config );
         try
         {
-            Logging logging = logging();
-            ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
-            new StandaloneClusterClient( logging, new ClusterClient( new Monitors(), adapt( new Config( config ) ),
-                    logging, new NotElectableElectionCredentialsProvider(), objectStreamFactory,
-                    objectStreamFactory ) );
+            JobScheduler jobScheduler = new Neo4jJobScheduler();
+            LogService logService = logService( new DefaultFileSystemAbstraction() );
+
+            LifeSupport life = new LifeSupport();
+            life.add(jobScheduler);
+            Dependencies dependencies = new Dependencies();
+            ClusterClientModule clusterClientModule = new ClusterClientModule( life, dependencies, new Monitors(), new Config( config ), logService, new NotElectableElectionCredentialsProvider() );
+
+            new StandaloneClusterClient( life );
         }
         catch ( LifecycleException e )
         {
             @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
-            Throwable cause = peel( e, exceptionsOfType( LifecycleException.class ) );
+            Throwable cause = peel( e, Predicates.<Throwable>instanceOf( LifecycleException.class ) );
             if ( cause instanceof ChannelException )
             {
                 System.err.println( "ERROR: " + cause.getMessage() +
@@ -183,14 +190,13 @@ public class StandaloneClusterClient
         }
     }
 
-    private static Logging logging()
+    private static LogService logService( FileSystemAbstraction fileSystem ) throws IOException
     {
         File home = new File( System.getProperty( "neo4j.home" ) );
         String logDir = System.getProperty( "org.neo4j.cluster.logdirectory",
-                new File( new File( new File( home, "data" ), "log" ), "arbiter" ).getPath() );
-        Config config = new Config( stringMap( InternalAbstractGraphDatabase.Configuration.store_dir.name(), logDir ) );
-
-        return LogbackWeakDependency.tryLoadLogbackService( config, DEFAULT_TO_CLASSIC, new Monitors() );
+                new File( new File( new File( home, "data" ), "log" ), "arbiter" ).getAbsolutePath() );
+        return StoreLogService.withUserLogProvider( FormattedLogProvider.toOutputStream( System.out ) )
+                .inStoreDirectory( fileSystem, new File( logDir ) );
     }
 
     private static File extractDbTuningProperties( String propertiesFile )

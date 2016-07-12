@@ -23,9 +23,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
+import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
@@ -47,7 +49,8 @@ import org.neo4j.kernel.impl.api.index.OnlineIndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -63,9 +66,10 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLog;
 
 import static java.lang.String.format;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
@@ -92,14 +96,14 @@ class RebuildFromLogs
             return;
         }
         Args params = Args.parse( args );
-        @SuppressWarnings("boxing")
+        @SuppressWarnings( "boxing" )
         long txId = params.getNumber( UP_TO_TX_ID, BASE_TX_ID ).longValue();
         List<String> orphans = params.orphans();
         args = orphans.toArray( new String[orphans.size()] );
         if ( args.length != 2 )
         {
-            printUsage( "Exactly two positional arguments expected: "
-                    + "<source dir with logs> <target dir for graphdb>, got " + args.length );
+            printUsage( "Exactly two positional arguments expected: " +
+                        "<source dir with logs> <target dir for graphdb>, got " + args.length );
             System.exit( -1 );
             return;
         }
@@ -114,7 +118,7 @@ class RebuildFromLogs
         {
             if ( target.isDirectory() )
             {
-                if ( new BackupService().directoryContainsDb( target.getAbsolutePath() ) )
+                if ( new BackupService().directoryContainsDb( target.getAbsoluteFile() ) )
                 {
                     printUsage( "target graph database already exists" );
                     System.exit( -1 );
@@ -161,8 +165,8 @@ class RebuildFromLogs
             {
                 long lastTxId = applier.applyTransactionsFrom( source, txId );
                 // set last tx id in neostore otherwise the db is not usable
-                NeoStore.setRecord( fs, new File( target, NeoStore.DEFAULT_NAME ),
-                        NeoStore.Position.LAST_TRANSACTION_ID, lastTxId );
+                MetaDataStore.setRecord( pageCache, new File( target, MetaDataStore.DEFAULT_NAME ),
+                        MetaDataStore.Position.LAST_TRANSACTION_ID, lastTxId );
             }
 
             try ( ConsistencyChecker checker = new ConsistencyChecker( target, pageCache ) )
@@ -184,7 +188,7 @@ class RebuildFromLogs
         try ( IOCursor<CommittedTransactionRepresentation> cursor =
                       new PhysicalTransactionCursor<>( logChannel, new VersionAwareLogEntryReader<>() ) )
         {
-            while (cursor.next())
+            while ( cursor.next() )
             {
                 lastTransactionId = cursor.get().getCommitEntry().getTxId();
             }
@@ -198,11 +202,10 @@ class RebuildFromLogs
         {
             System.err.println( line );
         }
-        System.err.println( Args.jarUsage( RebuildFromLogs.class, "[-full] <source dir with logs> <target dir for " +
-                "graphdb>" ) );
+        System.err.println( Args.jarUsage( RebuildFromLogs.class,
+                "[-full] <source dir with logs> <target dir for graphdb>" ) );
         System.err.println( "WHERE:   <source dir>  is the path for where transactions to rebuild from are stored" );
         System.err.println( "         <target dir>  is the path for where to create the new graph database" );
-        System.err.println( "         -full     --  to run a full check over the entire store for each transaction" );
         System.err.println( "         -tx       --  to rebuild the store up to a given transaction" );
     }
 
@@ -212,22 +215,23 @@ class RebuildFromLogs
         private final GraphDatabaseAPI graphdb;
         private final TransactionRepresentationStoreApplier storeApplier;
         private final OnlineIndexUpdatesValidator indexUpdatesValidator;
-        private final NeoStore neoStore;
+        private final NeoStores neoStores;
         private final IndexingService indexingService;
         private final FileSystemAbstraction fs;
 
         TransactionApplier( FileSystemAbstraction fs, File dbDirectory, PageCache pageCache )
         {
             this.fs = fs;
-            this.graphdb = BackupService.startTemporaryDb( dbDirectory .getAbsolutePath(), pageCache, stringMap() );
+            this.graphdb = BackupService.startTemporaryDb( dbDirectory.getAbsoluteFile(), pageCache, stringMap() );
             DependencyResolver resolver = graphdb.getDependencyResolver();
-            this.neoStore = resolver.resolveDependency( NeoStore.class );
+            this.neoStores = resolver.resolveDependency( NeoStores.class );
             this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class )
                     .withLegacyIndexTransactionOrdering( IdOrderingQueue.BYPASS );
             this.indexingService = resolver.resolveDependency( IndexingService.class );
             KernelHealth kernelHealth = resolver.resolveDependency( KernelHealth.class );
             this.indexUpdatesValidator = new OnlineIndexUpdatesValidator(
-                    neoStore, kernelHealth, new PropertyLoader( neoStore ), indexingService, IndexUpdateMode.BATCHED );
+                    neoStores, resolver.resolveDependency( KernelHealth.class ), new PropertyLoader( neoStores ),
+                    indexingService, IndexUpdateMode.BATCHED );
         }
 
         long applyTransactionsFrom( File sourceDir, long upToTxId ) throws IOException
@@ -274,11 +278,11 @@ class RebuildFromLogs
         private final NeoStoreDataSource dataSource;
         private final Config tuningConfiguration =
                 new Config( stringMap(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
-        private SchemaIndexProvider indexes;
+        private final SchemaIndexProvider indexes;
 
         ConsistencyChecker( File dbDirectory, PageCache pageCache )
         {
-            this.graphdb = BackupService.startTemporaryDb( dbDirectory.getAbsolutePath(), pageCache, stringMap() );
+            this.graphdb = BackupService.startTemporaryDb( dbDirectory.getAbsoluteFile(), pageCache, stringMap() );
             DependencyResolver resolver = graphdb.getDependencyResolver();
             this.dataSource = resolver.resolveDependency( DataSourceManager.class ).getDataSource();
             this.indexes = resolver.resolveDependency( SchemaIndexProvider.class );
@@ -287,9 +291,12 @@ class RebuildFromLogs
         private void checkConsistency() throws ConsistencyCheckIncompleteException
         {
             LabelScanStore labelScanStore = dataSource.getLabelScanStore();
-            DirectStoreAccess stores = new DirectStoreAccess( new StoreAccess( graphdb ), labelScanStore, indexes );
-            new FullCheck( tuningConfiguration, ProgressMonitorFactory.textual( System.err ) )
-                    .execute( stores, StringLogger.SYSTEM );
+            StoreAccess nativeStores = new StoreAccess( graphdb ).initialize();
+            DirectStoreAccess stores = new DirectStoreAccess( nativeStores, labelScanStore, indexes );
+            FullCheck fullCheck = new FullCheck( tuningConfiguration, ProgressMonitorFactory.textual( System.err ),
+                    Statistics.NONE, ConsistencyCheckService.defaultConsistencyCheckThreadsNumber() );
+
+            fullCheck.execute( stores, NullLog.getInstance() );
         }
 
         @Override

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import java.io.Flushable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -99,11 +100,6 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
         return this;
     }
 
-    @Override
-    public void force() throws IOException
-    {
-    }
-
     public StoreChannel getFileChannel()
     {
         throw new UnsupportedOperationException();
@@ -120,8 +116,9 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     }
 
     @Override
-    public void emptyBufferIntoChannelAndClearIt()
+    public Flushable emptyBufferIntoChannelAndClearIt()
     {
+        return NO_OP_FLUSHABLE;
     }
 
     @Override
@@ -232,4 +229,11 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     {
         return asWriter.remaining();
     }
+    private static final Flushable NO_OP_FLUSHABLE = new Flushable()
+    {
+        @Override
+        public void flush() throws IOException
+        {
+        }
+    };
 }

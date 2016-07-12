@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index;
 
+import java.io.File;
 import java.util.Map;
 
 import org.junit.After;
@@ -49,7 +50,7 @@ public class TestIndexImplOnNeo
     @Before
     public void createDb() throws Exception
     {
-        db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( "mydb" );
+        db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( new File( "mydb" ) );
     }
 
     private void restartDb() throws Exception

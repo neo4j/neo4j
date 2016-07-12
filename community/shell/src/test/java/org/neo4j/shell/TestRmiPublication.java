@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -30,11 +31,11 @@ import java.util.Properties;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.ProcessStreamHandler;
+import org.neo4j.test.TargetDirectory;
 
 import static java.lang.Runtime.getRuntime;
 import static java.lang.System.getProperty;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.TargetDirectory.forTest;
 
 public class TestRmiPublication
 {
@@ -62,9 +63,12 @@ public class TestRmiPublication
         assertEquals( 0, spawnJvm( DontShutdownLocalServer.class, "server" ) );
     }
 
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
     private int spawnJvm( Class<?> mainClass, String name ) throws Exception
     {
-        String dir = forTest( getClass() ).cleanDirectory( name ).getAbsolutePath();
+        String dir = testDirectory.directory( name ).getAbsolutePath();
         return waitForExit( getRuntime().exec( new String[] { "java", "-cp", getProperty( "java.class.path" ),
                 "-Djava.awt.headless=true", mainClass.getName(), dir } ), 20 );
     }

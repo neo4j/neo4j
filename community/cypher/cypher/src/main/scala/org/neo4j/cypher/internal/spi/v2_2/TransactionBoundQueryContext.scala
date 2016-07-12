@@ -22,22 +22,20 @@ package org.neo4j.cypher.internal.spi.v2_2
 import java.net.URL
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.compiler.v2_2.{EntityNotFoundException, FailedIndexException}
 import org.neo4j.cypher.internal.compiler.v2_2.spi._
-import org.neo4j.cypher.internal.helpers.JavaConversionSupport
-import org.neo4j.cypher.internal.helpers.JavaConversionSupport._
-import org.neo4j.cypher.internal.spi.v2_2.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.compiler.v2_2.{EntityNotFoundException, FailedIndexException}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
 import org.neo4j.graphdb.DynamicRelationshipType._
 import org.neo4j.graphdb._
-import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.helpers.collection.IteratorUtil
-import org.neo4j.kernel.api.{exceptions, _}
+import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
+import org.neo4j.kernel.api.{exceptions, _}
 import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
+import org.neo4j.kernel.security.URLAccessValidationError
 import org.neo4j.tooling.GlobalGraphOperations
 
 import scala.collection.JavaConverters._
@@ -46,7 +44,7 @@ import scala.collection.{Iterator, mutable}
 final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
                                          private var tx: Transaction,
                                          val isTopLevelTx: Boolean,
-                                         initialStatement: Statement)(implicit indexSearchMonitor: IndexSearchMonitor)
+                                         initialStatement: Statement)
   extends TransactionBoundTokenContext(initialStatement) with QueryContext {
 
   private var open = true
@@ -57,8 +55,6 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   val relationshipOps = new RelationshipOperations
 
   def isOpen = open
-
-  private val protocolWhiteList: Seq[String] = Seq("file", "http", "https", "ftp")
 
   def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) => if (statement.dataWriteOperations().nodeAddLabel(node, labelId)) count + 1 else count
@@ -91,7 +87,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       val isTopLevelTx = !txBridge.hasTransaction
       val tx = graph.beginTx()
       try {
-        val otherStatement = txBridge.instance()
+        val otherStatement = txBridge.get()
         val result = try {
           work(new TransactionBoundQueryContext(graph, tx, isTopLevelTx, otherStatement))
         }
@@ -120,10 +116,10 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     JavaConversionSupport.asScala(statement.readOperations().nodeGetLabels(node))
 
   def getPropertiesForNode(node: Long) =
-    JavaConversionSupport.asScala(statement.readOperations().nodeGetAllPropertiesKeys(node))
+    JavaConversionSupport.mapToScala(statement.readOperations().nodeGetPropertyKeys(node))(_.toLong)
 
   def getPropertiesForRelationship(relId: Long) =
-    JavaConversionSupport.asScala(statement.readOperations().relationshipGetAllPropertiesKeys(relId))
+    JavaConversionSupport.mapToScala(statement.readOperations().relationshipGetPropertyKeys(relId))(_.toLong)
 
   override def isLabelSetOnNode(label: Int, node: Long) =
     statement.readOperations().nodeHasLabel(node, label)
@@ -136,14 +132,11 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     case Some(typeIds) => JavaConversionSupport.asScala(statement.readOperations().nodeGetRelationships(node.getId, dir, typeIds: _* )).map(relationshipOps.getById)
   }
 
-  def exactIndexSearch(index: IndexDescriptor, value: Any) = {
-    indexSearchMonitor.exactIndexSearch(index, value)
-    mapToScala(statement.readOperations().nodesGetFromIndexLookup(index, value))(nodeOps.getById)
-  }
+  def exactIndexSearch(index: IndexDescriptor, value: Any) =
+    mapToScala(statement.readOperations().nodesGetFromIndexSeek(index, value))(nodeOps.getById)
 
   def lockingExactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = {
-    indexSearchMonitor.lockingIndexSearch(index, value)
-    val nodeId: Long = statement.readOperations().nodeGetUniqueFromIndexLookup(index, value)
+    val nodeId: Long = statement.readOperations().nodeGetFromUniqueIndexSeek(index, value)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
 
@@ -175,14 +168,14 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     }
 
     def propertyKeyIds(id: Long): Iterator[Int] =
-      statement.readOperations().nodeGetAllProperties(id).asScala.map(_.propertyKeyId())
+      asScala(statement.readOperations().nodeGetPropertyKeys(id))
 
     def getProperty(id: Long, propertyKeyId: Int): Any = {
-      statement.readOperations().nodeGetProperty(id, propertyKeyId).value(null)
+      statement.readOperations().nodeGetProperty(id, propertyKeyId)
     }
 
     def hasProperty(id: Long, propertyKey: Int) =
-      statement.readOperations().nodeGetProperty(id, propertyKey).isDefined
+      statement.readOperations().nodeHasProperty(id, propertyKey)
 
     def removeProperty(id: Long, propertyKeyId: Int) {
       statement.dataWriteOperations().nodeRemoveProperty(id, propertyKeyId)
@@ -207,7 +200,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       graph.index.forNodes(name).query(query).iterator().asScala
 
     def isDeleted(n: Node): Boolean =
-      kernelStatement.txState().nodeIsDeletedInThisTx(n.getId)
+      kernelStatement.hasTxStateWithChanges && kernelStatement.txState().nodeIsDeletedInThisTx(n.getId)
   }
 
   class RelationshipOperations extends BaseOperations[Relationship] {
@@ -220,13 +213,13 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     }
 
     def propertyKeyIds(id: Long): Iterator[Int] =
-      statement.readOperations().relationshipGetAllProperties(id).asScala.map(_.propertyKeyId())
+      asScala(statement.readOperations().relationshipGetPropertyKeys(id))
 
     def getProperty(id: Long, propertyKeyId: Int): Any =
-      statement.readOperations().relationshipGetProperty(id, propertyKeyId).value(null)
+      statement.readOperations().relationshipGetProperty(id, propertyKeyId)
 
     def hasProperty(id: Long, propertyKey: Int) =
-      statement.readOperations().relationshipGetProperty(id, propertyKey).isDefined
+      statement.readOperations().relationshipHasProperty(id, propertyKey)
 
     def removeProperty(id: Long, propertyKeyId: Int) {
       statement.dataWriteOperations().relationshipRemoveProperty(id, propertyKeyId)
@@ -252,7 +245,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       graph.index.forRelationships(name).query(query).iterator().asScala
 
     def isDeleted(r: Relationship): Boolean =
-      kernelStatement.txState().relationshipIsDeletedInThisTx(r.getId)
+      kernelStatement.hasTxStateWithChanges && kernelStatement.txState().relationshipIsDeletedInThisTx(r.getId)
   }
 
   def getOrCreatePropertyKeyId(propertyKey: String) =
@@ -280,7 +273,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   }
 
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V) = {
-    val javaCreator = new org.neo4j.helpers.Function[K, V]() {
+    val javaCreator = new org.neo4j.function.Function[K, V]() {
       def apply(key: K) = creator
     }
     statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
@@ -300,26 +293,21 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     statement.schemaWriteOperations().indexDrop(new IndexDescriptor(labelId, propertyKeyId))
 
   def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[UniquenessConstraint] = try {
-    IdempotentResult(statement.schemaWriteOperations().uniquenessConstraintCreate(labelId, propertyKeyId))
+    IdempotentResult(statement.schemaWriteOperations().uniquePropertyConstraintCreate(labelId, propertyKeyId))
   } catch {
-    case _: AlreadyConstrainedException =>
-      val readOperations: ReadOperations = statement.readOperations()
-      val uniquenessConstraints = readOperations.constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId)
-      IdempotentResult(IteratorUtil.single(uniquenessConstraints), wasCreated = false)
+    case existing: AlreadyConstrainedException =>
+      IdempotentResult(existing.constraint().asInstanceOf[UniquenessConstraint], wasCreated = false)
   }
 
   def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) =
     statement.schemaWriteOperations().constraintDrop(new UniquenessConstraint(labelId, propertyKeyId))
 
-  override def getImportURL(url: URL): Either[String, URL] = graph match {
-    case iagdb: InternalAbstractGraphDatabase =>
-      val protocol = url.getProtocol
-      if (!protocolWhiteList.contains(protocol)) {
-        Left(s"loading resources via protocol '$protocol' is not permitted")
-      } else if (url.getProtocol == "file" && !iagdb.getConfig.get(GraphDatabaseSettings.allow_file_urls)) {
-        Left{s"configuration property '${GraphDatabaseSettings.allow_file_urls.name()}' is false"}
-      } else {
-        Right(url)
+  override def getImportURL(url: URL): Either[String,URL] = graph match {
+    case db: GraphDatabaseAPI =>
+      try {
+        Right(db.validateURLAccess(url))
+      } catch {
+        case error: URLAccessValidationError => Left(error.getMessage)
       }
   }
 
@@ -334,14 +322,6 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     tx.close()
 
     tx = graph.beginTx()
-    statement = txBridge.instance()
-  }
-}
-
-object TransactionBoundQueryContext {
-  trait IndexSearchMonitor {
-    def exactIndexSearch(index: IndexDescriptor, value: Any): Unit
-
-    def lockingIndexSearch(index: IndexDescriptor, value: Any): Unit
+    statement = txBridge.get()
   }
 }

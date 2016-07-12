@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.io.File;
+import java.util.Map;
+
 import org.junit.Test;
 
 import org.neo4j.graphdb.Transaction;
@@ -26,6 +29,12 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.factory.CommunityEditionModule;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.EditionModule;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static org.hamcrest.Matchers.containsString;
@@ -44,11 +53,11 @@ public class KernelTest
 
         try ( Transaction ignored = db.beginTx() )
         {
-            Statement statement = stmtBridge.instance();
+            Statement statement = stmtBridge.get();
 
             try
             {
-                statement.schemaWriteOperations().uniquenessConstraintCreate( 1, 1 );
+                statement.schemaWriteOperations().uniquePropertyConstraintCreate( 1, 1 );
                 fail( "expected exception here" );
             }
             catch ( InvalidTransactionTypeKernelException e )
@@ -64,12 +73,39 @@ public class KernelTest
     class FakeHaDatabase extends ImpermanentGraphDatabase
     {
         @Override
-        public void assertSchemaWritesAllowed() throws InvalidTransactionTypeKernelException
+        protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
         {
-            throw new InvalidTransactionTypeKernelException(
-                    "Creation or deletion of constraints is not possible while running in a HA cluster. " +
-                    "In order to do that, please restart in non-HA mode and propagate the database copy to " +
-                    "all slaves" );
+            new CommunityFacadeFactory()
+            {
+                @Override
+                protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                {
+                    return new ImpermanentPlatformModule( storeDir, params, dependencies, graphDatabaseFacade );
+                }
+
+                @Override
+                protected EditionModule createEdition( PlatformModule platformModule )
+                {
+                    return new CommunityEditionModule( platformModule )
+                    {
+                        @Override
+                        protected SchemaWriteGuard createSchemaWriteGuard()
+                        {
+                            return new SchemaWriteGuard()
+                            {
+                                @Override
+                                public void assertSchemaWritesAllowed() throws InvalidTransactionTypeKernelException
+                                {
+                                    throw new InvalidTransactionTypeKernelException(
+                                            "Creation or deletion of constraints is not possible while running in a HA cluster. " +
+                                            "In order to do that, please restart in non-HA mode and propagate the database copy to " +
+                                            "all slaves" );
+                                }
+                            };
+                        }
+                    };
+                }
+            }.newFacade( storeDir, params, dependencies, this );
         }
     }
 }

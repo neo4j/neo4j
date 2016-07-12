@@ -21,6 +21,7 @@ package org.neo4j.server.webadmin.console;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
 
@@ -28,5 +29,5 @@ public interface ConsoleSessionCreator
 {
     String name();
 
-    ScriptSession newSession( Database database, CypherExecutor cypherExecutor, HttpServletRequest request );
+    ScriptSession newSession( Database database, CypherExecutor cypherExecutor, HttpServletRequest request, LogProvider logProvider );
 }

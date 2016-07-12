@@ -28,6 +28,7 @@ import org.neo4j.shell.impl.SimpleAppServer;
 import org.neo4j.shell.impl.RemoteClient;
 import org.neo4j.shell.impl.RmiLocation;
 import org.neo4j.shell.impl.SameJvmClient;
+import org.neo4j.shell.impl.SystemOutput;
 
 /**
  * A convenience class for creating servers clients as well as finding remote
@@ -95,7 +96,24 @@ public abstract class ShellLobby
     public static ShellClient newClient( ShellServer server, Map<String, Serializable> initialSession,
                                          CtrlCHandler signalHandler ) throws ShellException
     {
-        return new SameJvmClient( initialSession, server, signalHandler );
+        return newClient( server, initialSession, new SystemOutput(), signalHandler );
+    }
+
+    /**
+     * Creates a client and "starts" it, i.e. grabs the console prompt.
+     * @param server the server (in the same JVM) which the client will
+     * communicate with.
+     * @param initialSession the initial session variables the shell will have,
+     * in addition to those provided by the server initially.
+     * @param output the output to write to.
+     * @param signalHandler the ctrl-c handler to use
+     * @throws ShellException if the execution fails
+     * @return the new shell client.
+     */
+    public static ShellClient newClient( ShellServer server, Map<String, Serializable> initialSession,
+                                         Output output, CtrlCHandler signalHandler ) throws ShellException
+    {
+        return new SameJvmClient( initialSession, server, output, signalHandler );
     }
 	
     /**

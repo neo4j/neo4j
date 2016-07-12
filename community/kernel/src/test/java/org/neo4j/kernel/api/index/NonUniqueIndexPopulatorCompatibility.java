@@ -62,7 +62,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, config, indexSamplingConfig );
         try ( IndexReader reader = accessor.newReader() )
         {
-            PrimitiveLongIterator nodes = reader.lookup( "value1" );
+            PrimitiveLongIterator nodes = reader.seek( "value1" );
             assertEquals( asSet( 1l, 2l ), asSet( nodes ) );
         }
         accessor.close();
@@ -76,6 +76,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         String failure = "The contrived failure";
+        populator.create();
 
         // WHEN
         populator.markAsFailed( failure );
@@ -92,6 +93,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config, indexSamplingConfig );
         String failure = "The contrived failure";
+        populator.create();
 
         // WHEN
         populator.markAsFailed( failure );
@@ -151,7 +153,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, new IndexConfiguration( false ), indexSamplingConfig );
         try ( IndexReader reader = accessor.newReader() )
         {
-            PrimitiveLongIterator nodes = reader.lookup( propertyValue );
+            PrimitiveLongIterator nodes = reader.seek( propertyValue );
             assertEquals( asSet( 1l ), asSet( nodes ) );
         }
         accessor.close();

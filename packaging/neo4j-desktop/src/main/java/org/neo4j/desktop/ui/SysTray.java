@@ -19,9 +19,7 @@
  */
 package org.neo4j.desktop.ui;
 
-import java.awt.AWTException;
-import java.awt.SystemTray;
-import java.awt.TrayIcon;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -44,11 +42,17 @@ public abstract class SysTray
 {
     public static SysTray install( Actions actions, JFrame mainWindow )
     {
+        SysTray sysTray = null;
+
         try
         {
             if ( SystemTray.isSupported() )
             {
-                return new SysTray.Enabled( Graphics.SYSTEM_TRAY_ICON, actions, mainWindow );
+                sysTray = new SysTray.Enabled( Graphics.SYSTEM_TRAY_ICON, actions, mainWindow );
+            }
+            else
+            {
+                sysTray = new SysTray.Disabled( actions, mainWindow );
             }
         }
         catch ( AWTException e )
@@ -58,7 +62,7 @@ public abstract class SysTray
         }
         
         // Fall back to still being able to function, but without the systray support.
-        return new SysTray.Disabled( actions, mainWindow );
+        return sysTray;
     }
     
     public abstract void changeStatus( DatabaseStatus status );
@@ -67,10 +71,11 @@ public abstract class SysTray
     {
         private final TrayIcon trayIcon;
         private final String iconResourceBaseName;
-        
+
         Enabled( String iconResourceBaseName, Actions actions, JFrame mainWindow ) throws AWTException
         {
             this.iconResourceBaseName = iconResourceBaseName;
+
             this.trayIcon = init( actions, mainWindow );
         }
 
@@ -91,6 +96,33 @@ public abstract class SysTray
                 throws AWTException
         {
             TrayIcon trayIcon = new TrayIcon( loadImage( tryStatusSpecific( STOPPED ) ), title( STOPPED ) );
+
+            PopupMenu popUpMenu = new PopupMenu(  );
+
+            MenuItem menuItemOpen = new MenuItem( "Open" );
+            menuItemOpen.addActionListener( new ActionListener()
+            {
+                @Override
+                public void actionPerformed( ActionEvent actionEvent )
+                {
+                    actions.open();
+                }
+            } );
+            popUpMenu.add( menuItemOpen );
+
+            MenuItem menuItemExit = new MenuItem( "Exit" );
+            menuItemExit.addActionListener( new ActionListener()
+            {
+                @Override
+                public void actionPerformed( ActionEvent actionEvent )
+                {
+                    actions.exit();
+                }
+            } );
+
+            popUpMenu.add( menuItemExit );
+            trayIcon.setPopupMenu( popUpMenu );
+
             trayIcon.addActionListener( new ActionListener()
             {
                 @Override
@@ -107,6 +139,7 @@ public abstract class SysTray
                     actions.clickSysTray();
                 }
             } );
+
             mainWindow.setDefaultCloseOperation( DO_NOTHING_ON_CLOSE );
             mainWindow.addWindowListener( new WindowAdapter()
             {
@@ -116,7 +149,9 @@ public abstract class SysTray
                     actions.clickCloseButton();
                 }
             } );
+
             SystemTray.getSystemTray().add( trayIcon );
+
             return trayIcon;
         }
 
@@ -155,5 +190,9 @@ public abstract class SysTray
         void clickSysTray();
         
         void closeForReal();
+
+        void open();
+
+        void exit();
     }
 }

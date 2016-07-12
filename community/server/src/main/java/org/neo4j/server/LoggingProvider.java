@@ -21,7 +21,7 @@ package org.neo4j.server;
 
 import javax.ws.rs.ext.Provider;
 
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.database.InjectableProvider;
 
 import com.sun.jersey.api.core.HttpContext;
@@ -31,19 +31,19 @@ import com.sun.jersey.api.core.HttpContext;
  */
 @Deprecated
 @Provider
-public class LoggingProvider extends InjectableProvider<Logging>
+public class LoggingProvider extends InjectableProvider<LogProvider>
 {
-    private final Logging logging;
+    private final LogProvider logProvider;
 
-    public LoggingProvider( Logging logging )
+    public LoggingProvider( LogProvider logProvider )
     {
-        super( Logging.class );
-        this.logging = logging;
+        super( LogProvider.class );
+        this.logProvider = logProvider;
     }
 
     @Override
-    public Logging getValue( HttpContext c )
+    public LogProvider getValue( HttpContext c )
     {
-        return logging;
+        return logProvider;
     }
 }

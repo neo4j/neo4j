@@ -55,9 +55,9 @@ public class UpdatePullerSwitchIT
     @Before
     public void setup() throws Exception
     {
-        managedCluster = clusterRule.provider( ClusterManager.clusterOfSize( 2 ) )
-                                    .config( tx_push_factor, "0" )
-                                    .config( HaSettings.pull_interval, "100s" )
+        managedCluster = clusterRule.withProvider( ClusterManager.clusterOfSize( 2 ) )
+                                    .withSharedSetting( tx_push_factor, "0" )
+                                    .withSharedSetting( HaSettings.pull_interval, "100s" )
                                     .startCluster();
     }
 
@@ -109,8 +109,8 @@ public class UpdatePullerSwitchIT
 
     private void verifyUpdatePullerThreads()
     {
-        InstanceId masterId = managedCluster.getMaster().getConfig().get( ClusterSettings.server_id );
-        InstanceId slaveId = managedCluster.getAnySlave().getConfig().get( ClusterSettings.server_id );
+        InstanceId masterId = managedCluster.getMaster().platformModule.config.get( ClusterSettings.server_id );
+        InstanceId slaveId = managedCluster.getAnySlave().platformModule.config.get( ClusterSettings.server_id );
         Map<Thread,StackTraceElement[]> allStackTraces = Thread.getAllStackTraces();
         Set<Thread> threads = allStackTraces.keySet();
         assertFalse( "Master should not have any puller threads", findThreadWithPrefix( threads,

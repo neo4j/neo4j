@@ -24,12 +24,14 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -37,7 +39,12 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.IdTypeConfigurationProvider;
+import org.neo4j.kernel.impl.factory.CommunityEditionModule;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.EditionModule;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.PlatformModule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -54,38 +61,44 @@ import static org.neo4j.kernel.impl.core.BigStoreIT.assertProperties;
         "hack in JumpingFileSystemAbstraction$JumpingFileChannel.assertWithinDiff() for the PropertyStore alignment." )
 public class BigJumpingStoreIT
 {
-    private static class TestDatabase extends InternalAbstractGraphDatabase
-    {
-        protected TestDatabase( String storeDir, Map<String, String> params )
-        {
-            super( storeDir, params, GraphDatabaseDependencies.newDependencies() );
-            run();
-        }
-
-        @Override
-        protected IdGeneratorFactory createIdGeneratorFactory()
-        {
-            return new JumpingIdGeneratorFactory( SIZE_PER_JUMP );
-        }
-
-        @Override
-        protected FileSystemAbstraction createFileSystemAbstraction()
-        {
-            return life.add( new JumpingFileSystemAbstraction( SIZE_PER_JUMP ) );
-        }
-    }
-
     private static final int SIZE_PER_JUMP = 1000;
-    private static final String PATH = "target/var/bigjump";
+    private static final File PATH = new File( "target/var/bigjump" );
     private static final RelationshipType TYPE = DynamicRelationshipType.withName( "KNOWS" );
     private static final RelationshipType TYPE2 = DynamicRelationshipType.withName( "DROP_KICKS" );
-    private InternalAbstractGraphDatabase db;
+    private GraphDatabaseService db;
 
     @Before
     public void doBefore()
     {
         deleteFileOrDirectory( PATH );
-        db = new TestDatabase( PATH, config() );
+        db = new CommunityFacadeFactory()
+        {
+            @Override
+            protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+            {
+                return new PlatformModule( storeDir, params, dependencies, graphDatabaseFacade )
+                {
+                    protected FileSystemAbstraction createFileSystemAbstraction()
+                    {
+                        return new JumpingFileSystemAbstraction( SIZE_PER_JUMP );
+                    }
+                };
+            }
+
+            @Override
+            protected EditionModule createEdition( PlatformModule platformModule )
+            {
+                return new CommunityEditionModule( platformModule )
+                {
+                    @Override
+                    protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs,
+                            IdTypeConfigurationProvider idTypeConfigurationProvider )
+                    {
+                        return new JumpingIdGeneratorFactory( SIZE_PER_JUMP );
+                    }
+                };
+            }
+        }.newFacade( PATH, config(), GraphDatabaseDependencies.newDependencies() );
     }
 
     private Map<String, String> config()
@@ -130,8 +143,7 @@ public class BigJumpingStoreIT
         }
 
         tx.success();
-        //noinspection deprecation
-        tx.finish();
+        tx.close();
 
         // Verify
         tx = db.beginTx();
@@ -146,11 +158,9 @@ public class BigJumpingStoreIT
                 assertProperties( map( "number", nodeCount++, "string", stringValue, "array", arrayValue ), node );
                 relCount += count( node.getRelationships( Direction.OUTGOING ) );
             }
-            caches().clear();
         }
         assertEquals( numberOfRels, relCount );
-        //noinspection deprecation
-        tx.finish();
+        tx.close();
 
         // Remove stuff
         tx = db.beginTx();
@@ -207,8 +217,7 @@ public class BigJumpingStoreIT
             }
         }
         tx.success();
-        //noinspection deprecation
-        tx.finish();
+        tx.close();
 
         // Verify again
         tx = db.beginTx();
@@ -260,15 +269,8 @@ public class BigJumpingStoreIT
                 }
                 nodeCount++;
             }
-            caches().clear();
         }
-        //noinspection deprecation
-        tx.finish();
-    }
-
-    private Caches caches()
-    {
-        return db.getDependencyResolver().resolveDependency( Caches.class );
+        tx.close();
     }
 
     private void setPropertyOnAll( Iterable<Relationship> relationships, String key,

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,29 +28,53 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache;
-import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
+import org.neo4j.test.PageCacheRule;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 
 public class AbstractDynamicStoreTest
 {
+    private static final int BLOCK_SIZE = 60;
+
+    @Rule
+    public final EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
+
+    private final File fileName = new File( "store" );
+    private PageCache pageCache;
+    private FileSystemAbstraction fs;
+
+    @Before
+    public void before() throws IOException
+    {
+        fs = fsr.get();
+        pageCache = pageCacheRule.getPageCache( fsr.get() );
+        try ( StoreChannel channel = fs.create( fileName ) )
+        {
+            ByteBuffer buffer = ByteBuffer.allocate( 4 );
+            buffer.putInt( BLOCK_SIZE );
+            buffer.flip();
+            channel.write( buffer );
+        }
+    }
+
     @Test
     public void shouldRecognizeDesignatedInUseBit() throws Exception
     {
         // GIVEN
-        AbstractDynamicStore store = newTestableDynamicStore();
-        try
+        try ( AbstractDynamicStore store = newTestableDynamicStore() )
         {
             // WHEN
             byte otherBitsInTheInUseByte = 0;
@@ -61,10 +86,67 @@ public class AbstractDynamicStoreTest
                 otherBitsInTheInUseByte |= 1;
             }
         }
-        finally
+    }
+
+    @Test
+    public void dynamicRecordCursorReadsInUseRecords()
+    {
+        try ( AbstractDynamicStore store = newTestableDynamicStore() )
         {
-            store.close();
+            DynamicRecord first = createDynamicRecord( 1, store );
+            DynamicRecord second = createDynamicRecord( 2, store );
+            DynamicRecord third = createDynamicRecord( 3, store );
+
+            first.setNextBlock( second.getId() );
+            store.forceUpdateRecord( first );
+            second.setNextBlock( third.getId() );
+            store.forceUpdateRecord( second );
+
+            AbstractDynamicStore.DynamicRecordCursor recordsCursor = store.getRecordsCursor( 1 );
+            assertTrue( recordsCursor.next() );
+            assertEquals( first, recordsCursor.get() );
+            assertTrue( recordsCursor.next() );
+            assertEquals( second, recordsCursor.get() );
+            assertTrue( recordsCursor.next() );
+            assertEquals( third, recordsCursor.get() );
+            assertFalse( recordsCursor.next() );
         }
+    }
+
+    @Test
+    public void dynamicRecordCursorReadsNotInUseRecords()
+    {
+        try ( AbstractDynamicStore store = newTestableDynamicStore() )
+        {
+            DynamicRecord first = createDynamicRecord( 1, store );
+            DynamicRecord second = createDynamicRecord( 2, store );
+            DynamicRecord third = createDynamicRecord( 3, store );
+
+            first.setNextBlock( second.getId() );
+            store.forceUpdateRecord( first );
+            second.setNextBlock( third.getId() );
+            store.forceUpdateRecord( second );
+            second.setInUse( false );
+            store.forceUpdateRecord( second );
+
+            AbstractDynamicStore.DynamicRecordCursor recordsCursor = store.getRecordsCursor( 1 );
+            assertTrue( recordsCursor.next() );
+            assertEquals( first, recordsCursor.get() );
+            assertTrue( recordsCursor.next() );
+            assertEquals( second, recordsCursor.get() );
+            assertTrue( recordsCursor.next() );
+            assertEquals( third, recordsCursor.get() );
+            assertFalse( recordsCursor.next() );
+        }
+    }
+
+    private static DynamicRecord createDynamicRecord( long id, AbstractDynamicStore store )
+    {
+        DynamicRecord first = new DynamicRecord( id );
+        first.setInUse( true );
+        first.setData( RandomUtils.nextBytes( 10 ) );
+        store.forceUpdateRecord( first );
+        return first;
     }
 
     private void assertRecognizesByteAsInUse( AbstractDynamicStore store, byte inUseByte )
@@ -75,9 +157,9 @@ public class AbstractDynamicStoreTest
 
     private AbstractDynamicStore newTestableDynamicStore()
     {
-        return new AbstractDynamicStore( fileName, new Config(), IdType.ARRAY_BLOCK, new DefaultIdGeneratorFactory(),
-                new BatchingPageCache( fsr.get(), 1000, 1, BatchingPageCache.SYNCHRONOUS, mock( Monitor.class ) ),
-                fsr.get(), StringLogger.DEV_NULL, StoreVersionMismatchHandler.ALLOW_OLD_VERSION, new Monitors() )
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
+        AbstractDynamicStore store = new AbstractDynamicStore( fileName, new Config(), IdType.ARRAY_BLOCK,
+                idGeneratorFactory, pageCache, NullLogProvider.getInstance(), BLOCK_SIZE )
         {
             @Override
             public void accept( Processor processor, DynamicRecord record )
@@ -90,25 +172,7 @@ public class AbstractDynamicStoreTest
                 return "TestDynamicStore";
             }
         };
-    }
-
-    public final @Rule EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
-    private final File fileName = new File( "store" );
-
-    @Before
-    public void before() throws IOException
-    {
-        StoreChannel channel = fsr.get().create( fileName );
-        try
-        {
-            ByteBuffer buffer = ByteBuffer.allocate( 4 );
-            buffer.putInt( 60 );
-            buffer.flip();
-            channel.write( buffer );
-        }
-        finally
-        {
-            channel.close();
-        }
+        store.initialise( true );
+        return store;
     }
 }

@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.rest.web;
 
+import org.junit.Test;
+
 import java.util.List;
 import java.util.Map;
 import javax.ws.rs.core.Response;
 
-import org.junit.Test;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -41,26 +41,70 @@ public class DatabaseMetadataServiceTest
     @Test
     public void shouldAdvertiseRelationshipTypesThatCurrentlyExistInTheDatabase() throws Throwable
     {
-        InternalAbstractGraphDatabase db = (InternalAbstractGraphDatabase)new TestGraphDatabaseFactory().newImpermanentDatabase();
-        Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        node.createRelationshipTo( db.createNode(), withName( "a" ) );
-        node.createRelationshipTo( db.createNode(), withName( "b" ) );
-        node.createRelationshipTo( db.createNode(), withName( "c" ) );
-        tx.success();
-        tx.finish();
-        
+        GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
+        long relId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            node.createRelationshipTo( db.createNode(), withName( "a" ) );
+            node.createRelationshipTo( db.createNode(), withName( "b" ) );
+            relId = node.createRelationshipTo( db.createNode(), withName( "c" ) ).getId();
+            tx.success();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.getRelationshipById( relId ).delete();
+            tx.success();
+        }
+
         Database database = new WrappedDatabase( db );
         DatabaseMetadataService service = new DatabaseMetadataService( database );
 
-        tx = db.beginTx();
-        Response response = service.getRelationshipTypes();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Response response = service.getRelationshipTypes( false );
 
-        assertEquals( 200, response.getStatus() );
-        List<Map<String, Object>> jsonList = JsonHelper.jsonToList( response.getEntity()
-                .toString() );
-        assertEquals( 3, jsonList.size() );
-        tx.finish();
+            assertEquals( 200, response.getStatus() );
+            List<Map<String,Object>> jsonList = JsonHelper.jsonToList( response.getEntity()
+                    .toString() );
+            assertEquals( 3, jsonList.size() );
+        }
+        database.stop();
+    }
+
+    @Test
+    public void shouldAdvertiseRelationshipTypesThatCurrentlyInUseInTheDatabase() throws Throwable
+    {
+        GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
+        long relId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            node.createRelationshipTo( db.createNode(), withName( "a" ) );
+            node.createRelationshipTo( db.createNode(), withName( "b" ) );
+            relId = node.createRelationshipTo( db.createNode(), withName( "c" ) ).getId();
+            tx.success();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.getRelationshipById( relId ).delete();
+            tx.success();
+        }
+
+        Database database = new WrappedDatabase( db );
+        DatabaseMetadataService service = new DatabaseMetadataService( database );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Response response = service.getRelationshipTypes( true );
+
+            assertEquals( 200, response.getStatus() );
+            List<Map<String,Object>> jsonList = JsonHelper.jsonToList( response.getEntity()
+                    .toString() );
+            assertEquals( 2, jsonList.size() );
+        }
         database.stop();
     }
 }

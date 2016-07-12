@@ -22,23 +22,19 @@ package org.neo4j.cypher.internal
 import java.lang.{Iterable => JavaIterable}
 import java.util.{Iterator => JavaIterator}
 
-import org.neo4j.graphdb.traversal.Paths
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.CypherArray
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
+import org.neo4j.kernel.Traversal
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
+// TODO: This is only here for accomodating cypher-compiler-1.9. Do not touch, do not import, purge it with fire post 2.3
 case class PathImpl(pathEntities: PropertyContainer*)
-  extends org.neo4j.graphdb.Path
-  with Traversable[PropertyContainer]
-  with CypherArray {
-
-  val sz = pathEntities.size
+  extends org.neo4j.graphdb.Path with Traversable[PropertyContainer] with CypherArray {
 
   val (nodeList,relList) = {
-    if (sz % 2 == 0)
-      throw new IllegalArgumentException(
-        s"Tried to construct a path that is not built like a path: even number of elements ($sz)")
+    if (pathEntities.size % 2 == 0) throw new IllegalArgumentException("Tried to construct a path that is not built like a path: even number of elements.");
     var x = 0
     val nodes = new Array[Node](pathEntities.size/2+1)
     val rels = new Array[Relationship](pathEntities.size/2)
@@ -49,14 +45,12 @@ case class PathImpl(pathEntities: PropertyContainer*)
         x+=1
       })
     } catch {
-      case e: ClassCastException =>
-        throw new IllegalArgumentException(
-          s"Tried to construct a path that is not built like a path: $pathEntities", e)
+      case e: ClassCastException => throw new IllegalArgumentException("Tried to construct a path that is not built like a path",e);
     }
     (new mutable.WrappedArray.ofRef(nodes),new mutable.WrappedArray.ofRef(rels))
   }
 
-  require(isProperPath, s"Tried to construct a path that is not built like a path: $pathEntities")
+  require(isProperPath, "Tried to construct a path that is not built like a path")
 
   def isProperPath: Boolean = {
     val atLeastOneNode = nodeList.length > 0
@@ -79,10 +73,10 @@ case class PathImpl(pathEntities: PropertyContainer*)
   def iterator(): JavaIterator[PropertyContainer] = pathEntities.asJava.iterator()
 
   def foreach[U](f: (PropertyContainer) => U) {
-    pathEntities.foreach(f)
+    pathEntities.foreach(f(_))
   }
 
-  override def toString(): String = Paths.defaultPathToString(this)
+  override def toString(): String = Traversal.defaultPathToString(this)
 
   override def canEqual(that: Any) = that != null && that.isInstanceOf[Path]
 

@@ -22,21 +22,21 @@ package org.neo4j.server.rrd.sampler;
 import org.rrd4j.DsType;
 
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.server.rrd.Sampleable;
 
 public abstract class DatabasePrimitivesSampleableBase implements Sampleable
 {
-    private final NeoStoreProvider neoStore;
+    private final NeoStoresSupplier neoStore;
     private final AvailabilityGuard guard;
     private double lastReadValue = 0d;
 
-    public DatabasePrimitivesSampleableBase( NeoStoreProvider neoStore, AvailabilityGuard guard )
+    public DatabasePrimitivesSampleableBase( NeoStoresSupplier neoStore, AvailabilityGuard guard )
     {
         if ( neoStore == null )
         {
-            throw new RuntimeException( "Database sampler needs a NeoStore to work, was given null." );
+            throw new RuntimeException( "Database sampler needs a NeoStores to work, was given null." );
         }
         this.neoStore = neoStore;
         this.guard = guard;
@@ -45,11 +45,11 @@ public abstract class DatabasePrimitivesSampleableBase implements Sampleable
     @Override
     public double getValue()
     {
-        if ( guard.isAvailable(0) )
+        if ( guard.isAvailable( 0 ) )
         {
             try
             {
-                lastReadValue = readValue( neoStore.evaluate() );
+                lastReadValue = readValue( neoStore.get() );
             }
             catch ( Exception e )
             {
@@ -63,7 +63,7 @@ public abstract class DatabasePrimitivesSampleableBase implements Sampleable
         return lastReadValue;
     }
 
-    protected abstract double readValue( NeoStore neoStore );
+    protected abstract double readValue( NeoStores neoStore );
 
     @Override
     public DsType getType()

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.helpers.Provider;
+import org.neo4j.function.Supplier;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.api.KernelAPI;
@@ -29,9 +29,9 @@ import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 
 public class DefaultLabelIdCreator extends IsolatedTransactionTokenCreator
 {
-    public DefaultLabelIdCreator( Provider<KernelAPI> kernelProvider, IdGeneratorFactory idGeneratorFactory )
+    public DefaultLabelIdCreator( Supplier<KernelAPI> kernelSupplier, IdGeneratorFactory idGeneratorFactory )
     {
-        super( kernelProvider, idGeneratorFactory );
+        super( kernelSupplier, idGeneratorFactory );
     }
 
     @Override

@@ -19,12 +19,10 @@
  */
 package org.neo4j.server.database;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.logging.Logging;
 
 public class WrappedDatabase extends LifecycleAdapter implements Database
 {
@@ -35,7 +33,7 @@ public class WrappedDatabase extends LifecycleAdapter implements Database
         return new Factory()
         {
             @Override
-            public Database newDatabase(Config config, InternalAbstractGraphDatabase.Dependencies dependencies)
+            public Database newDatabase( Config config, CommunityFacadeFactory.Dependencies dependencies)
             {
                 return new WrappedDatabase( db );
             }
@@ -58,8 +56,7 @@ public class WrappedDatabase extends LifecycleAdapter implements Database
     @Override
     public String getLocation()
     {
-        return graph.getDependencyResolver().resolveDependency( Config.class )
-                .get( GraphDatabaseSettings.store_dir ).getAbsolutePath();
+        return graph.getStoreDir();
     }
 
     @Override
@@ -72,11 +69,5 @@ public class WrappedDatabase extends LifecycleAdapter implements Database
     public boolean isRunning()
     {
         return true;
-    }
-
-    @Override
-    public Logging getLogging()
-    {
-        return graph.getDependencyResolver().resolveDependency( Logging.class );
     }
 }

@@ -19,17 +19,15 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Functions;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.function.Function;
+import org.neo4j.function.Functions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 public class LuceneKernelExtensions
 {
-    public static DirectoryFactory directoryFactory( Config config, FileSystemAbstraction fileSystem )
+    public static DirectoryFactory directoryFactory( boolean ephemeral, FileSystemAbstraction fileSystem )
     {
-        if ( config.get( InternalAbstractGraphDatabase.Configuration.ephemeral ) )
+        if ( ephemeral )
         {
             return fileSystem.getOrCreateThirdPartyFileSystem( DirectoryFactory.class, IN_MEMORY_FACTORY );
         }

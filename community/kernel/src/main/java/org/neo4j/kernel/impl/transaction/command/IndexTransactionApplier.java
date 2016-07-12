@@ -35,7 +35,6 @@ import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
-import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -51,23 +50,20 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
  * Gather node and property changes, converting them into logical updates to the indexes.
  * {@link #close()} will actually apply to the indexes.
  */
-public class IndexTransactionApplier extends NeoCommandHandler.Adapter
+public class IndexTransactionApplier extends CommandHandler.Adapter
 {
     private final ValidatedIndexUpdates indexUpdates;
     private List<NodeLabelUpdate> labelUpdates;
 
     private final IndexingService indexingService;
-    private final CacheAccessBackDoor cacheAccess;
     private final WorkSync<Provider<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
 
     public IndexTransactionApplier( IndexingService indexingService, ValidatedIndexUpdates indexUpdates,
-                                    WorkSync<Provider<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync,
-                                    CacheAccessBackDoor cacheAccess )
+                                    WorkSync<Provider<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync )
     {
         this.indexingService = indexingService;
         this.indexUpdates = indexUpdates;
         this.labelScanStoreSync = labelScanStoreSync;
-        this.cacheAccess = cacheAccess;
     }
 
     @Override
@@ -78,7 +74,6 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
             if ( labelUpdates != null )
             {
                 updateLabelScanStore();
-                cacheAccess.applyLabelUpdates( labelUpdates );
             }
 
             if ( indexUpdates.hasChanges() )

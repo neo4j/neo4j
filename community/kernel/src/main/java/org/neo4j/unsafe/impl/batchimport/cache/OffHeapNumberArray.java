@@ -38,7 +38,7 @@ abstract class OffHeapNumberArray implements NumberArray
         this.length = length;
         this.shift = shift;
         this.stride = 1 << shift;
-        this.address = UnsafeUtil.malloc( length << shift );
+        this.address = UnsafeUtil.allocateMemory( length << shift );
     }
 
     @Override

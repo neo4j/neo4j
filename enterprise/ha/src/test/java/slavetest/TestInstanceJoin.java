@@ -19,6 +19,7 @@
  */
 package slavetest;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -31,15 +32,15 @@ import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.impl.transaction.log.LogRotation;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.TargetDirectory.forTest;
 
 /*
  * This test case ensures that instances with the same store id but very old txids
@@ -47,7 +48,8 @@ import static org.neo4j.test.TargetDirectory.forTest;
  */
 public class TestInstanceJoin
 {
-    private final TargetDirectory dir = forTest( getClass() );
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     @Test
     public void makeSureSlaveCanJoinEvenIfTooFarBackComparedToMaster() throws Exception
@@ -57,18 +59,22 @@ public class TestInstanceJoin
 
         HighlyAvailableGraphDatabase master = null;
         HighlyAvailableGraphDatabase slave = null;
+        String masterDir = testDirectory.directory( "master" ).getAbsolutePath();
+        String slaveDir = testDirectory.directory( "slave" ).getAbsolutePath();
         try
         {
-            master = start( dir.cleanDirectory( "master" ).getAbsolutePath(), 0,
+            master = start( masterDir, 0,
                     stringMap( keep_logical_logs.name(), "1 txs",
                                ClusterSettings.initial_hosts.name(), "127.0.0.1:5001" ) );
             createNode( master, "something", "unimportant" );
+            checkPoint( master );
             // Need to start and shutdown the slave so when we start it up later it verifies instead of copying
-            slave = start( dir.cleanDirectory( "slave" ).getAbsolutePath(), 1,
+            slave = start( slaveDir, 1,
                     stringMap( ClusterSettings.initial_hosts.name(), "127.0.0.1:5001,127.0.0.1:5002" ) );
             slave.shutdown();
 
-            long nodeId = createNode( master, key, value );
+            createNode( master, key, value );
+            checkPoint( master );
             // Rotating, moving the above transactions away so they are removed on shutdown.
             rotateLog( master );
 
@@ -80,7 +86,7 @@ public class TestInstanceJoin
              * restart.
              */
             master.shutdown();
-            master = start( dir.existingDirectory( "master" ).getAbsolutePath(), 0,
+            master = start( masterDir, 0,
                     stringMap( keep_logical_logs.name(), "1 txs",
                                ClusterSettings.initial_hosts.name(), "127.0.0.1:5001" ) );
 
@@ -91,10 +97,13 @@ public class TestInstanceJoin
             for ( int i = 0; i < importantNodeCount; i++ )
             {
                 createNode( master, key, value );
+                checkPoint( master );
                 rotateLog( master );
             }
 
-            slave = start( dir.existingDirectory( "slave" ).getAbsolutePath(), 1,
+            checkPoint( master );
+
+            slave = start( slaveDir, 1,
                     stringMap( ClusterSettings.initial_hosts.name(), "127.0.0.1:5001,127.0.0.1:5002" ) );
             slave.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
 
@@ -122,6 +131,13 @@ public class TestInstanceJoin
         db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
     }
 
+    private void checkPoint( HighlyAvailableGraphDatabase db ) throws IOException
+    {
+        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
+                new SimpleTriggerInfo( "test" )
+        );
+    }
+
     private int nodesHavingProperty( HighlyAvailableGraphDatabase slave, String key, String value )
     {
         try ( Transaction tx = slave.beginTx() )
@@ -137,11 +153,6 @@ public class TestInstanceJoin
             tx.success();
             return count;
         }
-    }
-
-    private KernelPanicEventGenerator getKernelPanicGenerator( HighlyAvailableGraphDatabase database )
-    {
-        return database.getDependencyResolver().resolveDependency( KernelPanicEventGenerator.class );
     }
 
     private long createNode( HighlyAvailableGraphDatabase db, String key, String value )
@@ -172,6 +183,6 @@ public class TestInstanceJoin
 
     private static void awaitStart( HighlyAvailableGraphDatabase db )
     {
-        db.beginTx().finish();
+        db.beginTx().close();
     }
 }

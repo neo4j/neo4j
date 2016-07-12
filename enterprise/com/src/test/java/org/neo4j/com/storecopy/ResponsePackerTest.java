@@ -19,13 +19,14 @@
  */
 package org.neo4j.com.storecopy;
 
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.junit.Test;
-
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
+import org.neo4j.function.Suppliers;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -42,8 +43,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import static org.neo4j.kernel.impl.util.Providers.singletonProvider;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 public class ResponsePackerTest
 {
@@ -56,9 +56,10 @@ public class ResponsePackerTest
         IOCursor<CommittedTransactionRepresentation> endlessCursor = new EndlessCursor( lastAppliedTransactionId+1 );
         when( transactionStore.getTransactions( anyLong() ) ).thenReturn( endlessCursor );
         final long targetTransactionId = 8L;
-        final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( targetTransactionId, 0 );
+        final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( targetTransactionId, 0,
+                BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
         ResponsePacker packer = new ResponsePacker( transactionStore, transactionIdStore,
-                singletonProvider( new StoreId() ) );
+                Suppliers.singleton( new StoreId() ) );
 
         // WHEN
         Response<Object> response = packer.packTransactionStreamResponse( requestContextStartingAt( 5L ), null );
@@ -86,7 +87,8 @@ public class ResponsePackerTest
 
                         // Move the target transaction id forward one step, effectively always keeping it out of reach
                         transactionIdStore.setLastCommittedAndClosedTransactionId(
-                                transactionIdStore.getLastCommittedTransactionId()+1, 0 );
+                                transactionIdStore.getLastCommittedTransactionId()+1, 0,
+                                BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
                         return true;
                     }
                 };

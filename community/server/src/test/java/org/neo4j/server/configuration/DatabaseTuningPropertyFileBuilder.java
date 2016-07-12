@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 
 import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
@@ -31,6 +32,7 @@ public class DatabaseTuningPropertyFileBuilder
 {
     private File parentDirectory = null;
     private String mappedMemory = null;
+    private String kernelId;
 
     public static DatabaseTuningPropertyFileBuilder builder( File directory )
     {
@@ -58,6 +60,13 @@ public class DatabaseTuningPropertyFileBuilder
         {
             properties.put( "neostore.nodestore.db.mapped_memory", mappedMemory );
         }
+
+
+        if(kernelId != null)
+        {
+            properties.put( GraphDatabaseSettings.forced_kernel_id.name(), kernelId );
+        }
+
         writePropertiesToFile( properties, temporaryConfigFile );
         return temporaryConfigFile;
     }
@@ -65,6 +74,12 @@ public class DatabaseTuningPropertyFileBuilder
     public DatabaseTuningPropertyFileBuilder mappedMemory( int i )
     {
         this.mappedMemory = String.valueOf( i ) + "M";
+        return this;
+    }
+
+    public DatabaseTuningPropertyFileBuilder withKernelId(String kernelId)
+    {
+        this.kernelId = kernelId;
         return this;
     }
 }

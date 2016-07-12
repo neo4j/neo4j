@@ -70,14 +70,22 @@ public class Message<MESSAGETYPE extends MessageType>
     public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> timeout( MESSAGETYPE message,
                                                                                   Message<?> causedBy, Object payload )
     {
-        return causedBy.copyHeadersTo( new Message<MESSAGETYPE>( message, payload ), Message.CONVERSATION_ID,
-                Message.CREATED_BY );
+        Message<MESSAGETYPE> timeout = causedBy.copyHeadersTo( new Message<>( message, payload ),
+                Message.CONVERSATION_ID, Message.CREATED_BY );
+        int timeoutCount = 0;
+        if ( causedBy.hasHeader( TIMEOUT_COUNT ) )
+        {
+            timeoutCount = Integer.parseInt( causedBy.getHeader( TIMEOUT_COUNT ) ) + 1;
+        }
+        timeout.setHeader( TIMEOUT_COUNT, "" + timeoutCount );
+        return timeout;
     }
 
 
     // Standard headers
     public static final String CONVERSATION_ID = "conversation-id";
     public static final String CREATED_BY = "created-by";
+    public static final String TIMEOUT_COUNT = "timeout-count";
     public static final String FROM = "from";
     public static final String TO = "to";
     public static final String INSTANCE_ID = "instance-id";

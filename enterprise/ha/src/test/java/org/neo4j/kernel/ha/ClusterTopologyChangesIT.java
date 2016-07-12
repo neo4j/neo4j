@@ -33,9 +33,9 @@ import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
+import org.neo4j.cluster.client.ClusterClientModule;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
-import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
@@ -44,21 +44,29 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
+import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.test.CleanupRule;
+import org.neo4j.test.RepeatRule;
+import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.ha.ClusterRule;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.cluster.protocol.cluster.ClusterConfiguration.COORDINATOR;
-import static org.neo4j.helpers.Predicates.not;
+import static org.neo4j.function.Predicates.not;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
@@ -70,6 +78,10 @@ public class ClusterTopologyChangesIT
 
     @Rule
     public final CleanupRule cleanup = new CleanupRule();
+    @Rule
+    public final RepeatRule repeat = new RepeatRule();
+    @Rule
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     private ClusterManager.ManagedCluster cluster;
 
@@ -77,10 +89,9 @@ public class ClusterTopologyChangesIT
     public void setup() throws Exception
     {
         cluster = clusterRule
-                .config(HaSettings.read_timeout, "1s")
-                .config(HaSettings.state_switch_timeout, "2s")
-                .config(HaSettings.com_chunk_size, "1024")
-                .config(GraphDatabaseSettings.cache_type, "none")
+                .withSharedSetting( HaSettings.read_timeout, "1s" )
+                .withSharedSetting( HaSettings.state_switch_timeout, "2s" )
+                .withSharedSetting( HaSettings.com_chunk_size, "1024" )
                 .startCluster();
     }
 
@@ -139,11 +150,11 @@ public class ClusterTopologyChangesIT
 
         // fail slave1 and await master to spot the failure
         RepairKit slave1RepairKit = cluster.fail( slave1 );
-        slave1Left.await(60, SECONDS);
+        assertTrue( slave1Left.await( 60, SECONDS ) );
 
         // fail slave2 and await master to spot the failure
         RepairKit slave2RepairKit = cluster.fail( slave2 );
-        slave2Left.await(60, SECONDS);
+        assertTrue( slave2Left.await( 60, SECONDS ) );
 
         // master loses quorum and goes to PENDING, cluster is unavailable
         cluster.await( not( masterAvailable() ) );
@@ -183,8 +194,9 @@ public class ClusterTopologyChangesIT
 
         // attempt to perform transactions on both slaves throws, election is triggered
         attemptTransactions( newSlave1, newSlave2 );
-        slave1Unavailable.await( 60, TimeUnit.SECONDS ); // set a timeout in case the instance does not have stale epoch
-        slave2Unavailable.await( 60, TimeUnit.SECONDS );
+        // set a timeout in case the instance does not have stale epoch
+        assertTrue( slave1Unavailable.await( 60, TimeUnit.SECONDS ) );
+        assertTrue( slave2Unavailable.await( 60, TimeUnit.SECONDS ) );
 
         // THEN: done with election, cluster feels good and able to serve transactions
         cluster.info( "Waiting for cluster to stabilize" );
@@ -211,11 +223,13 @@ public class ClusterTopologyChangesIT
         createNodeOn( cluster.getMaster() );
         cluster.sync();
 
-        ClusterClient clusterClient = cleanup.add( newClusterClient( new InstanceId( 1 ) ) );
+        LifeSupport life = new LifeSupport();
+        ClusterClientModule clusterClient = newClusterClient( life, new InstanceId( 1 ) );
+        cleanup.add( life );
 
         final AtomicReference<InstanceId> coordinatorIdWhenReJoined = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch( 1 );
-        clusterClient.addClusterListener( new ClusterListener.Adapter()
+        clusterClient.clusterClient.addClusterListener( new ClusterListener.Adapter()
         {
             @Override
             public void enteredCluster( ClusterConfiguration clusterConfiguration )
@@ -225,11 +239,10 @@ public class ClusterTopologyChangesIT
             }
         } );
 
-        clusterClient.init();
-        clusterClient.start();
+        life.start();
 
         // Then
-        latch.await( 2, SECONDS );
+        assertTrue( latch.await( 20, SECONDS ) );
         assertEquals( new InstanceId( 2 ), coordinatorIdWhenReJoined.get() );
     }
 
@@ -254,18 +267,21 @@ public class ClusterTopologyChangesIT
         }
     }
 
-    private ClusterClient newClusterClient( InstanceId id )
+    private ClusterClientModule newClusterClient( LifeSupport life, InstanceId id )
     {
         Map<String,String> configMap = MapUtil.stringMap(
                 ClusterSettings.initial_hosts.name(), cluster.getInitialHostsConfigString(),
                 ClusterSettings.server_id.name(), String.valueOf( id.toIntegerIndex() ),
                 ClusterSettings.cluster_server.name(), "0.0.0.0:8888" );
 
-        Config config = new Config( configMap, InternalAbstractGraphDatabase.Configuration.class,
+        Config config = new Config( configMap, GraphDatabaseFacadeFactory.Configuration.class,
                 GraphDatabaseSettings.class );
 
-        return new ClusterClient( new Monitors(), ClusterClient.adapt( config ), new DevNullLoggingService(),
-                new NotElectableElectionCredentialsProvider(), new ObjectStreamFactory(), new ObjectStreamFactory() );
+        SimpleLogService logService = new SimpleLogService( FormattedLogProvider.toOutputStream( System.out ),
+                FormattedLogProvider.toOutputStream( System.out ) );
+
+        return new ClusterClientModule( life, new Dependencies(), new Monitors(),
+                config, logService, new NotElectableElectionCredentialsProvider() );
     }
 
     private static void attemptTransactions( HighlyAvailableGraphDatabase... dbs )

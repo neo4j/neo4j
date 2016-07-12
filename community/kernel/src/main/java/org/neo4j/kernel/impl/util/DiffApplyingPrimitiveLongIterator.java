@@ -30,9 +30,9 @@ import org.neo4j.graphdb.Resource;
  * Applies a diffset to the given source PrimitiveLongIterator.
  * If the given source is a Resource, then so is this DiffApplyingPrimitiveLongIterator.
  */
-public final class DiffApplyingPrimitiveLongIterator extends PrimitiveLongBaseIterator implements Resource
+public class DiffApplyingPrimitiveLongIterator extends PrimitiveLongBaseIterator implements Resource
 {
-    private enum Phase
+    protected enum Phase
     {
         FILTERED_SOURCE
         {
@@ -68,7 +68,7 @@ public final class DiffApplyingPrimitiveLongIterator extends PrimitiveLongBaseIt
     private final Iterator<?> addedElementsIterator;
     private final Set<?> addedElements;
     private final Set<?> removedElements;
-    private Phase phase;
+    protected Phase phase;
 
     public DiffApplyingPrimitiveLongIterator( PrimitiveLongIterator source,
                                               Set<?> addedElements, Set<?> removedElements )

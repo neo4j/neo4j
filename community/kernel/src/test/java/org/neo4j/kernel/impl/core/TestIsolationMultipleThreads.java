@@ -49,16 +49,16 @@ public class TestIsolationMultipleThreads
     public void setup()
     {
         database = new TestGraphDatabaseFactory().newImpermanentDatabase();
-        Transaction tx = database.beginTx();
-
-        for (int i = 0; i < COUNT; i++)
+        try ( Transaction tx = database.beginTx() )
         {
-            Node node = database.createNode();
-            node.setProperty( "foo", 0 );
-        }
+            for ( int i = 0; i < COUNT; i++ )
+            {
+                Node node = database.createNode();
+                node.setProperty( "foo", 0 );
+            }
 
-        tx.success();
-        tx.finish();
+            tx.success();
+        }
     }
 
     @After
@@ -391,8 +391,7 @@ public class TestIsolationMultipleThreads
                     do
                     {
                         ex = null;
-                        Transaction tx = database.beginTx();
-                        try
+                        try ( Transaction tx = database.beginTx() )
                         {
                             for (int i = 0; i < count; i++)
                             {
@@ -409,16 +408,13 @@ public class TestIsolationMultipleThreads
                             deadLocks = deadLocks+1;
                             ex = e;
 
-                            tx.failure();
+
 
                             if (deadLocks > 100)
                             {
                                 totalDeadlocks += deadLocks;
                                 throw e;
                             }
-                        } finally
-                        {
-                            tx.finish();
                         }
                     } while (ex != null);
 
@@ -460,10 +456,8 @@ public class TestIsolationMultipleThreads
                 double total = 0;
                 while(!done.get())
                 {
-                    try
+                    try ( Transaction transaction = database.beginTx() )
                     {
-                        tx = database.beginTx();
-
                         int firstNode = getFirstValue();
                         int lastNode = getSecondValue();
                         if (firstNode - lastNode != 0)
@@ -473,10 +467,6 @@ public class TestIsolationMultipleThreads
                         total++;
 
                         tx.success();
-                    }
-                    finally
-                    {
-                        tx.finish();
                     }
                 }
                 double percentage = (errors/total)*100.0;
@@ -516,11 +506,10 @@ public class TestIsolationMultipleThreads
                 int totalDiff = 0;
                 while(!done.get())
                 {
-                    try
+                    try ( Transaction tx = database.beginTx() )
                     {
                         int correctValue = -1;
                         int diff = 0;
-                        tx = database.beginTx();
 
                         for (int i = 0; i < count; i++)
                         {
@@ -539,9 +528,6 @@ public class TestIsolationMultipleThreads
                     {
                         e.printStackTrace();
                         tx.failure();
-                    } finally
-                    {
-                        tx.finish();
                     }
 
                 }

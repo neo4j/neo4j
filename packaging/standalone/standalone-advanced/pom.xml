@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j.assembly</groupId>
     <artifactId>neo4j-standalone</artifactId>
-    <version>2.2.11-SNAPSHOT</version>
+    <version>2.3.6-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
@@ -14,7 +14,7 @@
 
   <name>Neo4j Advanced - Server Assembler</name>
 
-  <version>2.2.11-SNAPSHOT</version>
+  <version>2.3.6-SNAPSHOT</version>
 
   <description>This project assembles the Neo4j Advanced stand-alone distribution,
     pulling together all the deliverable artifacts and packaging them
@@ -25,6 +25,9 @@
 	  <url>https://github.com/neo4j/neo4j/tree/master/packaging/standalone/standalone-advanced</url>
   </scm>
 
+  <properties>
+    <neo4j.mainClass>org.neo4j.server.advanced.AdvancedBootstrapper</neo4j.mainClass>
+  </properties>
 
   <licenses>
     <license>
@@ -74,6 +77,11 @@ terms of the relevant Commercial Agreement.
           <finalName>${product.shortname}-advanced-${project.version}</finalName>
           <appendAssemblyId>true</appendAssemblyId>
           <outputDirectory>${project.parent.build.directory}</outputDirectory>
+          <delimiters>
+            <!-- Because we are filtering shell scripts, which use '@' on windows and '${}' on *nix, change the
+                 parameter substitution pattern to not clash with those. -->
+            <delimiter>#{*}</delimiter>
+          </delimiters>
         </configuration>
         <executions>
           <execution>
@@ -159,20 +167,6 @@ terms of the relevant Commercial Agreement.
       <artifactId>neo4j-server-advanced</artifactId>
       <version>${neo4j.version}</version>
     </dependency>
-    <dependency>
-      <!-- Ugly addition just to make the download package contain the same jars. -->
-      <groupId>org.slf4j</groupId>
-      <artifactId>jcl-over-slf4j</artifactId>
-      <!-- Remove conflicting version (why do we have this conflict?) -->
-      <exclusions>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-
   </dependencies>
 
 </project>

@@ -24,52 +24,54 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
+import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 public class StoreFactoryTest
 {
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
     private StoreFactory storeFactory;
-    private NeoStore neoStore;
+    private NeoStores neoStores;
+    private File storeDir;
 
     @Before
-    public void setUp()
+    public void setUp() throws IOException
     {
         FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        Map<String, String> configParams = stringMap(
-                GraphDatabaseSettings.neo_store.name(), "graph.db/neostore" );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
 
-        storeFactory = new StoreFactory( new Config( configParams ), new DefaultIdGeneratorFactory(),
-                pageCache, fs, StringLogger.DEV_NULL, new Monitors() );
+        storeDir = testDirectory.graphDbDir();
+        fs.mkdirs( storeDir );
+        storeFactory = new StoreFactory( storeDir, new Config(), idGeneratorFactory, pageCache,
+                fs, NullLogProvider.getInstance() );
     }
 
     @After
     public void tearDown()
     {
-        if ( neoStore != null )
+        if ( neoStores != null )
         {
-            neoStore.close();
+            neoStores.close();
         }
     }
 
@@ -77,20 +79,22 @@ public class StoreFactoryTest
     public void shouldHaveSameCreationTimeAndUpgradeTimeOnStartup() throws Exception
     {
         // When
-        neoStore = storeFactory.createNeoStore();
+        neoStores = storeFactory.openAllNeoStores( true );
+        MetaDataStore metaDataStore = neoStores.getMetaDataStore();
 
         // Then
-        assertThat( neoStore.getUpgradeTime(), equalTo( neoStore.getCreationTime() ) );
+        assertThat( metaDataStore.getUpgradeTime(), equalTo( metaDataStore.getCreationTime() ) );
     }
 
     @Test
     public void shouldHaveSameCommittedTransactionAndUpgradeTransactionOnStartup() throws Exception
     {
         // When
-        neoStore = storeFactory.createNeoStore();
+        neoStores = storeFactory.openAllNeoStores( true );
+        MetaDataStore metaDataStore = neoStores.getMetaDataStore();
 
         // Then
-        assertEquals( neoStore.getUpgradeTransaction(), neoStore.getLastCommittedTransaction() );
+        assertEquals( metaDataStore.getUpgradeTransaction(), metaDataStore.getLastCommittedTransaction() );
     }
 
     @Test
@@ -99,16 +103,22 @@ public class StoreFactoryTest
         // when
         FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreFactory readOnlyStoreFactory = new StoreFactory(
-                new Config( MapUtil.stringMap(
-                        GraphDatabaseSettings.read_only.name(), Settings.TRUE ,
-                        GraphDatabaseSettings.neo_store.name(), "/tmp/graph.db/"
-                ) ),
-                new DefaultIdGeneratorFactory(), pageCache, fs, StringLogger.DEV_NULL, new Monitors() );
-        neoStore = readOnlyStoreFactory.createNeoStore();
-        long lastClosedTransactionId = neoStore.getLastClosedTransactionId();
+        StoreFactory readOnlyStoreFactory = new StoreFactory( testDirectory.directory( "readOnlyStore" ),
+                new Config( MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) ),
+                new DefaultIdGeneratorFactory( fs ), pageCache, fs, NullLogProvider.getInstance() );
+        neoStores = readOnlyStoreFactory.openAllNeoStores( true );
+        long lastClosedTransactionId = neoStores.getMetaDataStore().getLastClosedTransactionId();
 
         // then
-        assertEquals( -1, neoStore.getCounts().rotate( lastClosedTransactionId ));
+        assertEquals( -1, neoStores.getCounts().rotate( lastClosedTransactionId ) );
+    }
+
+    @Test( expected = StoreNotFoundException.class )
+    public void shouldThrowWhenOpeningNonExistingNeoStores()
+    {
+        try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
+        {
+            neoStores.getMetaDataStore();
+        }
     }
 }

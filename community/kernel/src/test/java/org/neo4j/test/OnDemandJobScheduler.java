@@ -19,17 +19,54 @@
  */
 package org.neo4j.test;
 
+import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+import static org.neo4j.kernel.impl.util.JobScheduler.Group.*;
 
 public class OnDemandJobScheduler extends LifecycleAdapter implements JobScheduler
 {
     private Runnable job;
 
     @Override
+    public Executor executor( Group group )
+    {
+        return new Executor()
+        {
+            @Override
+            public void execute( Runnable command )
+            {
+                job = command;
+            }
+        };
+    }
+
+    @Override
+    public ThreadFactory threadFactory( Group group )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public JobHandle schedule( Group group, Runnable job )
+    {
+        return this.schedule( group, job, NO_METADATA );
+    }
+
+    @Override
+    public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
+    {
+        this.job = job;
+        return new OnDemandJobHandle();
+    }
+
+    @Override
+    public JobHandle schedule( Group group, Runnable job, long initialDelay, TimeUnit timeUnit )
     {
         this.job = job;
         return new OnDemandJobHandle();
@@ -43,8 +80,8 @@ public class OnDemandJobScheduler extends LifecycleAdapter implements JobSchedul
     }
 
     @Override
-    public JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit
-            timeUnit )
+    public JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay,
+            long period, TimeUnit timeUnit )
     {
         this.job = runnable;
         return new OnDemandJobHandle();

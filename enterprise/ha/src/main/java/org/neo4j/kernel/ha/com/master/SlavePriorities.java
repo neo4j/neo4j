@@ -104,9 +104,9 @@ public abstract class SlavePriorities
     
     /**
      * @return {@link SlavePriority} which returns the slaves in the same fixed order
-     * sorted by server id in descending order. 
+     * sorted by server id in descending order.
      */
-    public static SlavePriority fixed()
+    public static SlavePriority fixedDescending()
     {
         return new SlavePriority()
         {
@@ -114,6 +114,32 @@ public abstract class SlavePriorities
             public Iterable<Slave> prioritize( final Iterable<Slave> slaves )
             {
                 return sortSlaves( slaves, false );
+            }
+        };
+    }
+
+    /**
+     * @return {@link SlavePriority} which returns the slaves in the same fixed order
+     * sorted by server id in ascending order. This is generally preferrable to {@link #fixedDescending()},
+     * because this aligns with the tie-breaker aspect of the lowest server id becoming master.
+     * <p>
+     * Eg. if you want to ensure that failover most likely will happen in a specific datacenter,
+     * you would place low-id instances in that datacenter and choose this strategy. That way,
+     * most of the time the most up-to-date instance will be in this data center, and if there is
+     * a tie, the tie-break will also end up electing a master in the same data center.
+     * <p>
+     * This is in contrast to {@link #fixedDescending()}, where a high-id server is likely to be most
+     * up-to-date if the master fails, but a low-id server is likely to be elected if there is a tie.
+     * This makes the two scenarios consistently choose a low-id server as the new master.
+     */
+    public static SlavePriority fixedAscending()
+    {
+        return new SlavePriority()
+        {
+            @Override
+            public Iterable<Slave> prioritize( final Iterable<Slave> slaves )
+            {
+                return sortSlaves( slaves, true );
             }
         };
     }

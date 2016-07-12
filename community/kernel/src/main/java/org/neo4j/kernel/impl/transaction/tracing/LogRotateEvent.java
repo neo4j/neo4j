@@ -36,5 +36,5 @@ public interface LogRotateEvent extends AutoCloseable
      * Marks the end of the log rotation process.
      */
     @Override
-    public void close();
+    void close();
 }

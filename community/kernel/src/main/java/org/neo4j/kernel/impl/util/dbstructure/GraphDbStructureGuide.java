@@ -32,6 +32,9 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -40,7 +43,6 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
-
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 
@@ -71,7 +73,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
     {
         try ( Transaction tx = db.beginTx() )
         {
-            try ( Statement statement = bridge.instance() )
+            try ( Statement statement = bridge.get() )
             {
                 showStructure( statement, visitor );
             }
@@ -146,7 +148,8 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
             IndexDescriptor descriptor = indexDescriptors.next();
             String userDescription = descriptor.userDescription( nameLookup );
             double uniqueValuesPercentage = read.indexUniqueValuesSelectivity( descriptor );
-            visitor.visitIndex( descriptor, userDescription , uniqueValuesPercentage);
+            long size = read.indexSize( descriptor );
+            visitor.visitIndex( descriptor, userDescription , uniqueValuesPercentage, size );
         }
     }
 
@@ -159,18 +162,38 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
             IndexDescriptor descriptor = indexDescriptors.next();
             String userDescription = descriptor.userDescription( nameLookup );
             double uniqueValuesPercentage = read.indexUniqueValuesSelectivity( descriptor );
-            visitor.visitUniqueIndex( descriptor, userDescription, uniqueValuesPercentage );
+            long size = read.indexSize( descriptor );
+            visitor.visitUniqueIndex( descriptor, userDescription, uniqueValuesPercentage, size );
         }
     }
 
     private void showUniqueConstraints( DbStructureVisitor visitor, ReadOperations read, TokenNameLookup nameLookup )
     {
-        Iterator<UniquenessConstraint> constraints = read.constraintsGetAll();
+        Iterator<PropertyConstraint> constraints = read.constraintsGetAll();
         while ( constraints.hasNext() )
         {
-            UniquenessConstraint constraint = constraints.next();
+            PropertyConstraint constraint = constraints.next();
             String userDescription = constraint.userDescription( nameLookup );
-            visitor.visitUniqueConstraint( constraint, userDescription );
+
+            if ( constraint instanceof UniquenessConstraint )
+            {
+                visitor.visitUniqueConstraint( (UniquenessConstraint) constraint, userDescription );
+            }
+            else if ( constraint instanceof NodePropertyExistenceConstraint )
+            {
+                NodePropertyExistenceConstraint existenceConstraint = (NodePropertyExistenceConstraint) constraint;
+                visitor.visitNodePropertyExistenceConstraint( existenceConstraint, userDescription );
+            }
+            else if ( constraint instanceof RelationshipPropertyExistenceConstraint )
+            {
+                RelationshipPropertyExistenceConstraint existenceConstraint = (RelationshipPropertyExistenceConstraint) constraint;
+                visitor.visitRelationshipPropertyExistenceConstraint( existenceConstraint, userDescription );
+            }
+            else
+            {
+                throw new IllegalArgumentException( "Unknown constraint type: " + constraint.getClass() + ", " +
+                                                    "constraint: " + constraint );
+            }
         }
     }
 

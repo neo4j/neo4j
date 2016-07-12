@@ -33,8 +33,8 @@ import javax.ws.rs.core.Response.Status;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
@@ -60,23 +60,24 @@ public class ConsoleService implements AdvertisableService
 
     private final ConsoleSessionFactory sessionFactory;
     private final Database database;
+    private final LogProvider logProvider;
     private final OutputFormat output;
-    private final StringLogger log;
+    private final Log log;
 
-    @SuppressWarnings("unchecked")
-    public ConsoleService( @Context Config config, @Context Database database, @Context HttpServletRequest req,
+    public ConsoleService( @Context Config config, @Context Database database, @Context LogProvider logProvider, @Context HttpServletRequest req,
                            @Context OutputFormat output, @Context CypherExecutor cypherExecutor )
     {
         this( new SessionFactoryImpl( req, config.get( ServerSettings.management_console_engines ),
-                cypherExecutor ), database, database.getLogging(), output );
+                cypherExecutor ), database, logProvider, output );
     }
 
-    public ConsoleService( ConsoleSessionFactory sessionFactory, Database database, Logging logging, OutputFormat output )
+    public ConsoleService( ConsoleSessionFactory sessionFactory, Database database, LogProvider logProvider, OutputFormat output )
     {
         this.sessionFactory = sessionFactory;
         this.database = database;
+        this.logProvider = logProvider;
         this.output = output;
-        this.log = logging.getMessagesLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -144,6 +145,6 @@ public class ConsoleService implements AdvertisableService
 
     private ScriptSession getSession( Map<String, Object> args )
     {
-        return sessionFactory.createSession( (String) args.get( "engine" ), database );
+        return sessionFactory.createSession( (String) args.get( "engine" ), database, logProvider );
     }
 }

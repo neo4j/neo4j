@@ -21,6 +21,9 @@ package org.neo4j.kernel.monitoring.tracing;
 
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.api.DefaultTransactionTracer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.DefaultCheckPointerTracer;
+import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 
 /**
@@ -43,6 +46,12 @@ public class DefaultTracerFactory implements TracerFactory
     @Override
     public TransactionTracer createTransactionTracer()
     {
-        return TransactionTracer.NULL;
+        return new DefaultTransactionTracer();
+    }
+
+    @Override
+    public CheckPointTracer createCheckPointTracer()
+    {
+        return new DefaultCheckPointerTracer();
     }
 }

@@ -24,6 +24,7 @@ import org.hamcrest.Description;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.internal.matchers.Any;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -34,7 +35,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreCopyServer;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -48,46 +51,49 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
-import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.store.NeoStore.Position;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
-import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
+import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.impl.util.DependenciesProxy;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.logging.SingleLoggingService;
-import org.neo4j.kernel.logging.SystemOutLogging;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.Logger;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.EmbeddedDatabaseRule;
-import org.neo4j.test.Mute;
+import org.neo4j.test.PageCacheRule;
+import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -97,6 +103,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -104,7 +112,6 @@ import static org.neo4j.backup.BackupServiceStressTestingBuilder.untilTimeExpire
 
 public class BackupServiceIT
 {
-
     private static final class StoreSnoopingMonitor extends StoreCopyServer.Monitor.Adapter
     {
         private final Barrier barrier;
@@ -125,52 +132,69 @@ public class BackupServiceIT
         }
     }
 
-    private static final TargetDirectory target = TargetDirectory.forTest( BackupServiceIT.class );
+    @Rule
+    public final TargetDirectory.TestDirectory target = TargetDirectory.testDirForTest( BackupServiceIT.class );
     private static final String NODE_STORE = StoreFactory.NODE_STORE_NAME;
     private static final String RELATIONSHIP_STORE = StoreFactory.RELATIONSHIP_STORE_NAME;
     private static final String BACKUP_HOST = "localhost";
 
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
     private final Monitors monitors = new Monitors();
-    private final File storeDir = target.cleanDirectory( "store_dir" ) ;
-    private final File backupDir = target.cleanDirectory( "backup_dir" );
+    private File storeDir;
+    private File backupDir;
     public int backupPort = 8200;
 
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( storeDir ).startLazily();
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() ).startLazily();
     @Rule
-    public Mute mute = Mute.muteAll();
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Before
     public void setup()
     {
         backupPort = backupPort + 1;
+        storeDir = dbRule.getStoreDirFile();
+        backupDir = target.directory( "backup_dir" );
     }
 
     private BackupService backupService()
     {
-        return backupService( new SystemOutLogging() );
+        return new BackupService( fileSystem, FormattedLogProvider.toOutputStream( System.out ), new Monitors() );
     }
 
-    private BackupService backupService( Logging logging )
+    private BackupService backupService( LogProvider logProvider )
     {
-        return new BackupService( fileSystem, logging, new Monitors() );
+        return new BackupService( fileSystem, logProvider, new Monitors() );
     }
 
     @Test
     public void shouldPrintThatFullBackupIsPerformed() throws Exception
     {
         defaultBackupPortHostParams();
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
 
-        Logging logger = mock( Logging.class );
-        StringLogger stringLogger = mock( StringLogger.class );
-        when( logger.getMessagesLog( BackupService.class ) ).thenReturn( stringLogger );
+        final Log log = mock( Log.class );
+        LogProvider logProvider = new LogProvider()
+        {
+            @Override
+            public Log getLog( Class loggingClass )
+            {
+                return log;
+            }
 
-        backupService( logger ).doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort,
-                backupDir.getAbsolutePath(), false, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
+            @Override
+            public Log getLog( String name )
+            {
+                return log;
+            }
+        };
 
-        verify( stringLogger ).info( "Previous backup not found, a new full backup will be performed." );
+        backupService( logProvider ).doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort,
+                backupDir, ConsistencyCheck.NONE, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
+
+        verify( log ).info( "Previous backup not found, a new full backup will be performed." );
     }
 
     @Test
@@ -185,26 +209,38 @@ public class BackupServiceIT
         createAndIndexNode( db, 1 );
 
         // A full backup
-        backupService().doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig,
+        backupService().doFullBackup( BACKUP_HOST, backupPort, backupDir, ConsistencyCheck.NONE, defaultConfig,
                 BackupClient.BIG_READ_TIMEOUT, false );
 
         // And the log the backup uses is rotated out
         createAndIndexNode( db, 2 );
-        rotate( db );
+        rotateAndCheckPoint( db );
         createAndIndexNode( db, 3 );
-        rotate( db );
+        rotateAndCheckPoint( db );
         createAndIndexNode( db, 4 );
-        rotate( db );
+        rotateAndCheckPoint( db );
 
-        Logging logger = mock( Logging.class );
-        StringLogger stringLogger = mock( StringLogger.class );
-        when( logger.getMessagesLog( BackupService.class ) ).thenReturn( stringLogger );
+        final Log log = mock( Log.class );
+        LogProvider logProvider = new LogProvider()
+        {
+            @Override
+            public Log getLog( Class loggingClass )
+            {
+                return log;
+            }
 
-        backupService( logger ).doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort,
-                backupDir.getAbsolutePath(), false, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
+            @Override
+            public Log getLog( String name )
+            {
+                return log;
+            }
+        };
 
-        verify( stringLogger ).info( "Previous backup found, trying incremental backup." );
-        verify( stringLogger ).info( "Existing backup is too far out of date, a new full backup will be performed." );
+        backupService( logProvider ).doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort,
+                backupDir, ConsistencyCheck.NONE, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
+
+        verify( log ).info( "Previous backup found, trying incremental backup." );
+        verify( log ).info( "Existing backup is too far out of date, a new full backup will be performed." );
     }
 
     @Test
@@ -212,7 +248,7 @@ public class BackupServiceIT
     {
         try
         {
-            backupService().doIncrementalBackupOrFallbackToFull( BACKUP_HOST, 56789, backupDir.getAbsolutePath(), false,
+            backupService().doIncrementalBackupOrFallbackToFull( BACKUP_HOST, 56789, backupDir, ConsistencyCheck.NONE,
                     dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
             fail( "No exception thrown" );
         }
@@ -233,11 +269,11 @@ public class BackupServiceIT
         createAndIndexNode( db, 1 );
 
         // A full backup
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
-                false, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir,
+                ConsistencyCheck.NONE, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
         try
         {
-            backupService().doIncrementalBackupOrFallbackToFull( BACKUP_HOST, 56789, backupDir.getAbsolutePath(), false,
+            backupService().doIncrementalBackupOrFallbackToFull( BACKUP_HOST, 56789, backupDir, ConsistencyCheck.NONE,
                     dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
             fail( "No exception thrown" );
         }
@@ -249,24 +285,80 @@ public class BackupServiceIT
     }
 
     @Test
-    public void shouldThrowExceptionWhenDoingFullBackupOnADirectoryContainingANeoStore() throws Exception
+    public void shouldThrowExceptionWhenDoingFullBackupWhenDirectoryHasSomeFiles() throws Exception
     {
         // given
-        fileSystem.mkdir( backupDir );
-        fileSystem.create( new File( backupDir, NeoStore.DEFAULT_NAME ) ).close();
+        defaultBackupPortHostParams();
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        createAndIndexNode( db, 1 );
+
+        // Touch a random file
+        assertTrue( new File( backupDir, ".jibberishfile" ).createNewFile() );
 
         try
         {
             // when
-            backupService().doFullBackup( "", 0, backupDir.getAbsolutePath(), true, new Config(),
-                    BackupClient.BIG_READ_TIMEOUT, false );
-            fail( "No exception thrown ");
+            backupService().doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(),
+                    ConsistencyCheck.DEFAULT, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
+            fail( "Should have thrown an exception" );
         }
         catch ( RuntimeException ex )
         {
             // then
-            assertThat( ex.getMessage(), containsString( "already contains a database" ) );
+            assertThat( ex.getMessage(), containsString( "is not empty" ) );
         }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenDoingFullBackupWhenDirectoryHasSomeDirs() throws Exception
+    {
+        // given
+        defaultBackupPortHostParams();
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        createAndIndexNode( db, 1 );
+
+        // Touch a random directory
+        assertTrue( new File( backupDir, "jibberishfolder" ).mkdir() );
+
+        try
+        {
+            // when
+            backupService().doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(),
+                    ConsistencyCheck.DEFAULT, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
+            fail( "Should have thrown an exception" );
+        }
+        catch ( RuntimeException ex )
+        {
+            // then
+            assertThat( ex.getMessage(), containsString( "is not empty" ) );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    @Test
+    public void shouldRemoveTempDirectory() throws Throwable
+    {
+        // given
+        defaultBackupPortHostParams();
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        createAndIndexNode( db, 1 );
+
+        // when
+        BackupService backupService = backupService();
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.NONE,
+                dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
+        db.shutdown();
+
+        // then
+        assertFalse( "Temp directory was not removed as expected",
+                fileSystem.fileExists( new File( backupDir, StoreCopyClient.TEMP_COPY_DIRECTORY_NAME ) ) );
     }
 
     @Test
@@ -279,12 +371,14 @@ public class BackupServiceIT
 
         // when
         BackupService backupService = backupService();
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, dbRule.getConfigCopy(),
-                BackupClient.BIG_READ_TIMEOUT, false );
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.NONE,
+                dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
         db.shutdown();
 
         // then
         File[] files = fileSystem.listFiles( backupDir );
+
+        assertTrue( files.length > 0 );
 
         for ( final StoreFile storeFile : StoreFile.values() )
         {
@@ -409,16 +503,16 @@ public class BackupServiceIT
         }
 
         final File oldLog = db.getDependencyResolver().resolveDependency( LogFile.class ).currentLogFile();
-        rotate( db );
+        rotateAndCheckPoint( db );
 
         for ( int i = 0; i < 1; i++ )
         {
             createAndIndexNode( db, i );
         }
-        rotate( db );
+        rotateAndCheckPoint( db );
 
-        long lastCommittedTxBefore = db.getDependencyResolver().resolveDependency( NeoStore.class )
-                .getLastCommittedTransactionId();
+        long lastCommittedTxBefore = db.getDependencyResolver().resolveDependency( NeoStores.class ).getMetaDataStore()
+                                       .getLastCommittedTransactionId();
 
         db = dbRule.restartDatabase( new DatabaseRule.RestartAction()
         {
@@ -429,13 +523,14 @@ public class BackupServiceIT
             }
         } );
 
-        long lastCommittedTxAfter = db.getDependencyResolver().resolveDependency( NeoStore.class )
-                .getLastCommittedTransactionId();
+        long lastCommittedTxAfter = db.getDependencyResolver().resolveDependency( NeoStores.class ).getMetaDataStore()
+                                      .getLastCommittedTransactionId();
 
         // when
         BackupService backupService = backupService();
         BackupService.BackupOutcome outcome = backupService.doFullBackup( BACKUP_HOST, backupPort,
-                backupDir.getAbsolutePath(), true, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
+                backupDir.getAbsoluteFile(), ConsistencyCheck.DEFAULT, dbRule.getConfigCopy(),
+                BackupClient.BIG_READ_TIMEOUT, false );
 
         db.shutdown();
 
@@ -446,7 +541,7 @@ public class BackupServiceIT
     }
 
     @Test
-    public void shouldFindTransactionLogContainingLastNeoStoreTransactionInAnEmptyStore()
+    public void shouldFindTransactionLogContainingLastNeoStoreTransactionInAnEmptyStore() throws IOException
     {
         // This test highlights a special case where an empty store can return transaction metadata for transaction 0.
 
@@ -456,14 +551,14 @@ public class BackupServiceIT
 
         // when
         BackupService backupService = backupService();
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, dbRule.getConfigCopy(),
-                BackupClient.BIG_READ_TIMEOUT, false );
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(),
+                ConsistencyCheck.NONE, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
         db.shutdown();
 
         // then
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
 
-        assertEquals( 0, getLastTxChecksum() );
+        assertEquals( 0, getLastTxChecksum( pageCacheRule.getPageCache( fileSystem ) ) );
     }
 
     @Test
@@ -476,13 +571,13 @@ public class BackupServiceIT
 
         // when
         BackupService backupService = backupService();
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, dbRule.getConfigCopy(),
-                BackupClient.BIG_READ_TIMEOUT, false );
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(),
+                ConsistencyCheck.NONE, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
         db.shutdown();
 
         // then
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
-        assertNotEquals( 0, getLastTxChecksum() );
+        assertNotEquals( 0, getLastTxChecksum( pageCacheRule.getPageCache( fileSystem ) ) );
     }
 
     @Test
@@ -496,14 +591,14 @@ public class BackupServiceIT
         createAndIndexNode( db, 3 );
         createAndIndexNode( db, 4 );
 
-        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStore.class );
-        neoStore.flush();
-        long txId = neoStore.getLastCommittedTransactionId();
+        NeoStores neoStores = db.getDependencyResolver().resolveDependency( NeoStores.class );
+        neoStores.flush();
+        long txId = neoStores.getMetaDataStore().getLastCommittedTransactionId();
 
         // when
         BackupService backupService = backupService();
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, dbRule.getConfigCopy(),
-                BackupClient.BIG_READ_TIMEOUT, false );
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(),
+                ConsistencyCheck.NONE, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
         db.shutdown();
 
         // then
@@ -521,13 +616,13 @@ public class BackupServiceIT
 
         // when
         BackupService backupService = backupService();
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig,
-                BackupClient.BIG_READ_TIMEOUT, false );
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(),
+                ConsistencyCheck.NONE, defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
         db.shutdown();
 
         // then
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
-        assertNotEquals( 0, getLastTxChecksum() );
+        assertNotEquals( 0, getLastTxChecksum( pageCacheRule.getPageCache( fileSystem ) ) );
     }
 
     @Test
@@ -542,27 +637,27 @@ public class BackupServiceIT
         BackupService backupService = backupService();
 
         createAndIndexNode( db, 1 );
-        rotate( db );
+        rotateAndCheckPoint( db );
 
         // A full backup
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
-                false, defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(),
+                ConsistencyCheck.NONE, defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
 
         // And the log the backup uses is rotated out
         createAndIndexNode( db, 2 );
-        rotate( db );
+        rotateAndCheckPoint( db );
         createAndIndexNode( db, 3 );
-        rotate( db );
+        rotateAndCheckPoint( db );
         createAndIndexNode( db, 4 );
-        rotate( db );
+        rotateAndCheckPoint( db );
         createAndIndexNode( db, 5 );
-        rotate( db );
+        rotateAndCheckPoint( db );
 
         // when
         try
         {
-            backupService.doIncrementalBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
-                    false, BackupClient.BIG_READ_TIMEOUT, defaultConfig );
+            backupService.doIncrementalBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(),
+                    BackupClient.BIG_READ_TIMEOUT, defaultConfig );
             fail( "Should have thrown exception." );
         }
         // Then
@@ -586,20 +681,20 @@ public class BackupServiceIT
         createAndIndexNode( db, 1 );
 
         // A full backup
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
-                false, defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(),
+                ConsistencyCheck.NONE, defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
 
         // And the log the backup uses is rotated out
         createAndIndexNode( db, 2 );
-        rotate( db );
+        rotateAndCheckPoint( db );
         createAndIndexNode( db, 3 );
-        rotate( db );
+        rotateAndCheckPoint( db );
         createAndIndexNode( db, 4 );
-        rotate( db );
+        rotateAndCheckPoint( db );
 
         // when
         backupService.doIncrementalBackupOrFallbackToFull(
-                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig,
+                BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.NONE, defaultConfig,
                 BackupClient.BIG_READ_TIMEOUT, false );
 
         // Then
@@ -607,9 +702,12 @@ public class BackupServiceIT
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
     }
 
-    private void rotate( GraphDatabaseAPI db ) throws IOException
+    private void rotateAndCheckPoint( GraphDatabaseAPI db ) throws IOException
     {
         db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
+        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
+                new SimpleTriggerInfo( "test" )
+        );
     }
 
     @Test
@@ -626,7 +724,7 @@ public class BackupServiceIT
 
         // A full backup
         backupService.doIncrementalBackupOrFallbackToFull(
-                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig,
+                BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.NONE, defaultConfig,
                 BackupClient.BIG_READ_TIMEOUT, false );
 
         // And the log the backup uses is rotated out
@@ -638,7 +736,7 @@ public class BackupServiceIT
 
         // when
         backupService.doIncrementalBackupOrFallbackToFull(
-                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig,
+                BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.NONE, defaultConfig,
                 BackupClient.BIG_READ_TIMEOUT, false );
 
         // Then
@@ -684,7 +782,7 @@ public class BackupServiceIT
 
         // when
         backupService.doIncrementalBackupOrFallbackToFull(
-                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig,
+                BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.NONE, defaultConfig,
                 BackupClient.BIG_READ_TIMEOUT, false );
 
         // then
@@ -706,23 +804,22 @@ public class BackupServiceIT
 
         createAndIndexNode( db, 1 ); // create some data
 
-        NeoStoreDataSource ds = db.getDependencyResolver().resolveDependency( DataSourceManager.class ).getDataSource();
-        long expectedLastTxId = ds.getNeoStore().getLastCommittedTransactionId();
+        final DependencyResolver resolver = db.getDependencyResolver();
+        NeoStoreDataSource ds = resolver.resolveDependency( DataSourceManager.class ).getDataSource();
+        long expectedLastTxId = ds.getNeoStores().getMetaDataStore().getLastCommittedTransactionId();
 
         // This monitor is added server-side...
         monitors.addMonitorListener( new StoreSnoopingMonitor( barrier ) );
 
-        OnlineBackupKernelExtension backup = new OnlineBackupKernelExtension(
-                defaultConfig,
-                db,
-                db.getDependencyResolver().resolveDependency( KernelPanicEventGenerator.class ),
-                new DevNullLoggingService(),
-                // ... so that it's used by StoreCopyServer
-                monitors );
+        Dependencies dependencies = new Dependencies( resolver );
+        dependencies.satisfyDependencies( defaultConfig, monitors, NullLogProvider.getInstance() );
+
+        OnlineBackupKernelExtension backup = (OnlineBackupKernelExtension) new OnlineBackupExtensionFactory().newKernelExtension(
+                DependenciesProxy.dependencies(dependencies, OnlineBackupExtensionFactory.Dependencies.class));
         backup.start();
 
         // when
-        BackupService backupService =backupService();
+        BackupService backupService = backupService();
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute( new Runnable()
         {
@@ -732,14 +829,15 @@ public class BackupServiceIT
                 barrier.awaitUninterruptibly();
 
                 createAndIndexNode( db, 1 );
-                db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate().flush();
+                resolver.resolveDependency( NeoStoresSupplier.class ).get().flush();
 
                 barrier.release();
             }
         } );
 
         BackupService.BackupOutcome backupOutcome = backupService.doFullBackup( BACKUP_HOST, backupPort,
-                backupDir.getAbsolutePath(), true, withOnlineBackupDisabled, BackupClient.BIG_READ_TIMEOUT, false );
+                backupDir.getAbsoluteFile(), ConsistencyCheck.DEFAULT, withOnlineBackupDisabled,
+                BackupClient.BIG_READ_TIMEOUT, false );
 
         backup.stop();
         executor.shutdown();
@@ -747,7 +845,10 @@ public class BackupServiceIT
 
         // then
         checkPreviousCommittedTxIdFromLog( 0, expectedLastTxId );
-        checkLastCommittedTxIdInLogAndNeoStore( expectedLastTxId+1 );
+        File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        long txIdFromOrigin = MetaDataStore
+                .getRecord( resolver.resolveDependency( PageCache.class ), neoStore, Position.LAST_TRANSACTION_ID );
+        checkLastCommittedTxIdInLogAndNeoStore( expectedLastTxId+1, txIdFromOrigin );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupDir ) );
         assertTrue( backupOutcome.isConsistent() );
     }
@@ -762,42 +863,54 @@ public class BackupServiceIT
         Config withOnlineBackupDisabled = dbRule.getConfigCopy();
         createAndIndexNode( dbRule, 1 );
 
-        final StringLogger msgLog = mock( StringLogger.class );
-        final ConsoleLogger console = mock( ConsoleLogger.class );
-        Logging logging = new SingleLoggingService( msgLog )
+        final Log log = mock( Log.class );
+        LogProvider logProvider = new LogProvider()
         {
             @Override
-            public ConsoleLogger getConsoleLog( Class loggingClass )
+            public Log getLog( Class loggingClass )
             {
-                return console;
+                return log;
+            }
+
+            @Override
+            public Log getLog( String name )
+            {
+                return log;
             }
         };
+        Logger logger = mock( Logger.class );
+        when( log.infoLogger() ).thenReturn( logger );
+        LogService logService = mock( LogService.class );
+        when( logService.getInternalLogProvider() ).thenReturn( logProvider );
 
-        OnlineBackupKernelExtension backup = new OnlineBackupKernelExtension( config, dbRule,
-                dbRule.getDependencyResolver().resolveDependency( KernelPanicEventGenerator.class ), logging,
-                // ... so that it's used by StoreCopyServer
-                monitors );
+        Dependencies dependencies = new Dependencies( dbRule.getDependencyResolver() );
+        dependencies.satisfyDependencies( config, monitors, logService );
+
+        OnlineBackupKernelExtension backup = (OnlineBackupKernelExtension) new OnlineBackupExtensionFactory()
+                .newKernelExtension( DependenciesProxy
+                        .dependencies( dependencies, OnlineBackupExtensionFactory.Dependencies.class ) );
+
         backup.start();
 
         // when
-        backupService().doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
+        backupService().doFullBackup( BACKUP_HOST, backupPort, backupDir, ConsistencyCheck.NONE,
                 withOnlineBackupDisabled, BackupClient.BIG_READ_TIMEOUT, false );
 
         // then
-        verify( console ).log( "Full backup started..." );
-        verify( console ).log( "Full backup finished." );
+        verify( logger ).log( "Full backup started..." );
+        verify( logger ).log( "Full backup finished." );
 
         // when
         createAndIndexNode( dbRule, 2 );
 
-        backupService().doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
-                false, withOnlineBackupDisabled, BackupClient.BIG_READ_TIMEOUT, false );
+        backupService().doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDir,
+                ConsistencyCheck.NONE, withOnlineBackupDisabled, BackupClient.BIG_READ_TIMEOUT, false );
 
         backup.stop();
 
         // then
-        verify( console ).log( "Incremental backup started..." );
-        verify( console ).log( "Incremental backup finished." );
+        verify( logger ).log( "Incremental backup started..." );
+        verify( logger ).log( "Incremental backup finished." );
     }
 
     @Test
@@ -809,7 +922,7 @@ public class BackupServiceIT
         GraphDatabaseAPI db1 = dbRule.getGraphDatabaseAPI();
         createAndIndexNode( db1, 1 );
 
-        backupService().doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
+        backupService().doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.NONE,
                 defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
 
         // When
@@ -829,7 +942,8 @@ public class BackupServiceIT
         try
         {
             backupService().doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort,
-                    backupDir.getAbsolutePath(), false, defaultConfig, BackupClient.BIG_READ_TIMEOUT, false );
+                    backupDir.getAbsoluteFile(), ConsistencyCheck.NONE, defaultConfig,
+                    BackupClient.BIG_READ_TIMEOUT, false );
 
             fail( "Should have thrown exception about mismatching store ids" );
         }
@@ -910,15 +1024,16 @@ public class BackupServiceIT
         assertEquals( txId, logHeader.lastCommittedTxId );
     }
 
-    private void checkLastCommittedTxIdInLogAndNeoStore( long txId ) throws IOException
+    private void checkLastCommittedTxIdInLogAndNeoStore( long txId, long txIdFromOrigin ) throws IOException
     {
         // Assert last committed transaction can be found in tx log and is the last tx in the log
         LifeSupport life = new LifeSupport();
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         LogicalTransactionStore transactionStore =
-                life.add( new ReadOnlyTransactionStore( fileSystem, backupDir, monitors, mock( KernelHealth.class ) ) );
+                life.add( new ReadOnlyTransactionStore( pageCache, fileSystem, backupDir, monitors ) );
         life.start();
         try ( IOCursor<CommittedTransactionRepresentation> cursor =
-                transactionStore.getTransactions( txId ) )
+                      transactionStore.getTransactions( txId ) )
         {
             assertTrue( cursor.next() );
             assertEquals( txId, cursor.get().getCommitEntry().getTxId() );
@@ -930,13 +1045,13 @@ public class BackupServiceIT
         }
 
         // Assert last committed transaction is correct in neostore
-        NeoStoreUtil store = new NeoStoreUtil( backupDir, fileSystem );
-        assertEquals( txId, store.getLastCommittedTx() );
+        assertEquals( txId, txIdFromOrigin );
     }
 
-    private long getLastTxChecksum()
+    private long getLastTxChecksum( PageCache pageCache ) throws IOException
     {
-        return new NeoStoreUtil( backupDir ).getValue( Position.LAST_TRANSACTION_CHECKSUM );
+        File neoStore = new File( backupDir, MetaDataStore.DEFAULT_NAME );
+        return MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
     }
 
     private void deleteAllBackedUpTransactionLogs()
@@ -951,7 +1066,7 @@ public class BackupServiceIT
     {
         BackupService backupService = backupService();
         backupService.doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort,
-                backupDir.getAbsolutePath(), false, new Config(), BackupClient.BIG_READ_TIMEOUT, false );
+                backupDir, ConsistencyCheck.NONE, new Config(), BackupClient.BIG_READ_TIMEOUT, false );
     }
 
     private Node findNodeByLabel( GraphDatabaseAPI graphDatabase, Label label )

@@ -19,21 +19,20 @@
  */
 package org.neo4j.server.web;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 import com.sun.jersey.api.core.ClassNamesResourceConfig;
 import com.sun.jersey.api.core.PackagesResourceConfig;
 import com.sun.jersey.api.core.ResourceConfig;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 import org.eclipse.jetty.servlet.ServletHolder;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
-import org.neo4j.server.rest.web.CollectUserAgentFilter;
 
 /**
  * Different {@link ServerModule}s can register services at the same mount point.
@@ -74,7 +73,7 @@ public abstract class JaxRsServletHolderFactory
     private String getRequestFilterConfig()
     {
         // Ordering of execution of filters goes from left to right
-        return XForwardFilter.class.getName() + "," + CollectUserAgentFilter.class.getName();
+        return XForwardFilter.class.getName();
     }
 
     protected abstract void configure( ServletHolder servletHolder, String commaSeparatedList );

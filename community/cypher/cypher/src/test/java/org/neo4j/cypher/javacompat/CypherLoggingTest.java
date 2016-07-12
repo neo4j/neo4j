@@ -21,58 +21,35 @@ package org.neo4j.cypher.javacompat;
 
 import java.io.IOException;
 
-import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.kernel.logging.BufferingLogger;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertEquals;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class CypherLoggingTest
 {
-    private ExecutionEngine engine;
-    private boolean debugEnabled;
-    private BufferingLogger logger = new BufferingLogger()
-    {
-        @Override
-        public boolean isDebugEnabled()
-        {
-            return debugEnabled;
-        }
-    };
-
     @Test
-    public void shouldLogQueriesWhenDebugLoggingIsEnabled() throws Exception
+    public void shouldNotLogQueries() throws Exception
     {
         // given
-        debugEnabled = true;
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        ExecutionEngine engine = engineWithLogger( logProvider );
 
         // when
         engine.execute( "CREATE (n:Reference) CREATE (foo {test:'me'}) RETURN n" );
         engine.execute( "MATCH n RETURN n" );
 
         // then
-        assertEquals("", logger.toString() );
+        inLog( org.neo4j.cypher.ExecutionEngine.class );
+        logProvider.assertNoLoggingOccurred();
     }
 
-    @Test
-    public void shouldNotLogQueriesWhenDebugLoggingIsDisabled() throws Exception
+    private ExecutionEngine engineWithLogger( LogProvider logProvider ) throws IOException
     {
-        // given
-        debugEnabled = false;
-
-        // when
-        engine.execute( "CREATE (n:Reference) CREATE (foo {test:'me'}) RETURN n" );
-        engine.execute( "MATCH n RETURN n" );
-
-        // then
-        assertEquals("", logger.toString() );
-    }
-
-    @Before
-    public void setup() throws IOException
-    {
-        engine = new ExecutionEngine( new TestGraphDatabaseFactory().newImpermanentDatabase(), logger );
+        return new ExecutionEngine( new TestGraphDatabaseFactory().newImpermanentDatabase(), logProvider );
     }
 }

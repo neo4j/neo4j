@@ -19,26 +19,26 @@
  */
 package org.neo4j.cypher
 
+import java.lang.Boolean.FALSE
 import java.util.{Map => JavaMap}
 
-import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.helpers.JavaCompatibility.asJavaMap
-import org.neo4j.cypher.internal.compiler.v2_2.helpers.LRUCache
-import org.neo4j.cypher.internal.compiler.v2_2.parser.ParserMonitor
-import org.neo4j.cypher.internal.compiler.v2_2.prettifier.Prettifier
+import org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier
+import org.neo4j.cypher.internal.compiler.v2_3.{LRUCache => LRUCachev2_3, _}
+import org.neo4j.cypher.internal.frontend.v2_3.helpers.JavaCompatibility.asJavaMap
+import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTracer}
 import org.neo4j.cypher.internal.{CypherCompiler, _}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionMonitor, QuerySession}
-import org.neo4j.kernel.impl.util.StringLogger
-import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase, api, monitoring}
+import org.neo4j.kernel.{GraphDatabaseAPI, api, monitoring}
+import org.neo4j.logging.{LogProvider, NullLogProvider}
 
 import scala.collection.JavaConverters._
 
 trait StringCacheMonitor extends CypherCacheMonitor[String, api.Statement]
-
 /**
   * This class construct and initialize both the cypher compiler and the cypher runtime, which is a very expensive
   * operation so please make sure this will be constructed only once and properly reused.
@@ -46,7 +46,7 @@ trait StringCacheMonitor extends CypherCacheMonitor[String, api.Statement]
   * @deprecated use { @link org.neo4j.graphdb.GraphDatabaseService#execute(String)} instead.
   */
 @Deprecated
-class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) {
+class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = NullLogProvider.getInstance()) {
 
   require(graph != null, "Can't work with a null graph database")
 
@@ -56,12 +56,19 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   protected val kernel = graphAPI.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.api.KernelAPI])
   private val lastCommittedTxId = LastCommittedTxIdProvider(graphAPI)
   protected val kernelMonitors: monitoring.Monitors = graphAPI.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
-  protected val compiler = createCompiler(logger)
+  private val compilationTracer: CompilationTracer = {
+    if(optGraphSetting(graph, GraphDatabaseSettings.cypher_compiler_tracing, FALSE))
+      new TimingCompilationTracer(kernelMonitors.newMonitor(classOf[TimingCompilationTracer.EventListener]))
+    else
+      CompilationTracer.NO_COMPILATION_TRACING
+  }
+  protected val compiler = createCompiler
 
+  private val log = logProvider.getLog( getClass )
   private val cacheMonitor = kernelMonitors.newMonitor(classOf[StringCacheMonitor])
   kernelMonitors.addMonitorListener(new StringCacheMonitor {
     override def cacheDiscard(query: String) {
-      logger.info(s"Discarded stale query from the query cache: $query")
+      log.info(s"Discarded stale query from the query cache: $query")
     }
   })
 
@@ -69,8 +76,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   private val cacheAccessor = new MonitoringCacheAccessor[String, (ExecutionPlan, Map[String, Any])](cacheMonitor)
 
-  private val preParsedQueries = new LRUCache[String, PreParsedQuery](getPlanCacheSize)
-  private val parsedQueries = new LRUCache[String, ParsedQuery](getPlanCacheSize)
+  private val preParsedQueries = new LRUCachev2_3[String, PreParsedQuery](getPlanCacheSize)
+  private val parsedQueries = new LRUCachev2_3[String, ParsedQuery](getPlanCacheSize)
 
   @throws(classOf[SyntaxException])
   def profile(query: String): ExtendedExecutionResult = profile(query, Map[String, Any](), QueryEngineProvider.embeddedSession)
@@ -116,12 +123,12 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   @throws(classOf[SyntaxException])
   protected def parseQuery(queryText: String): ParsedQuery =
-    parsePreParsedQuery(preParseQuery(queryText))
+    parsePreParsedQuery(preParseQuery(queryText), CompilationPhaseTracer.NO_TRACING)
 
   @throws(classOf[SyntaxException])
-  private def parsePreParsedQuery(preParsedQuery: PreParsedQuery): ParsedQuery = {
+  private def parsePreParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer): ParsedQuery = {
     parsedQueries.get(preParsedQuery.statementWithVersionAndPlanner).getOrElse {
-      val parsedQuery = compiler.parseQuery(preParsedQuery)
+      val parsedQuery = compiler.parseQuery(preParsedQuery, tracer)
       //don't cache failed queries
       if (!parsedQuery.hasErrors) parsedQueries.put(preParsedQuery.statementWithVersionAndPlanner, parsedQuery)
       parsedQuery
@@ -134,56 +141,62 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   @throws(classOf[SyntaxException])
   protected def planQuery(queryText: String): (PreparedPlanExecution, TransactionInfo) = {
-    val preParsedQuery = preParseQuery(queryText)
-    val executionMode = preParsedQuery.executionMode
-    val cacheKey = preParsedQuery.statementWithVersionAndPlanner
+    val phaseTracer = compilationTracer.compileQuery(queryText)
+    try {
 
-    var n = 0
-    while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
-      // create transaction and query context
-      val isTopLevelTx = !txBridge.hasTransaction
-      val tx = graph.beginTx()
-      val kernelStatement = txBridge.instance()
+      val preParsedQuery = preParseQuery(queryText)
+      val executionMode = preParsedQuery.executionMode
+      val cacheKey = preParsedQuery.statementWithVersionAndPlanner
 
-      val ((plan: ExecutionPlan, extractedParameters), touched) = try {
-        // fetch plan cache
-        val cache = getOrCreateFromSchemaState(kernelStatement, {
-          cacheMonitor.cacheFlushDetected(kernelStatement)
-          val lruCache = new LRUCache[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
-          new QueryCache[String, (ExecutionPlan, Map[String, Any])](cacheAccessor, lruCache)
-        })
+      var n = 0
+      while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
+        // create transaction and query context
+        val isTopLevelTx = !txBridge.hasTransaction
+        val tx = graph.beginTx()
+        val kernelStatement = txBridge.get()
 
-        cache.getOrElseUpdate(cacheKey,
-          planParams => planParams._1.isStale(lastCommittedTxId, kernelStatement), {
-            val parsedQuery = parsePreParsedQuery(preParsedQuery)
-            parsedQuery.plan(kernelStatement)
-          }
-        )
-      }
-      catch {
-        case (t: Throwable) =>
+        val ((plan: ExecutionPlan, extractedParameters), touched) = try {
+          // fetch plan cache
+          val cache = getOrCreateFromSchemaState(kernelStatement, {
+            cacheMonitor.cacheFlushDetected(kernelStatement)
+            val lruCache = new LRUCachev2_3[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
+            new QueryCache[String, (ExecutionPlan, Map[String, Any])](cacheAccessor, lruCache)
+          })
+
+          cache.getOrElseUpdate(cacheKey,
+            planParams => {
+              val stale: Boolean = planParams._1.isStale(lastCommittedTxId, kernelStatement)
+              stale
+            }, {
+              val parsedQuery = parsePreParsedQuery(preParsedQuery, phaseTracer)
+              parsedQuery.plan(kernelStatement, phaseTracer)
+            }
+          )
+        }
+        catch {
+          case (t: Throwable) =>
+            kernelStatement.close()
+            tx.failure()
+            tx.close()
+            throw t
+        }
+
+        if (touched) {
           kernelStatement.close()
-          tx.failure()
+          tx.success()
           tx.close()
-          throw t
-      }
+        } else {
+          // close the old statement reference after the statement has been "upgraded"
+          // to either a schema data or a schema statement, so that the locks are "handed over".
+          kernelStatement.close()
+          val preparedPlanExecution = PreparedPlanExecution(plan, executionMode, extractedParameters)
+          val txInfo = TransactionInfo(tx, isTopLevelTx, txBridge.get())
+          return (preparedPlanExecution, txInfo)
+        }
 
-      if (touched) {
-        kernelStatement.close()
-        tx.success()
-        tx.close()
+        n += 1
       }
-      else {
-        // close the old statement reference after the statement has been "upgraded"
-        // to either a schema data or a schema statement, so that the locks are "handed over".
-        kernelStatement.close()
-        val preparedPlanExecution = PreparedPlanExecution(plan, executionMode, extractedParameters)
-        val txInfo = TransactionInfo(tx, isTopLevelTx, txBridge.instance())
-        return (preparedPlanExecution, txInfo)
-      }
-
-      n += 1
-    }
+    } finally phaseTracer.close()
 
     throw new IllegalStateException("Could not execute query due to insanely frequent schema changes")
   }
@@ -192,8 +205,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     .getDependencyResolver
     .resolveDependency(classOf[ThreadToStatementContextBridge])
 
-  private def getOrCreateFromSchemaState[V](statement: api.Statement, creator: => V): V = {
-    val javaCreator = new org.neo4j.helpers.Function[ExecutionEngine, V]() {
+  private def getOrCreateFromSchemaState[V](statement: api.Statement, creator: => V) = {
+    val javaCreator = new org.neo4j.function.Function[ExecutionEngine, V]() {
       def apply(key: ExecutionEngine) = creator
     }
     statement.readOperations().schemaStateGetOrCreate(this, javaCreator)
@@ -201,19 +214,29 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   def prettify(query: String): String = Prettifier(query)
 
-  private def createCompiler(logger: StringLogger): CypherCompiler = {
+  private def createCompiler: CypherCompiler = {
     val version = CypherVersion(optGraphSetting[String](
-      graph, GraphDatabaseSettings.cypher_parser_version, CypherVersion.vDefault.name))
-    val planner = PlannerName(optGraphSetting[String](
-      graph, GraphDatabaseSettings.cypher_planner, PlannerName.default.name))
-    if (version != CypherVersion.v2_2 && (planner == CostPlannerName || planner == IDPPlannerName || planner == DPPlannerName)) {
-      logger.error(s"Cannot combine configurations: ${GraphDatabaseSettings.cypher_parser_version.name}=${version.name} " +
-        s"with ${GraphDatabaseSettings.cypher_planner.name} = ${planner.name}")
-      throw new IllegalStateException(s"Cannot combine configurations: ${GraphDatabaseSettings.cypher_parser_version.name}=${version.name} " +
-        s"with ${GraphDatabaseSettings.cypher_planner.name} = ${planner.name}")
+      graph, GraphDatabaseSettings.cypher_parser_version, CypherVersion.default.name))
+    val planner = CypherPlanner(optGraphSetting[String](
+      graph, GraphDatabaseSettings.cypher_planner, CypherPlanner.default.name))
+    val runtime = CypherRuntime(optGraphSetting[String](
+      graph, GraphDatabaseSettings.cypher_runtime, CypherRuntime.default.name))
+    val useErrorsOverWarnings: java.lang.Boolean = optGraphSetting[java.lang.Boolean](
+      graph, GraphDatabaseSettings.cypher_hints_error,
+      GraphDatabaseSettings.cypher_hints_error.getDefaultValue.toBoolean)
+    val idpMaxTableSize: Int = optGraphSetting[java.lang.Integer](
+      graph, GraphDatabaseSettings.cypher_idp_solver_table_threshold,
+      GraphDatabaseSettings.cypher_idp_solver_table_threshold.getDefaultValue.toInt)
+    val idpIterationDuration: Long = optGraphSetting[java.lang.Long](
+      graph, GraphDatabaseSettings.cypher_idp_solver_duration_threshold,
+      GraphDatabaseSettings.cypher_idp_solver_duration_threshold.getDefaultValue.toLong)
+    if ((version != CypherVersion.v2_2 && version != CypherVersion.v2_3) && (planner == CypherPlanner.greedy || planner == CypherPlanner.idp || planner == CypherPlanner.dp)) {
+      val message = s"Cannot combine configurations: ${GraphDatabaseSettings.cypher_parser_version.name}=${version.name} " +
+        s"with ${GraphDatabaseSettings.cypher_planner.name} = ${planner.name}"
+      log.error(message)
+      throw new IllegalStateException(message)
     }
-    val optionParser = CypherOptionParser(kernelMonitors.newMonitor(classOf[ParserMonitor[CypherQueryWithOptions]]))
-    new CypherCompiler(graph, kernel, kernelMonitors, version, planner, optionParser, logger)
+    new CypherCompiler(graph, kernel, kernelMonitors, version, planner, runtime, useErrorsOverWarnings, idpMaxTableSize, idpIterationDuration, logProvider)
   }
 
   private def getPlanCacheSize: Int =
@@ -226,8 +249,10 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     def optGraphAs[T <: GraphDatabaseService : Manifest]: PartialFunction[GraphDatabaseService, T] = {
       case (db: T) => db
     }
-    optGraphAs[InternalAbstractGraphDatabase]
-      .andThen(g => Option(g.getConfig.get(setting)))
+    optGraphAs[GraphDatabaseFacade]
+      .andThen(g => {
+      Option(g.platformModule.config.get(setting))
+    })
       .andThen(_.getOrElse(defaultValue))
       .applyOrElse(graph, (_: GraphDatabaseService) => defaultValue)
   }

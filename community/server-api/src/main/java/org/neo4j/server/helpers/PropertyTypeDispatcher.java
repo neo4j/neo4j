@@ -19,10 +19,8 @@
  */
 package org.neo4j.server.helpers;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
+import java.util.Map;
 
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.helpers.collection.ArrayIterator;
@@ -48,40 +46,10 @@ public abstract class PropertyTypeDispatcher<K, T>
     public static void consumeProperties( PropertyTypeDispatcher<String, Void> dispatcher,
             PropertyContainer entity )
     {
-        final Iterable<String> keys = entity.getPropertyKeys();
-        if (keys instanceof List)
+        for ( Map.Entry<String, Object> property : entity.getAllProperties().entrySet() )
         {
-            final List<String> keysList = (List<String>) keys;
-            for (int i = keysList.size() - 1; i >= 0; i--)
-            {
-                dispatchProperty(dispatcher, entity, keysList.get(i));
-            }
-        } else
-        {
-            for (String key : keys)
-            {
-                dispatchProperty(dispatcher, entity, key);
-            }
+            dispatcher.dispatch( property.getValue(), property.getKey() );
         }
-    }
-
-    private static void dispatchProperty(PropertyTypeDispatcher<String, Void> dispatcher, PropertyContainer entity, String key) {
-        Object property = entity.getProperty(key, null);
-        if ( property == null ) return;
-        dispatcher.dispatch( property, key );
-    }
-
-    public static <T> Collection<T> dispatchProperties(
-            PropertyTypeDispatcher<String, T> dispatcher, PropertyContainer entity )
-    {
-        List<T> result = new ArrayList<T>();
-        for ( String key : entity.getPropertyKeys() )
-        {
-            Object property = entity.getProperty( key, null );
-            if ( property == null ) continue;
-            result.add( dispatcher.dispatch( property, key ) );
-        }
-        return result;
     }
 
     @SuppressWarnings( "boxing" )

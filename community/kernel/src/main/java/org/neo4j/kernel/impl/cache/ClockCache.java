@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.cache;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Queue;
@@ -31,8 +30,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ClockCache<K, V>
 {
-    private final Queue<Page<V>> clock = new ConcurrentLinkedQueue<Page<V>>();
-    private final Map<K, Page<V>> cache = new ConcurrentHashMap<K, Page<V>>();
+    private final Queue<Page<V>> clock = new ConcurrentLinkedQueue<>();
+    private final Map<K, Page<V>> cache = new ConcurrentHashMap<>();
     private final int maxSize;
     private final AtomicInteger currentSize = new AtomicInteger( 0 );
     private final String name;
@@ -64,7 +63,7 @@ public class ClockCache<K, V>
         Page<V> theValue = cache.get( key );
         if ( theValue == null )
         {
-            theValue = new Page<V>();
+            theValue = new Page<>();
             cache.put( key, theValue );
             clock.offer( theValue );
         }
@@ -132,14 +131,9 @@ public class ClockCache<K, V>
         // to be overridden as required
     }
 
-    public synchronized Set<K> keySet()
-    {
-        return cache.keySet();
-    }
-
     public Collection<V> values()
     {
-        Set<V> toReturn = new HashSet<V>();
+        Set<V> toReturn = new HashSet<>();
         for ( Page<V> page : cache.values() )
         {
             if ( page.value != null )
@@ -148,19 +142,6 @@ public class ClockCache<K, V>
             }
         }
         return toReturn;
-    }
-
-    public synchronized Set<Map.Entry<K, V>> entrySet()
-    {
-        Map<K, V> temp = new HashMap<K, V>();
-        for ( Map.Entry<K, Page<V>> entry : cache.entrySet() )
-        {
-            if ( entry.getValue().value != null )
-            {
-                temp.put( entry.getKey(), entry.getValue().value );
-            }
-        }
-        return temp.entrySet();
     }
 
     public V remove( K key )

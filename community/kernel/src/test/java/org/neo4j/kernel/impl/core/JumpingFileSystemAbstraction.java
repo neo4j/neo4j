@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.core;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -31,9 +30,7 @@ import java.io.Writer;
 import java.nio.ByteBuffer;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.function.Function;
-import org.neo4j.io.fs.FileLock;
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -42,25 +39,31 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
-public class JumpingFileSystemAbstraction extends LifecycleAdapter implements FileSystemAbstraction
+public class JumpingFileSystemAbstraction extends DelegatingFileSystemAbstraction
 {
+    private final EphemeralFileSystemAbstraction ephemeralFileSystem;
     private final int sizePerJump;
-    private final EphemeralFileSystemAbstraction actualFileSystem = new EphemeralFileSystemAbstraction();
 
     public JumpingFileSystemAbstraction( int sizePerJump )
     {
+        this( new EphemeralFileSystemAbstraction(), sizePerJump );
+    }
+
+    private JumpingFileSystemAbstraction( EphemeralFileSystemAbstraction ephemeralFileSystem, int sizePerJump )
+    {
+        super( ephemeralFileSystem );
+        this.ephemeralFileSystem = ephemeralFileSystem;
         this.sizePerJump = sizePerJump;
     }
 
     @Override
     public StoreChannel open( File fileName, String mode ) throws IOException
     {
-        StoreFileChannel channel = (StoreFileChannel) actualFileSystem.open( fileName, mode );
+        StoreFileChannel channel = (StoreFileChannel) super.open( fileName, mode );
         if (
                 fileName.getName().equals( "neostore.nodestore.db" ) ||
                 fileName.getName().equals( "neostore.nodestore.db.labels" ) ||
@@ -103,90 +106,6 @@ public class JumpingFileSystemAbstraction extends LifecycleAdapter implements Fi
     public StoreChannel create( File fileName ) throws IOException
     {
         return open( fileName, "rw" );
-    }
-
-    @Override
-    public boolean fileExists( File fileName )
-    {
-        return actualFileSystem.fileExists( fileName );
-    }
-
-    @Override
-    public long getFileSize( File fileName )
-    {
-        return actualFileSystem.getFileSize( fileName );
-    }
-
-    @Override
-    public boolean deleteFile( File fileName )
-    {
-        return actualFileSystem.deleteFile( fileName );
-    }
-
-    @Override
-    public void deleteRecursively( File directory ) throws IOException
-    {
-        actualFileSystem.deleteRecursively( directory );
-    }
-
-    @Override
-    public boolean mkdir( File fileName )
-    {
-        return actualFileSystem.mkdir( fileName );
-    }
-
-    @Override
-    public void mkdirs( File fileName )
-    {
-        actualFileSystem.mkdirs( fileName );
-    }
-
-    @Override
-    public boolean renameFile( File from, File to ) throws IOException
-    {
-        return actualFileSystem.renameFile( from, to );
-    }
-
-    @Override
-    public FileLock tryLock( File fileName, StoreChannel channel ) throws IOException
-    {
-        return actualFileSystem.tryLock( fileName, channel );
-    }
-
-    @Override
-    public File[] listFiles( File directory )
-    {
-        return actualFileSystem.listFiles( directory );
-    }
-
-    @Override
-    public File[] listFiles( File directory, FilenameFilter filter )
-    {
-        return actualFileSystem.listFiles( directory, filter );
-    }
-
-    @Override
-    public boolean isDirectory( File file )
-    {
-        return actualFileSystem.isDirectory( file );
-    }
-
-    @Override
-    public void moveToDirectory( File file, File toDirectory ) throws IOException
-    {
-        actualFileSystem.moveToDirectory( file, toDirectory );
-    }
-
-    @Override
-    public void copyFile( File from, File to ) throws IOException
-    {
-        actualFileSystem.copyFile( from, to );
-    }
-
-    @Override
-    public void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
-    {
-        actualFileSystem.copyRecursively( fromDirectory, toDirectory );
     }
 
     private int recordSizeFor( File fileName )
@@ -334,22 +253,8 @@ public class JumpingFileSystemAbstraction extends LifecycleAdapter implements Fi
         }
     }
 
-    @Override
-    public <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem(
-            Class<K> clazz, Function<Class<K>, K> creator )
-    {
-        return actualFileSystem.getOrCreateThirdPartyFileSystem( clazz, creator );
-    }
-
-    @Override
-    public void truncate( File path, long size ) throws IOException
-    {
-        actualFileSystem.truncate( path, size );
-    }
-
-    @Override
     public void shutdown()
     {
-        actualFileSystem.shutdown();
+        ephemeralFileSystem.shutdown();
     }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -32,15 +33,14 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.PageCacheRule;
@@ -60,7 +60,8 @@ public class ManyPropertyKeysIT
     public void creating_many_property_keys_should_have_all_loaded_the_next_restart() throws Exception
     {
         // GIVEN
-        GraphDatabaseAPI db = databaseWithManyPropertyKeys( 3000 ); // The previous limit to load was 2500, so go some above that
+        // The previous limit to load was 2500, so go some above that
+        GraphDatabaseAPI db = databaseWithManyPropertyKeys( 3000 );
         int countBefore = propertyKeyCount( db );
 
         // WHEN
@@ -74,7 +75,8 @@ public class ManyPropertyKeysIT
     }
 
     @Test
-    public void concurrently_creating_same_property_key_in_different_transactions_should_end_up_with_same_key_id() throws Exception
+    public void concurrently_creating_same_property_key_in_different_transactions_should_end_up_with_same_key_id()
+            throws Exception
     {
         // GIVEN
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
@@ -99,7 +101,16 @@ public class ManyPropertyKeysIT
 
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final File storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    private File storeDir;
+
+
+    @Before
+    public void setup()
+    {
+        storeDir  = testDirectory.graphDbDir();
+    }
 
     private GraphDatabaseAPI database()
     {
@@ -110,9 +121,9 @@ public class ManyPropertyKeysIT
     {
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreFactory storeFactory = new StoreFactory( fs, storeDir, pageCache, StringLogger.DEV_NULL, new Monitors() );
-        NeoStore neoStore = storeFactory.newNeoStore( true );
-        PropertyKeyTokenStore store = neoStore.getPropertyKeyTokenStore();
+        StoreFactory storeFactory = new StoreFactory( fs, storeDir, pageCache, NullLogProvider.getInstance() );
+        NeoStores neoStores = storeFactory.openAllNeoStores( true );
+        PropertyKeyTokenStore store = neoStores.getPropertyKeyTokenStore();
         for ( int i = 0; i < propertyKeyCount; i++ )
         {
             PropertyKeyTokenRecord record = new PropertyKeyTokenRecord( (int) store.nextId() );
@@ -122,7 +133,7 @@ public class ManyPropertyKeysIT
             record.setNameId( (int) first( nameRecords ).getId() );
             store.updateRecord( record );
         }
-        neoStore.close();
+        neoStores.close();
 
         return database();
     }
@@ -145,7 +156,7 @@ public class ManyPropertyKeysIT
 
     private int propertyKeyCount( GraphDatabaseAPI db )
     {
-        return (int) db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate()
+        return (int) db.getDependencyResolver().resolveDependency( NeoStoresSupplier.class ).get()
                 .getPropertyKeyTokenStore().getHighId();
     }
 
@@ -194,8 +205,7 @@ public class ManyPropertyKeysIT
         public Void doWork( WorkerState state )
         {
             state.tx.success();
-            //noinspection deprecation
-            state.tx.finish();
+            state.tx.close();
             return null;
         }
     }

@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.QuerySession;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.LogProvider;
 
 /**
  * This is a variant of {@link ExecutionEngine} that provides additional
@@ -41,15 +41,16 @@ public class ServerExecutionEngine extends ExecutionEngine implements QueryExecu
 {
     private org.neo4j.cypher.internal.ServerExecutionEngine serverExecutionEngine;
 
-    public ServerExecutionEngine( GraphDatabaseService database, StringLogger logger )
+    public ServerExecutionEngine( GraphDatabaseService database, LogProvider logProvider )
     {
-        super( database, logger );
+        super( database, logProvider );
     }
 
+    @Override
     protected
-    org.neo4j.cypher.ExecutionEngine createInnerEngine( GraphDatabaseService database, StringLogger logger )
+    org.neo4j.cypher.ExecutionEngine createInnerEngine( GraphDatabaseService database, LogProvider logProvider )
     {
-        return serverExecutionEngine = new org.neo4j.cypher.internal.ServerExecutionEngine( database, logger );
+        return serverExecutionEngine = new org.neo4j.cypher.internal.ServerExecutionEngine( database, logProvider );
     }
 
     @Override

@@ -19,6 +19,7 @@
  */
 package org.neo4j.tooling;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 
@@ -27,7 +28,9 @@ import org.neo4j.csv.reader.CharSeekers;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Readables;
 import org.neo4j.helpers.Args;
-import org.neo4j.kernel.logging.SystemOutLogging;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
+import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
@@ -69,7 +72,7 @@ public class QuickImport
         long relationshipCount = parseLongWithUnit( args.get( "relationships", null ) );
         int labelCount = args.getNumber( "labels", 4 ).intValue();
         int relationshipTypeCount = args.getNumber( "relationship-types", 4 ).intValue();
-        String dir = args.get( ImportTool.Options.STORE_DIR.key() );
+        File dir = new File( args.get( ImportTool.Options.STORE_DIR.key() ) );
 
         Extractors extractors = new Extractors( COMMAS.arrayDelimiter() );
         IdType idType = IdType.valueOf( args.get( "id-type", IdType.ACTUAL.name() ) );
@@ -77,11 +80,13 @@ public class QuickImport
         Header nodeHeader = parseNodeHeader( args, idType, extractors );
         Header relationshipHeader = parseRelationshipHeader( args, idType, extractors );
 
+        FormattedLogProvider sysoutLogProvider = FormattedLogProvider.toOutputStream( System.out );
         Input input = new CsvDataGeneratorInput(
                 nodeHeader, relationshipHeader,
                 COMMAS, nodeCount, relationshipCount, new Groups(), idType, labelCount, relationshipTypeCount,
                 silentBadCollector( 0 ));
-        BatchImporter importer = new ParallelBatchImporter( dir, DEFAULT, new SystemOutLogging(), defaultVisible() );
+        BatchImporter importer = new ParallelBatchImporter( dir, DEFAULT,
+                new SimpleLogService( sysoutLogProvider, sysoutLogProvider ), defaultVisible(), new Config() );
         importer.doImport( input );
     }
 

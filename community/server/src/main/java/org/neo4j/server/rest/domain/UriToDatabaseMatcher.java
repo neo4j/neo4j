@@ -94,7 +94,7 @@ public class UriToDatabaseMatcher
         @Override
         public String toString()
         {
-            return pattern.toString() + " => " + graphDatabaseName + System.getProperty( "line.separator" );
+            return pattern.toString() + " => " + graphDatabaseName + System.lineSeparator();
         }
     }
 }

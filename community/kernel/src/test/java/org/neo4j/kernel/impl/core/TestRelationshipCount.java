@@ -46,10 +46,12 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
-import static java.lang.Integer.parseInt;
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
+import static java.lang.Integer.parseInt;
+import static java.util.Arrays.asList;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 @RunWith( Parameterized.class )
@@ -104,7 +106,6 @@ public class TestRelationshipCount
             node.createRelationshipTo( getGraphDb().createNode(), MyRelTypes.TEST );
         }
 
-        clearCache();
         assertEquals( expectedRelCount, node.getDegree() );
         assertEquals( expectedRelCount, node.getDegree( Direction.BOTH ) );
         assertEquals( expectedRelCount, node.getDegree( Direction.OUTGOING ) );
@@ -180,7 +181,6 @@ public class TestRelationshipCount
         {
             newTransaction();
         }
-        clearCache();
         assertEquals( expectedTypes, asSet( asStrings( node.getRelationshipTypes() ) ) );
     }
 
@@ -228,7 +228,6 @@ public class TestRelationshipCount
             if ( i%10 == 0 )
             {
                 newTransaction();
-                clearCache();
             }
         }
 
@@ -592,10 +591,5 @@ public class TestRelationshipCount
     private GraphDatabaseService getGraphDb()
     {
         return dbRule.getGraphDatabaseService();
-    }
-
-    private void clearCache()
-    {
-        dbRule.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( Caches.class ).clear();
     }
 }

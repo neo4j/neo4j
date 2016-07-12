@@ -19,14 +19,21 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.exceptions.schema.AddIndexFailureException;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.procedures.ProcedureSignature;
+import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
 
 interface SchemaWrite
 {
@@ -35,19 +42,40 @@ interface SchemaWrite
      * {@code labelId}.
      */
     IndexDescriptor indexCreate( int labelId, int propertyKeyId )
-            throws AddIndexFailureException, AlreadyIndexedException, AlreadyConstrainedException;
+            throws AlreadyIndexedException, AlreadyConstrainedException;
 
     /** Drops a {@link IndexDescriptor} from the database */
     void indexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException;
 
-    UniquenessConstraint uniquenessConstraintCreate( int labelId, int propertyKeyId )
+    UniquenessConstraint uniquePropertyConstraintCreate( int labelId, int propertyKeyId )
             throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException;
 
-    void constraintDrop( UniquenessConstraint constraint ) throws DropConstraintFailureException;
+    NodePropertyExistenceConstraint nodePropertyExistenceConstraintCreate( int labelId, int propertyKeyId )
+            throws CreateConstraintFailureException, AlreadyConstrainedException;
+
+    RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate( int relationshipTypeId,
+            int propertyKeyId ) throws CreateConstraintFailureException, AlreadyConstrainedException;
+
+    void constraintDrop( NodePropertyConstraint constraint ) throws DropConstraintFailureException;
+
+    void constraintDrop( RelationshipPropertyConstraint constraint ) throws DropConstraintFailureException;
 
     /**
      * This should not be used, it is exposed to allow an external job to clean up constraint indexes.
      * That external job should become an internal job, at which point this operation should go away.
      */
     void uniqueIndexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException;
+
+    /**
+     * @param signature the namespace, name, typed inputs and typed outputs
+     * @param language named procedure language, eg "js"
+     * @param body the procedure code, format is language-handler specific
+     */
+    void procedureCreate( ProcedureSignature signature, String language, String body ) throws ProcedureException, ProcedureConstraintViolation;
+
+    /**
+     * Drop a procedure from the database.
+     * @param name
+     */
+    void procedureDrop( ProcedureName name ) throws ProcedureConstraintViolation, ProcedureException;
 }

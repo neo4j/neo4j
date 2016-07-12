@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -273,6 +274,53 @@ public class IndexSamplingJobTrackerTest
             {
                 latch2.countDown();
                 jobTracker.stopAndAwaitAllJobs();
+            }
+        } );
+
+        // When
+        latch2.await();
+        assertFalse( stopping.isDone() );
+        latch1.countDown();
+        stopping.get( 10, SECONDS );
+
+        // Then
+        assertTrue( stopping.isDone() );
+        assertNull( stopping.get() );
+        assertTrue( job1.executed );
+        assertTrue( job2.executed );
+    }
+
+    @Test( timeout = 5_000 )
+    public void shouldWaitForAllJobsToFinish() throws Throwable
+    {
+        // Given
+        when( config.jobLimit() ).thenReturn( 2 );
+
+        JobScheduler jobScheduler = new Neo4jJobScheduler();
+        jobScheduler.init();
+
+        final IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( config, jobScheduler );
+        final CountDownLatch latch1 = new CountDownLatch( 1 );
+        final CountDownLatch latch2 = new CountDownLatch( 1 );
+
+        WaitingIndexSamplingJob job1 = new WaitingIndexSamplingJob( new IndexDescriptor( 1, 1 ), latch1 );
+        WaitingIndexSamplingJob job2 = new WaitingIndexSamplingJob( new IndexDescriptor( 2, 2 ), latch1 );
+
+        jobTracker.scheduleSamplingJob( job1 );
+        jobTracker.scheduleSamplingJob( job2 );
+
+        Future<?> stopping = Executors.newSingleThreadExecutor().submit( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                latch2.countDown();
+                try {
+                    jobTracker.awaitAllJobs( 10, TimeUnit.SECONDS );
+                } catch (InterruptedException e)
+                {
+                    throw new RuntimeException( e );
+                }
             }
         } );
 

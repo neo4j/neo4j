@@ -30,8 +30,8 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.PaxosInstance;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.PaxosInstanceStore;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.timeout.Timeouts;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.impl.util.CappedLogger;
-import org.neo4j.kernel.logging.Logging;
 
 class LearnerContextImpl
         extends AbstractContextImpl
@@ -51,7 +51,7 @@ class LearnerContextImpl
     private final PaxosInstanceStore paxosInstances;
 
     LearnerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState,
-                        Logging logging,
+                        LogProvider logging,
                         Timeouts timeouts, PaxosInstanceStore paxosInstances,
                         AcceptorInstanceStore instanceStore,
                         ObjectInputStreamFactory objectInputStreamFactory,
@@ -64,10 +64,11 @@ class LearnerContextImpl
         this.objectInputStreamFactory = objectInputStreamFactory;
         this.objectOutputStreamFactory = objectOutputStreamFactory;
         this.paxosInstances = paxosInstances;
-        this.learnMissLogger = new CappedLogger( getLogger( LearnerState.class ) ).setDuplicateFilterEnabled( true );
+        this.learnMissLogger = new CappedLogger( logging.getLog( LearnerState.class ) )
+                .setDuplicateFilterEnabled( true );
     }
 
-    private LearnerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState, Logging logging,
+    private LearnerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState, LogProvider logging,
                                 Timeouts timeouts, long lastDeliveredInstanceId, long lastLearnedInstanceId,
                                 HeartbeatContext heartbeatContext,
                         AcceptorInstanceStore instanceStore, ObjectInputStreamFactory objectInputStreamFactory,
@@ -81,7 +82,8 @@ class LearnerContextImpl
         this.objectInputStreamFactory = objectInputStreamFactory;
         this.objectOutputStreamFactory = objectOutputStreamFactory;
         this.paxosInstances = paxosInstances;
-        this.learnMissLogger = new CappedLogger( getLogger( LearnerState.class ) ).setDuplicateFilterEnabled( true );
+        this.learnMissLogger = new CappedLogger( logging.getLog( LearnerState.class ) ).setDuplicateFilterEnabled(
+                true );
     }
 
     @Override
@@ -176,10 +178,10 @@ class LearnerContextImpl
         learnMissLogger.warn( "Did not have learned value for Paxos instance " + instanceId + ". " +
                               "This generally indicates that this instance has missed too many cluster events and is " +
                               "failing to catch up. If this error does not resolve soon it may become necessary to " +
-                              "restart this cluster member so normal operation can resume.", null );
+                              "restart this cluster member so normal operation can resume." );
     }
 
-    public LearnerContextImpl snapshot( CommonContextState commonStateSnapshot, Logging logging, Timeouts timeouts,
+    public LearnerContextImpl snapshot( CommonContextState commonStateSnapshot, LogProvider logging, Timeouts timeouts,
                                         PaxosInstanceStore paxosInstancesSnapshot, AcceptorInstanceStore instanceStore,
                                         ObjectInputStreamFactory objectInputStreamFactory, ObjectOutputStreamFactory
             objectOutputStreamFactory, HeartbeatContextImpl snapshotHeartbeatContext )

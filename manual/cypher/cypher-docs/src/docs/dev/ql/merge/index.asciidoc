@@ -1,0 +1,105 @@
+[[query-merge]]
+= Merge
+
+[abstract]
+The `MERGE` clause ensures that a pattern exists in the graph.
+Either the pattern already exists, or it needs to be created.
+
+== Introduction ==
+
+`MERGE` either matches existing nodes and binds them, or it creates new data and binds that.
+It's like a combination of `MATCH` and `CREATE` that additionally allows you to specify what happens if the data was matched or created.
+
+For example, you can specify that the graph must contain a node for a user with a certain name.
+If there isn't a node with the correct name, a new node will be created and its name property set.
+
+When using `MERGE` on full patterns, the behavior is that either the whole pattern matches, or the whole pattern is created.
+`MERGE` will not partially use existing patterns -- it's all or nothing.
+If partial matches are needed, this can be accomplished by splitting a pattern up into multiple `MERGE` clauses.
+
+As with `MATCH`, `MERGE` can match multiple occurrences of a pattern.
+If there are multiple matches, they will all be passed on to later stages of the query.
+
+The last part of +MERGE+ is the +ON CREATE+ and +ON MATCH+.
+These allow a query to express additional changes to the properties of a node or relationship, depending on if the element was ++MATCH++ed in the database or if it was ++CREATE++d.
+
+The rule planner (see <<how-are-queries-executed>>) expands a `MERGE` pattern from the end point that has the identifier with the lowest lexicographical order.
+This means that it might choose a suboptimal expansion path, expanding from a node with a higher degree.
+The pattern `MERGE (a:A)-[:R]->(b:B)` will always expand from `a` to `b`, so if it is known that `b` nodes are a better choice for start point, renaming identifiers could improve performance.
+
+The following graph is used for the examples below:
+
+.Graph
+include::includes/cypher-merge-graph.asciidoc[]
+
+[[query-merge-node-derived]]
+== Merge nodes ==
+
+:leveloffset: 3
+
+include::merge-single-node-with-a-label.asciidoc[]
+
+include::merge-single-node-with-properties.asciidoc[]
+
+include::merge-single-node-specifying-both-label-and-property.asciidoc[]
+
+include::merge-single-node-derived-from-an-existing-node-property.asciidoc[]
+
+:leveloffset: 2
+
+== Use ON CREATE and ON MATCH ==
+
+:leveloffset: 3
+
+include::merge-with-on-create.asciidoc[]
+
+include::merge-with-on-match.asciidoc[]
+
+include::merge-with-on-create-and-on-match.asciidoc[]
+
+include::merge-with-on-match-setting-multiple-properties.asciidoc[]
+
+:leveloffset: 2
+
+== Merge relationships ==
+
+:leveloffset: 3
+
+include::merge-on-a-relationship.asciidoc[]
+
+include::merge-on-multiple-relationships.asciidoc[]
+
+include::merge-on-an-undirected-relationship.asciidoc[]
+
+include::merge-on-a-relationship-between-two-existing-nodes.asciidoc[]
+
+include::merge-on-a-relationship-between-an-existing-node-and-a-merged-node-derived-from-a-node-property.asciidoc[]
+
+:leveloffset: 2
+
+== Using unique constraints with MERGE ==
+
+Cypher prevents getting conflicting results from +MERGE+ when using patterns that involve uniqueness constrains.
+In this case, there must be at most one node that matches that pattern.
+
+For example, given two uniqueness constraints on `:Person(id)` and +:Person(ssn)+: then a query such as `MERGE (n:Person {id: 12, ssn: 437})` will fail, if there are two different nodes (one with +id+ 12 and one with +ssn+ 437) or if there is only one node with only one of the properties.
+In other words, there must be exactly one node that matches the pattern, or no matching nodes.
+
+Note that the following examples assume the existence of uniqueness constraints that have been created using:
+
+include::includes/merge-setup-constraints.asciidoc[]
+
+:leveloffset: 3
+
+include::merge-using-unique-constraints-creates-a-new-node-if-no-node-is-found.asciidoc[]
+
+include::merge-using-unique-constraints-matches-an-existing-node.asciidoc[]
+
+include::merge-with-unique-constraints-and-partial-matches.asciidoc[]
+
+include::merge-with-unique-constraints-and-conflicting-matches.asciidoc[]
+
+:leveloffset: 2
+
+include::using-map-parameters-with-merge.asciidoc[]
+

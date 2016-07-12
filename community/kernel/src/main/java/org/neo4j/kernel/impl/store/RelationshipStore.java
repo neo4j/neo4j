@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.store;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -31,8 +30,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
@@ -40,13 +38,8 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 /**
  * Implementation of the relationship store.
  */
-public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> implements Store
+public class RelationshipStore extends AbstractRecordStore<RelationshipRecord>
 {
-    public static abstract class Configuration
-        extends AbstractStore.Configuration
-    {
-    }
-
     public static final String TYPE_DESCRIPTOR = "RelationshipStore";
 
     // record header size
@@ -60,13 +53,9 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
             Config configuration,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger,
-            StoreVersionMismatchHandler versionMismatchHandler,
-            Monitors monitors )
+            LogProvider logProvider )
     {
-        super( fileName, configuration, IdType.RELATIONSHIP, idGeneratorFactory,
-                pageCache, fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
+        super( fileName, configuration, IdType.RELATIONSHIP, idGeneratorFactory, pageCache, logProvider );
     }
 
     @Override
@@ -96,59 +85,36 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
     @Override
     public RelationshipRecord getRecord( long id )
     {
-        RelationshipRecord record = new RelationshipRecord( id );
+        return getRecord( new RelationshipRecord( id ) );
+    }
 
-        if ( fillRecord( id, record, RecordLoad.NORMAL ) )
-        {
-            return record;
-        }
-        else
-        {
-            return null;
-        }
+    public RelationshipRecord getRecord( RelationshipRecord record )
+    {
+        return fillRecord( record.getId(), record, RecordLoad.NORMAL ) ? record : null;
     }
 
     @Override
     public RelationshipRecord forceGetRecord( long id )
     {
         RelationshipRecord record = new RelationshipRecord( -1 );
-
-        if ( fillRecord( id, record, RecordLoad.FORCE ) )
-        {
-            return record;
-        }
-        else
-        {
-            return null;
-        }
-    }
-
-    @Override
-    public RelationshipRecord forceGetRaw( RelationshipRecord record )
-    {
-        return record;
-    }
-
-    @Override
-    public RelationshipRecord forceGetRaw( long id )
-    {
-        return forceGetRecord( id );
+        return fillRecord( id, record, RecordLoad.FORCE ) ? record : null;
     }
 
     public RelationshipRecord getLightRel( long id )
     {
         RelationshipRecord record = new RelationshipRecord( id );
-
-        if( fillRecord( id, record, RecordLoad.CHECK ) )
-        {
-            return record;
-        }
-        else
-        {
-            return null;
-        }
+        return fillRecord( id, record, RecordLoad.CHECK ) ? record : null;
     }
 
+    /**
+     * @return {@code true} if record successfully loaded and in use.
+     * If not in use the return value depends on the {@code loadMode}:
+     * <ol>
+     * <li>NORMAL: throws {@link InvalidRecordException}</li>
+     * <li>CHECK: returns {@code false}</li>
+     * <li>FORCE: return {@code true}</li>
+     * </ol>
+     */
     public boolean fillRecord( long id, RelationshipRecord target, RecordLoad loadMode )
     {
         try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )

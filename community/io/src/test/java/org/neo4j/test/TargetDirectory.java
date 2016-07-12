@@ -92,13 +92,24 @@ public class TargetDirectory
             return new File( directory(), name );
         }
 
-        public File directory( String name ) {
+        public File directory( String name )
+        {
             File dir = new File( directory(), name );
-            if ( ! fileSystem.fileExists( dir ) )
+            if ( !fileSystem.fileExists( dir ) )
             {
                 fileSystem.mkdir( dir );
             }
             return dir;
+        }
+
+        public File cleanDirectory( String name ) throws IOException
+        {
+            File directory = directory( name );
+            for ( File file : fileSystem.listFiles( directory ) )
+            {
+                fileSystem.deleteRecursively( file );
+            }
+            return directory;
         }
 
         public File graphDbDir()
@@ -164,17 +175,6 @@ public class TargetDirectory
     private final FileSystemAbstraction fileSystem;
     private final File base;
 
-    /**
-     * @deprecated Use {@link org.neo4j.test.TargetDirectory.TestDirectory} instead of creating
-     * {@link org.neo4j.test.TargetDirectory} directly. The easiest way to do this is with
-     * {@link #testDirForTest(Class)}.
-     */
-    @Deprecated
-    public static TargetDirectory forTest( Class<?> owningTest )
-    {
-        return new TargetDirectory( new DefaultFileSystemAbstraction(), owningTest );
-    }
-
     public static TestDirectory testDirForTest( Class<?> owningTest )
     {
         return new TargetDirectory( new DefaultFileSystemAbstraction(), owningTest ).testDirectory();
@@ -186,7 +186,7 @@ public class TargetDirectory
         return new TargetDirectory( fileSystem, owningTest ).testDirectory();
     }
 
-    private TargetDirectory( FileSystemAbstraction fileSystem, Class<?> owningTest )
+    TargetDirectory( FileSystemAbstraction fileSystem, Class<?> owningTest )
     {
         this.fileSystem = fileSystem;
         this.base = new File( new File( locateTarget( owningTest ), "test-data" ), owningTest.getName() )

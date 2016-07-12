@@ -19,19 +19,13 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -41,13 +35,20 @@ import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.ReadableIndex;
 import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class TestAutoIndexing
 {
-    private ImpermanentGraphDatabase graphDb;
+    private GraphDatabaseAPI graphDb;
     private Transaction tx;
     private Map<String, String> config;
 
@@ -56,7 +57,7 @@ public class TestAutoIndexing
         if ( tx != null )
         {
             tx.success();
-            tx.finish();
+            tx.close();
         }
         tx = graphDb.beginTx();
     }
@@ -73,7 +74,7 @@ public class TestAutoIndexing
     @Before
     public void startDb()
     {
-        graphDb = (ImpermanentGraphDatabase) new TestGraphDatabaseFactory().
+        graphDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
                 newImpermanentDatabaseBuilder().setConfig( getConfig() ).newGraphDatabase();
     }
 
@@ -82,7 +83,7 @@ public class TestAutoIndexing
     {
         if ( tx != null )
         {
-            tx.finish();
+            tx.close();
         }
         if ( graphDb != null )
         {
@@ -575,8 +576,6 @@ public class TestAutoIndexing
         // clear the caches
         NeoStoreDataSource dataSource =
                 graphDb.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
-        dataSource.getNodeCache().clear();
-        dataSource.getRelationshipCache().clear();
 
         node1.removeProperty( "nodeProp" );
         newTransaction();

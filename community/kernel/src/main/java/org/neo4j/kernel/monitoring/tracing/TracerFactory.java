@@ -20,18 +20,19 @@
 package org.neo4j.kernel.monitoring.tracing;
 
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 
 /**
  * A TracerFactory determines the implementation of the tracers, that a database should use. Each implementation has
  * a particular name, which is given by the getImplementationName method, and is used for identifying it in the
- * {@link org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration#tracer} setting.
+ * {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration#tracer} setting.
  */
 public interface TracerFactory
 {
     /**
      * @return The name this implementation is identified by in the
-     * {@link org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration#tracer} setting.
+     * {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration#tracer} setting.
      */
     String getImplementationName();
 
@@ -46,4 +47,10 @@ public interface TracerFactory
      * @return The created instance.
      */
     TransactionTracer createTransactionTracer();
+
+    /**
+     * Create a new CheckPointTracer instance.
+     * @return The created instance.
+     */
+    CheckPointTracer createCheckPointTracer();
 }

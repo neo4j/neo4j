@@ -24,10 +24,9 @@ import org.neo4j.kernel.api.exceptions.{KernelException, Status}
 abstract class CypherException(message: String, cause: Throwable) extends RuntimeException(message, cause)
 with Status.HasStatus {
   def status: Status
-  def this(message: String) = this(message, null)
 }
 
-class CypherExecutionException(message: String, cause: KernelException) extends CypherException(message, cause) {
+class CypherExecutionException(message: String, cause: Throwable) extends CypherException(message, cause) {
   def status = cause match {
     // These are always caused by KernelException's, so just map to the status code from the kernel exception.
     case e: KernelException if e != null => e.status()
@@ -35,7 +34,7 @@ class CypherExecutionException(message: String, cause: KernelException) extends 
   }
 }
 
-class UniquePathNotUniqueException(message: String) extends CypherException(message) {
+class UniquePathNotUniqueException(message: String, cause:Throwable) extends CypherException(message, cause) {
   val status = Status.Statement.ConstraintViolation
 }
 
@@ -48,14 +47,10 @@ class CypherTypeException(message: String, cause: Throwable = null) extends Cyph
 }
 
 class ParameterNotFoundException(message: String, cause: Throwable) extends CypherException(message, cause) {
-  def this(message: String) = this(message, null)
-
   val status = Status.Statement.ParameterMissing
 }
 
 class ParameterWrongTypeException(message: String, cause: Throwable) extends CypherException(message, cause) {
-  def this(message: String) = this(message, null)
-
   val status = Status.Statement.InvalidType
 }
 
@@ -63,23 +58,25 @@ class InvalidArgumentException(message: String, cause: Throwable = null) extends
   val status = Status.Statement.InvalidArguments
 }
 
-class PatternException(message: String) extends CypherException(message, null) {
+class PatternException(message: String, cause: Throwable) extends CypherException(message, cause) {
   val status = Status.Statement.InvalidSemantics
+  def this(message: String) = this(message,null)
 }
 
 class InternalException(message: String, inner: Exception = null) extends CypherException(message, inner) {
   val status = Status.Statement.ExecutionFailure
 }
 
-class MissingIndexException(indexName: String) extends CypherException("Index `" + indexName + "` does not exist") {
+class MissingIndexException(indexName: String) extends CypherException("Index `" + indexName + "` does not exist", null) {
   val status = Status.Schema.NoSuchIndex
 }
 
-class FailedIndexException(indexName: String) extends CypherException("Index `" + indexName + "` has failed. Drop and recreate it to get it back online.") {
+class FailedIndexException(indexName: String, cause: Throwable) extends CypherException("Index `" + indexName + "` has failed. Drop and recreate it to get it back online.", cause) {
   val status = Status.General.FailedIndex
+  def this(indexName: String) = this(indexName, null)
 }
 
-class MissingConstraintException() extends CypherException("Constraint not found") {
+class MissingConstraintException(cause: Throwable) extends CypherException("Constraint not found", cause) {
   val status = Status.Schema.NoSuchConstraint
 }
 
@@ -88,56 +85,67 @@ class NodeStillHasRelationshipsException(val nodeId: Long, cause: Throwable)
   val status = Status.Schema.ConstraintViolation
 }
 
-class ProfilerStatisticsNotReadyException() extends CypherException("This result has not been materialised yet. Iterate over it to get profiler stats.") {
+class ProfilerStatisticsNotReadyException(cause: Throwable) extends CypherException("This result has not been materialised yet. Iterate over it to get profiler stats.", cause) {
   val status = Status.Statement.ExecutionFailure
+  def this() = this(null)
 }
 
-class UnknownLabelException(labelName: String) extends CypherException(s"The provided label :`$labelName` does not exist in the store") {
+class UnknownLabelException(labelName: String, cause: Throwable) extends CypherException(s"The provided label :`$labelName` does not exist in the store", cause) {
   val status = Status.Statement.NoSuchLabel
+  def this(labelName: String) = this(labelName, null)
 }
 
-class HintException( message: String)
-  extends CypherException(message) {
+class HintException(message: String, cause: Throwable)
+  extends CypherException(message, cause) {
   val status = Status.Statement.ExecutionFailure
 }
 
-class IndexHintException(identifier: String, label: String, property: String, message: String)
-  extends CypherException(s"$message\nLabel: `$label`\nProperty name: `$property`") {
+class IndexHintException(identifier: String, label: String, property: String, message: String, cause: Throwable)
+  extends CypherException(s"$message\nLabel: `$label`\nProperty name: `$property`", cause) {
   val status = Status.Schema.NoSuchIndex
 }
 
-class LabelScanHintException(identifier: String, label: String, message: String)
-  extends CypherException(s"$message\nLabel: `$label`") {
-  val status = Status.Statement.InvalidSemantics
-}
-
-class UnableToPickStartPointException(message: String) extends CypherException(message) {
+class JoinHintException(identifier: String, message: String, cause: Throwable)
+  extends CypherException(message, cause) {
   val status = Status.Statement.ExecutionFailure
 }
 
-class InvalidSemanticsException(message: String) extends CypherException(message) {
+class LabelScanHintException(identifier: String, label: String, message: String, cause: Throwable)
+  extends CypherException(s"$message\nLabel: `$label`", cause) {
   val status = Status.Statement.InvalidSemantics
+  def this(identifier: String, label: String, message: String) = this(identifier, label, message, null)
 }
 
-class OutOfBoundsException(message: String) extends CypherException(message) {
-  val status = Status.Statement.InvalidArguments
+class InvalidSemanticsException(message: String, cause: Throwable) extends CypherException(message, cause) {
+  val status = Status.Statement.InvalidSemantics
+  def this(message: String) = this(message,null)
 }
 
-class MergeConstraintConflictException(message: String) extends CypherException(message) {
+class MergeConstraintConflictException(message: String, cause: Throwable) extends CypherException(message, cause) {
   val status = Status.Statement.ConstraintViolation
+  def this(message: String) = this(message, null)
 }
 
-class ArithmeticException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
+class ConstraintValidationException(message: String, cause: Throwable) extends CypherException(message, cause) {
+  val status = Status.Statement.ConstraintViolation
+  def this(message: String) = this(message, null)
+}
+
+class ArithmeticException(message: String, cause: Throwable) extends CypherException(message, cause) {
   val status = Status.Statement.ArithmeticError
 }
 
-class IncomparableValuesException(lhs: String, rhs: String)
-  extends SyntaxException(s"Don't know how to compare that. Left: ${lhs}; Right: ${rhs}")
+class IncomparableValuesException(lhs: String, rhs: String, cause: Throwable)
+  extends SyntaxException(s"Don't know how to compare that. Left: ${lhs}; Right: ${rhs}", cause) {
+  def this(lhs: String, rhs: String) = this(lhs, rhs, null)
+}
 
-class PeriodicCommitInOpenTransactionException
-  extends InvalidSemanticsException("Executing queries that use periodic commit in an open transaction is not possible.")
+class PeriodicCommitInOpenTransactionException(cause: Throwable)
+  extends InvalidSemanticsException("Executing queries that use periodic commit in an open transaction is not possible.", cause) {
+  def this() = this(null)
+}
 
-class LoadExternalResourceException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
+class LoadExternalResourceException(message: String, cause: Throwable) extends CypherException(message, cause) {
   val status = Status.Statement.ExternalResourceFailure
 }
 

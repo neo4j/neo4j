@@ -23,8 +23,6 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -157,30 +155,13 @@ public abstract class IoPrimitiveUtils
             ByteBuffer buffer ) throws IOException
     {
         Integer length = readInt( channel, buffer );
-        if (length != null)
+        if ( length != null )
         {
             char[] chars = new char[length];
             chars = readCharArray( channel, buffer, chars );
             return chars == null ? null : new String( chars );
-        } else
-            return null;
-    }
-
-    public static Map<String, String> readMap( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
-    {
-        int size = readInt( channel, buffer );
-        Map<String, String> map = new HashMap<>();
-        for ( int i = 0; i < size; i++ )
-        {
-            String key = readLengthAndString( channel, buffer );
-            String value = readLengthAndString( channel, buffer );
-            if ( key == null || value == null )
-            {
-                return null;
-            }
-            map.put( key, value );
         }
-        return map;
+        return null;
     }
 
     public static void writeLengthAndString( StoreChannel channel, ByteBuffer buffer, String value )
@@ -239,23 +220,7 @@ public abstract class IoPrimitiveUtils
             }
             return result;
         }
-        else
-        {
-            return new Object[] { propertyValue };
-        }
-    }
-
-    public static Collection<Object> arrayAsCollection( Object arrayValue )
-    {
-        assert arrayValue.getClass().isArray();
-
-        Collection<Object> result = new ArrayList<>();
-        int length = Array.getLength( arrayValue );
-        for ( int i = 0; i < length; i++ )
-        {
-            result.add( Array.get( arrayValue, i ) );
-        }
-        return result;
+        return new Object[] { propertyValue };
     }
 
     public static int safeCastLongToInt( long value )

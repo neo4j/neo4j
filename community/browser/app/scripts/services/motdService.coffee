@@ -22,10 +22,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 angular.module('neo4jApp.services')
   .factory 'motdService', [
+    '$rootScope',
     'rssFeedService',
     'motdFeedParser',
     'Settings'
-    (rssFeedService, motdFeedParser, Settings) ->
+    ($rootScope, rssFeedService, motdFeedParser, Settings) ->
       class Motd
 
         choices =
@@ -64,7 +65,7 @@ angular.module('neo4jApp.services')
           callToAction: [
             {
               'd': "Every good graph starts with Neo4j."
-              'u':'http://neo4j.org'
+              'u':'http://neo4j.com'
             }
           ]
 
@@ -104,6 +105,8 @@ angular.module('neo4jApp.services')
                 return hit or val is 'neo4j'
             item = motdFeedParser.getFirstMatch(feed, match_filter)
           item.bang = motdFeedParser.explodeTags(item.t).combo?.replace(/[^a-z]*/ig, '')
+          if (item?.u and item.u.indexOf('blog') >= 0)
+            item.d = "Latest Blog: " + item.d
           item
 
         refresh: ->
@@ -115,6 +118,7 @@ angular.module('neo4jApp.services')
           @callToAction = @pickRandomlyFrom(choices.callToAction)
 
           return if Settings.enableMotd is false
+          return if not $rootScope.neo4j.config.allow_outgoing_browser_connections
           rssFeedService.get().then (feed) => @callToAction = @getCallToActionFeedItem feed
 
 

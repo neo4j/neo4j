@@ -22,6 +22,7 @@ org.neo4j.shell.kernel.apps.cypher.Start
 org.neo4j.shell.kernel.apps.cypher.Using
 org.neo4j.shell.kernel.apps.cypher.Unwind
 org.neo4j.shell.kernel.apps.cypher.With
+org.neo4j.shell.kernel.apps.cypher.Foreach
 org.neo4j.shell.kernel.apps.Ls
 org.neo4j.shell.kernel.apps.Mknode
 org.neo4j.shell.kernel.apps.Mkrel

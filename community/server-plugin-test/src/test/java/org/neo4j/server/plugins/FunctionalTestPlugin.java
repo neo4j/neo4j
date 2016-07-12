@@ -240,8 +240,7 @@ public class FunctionalTestPlugin extends ServerPlugin
     public Path pathToReference( @Source Node me )
     {
         PathFinder<Path> finder = GraphAlgoFactory.shortestPath( PathExpanders.allTypesAndDirections(), 6 );
-        Transaction tx = me.getGraphDatabase().beginTx();
-        try
+        try ( Transaction tx = me.getGraphDatabase().beginTx() )
         {
             Node other;
             if ( me.hasRelationship( DynamicRelationshipType.withName( "friend" ) ) )
@@ -259,10 +258,6 @@ public class FunctionalTestPlugin extends ServerPlugin
 
             tx.success();
             return path;
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 

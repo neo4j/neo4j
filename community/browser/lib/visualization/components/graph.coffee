@@ -91,4 +91,13 @@ class neo.models.Graph
 
   findNode: (id) => @nodeMap[id]
 
+  findNodeNeighbourIds: (id) =>
+    @_relationships
+      .filter((relationship) -> relationship.source.id is id or relationship.target.id is id)
+      .map((relationship) ->
+        if relationship.target.id is id
+          return relationship.source.id
+        return relationship.target.id
+      )
+
   findRelationship: (id) => @relationshipMap[id]

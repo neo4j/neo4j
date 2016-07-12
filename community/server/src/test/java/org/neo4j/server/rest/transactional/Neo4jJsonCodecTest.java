@@ -19,17 +19,17 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.codehaus.jackson.JsonGenerator;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
@@ -62,7 +62,7 @@ public class Neo4jJsonCodecTest
     {
         //Given
         PropertyContainer propertyContainer = mock( PropertyContainer.class );
-        when( propertyContainer.getPropertyKeys() ).thenThrow( RuntimeException.class );
+        when( propertyContainer.getAllProperties() ).thenThrow( RuntimeException.class );
 
         //When
         try
@@ -84,7 +84,7 @@ public class Neo4jJsonCodecTest
         //Given
         Path path = mock( Path.class );
         PropertyContainer propertyContainer = mock( PropertyContainer.class );
-        when( propertyContainer.getPropertyKeys() ).thenThrow( RuntimeException.class );
+        when( propertyContainer.getAllProperties() ).thenThrow( RuntimeException.class );
         when( path.iterator() ).thenReturn( Arrays.asList(propertyContainer).listIterator() );
 
         //When
@@ -106,7 +106,7 @@ public class Neo4jJsonCodecTest
     {
         //Given
         PropertyContainer propertyContainer = mock( PropertyContainer.class );
-        when( propertyContainer.getPropertyKeys() ).thenThrow( RuntimeException.class );
+        when( propertyContainer.getAllProperties() ).thenThrow( RuntimeException.class );
 
         //When
         try

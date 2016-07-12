@@ -4,7 +4,7 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
   Apache Commons Configuration
-  Apache ServiceMix Bundles: jline-0.9.94
+  Apache Commons Lang
   ColorBrewer
   Commons BeanUtils
   Commons Digester
@@ -25,6 +25,7 @@ Apache Software License, Version 2.0
   Jetty :: Webapp Application Support
   Jetty :: XML utilities
   Lucene Core
+  Netty/All-in-One
   opencsv
   parboiled-core
   parboiled-scala
@@ -314,12 +315,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
 BSD License
-  Commons Compiler
+  ASM Core
   D3.js
   Easing Equations (in easing.js)
-  Janino
+  JLine
   JQuery Easing Plugin
   Scala Compiler
+  scala-parser-combinators
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>
@@ -350,7 +352,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
 Bouncy Castle License
-  Legion of the Bouncy Castle Java Cryptography APIs
+  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
+  Bouncy Castle Provider
 ------------------------------------------------------------------------------
 
 Please note: our license is an adaptation of the MIT X11 License and should be

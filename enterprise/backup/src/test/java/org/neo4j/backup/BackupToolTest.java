@@ -19,16 +19,17 @@
  */
 package org.neo4j.backup;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Properties;
 
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 import org.neo4j.consistency.ConsistencyCheckSettings;
-import org.neo4j.consistency.checking.full.TaskExecutionOrder;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.TargetDirectory;
@@ -45,8 +46,8 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -55,6 +56,10 @@ import static org.mockito.Mockito.when;
 
 public class BackupToolTest
 {
+
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
     @Test
     public void shouldUseIncrementalOrFallbackToFull() throws Exception
     {
@@ -67,15 +72,15 @@ public class BackupToolTest
 
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ),
-                eq( BackupServer.DEFAULT_PORT ), eq( "my_backup" ), eq( true ), any( Config.class ),
-                eq( BackupClient.BIG_READ_TIMEOUT ), eq( false ) );
+                eq( BackupServer.DEFAULT_PORT ), eq( new File( "my_backup" ) ), eq( ConsistencyCheck.DEFAULT ),
+                any( Config.class ), eq( BackupClient.BIG_READ_TIMEOUT ), eq( false ) );
         verify( systemOut ).println(
                 "Performing backup from '" + new HostnamePort( "localhost", BackupServer.DEFAULT_PORT ) + "'" );
         verify( systemOut ).println( "Done" );
     }
-    
+
     @Test
-    public void shouldResetTimeout() throws Exception 
+    public void shouldResetTimeout() throws Exception
     {
         String newTimeout = "3"; /*seconds by default*/
         long expectedTimeout = 3 * 1000;
@@ -88,7 +93,7 @@ public class BackupToolTest
 
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
-                eq( "my_backup" ), eq( true ), any( Config.class ), eq( expectedTimeout ), eq( false ) );
+                eq( new File( "my_backup" ) ), eq( ConsistencyCheck.DEFAULT ), any( Config.class ), eq( expectedTimeout ), eq( false ) );
         verify( systemOut ).println(
                 "Performing backup from '" + new HostnamePort( "localhost", BackupServer.DEFAULT_PORT ) + "'" );
         verify( systemOut ).println( "Done" );
@@ -106,7 +111,8 @@ public class BackupToolTest
 
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
-                eq( "my_backup" ), eq( true ), any( Config.class ), eq( BackupClient.BIG_READ_TIMEOUT ), eq( false ) );
+                eq( new File( "my_backup" ) ), eq( ConsistencyCheck.DEFAULT ), any( Config.class ),
+                eq( BackupClient.BIG_READ_TIMEOUT ), eq( false ) );
         verify( systemOut ).println(
                 "Performing backup from '" + new HostnamePort( "localhost", BackupServer.DEFAULT_PORT ) + "'" );
         verify( systemOut ).println( "Done" );
@@ -117,7 +123,7 @@ public class BackupToolTest
     {
         String[] args = new String[]{"-full", "-host", "localhost", "-to", "my_backup"};
         BackupService service = mock( BackupService.class );
-        when( service.directoryContainsDb( anyString() ) ).thenReturn( true );
+        when( service.directoryContainsDb( eq( new File( "my_backup" ) ) ) ).thenReturn( true );
         PrintStream systemOut = mock( PrintStream.class );
 
         // when
@@ -125,7 +131,8 @@ public class BackupToolTest
 
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
-                eq( "my_backup" ), eq( true ), any( Config.class ), eq( BackupClient.BIG_READ_TIMEOUT ), eq( false ) );
+                eq( new File( "my_backup" ) ), eq( ConsistencyCheck.DEFAULT ), any( Config.class ),
+                eq( BackupClient.BIG_READ_TIMEOUT ), eq( false ) );
         verify( systemOut ).println(
                 "Performing backup from '" + new HostnamePort( "localhost", BackupServer.DEFAULT_PORT ) + "'" );
         verify( systemOut ).println( "Done" );
@@ -144,18 +151,16 @@ public class BackupToolTest
 
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
-        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), anyString(), anyBoolean(),
-                config.capture(), eq( BackupClient.BIG_READ_TIMEOUT ), eq( false ) );
+        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), eq( new File( "my_backup" ) ),
+                any( ConsistencyCheck.class ), config.capture(), eq( BackupClient.BIG_READ_TIMEOUT ), eq( false ) );
         assertFalse( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
-        assertEquals( TaskExecutionOrder.MULTI_PASS,
-                config.getValue().get( ConsistencyCheckSettings.consistency_check_execution_order ) );
     }
 
     @Test
     public void passesOnConfigurationIfProvided() throws Exception
     {
         // given
-        File propertyFile = TargetDirectory.forTest( getClass() ).file( "neo4j.properties" );
+        File propertyFile = testDirectory.file( "neo4j.properties" );
         Properties properties = new Properties();
         properties.setProperty( ConsistencyCheckSettings.consistency_check_property_owners.name(), "true" );
         properties.store( new FileWriter( propertyFile ), null );
@@ -169,8 +174,8 @@ public class BackupToolTest
 
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
-        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), anyString(), anyBoolean(),
-                config.capture(), anyLong(), eq( false ) );
+        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), eq( new File( "my_backup" ) ),
+                any( ConsistencyCheck.class ), config.capture(), anyLong(), eq( false ) );
         assertTrue( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
     }
 
@@ -178,7 +183,7 @@ public class BackupToolTest
     public void exitWithFailureIfConfigSpecifiedButPropertiesFileDoesNotExist() throws Exception
     {
         // given
-        File propertyFile = TargetDirectory.forTest( getClass() ).file( "nonexistent_file" );
+        File propertyFile = testDirectory.file( "nonexistent_file" );
         String[] args = new String[]{"-host", "localhost", "-to", "my_backup", "-config", propertyFile.getPath()};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
@@ -301,8 +306,8 @@ public class BackupToolTest
     {
         // Given
         String host = "localhost";
-        String targetDir = "/var/backup/neo4j/";
-        String[] args = {"-from", host, "-to", targetDir, "-verify", "false"};
+        File targetDir = new File( "/var/backup/neo4j/" ).getAbsoluteFile();
+        String[] args = {"-from", host, "-to", targetDir.getAbsolutePath(), "-verify", "false"};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
@@ -311,7 +316,8 @@ public class BackupToolTest
 
         // Then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( host ), eq( BackupServer.DEFAULT_PORT ),
-                eq( targetDir ), eq( false ), any( Config.class ), eq( BackupClient.BIG_READ_TIMEOUT ), eq( false ) );
+                eq( targetDir ), eq( ConsistencyCheck.NONE ), any( Config.class ), eq( BackupClient.BIG_READ_TIMEOUT ),
+                eq( false ) );
         verify( systemOut ).println(
                 "Performing backup from '" + new HostnamePort( host, BackupServer.DEFAULT_PORT ) + "'" );
         verify( systemOut ).println( "Done" );
@@ -329,7 +335,129 @@ public class BackupToolTest
         new BackupTool( service, systemOut ).run( args );
 
         // then
-        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), anyString(), anyBoolean(),
-                any( Config.class ), anyLong(), eq( true ) );
+        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), eq( new File( "my_backup" ) ),
+                any( ConsistencyCheck.class ), any( Config.class ), anyLong(), eq( true ) );
+    }
+
+    @Test
+    public void shouldHaveNoConsistencyCheckIfVerifyFalse() throws Exception
+    {
+        // Given
+        String[] args = new String[]{"-host", "localhost", "-to", "my_backup", "-verify", "false"};
+        BackupService service = mock( BackupService.class );
+        PrintStream systemOut = mock( PrintStream.class );
+
+        // When
+        new BackupTool( service, systemOut ).run( args );
+
+        // Then
+        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), any( File.class ),
+                eq( ConsistencyCheck.NONE ), any( Config.class ), anyLong(), anyBoolean() );
+    }
+
+    @Test
+    public void shouldIgnoreConsistencyCheckIfVerifyFalse() throws Exception
+    {
+        // Given
+        String[] args = new String[]{"-host", "localhost", "-to", "my_backup", "-verify", "false",
+                "-consistency-checker", "legacy"};
+        BackupService service = mock( BackupService.class );
+        PrintStream systemOut = mock( PrintStream.class );
+
+        // When
+        new BackupTool( service, systemOut ).run( args );
+
+        // Then
+        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), any( File.class ),
+                eq( ConsistencyCheck.NONE ), any( Config.class ), anyLong(), anyBoolean() );
+    }
+
+    @Test
+    public void shouldHaveDefaultConsistencyCheckIfVerifyTrue() throws Exception
+    {
+        // Given
+        String[] args = new String[]{"-host", "localhost", "-to", "my_backup", "-verify", "true",};
+        BackupService service = mock( BackupService.class );
+        PrintStream systemOut = mock( PrintStream.class );
+
+        // When
+        new BackupTool( service, systemOut ).run( args );
+
+        // Then
+        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), any( File.class ),
+                eq( ConsistencyCheck.DEFAULT ), any( Config.class ), anyLong(), anyBoolean() );
+    }
+
+    @Test
+    public void shouldHaveLegacyConsistencyCheckIfSpecified() throws Exception
+    {
+        // Given
+        String[] args = new String[]{"-host", "localhost", "-to", "my_backup", "-verify", "true",
+                "-consistency-checker", "legacy"};
+        BackupService service = mock( BackupService.class );
+        PrintStream systemOut = mock( PrintStream.class );
+
+        // When
+        new BackupTool( service, systemOut ).run( args );
+
+        // Then
+        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), any( File.class ),
+                eq( ConsistencyCheck.LEGACY ), any( Config.class ), anyLong(), anyBoolean() );
+    }
+
+    @Test
+    public void shouldHaveExperimentalConsistencyCheckIfSpecified() throws Exception
+    {
+        // Given
+        String[] args = new String[]{"-host", "localhost", "-to", "my_backup", "-verify", "true",
+                "-consistency-checker", "experimental"};
+        BackupService service = mock( BackupService.class );
+        PrintStream systemOut = mock( PrintStream.class );
+
+        // When
+        new BackupTool( service, systemOut ).run( args );
+
+        // Then
+        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), any( File.class ),
+                eq( ConsistencyCheck.EXPERIMENTAL ), any( Config.class ), anyLong(), anyBoolean() );
+    }
+
+    @Test
+    public void shouldRespectConsistencyCheckerWithDefaultVerify() throws Exception
+    {
+        // Given
+        String[] args = new String[]{"-host", "localhost", "-to", "my_backup",
+                "-consistency-checker", "legacy"};
+        BackupService service = mock( BackupService.class );
+        PrintStream systemOut = mock( PrintStream.class );
+
+        // When
+        new BackupTool( service, systemOut ).run( args );
+
+        // Then
+        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), any( File.class ),
+                eq( ConsistencyCheck.LEGACY ), any( Config.class ), anyLong(), anyBoolean() );
+    }
+
+    @Test
+    public void shouldCrashIfInvalidConsistencyCheckerSpecified() throws Exception
+    {
+        // Given
+        String[] args = new String[]{"-host", "localhost", "-to", "my_backup", "-verify", "true",
+                "-consistency-checker", "notarealname"};
+        BackupService service = mock( BackupService.class );
+        PrintStream systemOut = mock( PrintStream.class );
+
+        try
+        {
+            // When
+            new BackupTool( service, systemOut ).run( args );
+            fail( "Should throw exception if invalid consistency checker is specified." );
+        }
+        catch ( IllegalArgumentException t )
+        {
+            // Then
+            assertThat( t.getMessage(), containsString( "Unknown consistency check name" ) );
+        }
     }
 }

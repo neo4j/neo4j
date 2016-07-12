@@ -45,7 +45,7 @@ public interface BranchCollisionDetector
      * from the start side of this bidirectional traversal, or {@link Direction#INCOMING}
      * for the end side.
      * @return new paths formed if this branch collided with other branches,
-     * or {@code null} if no collision occured.
+     * or {@code null} if no collision occurred.
      */
     Iterable<Path> evaluate( TraversalBranch branch, Direction direction );
 }

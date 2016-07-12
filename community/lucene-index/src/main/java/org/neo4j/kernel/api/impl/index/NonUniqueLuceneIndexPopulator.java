@@ -47,10 +47,10 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 
     NonUniqueLuceneIndexPopulator( int queueThreshold, LuceneDocumentStructure documentStructure,
                                    IndexWriterFactory<LuceneIndexWriter> indexWriterFactory,
-                                   IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile,
-                                   FailureStorage failureStorage, long indexId, IndexSamplingConfig samplingConfig )
+                                   DirectoryFactory dirFactory, File dirFile, FailureStorage failureStorage,
+                                   long indexId, IndexSamplingConfig samplingConfig )
     {
-        super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile, failureStorage, indexId );
+        super( documentStructure, indexWriterFactory, dirFactory, dirFile, failureStorage, indexId );
         this.queueThreshold = queueThreshold;
         this.sampler = new NonUniqueIndexSampler( samplingConfig.bufferSize() );
     }
@@ -145,11 +145,11 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
             case CHANGED:
                 // We don't look at the "before" value, so adding and changing idempotently is done the same way.
                 Fieldable encodedValue = documentStructure.encodeAsFieldable( update.getValueAfter() );
-                writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
+                writer.updateDocument( documentStructure.newTermForChangeOrRemove( nodeId ),
                                        documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
                 break;
             case REMOVED:
-                writer.deleteDocuments( documentStructure.newQueryForChangeOrRemove( nodeId ) );
+                writer.deleteDocuments( documentStructure.newTermForChangeOrRemove( nodeId ) );
                 break;
             default:
                 throw new IllegalStateException( "Unknown update mode " + update.getUpdateMode() );

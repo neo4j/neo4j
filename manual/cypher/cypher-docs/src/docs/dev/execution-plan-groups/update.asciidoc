@@ -1,0 +1,12 @@
+[[execution-plans-update]]
+
+== Update Operators ==
+
+These operators are used in queries that update the graph.
+
+:leveloffset: 2
+
+include::../ql/query-plan/constraint-operation.asciidoc[]
+include::../ql/query-plan/empty-result.asciidoc[]
+include::../ql/query-plan/update-graph.asciidoc[]
+include::../ql/query-plan/merge-into.asciidoc[]

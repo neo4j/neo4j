@@ -24,66 +24,58 @@ import java.net.URI;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
-import org.neo4j.com.Server;
 import org.neo4j.com.ServerUtil;
-import org.neo4j.com.monitor.RequestMonitor;
-import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.Provider;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.function.BiFunction;
+import org.neo4j.function.Factory;
+import org.neo4j.function.Supplier;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.ha.BranchDetectingTxVerifier;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.TransactionChecksumLookup;
+import org.neo4j.kernel.ha.com.master.ConversationManager;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.master.SlaveFactory;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.logging.Log;
 
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 
 public class SwitchToMaster implements AutoCloseable
 {
-    private Logging logging;
-    private ConsoleLogger console;
-    private GraphDatabaseAPI graphDb;
+    private LogService logService;
+    Factory<ConversationManager> conversationManagerFactory;
+    BiFunction<ConversationManager, LifeSupport, Master> masterFactory;
+    BiFunction<Master, ConversationManager, MasterServer> masterServerFactory;
+    private Log userLog;
     private HaIdGeneratorFactory idGeneratorFactory;
     private Config config;
-    private Provider<SlaveFactory> slaveFactorySupplier;
-    private MasterImpl.Monitor masterImplMonitor;
+    private Supplier<SlaveFactory> slaveFactorySupplier;
     private DelegateInvocationHandler<Master> masterDelegateHandler;
     private ClusterMemberAvailability clusterMemberAvailability;
-    private DataSourceManager dataSourceManager;
-    private ByteCounterMonitor masterByteCounterMonitor;
-    private RequestMonitor masterRequestMonitor;
+    private Supplier<NeoStoreDataSource> dataSourceSupplier;
 
-    public SwitchToMaster( Logging logging, ConsoleLogger console, GraphDatabaseAPI graphDb,
-            HaIdGeneratorFactory idGeneratorFactory, Config config, Provider<SlaveFactory> slaveFactorySupplier,
+    public SwitchToMaster( LogService logService,
+            HaIdGeneratorFactory idGeneratorFactory, Config config, Supplier<SlaveFactory> slaveFactorySupplier,
+            Factory<ConversationManager> conversationManagerFactory,
+            BiFunction<ConversationManager, LifeSupport, Master> masterFactory,
+            BiFunction<Master, ConversationManager, MasterServer> masterServerFactory,
             DelegateInvocationHandler<Master> masterDelegateHandler, ClusterMemberAvailability clusterMemberAvailability,
-            DataSourceManager dataSourceManager, ByteCounterMonitor masterByteCounterMonitor, RequestMonitor masterRequestMonitor, MasterImpl.Monitor masterImplMonitor)
+            Supplier<NeoStoreDataSource> dataSourceSupplier )
     {
-        this.logging = logging;
-        this.console = console;
-        this.graphDb = graphDb;
+        this.logService = logService;
+        this.conversationManagerFactory = conversationManagerFactory;
+        this.masterFactory = masterFactory;
+        this.masterServerFactory = masterServerFactory;
+        this.userLog = logService.getUserLog( getClass() );
         this.idGeneratorFactory = idGeneratorFactory;
         this.config = config;
         this.slaveFactorySupplier = slaveFactorySupplier;
-        this.masterImplMonitor = masterImplMonitor;
         this.masterDelegateHandler = masterDelegateHandler;
         this.clusterMemberAvailability = clusterMemberAvailability;
-        this.dataSourceManager = dataSourceManager;
-        this.masterByteCounterMonitor = masterByteCounterMonitor;
-        this.masterRequestMonitor = masterRequestMonitor;
+        this.dataSourceSupplier = dataSourceSupplier;
     }
 
     /**
@@ -95,92 +87,58 @@ public class SwitchToMaster implements AutoCloseable
      */
     public URI switchToMaster( LifeSupport haCommunicationLife, URI me )
     {
-        console.log( "I am " + myId() + ", moving to master" );
+        userLog.info( "I am %s, moving to master", myId( config ) );
 
-        /*
-         * Synchronizing on the xaDataSourceManager makes sense if you also look at HaKernelPanicHandler. In
-         * particular, it is possible to get a masterIsElected while recovering the database. That is generally
-         * going to break things. Synchronizing on the xaDSM as HaKPH does solves this.
-         */
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
-//        synchronized ( xaDataSourceManager )
-        {
+        // Do not wait for currently active transactions to complete before continuing switching.
+        // - A master in a cluster is very important, without it the cluster cannot process any write requests
+        // - Awaiting open transactions to complete assumes that this instance just now was a slave that is
+        //   switching to master, which means the previous master where these active transactions were hosted
+        //   is no longer available so these open transactions cannot continue and complete anyway,
+        //   so what's the point waiting for them?
+        // - Read transactions may still be able to complete, but the correct response to failures in those
+        //   is to have them throw transient error exceptions hinting that they should be retried,
+        //   at which point they may get redirected to another instance, or to this instance if it has completed
+        //   the switch until then.
 
-            idGeneratorFactory.switchToMaster();
-            NeoStoreDataSource neoStoreXaDataSource = dataSourceManager.getDataSource();
-            neoStoreXaDataSource.afterModeSwitch();
+        idGeneratorFactory.switchToMaster();
+        NeoStoreDataSource neoStoreXaDataSource = dataSourceSupplier.get();
+        neoStoreXaDataSource.afterModeSwitch();
 
-            MasterImpl.SPI spi = new DefaultMasterImplSPI( graphDb );
+        ConversationManager conversationManager = conversationManagerFactory.newInstance();
+        Master master = masterFactory.apply( conversationManager, haCommunicationLife );
 
-            MasterImpl masterImpl = new MasterImpl( spi, masterImplMonitor,
-                    logging, config );
+        MasterServer masterServer = masterServerFactory.apply( master, conversationManager );
 
-            DependencyResolver resolver = neoStoreXaDataSource.getDependencyResolver();
-            TransactionChecksumLookup txChecksumLookup = new TransactionChecksumLookup(
-                    resolver.resolveDependency( TransactionIdStore.class ),
-                    resolver.resolveDependency( LogicalTransactionStore.class ) );
-            MasterServer masterServer = new MasterServer( masterImpl, logging, serverConfig(),
-                    new BranchDetectingTxVerifier( logging.getMessagesLog( BranchDetectingTxVerifier.class ),
-                            txChecksumLookup ), masterByteCounterMonitor, masterRequestMonitor );
-            haCommunicationLife.add( masterImpl );
-            haCommunicationLife.add( masterServer );
-            masterDelegateHandler.setDelegate( masterImpl );
+        haCommunicationLife.add( masterServer );
+        masterDelegateHandler.setDelegate( master );
 
-            haCommunicationLife.start();
+        haCommunicationLife.start();
 
-            URI masterHaURI = getMasterUri( me, masterServer );
-            clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI, neoStoreXaDataSource.getStoreId() );
-            console.log( "I am " + myId() + ", successfully moved to master" );
+        URI masterHaURI = getMasterUri( me, masterServer, config );
+        clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI, neoStoreXaDataSource.getStoreId() );
+        userLog.info( "I am %s, successfully moved to master", myId( config ) );
 
-            slaveFactorySupplier.instance().setStoreId( neoStoreXaDataSource.getStoreId() );
+        slaveFactorySupplier.get().setStoreId( neoStoreXaDataSource.getStoreId() );
 
-            return masterHaURI;
-        }
+        return masterHaURI;
     }
 
-    private URI getMasterUri( URI me, MasterServer masterServer )
+    static URI getMasterUri( URI me, MasterServer masterServer, Config config )
     {
-        String hostname = ServerUtil.getHostString( masterServer.getSocketAddress() ).contains( "0.0.0.0" ) ?
-                            me.getHost() :
-                            ServerUtil.getHostString( masterServer.getSocketAddress() );
+
+        String hostname = config.get( HaSettings.ha_server ).getHost();
+        if ( hostname == null || hostname.contains( "0.0.0.0" ) )
+        {
+            String masterAddress = ServerUtil.getHostString( masterServer.getSocketAddress() );
+            hostname = masterAddress.contains( "0.0.0.0" ) ? me.getHost() : masterAddress;
+        }
 
         int port = masterServer.getSocketAddress().getPort();
 
-        return URI.create( "ha://" + hostname + ":" + port + "?serverId=" + myId() );
+        return URI.create( "ha://" + hostname + ":" + port + "?serverId=" + myId( config ) );
     }
 
-    private Server.Configuration serverConfig()
-    {
-        Server.Configuration serverConfig = new Server.Configuration()
-        {
-            @Override
-            public long getOldChannelThreshold()
-            {
-                return config.get( HaSettings.lock_read_timeout );
-            }
-
-            @Override
-            public int getMaxConcurrentTransactions()
-            {
-                return config.get( HaSettings.max_concurrent_channels_per_slave );
-            }
-
-            @Override
-            public int getChunkSize()
-            {
-                return config.get( HaSettings.com_chunk_size ).intValue();
-            }
-
-            @Override
-            public HostnamePort getServerAddress()
-            {
-                return config.get( HaSettings.ha_server );
-            }
-        };
-        return serverConfig;
-    }
-
-    private InstanceId myId()
+    private static InstanceId myId( Config config )
     {
         return config.get( ClusterSettings.server_id );
     }
@@ -188,17 +146,16 @@ public class SwitchToMaster implements AutoCloseable
     @Override
     public void close() throws Exception
     {
-        logging = null;
-        console = null;
-        graphDb = null;
+        logService = null;
+        userLog = null;
+        conversationManagerFactory = null;
+        masterFactory = null;
+        masterServerFactory = null;
         idGeneratorFactory = null;
         config = null;
         slaveFactorySupplier = null;
-        masterImplMonitor = null;
         masterDelegateHandler = null;
         clusterMemberAvailability = null;
-        dataSourceManager = null;
-        masterByteCounterMonitor = null;
-        masterRequestMonitor = null;
+        dataSourceSupplier = null;
     }
 }

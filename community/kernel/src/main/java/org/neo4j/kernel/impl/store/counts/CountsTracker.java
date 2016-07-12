@@ -29,7 +29,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
-import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.kvstore.AbstractKeyValueStore;
@@ -44,12 +43,12 @@ import org.neo4j.kernel.impl.store.kvstore.RotationMonitor;
 import org.neo4j.kernel.impl.store.kvstore.RotationTimerFactory;
 import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
 import org.neo4j.kernel.impl.store.kvstore.WritableBuffer;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.function.Optional;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register;
 
 import static java.lang.String.format;
-
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexStatisticsKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
@@ -77,45 +76,47 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
 {
     /** The format specifier for the current version of the store file format. */
     private static final byte[] FORMAT = {'N', 'e', 'o', 'C', 'o', 'u', 'n', 't',
-                                          'S', 't', 'o', 'r', 'e', /**/0, 0, 'V'};
+                                          'S', 't', 'o', 'r', 'e', /**/0, 1, 'V'};
     @SuppressWarnings("unchecked")
     private static final HeaderField<?>[] HEADER_FIELDS = new HeaderField[]{FileVersion.FILE_VERSION};
     public static final String LEFT = ".a", RIGHT = ".b";
     public static final String TYPE_DESCRIPTOR = "CountsStore";
 
-    public CountsTracker( final StringLogger logger, FileSystemAbstraction fs, PageCache pages, Config config,
+    public CountsTracker( final LogProvider logProvider, FileSystemAbstraction fs, PageCache pages, Config config,
             File baseFile )
     {
         super( fs, pages, baseFile, new RotationMonitor()
         {
+            final Log log = logProvider.getLog( CountsTracker.class );
+
             @Override
             public void failedToOpenStoreFile( File path, Exception error )
             {
-                logger.error( "Failed to open counts store file: " + path, error );
+                log.error( "Failed to open counts store file: " + path, error );
             }
 
             @Override
             public void beforeRotation( File source, File target, Headers headers )
             {
-                logger.info( format( "About to rotate counts store at transaction %d to [%s], from [%s].",
-                                           headers.get( FileVersion.FILE_VERSION ).txId, target, source ) );
+                log.info( format( "About to rotate counts store at transaction %d to [%s], from [%s].",
+                        headers.get( FileVersion.FILE_VERSION ).txId, target, source ) );
             }
 
             @Override
             public void rotationSucceeded( File source, File target, Headers headers )
             {
-                logger.info( format( "Successfully rotated counts store at transaction %d to [%s], from [%s].",
-                                           headers.get( FileVersion.FILE_VERSION ).txId, target, source ) );
+                log.info( format( "Successfully rotated counts store at transaction %d to [%s], from [%s].",
+                        headers.get( FileVersion.FILE_VERSION ).txId, target, source ) );
             }
 
             @Override
             public void rotationFailed( File source, File target, Headers headers, Exception e )
             {
-                logger.error( format( "Failed to rotate counts store at transaction %d to [%s], from [%s].",
-                                           headers.get( FileVersion.FILE_VERSION ).txId, target, source ), e );
+                log.error( format( "Failed to rotate counts store at transaction %d to [%s], from [%s].",
+                        headers.get( FileVersion.FILE_VERSION ).txId, target, source ), e );
             }
-        }, new RotationTimerFactory( Clock.SYSTEM_CLOCK, config.get( GraphDatabaseSettings
-                .store_interval_log_rotation_wait_time ) ), 16, 16, HEADER_FIELDS );
+        }, new RotationTimerFactory( Clock.SYSTEM_CLOCK,
+                config.get( GraphDatabaseSettings.store_interval_log_rotation_wait_time ) ), 16, 16, HEADER_FIELDS );
     }
 
     public CountsTracker setInitializer( final DataInitializer<Updater> initializer )
@@ -259,12 +260,6 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
     protected CountsKey readKey( ReadableBuffer key ) throws UnknownKey
     {
         return KeyFormat.readKey( key );
-    }
-
-    @Override
-    protected String fileTrailer()
-    {
-        return StoreFactory.buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR );
     }
 
     @Override

@@ -21,33 +21,36 @@ package org.neo4j.kernel.impl.core;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Settings;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import java.io.File;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
 public class TestReadOnlyNeo4j
 {
-    private static final String PATH = "read-only";
+    private static final File PATH = new File( "read-only" );
     public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Test
@@ -60,15 +63,11 @@ public class TestReadOnlyNeo4j
                 .newGraphDatabase();
         assertEquals( someData, DbRepresentation.of( readGraphDb ) );
 
-        Transaction tx = readGraphDb.beginTx();
-        try
+        try (Transaction tx = readGraphDb.beginTx())
         {
             readGraphDb.createNode();
 
             tx.success();
-            tx.close();
-
-            fail( "expected exception" );
         }
         catch ( TransactionFailureException e )
         {
@@ -82,18 +81,18 @@ public class TestReadOnlyNeo4j
     {
         DynamicRelationshipType type = withName( "KNOWS" );
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( PATH );
-        Transaction tx = db.beginTx();
-        @SuppressWarnings("deprecation")
-        Node prevNode = db.createNode();
-        for ( int i = 0; i < 100; i++ )
+        try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
-            Relationship rel = prevNode.createRelationshipTo( node, type );
-            node.setProperty( "someKey" + i%10, i%15 );
-            rel.setProperty( "since", System.currentTimeMillis() );
+            Node prevNode = db.createNode();
+            for ( int i = 0; i < 100; i++ )
+            {
+                Node node = db.createNode();
+                Relationship rel = prevNode.createRelationshipTo( node, type );
+                node.setProperty( "someKey" + i % 10, i % 15 );
+                rel.setProperty( "since", System.currentTimeMillis() );
+            }
+            tx.success();
         }
-        tx.success();
-        tx.finish();
         DbRepresentation result = DbRepresentation.of( db );
         db.shutdown();
         return result;
@@ -112,7 +111,7 @@ public class TestReadOnlyNeo4j
         node1.setProperty( "key1", "value1" );
         rel.setProperty( "key1", "value1" );
         tx.success();
-        tx.finish();
+        tx.close();
 
         // make sure write operations still throw exception
         try
@@ -149,26 +148,18 @@ public class TestReadOnlyNeo4j
         { // good
         }
 
-        // clear caches and try reads
-        clearCache( db );
 
         Transaction transaction = db.beginTx();
         assertEquals( node1, db.getNodeById( node1.getId() ) );
         assertEquals( node2, db.getNodeById( node2.getId() ) );
         assertEquals( rel, db.getRelationshipById( rel.getId() ) );
-        clearCache( db );
 
         assertThat( node1, inTx( db, hasProperty( "key1" ).withValue( "value1" ) ) );
         Relationship loadedRel = node1.getSingleRelationship(
                 DynamicRelationshipType.withName( "TEST" ), Direction.OUTGOING );
         assertEquals( rel, loadedRel );
         assertThat(loadedRel, inTx(db, hasProperty( "key1" ).withValue( "value1" )));
-        transaction.finish();
+        transaction.close();
         db.shutdown();
-    }
-
-    private void clearCache( GraphDatabaseService db )
-    {
-        ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( Caches.class ).clear();
     }
 }

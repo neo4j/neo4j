@@ -19,26 +19,20 @@
  */
 package org.neo4j.ha;
 
-import java.io.File;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-
-import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.com.ComException;
-import org.neo4j.function.Function;
+import java.util.concurrent.Future;
+
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Predicates;
-import org.neo4j.helpers.TransactionTemplate;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
-import org.neo4j.kernel.lifecycle.LifeRule;
+import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.test.OtherThreadRule;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -46,46 +40,37 @@ import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.kernel.impl.api.integrationtest.UniquenessConstraintValidationConcurrencyIT.createNode;
-import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.OtherThreadRule.isWaiting;
-import static org.neo4j.test.TargetDirectory.testDirForTest;
 
 public class UniquenessConstraintValidationHAIT
 {
-    public final @Rule LifeRule life = new LifeRule();
-    public final @Rule TargetDirectory.TestDirectory targetDir =
-            testDirForTest( UniquenessConstraintValidationHAIT.class );
-    public final @Rule OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
+    private static final Label LABEL = label( "Label1" );
+    private static final String PROPERTY_KEY = "key1";
 
-    @Before
-    public void startLife()
-    {
-        life.start();
-    }
+    @Rule
+    public final OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
+    @ClassRule
+    public static final ClusterRule clusterRule = new ClusterRule( UniquenessConstraintValidationHAIT.class )
+            .withInitialDataset( uniquenessConstraint( LABEL, PROPERTY_KEY ) );
 
     @Test
     public void shouldAllowCreationOfNonConflictingDataOnSeparateHosts() throws Exception
     {
         // given
-        ClusterManager.ManagedCluster cluster = startClusterSeededWith(
-                databaseWithUniquenessConstraint( "Label1", "key1" ) );
+        ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
 
         HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
         HighlyAvailableGraphDatabase slave2 = cluster.getAnySlave( /*except:*/slave1 );
 
         // when
         Future<Boolean> created;
-        Transaction tx = slave1.beginTx();
-        try
-        {
-            slave1.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
 
-            created = otherThread.execute( createNode( slave2, "Label1", "key1", "value2" ) );
-            tx.success();
-        }
-        finally
+        try ( Transaction tx = slave1.beginTx() )
         {
-            tx.finish();
+            slave1.createNode( LABEL ).setProperty( PROPERTY_KEY, "value1" );
+
+            created = otherThread.execute( createNode( slave2, LABEL.name(), PROPERTY_KEY, "value2" ) );
+            tx.success();
         }
 
         // then
@@ -96,36 +81,24 @@ public class UniquenessConstraintValidationHAIT
     public void shouldPreventConcurrentCreationOfConflictingDataOnSeparateHosts() throws Exception
     {
         // given
-        ClusterManager.ManagedCluster cluster = startClusterSeededWith(
-                databaseWithUniquenessConstraint( "Label1", "key1" ) );
+        ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
 
-        final HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
-        final HighlyAvailableGraphDatabase slave2 = cluster.getAnySlave( /*except:*/slave1 );
+        HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
+        HighlyAvailableGraphDatabase slave2 = cluster.getAnySlave( /*except:*/slave1 );
 
         // when
-        TransactionTemplate template = new TransactionTemplate().
-                retries( 3 ).
-                backoff( 10, TimeUnit.SECONDS ).
-                retryOn( Predicates.<Throwable>instanceOf( ComException.class ) ).
-                with( slave1 );
-
-        Future<Boolean> created = template.execute( new Function<Transaction, Future<Boolean>>()
+        Future<Boolean> created;
+        try ( Transaction tx = slave1.beginTx() )
         {
-            @Override
-            public Future<Boolean> apply( Transaction transaction ) throws RuntimeException
-            {
-                slave1.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
+            slave1.createNode( LABEL ).setProperty( PROPERTY_KEY, "value3" );
 
-                try
-                {
-                    return otherThread.execute( createNode( slave2, "Label1", "key1", "value1" ) );
-                }
-                finally
-                {
-                    assertThat( otherThread, isWaiting() );
-                }
-            }
-        } );
+            created = otherThread.execute( createNode( slave2, LABEL.name(), PROPERTY_KEY, "value3" ) );
+
+            assertThat( otherThread, isWaiting() );
+
+            tx.success();
+        }
+
 
         // then
         assertFalse( "creating violating data should fail", created.get() );
@@ -135,28 +108,22 @@ public class UniquenessConstraintValidationHAIT
     public void shouldPreventConcurrentCreationOfConflictingNonStringPropertyOnMasterAndSlave() throws Exception
     {
         // given
-        ClusterManager.ManagedCluster cluster = startClusterSeededWith(
-                databaseWithUniquenessConstraint( "Label1", "key1" ) );
+        ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
 
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
 
         // when
         Future<Boolean> created;
-        Transaction tx = master.beginTx();
-        try
+        try ( Transaction tx = master.beginTx() )
         {
-            master.createNode( label( "Label1" ) ).setProperty( "key1", 0x0099CC );
+            master.createNode( LABEL ).setProperty( PROPERTY_KEY, 0x0099CC );
 
-            created = otherThread.execute( createNode( slave, "Label1", "key1", 0x0099CC ) );
+            created = otherThread.execute( createNode( slave, LABEL.name(), PROPERTY_KEY, 0x0099CC ) );
 
             assertThat( otherThread, isWaiting() );
 
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
 
         // then
@@ -167,65 +134,44 @@ public class UniquenessConstraintValidationHAIT
     public void shouldAllowOtherHostToCompleteIfFirstHostRollsBackTransaction() throws Exception
     {
         // given
-        ClusterManager.ManagedCluster cluster = startClusterSeededWith(
-                databaseWithUniquenessConstraint( "Label1", "key1" ) );
+        ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
 
         HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
         HighlyAvailableGraphDatabase slave2 = cluster.getAnySlave( /*except:*/slave1 );
 
         // when
         Future<Boolean> created;
-        Transaction tx = slave1.beginTx();
-        try
-        {
-            slave1.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
 
-            created = otherThread.execute( createNode( slave2, "Label1", "key1", "value1" ) );
+        try ( Transaction tx = slave1.beginTx() )
+        {
+            slave1.createNode( LABEL ).setProperty( PROPERTY_KEY, "value4" );
+
+            created = otherThread.execute( createNode( slave2, LABEL.name(), PROPERTY_KEY, "value4" ) );
 
             assertThat( otherThread, isWaiting() );
 
             tx.failure();
         }
-        finally
-        {
-            tx.finish();
-        }
+
 
         // then
         assertTrue( "creating data that conflicts only with rolled back data should pass", created.get() );
     }
 
-    private ClusterManager.ManagedCluster startClusterSeededWith( File seedDir )
+    private static Listener<GraphDatabaseService> uniquenessConstraint( final Label label, final String propertyKey )
     {
-        ClusterManager.ManagedCluster cluster = life
-                .add( new ClusterManager.Builder( targetDir.directory() ).withSeedDir( seedDir ).build() )
-                .getDefaultCluster();
-        cluster.await( allSeesAllAsAvailable() );
-        return cluster;
-    }
-
-    private File databaseWithUniquenessConstraint( String label, String propertyKey )
-    {
-        File storeDir = new File( targetDir.directory(), "seed" );
-        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() );
-        try
+        return new Listener<GraphDatabaseService>()
         {
-            Transaction tx = graphDb.beginTx();
-            try
+            @Override
+            public void receive( GraphDatabaseService db )
             {
-                graphDb.schema().constraintFor( label( label ) ).assertPropertyIsUnique( propertyKey ).create();
+                try ( Transaction tx = db.beginTx() )
+                {
+                    db.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
 
-                tx.success();
+                    tx.success();
+                }
             }
-            finally
-            {
-                tx.finish();
-            }
-        }
-        finally
-        {
-            graphDb.shutdown();
-        }
-        return storeDir;
+        };
     }
 }

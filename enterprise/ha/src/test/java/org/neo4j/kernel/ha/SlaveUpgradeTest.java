@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -41,12 +42,14 @@ public class SlaveUpgradeTest
     {
         try
         {
-            File dir = TargetDirectory.forTest( getClass() ).cleanDirectory( "haShouldFailToStartWithOldStore" );
+            File dir = testDirectory.directory( "haShouldFailToStartWithOldStore" );
             MigrationTestUtils.find20FormatStoreDirectory( dir );
 
             new TestHighlyAvailableGraphDatabaseFactory()
                     .newHighlyAvailableDatabaseBuilder( dir.getAbsolutePath() )
-                    .setConfig( ClusterSettings.server_id, "1" ).newGraphDatabase();
+                    .setConfig( ClusterSettings.server_id, "1" )
+                    .setConfig( ClusterSettings.initial_hosts, "localhost:9999" ) // Mandatory setting, irrelevant for this test though, just needs to be here
+                    .newGraphDatabase();
 
             fail( "Should exit abnormally" );
         }
@@ -56,4 +59,7 @@ public class SlaveUpgradeTest
             assertThat( rootCause, instanceOf( UpgradeNotAllowedByDatabaseModeException.class ) );
         }
     }
+
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 }

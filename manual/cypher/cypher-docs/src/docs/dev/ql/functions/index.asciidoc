@@ -1,0 +1,220 @@
+[[query-function]]
+Functions
+=========
+
+This chapter contains information on all functions in Cypher.
+Note that related information exists in <<query-operators>>.
+
+NOTE: Most functions in Cypher will return +NULL+ if an input parameter is +NULL+.
+
+[[query-predicates]]
+== Predicates ==
+
+Predicates are boolean functions that return true or false for a given set of input.
+They are most commonly used to filter out subgraphs in the +WHERE+ part of a query.
+
+See also <<query-operators-comparison>>.
+
+.Graph
+include::includes/cypher-functions-graph.asciidoc[]
+
+:leveloffset: 2
+
+include::all.asciidoc[]
+
+include::any.asciidoc[]
+
+include::none.asciidoc[]
+
+include::single.asciidoc[]
+
+include::exists.asciidoc[]
+
+:leveloffset: 1
+
+[[query-functions-scalar]]
+== Scalar functions ==
+
+Scalar functions return a single value.
+
+[IMPORTANT]
+The `LENGTH` and `SIZE` functions are quite similar, and so it is important to take note of the difference.
+Due to backwards compatibility `LENGTH` currently works on four types: strings, paths, collections and pattern expressions.
+However, for clarity it is recommended to only use `LENGTH` on strings and paths, and use the new `SIZE` function
+on collections and pattern expressions. `LENGTH` on those types may be deprecated in future.
+
+.Graph
+include::includes/cypher-functions-graph.asciidoc[]
+
+:leveloffset: 2
+
+include::size.asciidoc[]
+
+include::size-of-pattern-expression.asciidoc[]
+
+include::length.asciidoc[]
+
+include::length-of-string.asciidoc[]
+
+include::type.asciidoc[]
+
+include::id.asciidoc[]
+
+include::coalesce.asciidoc[]
+
+include::head.asciidoc[]
+
+include::last.asciidoc[]
+
+include::timestamp.asciidoc[]
+
+include::startnode.asciidoc[]
+
+include::endnode.asciidoc[]
+
+include::toint.asciidoc[]
+
+include::tofloat.asciidoc[]
+
+:leveloffset: 1
+
+[[query-functions-collection]]
+== Collection functions ==
+
+Collection functions return collections of things -- nodes in a path, and so on.
+
+See also <<query-operators-collection>>.
+
+.Graph
+include::includes/cypher-functions-graph.asciidoc[]
+
+:leveloffset: 2
+
+include::nodes.asciidoc[]
+
+include::relationships.asciidoc[]
+
+include::labels.asciidoc[]
+
+include::keys.asciidoc[]
+
+include::extract.asciidoc[]
+
+include::filter.asciidoc[]
+
+include::tail.asciidoc[]
+
+include::range.asciidoc[]
+
+include::reduce.asciidoc[]
+
+:leveloffset: 1
+
+[[query-functions-mathematical]]
+== Mathematical functions ==
+
+These functions all operate on numerical expressions only, and will return an error if used on any other values.
+
+See also <<query-operators-mathematical>>.
+
+.Graph
+include::includes/cypher-functions-graph.asciidoc[]
+
+:leveloffset: 2
+
+include::abs.asciidoc[]
+
+include::acos.asciidoc[]
+
+include::asin.asciidoc[]
+
+include::atan.asciidoc[]
+
+include::atan2.asciidoc[]
+
+include::ceil.asciidoc[]
+
+include::cos.asciidoc[]
+
+include::cot.asciidoc[]
+
+include::degrees.asciidoc[]
+
+include::e.asciidoc[]
+
+include::exp.asciidoc[]
+
+include::floor.asciidoc[]
+
+include::haversin.asciidoc[]
+
+:leveloffset: 3
+
+include::spherical-distance-using-the-haversin-function.asciidoc[]
+
+:leveloffset: 2
+
+include::log.asciidoc[]
+
+include::log10.asciidoc[]
+
+include::pi.asciidoc[]
+
+include::radians.asciidoc[]
+
+include::rand.asciidoc[]
+
+include::round.asciidoc[]
+
+include::sign.asciidoc[]
+
+include::sin.asciidoc[]
+
+include::sqrt.asciidoc[]
+
+include::tan.asciidoc[]
+
+:leveloffset: 1
+
+[[query-functions-string]]
+== String functions ==
+
+These functions all operate on string expressions only, and will return an error if used on any other values.
+The exception to this rule is `TOSTRING()`, which also accepts numbers.
+
+See also <<query-operators-string>>.
+
+.Graph
+include::includes/cypher-functions-graph.asciidoc[]
+
+:leveloffset: 2
+
+include::str.asciidoc[]
+
+[NOTE]
+The `STR()` function is deprecated from Neo4j version 2.3 and onwards.
+This means it may be removed in a future Neo4j major release.
+
+include::replace.asciidoc[]
+
+include::substring.asciidoc[]
+
+include::left.asciidoc[]
+
+include::right.asciidoc[]
+
+include::ltrim.asciidoc[]
+
+include::rtrim.asciidoc[]
+
+include::trim.asciidoc[]
+
+include::lower.asciidoc[]
+
+include::upper.asciidoc[]
+
+include::split.asciidoc[]
+
+include::reverse.asciidoc[]
+
+include::tostring.asciidoc[]

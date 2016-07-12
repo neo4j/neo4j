@@ -68,7 +68,7 @@ public class RecoveryVisitorTest
 
         visitor.close();
 
-        verify( store, never() ).setLastCommittedAndClosedTransactionId( anyLong(), anyLong() );
+        verify( store, never() ).setLastCommittedAndClosedTransactionId( anyLong(), anyLong(), anyLong(), anyLong(), anyLong() );
     }
 
     @Test
@@ -82,7 +82,21 @@ public class RecoveryVisitorTest
         final CommittedTransactionRepresentation transaction =
                 new CommittedTransactionRepresentation( startEntry, representation, commitEntry );
 
-        final boolean result = visitor.visit( transaction );
+        final LogPosition logPosition = new LogPosition( 0, 42 );
+        final boolean result = visitor.visit( new RecoverableTransaction()
+        {
+            @Override
+            public CommittedTransactionRepresentation representation()
+            {
+                return transaction;
+            }
+
+            @Override
+            public LogPosition positionAfterTx()
+            {
+                return logPosition;
+            }
+        } );
 
         assertFalse( result );
         verify( storeApplier, times( 1 ) ).apply( eq( representation ), any( ValidatedIndexUpdates.class ),
@@ -91,7 +105,10 @@ public class RecoveryVisitorTest
 
         visitor.close();
 
-        verify( store, times( 1 ) ).setLastCommittedAndClosedTransactionId( commitEntry.getTxId(),
-                LogEntryStart.checksum( startEntry ) );
+        verify( store, times( 1 ) ).setLastCommittedAndClosedTransactionId(
+                commitEntry.getTxId(),
+                LogEntryStart.checksum( startEntry ), commitEntry.getTimeWritten(),
+                logPosition.getByteOffset(),
+                logPosition.getLogVersion() );
     }
 }

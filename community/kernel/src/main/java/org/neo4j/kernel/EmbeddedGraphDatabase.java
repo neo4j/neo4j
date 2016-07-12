@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel;
 
-import java.util.Arrays;
+import java.io.File;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 
 /**
  * An implementation of {@link GraphDatabaseService} that is used to embed Neo4j
@@ -44,18 +46,31 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
  * @deprecated This will be moved to internal packages in the next major release.
  */
 @Deprecated
-public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
+public class EmbeddedGraphDatabase extends GraphDatabaseFacade
 {
-    private static final Iterable<Class<?>> SETTINGS_CLASSES = Arrays.<Class<?>>asList( GraphDatabaseSettings.class );
-
     /**
      * Internal constructor used by {@link org.neo4j.graphdb.factory.GraphDatabaseFactory}
      */
     public EmbeddedGraphDatabase( String storeDir,
                                   Map<String, String> params,
-                                  Dependencies dependencies )
+                                  GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        super( storeDir, params, dependencies );
-        run();
+        this( new File( storeDir ), params, dependencies );
+    }
+
+    /**
+     * Internal constructor used by {@link org.neo4j.graphdb.factory.GraphDatabaseFactory}
+     */
+    public EmbeddedGraphDatabase( File storeDir,
+                                  Map<String, String> params,
+                                  GraphDatabaseFacadeFactory.Dependencies dependencies )
+    {
+        create( storeDir, params, dependencies );
+    }
+
+    protected void create( File storeDir, Map<String, String> params,
+                                      GraphDatabaseFacadeFactory.Dependencies dependencies)
+    {
+        new CommunityFacadeFactory().newFacade( storeDir, params, dependencies, this );
     }
 }

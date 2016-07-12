@@ -38,14 +38,14 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
@@ -130,7 +130,7 @@ public class TestCrashWithRebuildSlow
     @Test
     public void crashAndRebuildSlowWithDynamicStringDeletions() throws Exception
     {
-        String storeDir = new File( "dir" ).getAbsolutePath();
+        File storeDir = new File( "dir" ).getAbsoluteFile();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
         List<Long> deletedNodeIds = produceNonCleanDefraggedStringStore( db );
@@ -200,9 +200,9 @@ public class TestCrashWithRebuildSlow
     private Map<IdType,Long> getHighIds( GraphDatabaseAPI db )
     {
         final Map<IdType,Long> highIds = new HashMap<>();
-        NeoStore neoStore = db.getDependencyResolver().resolveDependency(
-                DataSourceManager.class ).getDataSource().getNeoStore();
-        neoStore.visitStore( new Visitor<CommonAbstractStore,RuntimeException>()
+        NeoStores neoStores = db.getDependencyResolver().resolveDependency(
+                DataSourceManager.class ).getDataSource().getNeoStores();
+        neoStores.visitStore( new Visitor<CommonAbstractStore,RuntimeException>()
         {
             @Override
             public boolean visit( CommonAbstractStore store ) throws RuntimeException
@@ -214,7 +214,7 @@ public class TestCrashWithRebuildSlow
         return highIds;
     }
 
-    private void assertNumberOfFreeIdsEquals( String storeDir, FileSystemAbstraction fs, long numberOfFreeIds )
+    private void assertNumberOfFreeIdsEquals( File storeDir, FileSystemAbstraction fs, long numberOfFreeIds )
     {
         long fileSize = fs.getFileSize( new File( storeDir, "neostore.propertystore.db.strings.id" ) );
         long fileSizeWithoutHeader = fileSize - 9;

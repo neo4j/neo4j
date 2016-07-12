@@ -29,6 +29,6 @@ public class NonUniqueTokenException extends RuntimeException
     public NonUniqueTokenException( Class<? extends TokenHolder> holder, String tokenName, int tokenId, int existingId )
     {
         super( String.format( "The %s \"%s\" is not unique, it existed with id=%d before being added with id=%d.",
-                              holder.getSimpleName().replace( "TokenHolder", "" ), tokenName, existingId, tokenId ) );
+                              holder.getSimpleName().replace( "Delegating", "" ).replace( "TokenHolder", "" ), tokenName, existingId, tokenId ) );
     }
 }

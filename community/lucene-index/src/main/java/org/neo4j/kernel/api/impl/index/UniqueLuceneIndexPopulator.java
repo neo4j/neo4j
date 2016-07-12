@@ -54,10 +54,10 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
 
     UniqueLuceneIndexPopulator( int batchSize, LuceneDocumentStructure documentStructure,
                                 IndexWriterFactory<LuceneIndexWriter> indexWriterFactory,
-                                IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile,
+                                DirectoryFactory dirFactory, File dirFile,
                                 FailureStorage failureStorage, long indexId )
     {
-        super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile, failureStorage, indexId );
+        super( documentStructure, indexWriterFactory, dirFactory, dirFile, failureStorage, indexId );
         this.batchSize = batchSize;
     }
 
@@ -95,7 +95,7 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
             IndexSearcher searcher = searcherManager.acquire();
             try
             {
-                TopDocs docs = searcher.search( documentStructure.newQuery( propertyValue ), 1 );
+                TopDocs docs = searcher.search( documentStructure.newSeekQuery( propertyValue ), 1 );
                 if ( docs.totalHits > 0 )
                 {
                     Document doc = searcher.getIndexReader().document( docs.scoreDocs[0].doc );

@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.helpers.BiConsumer;
+import org.neo4j.function.BiConsumer;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 
 /**

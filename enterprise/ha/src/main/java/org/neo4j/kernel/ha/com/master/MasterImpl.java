@@ -31,15 +31,11 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.function.Consumer;
-import org.neo4j.helpers.Clock;
-import org.neo4j.helpers.Factory;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.ha.lock.LockStatus;
@@ -48,15 +44,9 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.collection.ConcurrentAccessException;
 import org.neo4j.kernel.impl.util.collection.NoSuchEntryException;
-import org.neo4j.kernel.impl.util.collection.TimedRepository;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.logging.Logging;
-
-import static org.neo4j.kernel.impl.util.JobScheduler.Group.slaveLocksTimeout;
 
 /**
  * This is the real master code that executes on a master. The actual
@@ -69,8 +59,6 @@ public class MasterImpl extends LifecycleAdapter implements Master
     {
         void initializeTx( RequestContext context );
     }
-
-    public static final int TX_TIMEOUT_ADDITION = 5 * 1000;
 
     // This is a bridge SPI that MasterImpl requires to function. Eventually this should be split
     // up into many smaller APIs implemented by other services so that this is not needed.
@@ -103,36 +91,21 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
         int getOrCreateProperty( String name );
 
-        Locks.Client acquireClient();
-
-        JobScheduler.JobHandle scheduleRecurringJob( JobScheduler.Group group, long interval, Runnable job );
     }
 
-    public static final int UNFINISHED_TRANSACTION_CLEANUP_DELAY = 1_000;
-
     private final SPI spi;
-    private final StringLogger msgLog;
     private final Config config;
     private final Monitor monitor;
     private final long epoch;
 
-    private TimedRepository<RequestContext, Locks.Client> slaveLockSessions;
-    private JobScheduler.JobHandle staleSlaveReaperJob;
+    private ConversationManager conversationManager;
 
-    private final int unfinishedSessionsCheckInterval;
-
-    public MasterImpl( SPI spi, Monitor monitor, Logging logging, Config config )
-    {
-        this( spi, monitor, logging, config, UNFINISHED_TRANSACTION_CLEANUP_DELAY );
-    }
-
-    public MasterImpl( final SPI spi, Monitor monitor, Logging logging, Config config, int staleSlaveReapIntervalMillis )
+    public MasterImpl( SPI spi, ConversationManager conversationManager, Monitor monitor, Config config )
     {
         this.spi = spi;
-        this.unfinishedSessionsCheckInterval = staleSlaveReapIntervalMillis;
-        this.msgLog = logging.getMessagesLog( getClass() );
         this.config = config;
         this.monitor = monitor;
+        this.conversationManager = conversationManager;
         this.epoch = generateEpoch();
     }
 
@@ -144,27 +117,13 @@ public class MasterImpl extends LifecycleAdapter implements Master
     @Override
     public void start() throws Throwable
     {
-        this.slaveLockSessions = new TimedRepository<>( new Factory<Locks.Client>()
-            {
-                @Override public Locks.Client newInstance()
-                {
-                    return spi.acquireClient();
-                }
-            }, new Consumer<Locks.Client>()
-            {
-                @Override public void accept( Locks.Client value )
-                {
-                    value.close();
-                }
-            }, config.get( HaSettings.lock_read_timeout ) + TX_TIMEOUT_ADDITION, Clock.SYSTEM_CLOCK );
-        staleSlaveReaperJob = spi.scheduleRecurringJob( slaveLocksTimeout, unfinishedSessionsCheckInterval, slaveLockSessions );
+        conversationManager.start();
     }
 
     @Override
     public void stop()
     {
-        staleSlaveReaperJob.cancel( false );
-        slaveLockSessions = null;
+        conversationManager.stop();
     }
 
     /**
@@ -211,9 +170,9 @@ public class MasterImpl extends LifecycleAdapter implements Master
         if(context.getEventIdentifier() == -1)
         {
             // Client is not holding locks, use a temporary lock client
-            try(Locks.Client locks = spi.acquireClient())
+            try(Conversation conversation = conversationManager.acquire())
             {
-                return commit0( context, preparedTransaction, locks );
+                return commit0( context, preparedTransaction, conversation.getLocks() );
             }
         }
         else
@@ -221,14 +180,15 @@ public class MasterImpl extends LifecycleAdapter implements Master
             // Client is holding locks, use the clients lock session
             try
             {
-                Locks.Client locks = slaveLockSessions.acquire( context );
+                Conversation conversation = conversationManager.acquire( context );
+                Locks.Client locks = conversation.getLocks();
                 try
                 {
                     return commit0( context, preparedTransaction, locks );
                 }
                 finally
                 {
-                    slaveLockSessions.release( context );
+                    conversationManager.release(context);
                 }
             }
             catch(NoSuchEntryException | ConcurrentAccessException e)
@@ -320,7 +280,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
         try
         {
-            slaveLockSessions.begin( context );
+            conversationManager.begin( context );
         }
         catch ( ConcurrentAccessException e )
         {
@@ -335,7 +295,11 @@ public class MasterImpl extends LifecycleAdapter implements Master
     public Response<Void> endLockSession( RequestContext context, boolean success )
     {
         assertCorrectEpoch( context );
-        slaveLockSessions.end( context );
+        conversationManager.end( context );
+        if ( !success )
+        {
+            conversationManager.stop( context );
+        }
         return spi.packTransactionObligationResponse( context, null );
     }
 
@@ -347,7 +311,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         Locks.Client session;
         try
         {
-            session = slaveLockSessions.acquire( context );
+            session = conversationManager.acquire( context ).getLocks();
         }
         catch ( NoSuchEntryException | ConcurrentAccessException e)
         {
@@ -355,7 +319,10 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
         try
         {
-            session.acquireExclusive( type, resourceIds );
+            for ( long resourceId : resourceIds )
+            {
+                session.acquireExclusive( type, resourceId );
+            }
             return spi.packTransactionObligationResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
         }
         catch ( DeadlockDetectedException e )
@@ -368,7 +335,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
         finally
         {
-            slaveLockSessions.release( context );
+            conversationManager.release( context );
         }
     }
 
@@ -380,7 +347,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         Locks.Client session;
         try
         {
-            session = slaveLockSessions.acquire( context );
+            session = conversationManager.acquire( context ).getLocks();
         }
         catch ( NoSuchEntryException | ConcurrentAccessException e)
         {
@@ -388,7 +355,11 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
         try
         {
-            session.acquireShared( type, resourceIds );
+            for ( long resourceId : resourceIds )
+            {
+                session.acquireShared( type, resourceId );
+            }
+
             return spi.packTransactionObligationResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
         }
         catch ( DeadlockDetectedException e )
@@ -401,7 +372,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
         finally
         {
-            slaveLockSessions.release( context );
+            conversationManager.release( context );
         }
     }
 
@@ -413,7 +384,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     public Map<Integer, Collection<RequestContext>> getOngoingTransactions()
     {
         Map<Integer, Collection<RequestContext>> result = new HashMap<>();
-        Set<RequestContext> contexts = slaveLockSessions.keys();
+        Set<RequestContext> contexts = conversationManager.getActiveContexts();
         for ( RequestContext context : contexts.toArray( new RequestContext[contexts.size()] ) )
         {
             Collection<RequestContext> txs = result.get( context.machineId() );

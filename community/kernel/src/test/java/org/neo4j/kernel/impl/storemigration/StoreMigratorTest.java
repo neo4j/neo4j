@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.storemigration;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,59 +29,176 @@ import java.io.IOException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
-import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.store.TransactionId;
+import org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogs;
+import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
-import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.test.PageCacheRule;
+import org.neo4j.test.RandomRule;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TargetDirectory.TestDirectory;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
+import static org.neo4j.kernel.impl.store.MetaDataStore.FIELD_NOT_PRESENT;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_CHECKSUM;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_COMMIT_TIMESTAMP;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
+import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
+import static org.neo4j.kernel.impl.store.MetaDataStore.setRecord;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP;
 
 public class StoreMigratorTest
 {
-    private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
+    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    private final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final RandomRule random = new RandomRule();
 
-    private File createNeoStoreWithOlderVersion( String version ) throws IOException
+    @Rule
+    public final RuleChain ruleChain = RuleChain.outerRule( directory )
+            .around( pageCacheRule )
+            .around( random );
+
+    @Test
+    public void shouldExtractTransactionInformationFromMetaDataStore() throws Exception
     {
-        File storeDir = directory.directory().getAbsoluteFile();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, storeDir );
-        return storeDir;
+        // given
+        // ... variables
+        long txId = 42;
+        long checksum = 123456789123456789L;
+        long timestamp = 919191919191919191L;
+        TransactionId expected = new TransactionId( txId, checksum, timestamp );
+
+        // ... and files
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        File storeDir = directory.graphDbDir();
+        File neoStore = new File( storeDir, DEFAULT_NAME );
+        neoStore.createNewFile();
+
+        // ... and mocks
+        MigrationProgressMonitor progressMonitor = mock( MigrationProgressMonitor.class );
+        Config config = mock( Config.class );
+        LogService logService = mock( LogService.class );
+
+        // when
+        // ... data in record
+        setRecord( pageCache, neoStore, LAST_TRANSACTION_ID, txId );
+        setRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, checksum );
+        setRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, timestamp );
+
+        // ... and with migrator
+        StoreMigrator migrator = new StoreMigrator( progressMonitor, fs, pageCache, config, logService );
+        TransactionId actual = migrator.extractTransactionIdInformation( neoStore, storeDir, txId );
+
+        // then
+        assertEquals( expected, actual );
     }
 
     @Test
-    public void shouldBeAbleToResumeMigration() throws Exception
+    public void shouldExtractTransactionInformationFromLegacyLogsWhenCantFindInStore() throws Exception
     {
-        // GIVEN a legacy database
-        File storeDirectory = createNeoStoreWithOlderVersion( Legacy21Store.LEGACY_VERSION );
-        // and a state of the migration saying that it has done the actual migration
-        Logging logging = new DevNullLoggingService();
+        // given
+        // ... variables
+        long txId = 42;
+        long checksum = 123456789123456789L;
+        long timestamp = 919191919191919191L;
+        TransactionId expected = new TransactionId( txId, checksum, timestamp );
+
+        // ... and files
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreMigrator migrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fs, logging );
-        File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
-        fs.mkdirs( migrationDir );
-        assertTrue( migrator.needsMigration( storeDirectory ) );
-        migrator.migrate( storeDirectory, migrationDir, schemaIndexProvider, pageCache );
-        migrator.close();
+        File storeDir = directory.graphDbDir();
+        File neoStore = new File( storeDir, DEFAULT_NAME );
+        neoStore.createNewFile();
 
-        // WHEN simulating resuming the migration
-        migrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fs, logging );
-        migrator.moveMigratedFiles( migrationDir, storeDirectory );
+        // ... and mocks
+        MigrationProgressMonitor progressMonitor = mock( MigrationProgressMonitor.class );
+        Config config = mock( Config.class );
+        LogService logService = mock( LogService.class );
+        LegacyLogs legacyLogs = mock( LegacyLogs.class );
+        when( legacyLogs.getTransactionInformation( storeDir, txId ) ).thenReturn( expected );
 
-        // THEN starting the new store should be successful
-        StoreFactory storeFactory = new StoreFactory( fs, storeDirectory, pageCache,
-                logging.getMessagesLog( getClass() ), new Monitors() );
-        storeFactory.newNeoStore( false ).close();
+        // when
+        // ... neoStore is empty and with migrator
+        StoreMigrator migrator = new StoreMigrator( progressMonitor, fs, pageCache, config, logService, legacyLogs );
+        TransactionId actual = migrator.extractTransactionIdInformation( neoStore, storeDir, txId );
+
+        // then
+        assertEquals( expected, actual );
     }
 
-    @Rule
-    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
-    public final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
+    @Test
+    public void shouldGenerateTransactionInformationAsLastOption() throws Exception
+    {
+        // given
+        // ... variables
+        long txId = 42;
+        TransactionId expected = new TransactionId( txId, FIELD_NOT_PRESENT, UNKNOWN_TX_COMMIT_TIMESTAMP );
+
+        // ... and files
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        File storeDir = directory.graphDbDir();
+        File neoStore = new File( storeDir, DEFAULT_NAME );
+        neoStore.createNewFile();
+
+        // ... and mocks
+        MigrationProgressMonitor progressMonitor = mock( MigrationProgressMonitor.class );
+        Config config = mock( Config.class );
+        LogService logService = mock( LogService.class );
+        LegacyLogs legacyLogs = mock( LegacyLogs.class );
+
+        // when
+        // ... transaction info not in neo store
+        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_ID ) );
+        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM ) );
+        assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP ) );
+        // ... and transaction not in log
+        when( legacyLogs.getTransactionInformation( storeDir, txId ) ).thenThrow( NoSuchTransactionException.class );
+        // ... and with migrator
+        StoreMigrator migrator = new StoreMigrator( progressMonitor, fs, pageCache, config, logService, legacyLogs );
+        TransactionId actual = migrator.extractTransactionIdInformation( neoStore, storeDir, txId );
+
+        // then
+        assertEquals( expected.transactionId(), actual.transactionId() );
+        assertEquals( expected.commitTimestamp(), actual.commitTimestamp() );
+        // We do not expect checksum to be equal as it is randomly generated
+    }
+
+    @Test
+    public void writeAndReadLastTxInformation() throws IOException
+    {
+        StoreMigrator migrator = newStoreMigrator();
+        TransactionId writtenTxId = new TransactionId( random.nextLong(), random.nextLong(), random.nextLong() );
+
+        migrator.writeLastTxInformation( directory.graphDbDir(), writtenTxId );
+
+        TransactionId readTxId = migrator.readLastTxInformation( directory.graphDbDir() );
+
+        assertEquals( writtenTxId, readTxId );
+    }
+
+    @Test
+    public void writeAndReadLastTxLogPosition() throws IOException
+    {
+        StoreMigrator migrator = newStoreMigrator();
+        LogPosition writtenLogPosition = new LogPosition( random.nextLong(), random.nextLong() );
+
+        migrator.writeLastTxLogPosition( directory.graphDbDir(), writtenLogPosition );
+
+        LogPosition readLogPosition = migrator.readLastTxLogPosition( directory.graphDbDir() );
+
+        assertEquals( writtenLogPosition, readLogPosition );
+    }
+
+    private StoreMigrator newStoreMigrator()
+    {
+        return new StoreMigrator( new SilentMigrationProgressMonitor(), fs, pageCacheRule.getPageCache( fs ),
+                new Config(), NullLogService.getInstance() );
+    }
 }

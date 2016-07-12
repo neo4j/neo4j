@@ -19,11 +19,12 @@
  */
 package org.neo4j.test.server.ha;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
+
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.IndexManager;
@@ -144,6 +145,7 @@ public class EnterpriseServerHelper
         EnterpriseServerBuilder builder = EnterpriseServerBuilder.server().usingDatabaseDir( databaseDir.getAbsolutePath() );
         configureHostname( builder );
         if ( persistent ) builder = (EnterpriseServerBuilder) builder.persistent();
+        builder.withDefaultDatabaseTuning();
         EnterpriseNeoServer server = builder.build();
         server.start();
         return server;

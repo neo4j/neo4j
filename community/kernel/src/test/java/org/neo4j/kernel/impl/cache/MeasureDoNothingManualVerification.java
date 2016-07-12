@@ -29,7 +29,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.FormattedLog;
+import org.neo4j.logging.Log;
 
 import static java.util.Arrays.asList;
 
@@ -45,7 +46,8 @@ public class MeasureDoNothingManualVerification
 
     public static void main(String ... args) throws InterruptedException, ExecutionException
     {
-        new Thread(new MeasureDoNothing( "GC Monitor", StringLogger.SYSTEM, 100, 1 )).start();
+        Log log = FormattedLog.toOutputStream( System.out );
+        new Thread(new MeasureDoNothing( "GC Monitor", log, 100, 1 )).start();
 
         ExecutorService executorService = Executors.newFixedThreadPool( 4 );
         for ( Future<Object> objectFuture : executorService.invokeAll(

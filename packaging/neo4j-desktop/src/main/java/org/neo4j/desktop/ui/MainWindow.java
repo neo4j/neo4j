@@ -26,6 +26,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.Scanner;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
@@ -74,17 +77,36 @@ public class MainWindow
 
     private DatabaseStatus databaseStatus;
 
-    public MainWindow( final DatabaseActions databaseActions, DesktopModel model )
+    public MainWindow( DatabaseActions databaseActions, DesktopModel model )
     {
         this.model = model;
         this.debugWindow = new SystemOutDebugWindow();
         this.databaseActions = databaseActions;
 
-        this.frame = new JFrame( "Neo4j Community" );
+        this.frame = new JFrame( "Neo4j Community Edition" );
         this.frame.setIconImages( Graphics.loadIcons() );
         this.sysTray = SysTray.install( new SysTrayActions(), frame );
 
-        this.directoryDisplay = createUnmodifiableTextField( model.getDatabaseDirectory().getAbsolutePath(), 35 );
+        String location = model.getDatabaseDirectory().getAbsolutePath();
+        File file = new File( ".dblocation" );
+
+        if( file.exists() && file.canRead() )
+        {
+            try
+            {
+                Scanner scanner = new Scanner( file );
+                if ( scanner.hasNextLine() )
+                {
+                    location = scanner.nextLine();
+                }
+            }
+            catch ( FileNotFoundException e )
+            {
+                e.printStackTrace();
+            }
+        }
+
+        this.directoryDisplay = createUnmodifiableTextField( location, 35 );
         this.browseButton = createBrowseButton();
         this.statusPanelLayout = new CardLayout();
         this.statusPanel = createStatusPanel( statusPanelLayout );
@@ -145,7 +167,7 @@ public class MainWindow
 
     private JPanel createSelectionPanel( JTextField directoryDisplay, JButton selectButton )
     {
-        return withTitledBorder( "Database location", withBoxLayout( BoxLayout.LINE_AXIS,
+        return withTitledBorder( "Database Location", withBoxLayout( BoxLayout.LINE_AXIS,
                 createPanel( directoryDisplay, selectButton ) ) );
     }
 
@@ -182,7 +204,7 @@ public class MainWindow
     private JButton createBrowseButton()
     {
         ActionListener actionListener = new BrowseForDatabaseActionListener( frame, directoryDisplay, model );
-        return Components.createTextButton( ellipsis( "Browse" ), actionListener );
+        return Components.createTextButton( ellipsis( "Choose" ), actionListener );
     }
 
     private JButton createStartButton()
@@ -248,5 +270,11 @@ public class MainWindow
                 frame.setVisible( false );
             }
         }
+
+        @Override
+        public void exit() { shutdown(); }
+
+        @Override
+        public void open() { frame.setVisible( true ); }
     }
 }

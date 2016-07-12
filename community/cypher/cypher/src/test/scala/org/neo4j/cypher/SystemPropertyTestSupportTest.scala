@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.commons.{CypherTestSupport, CypherFunSuite}
 import java.util.Properties
+
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.{CypherFunSuite, CypherTestSupport}
 
 class SystemPropertyTestSupportTest extends CypherFunSuite
 {
@@ -52,7 +53,7 @@ class SystemPropertyTestSupportTest extends CypherFunSuite
     {
       def apply( )
       {
-        setSystemProperty( "os.name", "Linux" )
+        setSystemProperty( "os.name" -> "Linux" )
         getSystemProperty( "os.name" ) should equal( ("os.name", "Linux") )
       }
     })( )
@@ -64,8 +65,8 @@ class SystemPropertyTestSupportTest extends CypherFunSuite
     {
       def apply( )
       {
-        setSystemProperty( "os.name", "Linux" )
-        setSystemProperty( "os.name", "Mac OS" ) should equal( ("os.name", "Linux") )
+        setSystemProperty( "os.name" -> "Linux" )
+        setSystemProperty( "os.name" -> "Mac OS" ) should equal( ("os.name", "Linux") )
       }
     })( )
   }
@@ -76,7 +77,7 @@ class SystemPropertyTestSupportTest extends CypherFunSuite
     {
       def apply( )
       {
-        setSystemProperty( "os.name", "Linux" )
+        setSystemProperty( "os.name" -> "Linux" )
         withSystemProperties( "os.name" -> "Windows" )
         {
           getSystemProperty( "os.name" ) should equal( ("os.name", "Windows") )
@@ -91,10 +92,10 @@ class SystemPropertyTestSupportTest extends CypherFunSuite
     {
       def apply( )
       {
-        setSystemProperty( "os.name", "Linux" )
+        setSystemProperty( "os.name" -> "Linux" )
         withSystemProperties( "os.name" -> "Windows" )
         {
-          setSystemProperty( "os.name", "Mac OS" )
+          setSystemProperty( "os.name" -> "Mac OS" )
         }
         getSystemProperty( "os.name" ) should equal( ("os.name", "Linux") )
       }

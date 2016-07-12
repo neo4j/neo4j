@@ -19,8 +19,12 @@
  */
 package org.neo4j.test;
 
-import org.neo4j.helpers.Function;
+import org.neo4j.function.Function;
 
+/**
+ * @deprecated This class will be removed in the next major release.
+ */
+@Deprecated
 public abstract class AlgebraicFunction<FROM, TO> implements Function<FROM, TO>
 {
     public <NEXT> AlgebraicFunction<FROM, NEXT> then( final Function<TO, NEXT> function )

@@ -19,30 +19,22 @@
  */
 package org.neo4j.kernel.impl.api.operations;
 
-import java.util.Iterator;
-
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.graphdb.Direction;
+import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.util.register.NeoRegister;
-import org.neo4j.register.Register;
+import org.neo4j.kernel.impl.api.store.StoreStatement;
 
 public interface EntityReadOperations
 {
-    // Currently, of course, most relevant operations here are still in the old core API implementation.
-    boolean nodeExists(KernelStatement state, long nodeId);
-
-    boolean relationshipExists( KernelStatement statement, long relId );
-
     /**
      * @param labelId the label id of the label that returned nodes are guaranteed to have
      * @return ids of all nodes that have the given label
@@ -54,7 +46,51 @@ public interface EntityReadOperations
      *
      * @throws IndexNotFoundKernelException if no such index found.
      */
-    PrimitiveLongIterator nodesGetFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
+    PrimitiveLongIterator nodesGetFromIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
+            throws IndexNotFoundKernelException;
+
+    /**
+     * Returns an iterable with the matched nodes.
+     *
+     * @throws IndexNotFoundKernelException if no such index found.
+     */
+    PrimitiveLongIterator nodesGetFromIndexRangeSeekByNumber( KernelStatement state,
+            IndexDescriptor index,
+            Number lower,
+            boolean includeLower,
+            Number upper,
+            boolean includeUpper )
+            throws IndexNotFoundKernelException;
+
+    /**
+     * Returns an iterable with the matched nodes.
+     *
+     * @throws IndexNotFoundKernelException if no such index found.
+     */
+    PrimitiveLongIterator nodesGetFromIndexRangeSeekByString( KernelStatement state,
+            IndexDescriptor index,
+            String lower,
+            boolean includeLower,
+            String upper,
+            boolean includeUpper )
+            throws IndexNotFoundKernelException;
+
+    /**
+     * Returns an iterable with the matched nodes.
+     *
+     * @throws IndexNotFoundKernelException if no such index found.
+     */
+    PrimitiveLongIterator nodesGetFromIndexRangeSeekByPrefix( KernelStatement state,
+            IndexDescriptor index,
+            String prefix )
+            throws IndexNotFoundKernelException;
+
+    /**
+     * Returns an iterable with the matched nodes.
+     *
+     * @throws IndexNotFoundKernelException if no such index found.
+     */
+    PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, IndexDescriptor index )
             throws IndexNotFoundKernelException;
 
     /**
@@ -63,70 +99,17 @@ public interface EntityReadOperations
      * @throws IndexNotFoundKernelException if no such index found.
      * @throws IndexBrokenKernelException   if we found an index that was corrupt or otherwise in a failed state.
      */
-    long nodeGetUniqueFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
+    long nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;
 
-    /**
-     * Checks if a node is labeled with a certain label or not. Returns
-     * {@code true} if the node is labeled with the label, otherwise {@code false.}
-     * Label ids are retrieved from {@link KeyWriteOperations#labelGetOrCreateForName(org.neo4j.kernel.api.Statement,
-     * String)} or
-     * {@link KeyReadOperations#labelGetForName(org.neo4j.kernel.api.Statement, String)}.
-     */
-    boolean nodeHasLabel( KernelStatement state, long nodeId, int labelId ) throws EntityNotFoundException;
+    boolean graphHasProperty( KernelStatement state, int propertyKeyId );
 
-    /**
-     * Returns all labels set on node with id {@code nodeId}.
-     * If the node has no labels an empty iterator will be returned.
-     */
-    PrimitiveIntIterator nodeGetLabels( KernelStatement state, long nodeId ) throws EntityNotFoundException;
-
-    Property nodeGetProperty( KernelStatement state, long nodeId, int propertyKeyId ) throws EntityNotFoundException;
-
-    Property relationshipGetProperty( KernelStatement state, long relationshipId, int propertyKeyId )
-            throws EntityNotFoundException;
-
-    Property graphGetProperty( KernelStatement state, int propertyKeyId );
-
-    // TODO: decide if this should be replaced by nodeGetAllProperties()
-
-    /**
-     * Return all property keys associated with a node.
-     */
-    PrimitiveLongIterator nodeGetPropertyKeys( KernelStatement state, long nodeId ) throws EntityNotFoundException;
-
-    Iterator<DefinedProperty> nodeGetAllProperties( KernelStatement state, long nodeId ) throws EntityNotFoundException;
-
-    // TODO: decide if this should be replaced by relationshipGetAllProperties()
+    Object graphGetProperty( KernelStatement state, int propertyKeyId );
 
     /**
      * Return all property keys associated with a relationship.
      */
-    PrimitiveLongIterator relationshipGetPropertyKeys( KernelStatement state, long relationshipId ) throws
-            EntityNotFoundException;
-
-    Iterator<DefinedProperty> relationshipGetAllProperties( KernelStatement state,
-                                                            long relationshipId ) throws EntityNotFoundException;
-
-    // TODO: decide if this should be replaced by relationshipGetAllProperties()
-
-    /**
-     * Return all property keys associated with a relationship.
-     */
-    PrimitiveLongIterator graphGetPropertyKeys( KernelStatement state );
-
-    Iterator<DefinedProperty> graphGetAllProperties( KernelStatement state );
-
-    PrimitiveLongIterator nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction,
-                                                int[] relTypes ) throws EntityNotFoundException;
-
-    PrimitiveLongIterator nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction ) throws EntityNotFoundException;
-
-    int nodeGetDegree( KernelStatement statement, long nodeId, Direction direction, int relType ) throws EntityNotFoundException;
-
-    int nodeGetDegree( KernelStatement statement, long nodeId, Direction direction ) throws EntityNotFoundException;
-
-    PrimitiveIntIterator nodeGetRelationshipTypes( KernelStatement statement, long nodeId ) throws EntityNotFoundException;
+    PrimitiveIntIterator graphGetPropertyKeys( KernelStatement state );
 
     PrimitiveLongIterator nodesGetAll( KernelStatement state );
 
@@ -135,19 +118,58 @@ public interface EntityReadOperations
     <EXCEPTION extends Exception> void relationshipVisit( KernelStatement statement, long relId,
             RelationshipVisitor<EXCEPTION> visitor ) throws EntityNotFoundException, EXCEPTION;
 
-    Cursor expand( KernelStatement statement, Cursor inputCursor,
-                     /* Inputs  */ NeoRegister.Node.In nodeId, Register.Object.In<int[]> types,
-                     Register.Object.In<Direction> expandDirection,
-                     /* Outputs */ NeoRegister.Relationship.Out relId, NeoRegister.RelType.Out relType,
-                     Register.Object.Out<Direction> direction,
-                     NeoRegister.Node.Out startNodeId, NeoRegister.Node.Out neighborNodeId );
+    Cursor<NodeItem> nodeCursorById( KernelStatement statement, long nodeId ) throws EntityNotFoundException;
 
+    Cursor<NodeItem> nodeCursor( KernelStatement statement, long nodeId );
 
-    Cursor nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction,
-                                 RelationshipVisitor<? extends RuntimeException> visitor )
+    Cursor<NodeItem> nodeCursor( TxStateHolder txStateHolder, StoreStatement statement, long nodeId );
+
+    Cursor<RelationshipItem> relationshipCursorById( KernelStatement statement, long relId )
             throws EntityNotFoundException;
 
-    Cursor nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction, int[] types,
-                                 RelationshipVisitor<? extends RuntimeException> visitor )
-            throws EntityNotFoundException;
+    Cursor<RelationshipItem> relationshipCursor( KernelStatement statement, long relId );
+
+    Cursor<RelationshipItem> relationshipCursor( TxStateHolder txStateHolder, StoreStatement statement, long relId );
+
+    Cursor<NodeItem> nodeCursorGetAll( KernelStatement statement );
+
+    Cursor<RelationshipItem> relationshipCursorGetAll( KernelStatement statement );
+
+    Cursor<NodeItem> nodeCursorGetForLabel( KernelStatement statement, int labelId );
+
+    Cursor<NodeItem> nodeCursorGetFromIndexSeek( KernelStatement statement,
+            IndexDescriptor index,
+            Object value ) throws IndexNotFoundKernelException;
+
+    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByNumber( KernelStatement statement,
+            IndexDescriptor index,
+            Number lower,
+            boolean includeLower,
+            Number upper,
+            boolean includeUpper )
+            throws IndexNotFoundKernelException;
+
+    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByString( KernelStatement statement,
+            IndexDescriptor index,
+            String lower,
+            boolean includeLower,
+            String upper,
+            boolean includeUpper )
+            throws IndexNotFoundKernelException;
+
+    Cursor<NodeItem> nodeCursorGetFromIndexRangeSeekByPrefix( KernelStatement statement,
+            IndexDescriptor index,
+            String prefix ) throws IndexNotFoundKernelException;
+
+    Cursor<NodeItem> nodeCursorGetFromIndexScan( KernelStatement statement,
+            IndexDescriptor index ) throws IndexNotFoundKernelException;
+
+    Cursor<NodeItem> nodeCursorGetFromIndexSeekByPrefix( KernelStatement statement,
+            IndexDescriptor index,
+            String prefix ) throws IndexNotFoundKernelException;
+
+    Cursor<NodeItem> nodeCursorGetFromUniqueIndexSeek( KernelStatement statement,
+            IndexDescriptor index,
+            Object value ) throws IndexBrokenKernelException, IndexNotFoundKernelException;
+
 }

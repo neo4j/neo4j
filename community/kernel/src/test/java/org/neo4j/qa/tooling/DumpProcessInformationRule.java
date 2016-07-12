@@ -27,10 +27,10 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.hamcrest.Matcher;
 import org.junit.rules.ExternalResource;
 
-import org.neo4j.helpers.Predicate;
-import org.neo4j.kernel.logging.SystemOutLogging;
+import org.neo4j.logging.NullLogProvider;
 
 public class DumpProcessInformationRule extends ExternalResource
 {
@@ -51,14 +51,14 @@ public class DumpProcessInformationRule extends ExternalResource
         };
     }
     
-    public static Dump otherVm( final Predicate<String> processFilter, final File baseDir )
+    public static Dump otherVm( final Matcher<String> processFilter, final File baseDir )
     {
         return new Dump()
         {
             @Override
             public void dump() throws Exception
             {
-                new DumpProcessInformation( new SystemOutLogging(), baseDir ).doThreadDump( processFilter );
+                new DumpProcessInformation( NullLogProvider.getInstance(), baseDir ).doThreadDump( processFilter );
             }
         };
     }

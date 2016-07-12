@@ -19,20 +19,21 @@
  */
 package org.neo4j.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 
-import org.junit.Test;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.web.Jetty9WebServer;
-import org.neo4j.test.BufferingLogging;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
 {
@@ -42,12 +43,11 @@ public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
         int contestedPort = 9999;
         try ( ServerSocket ignored = new ServerSocket( contestedPort, 0, InetAddress.getByName(Jetty9WebServer.DEFAULT_ADDRESS ) ) )
         {
-            Logging logging = new BufferingLogging();
-            CommunityNeoServer server = CommunityServerBuilder.server()
+            AssertableLogProvider logProvider = new AssertableLogProvider();
+            CommunityNeoServer server = CommunityServerBuilder.server( logProvider )
                     .onPort( contestedPort )
-                    .usingDatabaseDir( folder.cleanDirectory( name.getMethodName() ).getAbsolutePath() )
+                    .usingDatabaseDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                     .onHost( Jetty9WebServer.DEFAULT_ADDRESS )
-                    .withLogging( logging )
                     .build();
             try
             {
@@ -57,14 +57,15 @@ public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
             }
             catch ( ServerStartupException e )
             {
-                assertThat( e.getMessage(), containsString( "Starting Neo4j Server failed" ) );
+                assertThat( e.getMessage(), containsString( "Starting Neo4j failed" ) );
             }
 
-            // Don't include the SEVERE string since it's
-            // OS-regional-settings-specific
-            assertThat(
-                    logging.toString(),
-                    containsString( String.format( "Failed to start Neo Server" ) ) );
+            logProvider.assertAtLeastOnce(
+                    AssertableLogProvider.inLog( containsString( "CommunityNeoServer" ) ).error(
+                            "Failed to start Neo Server on port %d: %s",
+                            9999, startsWith( "Address 0.0.0.0:9999 is already in use, cannot bind to it." )
+                    )
+            );
             server.stop();
         }
     }

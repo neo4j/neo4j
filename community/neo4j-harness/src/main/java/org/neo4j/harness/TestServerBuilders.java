@@ -34,15 +34,15 @@ public final class TestServerBuilders
      */
     public static TestServerBuilder newInProcessBuilder()
     {
-        return new InProcessServerBuilder(new File(System.getProperty("java.io.tmpdir")));
+        return new InProcessServerBuilder();
     }
 
     /**
-     * Create a builder capable of starting an in-process Neo4j instance, running in the specified directory.
+     * Create a builder capable of starting an in-process Neo4j instance, running in a subdirectory of the specified directory.
      */
     public static TestServerBuilder newInProcessBuilder(File workingDirectory)
     {
-        return new InProcessServerBuilder(workingDirectory );
+        return new InProcessServerBuilder( workingDirectory );
     }
 
     private TestServerBuilders(){}

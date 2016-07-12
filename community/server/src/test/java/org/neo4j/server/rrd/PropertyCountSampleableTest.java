@@ -30,7 +30,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.server.rrd.sampler.PropertyCountSampleable;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -78,7 +78,7 @@ public class PropertyCountSampleableTest
     public void setupReferenceNode()
     {
         DependencyResolver dependencyResolver = dbRule.getGraphDatabaseAPI().getDependencyResolver();
-        NeoStoreProvider neoStore = dependencyResolver.resolveDependency( NeoStoreProvider.class );
+        NeoStoresSupplier neoStore = dependencyResolver.resolveDependency( NeoStoresSupplier.class );
         AvailabilityGuard gaurd = dependencyResolver.resolveDependency( AvailabilityGuard.class );
         sampleable = new PropertyCountSampleable( neoStore, gaurd );
     }

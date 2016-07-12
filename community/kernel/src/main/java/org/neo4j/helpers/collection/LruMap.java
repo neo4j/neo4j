@@ -22,6 +22,10 @@ package org.neo4j.helpers.collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * @deprecated This class will be removed in the next major release.
+ */
+@Deprecated
 public class LruMap<K, V> extends LinkedHashMap<K,V >
 {
     private final int maxEntries;

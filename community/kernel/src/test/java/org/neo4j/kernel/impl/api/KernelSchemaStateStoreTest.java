@@ -22,11 +22,10 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.impl.util.TestLogger;
-import org.neo4j.kernel.impl.util.TestLogging;
+import org.neo4j.logging.AssertableLogProvider;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class KernelSchemaStateStoreTest
 {
@@ -58,20 +57,17 @@ public class KernelSchemaStateStoreTest
         assertEquals( null, result );
 
         // AND ALSO
-        logger().assertExactly( info( "Schema state store has been cleared." ) );
+        logProvider.assertExactly(
+                inLog( KernelSchemaStateStore.class ).info( "Schema state store has been cleared." )
+        );
     }
 
     private KernelSchemaStateStore stateStore;
-    private TestLogging logging = new TestLogging();
+    private AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Before
     public void before()
     {
-        this.stateStore = new KernelSchemaStateStore( logging.getMessagesLog( KernelSchemaStateStore.class ) );
-    }
-
-    private TestLogger logger()
-    {
-        return logging.getMessagesLog( KernelSchemaStateStore.class );
+        this.stateStore = new KernelSchemaStateStore( logProvider );
     }
 }

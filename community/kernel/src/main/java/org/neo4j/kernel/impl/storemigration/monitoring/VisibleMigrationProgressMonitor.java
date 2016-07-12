@@ -19,48 +19,37 @@
  */
 package org.neo4j.kernel.impl.storemigration.monitoring;
 
-import java.io.PrintStream;
-
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
 
 public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
 {
-    private final StringLogger logger;
-    private final PrintStream out;
+    private final Log log;
 
-    public VisibleMigrationProgressMonitor( StringLogger logger, PrintStream out )
+    public VisibleMigrationProgressMonitor( Log log )
     {
-        this.logger = logger;
-        this.out = out;
+        this.log = log;
     }
 
     @Override
     public void started()
     {
-        String message = "Starting upgrade of database store files";
-        out.println( message );
-        logger.info( message );
+        log.info( "Starting upgrade of database store files" );
     }
 
     @Override
     public void percentComplete( int percent )
     {
-        out.print( "." );
         if (percent % 10 == 0)
         {
-            logger.info( format( "Store upgrade %d%% complete", percent ) );
-            out.println( " " + percent + "%" );
+            log.info( format( "Store upgrade %d%% complete", percent ) );
         }
-        out.flush();
     }
 
     @Override
     public void finished()
     {
-        String message = "Finished upgrade of database store files";
-        out.println( message );
-        logger.info( message );
+        log.info( "Finished upgrade of database store files" );
     }
 }

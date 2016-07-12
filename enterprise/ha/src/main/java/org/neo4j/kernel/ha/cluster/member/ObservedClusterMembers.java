@@ -36,8 +36,8 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Keeps list of members, their roles and availability.
@@ -60,15 +60,15 @@ public class ObservedClusterMembers
         }
     };
 
-    private final StringLogger log;
+    private final Log log;
     private final InstanceId me;
     private final Map<InstanceId,ClusterMember> members = new CopyOnWriteHashMap<>();
 
-    public ObservedClusterMembers( Logging logging, Cluster cluster, Heartbeat heartbeat, ClusterMemberEvents events,
-            InstanceId me )
+    public ObservedClusterMembers( LogProvider logProvider, Cluster cluster, Heartbeat heartbeat,
+            ClusterMemberEvents events, InstanceId me )
     {
         this.me = me;
-        this.log = logging.getMessagesLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
         cluster.addClusterListener( new HAMClusterListener() );
         heartbeat.addHeartbeatListener( new HAMHeartbeatListener() );
         events.addClusterMemberListener( new HAMClusterMemberListener() );

@@ -19,47 +19,44 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.Commitment;
+import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.StoreApplyEvent;
 
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.CouldNotCommit;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.CouldNotWriteToLog;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.ValidationFailed;
 
 public class TransactionRepresentationCommitProcess implements TransactionCommitProcess
 {
-    private final LogicalTransactionStore logicalTransactionStore;
-    private final TransactionIdStore transactionIdStore;
+    private final TransactionAppender appender;
     private final TransactionRepresentationStoreApplier storeApplier;
     private final IndexUpdatesValidator indexUpdatesValidator;
 
-    public TransactionRepresentationCommitProcess( LogicalTransactionStore logicalTransactionStore,
-            TransactionIdStore transactionIdStore, TransactionRepresentationStoreApplier storeApplier,
-            IndexUpdatesValidator indexUpdatesValidator )
+    public TransactionRepresentationCommitProcess( TransactionAppender appender,
+            TransactionRepresentationStoreApplier storeApplier, IndexUpdatesValidator indexUpdatesValidator )
     {
-        this.logicalTransactionStore = logicalTransactionStore;
-        this.transactionIdStore = transactionIdStore;
+        this.appender = appender;
         this.storeApplier = storeApplier;
         this.indexUpdatesValidator = indexUpdatesValidator;
     }
 
     @Override
     public long commit( TransactionRepresentation transaction, LockGroup locks, CommitEvent commitEvent,
-                        TransactionApplicationMode mode ) throws TransactionFailureException
+            TransactionApplicationMode mode ) throws TransactionFailureException
     {
         try ( ValidatedIndexUpdates indexUpdates = validateIndexUpdates( transaction ) )
         {
-            long transactionId = appendToLog( transaction, commitEvent );
-            applyToStore( transaction, locks, commitEvent, indexUpdates, transactionId, mode );
-            return transactionId;
+            Commitment commitment = appendToLog( transaction, commitEvent );
+            applyToStore( transaction, locks, commitEvent, indexUpdates, commitment, mode );
+            return commitment.transactionId();
         }
     }
 
@@ -76,31 +73,31 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         }
     }
 
-    private long appendToLog(
+    private Commitment appendToLog(
             TransactionRepresentation transaction, CommitEvent commitEvent ) throws TransactionFailureException
     {
-        long transactionId;
+        Commitment commitment;
         try ( LogAppendEvent logAppendEvent = commitEvent.beginLogAppend() )
         {
-            transactionId = logicalTransactionStore.getAppender().append( transaction, logAppendEvent );
+            commitment = appender.append( transaction, logAppendEvent );
         }
-        catch ( Throwable e )
+        catch ( Throwable cause )
         {
-            throw new TransactionFailureException( Status.Transaction.CouldNotWriteToLog, e,
+            throw new TransactionFailureException( CouldNotWriteToLog, cause,
                     "Could not append transaction representation to log" );
         }
-        commitEvent.setTransactionId( transactionId );
-        return transactionId;
+        commitEvent.setTransactionId( commitment.transactionId() );
+        return commitment;
     }
 
     private void applyToStore(
             TransactionRepresentation transaction, LockGroup locks, CommitEvent commitEvent,
-            ValidatedIndexUpdates indexUpdates, long transactionId, TransactionApplicationMode mode )
+            ValidatedIndexUpdates indexUpdates, Commitment commitment, TransactionApplicationMode mode )
             throws TransactionFailureException
     {
         try ( StoreApplyEvent storeApplyEvent = commitEvent.beginStoreApply() )
         {
-            storeApplier.apply( transaction, indexUpdates, locks, transactionId, mode );
+            storeApplier.apply( transaction, indexUpdates, locks, commitment.transactionId(), mode );
         }
         // TODO catch different types of exceptions here, some which are OK
         catch ( Throwable cause )
@@ -110,7 +107,7 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         }
         finally
         {
-            transactionIdStore.transactionClosed( transactionId );
+            commitment.publishAsApplied();
         }
     }
 }

@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -26,11 +32,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -85,8 +86,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
  //       assertTrue( node1.getProperty( key1 ).equals( 1 ) );
         Transaction tx = getTransaction();
         tx.success();
-        tx.finish();
-        clearCache();
+        tx.close();
         tx = getGraphDb().beginTx();
 //        node1.getPropertyKeys().iterator().next();
         assertTrue( node1.getProperty( key1 ).equals( 1 ) );
@@ -187,7 +187,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     private Relationship[] getRelationshipArray(
         Iterable<Relationship> relsIterable )
     {
-        ArrayList<Relationship> relList = new ArrayList<Relationship>();
+        ArrayList<Relationship> relList = new ArrayList<>();
         for ( Relationship rel : relsIterable )
         {
             relList.add( rel );
@@ -258,7 +258,6 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         Relationship relA = nodeA.createRelationshipTo( nodeB, MyRelTypes.TEST );
         nodeA.setProperty( arrayKey, array );
         relA.setProperty( arrayKey, array );
-        clearCache();
         assertTrue( nodeA.getProperty( arrayKey ) != null );
         assertTrue( relA.getProperty( arrayKey ) != null );
         relA.delete();
@@ -277,7 +276,6 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         rel.setProperty( "1", 1 );
         commit();
         newTransaction();
-        clearCache();
         nodeA.createRelationshipTo( nodeB, MyRelTypes.TEST );
         int count = 0;
         for ( Relationship relToB : nodeA.getRelationships( MyRelTypes.TEST ) )
@@ -289,7 +287,6 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         assertEquals( 1, nodeA.getProperty( "1" ) );
         rel.setProperty( "2", 2 );
         assertEquals( 1, rel.getProperty( "1" ) );
-        clearCache();
         // trigger empty load
         getGraphDb().getNodeById( nodeA.getId() );
         getGraphDb().getRelationshipById( rel.getId() );
@@ -322,7 +319,6 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         node.removeProperty( "key2" );
         node.removeProperty( "key3" );
         newTransaction();
-        clearCache();
         assertEquals( "0", node.getProperty( "key0" ) );
         assertEquals( "1", node.getProperty( "key1" ) );
         assertEquals( "4", node.getProperty( "key4" ) );
@@ -347,7 +343,6 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         rel.removeProperty( "key2" );
         rel.removeProperty( "key3" );
         newTransaction();
-        clearCache();
         assertEquals( "0", rel.getProperty( "key0" ) );
         assertEquals( "1", rel.getProperty( "key1" ) );
         assertEquals( "4", rel.getProperty( "key4" ) );
@@ -377,7 +372,6 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
             }
         }
         newTransaction();
-        clearCache();
         Iterable<Relationship> relIterable = toList( node1.getRelationships() );
         Set<Relationship> relSet = new HashSet<>();
         for ( Relationship rel : rels )
@@ -394,10 +388,10 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     @Test
     public void testLowGrabSize()
     {
-        Map<String,String> config = new HashMap<String,String>();
+        Map<String,String> config = new HashMap<>();
         config.put( "relationship_grab_size", "1" );
-        String storePath = getStorePath( "neo2" );
-        deleteFileOrDirectory( storePath );
+        File storeDir = getStorePath( "neo2" );
+        deleteFileOrDirectory( storeDir );
         GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( config ).newGraphDatabase();
 
         Node node1, node2;
@@ -416,28 +410,20 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
             RelationshipType types[] = new RelationshipType[] {
                 MyRelTypes.TEST, MyRelTypes.TEST2, MyRelTypes.TEST_TRAVERSAL };
 
-            clearCache();
             assertEquals( 3, count( node1.getRelationships( types ) ) );
 
-            clearCache();
             assertEquals( 3, count( node1.getRelationships() ) );
 
-            clearCache();
             assertEquals( 3, count( node2.getRelationships( types ) ) );
 
-            clearCache();
             assertEquals( 3, count( node2.getRelationships() ) );
 
-            clearCache();
             assertEquals( 2, count( node1.getRelationships( OUTGOING ) ) );
 
-            clearCache();
             assertEquals( 1, count( node1.getRelationships( INCOMING ) ) );
 
-            clearCache();
             assertEquals( 1, count( node2.getRelationships( OUTGOING ) ) );
 
-            clearCache();
             assertEquals( 2, count( node2.getRelationships( INCOMING ) ) );
 
             tx.success();
@@ -459,10 +445,10 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
 
     private void testLowGrabSize( boolean includeLoops )
     {
-        Map<String, String> config = new HashMap<String, String>();
+        Map<String, String> config = new HashMap<>();
         config.put( "relationship_grab_size", "2" );
-        String storePath = getStorePath( "neo2" );
-        deleteFileOrDirectory( storePath );
+        File storeDir = getStorePath( "neo2" );
+        deleteFileOrDirectory( storeDir );
         GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( config ).newGraphDatabase();
         Transaction tx = graphDb.beginTx();
         Node node1 = graphDb.createNode();
@@ -470,9 +456,9 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         Node node3 = graphDb.createNode();
 
         // These are expected relationships for node2
-        Collection<Relationship> outgoingOriginal = new HashSet<Relationship>();
-        Collection<Relationship> incomingOriginal = new HashSet<Relationship>();
-        Collection<Relationship> loopsOriginal = new HashSet<Relationship>();
+        Collection<Relationship> outgoingOriginal = new HashSet<>();
+        Collection<Relationship> incomingOriginal = new HashSet<>();
+        Collection<Relationship> loopsOriginal = new HashSet<>();
 
         int total = 0;
         int totalOneDirection = 0;
@@ -499,15 +485,14 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
             totalOneDirection++;
         }
         tx.success();
-        tx.finish();
+        tx.close();
 
         tx = graphDb.beginTx();
-        Set<Relationship> rels = new HashSet<Relationship>();
-        clearCache();
+        Set<Relationship> rels = new HashSet<>();
 
-        Collection<Relationship> outgoing = new HashSet<Relationship>( outgoingOriginal );
-        Collection<Relationship> incoming = new HashSet<Relationship>( incomingOriginal );
-        Collection<Relationship> loops = new HashSet<Relationship>( loopsOriginal );
+        Collection<Relationship> outgoing = new HashSet<>( outgoingOriginal );
+        Collection<Relationship> incoming = new HashSet<>( incomingOriginal );
+        Collection<Relationship> loops = new HashSet<>( loopsOriginal );
         for ( Relationship rel : node2.getRelationships( MyRelTypes.TEST ) )
         {
             assertTrue( rels.add( rel ) );
@@ -530,10 +515,9 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         assertEquals( 0, outgoing.size() );
         rels.clear();
 
-        clearCache();
-        outgoing = new HashSet<Relationship>( outgoingOriginal );
-        incoming = new HashSet<Relationship>( incomingOriginal );
-        loops = new HashSet<Relationship>( loopsOriginal );
+        outgoing = new HashSet<>( outgoingOriginal );
+        incoming = new HashSet<>( incomingOriginal );
+        loops = new HashSet<>( loopsOriginal );
         for ( Relationship rel : node2.getRelationships( Direction.OUTGOING ) )
         {
             assertTrue( rels.add( rel ) );
@@ -555,10 +539,9 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         assertEquals( 0, outgoing.size() );
         rels.clear();
 
-        clearCache();
-        outgoing = new HashSet<Relationship>( outgoingOriginal );
-        incoming = new HashSet<Relationship>( incomingOriginal );
-        loops = new HashSet<Relationship>( loopsOriginal );
+        outgoing = new HashSet<>( outgoingOriginal );
+        incoming = new HashSet<>( incomingOriginal );
+        loops = new HashSet<>( loopsOriginal );
         for ( Relationship rel : node2.getRelationships( Direction.INCOMING ) )
         {
             assertTrue( rels.add( rel ) );
@@ -581,7 +564,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         rels.clear();
 
         tx.success();
-        tx.finish();
+        tx.close();
         graphDb.shutdown();
     }
 }

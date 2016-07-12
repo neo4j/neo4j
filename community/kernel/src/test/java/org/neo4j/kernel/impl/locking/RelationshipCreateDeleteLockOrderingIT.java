@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.MyRelTypes;
@@ -30,6 +31,7 @@ import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.Race;
 import org.neo4j.test.RandomRule;
+
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -74,7 +76,7 @@ public class RelationshipCreateDeleteLockOrderingIT
                             {
                                 relationship.delete();
                             }
-                            catch ( IllegalStateException e )
+                            catch ( NotFoundException e )
                             {
                                 // This is OK and expected since there are multiple threads deleting
                                 assertTrue( e.getMessage().contains( "already deleted" ) );

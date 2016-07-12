@@ -1,6 +1,5 @@
 [[tutorials-java-embedded]]
-Using Neo4j embedded in Java applications
-=========================================
+= Using Neo4j embedded in Java applications
 
 It's easy to use Neo4j embedded in Java applications.
 In this chapter you will find everything needed -- from setting up the environment to doing something useful with your data.
@@ -28,6 +27,10 @@ include::index-users.asciidoc[]
 :leveloffset: 2
 
 include::resource-iteration.asciidoc[]
+
+:leveloffset: 2
+
+include::logging.asciidoc[]
 
 :leveloffset: 2
 
@@ -64,7 +67,3 @@ include::unique-nodes.asciidoc[]
 :leveloffset: 2
 
 include::terminate-tx.asciidoc[]
-
-
-
-

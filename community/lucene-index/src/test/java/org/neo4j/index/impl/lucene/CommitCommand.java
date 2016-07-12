@@ -27,7 +27,7 @@ public class CommitCommand implements WorkerCommand<CommandState, Void>
     public Void doWork( CommandState state )
     {
         state.tx.success();
-        state.tx.finish();
+        state.tx.close();
         return null;
     }
 }

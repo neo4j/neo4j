@@ -22,35 +22,23 @@ package org.neo4j.harness.internal;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
-import javax.ws.rs.core.MediaType;
-
-import org.codehaus.jackson.JsonNode;
-
+import org.neo4j.function.Function;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.JsonParseException;
-
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientRequest;
-import com.sun.jersey.api.client.ClientResponse;
-
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
 /**
  * Manages user-defined cypher fixtures that can be exercised against the server.
  */
 public class Fixtures
 {
-    private static final String TX_COMMIT_ENDPOINT = "/db/data/transaction/commit";
-
     private final List<String> fixtureStatements = new LinkedList<>();
+    private final List<Function<GraphDatabaseService, Void>> fixtureFunctions = new LinkedList<>();
+
     private final String cypherSuffix = "cyp";
 
     private final FileFilter cypherFileOrDirectoryFilter = new FileFilter()
@@ -96,45 +84,26 @@ public class Fixtures
         }
     }
 
-    public void applyTo( URI serverBaseURI )
+
+    public void add( Function<GraphDatabaseService,Void> fixtureFunction )
     {
-        if(fixtureStatements.size() > 0)
-        {
-            Client client = new Client();
-            ClientRequest req = ClientRequest.create()
-                    .accept( MediaType.APPLICATION_JSON )
-                    .entity( createJsonFrom( map( "statements", statementPayload() ) ),
-                            MediaType.APPLICATION_JSON_TYPE )
-                    .build( serverBaseURI.resolve( TX_COMMIT_ENDPOINT ), "POST" );
-            ClientResponse response = client.handle( req );
-            ensureInstallSuccessful( response );
-        }
+        fixtureFunctions.add( fixtureFunction );
     }
 
-    private void ensureInstallSuccessful( ClientResponse response )
+    public void applyTo( InProcessServerControls controls )
     {
-        String entity = response.getEntity( String.class );
-        try
-        {
-            JsonNode errors = JsonHelper.jsonNode( entity ).get("errors");
-            if(errors.size() > 0)
-            {
-                throw new RuntimeException( "Failed to install fixtures: " + errors.get(0).get("message").asText() );
-            }
-        }
-        catch ( JsonParseException e )
-        {
-            throw new RuntimeException( "Fatal, server returned an invalid response, '"+e.getMessage()+"': " + entity );
-        }
-    }
-
-    private List<Map<String, Object>> statementPayload()
-    {
-        List<Map<String,Object>> statements = new LinkedList<>();
+        GraphDatabaseService db = controls.graph();
         for ( String fixtureStatement : fixtureStatements )
         {
-            statements.add(map("statement", fixtureStatement));
+            try( Transaction tx = db.beginTx() )
+            {
+                db.execute( fixtureStatement );
+                tx.success();
+            }
         }
-        return statements;
+        for ( Function<GraphDatabaseService, Void> fixtureFunction : fixtureFunctions )
+        {
+            fixtureFunction.apply( db );
+        }
     }
 }

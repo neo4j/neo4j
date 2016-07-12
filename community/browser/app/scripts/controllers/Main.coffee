@@ -34,16 +34,17 @@ angular.module('neo4jApp.controllers')
       'UsageDataCollectionService'
       'Utils'
       ($scope, $window, Server, Frame, AuthService, ConnectionStatusService, Settings, motdService, UDC, Utils) ->
-        refresh = ->
+        $scope.kernel = {}
+        $scope.refresh = ->
           return '' if $scope.unauthorized || $scope.offline
 
-          $scope.labels = Server.labels()
-          $scope.relationships = Server.relationships()
-          $scope.propertyKeys = Server.propertyKeys()
-          $scope.server = Server.info()
-          $scope.version = Server.version()
+          $scope.labels = Server.labels $scope.labels
+          $scope.relationships = Server.relationships $scope.relationships
+          $scope.propertyKeys = Server.propertyKeys $scope.propertyKeys
+          $scope.server = Server.info $scope.server
+          $scope.version = Server.version $scope.version
           $scope.host = $window.location.host
-          $scope.kernel = {}
+
           # gather info from jmx
           Server.jmx(
             [
@@ -57,12 +58,28 @@ angular.module('neo4jApp.controllers')
               UDC.set('store_id',   $scope.kernel['StoreId'])
               UDC.set('neo4j_version', $scope.server.neo4j_version)
               refreshPolicies $scope.kernel['dbms.browser.store_credentials'], $scope.kernel['dbms.browser.credential_timeout']
+              allow_connections = [no, 'false', 'no'].indexOf($scope.kernel['dbms.security.allow_outgoing_browser_connections']) < 0 ? yes : no
+              refreshAllowOutgoingConnections allow_connections
             ).error((r)-> $scope.kernel = {})
+
+        refreshAllowOutgoingConnections = (allow_connections) ->
+          return unless $scope.neo4j.config.allow_outgoing_browser_connections != allow_connections
+          allow_connections = if $scope.neo4j.enterpriseEdition then allow_connections else yes
+          mapServerConfig 'allow_outgoing_browser_connections', allow_connections
+          if allow_connections 
+            $scope.motd.refresh()
+            UDC.loadUDC()
+          else if not allow_connections
+            UDC.unloadUDC()
 
         refreshPolicies = (storeCredentials = yes, credentialTimeout = 0) ->
           storeCredentials = [no, 'false', 'no'].indexOf(storeCredentials) < 0 ? yes : no
           credentialTimeout = Utils.parseTimeMillis(credentialTimeout) / 1000
           ConnectionStatusService.setAuthPolicies {storeCredentials, credentialTimeout}
+
+        mapServerConfig = (key, val) ->
+          return unless $scope.neo4j.config[key] != val
+          $scope.neo4j.config[key] = val
 
         $scope.identity = angular.identity
 
@@ -75,8 +92,9 @@ angular.module('neo4jApp.controllers')
             url: "http://www.gnu.org/licenses/gpl.html"
             edition: 'community'
             enterpriseEdition: no
+        $scope.neo4j.config = {}
 
-        $scope.$on 'db:changed:labels', refresh
+        $scope.$on 'db:changed:labels', $scope.refresh
 
         $scope.today = Date.now()
         $scope.cmdchar = Settings.cmdchar
@@ -87,13 +105,9 @@ angular.module('neo4jApp.controllers')
         $scope.$watch 'offline', (serverIsOffline) ->
           if (serverIsOffline?)
             if not serverIsOffline
-              refresh()
               UDC.ping("connect")
             else
               $scope.errorMessage = motdService.pickRandomlyFromChoiceName('disconnected')
-
-        $scope.$watch 'unauthorized', (isUnauthorized) ->
-          refresh()
 
         $scope.$on 'auth:status_updated', (e, is_connected) ->
           $scope.check()
@@ -125,8 +139,6 @@ angular.module('neo4jApp.controllers')
 
           if val.version then $scope.motd.setCallToActionVersion(val.version)
         , true
-
-        refresh()
     ]
 
   .run([

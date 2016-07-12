@@ -27,8 +27,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.function.Predicate;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
@@ -45,7 +45,7 @@ class ClusterState
     public static final Predicate<ClusterInstance> HAS_TIMEOUTS = new Predicate<ClusterInstance>()
     {
         @Override
-        public boolean accept( ClusterInstance item )
+        public boolean test( ClusterInstance item )
         {
             return item.hasPendingTimeouts();
         }

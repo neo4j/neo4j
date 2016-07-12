@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -32,10 +36,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -51,15 +51,13 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.store.SchemaStorage;
-import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -273,7 +271,7 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.instance();
+            Statement statement = bridge.get();
             statement.dataWriteOperations().nodeDelete( nodeId );
             tx.success();
         }
@@ -283,7 +281,7 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.instance();
+            Statement statement = bridge.get();
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKeyName );
             statement.dataWriteOperations().nodeSetProperty( nodeId, Property.property( propertyKeyId, newValue ) );
             tx.success();
@@ -294,7 +292,7 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.instance();
+            Statement statement = bridge.get();
             for ( String name : NAMES )
             {
                 long nodeId = createNode( statement, "Person", "name", name );
@@ -369,7 +367,7 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.instance();
+            Statement statement = bridge.get();
             statement.schemaWriteOperations().indexDrop( index );
             tx.success();
         }
@@ -380,7 +378,7 @@ public class IndexStatisticsTest
         return ((GraphDatabaseAPI) db).getDependencyResolver()
                                       .resolveDependency( NeoStoreDataSource.class )
                                       .getIndexService()
-                                      .indexUpdatesAndSize( indexId( descriptor ) ).readSecond();
+                                      .indexUpdatesAndSize( descriptor ).readSecond();
     }
 
     private long indexUpdates( IndexDescriptor descriptor ) throws KernelException
@@ -388,23 +386,14 @@ public class IndexStatisticsTest
         return ((GraphDatabaseAPI) db).getDependencyResolver()
                                       .resolveDependency( NeoStoreDataSource.class )
                                       .getIndexService()
-                                      .indexUpdatesAndSize( indexId( descriptor ) ).readFirst();
-    }
-
-    private long indexId( IndexDescriptor descriptor )
-    {
-        SchemaStore schemaStore = ((GraphDatabaseAPI) db).getDependencyResolver()
-                                                         .resolveDependency( NeoStore.class )
-                                                         .getSchemaStore();
-        SchemaStorage schemaStorage = new SchemaStorage( schemaStore );
-        return schemaStorage.indexRule( descriptor.getLabelId(), descriptor.getPropertyKeyId() ).getId();
+                                      .indexUpdatesAndSize( descriptor ).readFirst();
     }
 
     private double indexSelectivity( IndexDescriptor descriptor ) throws KernelException
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.instance();
+            Statement statement = bridge.get();
             double selectivity = statement.readOperations().indexUniqueValuesSelectivity( descriptor );
             tx.success();
             return selectivity;
@@ -413,14 +402,14 @@ public class IndexStatisticsTest
 
     private CountsTracker getTracker()
     {
-        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NeoStore.class ).getCounts();
+        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
     }
 
     private void createSomePersons() throws KernelException
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.instance();
+            Statement statement = bridge.get();
             createNode( statement, "Person", "name", "Davide" );
             createNode( statement, "Person", "name", "Stefan" );
             createNode( statement, "Person", "name", "John" );
@@ -444,7 +433,7 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.instance();
+            Statement statement = bridge.get();
             int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( labelName );
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKeyName );
             IndexDescriptor index = statement.schemaWriteOperations().indexCreate( labelId, propertyKeyId );
@@ -461,7 +450,7 @@ public class IndexStatisticsTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Statement statement = bridge.instance();
+                Statement statement = bridge.get();
                 switch ( statement.readOperations().indexGetState( index ) )
                 {
                 case ONLINE:
@@ -642,7 +631,7 @@ public class IndexStatisticsTest
     private static final double DOUBLE_ERROR_TOLERANCE = 0.00001d;
 
     @Rule
-    public DatabaseRule dbRule = new ImpermanentDatabaseRule()
+    public DatabaseRule dbRule = new EmbeddedDatabaseRule()
     {
         @Override
         protected void configure( GraphDatabaseBuilder builder )

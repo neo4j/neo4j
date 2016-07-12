@@ -19,39 +19,47 @@
  */
 package org.neo4j.kernel.ha.transaction;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.function.Supplier;
 import org.neo4j.kernel.impl.core.LastTxIdGetter;
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 
 public class OnDiskLastTxIdGetter implements LastTxIdGetter
 {
-    private final GraphDatabaseAPI graphdb;
+    private final Supplier<NeoStores> neoStoresSupplier;
 
-    public OnDiskLastTxIdGetter( GraphDatabaseAPI graphdb )
+    public OnDiskLastTxIdGetter( Supplier<NeoStores> neoStoresSupplier )
     {
-        this.graphdb = graphdb;
+        this.neoStoresSupplier = neoStoresSupplier;
     }
 
+    /* This method is used to construct credentials for election process.
+     And can be invoked at any moment of instance lifecycle.
+     It mean that its possible that we will be invoked when neo stores are stopped
+     (for example while we copy store) in that case we will return TransactionIdStore.BASE_TX_ID */
     @Override
     public long getLastTxId()
     {
-        TransactionIdStore neoStore = getNeoStore();
-        return neoStore.getLastCommittedTransactionId();
+        try
+        {
+            TransactionIdStore neoStore = getNeoStores().getMetaDataStore();
+            return neoStore.getLastCommittedTransactionId();
+        }
+        catch ( Throwable e )
+        {
+            return TransactionIdStore.BASE_TX_ID;
+        }
     }
 
-    private NeoStore getNeoStore()
+    private NeoStores getNeoStores()
     {
-        // Note that it is important that we resolve the NeoStore dependency anew every
+        // Note that it is important that we resolve the NeoStores dependency anew every
         // time we want to read the last transaction id.
         // The reason is that a mode switch can stop and restart the database innards,
-        // leaving us with a stale NeoStore, not connected to a working page cache,
+        // leaving us with a stale NeoStores, not connected to a working page cache,
         // if we cache it.
         // We avoid this problem by simply not caching it, and instead looking it up
         // every time.
-        NeoStoreProvider neoStoreProvider =
-                graphdb.getDependencyResolver().resolveDependency( NeoStoreProvider.class );
-        return neoStoreProvider.evaluate();
+        return neoStoresSupplier.get();
     }
 }

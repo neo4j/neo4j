@@ -59,12 +59,10 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
-import static junit.framework.TestCase.assertNull;
-import static org.junit.Assert.assertEquals;
-
 import static java.lang.reflect.Modifier.isAbstract;
 import static java.util.Arrays.asList;
-
+import static junit.framework.TestCase.assertNull;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 
 /**

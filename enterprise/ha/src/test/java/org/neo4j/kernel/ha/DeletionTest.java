@@ -19,18 +19,18 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.junit.Assert.assertNotNull;
-
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
-
-import org.junit.After;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.ha.ClusterManager;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
+import org.neo4j.test.ha.ClusterRule;
+
+import static org.junit.Assert.assertNotNull;
+
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
 /**
  * Test for a regression:
@@ -54,70 +54,41 @@ import org.neo4j.test.TargetDirectory;
  */
 public class DeletionTest
 {
-    private ClusterManager clusterManager;
-
-    @After
-    public void after() throws Throwable
-    {
-        if ( clusterManager != null )
-        {
-            clusterManager.stop();
-            clusterManager = null;
-        }
-    }
+    @ClassRule
+    public static ClusterRule clusterRule = new ClusterRule( DeletionTest.class )
+            .withProvider( clusterOfSize( 2 ) );
 
     /**
      * The problem would manifest even if the transaction was performed on the Master, it would then occur when the
      * Slave pulls updates and tries to apply the transaction. The reason for the test to run transactions against the
      * Slave is because it makes guarantees for when the master has to apply the transaction.
      */
-//    @Test
+    @Test
     public void shouldDeleteRecords() throws Throwable
     {
         // given
-        clusterManager = new ClusterManager( clusterOfSize( 2 ), TargetDirectory.forTest( getClass() ).cleanDirectory(
-                "deleteRecords" ), stringMap() );
-        clusterManager.start();
-        ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
+        ManagedCluster cluster = clusterRule.startCluster();
 
-        cluster.await( ClusterManager.allSeesAllAsAvailable() );
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
 
         Relationship rel;
-        Transaction tx = slave.beginTx();
-        try
+        try ( Transaction tx = slave.beginTx() )
         {
             rel = slave.createNode().createRelationshipTo( slave.createNode(), withName( "FOO" ) );
-
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
 
-        Transaction transaction = master.beginTx();
-        try
+        try ( Transaction transaction = master.beginTx() )
         {
             assertNotNull( master.getRelationshipById( rel.getId() ) );
         }
-        finally
-        {
-            transaction.finish();
-        }
 
         // when
-        tx = slave.beginTx();
-        try
+        try ( Transaction tx = slave.beginTx() )
         {
             rel.delete();
-
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
 
         // then - there should have been no exceptions

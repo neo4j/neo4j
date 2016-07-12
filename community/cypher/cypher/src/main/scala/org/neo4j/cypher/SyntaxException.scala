@@ -22,9 +22,11 @@ package org.neo4j.cypher
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.kernel.api.exceptions.Status
 
-class SyntaxException(message: String, val query:String,  val offset: Option[Int]) extends CypherException(message, null) {
-  def this(message: String, query:String, offset: Int) = this(message,query,Some(offset))
-  def this(message:String) = this(message,"",None)
+class SyntaxException(message: String, val query:String,  val offset: Option[Int], cause: Throwable) extends CypherException(message, cause) {
+  def this(message: String, query:String, offset: Option[Int]) = this(message,query,offset,null)
+  def this(message: String, query:String, offset: Int) = this(message,query,Some(offset),null)
+  def this(message:String, cause: Throwable) = this(message,"",None, cause)
+  def this(message:String) = this(message,"",None,null)
 
   override def toString = offset match {
     case Some(idx) =>message + "\n" + findErrorLine(idx, query.split('\n').toList)

@@ -77,7 +77,7 @@ module.exports = (grunt) ->
         files: ["test/spec/{,*/}*.coffee"]
         tasks: ["coffee:test"]
       stylus:
-        files: 'app/styles/*.styl',
+        files: 'app/styles/**/*.styl',
         tasks: ["stylus"]
       livereload:
         files: ["<%= yeoman.app %>/{,*/}*.html", "{.tmp,<%= yeoman.app %>}/styles/{,*/}*.css", "{.tmp,<%= yeoman.app %>}/scripts/{,*/}*.js", "<%= yeoman.app %>/images/{,*/}*.{png,jpg,jpeg,gif,webp,svg}"]
@@ -189,7 +189,10 @@ module.exports = (grunt) ->
     stylus:
       compile:
         files:
-          '<%= yeoman.app %>/styles/main.css': ['<%= yeoman.app %>/styles/*.styl']
+          '<%= yeoman.app %>/styles/main.css': [
+            '<%= yeoman.app %>/styles/*.styl',
+            '<%= yeoman.app %>/styles/themes/*.styl'
+          ]
       options:
         paths: ["<%= yeoman.app %>/vendor/foundation", "<%= yeoman.app %>/images"]
 
@@ -274,7 +277,7 @@ module.exports = (grunt) ->
             dot: true
             cwd: "<%= yeoman.app %>"
             dest: "<%= yeoman.dist %>/fonts"
-            src: ["components/**/*.{otf,woff,ttf,svg}"]
+            src: ["components/**/*.{otf,woff,woff2,ttf,svg}"]
         }]
     shell:
       dirListing:

@@ -19,10 +19,15 @@
  */
 package org.neo4j.helpers;
 
-/** Utility functions that are helpful for suppressing compiler warnings. */
+/**
+ * Utility functions that are helpful for suppressing compiler warnings.
+ *
+ * @deprecated This class will be removed in the next major release.
+ */
+@Deprecated
 public class SillyUtils
 {
-    public static void ignore( @SuppressWarnings("unused") Object value )
+    public static void ignore( @SuppressWarnings( "unused" ) Object value )
     {
         // do nothing
     }

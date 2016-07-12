@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_3.CostBasedPlannerName
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.GraphDatabaseAPI
@@ -28,22 +29,39 @@ import org.neo4j.test.TestGraphDatabaseFactory
 
 class ExecutionEngineIT extends CypherFunSuite {
 
-  test("should use smart/conservative by default in 2.2") {
-   //given
+  test("by default when using cypher 2.2 some queries should default to COST") {
+    //given
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.2").newGraphDatabase()
 
     //when
-    val plan1 = db.execute("PROFILE MATCH (a) RETURN a").getExecutionPlanDescription
-    val plan2 = db.execute("PROFILE MATCH (a)-[:T*]-(a) RETURN a").getExecutionPlanDescription
+    val plan1 = db.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
+    val plan2 = db.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
 
     //then
     plan1.getArguments.get("planner") should equal("COST")
     plan2.getArguments.get("planner") should equal("COST")
   }
 
-  test("should be able to set RULE as default in 2.2") {
+  test("by default when using cypher 2.3 some queries should default to COST") {
+    //given
+    val db = new TestGraphDatabaseFactory()
+      .newImpermanentDatabaseBuilder()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3").newGraphDatabase()
+
+    //when
+    val plan1 = db.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
+    val plan2 = db.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
+
+    //then
+    plan1.getArguments.get("planner") should equal("COST")
+    plan1.getArguments.get("planner-impl") should equal(CostBasedPlannerName.default.name)
+    plan2.getArguments.get("planner") should equal("COST")
+    plan2.getArguments.get("planner-impl") should equal(CostBasedPlannerName.default.name)
+  }
+
+  test("should be able to set RULE as default when using cypher 2.2") {
     //given
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
@@ -51,13 +69,28 @@ class ExecutionEngineIT extends CypherFunSuite {
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.2").newGraphDatabase()
 
     //when
-    val plan = db.execute("PROFILE MATCH (a) RETURN a").getExecutionPlanDescription
+    val plan = db.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
 
     //then
     plan.getArguments.get("planner") should equal("RULE")
   }
 
-  test("should be able to force COST as default in 2.2") {
+  test("should be able to set RULE as default when using cypher 2.3") {
+    //given
+    val db = new TestGraphDatabaseFactory()
+      .newImpermanentDatabaseBuilder()
+      .setConfig(GraphDatabaseSettings.cypher_planner, "RULE")
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3").newGraphDatabase()
+
+    //when
+    val plan = db.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
+
+    //then
+    plan.getArguments.get("planner") should equal("RULE")
+    plan.getArguments.get("planner-impl") should equal("RULE")
+  }
+
+  test("should be able to force COST as default when using cypher 2.2") {
     //given
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
@@ -65,23 +98,26 @@ class ExecutionEngineIT extends CypherFunSuite {
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.2").newGraphDatabase()
 
     //when
-    val plan = db.execute("PROFILE MATCH (a)-[:T*]-(a) RETURN a").getExecutionPlanDescription
+    val plan = db.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
 
     //then
     plan.getArguments.get("planner") should equal("COST")
   }
 
-  test("should throw error if using COST for older versions") {
+
+  test("should be able to force COST as default when using cypher 2.3") {
     //given
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.0").newGraphDatabase()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3").newGraphDatabase()
 
-    // when-then
-    an [Exception] should be thrownBy {
-      db.execute("PROFILE MATCH (a)-[:T*]-(a) RETURN a").getExecutionPlanDescription
-    }
+    //when
+    val plan = db.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
+
+    //then
+    plan.getArguments.get("planner") should equal("COST")
+    plan.getArguments.get("planner-impl") should equal("IDP")
   }
 
   test("should work if query cache size is set to zero") {
@@ -167,6 +203,14 @@ class ExecutionEngineIT extends CypherFunSuite {
     engine.execute("explain return 1").javaIterator.close()
     // then
     txBridge(db).hasTransaction shouldBe false
+  }
+
+  private implicit class RichDb(db: GraphDatabaseService) {
+    def planDescriptionForQuery(query: String) = {
+      val res = db.execute(query)
+      res.resultAsString()
+      res.getExecutionPlanDescription
+    }
   }
 
   private def txBridge(db: GraphDatabaseService) = {

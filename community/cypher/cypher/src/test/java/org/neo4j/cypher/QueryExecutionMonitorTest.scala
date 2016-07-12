@@ -21,22 +21,18 @@ package org.neo4j.cypher
 
 import java.util.Collections
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.mockito.Mockito._
+import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QueryEngineProvider}
+import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionMonitor}
 import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.test.TestGraphDatabaseFactory
-import org.mockito.Mockito._
 
 class QueryExecutionMonitorTest extends CypherFunSuite {
 
   test("monitor is not called if iterator not exhausted") {
     // given
-    val graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    val monitor = mock[QueryExecutionMonitor]
-    monitors(graph).addMonitorListener(monitor)
-    val engine = new ExecutionEngine(graph)
     val session = QueryEngineProvider.embeddedSession()
 
     // when
@@ -49,10 +45,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
 
   test("monitor is called when exhausted") {
     // given
-    val graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    val monitor = mock[QueryExecutionMonitor]
-    monitors(graph).addMonitorListener(monitor)
-    val engine = new ExecutionEngine(graph)
     val session = QueryEngineProvider.embeddedSession()
 
     // when
@@ -69,10 +61,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
 
   test("monitor is called directly when return is empty") {
     // given
-    val graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    val monitor = mock[QueryExecutionMonitor]
-    monitors(graph).addMonitorListener(monitor)
-    val engine = new ExecutionEngine(graph)
     val session = QueryEngineProvider.embeddedSession()
 
     // when
@@ -85,10 +73,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
 
   test("monitor really not called until result is exhausted") {
     // given
-    val graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    val monitor = mock[QueryExecutionMonitor]
-    monitors(graph).addMonitorListener(monitor)
-    val engine = new ExecutionEngine(graph)
     val session = QueryEngineProvider.embeddedSession()
 
     // when
@@ -105,7 +89,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
 
   test("nothing breaks when no monitor is there") {
     // given
-    val graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
     val engine = new ExecutionEngine(graph)
     val session = QueryEngineProvider.embeddedSession()
 
@@ -115,10 +98,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
 
   test("monitor is called when iterator closes") {
     // given
-    val graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    val monitor = mock[QueryExecutionMonitor]
-    monitors(graph).addMonitorListener(monitor)
-    val engine = new ExecutionEngine(graph)
     val session = QueryEngineProvider.embeddedSession()
 
     // when
@@ -131,10 +110,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
 
   test("monitor is called when next on empty iterator") {
     // given
-    val graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    val monitor = mock[QueryExecutionMonitor]
-    monitors(graph).addMonitorListener(monitor)
-    val engine = new ExecutionEngine(graph)
     val session = QueryEngineProvider.embeddedSession()
 
     // when
@@ -156,10 +131,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
 
   test("check so that profile triggers monitor") {
     // given
-    val graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    val monitor = mock[QueryExecutionMonitor]
-    monitors(graph).addMonitorListener(monitor)
-    val engine = new ExecutionEngine(graph)
     val session = QueryEngineProvider.embeddedSession()
 
     // when
@@ -174,19 +145,15 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
     verify(monitor, times(1)).endSuccess(session)
   }
 
-  test("triggering monitor in 2.1") {
+  test("triggering monitor in 2.2") {
     // given
-    val graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    val monitor = mock[QueryExecutionMonitor]
-    monitors(graph).addMonitorListener(monitor)
-    val engine = new ExecutionEngine(graph)
     val session = QueryEngineProvider.embeddedSession()
 
     // when
-    val result = engine.profile("CYPHER 2.1 RETURN [1, 2, 3, 4, 5]", Map.empty[String, Any], session).javaIterator
+    val result = engine.profile("CYPHER 2.2 RETURN [1, 2, 3, 4, 5]", Map.empty[String, Any], session).javaIterator
 
     //then
-    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.1 RETURN [1, 2, 3, 4, 5]", Collections.emptyMap())
+    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.2 RETURN [1, 2, 3, 4, 5]", Collections.emptyMap())
     while (result.hasNext) {
       verify(monitor, never).endSuccess(session)
       result.next()
@@ -194,32 +161,24 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
     verify(monitor, times(1)).endSuccess(session)
   }
 
-  test("monitor is called when iterator closes in 2.1") {
+  test("monitor is called when iterator closes in 2.2") {
     // given
-    val graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    val monitor = mock[QueryExecutionMonitor]
-    monitors(graph).addMonitorListener(monitor)
-    val engine = new ExecutionEngine(graph)
     val session = QueryEngineProvider.embeddedSession()
 
     // when
-    val result = engine.execute("CYPHER 2.1 RETURN 42", Map.empty[String, Any], session).javaIterator.close()
+    val result = engine.execute("CYPHER 2.2 RETURN 42", Map.empty[String, Any], session).javaIterator.close()
 
     // then
-    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.1 RETURN 42", Collections.emptyMap())
+    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.2 RETURN 42", Collections.emptyMap())
     verify(monitor, times(1)).endSuccess(session)
   }
 
-  test("monitor is called when next on empty iterator in 2.1") {
+  test("monitor is called when next on empty iterator in 2.2") {
     // given
-    val graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    val monitor = mock[QueryExecutionMonitor]
-    monitors(graph).addMonitorListener(monitor)
-    val engine = new ExecutionEngine(graph)
     val session = QueryEngineProvider.embeddedSession()
 
     // when
-    val iterator = engine.execute("CYPHER 2.1 RETURN 42", Map.empty[String, Any], session).javaIterator
+    val iterator = engine.execute("CYPHER 2.2 RETURN 42", Map.empty[String, Any], session).javaIterator
     iterator.next()
     var throwable: Throwable = null
     try {
@@ -231,109 +190,24 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
     }
 
     // then
-    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.1 RETURN 42", Collections.emptyMap())
+    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.2 RETURN 42", Collections.emptyMap())
     verify(monitor, times(1)).endFailure(session, throwable)
   }
 
-  test("monitor is called directly when return is empty in 2.1 ") {
+  test("monitor is called directly when return is empty in 2.2") {
     // given
-    val graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    val monitor = mock[QueryExecutionMonitor]
-    monitors(graph).addMonitorListener(monitor)
-    val engine = new ExecutionEngine(graph)
     val session = QueryEngineProvider.embeddedSession()
 
     // when
-    val result = engine.execute("CYPHER 2.1 CREATE()", Map.empty[String, Any], session).javaIterator
+    val result = engine.execute("CYPHER 2.2 CREATE()", Map.empty[String, Any], session).javaIterator
 
     // then
-    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.1 CREATE()", Collections.emptyMap())
-    verify(monitor, times(1)).endSuccess(session)
-  }
-
-  test("triggering monitor in 2.0") {
-    // given
-    val graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    val monitor = mock[QueryExecutionMonitor]
-    monitors(graph).addMonitorListener(monitor)
-    val engine = new ExecutionEngine(graph)
-    val session = QueryEngineProvider.embeddedSession()
-
-    // when
-    val result = engine.profile("CYPHER 2.0 RETURN [1, 2, 3, 4, 5]", Map.empty[String, Any], session).javaIterator
-
-    //then
-    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.0 RETURN [1, 2, 3, 4, 5]", Collections.emptyMap())
-    while (result.hasNext) {
-      verify(monitor, never).endSuccess(session)
-      result.next()
-    }
-    verify(monitor, times(1)).endSuccess(session)
-  }
-
-  test("monitor is called when iterator closes in 2.0") {
-    // given
-    val graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    val monitor = mock[QueryExecutionMonitor]
-    monitors(graph).addMonitorListener(monitor)
-    val engine = new ExecutionEngine(graph)
-    val session = QueryEngineProvider.embeddedSession()
-
-    // when
-    val result = engine.execute("CYPHER 2.0 RETURN 42", Map.empty[String, Any], session).javaIterator.close()
-
-    // then
-    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.0 RETURN 42", Collections.emptyMap())
-    verify(monitor, times(1)).endSuccess(session)
-  }
-
-  test("monitor is called when next on empty iterator in 2.0") {
-    // given
-    val graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    val monitor = mock[QueryExecutionMonitor]
-    monitors(graph).addMonitorListener(monitor)
-    val engine = new ExecutionEngine(graph)
-    val session = QueryEngineProvider.embeddedSession()
-
-    // when
-    val iterator = engine.execute("CYPHER 2.0 RETURN 42", Map.empty[String, Any], session).javaIterator
-    iterator.next()
-    var throwable: Throwable = null
-    try {
-      iterator.next()
-      fail("we expect an exception here")
-    }
-    catch {
-      case e: Throwable => throwable = e
-    }
-
-    // then
-    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.0 RETURN 42", Collections.emptyMap())
-    verify(monitor, times(1)).endFailure(session, throwable)
-  }
-
-  test("monitor is called directly when return is empty in 2.0 ") {
-    // given
-    val graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    val monitor = mock[QueryExecutionMonitor]
-    monitors(graph).addMonitorListener(monitor)
-    val engine = new ExecutionEngine(graph)
-    val session = QueryEngineProvider.embeddedSession()
-
-    // when
-    val result = engine.execute("CYPHER 2.0 CREATE()", Map.empty[String, Any], session).javaIterator
-
-    // then
-    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.0 CREATE()", Collections.emptyMap())
+    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.2 CREATE()", Collections.emptyMap())
     verify(monitor, times(1)).endSuccess(session)
   }
 
   test("triggering monitor in 1.9") {
     // given
-    val graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    val monitor = mock[QueryExecutionMonitor]
-    monitors(graph).addMonitorListener(monitor)
-    val engine = new ExecutionEngine(graph)
     val session = QueryEngineProvider.embeddedSession()
 
     // when
@@ -350,10 +224,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
 
   test("monitor is called when iterator closes in 1.9") {
     // given
-    val graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    val monitor = mock[QueryExecutionMonitor]
-    monitors(graph).addMonitorListener(monitor)
-    val engine = new ExecutionEngine(graph)
     val session = QueryEngineProvider.embeddedSession()
 
     // when
@@ -366,10 +236,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
 
   test("monitor is called when next on empty iterator in 1.9") {
     // given
-    val graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    val monitor = mock[QueryExecutionMonitor]
-    monitors(graph).addMonitorListener(monitor)
-    val engine = new ExecutionEngine(graph)
     val session = QueryEngineProvider.embeddedSession()
 
     // when
@@ -391,10 +257,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
 
   test("monitor is called directly when return is empty in 1.9 ") {
     // given
-    val graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    val monitor = mock[QueryExecutionMonitor]
-    monitors(graph).addMonitorListener(monitor)
-    val engine = new ExecutionEngine(graph)
     val session = QueryEngineProvider.embeddedSession()
 
     // when
@@ -403,6 +265,23 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
     // then
     verify(monitor, times(1)).startQueryExecution(session, "CYPHER 1.9 CREATE()", Collections.emptyMap())
     verify(monitor, times(1)).endSuccess(session)
+  }
+
+  var graph: GraphDatabaseService = null
+  var monitor: QueryExecutionMonitor = null
+  var engine: ExecutionEngine = null
+
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
+    graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    monitor = mock[QueryExecutionMonitor]
+    monitors(graph).addMonitorListener(monitor)
+    engine = new ExecutionEngine(graph)
+  }
+
+  override protected def afterEach(): Unit = {
+    super.afterEach()
+    if (graph != null) graph.shutdown()
   }
 
   private def monitors(graph: GraphDatabaseService): Monitors = {

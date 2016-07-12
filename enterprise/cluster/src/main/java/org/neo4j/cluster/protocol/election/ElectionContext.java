@@ -58,7 +58,7 @@ public interface ElectionContext
 
     void startPromotionProcess( String role, final InstanceId promoteNode );
 
-    public boolean voted( String role, InstanceId suggestedNode, Comparable<Object> suggestionCredentials,
+    boolean voted( String role, InstanceId suggestedNode, Comparable<Object> suggestionCredentials,
                        long electionVersion );
 
     InstanceId getElectionWinner( String role );
@@ -87,13 +87,13 @@ public interface ElectionContext
 
     boolean hasCurrentlyElectedVoted( String role, InstanceId currentElected );
 
-    public Set<InstanceId> getFailed();
+    Set<InstanceId> getFailed();
 
-    public ClusterMessage.VersionedConfigurationStateChange newConfigurationStateChange();
+    ClusterMessage.VersionedConfigurationStateChange newConfigurationStateChange();
 
-    public VoteRequest voteRequestForRole( ElectionRole role );
+    VoteRequest voteRequestForRole( ElectionRole role );
 
-    public class VoteRequest implements Serializable
+    class VoteRequest implements Serializable
     {
         private static final long serialVersionUID = -715604979485263049L;
 

@@ -38,8 +38,10 @@ public class FinishTx implements WorkerCommand<HighlyAvailableGraphDatabase, Voi
     public Void doWork( HighlyAvailableGraphDatabase state )
     {
         if ( successful )
+        {
             tx.success();
-        tx.finish();
+        }
+        tx.close();
         return null;
     }
 }

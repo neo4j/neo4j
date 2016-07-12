@@ -19,31 +19,31 @@
  */
 package org.neo4j.graphdb;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
-
 import org.hamcrest.Description;
 import org.hamcrest.DiagnosingMatcher;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.helpers.Function;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.arrayAsCollection;
 
 public class Neo4jMatchers
 {
@@ -331,10 +331,8 @@ public class Neo4jMatchers
             if ( expected.getClass().isArray() )
             {
                 return arrayAsCollection( expected ).equals( arrayAsCollection( readValue ) );
-            } else
-            {
-                return expected.equals( readValue );
             }
+            return expected.equals( readValue );
         }
 
         private String formatValue(Object v)
@@ -387,7 +385,6 @@ public class Neo4jMatchers
         return new PropertyMatcher( propertyName );
     }
 
-
     public static Deferred<Node> findNodesByLabelAndProperty( final Label label, final String propertyName,
                                                               final Object propertyValue,
                                                               final GraphDatabaseService db )
@@ -435,6 +432,19 @@ public class Neo4jMatchers
             protected Iterable<ConstraintDefinition> manifest()
             {
                 return db.schema().getConstraints( label );
+            }
+        };
+    }
+
+    public static Deferred<ConstraintDefinition> getConstraints( final GraphDatabaseService db,
+            final RelationshipType type )
+    {
+        return new Deferred<ConstraintDefinition>( db )
+        {
+            @Override
+            protected Iterable<ConstraintDefinition> manifest()
+            {
+                return db.schema().getConstraints( type );
             }
         };
     }
@@ -648,5 +658,18 @@ public class Neo4jMatchers
             tx.success();
             return constraint;
         }
+    }
+
+    public static Collection<Object> arrayAsCollection( Object arrayValue )
+    {
+        assert arrayValue.getClass().isArray();
+
+        Collection<Object> result = new ArrayList<>();
+        int length = Array.getLength( arrayValue );
+        for ( int i = 0; i < length; i++ )
+        {
+            result.add( Array.get( arrayValue, i ) );
+        }
+        return result;
     }
 }

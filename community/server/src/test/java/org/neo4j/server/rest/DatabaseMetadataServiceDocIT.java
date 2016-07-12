@@ -44,10 +44,7 @@ public class DatabaseMetadataServiceDocIT extends AbstractRestFunctionalTestBase
         helper = functionalTestHelper.getGraphDbHelper();
     }
 
-    /**
-     * Get relationship types.
-     */
-    @Documented
+    @Documented( "Get relationship types." )
     @Test
     public void shouldReturn200OnGet()
     {

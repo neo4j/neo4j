@@ -67,7 +67,7 @@ import static org.neo4j.io.fs.FileUtils.truncateFile;
 public class IdGeneratorImpl implements IdGenerator
 {
     // sticky(byte), nextFreeId(long)
-    private static final int HEADER_SIZE = 9;
+    public static final int HEADER_SIZE = 9;
 
     // if sticky the id generator wasn't closed properly so it has to be
     // rebuilt (go through the node, relationship, property, rel type etc files)
@@ -424,18 +424,15 @@ public class IdGeneratorImpl implements IdGenerator
         fileChannel.write( buffer );
     }
 
-    public static void createGenerator( FileSystemAbstraction fs, File fileName )
-    {
-        createGenerator( fs, fileName, 0 );
-    }
-
     /**
      * Creates a new id generator.
      *
-     * @param fileName
-     *            The name of the id generator
+     * @param fileName The name of the id generator
+     * @param throwIfFileExists if {@code true} will cause an {@link UnderlyingStorageException} to be thrown if
+     * the file already exists. if {@code false} will truncate the file writing the header in it.
      */
-    public static void createGenerator( FileSystemAbstraction fs, File fileName, long highId )
+    public static void createGenerator( FileSystemAbstraction fs, File fileName, long highId,
+                                        boolean throwIfFileExists )
     {
         // sanity checks
         if ( fs == null )
@@ -446,20 +443,19 @@ public class IdGeneratorImpl implements IdGenerator
         {
             throw new IllegalArgumentException( "Null filename" );
         }
-        if ( fs.fileExists( fileName ) )
+        if ( throwIfFileExists && fs.fileExists( fileName ) )
         {
             throw new IllegalStateException( "Can't create IdGeneratorFile["
                 + fileName + "], file already exists" );
         }
-        try
+        try ( StoreChannel channel = fs.create( fileName ) )
         {
-            StoreChannel channel = fs.create( fileName );
             // write the header
+            channel.truncate( 0 );
             ByteBuffer buffer = ByteBuffer.allocate( HEADER_SIZE );
             buffer.put( CLEAN_GENERATOR ).putLong( highId ).flip();
             channel.write( buffer );
             channel.force( false );
-            channel.close();
         }
         catch ( IOException e )
         {
@@ -475,7 +471,7 @@ public class IdGeneratorImpl implements IdGenerator
         {
             fileChannel = fs.open( file, "rw" );
             ByteBuffer buffer = readHeader();
-            markAsSticky( buffer );
+            markAsSticky( fileChannel, buffer );
 
             fileChannel.position( HEADER_SIZE );
             maxReadPosition = fileChannel.size();
@@ -489,7 +485,11 @@ public class IdGeneratorImpl implements IdGenerator
         }
     }
 
-    private void markAsSticky( ByteBuffer buffer ) throws IOException
+    /**
+     * Made available for testing purposes.
+     * Marks an id generator as sticky, i.e. not cleanly shut down.
+     */
+    public static void markAsSticky( StoreChannel fileChannel, ByteBuffer buffer ) throws IOException
     {
         buffer.clear();
         buffer.put( STICKY_GENERATOR ).limit( 1 ).flip();

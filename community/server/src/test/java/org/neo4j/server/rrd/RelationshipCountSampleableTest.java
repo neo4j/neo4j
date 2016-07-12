@@ -28,7 +28,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.server.rrd.sampler.RelationshipCountSampleable;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -53,7 +53,7 @@ public class RelationshipCountSampleableTest
     public void addANodeAndSampleableGoesUp()
     {
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             Node node1 = db.createNode();
             Node node2 = db.createNode();
@@ -68,7 +68,7 @@ public class RelationshipCountSampleableTest
     public void setUp() throws Exception
     {
         DependencyResolver dependencyResolver = dbRule.getGraphDatabaseAPI().getDependencyResolver();
-        NeoStoreProvider neoStore = dependencyResolver.resolveDependency( NeoStoreProvider.class );
+        NeoStoresSupplier neoStore = dependencyResolver.resolveDependency( NeoStoresSupplier.class );
         AvailabilityGuard guard = dependencyResolver.resolveDependency( AvailabilityGuard.class );
         sampleable = new RelationshipCountSampleable( neoStore, guard );
     }

@@ -650,6 +650,7 @@ article.guide
               (bacon:Person {name:"Kevin Bacon"})-[*]-(meg:Person {name:"Meg Ryan"})
             )
             RETURN p
+          include ../../views/partials/inefficient-cypher-query
 
     slide.row-fluid
       .col-sm-3
@@ -706,6 +707,7 @@ article.guide
         figure
           pre.pre-scrollable.code.runnable.
             MATCH (a:Person),(m:Movie) OPTIONAL MATCH (a)-[r1]-(), (m)-[r2]-() DELETE a,r1,m,r2
+          include ../../views/partials/inefficient-cypher-query
         p.lead Prove that the Movie Graph is gone
         figure
           pre.pre-scrollable.code.runnable.

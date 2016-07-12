@@ -20,46 +20,45 @@
 package org.neo4j.kernel.impl.locking;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
-import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.logging.SingleLoggingService;
-
-import static java.lang.System.currentTimeMillis;
-import static org.neo4j.kernel.impl.util.StringLogger.logger;
-import static org.neo4j.test.TargetDirectory.forTest;
+import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.Log;
 
 public class LockWorkFailureDump
 {
-    private final Class<?> testClass;
+    private final File file;
 
-    public LockWorkFailureDump( Class<?> testClass )
+    public LockWorkFailureDump( File file )
     {
-        this.testClass = testClass;
+        this.file = file;
     }
-    
-    public File dumpState( Locks lm, LockWorker... workers )
+
+    public File dumpState( Locks lm, LockWorker... workers ) throws IOException
     {
-        LifeSupport life = new LifeSupport();
-        File file = forTest( testClass ).file( "failure-dump-" + currentTimeMillis() );
-        Logging logging = life.add( new SingleLoggingService( logger( file ) ) );
-        life.start();
+        FileOutputStream out = new FileOutputStream( file, false );
+        FormattedLogProvider logProvider = FormattedLogProvider.withoutAutoFlush().toOutputStream( out );
+
         try
         {
             //  * locks held by the lock manager
-            lm.accept( new DumpLocksVisitor( logging.getMessagesLog( LockWorkFailureDump.class ) ) );
+            lm.accept( new DumpLocksVisitor( logProvider.getLog( LockWorkFailureDump.class ) ) );
             //  * rag manager state;
             //  * workers state
+            Log log = logProvider.getLog( getClass() );
             for ( LockWorker worker : workers )
             {
                 // - what each is doing and have up to now
-                logging.getMessagesLog( getClass() ).logLongMessage( "Worker " + worker, worker );
+                log.info( "Worker %s", worker );
+                worker.dump( log.infoLogger() );
             }
             return file;
         }
         finally
         {
-            life.shutdown();
+            out.flush();
+            out.close();
         }
     }
 }

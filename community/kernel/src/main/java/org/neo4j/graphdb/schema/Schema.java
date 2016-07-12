@@ -22,7 +22,7 @@ package org.neo4j.graphdb.schema;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 
 /**
@@ -40,7 +40,7 @@ public interface Schema
      * population of an index, to tell when it is done populating and is online serving
      * requests.
      */
-    public static enum IndexState
+    enum IndexState
     {
         ONLINE,
         POPULATING,
@@ -99,24 +99,29 @@ public interface Schema
      * Returns a {@link ConstraintCreator} where details about the constraint can be
      * specified. When all details have been entered {@link ConstraintCreator#create()}
      * must be called for it to actually be created.
-     * 
-     * Creating a constraint will have the transaction creating it block on commit until
-     * all existing data has been verified for compliance. If any existing data doesn't
-     * comply with the constraint the transaction will not be able to commit, but
-     * fail in {@link Transaction#close()}.
+     *
+     * Creating a constraint will block on the {@linkplain ConstraintCreator#create() create method} until
+     * all existing data has been verified for compliance. If any existing data doesn't comply with the constraint an
+     * exception will be thrown, and the constraint will not be created.
      * 
      * @param label the label this constraint is for.
      * @return a {@link ConstraintCreator} capable of providing details for, as well as creating
-     * a constraint for the given {@link Label label}.
+     * a constraint for the given {@linkplain Label label}.
      */
     ConstraintCreator constraintFor( Label label );
     
     /**
-     * @param label the label to get constraints for.
+     * @param label the {@linkplain Label label} to get constraints for.
      * @return all constraints for the given label.
      */
     Iterable<ConstraintDefinition> getConstraints( Label label );
-    
+
+    /**
+     * @param type the {@linkplain RelationshipType relationship type} to get constraints for.
+     * @return all constraints for the given relationship type.
+     */
+    Iterable<ConstraintDefinition> getConstraints( RelationshipType type );
+
     /**
      * @return all constraints
      */

@@ -22,14 +22,14 @@ package org.neo4j.concurrencytest;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.function.Function;
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.schema.UniqueConstraintViolationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.DatabaseRule;
@@ -54,7 +54,7 @@ public class ConstraintIndexConcurrencyTest
         // Given
         GraphDatabaseAPI graphDb = db.getGraphDatabaseAPI();
 
-        Provider<Statement> statementProvider = graphDb.getDependencyResolver()
+        Supplier<Statement> statementSupplier = graphDb.getDependencyResolver()
                 .resolveDependency( ThreadToStatementContextBridge.class );
 
         Label label = label( "Foo" );
@@ -72,10 +72,10 @@ public class ConstraintIndexConcurrencyTest
         try ( Transaction tx = graphDb.beginTx() )
         {
             // create a statement and perform a lookup
-            Statement statement = statementProvider.instance();
+            Statement statement = statementSupplier.get();
             int labelId = statement.readOperations().labelGetForName( label.name() );
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
-            statement.readOperations().nodesGetFromIndexLookup( new IndexDescriptor( labelId, propertyKeyId ),
+            statement.readOperations().nodesGetFromIndexSeek( new IndexDescriptor( labelId, propertyKeyId ),
                     "The value is irrelevant, we just want to perform some sort of lookup against this index" );
 
             // then let another thread come in and create a node
@@ -92,7 +92,7 @@ public class ConstraintIndexConcurrencyTest
                 fail( "exception expected" );
             }
             // Then
-            catch ( UniqueConstraintViolationKernelException e )
+            catch ( UniquePropertyConstraintViolationKernelException e )
             {
                 assertEquals( labelId, e.labelId() );
                 assertEquals( propertyKeyId, e.propertyKeyId() );

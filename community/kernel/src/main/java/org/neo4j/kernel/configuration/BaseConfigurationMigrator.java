@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 /**
  * A basic approach to implementing configuration migrations.
@@ -31,70 +31,82 @@ import org.neo4j.kernel.impl.util.StringLogger;
  * can still continue to both read and write with the old configuration
  * value.
  */
-public class BaseConfigurationMigrator implements ConfigurationMigrator {
-
+public class BaseConfigurationMigrator implements ConfigurationMigrator
+{
     public interface Migration
     {
-        boolean appliesTo(Map<String, String> rawConfiguration);
+        boolean appliesTo( Map<String,String> rawConfiguration );
 
-        Map<String, String> apply(Map<String, String> rawConfiguration);
-        
+        Map<String,String> apply( Map<String,String> rawConfiguration );
+
         String getDeprecationMessage();
     }
-    
+
+    /**
+     * Base class for implementing a migration that applies to a specific config property key.
+     *
+     * By default, this class will print a  deprecation message and run {@link #setValueWithOldSetting(String, Map)}
+     * if the specified property key has been set by the user. Override {@link #appliesTo(Map)} if you want to
+     * trigger on more specific reasons than that.
+     */
     public static abstract class SpecificPropertyMigration implements Migration
     {
+        private final String propertyKey;
+        private final String deprecationMessage;
 
-        private String propertyKey;
-        private String deprecationMessage;
-
-        public SpecificPropertyMigration(String propertyKey, String deprecationMessage)
+        public SpecificPropertyMigration( String propertyKey, String deprecationMessage )
         {
             this.propertyKey = propertyKey;
             this.deprecationMessage = deprecationMessage;
         }
-        
-        public boolean appliesTo(Map<String, String> rawConfiguration) 
+
+        @Override
+        public boolean appliesTo( Map<String,String> rawConfiguration )
         {
-            return rawConfiguration.containsKey(propertyKey);
+            return rawConfiguration.containsKey( propertyKey );
         }
-        
-        public Map<String, String> apply(Map<String, String> rawConfiguration) 
+
+        @Override
+        public Map<String,String> apply( Map<String,String> rawConfiguration )
         {
-            String value = rawConfiguration.get(propertyKey);
-            rawConfiguration.remove(propertyKey);
-            setValueWithOldSetting(value, rawConfiguration);
+            String value = rawConfiguration.get( propertyKey );
+            rawConfiguration.remove( propertyKey );
+            setValueWithOldSetting( value, rawConfiguration );
             return rawConfiguration;
         }
-        
+
+        @Override
         public String getDeprecationMessage()
         {
             return deprecationMessage;
         }
-        
-        public abstract void setValueWithOldSetting(String value, Map<String, String> rawConfiguration);
+
+        public abstract void setValueWithOldSetting( String value, Map<String,String> rawConfiguration );
     }
-    
+
     public static class PropertyRenamed extends SpecificPropertyMigration
     {
+        private final String newKey;
 
-        private String newKey;
-
-		public PropertyRenamed(String oldKey, String newKey, String deprecationMessage)
+        public PropertyRenamed( String oldKey, String newKey, String deprecationMessage )
         {
-            super(oldKey, deprecationMessage);
+            super( oldKey, deprecationMessage );
             this.newKey = newKey;
         }
-		
-        public void setValueWithOldSetting(String value, Map<String, String> rawConfiguration)
+
+        @Override
+        public void setValueWithOldSetting( String value, Map<String,String> rawConfiguration )
         {
-        	rawConfiguration.put(newKey, value);
+            rawConfiguration.put( newKey, value );
         }
     }
 
+    /**
+     * A simple migration where a config value (usually an enum) has been renamed.
+     * Eg. it used to be `dbms.thing=doit` and now it's `dbm.thing=gogogo`.
+     */
     public static class ConfigValueChanged implements Migration
     {
-
         private final String propertyKey;
         private final String oldValue;
         private final String newValue;
@@ -109,14 +121,14 @@ public class BaseConfigurationMigrator implements ConfigurationMigrator {
         }
 
         @Override
-        public boolean appliesTo( Map<String, String> rawConfiguration )
+        public boolean appliesTo( Map<String,String> rawConfiguration )
         {
             return rawConfiguration.containsKey( propertyKey )
-                   && rawConfiguration.get( propertyKey ).equalsIgnoreCase( oldValue );
+                    && rawConfiguration.get( propertyKey ).equalsIgnoreCase( oldValue );
         }
 
         @Override
-        public Map<String, String> apply( Map<String, String> rawConfiguration )
+        public Map<String,String> apply( Map<String,String> rawConfiguration )
         {
             rawConfiguration.put( propertyKey, newValue );
             return rawConfiguration;
@@ -128,39 +140,41 @@ public class BaseConfigurationMigrator implements ConfigurationMigrator {
             return message;
         }
     }
-    
-    public static Migration propertyRenamed(String oldKey, String newKey, String deprecationMessage)
+
+    public static Migration valueChanged( String key, String oldValue, String newValue, String deprecationMessage )
     {
-    	return new PropertyRenamed(oldKey, newKey, deprecationMessage);
+        return new ConfigValueChanged( key, oldValue, newValue, deprecationMessage );
     }
-    
-    private List<Migration> migrations = new ArrayList<>();
-    
-    public void add(Migration migration) 
+
+    public static Migration propertyRenamed( String oldKey, String newKey, String deprecationMessage )
     {
-        migrations.add(migration);
+        return new PropertyRenamed( oldKey, newKey, deprecationMessage );
+    }
+
+    private final List<Migration> migrations = new ArrayList<>();
+
+    public void add( Migration migration )
+    {
+        migrations.add( migration );
     }
 
     @Override
-    public Map<String, String> apply(Map<String, String> rawConfiguration, StringLogger log)
+    public Map<String,String> apply( Map<String,String> rawConfiguration, Log log )
     {
         boolean printedDeprecationMessage = false;
-        for(Migration migration : migrations) 
+        for ( Migration migration : migrations )
         {
-            if(migration.appliesTo(rawConfiguration)) 
+            if ( migration.appliesTo( rawConfiguration ) )
             {
-                if(!printedDeprecationMessage) 
+                if ( !printedDeprecationMessage )
                 {
                     printedDeprecationMessage = true;
                     log.warn( "WARNING! Deprecated configuration options used. See manual for details" );
                 }
-
-                rawConfiguration = migration.apply(rawConfiguration);
-
+                rawConfiguration = migration.apply( rawConfiguration );
                 log.warn( migration.getDeprecationMessage() );
             }
         }
         return rawConfiguration;
     }
-    
 }

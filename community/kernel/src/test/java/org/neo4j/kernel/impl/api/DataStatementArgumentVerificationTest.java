@@ -24,9 +24,9 @@ import org.junit.Test;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.properties.Property;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 
 public class DataStatementArgumentVerificationTest
@@ -39,10 +39,10 @@ public class DataStatementArgumentVerificationTest
         DataWriteOperations statement = stubStatement();
 
         // when
-        Property property = statement.nodeGetProperty( 17, StatementConstants.NO_SUCH_PROPERTY_KEY );
+        Object value = statement.nodeGetProperty( 17, StatementConstants.NO_SUCH_PROPERTY_KEY );
 
         // then
-        assertFalse( "should return NoProperty", property.isDefined() );
+        assertNull( "should return NoProperty", value );
     }
 
     @Test
@@ -53,10 +53,10 @@ public class DataStatementArgumentVerificationTest
         DataWriteOperations statement = stubStatement();
 
         // when
-        Property property = statement.relationshipGetProperty( 17, StatementConstants.NO_SUCH_PROPERTY_KEY );
+        Object value = statement.relationshipGetProperty( 17, StatementConstants.NO_SUCH_PROPERTY_KEY );
 
         // then
-        assertFalse( "should return NoProperty", property.isDefined() );
+        assertNull( "should return NoProperty", value );
     }
 
     @Test
@@ -67,10 +67,10 @@ public class DataStatementArgumentVerificationTest
         DataWriteOperations statement = stubStatement();
 
         // when
-        Property property = statement.graphGetProperty( StatementConstants.NO_SUCH_PROPERTY_KEY );
+        Object value = statement.graphGetProperty( StatementConstants.NO_SUCH_PROPERTY_KEY );
 
         // then
-        assertFalse( "should return NoProperty", property.isDefined() );
+        assertNull( "should return NoProperty", value );
     }
 
     @Test

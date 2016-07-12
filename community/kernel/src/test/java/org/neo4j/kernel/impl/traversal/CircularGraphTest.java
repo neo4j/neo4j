@@ -51,20 +51,14 @@ public class CircularGraphTest extends TraversalTestBase
     public void testCircularBug()
     {
         final long timestamp = 3;
-        Transaction tx = beginTx();
-        try
+        try ( Transaction tx = beginTx() )
         {
             getNodeWithName( "2" ).setProperty( "timestamp", 1L );
             getNodeWithName( "3" ).setProperty( "timestamp", 2L );
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
 
-        Transaction tx2 = beginTx();
-        try
+        try ( Transaction tx2 = beginTx() )
         {
             final RelationshipType type = DynamicRelationshipType.withName( "TO" );
             Traverser t = node( "1" ).traverse( Order.DEPTH_FIRST, new StopEvaluator()
@@ -98,10 +92,6 @@ public class CircularGraphTest extends TraversalTestBase
             assertEquals( "2", nodes.next().getProperty( "name" ) );
             assertEquals( "3", nodes.next().getProperty( "name" ) );
             assertFalse( nodes.hasNext() );
-        }
-        finally
-        {
-            tx2.finish();
         }
     }
 }

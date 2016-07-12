@@ -45,12 +45,12 @@ public class TestPlaceboTransaction
     public void before() throws Exception
     {
         ThreadToStatementContextBridge bridge = mock (ThreadToStatementContextBridge.class );
-        when( bridge.instance() ).thenReturn( mock( Statement.class ) );
+        when( bridge.get() ).thenReturn( mock( Statement.class ) );
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         Statement statement = mock( Statement.class );
         ReadOperations readOperations = mock( ReadOperations.class );
         when( statement.readOperations() ).thenReturn( readOperations );
-        when( bridge.instance() ).thenReturn( statement );
+        when( bridge.get() ).thenReturn( statement );
         mockTopLevelTx = spy( new TopLevelTransaction( kernelTransaction, bridge ) );
 
         placeboTx = new PlaceboTransaction( mockTopLevelTx );

@@ -21,12 +21,12 @@ package org.neo4j.test;
 
 import org.junit.rules.ExternalResource;
 
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.helpers.Provider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
-public class EphemeralFileSystemRule extends ExternalResource implements Provider<FileSystemAbstraction>
+public class EphemeralFileSystemRule extends ExternalResource implements Supplier<FileSystemAbstraction>
 {
     private EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
 
@@ -36,13 +36,8 @@ public class EphemeralFileSystemRule extends ExternalResource implements Provide
         fs.shutdown();
     }
 
-    public final EphemeralFileSystemAbstraction get()
-    {
-        return instance();
-    }
-
     @Override
-    public final EphemeralFileSystemAbstraction instance()
+    public final EphemeralFileSystemAbstraction get()
     {
         return fs;
     }

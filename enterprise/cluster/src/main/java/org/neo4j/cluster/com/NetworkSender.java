@@ -19,23 +19,6 @@
  */
 package org.neo4j.cluster.com;
 
-import java.net.ConnectException;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.channels.ClosedChannelException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
-
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
@@ -55,15 +38,32 @@ import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
 
+import java.net.ConnectException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.channels.ClosedChannelException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.cluster.com.NetworkReceiver.CLUSTER_SCHEME;
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
@@ -76,7 +76,7 @@ public class NetworkSender
         implements MessageSender, Lifecycle
 {
     public interface Monitor
-            extends NamedThreadFactory.Monitor
+        extends NamedThreadFactory.Monitor
     {
         void queuedMessage( Message message );
 
@@ -101,28 +101,28 @@ public class NetworkSender
 
     // Sending
     // One executor for each receiving instance, so that one blocking instance cannot block others receiving messages
-    private Map<URI, ExecutorService> senderExecutors = new HashMap<URI, ExecutorService>();
-    private Set<URI> failedInstances = new HashSet<URI>(); // Keeps track of what instances we have failed to open
+    private final Map<URI, ExecutorService> senderExecutors = new HashMap<URI, ExecutorService>();
+    private final Set<URI> failedInstances = new HashSet<URI>(); // Keeps track of what instances we have failed to open
     // connections to
     private ClientBootstrap clientBootstrap;
 
     private final Monitor monitor;
-    private Configuration config;
+    private final Configuration config;
     private final NetworkReceiver receiver;
-    private StringLogger msgLog;
+    private final Log msgLog;
     private URI me;
 
-    private Map<URI, Channel> connections = new ConcurrentHashMap<URI, Channel>();
+    private final Map<URI, Channel> connections = new ConcurrentHashMap<URI, Channel>();
     private Iterable<NetworkChannelsListener> listeners = Listeners.newListeners();
 
     private volatile boolean paused;
 
-    public NetworkSender( Monitor monitor, Configuration config, NetworkReceiver receiver, Logging logging )
+    public NetworkSender( Monitor monitor, Configuration config, NetworkReceiver receiver, LogProvider logProvider )
     {
         this.monitor = monitor;
         this.config = config;
         this.receiver = receiver;
-        this.msgLog = logging.getMessagesLog( getClass() );
+        this.msgLog = logProvider.getLog( getClass() );
         me = URI.create( CLUSTER_SCHEME + "://0.0.0.0:" + config.port() );
         receiver.addNetworkChannelsListener( new NetworkReceiver.NetworkChannelsListener()
         {
@@ -163,6 +163,13 @@ public class NetworkSender
                 Executors.newFixedThreadPool( 2, daemon( "Cluster client worker", monitor ) ), 2 ) );
         clientBootstrap.setOption( "tcpNoDelay", true );
         clientBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
+
+        msgLog.debug( "Started NetworkSender for " + toString( config ) );
+    }
+
+    private String toString( Configuration config )
+    {
+        return "defaultPort:" + config.defaultPort() + ", port:" + config.port();
     }
 
     @Override
@@ -188,7 +195,7 @@ public class NetworkSender
 
         channels.close().awaitUninterruptibly();
         clientBootstrap.releaseExternalResources();
-        msgLog.debug( "Shutting down NetworkSender complete" );
+        msgLog.debug( "Shutting down NetworkSender for " + toString( config ) + " complete" );
     }
 
     @Override
@@ -217,24 +224,22 @@ public class NetworkSender
     @Override
     public boolean process( Message<? extends MessageType> message )
     {
-        if ( paused )
+        if (!paused)
         {
-            return true;
-        }
-
-        if ( message.hasHeader( Message.TO ) )
-        {
-            send( message );
-        }
-        else
-        {
-            // Internal message
-            receiver.receive( message );
+            if ( message.hasHeader( Message.TO ) )
+            {
+                send( message );
+            }
+            else
+            {
+                // Internal message
+                receiver.receive( message );
+            }
         }
         return true;
     }
 
-    public void setPaused( boolean paused )
+    public void setPaused(boolean paused)
     {
         this.paused = paused;
     }
@@ -308,13 +313,17 @@ public class NetworkSender
                             {
                                 msgLog.debug( "Unable to write " + message + " to " + future.getChannel(),
                                         future.getCause() );
+                                closedChannel( future.getChannel() );
+
+                                // Try again
+                                send( message );
                             }
                         }
                     } );
                 }
                 catch ( Exception e )
                 {
-                    if ( Exceptions.contains( e, ClosedChannelException.class ) )
+                    if( Exceptions.contains(e, ClosedChannelException.class ))
                     {
                         msgLog.warn( "Could not send message, because the connection has been closed." );
                     }
@@ -457,7 +466,7 @@ public class NetworkSender
             if ( !(cause instanceof ConnectException || cause instanceof RejectedExecutionException) )
             {
                 // If we keep getting the same exception, only output the first one
-                if ( lastException != null && !lastException.getClass().equals( cause.getClass() ) )
+                if (lastException != null && !lastException.getClass().equals( cause.getClass() ))
                 {
                     msgLog.error( "Receive exception:", cause );
                     lastException = cause;
@@ -468,9 +477,9 @@ public class NetworkSender
         @Override
         public void writeComplete( ChannelHandlerContext ctx, WriteCompletionEvent e ) throws Exception
         {
-            if ( lastException != null )
+            if (lastException != null)
             {
-                msgLog.error( "Recovered from:", lastException );
+                msgLog.error( "Recovered from:", lastException);
                 lastException = null;
             }
             super.writeComplete( ctx, e );

@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.io.IOException;
-
 import org.jboss.netty.buffer.ChannelBuffer;
+
+import java.io.IOException;
 
 import org.neo4j.com.ObjectSerializer;
 import org.neo4j.com.Protocol;

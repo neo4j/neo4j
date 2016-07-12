@@ -19,25 +19,26 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
-import org.neo4j.kernel.impl.util.RelIdArray;
+import org.neo4j.kernel.impl.util.DirectionWrapper;
 
 public class RelationshipCreator
 {
     private final RelationshipGroupGetter relGroupGetter;
-    private final RelationshipLocker locker;
+    private final Locks.Client locks;
     private final int denseNodeThreshold;
 
-    public RelationshipCreator( RelationshipLocker locker, RelationshipGroupGetter relGroupGetter,
-            int denseNodeThreshold )
+    public RelationshipCreator( Locks.Client locks, RelationshipGroupGetter relGroupGetter, int denseNodeThreshold )
     {
-        this.locker = locker;
         this.relGroupGetter = relGroupGetter;
+        this.locks = locks;
         this.denseNodeThreshold = denseNodeThreshold;
     }
 
@@ -69,6 +70,11 @@ public class RelationshipCreator
                 recordChangeSet.getRelGroupRecords() );
     }
 
+    public static int relCount( long nodeId, RelationshipRecord rel )
+    {
+        return (int) (nodeId == rel.getFirstNode() ? rel.getFirstPrevRel() : rel.getSecondPrevRel());
+    }
+
     private void convertNodeToDenseIfNecessary( NodeRecord node,
                                                 RecordAccess<Long, RelationshipRecord, Void> relRecords,
                                                 RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords )
@@ -82,9 +88,9 @@ public class RelationshipCreator
         {
             RecordProxy<Long, RelationshipRecord, Void> relChange = relRecords.getOrLoad( relId, null );
             RelationshipRecord rel = relChange.forReadingLinkage();
-            if ( RelationshipChainLoader.relCount( node.getId(), rel ) >= denseNodeThreshold )
+            if ( relCount( node.getId(), rel ) >= denseNodeThreshold )
             {
-                locker.getWriteLock( relId );
+                locks.acquireExclusive( ResourceTypes.RELATIONSHIP, relId );
                 // Re-read the record after we've locked it since another transaction might have
                 // changed in the meantime.
                 relChange = relRecords.getOrLoad( relId, null );
@@ -155,7 +161,7 @@ public class RelationshipCreator
     {
         RelationshipGroupRecord group =
                 relGroupGetter.getOrCreateRelationshipGroup( node, rel.getType(), relGroupRecords ).forChangingData();
-        RelIdArray.DirectionWrapper dir = DirectionIdentifier.wrapDirection( rel, node );
+        DirectionWrapper dir = DirectionIdentifier.wrapDirection( rel, node );
         long nextRel = dir.getNextRel( group );
         setCorrectNextRel( node, rel, nextRel );
         connect( node.getId(), nextRel, rel, relRecords );
@@ -183,7 +189,7 @@ public class RelationshipCreator
             connectRelationshipToDenseNode( node, relRecord, relRecords, relGroupRecords );
             if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {   // Lock and load the next relationship in the chain
-                locker.getWriteLock( relId );
+                locks.acquireExclusive( ResourceTypes.RELATIONSHIP, relId );
                 relRecord = relRecords.getOrLoad( relId, null ).forChangingLinkage();
             }
         }
@@ -195,7 +201,7 @@ public class RelationshipCreator
         long newCount = 1;
         if ( firstRelId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            locker.getWriteLock( firstRelId );
+            locks.acquireExclusive( ResourceTypes.RELATIONSHIP, firstRelId );
             RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null ).forChangingLinkage();
             boolean changed = false;
             if ( firstRel.getFirstNode() == nodeId )

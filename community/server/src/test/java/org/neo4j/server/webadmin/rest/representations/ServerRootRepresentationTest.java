@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.junit.Test;
 
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.rest.management.console.ConsoleService;
@@ -34,16 +35,13 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
 
 public class ServerRootRepresentationTest
 {
     @Test
     public void shouldProvideAListOfServiceUris() throws Exception
     {
-        ConsoleService consoleService = new ConsoleService( null, mockDatabase(), DEV_NULL, null );
+        ConsoleService consoleService = new ConsoleService( null, mock( Database.class ), NullLogProvider.getInstance(), null );
         ServerRootRepresentation srr = new ServerRootRepresentation( new URI( "http://example.org:9999" ),
                 Collections.<AdvertisableService>singletonList( consoleService ) );
         Map<String, Map<String, String>> map = srr.serialize();
@@ -52,13 +50,5 @@ public class ServerRootRepresentationTest
 
         assertThat( map.get( "services" )
                 .get( consoleService.getName() ), containsString( consoleService.getServerPath() ) );
-
-    }
-
-    private Database mockDatabase()
-    {
-        Database db = mock( Database.class );
-        when( db.getLogging() ).thenReturn( DEV_NULL );
-        return db;
     }
 }

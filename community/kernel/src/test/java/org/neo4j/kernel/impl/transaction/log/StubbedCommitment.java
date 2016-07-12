@@ -34,4 +34,15 @@ public class StubbedCommitment implements Commitment
     {
         return markedAsCommitted;
     }
+
+    @Override
+    public void publishAsApplied()
+    {
+    }
+
+    @Override
+    public long transactionId()
+    {
+        throw new UnsupportedOperationException();
+    }
 }

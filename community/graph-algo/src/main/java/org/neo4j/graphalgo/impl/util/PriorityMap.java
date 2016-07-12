@@ -130,7 +130,7 @@ public class PriorityMap<E, K, P>
     private final Comparator<P> order;
     private final boolean onlyKeepBestPriorities;
 
-    private PriorityMap( Converter<K, E> key, Comparator<P> priority, boolean onlyKeepBestPriorities )
+    public PriorityMap( Converter<K, E> key, Comparator<P> priority, boolean onlyKeepBestPriorities )
     {
         this.keyFunction = key;
         this.order = priority;
@@ -159,7 +159,7 @@ public class PriorityMap<E, K, P>
         {   // it already existed
             if ( onlyKeepBestPriorities )
             {
-                if ( priority.equals( node.head.priority ) )
+                if ( order.compare( priority, node.head.priority ) == 0 )
                 {   // ...with same priority => add as a candidate first in chain
                     node.head = new Link<E,P>( entity, priority, node.head );
                     result = true;
@@ -167,15 +167,16 @@ public class PriorityMap<E, K, P>
                 else if ( order.compare( priority, node.head.priority ) < 0 )
                 {   // ...with lower (better) priority => this new one replaces any existing
                     queue.remove( node );
-                    put( entity, priority, key );
+                    putNew( entity, priority, key );
                     result = true;
                 }
             }
             else
             {   // put in the appropriate place in the node linked list
                 if ( order.compare( priority, node.head.priority ) < 0 )
-                {   // ...first in chain
+                {   // ...first in chain and re-insert to queue
                     node.head = new Link<E,P>( entity, priority, node.head );
+                    reinsert( node );
                     result = true;
                 }
                 else
@@ -205,16 +206,22 @@ public class PriorityMap<E, K, P>
         }
         else
         {   // Didn't exist, just put
-            put( entity, priority, key );
+            putNew( entity, priority, key );
             result = true;
         }
         return result;
     }
 
-    private void put( E entity, P priority, K key )
+    private void putNew( E entity, P priority, K key )
     {
         Node<E, P> node = new Node<E, P>( new Link<E,P>( entity, priority, null ) );
         map.put( key, node );
+        queue.add( node );
+    }
+
+    private void reinsert( Node<E,P> node )
+    {
+        queue.remove( node );
         queue.add( node );
     }
 
@@ -241,10 +248,13 @@ public class PriorityMap<E, K, P>
         Entry<E, P> result = null;
         if ( node == null )
         {
+            // Queue is empty
             return null;
         }
         else if ( node.head.next == null )
         {
+            // There are no more entries attached to this key
+            // Poll from queue and remove from map.
             node = queue.poll();
             map.remove( keyFunction.convert( node.head.entity ) );
             result = new Entry<E, P>( node );
@@ -253,6 +263,17 @@ public class PriorityMap<E, K, P>
         {
             result = new Entry<E, P>( node );
             node.head = node.head.next;
+            if ( order.compare( result.priority, node.head.priority ) == 0 )
+            {
+                // Can leave at front of queue as priority is the same
+                // Do nothing
+            }
+            else
+            {
+                // node needs to be reinserted into queue
+                reinsert( node );
+            }
+
         }
         return result;
     }

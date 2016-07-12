@@ -30,6 +30,9 @@ angular.module('neo4jApp.directives')
         # Try to truncate string at first newline after limit
         str = val.substring(0, Settings.maxRawSize)
         rest = val.substring(Settings.maxRawSize + 1)
+        if attrs.overrideSizeLimit
+          str = val
+          rest = no
         if rest
           rest = rest.split("\n")[0] or ''
           str += rest + "\n...\n<truncated output>\n\nPress download to see complete response"

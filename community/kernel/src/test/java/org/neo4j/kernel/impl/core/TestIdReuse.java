@@ -69,7 +69,7 @@ public class TestIdReuse
         File storeDir = new File( "target/var/idreuse" );
         File file = new File( storeDir, fileName );
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).
-            newImpermanentDatabaseBuilder( storeDir.getPath() ).
+            newImpermanentDatabaseBuilder( storeDir ).
             newGraphDatabase();
         for ( int i = 0; i < 5; i++ )
         {
@@ -77,7 +77,7 @@ public class TestIdReuse
         }
         db.shutdown();
         long sizeBefore = file.length();
-        db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( storeDir.getPath() );
+        db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
         for ( int i = 0; i < iterations; i++ )
         {
             setAndRemoveSomeProperties( db, value );
@@ -88,32 +88,24 @@ public class TestIdReuse
     
     private void setAndRemoveSomeProperties( GraphDatabaseService graphDatabaseService, Object value )
     {
-        Transaction tx = graphDatabaseService.beginTx();
-        Node commonNode = graphDatabaseService.createNode();
-        try
+        Node commonNode;
+        try ( Transaction transaction = graphDatabaseService.beginTx() )
         {
+            commonNode = graphDatabaseService.createNode();
             for ( int i = 0; i < 10; i++ )
             {
                 commonNode.setProperty( "key" + i, value );
             }
-            tx.success();
+            transaction.success();
         }
-        finally
-        {
-            tx.finish();
-        }
-        tx = graphDatabaseService.beginTx();
-        try
+
+        try ( Transaction transaction = graphDatabaseService.beginTx() )
         {
             for ( int i = 0; i < 10; i++ )
             {
                 commonNode.removeProperty( "key" + i );
             }
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
+            transaction.success();
         }
     }
 }

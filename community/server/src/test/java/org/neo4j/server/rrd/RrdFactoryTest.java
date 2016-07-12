@@ -31,25 +31,28 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.RrdDbWrapper;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.web.ServerInternalSettings;
-import org.neo4j.test.Mute;
+import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static java.lang.Double.NaN;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.test.Mute.muteAll;
+
+import static java.lang.Double.NaN;
+
+import static org.neo4j.test.SuppressOutput.suppressAll;
 
 public class RrdFactoryTest
 {
@@ -59,7 +62,7 @@ public class RrdFactoryTest
     @Rule
     public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
     @Rule
-    public Mute mute = muteAll();
+    public SuppressOutput suppressOutput = suppressAll();
 
     @Before
     public void setUp() throws IOException
@@ -135,6 +138,10 @@ public class RrdFactoryTest
     public void shouldDeleteOldRrdFileFromDbDirectoryIfItExists() throws Exception
     {
         // given
+        File rrdDir = new File( ServerInternalSettings.rrd_store.getDefaultValue() ).getAbsoluteFile();
+        FileUtils.deleteFile( rrdDir ); // migration thing, it was a file in previous versions
+        FileUtils.deleteRecursively( rrdDir );
+
         File oldRrdFile = new File( directory.graphDbDir(), "rrd" );
         assertTrue( oldRrdFile.createNewFile() );
         TestableRrdFactory factory = createRrdFactory();
@@ -177,7 +184,7 @@ public class RrdFactoryTest
 
         public TestableRrdFactory( Config config )
         {
-            super( config, DevNullLoggingService.DEV_NULL );
+            super( config, NullLogProvider.getInstance() );
         }
 
         @Override

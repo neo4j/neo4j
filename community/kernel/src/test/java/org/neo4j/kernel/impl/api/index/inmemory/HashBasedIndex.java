@@ -30,16 +30,20 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
+import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_VALUES;
+import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.NUMBER;
+import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.STRING;
 import static org.neo4j.register.Register.DoubleLong;
 
 class HashBasedIndex extends InMemoryIndexImplementation
 {
     private Map<Object, Set<Long>> data;
 
-    public Map<Object,Set<Long>> data()
+    public Map<Object, Set<Long>> data()
     {
         if ( data == null )
         {
@@ -67,10 +71,98 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    PrimitiveLongIterator doLookup( Object propertyValue )
+    PrimitiveLongIterator doIndexSeek( Object propertyValue )
     {
         Set<Long> nodes = data().get( propertyValue );
         return nodes == null ? PrimitiveLongCollections.emptyIterator() : toPrimitiveIterator( nodes.iterator() );
+    }
+
+    @Override
+    public PrimitiveLongIterator rangeSeekByNumberInclusive( Number lower, Number upper )
+    {
+        Set<Long> nodeIds = new HashSet<>();
+        for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
+        {
+            Object key = entry.getKey();
+            if ( NUMBER.isSuperTypeOf( key ) )
+            {
+                boolean lowerFilter = lower == null || COMPARE_VALUES.compare( key, lower ) >= 0;
+                boolean upperFilter = upper == null || COMPARE_VALUES.compare( key, upper ) <= 0;
+
+                if ( lowerFilter && upperFilter )
+                {
+                    nodeIds.addAll( entry.getValue() );
+                }
+            }
+        }
+        return toPrimitiveIterator( nodeIds.iterator() );
+    }
+
+    @Override
+    public PrimitiveLongIterator rangeSeekByString( String lower, boolean includeLower,
+                                                    String upper, boolean includeUpper )
+    {
+        Set<Long> nodeIds = new HashSet<>();
+        for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
+        {
+            Object key = entry.getKey();
+            if ( STRING.isSuperTypeOf( key ) )
+            {
+                boolean lowerFilter = false;
+                boolean upperFilter = false;
+
+                if ( lower == null )
+                {
+                    lowerFilter = true;
+                }
+                else
+                {
+                    int cmp = COMPARE_VALUES.compare( key, lower );
+                    lowerFilter = (includeLower && cmp >= 0) || (cmp > 0);
+                }
+
+                if ( upper == null )
+                {
+                    upperFilter = true;
+                }
+                else
+                {
+                    int cmp = COMPARE_VALUES.compare( key, upper );
+                    upperFilter = (includeUpper && cmp <= 0) || (cmp < 0);
+                }
+
+                if ( lowerFilter && upperFilter )
+                {
+                    nodeIds.addAll( entry.getValue() );
+                }
+            }
+        }
+        return toPrimitiveIterator( nodeIds.iterator() );
+    }
+
+    @Override
+    public PrimitiveLongIterator rangeSeekByPrefix( String prefix )
+    {
+        Set<Long> nodeIds = new HashSet<>();
+        for ( Map.Entry<Object,Set<Long>> entry : data.entrySet() )
+        {
+            Object key = entry.getKey();
+            if ( key instanceof String )
+            {
+                if ( key.toString().startsWith( prefix ) )
+                {
+                    nodeIds.addAll( entry.getValue() );
+                }
+            }
+        }
+        return toPrimitiveIterator( nodeIds.iterator() );
+    }
+
+    @Override
+    public PrimitiveLongIterator scan()
+    {
+        Iterable<Long> all = Iterables.flattenIterable( data.values() );
+        return toPrimitiveIterator( all.iterator() );
     }
 
     @Override
@@ -148,7 +240,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    public int getIndexedCount( long nodeId, Object propertyValue )
+    public int countIndexedNodes( long nodeId, Object propertyValue )
     {
         Set<Long> candidates = data().get( propertyValue );
         return candidates != null && candidates.contains( nodeId ) ? 1 : 0;

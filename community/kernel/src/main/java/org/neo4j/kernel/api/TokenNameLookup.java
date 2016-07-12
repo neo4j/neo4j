@@ -23,5 +23,7 @@ public interface TokenNameLookup
 {
     String labelGetName( int labelId );
 
+    String relationshipTypeGetName( int relTypeId );
+
     String propertyKeyGetName( int propertyKeyId );
 }

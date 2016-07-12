@@ -1,0 +1,1 @@
+The Neo4j changelog has been moved to https://github.com/neo4j/neo4j/wiki/Changelog

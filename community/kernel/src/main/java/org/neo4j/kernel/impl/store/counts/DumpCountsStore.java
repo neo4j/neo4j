@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.store.counts;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Collections;
+import java.util.List;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -29,7 +31,9 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsVisitor;
+import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.kvstore.Headers;
@@ -37,10 +41,9 @@ import org.neo4j.kernel.impl.store.kvstore.MetadataVisitor;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownKey.Visitor
 {
@@ -56,16 +59,20 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
 
     public static void dumpCountsStore( FileSystemAbstraction fs, File path, PrintStream out ) throws IOException
     {
-        try ( PageCache pages = createPageCache( fs ); Lifespan life = new Lifespan() )
+        try ( PageCache pages = createPageCache( fs );
+              Lifespan life = new Lifespan() )
         {
             if ( fs.isDirectory( path ) )
             {
-                StoreFactory factory = new StoreFactory( fs, path, pages, DEV_NULL, new Monitors() );
-                life.add( factory.newCountsStore() ).accept( new DumpCountsStore( out, factory ) );
+                StoreFactory factory = new StoreFactory( fs, path, pages, NullLogProvider.getInstance() );
+
+                NeoStores neoStores = factory.openAllNeoStores();
+                neoStores.getCounts().accept( new DumpCountsStore( out, neoStores ) );
             }
             else
             {
-                CountsTracker tracker = new CountsTracker( DEV_NULL, fs, pages, new Config(), path );
+                CountsTracker tracker = new CountsTracker(
+                        NullLogProvider.getInstance(), fs, pages, new Config(), path );
                 if ( fs.fileExists( path ) )
                 {
                     tracker.visitFile( path, new DumpCountsStore( out ) );
@@ -78,27 +85,27 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         }
     }
 
-    private static final Token[] NO_TOKENS = new Token[0];
-
     DumpCountsStore( PrintStream out )
     {
-        this( out, NO_TOKENS, NO_TOKENS, NO_TOKENS );
+        this( out, Collections.<Token>emptyList(), Collections.<RelationshipTypeToken>emptyList(),
+                Collections.<Token>emptyList() );
     }
 
-    DumpCountsStore( PrintStream out, StoreFactory factory )
+    DumpCountsStore( PrintStream out, NeoStores neoStores )
     {
         this( out,
-              allTokensFrom( factory.newLabelTokenStore() ),
-              allTokensFrom( factory.newRelationshipTypeTokenStore() ),
-              allTokensFrom( factory.newPropertyKeyTokenStore() ) );
+              allTokensFrom( neoStores.getLabelTokenStore() ),
+              allTokensFrom( neoStores.getRelationshipTypeTokenStore() ),
+              allTokensFrom( neoStores.getPropertyKeyTokenStore() ) );
     }
 
     private final PrintStream out;
-    private final Token[] labels;
-    private final Token[] relationshipTypes;
-    private final Token[] propertyKeys;
+    private final List<Token> labels;
+    private final List<RelationshipTypeToken> relationshipTypes;
+    private final List<Token> propertyKeys;
 
-    private DumpCountsStore( PrintStream out, Token[] labels, Token[] relationshipTypes, Token[] propertyKeys )
+    private DumpCountsStore( PrintStream out, List<Token> labels, List<RelationshipTypeToken> relationshipTypes,
+                             List<Token> propertyKeys )
     {
         this.out = out;
         this.labels = labels;
@@ -177,13 +184,13 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         return token( new StringBuilder().append( '[' ), relationshipTypes, ":", "type", id ).append( ']' ).toString();
     }
 
-    private static StringBuilder token( StringBuilder result, Token[] tokens, String pre, String handle, int id )
+    private static StringBuilder token( StringBuilder result, List<? extends Token> tokens, String pre, String handle, int id )
     {
         Token token = null;
         // search backwards for the token
-        for ( int i = (id < tokens.length) ? id : tokens.length - 1; i >= 0; i-- )
+        for ( int i = (id < tokens.size()) ? id : tokens.size() - 1; i >= 0; i-- )
         {
-            token = tokens[i];
+            token = tokens.get(i);
             if ( token.id() == id )
             {
                 break; // found
@@ -207,9 +214,9 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         return result;
     }
 
-    private static Token[] allTokensFrom( TokenStore<?> store )
+    private static <TOKEN extends Token> List<TOKEN> allTokensFrom( TokenStore<?, TOKEN> store )
     {
-        try ( TokenStore<?> tokens = store )
+        try ( TokenStore<?, TOKEN> tokens = store )
         {
             return tokens.getTokens( Integer.MAX_VALUE );
         }

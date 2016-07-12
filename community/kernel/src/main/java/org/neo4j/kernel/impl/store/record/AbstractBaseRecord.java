@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import org.neo4j.function.Predicate;
 import org.neo4j.helpers.CloneableInPublic;
-import org.neo4j.helpers.Predicate;
 
 public abstract class AbstractBaseRecord implements CloneableInPublic
 {
@@ -84,7 +84,7 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
     private static final Predicate IN_USE_FILTER = new Predicate<AbstractBaseRecord>()
     {
         @Override
-        public boolean accept( AbstractBaseRecord item )
+        public boolean test( AbstractBaseRecord item )
         {
             return item.inUse();
         }
@@ -94,7 +94,7 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
     private static final Predicate NOT_IN_USE_FILTER = new Predicate<AbstractBaseRecord>()
     {
         @Override
-        public boolean accept( AbstractBaseRecord item )
+        public boolean test( AbstractBaseRecord item )
         {
             return !item.inUse();
         }

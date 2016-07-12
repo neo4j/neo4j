@@ -19,27 +19,28 @@
  */
 package org.neo4j.harness.internal;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.harness.ServerControls;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.server.AbstractNeoServer;
 
 public class InProcessServerControls implements ServerControls
 {
     private final File serverFolder;
     private final AbstractNeoServer server;
-    private final Lifecycle additionalLifeToManage;
+    private final Closeable additionalClosable;
 
-    public InProcessServerControls( File serverFolder, AbstractNeoServer server, Lifecycle additionalLifeToManage )
+    public InProcessServerControls( File serverFolder, AbstractNeoServer server, Closeable additionalClosable )
     {
         this.serverFolder = serverFolder;
         this.server = server;
-        this.additionalLifeToManage = additionalLifeToManage;
+        this.additionalClosable = additionalClosable;
     }
 
     @Override
@@ -65,7 +66,7 @@ public class InProcessServerControls implements ServerControls
         server.stop();
         try
         {
-            additionalLifeToManage.shutdown();
+            additionalClosable.close();
         }
         catch ( Throwable e )
         {
@@ -89,5 +90,10 @@ public class InProcessServerControls implements ServerControls
         // Pure paranoia, and a silly check - but this decreases the likelihood that we delete something that isn't
         // our randomly generated folder significantly.
         return name.length() == 32;
+    }
+
+    public GraphDatabaseService graph()
+    {
+        return server.getDatabase().getGraph();
     }
 }

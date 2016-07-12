@@ -19,21 +19,23 @@
  */
 package org.neo4j.kernel.info;
 
+import org.junit.Test;
+
+import org.neo4j.logging.BufferingLog;
+
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.kernel.info.JvmChecker.INCOMPATIBLE_JVM_VERSION_WARNING;
 import static org.neo4j.kernel.info.JvmChecker.INCOMPATIBLE_JVM_WARNING;
-
-import org.junit.Test;
-import org.neo4j.kernel.logging.BufferingLogger;
 
 public class JVMCheckerTest
 {
     @Test
     public void shouldNotIssueWarningWhenUsingHotspotServerVmVersion7() throws Exception
     {
-        BufferingLogger bufferingLogger = new BufferingLogger();
+        BufferingLog bufferingLogger = new BufferingLog();
 
         new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
                 "1.7.0-b147" ) ).checkJvmCompatibilityAndIssueWarning();
@@ -44,7 +46,7 @@ public class JVMCheckerTest
     @Test
     public void shouldNotIssueWarningWhenUsingHotspotServerVmVersion8() throws Exception
     {
-        BufferingLogger bufferingLogger = new BufferingLogger();
+        BufferingLog bufferingLogger = new BufferingLog();
 
         new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
                 "1.8.0_45" ) ).checkJvmCompatibilityAndIssueWarning();
@@ -55,7 +57,7 @@ public class JVMCheckerTest
     @Test
     public void shouldNotIssueWarningWhenUsingHotspotServerVmVersion7InThe32BitVersion() throws Exception
     {
-        BufferingLogger bufferingLogger = new BufferingLogger();
+        BufferingLog bufferingLogger = new BufferingLog();
 
         new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) Server VM",
                 "1.7.0_25-b15" ) ).checkJvmCompatibilityAndIssueWarning();
@@ -66,7 +68,7 @@ public class JVMCheckerTest
     @Test
     public void shouldNotIssueWarningWhenUsingOpenJDKServerVmVersion7() throws Exception
     {
-        BufferingLogger bufferingLogger = new BufferingLogger();
+        BufferingLog bufferingLogger = new BufferingLog();
 
         new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "OpenJDK 64-Bit Server VM",
                 "1.7.0-b147" ) ).checkJvmCompatibilityAndIssueWarning();
@@ -77,7 +79,7 @@ public class JVMCheckerTest
     @Test
     public void shouldNotIssueWarningWhenUsingOpenJDKClientVmVersion7() throws Exception
     {
-        BufferingLogger bufferingLogger = new BufferingLogger();
+        BufferingLog bufferingLogger = new BufferingLog();
 
         new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "OpenJDK Client VM",
                 "1.7.0-b147" ) ).checkJvmCompatibilityAndIssueWarning();
@@ -88,7 +90,7 @@ public class JVMCheckerTest
     @Test
     public void shouldIssueWarningWhenUsingUnsupportedJvm() throws Exception
     {
-        BufferingLogger bufferingLogger = new BufferingLogger();
+        BufferingLog bufferingLogger = new BufferingLog();
 
         new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "MyOwnJDK 64-Bit Awesome VM",
                 "1.7" ) ).checkJvmCompatibilityAndIssueWarning();
@@ -99,7 +101,7 @@ public class JVMCheckerTest
     @Test
     public void shouldIssueWarningWhenUsingUnsupportedJvmVersion() throws Exception
     {
-        BufferingLogger bufferingLogger = new BufferingLogger();
+        BufferingLog bufferingLogger = new BufferingLog();
 
         new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
                 "1.6.42_87" ) ).checkJvmCompatibilityAndIssueWarning();

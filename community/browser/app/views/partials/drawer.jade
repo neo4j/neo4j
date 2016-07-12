@@ -5,6 +5,8 @@
     include drawer-scripts
   div.pane.animate-drawer(ng-switch-when="info")
     include drawer-info
+  div.pane.animate-drawer(ng-switch-when='preferences')
+    include drawer-preferences
   div.pane.animate-drawer(ng-switch-when="credits")
     include drawer-credits
   //-div.pane.animate-drawer(ng-switch-default)

@@ -23,78 +23,83 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
+import org.neo4j.kernel.api.constraints.PropertyConstraint;
+import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.cursor.LabelItem;
+import org.neo4j.kernel.api.cursor.NodeItem;
+import org.neo4j.kernel.api.cursor.PropertyItem;
+import org.neo4j.kernel.api.cursor.RelationshipItem;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
+import org.neo4j.kernel.api.procedures.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.state.NodeState;
+import org.neo4j.kernel.impl.api.state.PropertyContainerState;
 import org.neo4j.kernel.impl.api.state.RelationshipState;
+import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
+import org.neo4j.kernel.impl.util.diffsets.ReadableRelationshipDiffSets;
 
 /**
  * Kernel transaction state.
- *
+ * <p>
  * This interface contains the methods for reading the state from the transaction state. The implementation of these
  * methods should be free of any side effects (such as initialising lazy state). Modifying methods are found in the
  * {@link TransactionState} interface.
  */
 public interface ReadableTxState
 {
-    void accept( TxStateVisitor visitor );
+    void accept( TxStateVisitor visitor ) throws ConstraintValidationKernelException, CreateConstraintFailureException;
 
     boolean hasChanges();
 
     // ENTITY RELATED
 
-    /** Returns all nodes that, in this tx, have had labelId removed. */
+    /**
+     * Returns all nodes that, in this tx, have had labelId removed.
+     */
     ReadableDiffSets<Long> nodesWithLabelChanged( int labelId );
 
-    /** Returns nodes that have been added and removed in this tx. */
+    /**
+     * Returns nodes that have been added and removed in this tx.
+     */
     ReadableDiffSets<Long> addedAndRemovedNodes();
 
-    /** Returns rels that have been added and removed in this tx. */
-    ReadableDiffSets<Long> addedAndRemovedRelationships();
+    /**
+     * Returns rels that have been added and removed in this tx.
+     */
+    ReadableRelationshipDiffSets<Long> addedAndRemovedRelationships();
 
-    /** Nodes that have had labels, relationships, or properties modified in this tx. */
+    /**
+     * Nodes that have had labels, relationships, or properties modified in this tx.
+     */
     Iterable<NodeState> modifiedNodes();
 
-    /** Rels that have properties modified in this tx. */
+    /**
+     * Rels that have properties modified in this tx.
+     */
     Iterable<RelationshipState> modifiedRelationships();
 
     boolean relationshipIsAddedInThisTx( long relationshipId );
 
     boolean relationshipIsDeletedInThisTx( long relationshipId );
 
-    ReadableDiffSets<Long> nodesWithChangedProperty( int propertyKeyId, Object value );
-
     ReadableDiffSets<Integer> nodeStateLabelDiffSets( long nodeId );
 
-    Iterator<DefinedProperty> augmentNodeProperties( long nodeId, Iterator<DefinedProperty> original );
-
-    Iterator<DefinedProperty> augmentRelationshipProperties( long relId, Iterator<DefinedProperty> original );
-
     Iterator<DefinedProperty> augmentGraphProperties( Iterator<DefinedProperty> original );
-
-    Iterator<DefinedProperty> addedAndChangedNodeProperties( long nodeId );
-
-    Iterator<DefinedProperty> addedAndChangedRelationshipProperties( long relId );
-
-    UpdateTriState labelState( long nodeId, int labelId );
 
     boolean nodeIsAddedInThisTx( long nodeId );
 
     boolean nodeIsDeletedInThisTx( long nodeId );
 
     boolean nodeModifiedInThisTx( long nodeId );
-
-    // TODO: refactor so that these are the same!
-    PrimitiveLongIterator augmentRelationships( long nodeId, Direction direction, PrimitiveLongIterator stored );
-
-    PrimitiveLongIterator augmentRelationships( long nodeId, Direction direction, int[] relTypes,
-                                                PrimitiveLongIterator stored );
-
-    PrimitiveLongIterator addedRelationships( long nodeId, int[] relTypes, Direction direction );
 
     PrimitiveIntIterator nodeRelationshipTypes( long nodeId );
 
@@ -104,7 +109,7 @@ public interface ReadableTxState
 
     PrimitiveLongIterator augmentNodesGetAll( PrimitiveLongIterator committed );
 
-    PrimitiveLongIterator augmentRelationshipsGetAll( PrimitiveLongIterator committed );
+    RelationshipIterator augmentRelationshipsGetAll( RelationshipIterator committed );
 
     /**
      * @return {@code true} if the relationship was visited in this state, i.e. if it was created
@@ -125,15 +130,65 @@ public interface ReadableTxState
 
     Iterable<IndexDescriptor> constraintIndexesCreatedInTx();
 
-    ReadableDiffSets<UniquenessConstraint> constraintsChanges();
+    ReadableDiffSets<PropertyConstraint> constraintsChanges();
 
-    ReadableDiffSets<UniquenessConstraint> constraintsChangesForLabel( int labelId );
+    ReadableDiffSets<NodePropertyConstraint> constraintsChangesForLabel( int labelId );
 
-    ReadableDiffSets<UniquenessConstraint> constraintsChangesForLabelAndProperty( int labelId, int propertyKey );
+    ReadableDiffSets<NodePropertyConstraint> constraintsChangesForLabelAndProperty( int labelId, int propertyKey );
+
+    ReadableDiffSets<RelationshipPropertyConstraint> constraintsChangesForRelationshipType( int relTypeId );
+
+    ReadableDiffSets<RelationshipPropertyConstraint> constraintsChangesForRelationshipTypeAndProperty( int relTypeId,
+            int propertyKey );
 
     Long indexCreatedForConstraint( UniquenessConstraint constraint );
 
-    ReadableDiffSets<Long> indexUpdates( IndexDescriptor index, Object value );
+    ReadableDiffSets<Long> indexUpdatesForScanOrSeek( IndexDescriptor index, Object value );
+
+    ReadableDiffSets<Long> indexUpdatesForRangeSeekByNumber( IndexDescriptor index,
+                                                             Number lower, boolean includeLower,
+                                                             Number upper, boolean includeUpper );
+
+    ReadableDiffSets<Long> indexUpdatesForRangeSeekByString( IndexDescriptor index,
+                                                             String lower, boolean includeLower,
+                                                             String upper, boolean includeUpper );
+
+    ReadableDiffSets<Long> indexUpdatesForRangeSeekByPrefix( IndexDescriptor index, String prefix );
+
+    NodeState getNodeState( long id );
+
+    RelationshipState getRelationshipState( long id );
+
+    Cursor<NodeItem> augmentSingleNodeCursor( Cursor<NodeItem> cursor, long nodeId );
+
+    Cursor<PropertyItem> augmentPropertyCursor( Cursor<PropertyItem> cursor,
+            PropertyContainerState propertyContainerState );
+
+    Cursor<PropertyItem> augmentSinglePropertyCursor( Cursor<PropertyItem> cursor,
+            PropertyContainerState propertyContainerState,
+            int propertyKeyId );
+
+    Cursor<LabelItem> augmentLabelCursor( Cursor<LabelItem> cursor, NodeState nodeState );
+
+    public Cursor<LabelItem> augmentSingleLabelCursor( Cursor<LabelItem> cursor, NodeState nodeState, int labelId );
+
+    Cursor<RelationshipItem> augmentSingleRelationshipCursor( Cursor<RelationshipItem> cursor, long relationshipId );
+
+    Cursor<RelationshipItem> augmentIteratorRelationshipCursor( Cursor<RelationshipItem> cursor,
+            RelationshipIterator iterator );
+
+    Cursor<RelationshipItem> augmentNodeRelationshipCursor( Cursor<RelationshipItem> cursor,
+            NodeState nodeState,
+            Direction direction,
+            int[] relTypes );
+
+    Cursor<NodeItem> augmentNodesGetAllCursor( Cursor<NodeItem> cursor );
+
+    Cursor<RelationshipItem> augmentRelationshipsGetAllCursor( Cursor<RelationshipItem> cursor );
+
+    Iterator<ProcedureDescriptor> augmentProcedures( Iterator<ProcedureDescriptor> procs );
+
+    ProcedureDescriptor getProcedure( ProcedureName name );
 
     /**
      * The way tokens are created is that the first time a token is needed it gets created in its own little

@@ -45,17 +45,10 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     {
         void opened( File logFile, long logVersion, long lastTransactionId, boolean clean );
 
-        void failureToTruncate( File logFile, IOException e );
-
-        public class Adapter implements Monitor
+        class Adapter implements Monitor
         {
             @Override
             public void opened( File logFile, long logVersion, long lastTransactionId, boolean clean )
-            {
-            }
-
-            @Override
-            public void failureToTruncate( File logFile, IOException e )
             {
             }
         }
@@ -74,13 +67,14 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     private final ByteBuffer headerBuffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
     private PhysicalWritableLogChannel writer;
     private final LogVersionRepository logVersionRepository;
-    private PhysicalLogVersionedStoreChannel channel;
     private final LogVersionBridge readerLogVersionBridge;
 
+    private volatile PhysicalLogVersionedStoreChannel channel;
+
     public PhysicalLogFile( FileSystemAbstraction fileSystem, PhysicalLogFiles logFiles, long rotateAtSize,
-                            TransactionIdStore transactionIdStore,
-                            LogVersionRepository logVersionRepository, Monitor monitor,
-                            TransactionMetadataCache transactionMetadataCache )
+            TransactionIdStore transactionIdStore,
+            LogVersionRepository logVersionRepository, Monitor monitor,
+            TransactionMetadataCache transactionMetadataCache )
     {
         this.fileSystem = fileSystem;
         this.rotateAtSize = rotateAtSize;
@@ -115,16 +109,20 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         writer = new PhysicalWritableLogChannel( channel );
     }
 
-    @Override
-    public void stop() throws Throwable
-    {
-        writer.close();
-        channel.close();
-    }
-
+    // In order to be able to write into a logfile after life.stop during shutdown sequence
+    // we will close channel and writer only during shutdown phase when all pending changes (like last
+    // checkpoint) are already in
     @Override
     public void shutdown() throws Throwable
     {
+        if ( writer != null )
+        {
+            writer.close();
+        }
+        if ( channel != null )
+        {
+            channel.close();
+        }
     }
 
     @Override
@@ -134,7 +132,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
          * Whereas channel.size() should be fine, we're safer calling position() due to possibility
          * of this file being memory mapped or whatever.
          */
-        return (channel.position() >= rotateAtSize);
+        return channel.position() >= rotateAtSize;
     }
 
     @Override
@@ -144,14 +142,14 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         writer.setChannel( channel );
     }
 
-    private PhysicalLogVersionedStoreChannel rotate( LogVersionedStoreChannel currentLog )
-            throws IOException
+    private PhysicalLogVersionedStoreChannel rotate( LogVersionedStoreChannel currentLog ) throws IOException
     {
         /*
          * The store is now flushed. If we fail now the recovery code will open the
          * current log file and replay everything. That's unnecessary but totally ok.
          */
         long newLogVersion = logVersionRepository.incrementAndGetVersion();
+        currentLog.flush();
         /*
          * The log version is now in the store, flushed and persistent. If we crash
          * now, on recovery we'll attempt to open the version we're about to create
@@ -198,14 +196,15 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     }
 
     public static PhysicalLogVersionedStoreChannel openForVersion( PhysicalLogFiles logFiles,
-                                                                   FileSystemAbstraction fileSystem,
-                                                                   long version ) throws IOException
+            FileSystemAbstraction fileSystem,
+            long version ) throws IOException
     {
         final File fileToOpen = logFiles.getLogFileForVersion( version );
 
         if ( !fileSystem.fileExists( fileToOpen ) )
         {
-            throw new FileNotFoundException( String.format( "File does not exist [%s]", fileToOpen.getCanonicalPath() ) );
+            throw new FileNotFoundException( String.format( "File does not exist [%s]",
+                    fileToOpen.getCanonicalPath() ) );
         }
 
         StoreChannel rawChannel;
@@ -215,14 +214,29 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         }
         catch ( FileNotFoundException cause )
         {
-            throw Exceptions.withCause( new FileNotFoundException( String.format( "File could not be opened [%s]", fileToOpen.getCanonicalPath() ) ), cause );
+            throw Exceptions.withCause( new FileNotFoundException( String.format( "File could not be opened [%s]",
+                    fileToOpen.getCanonicalPath() ) ), cause );
         }
 
         ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
         LogHeader header = readLogHeader( buffer, rawChannel, true );
-        assert header.logVersion == version;
+        assert header != null && header.logVersion == version;
 
         return new PhysicalLogVersionedStoreChannel( rawChannel, version, header.logFormatVersion );
+    }
+
+
+    public static PhysicalLogVersionedStoreChannel tryOpenForVersion( PhysicalLogFiles logFiles,
+            FileSystemAbstraction fileSystem, long version )
+    {
+        try
+        {
+            return openForVersion( logFiles, fileSystem, version );
+        }
+        catch ( IOException ex )
+        {
+            return null;
+        }
     }
 
     @Override
@@ -252,7 +266,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
             }
 
             long lowTransactionId = previousLogLastTxId + 1;
-            LogPosition position = new LogPosition( logVersion, LOG_HEADER_SIZE );
+            LogPosition position = LogPosition.start( logVersion );
             if ( !visitor.visit( position, lowTransactionId, highTransactionId ) )
             {
                 break;

@@ -21,9 +21,11 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.CypherCompiler.{CLOCK, DEFAULT_QUERY_PLAN_TTL, DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD}
-import org.neo4j.cypher.internal.compatibility.WrappedMonitors
-import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v2_2.{CostPlannerName, CypherCompilerFactory, InfoLogger}
+import org.neo4j.cypher.internal.compatibility.{EntityAccessorWrapper2_3, WrappedMonitors2_3}
+import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerFactory, GreedyPlannerName, InfoLogger, _}
+import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.impl.core.NodeManager
 
 class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
 
@@ -152,7 +154,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
 
   def plan(query: String): (Double, Double) = {
     val compiler = createCurrentCompiler
-    val (prepareTime, preparedQuery) = measure(compiler.prepareQuery(query, None))
+    val (prepareTime, preparedQuery) = measure(compiler.prepareQuery(query, query, devNullLogger))
     val (planTime, _) = graph.inTx {
       measure(compiler.executionPlanBuilder.build(planContext, preparedQuery))
     }
@@ -167,16 +169,26 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
   }
 
   def createCurrentCompiler = {
+    val nodeManager = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[NodeManager])
+
     CypherCompilerFactory.costBasedCompiler(
       graph = graph,
-      queryCacheSize = 1,
-      statsDivergenceThreshold = DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD,
-      queryPlanTTL = DEFAULT_QUERY_PLAN_TTL,
+      new EntityAccessorWrapper2_3(nodeManager),
+      CypherCompilerConfiguration(
+        queryCacheSize = 1,
+        statsDivergenceThreshold = DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD,
+        queryPlanTTL = DEFAULT_QUERY_PLAN_TTL,
+        useErrorsOverWarnings = false,
+        idpMaxTableSize = 128,
+        idpIterationDuration = 1000,
+        nonIndexedLabelWarningThreshold = 10000L
+      ),
       clock = CLOCK,
-      monitors = new WrappedMonitors(kernelMonitors),
+      monitors = new WrappedMonitors2_3(kernelMonitors),
       logger = DEV_NULL,
-      plannerName = Some(CostPlannerName),
-      rewriterSequencer = RewriterStepSequencer.newPlain _
+      rewriterSequencer = RewriterStepSequencer.newPlain,
+      plannerName = Some(GreedyPlannerName),
+      runtimeName = Some(InterpretedRuntimeName)
     )
   }
 

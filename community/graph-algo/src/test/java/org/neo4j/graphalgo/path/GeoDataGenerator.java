@@ -20,6 +20,7 @@
 package org.neo4j.graphalgo.path;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,12 +31,11 @@ import org.neo4j.graphalgo.EstimateEvaluator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
+import org.neo4j.unsafe.batchinsert.BatchInserters;
 
 import static java.lang.Math.abs;
 import static java.lang.Math.pow;
 import static java.lang.Math.sqrt;
-
-import static org.neo4j.unsafe.batchinsert.BatchInserters.inserter;
 
 /**
  * Data generator that can generate geographic graph data. The generated data is not realistic in terms of how
@@ -66,9 +66,9 @@ public class GeoDataGenerator
         return this;
     }
 
-    public void generate( File storeDir )
+    public void generate( File storeDir ) throws IOException
     {
-        BatchInserter inserter = inserter( storeDir.getAbsolutePath() );
+        BatchInserter inserter = BatchInserters.inserter( storeDir.getAbsoluteFile() );
         Grid grid = new Grid();
         try
         {
