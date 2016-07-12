@@ -124,6 +124,10 @@
               <target name="hipster build">
 
                 <exec executable="npm" dir="${project.basedir}" osfamily="unix" failonerror="true">
+                  <arg line="--color=false config set registry http://registry.npmjs.org/" />
+                </exec>
+
+                <exec executable="npm" dir="${project.basedir}" osfamily="unix" failonerror="true">
                   <arg line="--color=false install" />
                 </exec>
 
