@@ -72,9 +72,9 @@ public class RaftMembershipState extends LifecycleAdapter
     private MembershipEntry appended;
     long ordinal; // persistence ordinal must be increased each time we change committed or appended
 
-    public static RaftMembershipState startState()
+    public RaftMembershipState()
     {
-        return new RaftMembershipState( -1, null, null );
+        this( -1, null, null );
     }
 
     RaftMembershipState( long ordinal, MembershipEntry committed, MembershipEntry appended )
@@ -175,6 +175,11 @@ public class RaftMembershipState extends LifecycleAdapter
                '}';
     }
 
+    public RaftMembershipState newInstance()
+    {
+        return new RaftMembershipState( ordinal, committed, appended );
+    }
+
     public static class Marshal extends SafeStateMarshal<RaftMembershipState>
     {
         MembershipEntry.Marshal entryMarshal = new MembershipEntry.Marshal();
@@ -182,7 +187,7 @@ public class RaftMembershipState extends LifecycleAdapter
         @Override
         public RaftMembershipState startState()
         {
-            return RaftMembershipState.startState();
+            return new RaftMembershipState();
         }
 
         @Override
