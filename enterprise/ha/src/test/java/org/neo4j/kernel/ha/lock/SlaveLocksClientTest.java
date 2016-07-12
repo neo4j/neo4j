@@ -347,6 +347,36 @@ public class SlaveLocksClientTest
         stoppedClient().getLockSessionId();
     }
 
+    @Test( expected = LockClientStoppedException.class )
+    public void acquireSharedFailsWhenClientClosed()
+    {
+        closedClient().acquireShared( NODE, 1 );
+    }
+
+    @Test( expected = LockClientStoppedException.class )
+    public void releaseSharedFailsWhenClientClosed()
+    {
+        closedClient().releaseShared( NODE, 1 );
+    }
+
+    @Test( expected = LockClientStoppedException.class )
+    public void acquireExclusiveFailsWhenClientClosed()
+    {
+        closedClient().acquireExclusive( NODE, 1 );
+    }
+
+    @Test( expected = LockClientStoppedException.class )
+    public void releaseExclusiveFailsWhenClientClosed()
+    {
+        closedClient().releaseExclusive( NODE, 1 );
+    }
+
+    @Test( expected = LockClientStoppedException.class )
+    public void getLockSessionIdWhenClientClosed()
+    {
+        closedClient().getLockSessionId();
+    }
+
     @Test
     public void stopLocalLocksAndEndLockSessionOnMasterWhenStopped()
     {
@@ -445,6 +475,13 @@ public class SlaveLocksClientTest
     private SlaveLocksClient stoppedClient()
     {
         client.stop();
+        return client;
+    }
+
+    private SlaveLocksClient closedClient()
+    {
+        client.close();
+        client.acquireShared( NODE, 1 ); // trigger new lock session initialization
         return client;
     }
 }
