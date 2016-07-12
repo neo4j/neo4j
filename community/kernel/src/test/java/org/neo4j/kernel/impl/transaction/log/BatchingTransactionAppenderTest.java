@@ -332,7 +332,7 @@ public class BatchingTransactionAppenderTest
         // Given
         IOException ioex = new IOException( "boom!" );
         FlushablePositionAwareChannel channel = mock( FlushablePositionAwareChannel.class, RETURNS_MOCKS );
-        when (channel.put( anyByte() ) ).thenReturn( channel );
+        when( channel.put( anyByte() ) ).thenReturn( channel );
         when( channel.putLong( anyLong() ) ).thenThrow( ioex );
         when( channel.put( anyByte() ) ).thenThrow( ioex );
         when( logFile.getWriter() ).thenReturn( channel );

@@ -167,8 +167,9 @@ public class StateMachineProxyFactory
                     if ( foundMatch )
                     // State machine could only partially handle this interface
                     {
-                        exception = new IllegalArgumentException( "State machine for " + stateMachine.getMessageType
-                                ().getName() + " cannot handle method:" + method.getName() );
+                        exception = new IllegalArgumentException(
+                                "State machine for " + stateMachine.getMessageType().getName() +
+                                " cannot handle method:" + method.getName() );
                     }
 
                     // Continue searching

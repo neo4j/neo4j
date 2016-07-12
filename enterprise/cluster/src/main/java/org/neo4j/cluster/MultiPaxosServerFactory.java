@@ -168,8 +168,8 @@ public class MultiPaxosServerFactory
             }
         } );
 
-        stateMachines.addMessageProcessor( new HeartbeatRefreshProcessor( stateMachines.getOutgoing
-                (), context.getClusterContext() ) );
+        stateMachines.addMessageProcessor( new HeartbeatRefreshProcessor( stateMachines.getOutgoing(),
+                context.getClusterContext() ) );
         input.addMessageProcessor( new HeartbeatIAmAliveProcessor( stateMachines.getOutgoing(),
                 context.getClusterContext() ) );
 

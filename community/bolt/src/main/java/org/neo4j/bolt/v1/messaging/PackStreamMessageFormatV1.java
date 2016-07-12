@@ -274,7 +274,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 catch( PackStream.PackStreamException e )
                 {
                     throw new BoltIOException( Status.Request.InvalidFormat,
-                            "Unable to read " + messageTypeName (type) + " message. " +
+                            "Unable to read " + messageTypeName( type ) + " message. " +
                             "Error was: " + e.getMessage(), e );
                 }
             }

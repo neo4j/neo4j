@@ -141,7 +141,7 @@ public abstract class SpecSuiteResources extends Enclosed
 
     private static File obtainTargetDirectory( boolean create, String specSuiteName, String suffix )
     {
-        File directory = new File( new File ( new File( "target" ), specSuiteName ), suffix ).getAbsoluteFile();
+        File directory = new File( new File( new File( "target" ), specSuiteName ), suffix ).getAbsoluteFile();
         if ( !directory.exists() )
         {
             if ( !(create && directory.mkdirs()) )

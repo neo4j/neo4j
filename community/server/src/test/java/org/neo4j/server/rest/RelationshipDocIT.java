@@ -135,9 +135,10 @@ public class RelationshipDocIT extends AbstractRestFunctionalDocTestBase
     {
         data.get();
         Relationship loves = getFirstRelationshipFromRomeoNode();
-        gen().withHeader( StreamingFormat.STREAM_HEADER, "true" ).expectedStatus( Status.NOT_FOUND.getStatusCode
-                () ).delete(
-                getPropertiesUri( loves ) + "/non-existent" ).entity();
+        gen().withHeader( StreamingFormat.STREAM_HEADER, "true" )
+                .expectedStatus( Status.NOT_FOUND.getStatusCode() )
+                .delete( getPropertiesUri( loves ) + "/non-existent" )
+                .entity();
     }
 
     @Test

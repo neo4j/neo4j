@@ -1009,8 +1009,8 @@ public class RestfulGraphDatabase
                             String.valueOf( entityBody.get( "key" ) ),
                             getOrCreateValue, extractNodeIdOrNull( getStringOrNull(
                             entityBody, "uri" ) ), getMapOrNull( entityBody, "properties" ) );
-                    return result.other() ? output.created( result.first() ) : output.okIncludeLocation( result.first
-                            () );
+                    return result.other() ? output.created( result.first() )
+                                          : output.okIncludeLocation( result.first() );
 
                 case CreateOrFail:
                     entityBody = input.readMap( postBody, "key", "value" );
@@ -1107,8 +1107,8 @@ public class RestfulGraphDatabase
                     entityBody = input.readMap( postBody, "key", "value" );
                     result = actions.getOrCreateIndexedRelationship( indexName,
                             String.valueOf( entityBody.get( "key" ) ),
-                            String.valueOf( entityBody.get( "value" ) ), extractRelationshipIdOrNull( getStringOrNull
-                            ( entityBody, "uri" ) ),
+                            String.valueOf( entityBody.get( "value" ) ),
+                            extractRelationshipIdOrNull( getStringOrNull( entityBody, "uri" ) ),
                             extractNodeIdOrNull( getStringOrNull( entityBody, "start" ) ),
                             getStringOrNull( entityBody, "type" ), extractNodeIdOrNull( getStringOrNull( entityBody,
                             "end" ) ),
@@ -1119,8 +1119,8 @@ public class RestfulGraphDatabase
                     entityBody = input.readMap( postBody, "key", "value" );
                     result = actions.getOrCreateIndexedRelationship( indexName,
                             String.valueOf( entityBody.get( "key" ) ),
-                            String.valueOf( entityBody.get( "value" ) ), extractRelationshipIdOrNull( getStringOrNull
-                            ( entityBody, "uri" ) ),
+                            String.valueOf( entityBody.get( "value" ) ),
+                            extractRelationshipIdOrNull( getStringOrNull( entityBody, "uri" ) ),
                             extractNodeIdOrNull( getStringOrNull( entityBody, "start" ) ),
                             getStringOrNull( entityBody, "type" ), extractNodeIdOrNull( getStringOrNull( entityBody,
                             "end" ) ),

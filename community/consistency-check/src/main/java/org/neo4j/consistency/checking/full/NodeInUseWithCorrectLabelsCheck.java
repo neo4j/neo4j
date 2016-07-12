@@ -58,9 +58,9 @@ public class NodeInUseWithCorrectLabelsCheck
                 DynamicNodeLabels dynamicNodeLabels = (DynamicNodeLabels) nodeLabels;
                 long firstRecordId = dynamicNodeLabels.getFirstDynamicRecordId();
                 RecordReference<DynamicRecord> firstRecordReference = records.nodeLabels( firstRecordId );
-                engine.comparativeCheck( firstRecordReference,
-                        new LabelChainWalker<RECORD, REPORT>
-                                (new ExpectedNodeLabelsChecker( nodeRecord )) );
+                ExpectedNodeLabelsChecker expectedNodeLabelsChecker = new ExpectedNodeLabelsChecker( nodeRecord );
+                LabelChainWalker<RECORD,REPORT> checker = new LabelChainWalker<>( expectedNodeLabelsChecker );
+                engine.comparativeCheck( firstRecordReference, checker );
                 nodeRecord.getDynamicLabelRecords(); // I think this is empty in production
             }
             else

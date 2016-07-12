@@ -170,7 +170,7 @@ public class DefinedPropertyTest
     {
         int leftComparison = DefinedProperty.COMPARATOR.compare( leftProperty, rightProperty );
         int rightComparison = DefinedProperty.COMPARATOR.compare( rightProperty, leftProperty );
-        assertThat( sign ( leftComparison ) , equalTo( -sign( rightComparison ) ) );
+        assertThat( sign( leftComparison ), equalTo( -sign( rightComparison ) ) );
         return leftComparison;
     }
 

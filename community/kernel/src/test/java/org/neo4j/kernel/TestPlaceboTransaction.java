@@ -47,7 +47,7 @@ public class TestPlaceboTransaction
     @Before
     public void before() throws Exception
     {
-        ThreadToStatementContextBridge bridge = mock (ThreadToStatementContextBridge.class );
+        ThreadToStatementContextBridge bridge = mock( ThreadToStatementContextBridge.class );
         when( bridge.get() ).thenReturn( mock( Statement.class ) );
         kernelTransaction = spy( KernelTransaction.class );
         Statement statement = mock( Statement.class );

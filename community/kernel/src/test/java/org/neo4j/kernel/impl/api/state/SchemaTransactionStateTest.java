@@ -227,7 +227,7 @@ public class SchemaTransactionStateTest
                 mock( ConstraintIndexCreator.class ), mock( LegacyIndexStore.class ) );
 
         storeStatement = mock(StoreStatement.class);
-        when (state.getStoreStatement()).thenReturn( storeStatement );
+        when( state.getStoreStatement() ).thenReturn( storeStatement );
     }
 
     private static <T> Answer<Iterator<T>> asAnswer( final Iterable<T> values )

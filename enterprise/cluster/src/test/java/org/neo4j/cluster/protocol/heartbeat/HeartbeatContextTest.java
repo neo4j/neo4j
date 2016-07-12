@@ -228,7 +228,7 @@ public class HeartbeatContextTest
         toTest.suspicions( notInCluster, Iterables.asSet( Iterables.<InstanceId, InstanceId>iterable( instanceIds[1] ) ) );
 
         // When
-        List<InstanceId> suspicions = toTest.getSuspicionsOf ( instanceIds[1] );
+        List<InstanceId> suspicions = toTest.getSuspicionsOf( instanceIds[1] );
 
         // Then
         assertThat( suspicions.size(), CoreMatchers.equalTo( 0 ) );

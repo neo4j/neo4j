@@ -196,7 +196,7 @@ public class ImportToolTest
 
             tx.success();
             ResourceIterator<Node> nodes = dbRule.findNodes( DynamicLabel.label( "FIRST 4096" ) );
-            assertEquals (1, Iterators.asList(nodes).size() );
+            assertEquals( 1, Iterators.asList( nodes ).size() );
             nodes = dbRule.findNodes( DynamicLabel.label( "SECOND 4096" ) );
             assertEquals( 1, Iterators.asList( nodes ).size() );
         }

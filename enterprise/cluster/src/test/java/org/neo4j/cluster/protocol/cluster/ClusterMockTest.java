@@ -426,8 +426,7 @@ public class ClusterMockTest
         }
         try
         {
-            assertEquals( "Failed for server" + myId + " is wrong", failed, heartbeatContext.getFailed
-                    () );
+            assertEquals( "Failed for server" + myId + " is wrong", failed, heartbeatContext.getFailed() );
         }
         catch ( AssertionError e )
         {

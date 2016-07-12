@@ -81,7 +81,7 @@ public class SchemaRecordCheckTest
         IndexRule rule = IndexRule.indexRule( schemaRuleId, labelId, propertyKeyId, providerDescriptor );
         when( checker().ruleAccess.loadSingleSchemaRule( schemaRuleId ) ).thenReturn( rule );
 
-        LabelTokenRecord labelTokenRecord = add ( notInUse( new LabelTokenRecord( labelId ) ) );
+        LabelTokenRecord labelTokenRecord = add( notInUse( new LabelTokenRecord( labelId ) ) );
         add(inUse( new PropertyKeyTokenRecord( propertyKeyId ) ) );
 
         // when

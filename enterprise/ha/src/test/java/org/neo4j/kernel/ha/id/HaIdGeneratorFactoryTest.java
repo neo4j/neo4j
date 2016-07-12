@@ -159,7 +159,7 @@ public class HaIdGeneratorFactoryTest
         gen.nextId(); // that will ask the master for an IdRange
 
         // THEN
-        assertEquals ( highIdFromUpdatedRecord, gen.getHighId() );
+        assertEquals( highIdFromUpdatedRecord, gen.getHighId() );
     }
 
     @Test

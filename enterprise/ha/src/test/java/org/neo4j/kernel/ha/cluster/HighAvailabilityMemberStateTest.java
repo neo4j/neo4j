@@ -196,8 +196,8 @@ public class HighAvailabilityMemberStateTest
         assertEquals( TO_SLAVE, newState );
 
         // CASE 3: Got MasterIsAvailable for someone else who is not the master - should fail
-        HighAvailabilityMemberState moreIllegal = TO_SLAVE.masterIsAvailable( context, new InstanceId
-                ( 3 ), SampleUri );
+        InstanceId instanceId = new InstanceId( 3 );
+        HighAvailabilityMemberState moreIllegal = TO_SLAVE.masterIsAvailable( context, instanceId, SampleUri );
         assertEquals( ILLEGAL, moreIllegal );
     }
 

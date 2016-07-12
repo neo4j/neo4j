@@ -48,14 +48,12 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
+import static java.util.Arrays.asList;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.util.Arrays.asList;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 import static org.neo4j.kernel.impl.store.record.IndexRule.constraintIndexRule;
@@ -160,10 +158,8 @@ public class NodeCorrectlyIndexedCheckTest
     {
         IndexAccessorStub reader = new IndexAccessorStub( entries );
         IndexAccessors indexes = mock( IndexAccessors.class );
-        when( indexes.accessorFor( any( IndexRule.class ) ) )
-                .thenReturn( reader );
-        when (indexes.rules() )
-                .thenReturn( asList(indexRule) );
+        when( indexes.accessorFor( any( IndexRule.class ) ) ).thenReturn( reader );
+        when( indexes.rules() ).thenReturn( asList( indexRule ) );
         return indexes;
     }
 

@@ -631,7 +631,7 @@ public class HighAvailabilityMemberStateMachineTest
         return new StateMachineBuilder().build();
     }
 
-    private HighAvailabilityMemberStateMachine buildMockedStateMachine ( HighAvailabilityMemberContext context,
+    private HighAvailabilityMemberStateMachine buildMockedStateMachine( HighAvailabilityMemberContext context,
             ClusterMemberEvents events )
     {
         return new StateMachineBuilder().withContext( context ).withEvents( events ).build();
