@@ -35,7 +35,7 @@ import org.neo4j.graphdb.factory.EnterpriseDatabaseRule;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.RecordStorageIdController;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
@@ -134,7 +134,7 @@ public class IdReuseTest
         assertEquals( "Ids should be sequential", relationship1 + 1, relationship2 );
         assertEquals( "Ids should be sequential", relationship2 + 1, relationship3 );
 
-        final RecordStorageEngine.BufferedIdMaintenanceController idMaintenanceController = getIdMaintenanceController();
+        final RecordStorageIdController idMaintenanceController = getIdMaintenanceController();
 
         deleteRelationshipByLabelAndRelationshipType( marker );
 
@@ -151,7 +151,7 @@ public class IdReuseTest
         Label testLabel = Label.label( "testLabel" );
         long relationshipId = createRelationship( testLabel );
 
-        final RecordStorageEngine.BufferedIdMaintenanceController idMaintenanceController = getIdMaintenanceController();
+        final RecordStorageIdController idMaintenanceController = getIdMaintenanceController();
 
         try ( Transaction transaction = dbRule.beginTx();
               ResourceIterator<Node> nodes = dbRule.findNodes( testLabel ) )
@@ -196,10 +196,9 @@ public class IdReuseTest
         }
     }
 
-    private RecordStorageEngine.BufferedIdMaintenanceController getIdMaintenanceController()
+    private RecordStorageIdController getIdMaintenanceController()
     {
-        return dbRule.getDependencyResolver()
-                .resolveDependency( RecordStorageEngine.BufferedIdMaintenanceController.class );
+        return dbRule.getDependencyResolver().resolveDependency( RecordStorageIdController.class );
     }
 
     private long createRelationship( Label label )

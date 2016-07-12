@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfiguration;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 
 /**
- * Wraps {@link IdGenerator} for those that have {@link IdType#allowAggressiveReuse() aggressive id reuse}
+ * Wraps {@link IdGenerator} for those that have {@link IdTypeConfiguration#allowAggressiveReuse() aggressive id reuse}
  * so that ids can be {@link IdGenerator#freeId(long) freed} at safe points in time, after all transactions
  * which were active at the time of freeing, have been closed.
  */
