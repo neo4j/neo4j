@@ -68,8 +68,9 @@ public class SecuritySettings
     public static final Setting<HostnamePort> ldap_server =
             setting( "dbms.security.realms.ldap.host", HOSTNAME_PORT, "0.0.0.0:389" );
 
-    @Description( "LDAP authentication mechanism. This is one of `simple` or `sasl`, where `simple` is basic username" +
-                  " and password authentication and `sasl` is used for more advanced mechanisms. See RFC 2251 LDAPv3 " +
+    @Description( "LDAP authentication mechanism. This is one of `simple` or a SASL mechanism supported by JNDI, " +
+                  "e.g. `DIGEST-MD5`. `simple` is basic username" +
+                  " and password authentication and SASL is used for more advanced mechanisms. See RFC 2251 LDAPv3 " +
                   "documentation for more details." )
     public static final Setting<String> ldap_auth_mechanism =
             setting( "dbms.security.realms.ldap.auth_mechanism", STRING, "simple" );
@@ -78,7 +79,7 @@ public class SecuritySettings
             "The LDAP referral behavior when creating a connection. This is one of `follow`, `ignore` or `throw`.\n" +
             "* `follow` automatically follows any referrals\n" +
             "* `ignore` ignores any referrals\n" +
-            "* `throw` throws a `javax.naming.ReferralException` exception\n" )
+            "* `throw` throws a `javax.naming.ReferralException` exception, which will lead to authentication failure\n" )
     public static final Setting<String> ldap_referral =
             setting( "dbms.security.realms.ldap.referral", STRING, "follow" );
 

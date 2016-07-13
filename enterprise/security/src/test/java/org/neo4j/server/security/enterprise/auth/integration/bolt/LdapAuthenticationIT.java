@@ -21,8 +21,10 @@ package org.neo4j.server.security.enterprise.auth.integration.bolt;
 
 import org.apache.directory.server.annotations.CreateLdapServer;
 import org.apache.directory.server.annotations.CreateTransport;
+import org.apache.directory.server.annotations.SaslMechanism;
 import org.apache.directory.server.core.annotations.ApplyLdifFiles;
 import org.apache.directory.server.core.annotations.ContextEntry;
+import org.apache.directory.server.core.annotations.CreateAuthenticator;
 import org.apache.directory.server.core.annotations.CreateDS;
 import org.apache.directory.server.core.annotations.CreatePartition;
 import org.apache.directory.server.core.annotations.LoadSchema;
@@ -63,18 +65,30 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 @RunWith( FrameworkRunner.class )
 @CreateDS(
         name = "Test",
-        partitions = {@CreatePartition(
+        partitions = { @CreatePartition(
                 name = "example",
-                suffix = "dc=example,dc=com", contextEntry = @ContextEntry(
-                entryLdif = "dn: dc=example,dc=com\n" +
-                        "dc: example\n" +
-                        "o: example\n" +
-                        "objectClass: top\n" +
-                        "objectClass: dcObject\n" +
-                        "objectClass: organization\n\n" ) )}, loadedSchemas = {
-        @LoadSchema( name = "nis", enabled = true ),
-        @LoadSchema( name = "posix", enabled = false )} )
-@CreateLdapServer( transports = {@CreateTransport( protocol = "LDAP", port = 10389, address = "0.0.0.0" )} )
+                suffix = "dc=example,dc=com",
+                contextEntry = @ContextEntry( entryLdif = "dn: dc=example,dc=com\n" +
+                                                          "dc: example\n" +
+                                                          "o: example\n" +
+                                                          "objectClass: top\n" +
+                                                          "objectClass: dcObject\n" +
+                                                          "objectClass: organization\n\n" ) ),
+        },
+        loadedSchemas = {
+                @LoadSchema( name = "nis", enabled = true ),
+                @LoadSchema( name = "posix", enabled = false )
+        } )
+@CreateLdapServer(
+        transports = { @CreateTransport( protocol = "LDAP", port = 10389, address = "0.0.0.0" ) },
+        saslMechanisms = {
+                @SaslMechanism( name = "DIGEST-MD5", implClass = org.apache.directory.server.ldap.handlers.sasl
+                        .digestMD5.DigestMd5MechanismHandler.class ),
+                @SaslMechanism( name = "CRAM-MD5", implClass = org.apache.directory.server.ldap.handlers.sasl
+                        .cramMD5.CramMd5MechanismHandler.class )
+        },
+        saslHost = "0.0.0.0"
+)
 public class LdapAuthenticationIT extends AbstractLdapTestUnit
 {
     @Rule
@@ -128,6 +142,58 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
                 .send( TransportTestUtil.chunk(
                         init( "TestClient/1.1", map( "principal", "neo",
                                 "credentials", "abc123", "scheme", "basic" ) ) ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+    }
+
+    @Test
+    @ApplyLdifFiles( "ldap_test_data.ldif" )
+    public void shouldBeAbleToLoginWithLdapUsingSaslDigestMd5() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen(
+                settings -> {
+                    settings.put( SecuritySettings.ldap_auth_mechanism, "DIGEST-MD5" );
+                    settings.put( SecuritySettings.ldap_user_dn_template, "{0}" );
+                }
+        ) );
+
+        // When
+        String principal = "neo4j";
+        String credentials = "{MD5}6ZoYxCjLONXyYIU2eJIuAw=="; // Hashed 'abc123' (see ldap_test_data.ldif)
+
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", map( "principal", principal,
+                                "credentials", credentials, "scheme", "basic" ) ) ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+    }
+
+    @Test
+    @ApplyLdifFiles( "ldap_test_data.ldif" )
+    public void shouldBeAbleToLoginWithLdapUsingSaslCramMd5() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen(
+                settings -> {
+                    settings.put( SecuritySettings.ldap_auth_mechanism, "CRAM-MD5" );
+                    settings.put( SecuritySettings.ldap_user_dn_template, "{0}" );
+                }
+        ) );
+
+        // When
+        String principal = "neo4j";
+        String credentials = "{MD5}6ZoYxCjLONXyYIU2eJIuAw=="; // Hashed 'abc123' (see ldap_test_data.ldif)
+
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", map( "principal", principal,
+                                "credentials", credentials, "scheme", "basic" ) ) ) );
 
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
