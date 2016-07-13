@@ -50,6 +50,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
+import org.neo4j.kernel.api.bolt.SessionTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
@@ -63,6 +64,7 @@ import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
+import org.neo4j.kernel.impl.enterprise.StandardSessionTracker;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
@@ -203,6 +205,8 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                         databaseHealthSupplier, logProvider ),
                 txPulling, platformModule.dataSourceManager, new ConnectToRandomCoreServer( discoveryService ),
                 new ExponentialBackoffStrategy( 1, TimeUnit.SECONDS ), logProvider, discoveryService, config ) );
+
+        dependencies.satisfyDependency( createSessionTracker() );
     }
 
     public static AdvertisedSocketAddress extractBoltAddress( Config config )
@@ -264,5 +268,11 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         public void stop() throws Throwable
         {
         }
+    }
+
+    @Override
+    protected SessionTracker createSessionTracker()
+    {
+        return new StandardSessionTracker();
     }
 }

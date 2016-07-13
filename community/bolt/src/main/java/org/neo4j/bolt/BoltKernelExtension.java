@@ -57,7 +57,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.api.bolt.SessionManager;
+import org.neo4j.kernel.api.bolt.SessionTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -123,7 +123,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         ThreadToStatementContextBridge txBridge();
 
-        SessionManager sessionManager();
+        SessionTracker sessionManager();
     }
 
     public BoltKernelExtension()

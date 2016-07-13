@@ -19,13 +19,33 @@
  */
 package org.neo4j.kernel.api.bolt;
 
+import java.util.Collections;
 import java.util.Set;
 
-public interface SessionManager
+public interface SessionTracker
 {
     void sessionActivated( HaltableUserSession session );
 
     void sessionHalted( HaltableUserSession session );
 
     Set<HaltableUserSession> getActiveSessions();
+
+    SessionTracker NOOP = new SessionTracker()
+    {
+        @Override
+        public void sessionActivated( HaltableUserSession session )
+        {
+        }
+
+        @Override
+        public void sessionHalted( HaltableUserSession session )
+        {
+        }
+
+        @Override
+        public Set<HaltableUserSession> getActiveSessions()
+        {
+            return Collections.emptySet();
+        }
+    };
 }

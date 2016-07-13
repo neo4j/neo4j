@@ -40,7 +40,6 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.bolt.SessionManager;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.api.security.AuthSubject;
@@ -170,11 +169,6 @@ public class DataSourceModule
         Procedures procedures = setupProcedures( platformModule, editionModule );
 
         deps.satisfyDependency( new NonTransactionalDbmsOperations.Factory( procedures ) );
-
-        for ( SessionManager candidate : Service.load( SessionManager.class ) )
-        {
-            deps.satisfyDependency( candidate );
-        }
 
         NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup(
                 editionModule.labelTokenHolder,

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.enterprise;
 
-
+import org.neo4j.kernel.api.bolt.SessionTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
@@ -41,6 +41,7 @@ public class EnterpriseEditionModule extends CommunityEditionModule
         super( platformModule );
         platformModule.dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
+        platformModule.dependencies.satisfyDependency( createSessionTracker() );
     }
 
     @Override
@@ -53,5 +54,11 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     protected ConstraintSemantics createSchemaRuleVerifier()
     {
         return new EnterpriseConstraintSemantics();
+    }
+
+    @Override
+    protected SessionTracker createSessionTracker()
+    {
+        return new StandardSessionTracker();
     }
 }

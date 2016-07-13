@@ -34,7 +34,7 @@ import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.bolt.SessionManager;
+import org.neo4j.kernel.api.bolt.SessionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AccessMode;
@@ -705,10 +705,10 @@ public class SessionStateMachine implements Session, SessionState
         void sessionHalted( Session session );
     }
     public SessionStateMachine( String connectionDescriptor, UsageData usageData, GraphDatabaseFacade db, ThreadToStatementContextBridge txBridge,
-            StatementRunner engine, LogService logging, Authentication authentication, SessionManager sessionManager )
+            StatementRunner engine, LogService logging, Authentication authentication, SessionTracker sessionTracker )
     {
         this( new StandardStateMachineSPI( connectionDescriptor, usageData, db, engine, logging, authentication,
-                txBridge, sessionManager ));
+                txBridge, sessionTracker ));
     }
     public SessionStateMachine( SPI spi )
     {

@@ -68,7 +68,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.exceptions.Status.Session.InvalidSession;
 
 @RunWith( Parameterized.class )
-public class BoltSessionIT
+public class BoltSessionManagementIT
 {
     @Before
     public void setup() throws Exception

@@ -31,7 +31,7 @@ import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.KernelTransaction;
 
 import org.neo4j.kernel.api.bolt.HaltableUserSession;
-import org.neo4j.kernel.api.bolt.SessionManager;
+import org.neo4j.kernel.api.bolt.SessionTracker;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
@@ -226,9 +226,9 @@ public class AuthProcedures
     {
         ensureAdminAuthSubject();
 
-        SessionManager sessionManager = getSessionManager();
+        SessionTracker sessionTracker = getSessionTracker();
         return countSessionByUsername(
-                sessionManager.getActiveSessions().stream()
+                sessionTracker.getActiveSessions().stream()
                         .filter( session -> !session.willBeHalted() )
                         .map( HaltableUserSession::username )
                 );
@@ -247,7 +247,7 @@ public class AuthProcedures
         subject.getUserManager().getUser( username );
 
         Long killCount = 0L;
-        for ( HaltableUserSession session : getSessionManager().getActiveSessions() )
+        for ( HaltableUserSession session : getSessionTracker().getActiveSessions() )
         {
             if ( session.username().equals( username ) )
             {
@@ -266,9 +266,9 @@ public class AuthProcedures
         return graph.getDependencyResolver().resolveDependency( KernelTransactions.class ).activeTransactions();
     }
 
-    private SessionManager getSessionManager()
+    private SessionTracker getSessionTracker()
     {
-        return graph.getDependencyResolver().resolveDependency( SessionManager.class );
+        return graph.getDependencyResolver().resolveDependency( SessionTracker.class );
     }
 
     private Stream<TransactionResult> countTransactionByUsername( Stream<String> usernames )

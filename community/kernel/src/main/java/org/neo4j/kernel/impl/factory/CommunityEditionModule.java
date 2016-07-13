@@ -118,6 +118,8 @@ public class CommunityEditionModule extends EditionModule
         registerRecovery( platformModule.databaseInfo, life, dependencies );
 
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
+
+        dependencies.satisfyDependency( createSessionTracker() );
     }
 
     protected IdTypeConfigurationProvider createIdTypeConfigurationProvider( Config config )

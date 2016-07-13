@@ -28,7 +28,7 @@ import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.concurrent.DecayingFlags;
-import org.neo4j.kernel.api.bolt.SessionManager;
+import org.neo4j.kernel.api.bolt.SessionTracker;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -51,11 +51,11 @@ class StandardStateMachineSPI implements SessionStateMachine.SPI
     private final Authentication authentication;
     private final ThreadToStatementContextBridge txBridge;
     private final DecayingFlags featureUsage;
-    private final SessionManager sessionManager;
+    private final SessionTracker sessionTracker;
 
     StandardStateMachineSPI( String connectionDescriptor, UsageData usageData, GraphDatabaseFacade db, StatementRunner statementRunner,
             LogService logging, Authentication authentication, ThreadToStatementContextBridge txBridge,
-            SessionManager sessionManager )
+            SessionTracker sessionTracker )
     {
         this.connectionDescriptor = connectionDescriptor;
         this.usageData = usageData;
@@ -66,7 +66,7 @@ class StandardStateMachineSPI implements SessionStateMachine.SPI
         this.errorReporter = new ErrorReporter( logging );
         this.log = logging.getInternalLog( SessionStateMachine.class );
         this.authentication = authentication;
-        this.sessionManager = sessionManager;
+        this.sessionTracker = sessionTracker;
     }
 
     @Override
@@ -135,12 +135,12 @@ class StandardStateMachineSPI implements SessionStateMachine.SPI
     @Override
     public void sessionActivated( Session session )
     {
-        sessionManager.sessionActivated( session );
+        sessionTracker.sessionActivated( session );
     }
 
     @Override
     public void sessionHalted( Session session )
     {
-        sessionManager.sessionHalted( session );
+        sessionTracker.sessionHalted( session );
     }
 }
