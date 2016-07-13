@@ -70,18 +70,30 @@ public class CheckTxLogs
         System.out.println( "Found " + logs.length + " log files to verify" );
 
         CheckTxLogs tool = new CheckTxLogs( new DefaultFileSystemAbstraction() );
-
-        tool.scan( logs, CheckType.NODE, new PrintingInconsistenciesHandler() );
-        tool.scan( logs, CheckType.PROPERTY, new PrintingInconsistenciesHandler() );
+        if ( !tool.checkAll( logs ) )
+        {
+            System.exit( 1 );
+        }
     }
 
-    <C extends Command, R extends Abstract64BitRecord> void scan( File[] logs, CheckType<C,R> check,
+    public boolean checkAll( File[] logs ) throws IOException
+    {
+        boolean success = true;
+
+        success &= scan( logs, CheckType.NODE, new PrintingInconsistenciesHandler() );
+        success &= scan( logs, CheckType.PROPERTY, new PrintingInconsistenciesHandler() );
+
+        return success;
+    }
+
+    <C extends Command, R extends Abstract64BitRecord> boolean scan( File[] logs, CheckType<C,R> check,
             InconsistenciesHandler handler ) throws IOException
     {
         System.out.println( "Checking logs for " + check.name() + " inconsistencies" );
 
         CommittedRecords<R> state = new CommittedRecords<>( check );
 
+        boolean validLogs = true;
         for ( File log : logs )
         {
             long commandsRead = 0;
@@ -97,7 +109,7 @@ public class CheckTxLogs
                         {
                             long logVersion = PhysicalLogFiles.getLogVersion( log );
                             C cmd = check.commandClass().cast( command );
-                            process( cmd, check, state, logVersion, handler );
+                            validLogs &= process( cmd, check, state, logVersion, handler );
                         }
                     }
                     commandsRead++;
@@ -106,15 +118,18 @@ public class CheckTxLogs
             System.out.println( "Processed " + log.getCanonicalPath() + " with " + commandsRead + " commands" );
             System.out.println( state );
         }
+
+        return validLogs;
     }
 
-    private <C extends Command, R extends Abstract64BitRecord> void process( C command, CheckType<C,R> check,
+    private <C extends Command, R extends Abstract64BitRecord> boolean process( C command, CheckType<C,R> check,
             CommittedRecords<R> state, long logVersion, InconsistenciesHandler handler )
     {
         R before = check.before( command );
         R after = check.after( command );
 
-        if ( !state.isValid( before ) )
+        boolean isValid = state.isValid( before );
+        if ( !isValid )
         {
             LogRecord<R> seen = state.get( before.getId() );
             LogRecord<R> current = new LogRecord<>( before, logVersion );
@@ -123,6 +138,8 @@ public class CheckTxLogs
         }
 
         state.put( after, logVersion );
+
+        return isValid;
     }
 
     private static File parseDir( Args args )
