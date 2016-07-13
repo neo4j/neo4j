@@ -342,7 +342,7 @@ public class MetaDataStoreTest
         metaDataStore.close();
         try
         {
-            metaDataStore.setLastCommittedAndClosedTransactionId( 1, 1, BASE_TX_COMMIT_TIMESTAMP, 1, 1 );
+            metaDataStore.setLastCommittedAndClosedTransactionId( 1, 2, BASE_TX_COMMIT_TIMESTAMP, 3, 4 );
             fail( "Expected exception reading from MetaDataStore after being closed." );
         }
         catch ( Exception e )

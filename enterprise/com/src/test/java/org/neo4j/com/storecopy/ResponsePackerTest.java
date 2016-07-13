@@ -88,7 +88,7 @@ public class ResponsePackerTest
                         // Move the target transaction id forward one step, effectively always keeping it out of reach
                         transactionIdStore.setLastCommittedAndClosedTransactionId(
                                 transactionIdStore.getLastCommittedTransactionId() + 1, 0, BASE_TX_COMMIT_TIMESTAMP,
-                                0, 0 );
+                                3, 4 );
                         return true;
                     }
                 };

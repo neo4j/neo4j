@@ -87,6 +87,7 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -529,7 +530,7 @@ public class NeoStoresTest
             metaDataStore.setCreationTime( 3 );
             metaDataStore.setRandomNumber( 4 );
             metaDataStore.setCurrentLogVersion( 5 );
-            metaDataStore.setLastCommittedAndClosedTransactionId( 6, 0, 0, 0, 0 );
+            metaDataStore.setLastCommittedAndClosedTransactionId( 6, 0, 0, 43, 44 );
             metaDataStore.setStoreVersion( recordVersion );
 
             metaDataStore.setGraphNextProp( 8 );
@@ -541,7 +542,6 @@ public class NeoStoresTest
         {
             channel.position( 0 );
             channel.write( ByteBuffer.wrap( UTF8.encode( "This is some data that is not a record." ) ) );
-
         }
 
         MetaDataStore.setRecord( pageCache, file, Position.STORE_VERSION, recordVersion );
@@ -553,9 +553,11 @@ public class NeoStoresTest
             assertEquals( FIELD_NOT_PRESENT, metaDataStore.getRandomNumber() );
             assertEquals( FIELD_NOT_PRESENT, metaDataStore.getCurrentLogVersion() );
             assertEquals( FIELD_NOT_PRESENT, metaDataStore.getLastCommittedTransactionId() );
+            assertEquals( FIELD_NOT_PRESENT, metaDataStore.getLastClosedTransactionId() );
             assertEquals( recordVersion, metaDataStore.getStoreVersion() );
             assertEquals( 8, metaDataStore.getGraphNextProp() );
             assertEquals( 9, metaDataStore.getLatestConstraintIntroducingTx() );
+            assertArrayEquals( metaDataStore.getLastClosedTransaction(), new long[]{FIELD_NOT_PRESENT,44,43} );
         }
     }
 
@@ -642,7 +644,7 @@ public class NeoStoresTest
             metaDataStore.setCreationTime( 3 );
             metaDataStore.setRandomNumber( 4 );
             metaDataStore.setCurrentLogVersion( 5 );
-            metaDataStore.setLastCommittedAndClosedTransactionId( 6, 0, BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
+            metaDataStore.setLastCommittedAndClosedTransactionId( 6, 42, BASE_TX_COMMIT_TIMESTAMP, 43, 44 );
             metaDataStore.setStoreVersion( recordVersion );
 
             metaDataStore.setGraphNextProp( 8 );
@@ -671,6 +673,7 @@ public class NeoStoresTest
             assertEquals( new TransactionId( 10, 11, BASE_TX_COMMIT_TIMESTAMP ),
                     metaDataStore.getUpgradeTransaction() );
             assertEquals( 12, metaDataStore.getUpgradeTime() );
+            assertArrayEquals( metaDataStore.getLastClosedTransaction(), new long[]{6,44,43} );
         }
     }
 
@@ -694,6 +697,7 @@ public class NeoStoresTest
             // THEN
             assertEquals( new TransactionId( 42, 6666, BASE_TX_COMMIT_TIMESTAMP ),
                     store.getLastCommittedTransaction() );
+            assertArrayEquals( store.getLastClosedTransaction(), new long[]{40,0,LogHeader.LOG_HEADER_SIZE} );
         }
     }
 
@@ -717,6 +721,7 @@ public class NeoStoresTest
             // THEN
             assertEquals( new TransactionId( 40, 4444, BASE_TX_COMMIT_TIMESTAMP ),
                     store.getLastCommittedTransaction() );
+            assertArrayEquals( store.getLastClosedTransaction(), new long[]{40,0,LogHeader.LOG_HEADER_SIZE} );
         }
     }
 
