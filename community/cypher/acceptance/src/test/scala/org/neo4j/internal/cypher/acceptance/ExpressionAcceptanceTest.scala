@@ -19,11 +19,27 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{CypherTypeException, ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
+import org.neo4j.cypher._
 
 import scala.collection.JavaConverters._
 
 class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
+
+  test("accepts property access on type Any") {
+    val query = "WITH [{prop: 1}, 1] AS list RETURN (list[0]).prop AS p"
+
+    val result = executeWithAllPlanners(query)
+
+    result.toList should equal(List(Map("p" -> 1)))
+  }
+
+  test("fails at runtime when doing property access on non-map") {
+    val query = "WITH [{prop: 1}, 1] AS list RETURN (list[1]).prop AS p"
+
+    a [CypherTypeException] should be thrownBy {
+      executeWithAllPlanners(query)
+    }
+  }
 
   test("n[0]") {
     executeScalarWithAllPlannersAndCompatibilityMode[Int]("RETURN [1, 2, 3][0]") should equal(1)
