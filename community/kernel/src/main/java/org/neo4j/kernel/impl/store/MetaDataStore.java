@@ -173,7 +173,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         setUpgradeTransaction( BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP );
         setCurrentLogVersion( 0 );
         setLastCommittedAndClosedTransactionId(
-                BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
+                BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, BASE_TX_LOG_BYTE_OFFSET, BASE_TX_LOG_VERSION );
         setStoreVersion( storeVersionAsLong );
         setGraphNextProp( -1 );
         setLatestConstraintIntroducingTx( 0 );
@@ -185,7 +185,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     // Only for initialization and recovery, so we don't need to lock the records
     @Override
     public void setLastCommittedAndClosedTransactionId(
-            long transactionId, long checksum, long commitTimestamp, long logVersion, long byteOffset )
+            long transactionId, long checksum, long commitTimestamp, long byteOffset, long logVersion )
     {
         assertNotClosed();
         setRecord( Position.LAST_TRANSACTION_ID, transactionId );

@@ -125,8 +125,8 @@ public interface TransactionIdStore
      * @param byteOffset offset in the log file where the committed entry has been written.
      * @param logVersion version of log the committed entry has been written into.
      */
-    void setLastCommittedAndClosedTransactionId( long transactionId, long checksum, long commitTimestamp,
-            long logVersion, long byteOffset );
+    void setLastCommittedAndClosedTransactionId( long transactionId, long checksum, long commitTimestamp, long byteOffset,
+            long logVersion );
 
     /**
      * Signals that a transaction with the given transaction id has been fully applied. Calls to this method
