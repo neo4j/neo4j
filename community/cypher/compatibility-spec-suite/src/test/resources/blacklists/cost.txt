@@ -3,7 +3,5 @@ Fail when comparing parameters to nodes
 Comparing nodes to properties
 Fail when comparing nodes to relationships
 Fail when comparing relationships to nodes
-Concatenating lists of different type
-Appending to a list of different type
 Handling property access on the Any type
 Failing when performing property access on a non-map 1

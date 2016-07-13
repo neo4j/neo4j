@@ -64,8 +64,6 @@ Setting and returning the size of a list property
 Setting and returning the size of a list property
 Arithmetic expressions inside aggregation
 Concatenating and returning the size of literal lists
-Concatenating lists of different type
-Appending to a list of different type
 Failing when returning an undefined variable
 Failing when comparing to an undefined variable
 Failing when re-using a relationship in the same pattern
