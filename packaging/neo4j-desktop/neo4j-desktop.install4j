@@ -32,6 +32,7 @@
       <fileEntry mountPoint="262" file="./src/main/install4j/neo4j-community.vmoptions" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="262" file="./src/main/install4j/install.properties" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="262" file="./target/shell-scripts/Neo4j-Management.psd1" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <fileEntry mountPoint="262" file="./target/shell-scripts/neo4j-shared.sh" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="262" file="./target/shell-scripts/neo4j-import" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="262" file="./target/shell-scripts/neo4j-import.bat" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="262" file="./target/shell-scripts/neo4j-shell" overwriteMode="4" shared="false" fileMode="755" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="false" overrideUninstallMode="false" />
@@ -75,6 +76,7 @@
         <include all="false">
           <entry location="bin/Neo4j-Management" fileType="regular" />
           <entry location="bin/Neo4j-Management.psd1" fileType="regular" />
+          <entry location="bin/neo4j-shared.sh" fileType="regular" />
           <entry location="bin/neo4j-import" fileType="regular" />
           <entry location="bin/neo4j-import.bat" fileType="regular" />
           <entry location="bin/neo4j-shell" fileType="regular" />
@@ -713,6 +715,7 @@ return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getComp
       <excludedBeans />
       <overriddenPrincipalLanguage id="en" customLocalizationFile="" />
       <exclude>
+        <entry location="bin/neo4j-shared.sh" fileType="regular" />
         <entry location="bin/neo4j-import" fileType="regular" />
         <entry location="bin/neo4j-shell" fileType="regular" />
         <entry location="bin/neo4j-admin" fileType="regular" />
@@ -734,6 +737,7 @@ return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getComp
       <excludedBeans />
       <overriddenPrincipalLanguage id="en" customLocalizationFile="" />
       <exclude>
+        <entry location="bin/neo4j-shared.sh" fileType="regular" />
         <entry location="bin/neo4j-import" fileType="regular" />
         <entry location="bin/neo4j-shell" fileType="regular" />
         <entry location="bin/neo4j-admin" fileType="regular" />
