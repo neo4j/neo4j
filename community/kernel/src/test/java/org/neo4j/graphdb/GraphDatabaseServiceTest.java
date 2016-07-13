@@ -44,7 +44,8 @@ import static org.junit.Assert.fail;
 
 public class GraphDatabaseServiceTest
 {
-    @Rule public ExpectedException exception = ExpectedException.none();
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     @Test
     public void givenShutdownDatabaseWhenBeginTxThenExceptionIsThrown() throws Exception

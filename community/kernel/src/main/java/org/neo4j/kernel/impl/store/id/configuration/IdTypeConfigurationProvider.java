@@ -17,18 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.id;
+package org.neo4j.kernel.impl.store.id.configuration;
 
-import java.io.File;
+import org.neo4j.kernel.impl.store.id.IdType;
 
-public interface IdGeneratorFactory
+/**
+ * Edition based configuration provider for possible id types.
+ * @see IdType
+ * @see IdTypeConfiguration
+ */
+public interface IdTypeConfigurationProvider
 {
-    IdGenerator open( File filename, IdType idType, long highId, long maxId );
-
-    IdGenerator open( File filename, int grabSize, IdType idType, long highId, long maxId );
-
-    void create( File filename, long highId, boolean throwIfFileExists );
-
-    IdGenerator get( IdType idType );
-
+    /**
+     * Provides configuration object for requested id type.
+     * @param idType id type
+     * @return edition based id type configuration
+     */
+    IdTypeConfiguration getIdTypeConfiguration( IdType idType );
 }

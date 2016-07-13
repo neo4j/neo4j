@@ -34,7 +34,7 @@ import org.neo4j.test.impl.EphemeralIdGenerator;
 public class JumpingIdGeneratorFactory implements IdGeneratorFactory
 {
     private final Map<IdType, IdGenerator> generators = new EnumMap<>( IdType.class );
-    private final IdGenerator forTheRest = new EphemeralIdGenerator( null );
+    private final IdGenerator forTheRest = new EphemeralIdGenerator( null, null );
 
     private final int sizePerJump;
 
@@ -45,6 +45,12 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
 
     @Override
     public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
+    {
+        return get( idType );
+    }
+
+    @Override
+    public IdGenerator open( File filename, IdType idType, long highId, long maxId )
     {
         return get( idType );
     }

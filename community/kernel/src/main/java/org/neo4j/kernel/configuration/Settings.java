@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.configuration;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -39,7 +41,6 @@ import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.Iterables;
 
 import static java.lang.Character.isDigit;
-
 import static org.neo4j.io.fs.FileUtils.fixSeparatorsInPath;
 
 /**
@@ -457,8 +458,10 @@ public class Settings
             for( String item : list)
             {
                 item = item.trim();
-                if( !item.equals( "" ) )
+                if( StringUtils.isNotEmpty( item ) )
+                {
                     result.add( item );
+                }
             }
             return result;
         }

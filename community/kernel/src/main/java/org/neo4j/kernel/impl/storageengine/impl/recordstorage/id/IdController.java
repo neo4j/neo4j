@@ -17,18 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.id;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage.id;
 
-import java.io.File;
 
-public interface IdGeneratorFactory
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+
+/**
+ * Represent abstraction that responsible for any id related operations on a storage engine level: buffering,
+ * maintenance, clearing, resetting, generation.
+ */
+public interface IdController extends Lifecycle
 {
-    IdGenerator open( File filename, IdType idType, long highId, long maxId );
+    /**
+     * Retrieve id generation factory for current storage engine
+     * @return id generation factory
+     */
+    IdGeneratorFactory getIdGeneratorFactory();
 
-    IdGenerator open( File filename, int grabSize, IdType idType, long highId, long maxId );
+    /**
+     * Clear underlying id generation infrastructure (clear buffer of ids to reuse, reset buffers, etc.)
+     */
+    void clear();
 
-    void create( File filename, long highId, boolean throwIfFileExists );
-
-    IdGenerator get( IdType idType );
-
+    /**
+     * Perform ids related maintenance.
+     */
+    void maintenance();
 }
