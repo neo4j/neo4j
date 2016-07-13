@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.dbms;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
@@ -32,23 +33,41 @@ public class NonTransactionalDbmsOperations implements DbmsOperations
 {
 
     private final Procedures procedures;
+    private final KernelTransaction transaction;
 
-    public NonTransactionalDbmsOperations( Procedures procedures )
+    public NonTransactionalDbmsOperations( Procedures procedures, KernelTransaction transaction )
     {
         this.procedures = procedures;
+        this.transaction = transaction;
     }
 
     @Override
     public RawIterator<Object[],ProcedureException> procedureCallDbms( ProcedureSignature.ProcedureName name,
-            Object[] input, AccessMode accessMode ) throws ProcedureException
+            Object[] input ) throws ProcedureException
     {
         CallableProcedure.BasicContext ctx = new CallableProcedure.BasicContext();
-        if ( accessMode instanceof AuthSubject )
+        ctx.put( CallableProcedure.Context.KERNEL_TRANSACTION, transaction );
+        if ( transaction.mode() instanceof AuthSubject )
         {
-            AuthSubject subject = (AuthSubject) accessMode;
+            AuthSubject subject = (AuthSubject) transaction.mode();
             ctx.put( CallableProcedure.Context.AUTH_SUBJECT, subject );
         }
         return procedures.call( ctx, name, input );
     }
 
+    public static class Factory implements DbmsOperations.Factory
+    {
+        private final Procedures procedures;
+
+        public Factory( Procedures procedures )
+        {
+            this.procedures = procedures;
+        }
+
+        @Override
+        public DbmsOperations newInstance( KernelTransaction tx )
+        {
+            return new NonTransactionalDbmsOperations( procedures, tx );
+        }
+    }
 }

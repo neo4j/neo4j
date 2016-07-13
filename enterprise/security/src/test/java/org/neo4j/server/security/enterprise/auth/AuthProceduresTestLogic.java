@@ -80,7 +80,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     public void shouldListSelfTransaction()
     {
         assertSuccess( adminSubject, "CALL dbms.listTransactions()",
-            r -> assertKeyIsMap( r, "username", "transactionCount", map( "adminSubject", "1" ) ) );
+            r -> assertKeyIsMap( r, "username", "activeTransactions", map( "adminSubject", "1" ) ) );
     }
 
     @Test
@@ -95,7 +95,6 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldListTransactions() throws Throwable
     {
-
         ThreadedTransactionCreate<S> write1 = new ThreadedTransactionCreate<>( neo );
         ThreadedTransactionCreate<S> write2 = new ThreadedTransactionCreate<>( neo );
         write1.execute( threading, writeSubject );
@@ -104,7 +103,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         write2.barrier.await();
 
         assertSuccess( adminSubject, "CALL dbms.listTransactions()",
-                r -> assertKeyIsMap( r, "username", "transactionCount",
+                r -> assertKeyIsMap( r, "username", "activeTransactions",
                         map( "adminSubject", "1", "writeSubject", "2" ) ) );
 
         write1.closeAndAssertSuccess();
@@ -114,17 +113,17 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     //---------- terminate transactions for user -----------
 
     @Test
-    public void shouldTerminateTransaction() throws Throwable
+    public void shouldTerminateTransactionForUser() throws Throwable
     {
         ThreadedTransactionCreate<S> write = new ThreadedTransactionCreate<>( neo );
         write.execute( threading, writeSubject );
         write.barrier.await();
 
         assertSuccess( adminSubject, "CALL dbms.terminateTransactionsForUser( 'writeSubject' )",
-                r -> assertKeyIsMap( r, "username", "transactionCount", map( "writeSubject", "1" ) ) );
+                r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "writeSubject", "1" ) ) );
 
         assertSuccess( adminSubject, "CALL dbms.listTransactions()",
-                r -> assertKeyIsMap( r, "username", "transactionCount", map( "adminSubject", "1" ) ) );
+                r -> assertKeyIsMap( r, "username", "activeTransactions", map( "adminSubject", "1" ) ) );
 
         write.closeAndAssertTransactionTermination();
 
@@ -144,10 +143,10 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         write.barrier.await();
 
         assertSuccess( adminSubject, "CALL dbms.terminateTransactionsForUser( 'schemaSubject' )",
-                r -> assertKeyIsMap( r, "username", "transactionCount", map( "schemaSubject", "1" ) ) );
+                r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "schemaSubject", "1" ) ) );
 
         assertSuccess( adminSubject, "CALL dbms.listTransactions()",
-                r ->  assertKeyIsMap( r, "username", "transactionCount",
+                r ->  assertKeyIsMap( r, "username", "activeTransactions",
                         map( "adminSubject", "1", "writeSubject", "1" ) ) );
 
         schema.closeAndAssertTransactionTermination();
@@ -170,13 +169,49 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         schema2.barrier.await();
 
         assertSuccess( adminSubject, "CALL dbms.terminateTransactionsForUser( 'schemaSubject' )",
-                r -> assertKeyIsMap( r, "username", "transactionCount", map( "schemaSubject", "2" ) ) );
+                r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "schemaSubject", "2" ) ) );
 
         assertSuccess( adminSubject, "CALL dbms.listTransactions()",
-                r ->  assertKeyIsMap( r, "username", "transactionCount", map( "adminSubject", "1" ) ) );
+                r ->  assertKeyIsMap( r, "username", "activeTransactions", map( "adminSubject", "1" ) ) );
 
         schema1.closeAndAssertTransactionTermination();
         schema2.closeAndAssertTransactionTermination();
+
+        assertEmpty( adminSubject, "MATCH (n:Test) RETURN n.name AS name" );
+    }
+
+    @Test
+    public void shouldNotTerminateTerminationTransaction() throws InterruptedException, ExecutionException
+    {
+        assertSuccess( adminSubject, "CALL dbms.terminateTransactionsForUser( 'adminSubject' )",
+                r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "adminSubject", "0" ) ) );
+        assertSuccess( readSubject, "CALL dbms.terminateTransactionsForUser( 'readSubject' )",
+                r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "readSubject", "0" ) ) );
+    }
+
+    @Test
+    public void shouldTerminateSelfTransactionsExceptTerminationTransactionIfAdmin() throws Throwable
+    {
+        shouldTerminateSelfTransactionsExceptTerminationTransaction( adminSubject );
+    }
+
+    @Test
+    public void shouldTerminateSelfTransactionsExceptTerminationTransactionIfNotAdmin() throws Throwable
+    {
+        shouldTerminateSelfTransactionsExceptTerminationTransaction( writeSubject );
+    }
+
+    private void shouldTerminateSelfTransactionsExceptTerminationTransaction( S subject ) throws Throwable
+    {
+        ThreadedTransactionCreate<S> create = new ThreadedTransactionCreate<>( neo );
+        create.execute( threading, subject );
+        create.barrier.await();
+
+        String subjectName = neo.nameOf( subject );
+        assertSuccess( subject, "CALL dbms.terminateTransactionsForUser( '" + subjectName + "' )",
+                r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( subjectName, "1" ) ) );
+
+        create.closeAndAssertTransactionTermination();
 
         assertEmpty( adminSubject, "MATCH (n:Test) RETURN n.name AS name" );
     }

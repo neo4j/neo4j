@@ -168,8 +168,7 @@ public class DataSourceModule
         this.queryExecutor = queryExecutor::get;
         Procedures procedures = setupProcedures( platformModule, editionModule );
 
-        DbmsOperations dbmsOperations = new NonTransactionalDbmsOperations( procedures );
-        deps.satisfyDependency( dbmsOperations );
+        deps.satisfyDependency( new NonTransactionalDbmsOperations.Factory( procedures ) );
 
         NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup(
                 editionModule.labelTokenHolder,

@@ -19,17 +19,13 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -40,24 +36,8 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 
-public class AuthProceduresTest
+public class AuthProceduresTest extends KernelIntegrationTest
 {
-    private GraphDatabaseAPI db;
-    private DbmsOperations dbmsOperations;
-
-    @Before
-    public void setup()
-    {
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
-        dbmsOperations = db.getDependencyResolver().resolveDependency( DbmsOperations.class );
-    }
-
-    @After
-    public void cleanup() throws Exception
-    {
-        db.shutdown();
-    }
-
     @Test
         public void callChangePasswordWithAccessModeInDbmsMode() throws Throwable
         {
@@ -67,8 +47,8 @@ public class AuthProceduresTest
             AuthSubject authSubject = mock( AuthSubject.class );
 
             // When
-            RawIterator<Object[], ProcedureException> stream = dbmsOperations
-                    .procedureCallDbms( procedureName( "dbms", "changePassword" ), inputArray, authSubject );
+            RawIterator<Object[], ProcedureException> stream = dbmsOperations( authSubject )
+                    .procedureCallDbms( procedureName( "dbms", "changePassword" ), inputArray );
 
             // Then
             verify( authSubject ).setPassword( (String) inputArray[0] );
@@ -85,7 +65,7 @@ public class AuthProceduresTest
                 inputArray[0] = "newPassword";
 
                 // When
-                dbmsOperations.procedureCallDbms( procedureName( "dbms", "changePassword" ), inputArray, AccessMode.Static.NONE );
+                dbmsOperations( AccessMode.Static.NONE ).procedureCallDbms( procedureName( "dbms", "changePassword" ), inputArray );
                 fail( "Should have failed." );
             }
             catch ( Exception e )

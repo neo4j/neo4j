@@ -63,22 +63,6 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void failWhenCallingListAllLabelsInDbmsMode() throws Throwable
-    {
-        try
-        {
-            // When
-            dbmsOperations().procedureCallDbms( procedureName( "db", "labels" ), new Object[0], Static.NONE );
-            fail( "Should have failed." );
-        }
-        catch ( Exception e )
-        {
-            // Then
-            assertThat( e.getClass(), equalTo( ProcedureException.class ) );
-        }
-    }
-
-    @Test
     public void listPropertyKeys() throws Throwable
     {
         // Given
@@ -92,22 +76,6 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new Object[]{"MyProp"} ) ) );
-    }
-
-    @Test
-    public void failWhenCallingListPropertyKeysInDbmsMode() throws Throwable
-    {
-        try
-        {
-            // When
-            dbmsOperations().procedureCallDbms( procedureName( "db", "propertyKeys" ), new Object[0], Static.NONE );
-            fail( "Should have failed." );
-        }
-        catch ( Exception e )
-        {
-            // Then
-            assertThat( e.getClass(), equalTo( ProcedureException.class ) );
-        }
     }
 
     @Test
@@ -125,23 +93,6 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new Object[]{"MyRelType"} ) ) );
-    }
-
-    @Test
-    public void failWhenCallingListRelationshipTypesInDbmsMode() throws Throwable
-    {
-        try
-        {
-            // When
-            dbmsOperations()
-                    .procedureCallDbms( procedureName( "db", "relationshipTypes" ), new Object[0], Static.NONE );
-            fail( "Should have failed." );
-        }
-        catch ( Exception e )
-        {
-            // Then
-            assertThat( e.getClass(), equalTo( ProcedureException.class ) );
-        }
     }
 
     @Test
@@ -169,28 +120,12 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void failWhenCallingListProceduresInDbmsMode() throws Throwable
+    public void failWhenCallingNonExistingProcedures() throws Throwable
     {
         try
         {
             // When
-            dbmsOperations().procedureCallDbms( procedureName( "sys", "procedures" ), new Object[0], Static.NONE );
-            assertThat( "This should never get here", 1 == 2 );
-        }
-        catch ( Exception e )
-        {
-            // Then
-            assertThat( e.getClass(), equalTo( ProcedureException.class ) );
-        }
-    }
-
-    @Test
-    public void failWhenCallingNonExistentProcedures() throws Throwable
-    {
-        try
-        {
-            // When
-            dbmsOperations().procedureCallDbms( procedureName( "dbms", "iDoNotExist" ), new Object[0], Static.NONE );
+            dbmsOperations( Static.NONE ).procedureCallDbms( procedureName( "dbms", "iDoNotExist" ), new Object[0] );
             fail( "This should never get here" );
         }
         catch ( Exception e )
