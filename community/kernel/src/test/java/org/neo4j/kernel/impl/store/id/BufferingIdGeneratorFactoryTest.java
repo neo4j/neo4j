@@ -28,6 +28,7 @@ import java.util.function.Supplier;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -48,7 +49,7 @@ public class BufferingIdGeneratorFactoryTest
         MockedIdGeneratorFactory actual = new MockedIdGeneratorFactory();
         ControllableSnapshotSupplier boundaries = new ControllableSnapshotSupplier();
         BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory(
-                actual, boundaries, IdReuseEligibility.ALWAYS );
+                actual, boundaries, IdReuseEligibility.ALWAYS, new CommunityIdTypeConfigurationProvider() );
         IdGenerator idGenerator = bufferingIdGeneratorFactory.open(
                 new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, 0, Integer.MAX_VALUE );
 
@@ -77,7 +78,8 @@ public class BufferingIdGeneratorFactoryTest
         final long safeZone = MINUTES.toMillis( 1 );
         ControllableSnapshotSupplier boundaries = new ControllableSnapshotSupplier();
         BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual,
-                boundaries, t -> clock.currentTimeMillis() - t.snapshotTime() >= safeZone );
+                boundaries, t -> clock.currentTimeMillis() - t.snapshotTime() >= safeZone,
+                new CommunityIdTypeConfigurationProvider() );
 
         IdGenerator idGenerator = bufferingIdGeneratorFactory.open(
                 new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, 0, Integer.MAX_VALUE );
@@ -123,6 +125,12 @@ public class BufferingIdGeneratorFactoryTest
     private static class MockedIdGeneratorFactory implements IdGeneratorFactory
     {
         private final IdGenerator[] generators = new IdGenerator[IdType.values().length];
+
+        @Override
+        public IdGenerator open( File filename, IdType idType, long highId, long maxId )
+        {
+            return open( filename, 0, idType, highId, maxId );
+        }
 
         @Override
         public IdGenerator open( File filename, int grabSize, IdType idType, long highId, long maxId )

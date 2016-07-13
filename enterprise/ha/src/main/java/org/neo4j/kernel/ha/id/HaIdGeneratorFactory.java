@@ -27,14 +27,16 @@ import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfiguration;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -44,6 +46,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
 {
     private final Map<IdType, HaIdGenerator> generators = new EnumMap<>( IdType.class );
     private final FileSystemAbstraction fs;
+    private final IdTypeConfigurationProvider idTypeConfigurationProvider;
     private final IdGeneratorFactory localFactory;
     private final DelegateInvocationHandler<Master> master;
     private final Log log;
@@ -51,13 +54,21 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     private IdGeneratorState globalState = IdGeneratorState.PENDING;
 
     public HaIdGeneratorFactory( DelegateInvocationHandler<Master> master, LogProvider logProvider,
-            RequestContextFactory requestContextFactory, FileSystemAbstraction fs )
+            RequestContextFactory requestContextFactory, FileSystemAbstraction fs, IdTypeConfigurationProvider idTypeConfigurationProvider )
     {
         this.fs = fs;
-        this.localFactory = new DefaultIdGeneratorFactory( fs );
+        this.idTypeConfigurationProvider = idTypeConfigurationProvider;
+        this.localFactory = new DefaultIdGeneratorFactory( fs, idTypeConfigurationProvider );
         this.master = master;
         this.log = logProvider.getLog( getClass() );
         this.requestContextFactory = requestContextFactory;
+    }
+
+    @Override
+    public IdGenerator open( File filename, IdType idType, long highId, long maxId )
+    {
+        IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
+        return open( filename, idTypeConfiguration.getGrabSize(), idType, highId, maxId );
     }
 
     @Override

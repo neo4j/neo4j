@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
@@ -250,7 +251,7 @@ public class HaIdGeneratorFactoryTest
         masterDelegate = new DelegateInvocationHandler<>( Master.class );
         fs = new EphemeralFileSystemAbstraction();
         fac  = new HaIdGeneratorFactory( masterDelegate, NullLogProvider.getInstance(),
-                mock( RequestContextFactory.class ), fs );
+                mock( RequestContextFactory.class ), fs, new CommunityIdTypeConfigurationProvider()  );
     }
 
     @SuppressWarnings( "unchecked" )

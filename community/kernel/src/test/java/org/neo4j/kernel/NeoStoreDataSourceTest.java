@@ -34,6 +34,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -216,11 +217,14 @@ public class NeoStoreDataSourceTest
         Throwable openStoresError = new RuntimeException( "Can't set up modules" );
         doThrow( openStoresError ).when( idGeneratorFactory ).create( any( File.class ), anyLong(), anyBoolean() );
 
+        CommunityIdTypeConfigurationProvider idTypeConfigurationProvider =
+                new CommunityIdTypeConfigurationProvider();
         AssertableLogProvider logProvider = new AssertableLogProvider();
         SimpleLogService logService = new SimpleLogService( logProvider, logProvider );
         PageCache pageCache = pageCacheRule.getPageCache( fs.get() );
 
         NeoStoreDataSource dataSource = dsRule.getDataSource( dir.graphDbDir(), fs.get(), idGeneratorFactory,
+                idTypeConfigurationProvider,
                 pageCache, config.getParams(), mock( DatabaseHealth.class ), logService );
 
         try

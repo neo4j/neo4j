@@ -124,6 +124,7 @@ import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
+import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -133,6 +134,7 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -428,8 +430,9 @@ public class EnterpriseCoreEditionModule extends EditionModule
         MembershipWaiter membershipWaiter =
                 new MembershipWaiter( myself, platformModule.jobScheduler, electionTimeout * 4, batchingMessageHandler, logProvider );
 
+        idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
         ReplicatedIdGeneratorFactory replicatedIdGeneratorFactory =
-                createIdGeneratorFactory( fileSystem, idRangeAcquirer, logProvider );
+                createIdGeneratorFactory( fileSystem, idRangeAcquirer, logProvider, idTypeConfigurationProvider );
 
         this.idGeneratorFactory = dependencies.satisfyDependency( replicatedIdGeneratorFactory );
         dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
@@ -607,9 +610,10 @@ public class EnterpriseCoreEditionModule extends EditionModule
     }
 
     private ReplicatedIdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fileSystem,
-            final ReplicatedIdRangeAcquirer idRangeAcquirer, final LogProvider logProvider )
+            final ReplicatedIdRangeAcquirer idRangeAcquirer, final LogProvider logProvider,
+            IdTypeConfigurationProvider idTypeConfigurationProvider )
     {
-        return new ReplicatedIdGeneratorFactory( fileSystem, idRangeAcquirer, logProvider );
+        return new ReplicatedIdGeneratorFactory( fileSystem, idRangeAcquirer, logProvider, idTypeConfigurationProvider );
     }
 
     private Locks createLockManager( final Config config, final LogService logging, final Replicator replicator,

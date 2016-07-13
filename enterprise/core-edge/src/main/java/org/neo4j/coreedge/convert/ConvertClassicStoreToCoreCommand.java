@@ -212,7 +212,7 @@ public class ConvertClassicStoreToCoreCommand
 
     private long getHighId( File coreDir, DefaultIdGeneratorFactory factory, IdType idType, String store )
     {
-        IdGenerator idGenerator = factory.open( new File( coreDir, idFile( store ) ), idType.getGrabSize(), idType,
+        IdGenerator idGenerator = factory.open( new File( coreDir, idFile( store ) ), idType,
                 -1, Long.MAX_VALUE );
         long highId = idGenerator.getHighId();
         idGenerator.close();

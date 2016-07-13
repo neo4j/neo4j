@@ -50,6 +50,8 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
+import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -82,7 +84,8 @@ public class CommunityEditionModule extends EditionModule
 
         lockManager = dependencies.satisfyDependency( createLockManager( config, logging ) );
 
-        idGeneratorFactory = dependencies.satisfyDependency( createIdGeneratorFactory( fileSystem ) );
+        idTypeConfigurationProvider = createIdTypeConfigurationProvider( config );
+        idGeneratorFactory = dependencies.satisfyDependency( createIdGeneratorFactory( fileSystem, idTypeConfigurationProvider ) );
 
         propertyKeyTokenHolder = life.add( dependencies.satisfyDependency( new DelegatingPropertyKeyTokenHolder(
                 createPropertyKeyCreator( config, dataSourceManager, idGeneratorFactory ) ) ) );
@@ -115,6 +118,11 @@ public class CommunityEditionModule extends EditionModule
         registerRecovery( platformModule.databaseInfo, life, dependencies );
 
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
+    }
+
+    protected IdTypeConfigurationProvider createIdTypeConfigurationProvider( Config config )
+    {
+        return new CommunityIdTypeConfigurationProvider();
     }
 
     protected ConstraintSemantics createSchemaRuleVerifier()
@@ -172,9 +180,9 @@ public class CommunityEditionModule extends EditionModule
         return life.add( new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphAPI ) );
     }
 
-    protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs )
+    protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs, IdTypeConfigurationProvider idTypeConfigurationProvider )
     {
-        return new DefaultIdGeneratorFactory( fs );
+        return new DefaultIdGeneratorFactory( fs, idTypeConfigurationProvider );
     }
 
     public static Locks createLockManager( Config config, LogService logging )

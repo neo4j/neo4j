@@ -49,6 +49,8 @@ import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
+import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
@@ -108,11 +110,10 @@ public class RecordStorageEngineRule extends ExternalResource
         Supplier<KernelTransactionsSnapshot> txSnapshotSupplier =
                 () -> new KernelTransactionsSnapshot( Collections.emptySet(), 0 );
         return life.add( new ExtendedRecordStorageEngine( storeDirectory, config, idGeneratorFactory,
-                IdReuseEligibility.ALWAYS, pageCache, fs, NullLogProvider.getInstance(),
+                IdReuseEligibility.ALWAYS, new CommunityIdTypeConfigurationProvider(), pageCache, fs,
+                NullLogProvider.getInstance(),
                 mock( PropertyKeyTokenHolder.class ), mock( LabelTokenHolder.class ),
-                mock( RelationshipTypeTokenHolder.class ), () ->
-        {
-        }, new StandardConstraintSemantics(),
+                mock( RelationshipTypeTokenHolder.class ), () -> {}, new StandardConstraintSemantics(),
                 scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(),
                 schemaIndexProvider, IndexingService.NO_MONITOR, databaseHealth,
                 labelScanStoreProvider, legacyIndexProviderLookup, indexConfigStore,
@@ -194,6 +195,7 @@ public class RecordStorageEngineRule extends ExternalResource
 
         public ExtendedRecordStorageEngine( File storeDir, Config config,
                 IdGeneratorFactory idGeneratorFactory, IdReuseEligibility eligibleForReuse,
+                IdTypeConfigurationProvider idTypeConfigurationProvider,
                 PageCache pageCache, FileSystemAbstraction fs, LogProvider logProvider,
                 PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens,
                 RelationshipTypeTokenHolder relationshipTypeTokens, Runnable schemaStateChangeCallback,
@@ -208,8 +210,8 @@ public class RecordStorageEngineRule extends ExternalResource
                 Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade>
                         transactionApplierTransformer )
         {
-            super( storeDir, config, idGeneratorFactory, eligibleForReuse, pageCache, fs, logProvider,
-                    propertyKeyTokenHolder,
+            super( storeDir, config, idGeneratorFactory, eligibleForReuse, idTypeConfigurationProvider,
+                    pageCache, fs, logProvider, propertyKeyTokenHolder,
                     labelTokens, relationshipTypeTokens, schemaStateChangeCallback, constraintSemantics, scheduler,
                     tokenNameLookup, lockService, indexProvider, indexingServiceMonitor, databaseHealth,
                     labelScanStoreProvider,

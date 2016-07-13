@@ -49,6 +49,9 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfiguration;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
@@ -690,6 +693,9 @@ public class LabelsAcceptanceTest
     {
         final EphemeralIdGenerator.Factory idFactory = new EphemeralIdGenerator.Factory()
         {
+            private IdTypeConfigurationProvider
+                    idTypeConfigurationProvider = new CommunityIdTypeConfigurationProvider();
+
             @Override
             public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
             {
@@ -698,7 +704,8 @@ public class LabelsAcceptanceTest
                     IdGenerator generator = generators.get( idType );
                     if ( generator == null )
                     {
-                        generator = new EphemeralIdGenerator( idType )
+                        IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
+                        generator = new EphemeralIdGenerator( idType, idTypeConfiguration )
                         {
                             @Override
                             public long nextId()
@@ -737,7 +744,7 @@ public class LabelsAcceptanceTest
                                         {
                                             @Override
                                             protected IdGeneratorFactory createIdGeneratorFactory(
-                                                    FileSystemAbstraction fs )
+                                                    FileSystemAbstraction fs, IdTypeConfigurationProvider idTypeConfigurationProvider )
                                             {
                                                 return idFactory;
                                             }

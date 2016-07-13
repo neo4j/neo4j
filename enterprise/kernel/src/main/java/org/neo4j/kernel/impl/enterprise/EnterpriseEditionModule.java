@@ -20,11 +20,14 @@
 package org.neo4j.kernel.impl.enterprise;
 
 
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 
 /**
@@ -38,6 +41,12 @@ public class EnterpriseEditionModule extends CommunityEditionModule
         super( platformModule );
         platformModule.dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
+    }
+
+    @Override
+    protected IdTypeConfigurationProvider createIdTypeConfigurationProvider( Config config )
+    {
+        return new EnterpriseIdTypeConfigurationProvider( config );
     }
 
     @Override

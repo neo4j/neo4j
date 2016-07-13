@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -73,7 +74,8 @@ public class BigJumpingStoreIT
                 ( platformModule ) -> new CommunityEditionModule( platformModule )
                 {
                     @Override
-                    protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs )
+                    protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs,
+                            IdTypeConfigurationProvider idTypeConfigurationProvider )
                     {
                         return new JumpingIdGeneratorFactory( SIZE_PER_JUMP );
                     }

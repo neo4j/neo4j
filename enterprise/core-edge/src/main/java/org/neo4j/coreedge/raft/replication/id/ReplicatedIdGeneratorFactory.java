@@ -28,6 +28,8 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfiguration;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.LogProvider;
 
@@ -37,18 +39,36 @@ public class ReplicatedIdGeneratorFactory extends LifecycleAdapter implements Id
     private final FileSystemAbstraction fs;
     private final ReplicatedIdRangeAcquirer idRangeAcquirer;
     private final LogProvider logProvider;
+    private IdTypeConfigurationProvider idTypeConfigurationProvider;
     private boolean replicatedMode = false;
 
     public ReplicatedIdGeneratorFactory( FileSystemAbstraction fs, ReplicatedIdRangeAcquirer idRangeAcquirer,
-                                   LogProvider logProvider )
+                                   LogProvider logProvider, IdTypeConfigurationProvider idTypeConfigurationProvider )
     {
         this.fs = fs;
         this.idRangeAcquirer = idRangeAcquirer;
         this.logProvider = logProvider;
+        this.idTypeConfigurationProvider = idTypeConfigurationProvider;
+    }
+
+    @Override
+    public IdGenerator open( File filename, IdType idType, long highId, long maxId )
+    {
+        IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
+        return openGenerator( filename, idTypeConfiguration.getGrabSize(), idType, highId, maxId,
+                idTypeConfiguration.allowAggressiveReuse() );
     }
 
     @Override
     public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
+    {
+        IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
+        boolean aggressiveReuse = idTypeConfiguration.allowAggressiveReuse();
+        return openGenerator( fileName, grabSize, idType, highId, maxId, aggressiveReuse );
+    }
+
+    private IdGenerator openGenerator( File fileName, int grabSize, IdType idType, long highId, long maxId,
+            boolean aggressiveReuse )
     {
         SwitchableRaftIdGenerator previous = generators.remove( idType );
         if ( previous != null )
@@ -56,7 +76,6 @@ public class ReplicatedIdGeneratorFactory extends LifecycleAdapter implements Id
             previous.close();
         }
 
-        boolean aggressiveReuse = idType.allowAggressiveReuse();
         IdGenerator initialIdGenerator = new IdGeneratorImpl( fs, fileName, grabSize, maxId, aggressiveReuse, highId );
         SwitchableRaftIdGenerator switchableIdGenerator =
                 new SwitchableRaftIdGenerator( initialIdGenerator, idType, idRangeAcquirer, logProvider );

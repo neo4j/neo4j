@@ -130,6 +130,7 @@ import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
+import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -194,6 +195,8 @@ public class HighlyAvailableEditionModule
         final Dependencies dependencies = platformModule.dependencies;
         final LogService logging = platformModule.logging;
         final Monitors monitors = platformModule.monitors;
+
+        idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
 
         //Temporary check for custom IO
         CustomIOConfigValidator.assertCustomIOConfigNotUsed( config, CUSTOM_IO_EXCEPTION_MESSAGE );
@@ -576,7 +579,7 @@ public class HighlyAvailableEditionModule
             FileSystemAbstraction fs )
     {
         idGeneratorFactory = new HaIdGeneratorFactory(
-                masterDelegateInvocationHandler, logging, requestContextFactory, fs );
+                masterDelegateInvocationHandler, logging, requestContextFactory, fs, idTypeConfigurationProvider );
 
         /*
          * We don't really switch to master here. We just need to initialize the idGenerator so the initial store
