@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Consumer;
-
 import javax.ws.rs.core.HttpHeaders;
 
 import org.neo4j.bolt.BoltKernelExtension;
@@ -38,7 +37,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AuthSubject;
-import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
@@ -49,6 +47,10 @@ import org.neo4j.server.security.enterprise.auth.EnterpriseUserManager;
 import org.neo4j.server.security.enterprise.auth.NeoInteractionLevel;
 import org.neo4j.test.server.HTTP;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
@@ -108,15 +110,12 @@ public class NeoFullRESTInteraction extends CommunityServerTestBase implements N
 
         try
         {
-            JsonNode data = JsonHelper.jsonNode( response.rawContent() );
-            if ( data.has( "errors" ) && data.get( "errors").has( 0 ) )
+            String error = parseErrorMessage( response );
+            if (!error.isEmpty())
             {
-                JsonNode firstError = data.get( "errors" ).get( 0 );
-                if ( firstError.has( "message" ) )
-                {
-                    return firstError.get( "message" ).asText();
-                }
+                return error;
             }
+            JsonNode data = JsonHelper.jsonNode( response.rawContent() );
             if ( data.has( "results" ) && data.get( "results" ).has( 0 ) )
             {
                 JsonNode firstResult = data.get( "results" ).get( 0 );
@@ -136,8 +135,7 @@ public class NeoFullRESTInteraction extends CommunityServerTestBase implements N
     public RESTSubject login( String username, String password ) throws Throwable
     {
         String principalCredentials = challengeResponse( username, password );
-        HTTP.Response response = authenticate( principalCredentials );
-        return new RESTSubject( response, username, password, principalCredentials );
+        return new RESTSubject( username, password, principalCredentials );
     }
 
     private HTTP.Response authenticate( String principalCredentials )
@@ -147,27 +145,6 @@ public class NeoFullRESTInteraction extends CommunityServerTestBase implements N
 
     @Override
     public void logout( RESTSubject subject ) { }
-
-    @Override
-    public boolean isAuthenticated( RESTSubject subject )
-    {
-        subject.response = authenticate( subject.principalCredentials );
-        return subject.response.status() == 200 || // OK
-                ( subject.response.status() == 403 &&
-                  subject.response.rawContent().contains( "password_change" ) );
-    }
-
-    @Override
-    public AuthenticationResult authenticationResult( RESTSubject subject )
-    {
-        switch ( subject.response.status() )
-        {
-            case 200: return AuthenticationResult.SUCCESS;
-            case 403: return AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
-            case 429: return AuthenticationResult.TOO_MANY_ATTEMPTS;
-            default:  return AuthenticationResult.FAILURE;
-        }
-    }
 
     @Override
     public void updateAuthToken( RESTSubject subject, String username, String password )
@@ -188,6 +165,47 @@ public class NeoFullRESTInteraction extends CommunityServerTestBase implements N
         {
             server.stop();
         }
+    }
+
+    @Override
+    public void assertAuthenticated( RESTSubject subject )
+    {
+        assertThat( authenticate( subject.principalCredentials ).status(), equalTo( 200 ) );
+    }
+
+    @Override
+    public void assertPasswordChangeRequired( RESTSubject subject ) throws Exception
+    {
+        HTTP.Response response = authenticate( subject.principalCredentials );
+        assertThat( response.status(), equalTo( 403 ) );
+        assertThat( parseErrorMessage( response ), containsString( "User is required to change their password." ) );
+    }
+
+    @Override
+    public void assertUnauthenticated( RESTSubject subject )
+    {
+        assertThat( authenticate( subject.principalCredentials ).status(), not( equalTo( 200 ) ) );
+    }
+
+    private String parseErrorMessage( HTTP.Response response )
+    {
+        try
+        {
+            JsonNode data = JsonHelper.jsonNode( response.rawContent() );
+            if ( data.has( "errors" ) && data.get( "errors" ).has( 0 ) )
+            {
+                JsonNode firstError = data.get( "errors" ).get( 0 );
+                if ( firstError.has( "message" ) )
+                {
+                    return firstError.get( "message" ).asText();
+                }
+            }
+        }
+        catch ( JsonParseException e )
+        {
+            fail( "Unexpected error parsing Json!" );
+        }
+        return "";
     }
 
     protected String commitURL()

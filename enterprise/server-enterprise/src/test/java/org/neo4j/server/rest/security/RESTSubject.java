@@ -19,18 +19,14 @@
  */
 package org.neo4j.server.rest.security;
 
-import org.neo4j.test.server.HTTP;
-
 public class RESTSubject
 {
-    HTTP.Response response;
     String principalCredentials;
     String username;
     String password;
 
-    public RESTSubject( HTTP.Response response, String username, String password, String principalCredentials )
+    public RESTSubject( String username, String password, String principalCredentials )
     {
-        this.response = response;
         this.username = username;
         this.password = password;
         this.principalCredentials = principalCredentials;

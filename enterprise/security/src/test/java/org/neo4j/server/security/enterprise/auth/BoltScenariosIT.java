@@ -21,33 +21,20 @@ package org.neo4j.server.security.enterprise.auth;
 
 import org.junit.BeforeClass;
 import org.junit.Rule;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
 import java.util.Map;
 import java.util.function.Consumer;
 
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
-import org.neo4j.bolt.v1.transport.socket.client.Connection;
-import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
-import org.neo4j.function.Factory;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static java.util.Arrays.asList;
-
-@RunWith( Parameterized.class )
 public class BoltScenariosIT extends AuthScenariosLogic<BoltInteraction.BoltSubject>
 {
     @BeforeClass
@@ -79,43 +66,12 @@ public class BoltScenariosIT extends AuthScenariosLogic<BoltInteraction.BoltSubj
     {
         return settings -> {
             settings.put( GraphDatabaseSettings.auth_enabled, "true" );
-            settings.put( GraphDatabaseSettings.auth_manager, "enterprise-auth-manager" );
         };
-    }
-
-    @Parameterized.Parameter( 0 )
-    public Factory<Connection> cf;
-
-    @Parameterized.Parameter( 1 )
-    public HostnamePort address;
-
-    protected Connection client;
-
-    @Parameterized.Parameters
-    public static Collection<Object[]> transports()
-    {
-        return asList(
-                new Object[]{
-                        (Factory<Connection>) SocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                },
-                new Object[]{
-                        (Factory<Connection>) WebSocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                },
-                new Object[]{
-                        (Factory<Connection>) SecureSocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                },
-                new Object[]{
-                        (Factory<Connection>) SecureWebSocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                } );
     }
 
     @Override
     public NeoInteractionLevel<BoltInteraction.BoltSubject> setUpNeoServer() throws Throwable
     {
-        return new BoltInteraction(server, cf, address);
+        return new BoltInteraction( server );
     }
 }

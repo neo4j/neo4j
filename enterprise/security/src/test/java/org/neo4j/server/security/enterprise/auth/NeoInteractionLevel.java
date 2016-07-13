@@ -48,10 +48,6 @@ public interface NeoInteractionLevel<S>
 
     void logout( S subject ) throws Exception;
 
-    boolean isAuthenticated( S subject );
-
-    AuthenticationResult authenticationResult( S subject );
-
     void updateAuthToken( S subject, String username, String password );
 
     String nameOf( S subject );
@@ -64,4 +60,10 @@ public interface NeoInteractionLevel<S>
         Files.delete( path );
         return path.toString();
     }
+
+    void assertAuthenticated( S subject );
+
+    void assertPasswordChangeRequired( S subject ) throws Exception;
+
+    void assertUnauthenticated( S subject );
 }

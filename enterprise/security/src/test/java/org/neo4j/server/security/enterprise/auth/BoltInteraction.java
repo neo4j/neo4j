@@ -38,6 +38,7 @@ import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.Connection;
+import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.HostnamePort;
@@ -49,6 +50,8 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.bolt.v1.messaging.message.Messages.init;
 import static org.neo4j.bolt.v1.messaging.message.Messages.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.Messages.reset;
@@ -58,17 +61,15 @@ import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 
 public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject>
 {
-    protected final HostnamePort address;
-    protected final Factory<Connection> connectionFactory;
+    protected final HostnamePort address = new HostnamePort( "localhost:7687" );
+    protected final Factory<Connection> connectionFactory = SocketConnection::new;
     private final Neo4jWithSocket server;
     private Map<String,BoltSubject> subjects = new HashMap<>();
 
     EnterpriseAuthManager authManager;
 
-    public BoltInteraction( Neo4jWithSocket server, Factory<Connection> cf, HostnamePort address ) throws IOException
+    public BoltInteraction( Neo4jWithSocket server ) throws IOException
     {
-        connectionFactory = cf;
-        this.address = address;
         this.server = server;
         GraphDatabaseFacade db = (GraphDatabaseFacade) server.graphDatabaseService();
         authManager = db.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
@@ -143,18 +144,6 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
     }
 
     @Override
-    public boolean isAuthenticated( BoltSubject subject )
-    {
-        return subject.isAuthenticated();
-    }
-
-    @Override
-    public AuthenticationResult authenticationResult( BoltSubject subject )
-    {
-        return subject.loginResult;
-    }
-
-    @Override
     public void updateAuthToken( BoltSubject subject, String username, String password )
     {
 
@@ -180,6 +169,24 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
         {
             Files.delete( IMPERMANENT_DB_ROLES_PATH );
         }
+    }
+
+    @Override
+    public void assertAuthenticated( BoltSubject subject )
+    {
+        assertTrue( "Should be authenticated", subject.isAuthenticated() );
+    }
+
+    @Override
+    public void assertPasswordChangeRequired( BoltSubject subject )
+    {
+        assertTrue( "Should need to change password", subject.passwordChangeRequired() );
+    }
+
+    @Override
+    public void assertUnauthenticated( BoltSubject subject )
+    {
+        assertFalse( "Should not be authenticated", subject.isAuthenticated() );
     }
 
     private static BoltResult collectResults( Connection client ) throws Exception
@@ -231,7 +238,7 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
             FailureMessage failMessage = ((FailureMessage) message);
             // ack failure, get successMessage
             client.send( TransportTestUtil.chunk( reset() ) );
-            message = TransportTestUtil.recvOneMessage( client );
+            TransportTestUtil.recvOneMessage( client );
             throw new AuthenticationException( failMessage.status(), failMessage.message() );
         }
 
@@ -280,6 +287,11 @@ public class BoltInteraction implements NeoInteractionLevel<BoltInteraction.Bolt
         public boolean isAuthenticated()
         {
             return loginResult.equals( AuthenticationResult.SUCCESS );
+        }
+
+        public boolean passwordChangeRequired()
+        {
+            return loginResult.equals( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
         }
     }
 

@@ -21,9 +21,6 @@ package org.neo4j.server.security.enterprise.auth;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.security.AuthenticationResult;
-
-import static org.junit.Assert.assertEquals;
 import static org.neo4j.server.security.enterprise.auth.AuthProcedures.*;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
@@ -61,13 +58,13 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', true)" );
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
         S subject = neo.login( "Henrik", "foo" );
-        assertEquals( AuthenticationResult.FAILURE, neo.authenticationResult( subject ) );
+        neo.assertUnauthenticated( subject );
         subject = neo.login( "Henrik", "bar" );
-        assertEquals( AuthenticationResult.PASSWORD_CHANGE_REQUIRED, neo.authenticationResult( subject ) );
+        neo.assertPasswordChangeRequired( subject );
         testFailRead( subject, 3, pwdReqErrMsg( READ_OPS_NOT_ALLOWED ) );
         assertPasswordChangeWhenPasswordChangeRequired( subject, "foo" );
         subject = neo.login( "Henrik", "foo" );
-        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( subject ) );
+        neo.assertAuthenticated( subject );
         testFailWrite( subject );
         testSuccessfulRead( subject, 3 );
     }
@@ -86,10 +83,10 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
     {
         assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', true)" );
         S subject = neo.login( "Henrik", "bar" );
-        assertEquals( AuthenticationResult.PASSWORD_CHANGE_REQUIRED, neo.authenticationResult( subject ) );
+        neo.assertPasswordChangeRequired( subject );
         assertPasswordChangeWhenPasswordChangeRequired( subject, "foo" );
         subject = neo.login( "Henrik", "foo" );
-        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( subject ) );
+        neo.assertAuthenticated( subject );
         testFailRead( subject, 3 );
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
         testFailWrite( subject );
@@ -111,7 +108,7 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
     {
         assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         S subject = neo.login( "Henrik", "bar" );
-        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( subject ) );
+        neo.assertAuthenticated( subject );
         testFailRead( subject, 3 );
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
         testSuccessfulWrite( subject );
@@ -138,7 +135,7 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
     {
         assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         S subject = neo.login( "Henrik", "bar" );
-        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( subject ) );
+        neo.assertAuthenticated( subject );
         testFailRead( subject, 3 );
         testFailWrite( subject );
         testFailSchema( subject );
@@ -179,7 +176,7 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         assertEmpty( adminSubject, "CALL dbms.deleteUser('Henrik')" );
         S subject = neo.login( "Henrik", "bar" );
-        assertEquals( AuthenticationResult.FAILURE, neo.authenticationResult( subject ) );
+        neo.assertUnauthenticated( subject );
     }
 
     /*
@@ -225,7 +222,7 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
         S subject = neo.login( "Henrik", "bar" );
-        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( subject ) );
+        neo.assertAuthenticated( subject );
         assertEmpty( adminSubject, "CALL dbms.deleteUser('Henrik')" );
         testSessionKilled( subject );
     }
@@ -249,7 +246,7 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
         S subject = neo.login( "Henrik", "bar" );
-        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( subject ) );
+        neo.assertAuthenticated( subject );
         testSuccessfulWrite( subject );
         assertEmpty( adminSubject, "CALL dbms.removeUserFromRole('Henrik', '" + PUBLISHER + "')" );
         testFailRead( subject, 4 );
@@ -271,7 +268,7 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
     {
         assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         S subject = neo.login( "Henrik", "bar" );
-        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( subject ) );
+        neo.assertAuthenticated( subject );
         testFailWrite( subject );
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
@@ -295,7 +292,7 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
         S subject = neo.login( "Henrik", "bar" );
-        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( subject ) );
+        neo.assertAuthenticated( subject );
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
         testSuccessfulWrite( subject );
         testSuccessfulRead( subject, 4 );
@@ -321,7 +318,7 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
         S subject = neo.login( "Henrik", "bar" );
-        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( subject ) );
+        neo.assertAuthenticated( subject );
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
         testSuccessfulWrite( subject );
         testSuccessfulRead( subject, 4 );
@@ -345,11 +342,11 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
     {
         assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         S subject = neo.login( "Henrik", "bar" );
-        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( subject ) );
+        neo.assertAuthenticated( subject );
         neo.logout( subject );
         assertEmpty( adminSubject, "CALL dbms.suspendUser('Henrik')" );
         subject = neo.login( "Henrik", "bar" );
-        assertEquals( AuthenticationResult.FAILURE, neo.authenticationResult( subject ) );
+        neo.assertUnauthenticated( subject );
     }
 
     /*
@@ -367,14 +364,14 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
         S subject = neo.login( "Henrik", "bar" );
-        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( subject ) );
+        neo.assertAuthenticated( subject );
         testSuccessfulRead( subject, 3 );
         assertEmpty( adminSubject, "CALL dbms.suspendUser('Henrik')" );
 
         testSessionKilled( subject );
 
         subject = neo.login( "Henrik", "bar" );
-        assertEquals( AuthenticationResult.FAILURE, neo.authenticationResult( subject ) );
+        neo.assertUnauthenticated( subject );
     }
 
     //---------- User activation -----------
@@ -392,10 +389,10 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         assertEmpty( adminSubject, "CALL dbms.suspendUser('Henrik')" );
         S subject = neo.login( "Henrik", "bar" );
-        assertEquals( AuthenticationResult.FAILURE, neo.authenticationResult( subject ) );
+        neo.assertUnauthenticated( subject );
         assertEmpty( adminSubject, "CALL dbms.activateUser('Henrik')" );
         subject = neo.login( "Henrik", "bar" );
-        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( subject ) );
+        neo.assertAuthenticated( subject );
     }
 
     //---------- list users / roles -----------
@@ -416,7 +413,7 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         testSuccessfulListUsers( adminSubject, with( initialUsers, "Henrik" ) );
         S subject = neo.login( "Henrik", "bar" );
-        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( subject ) );
+        neo.assertAuthenticated( subject );
         testFailListUsers( subject, 6, PERMISSION_DENIED );
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + ADMIN + "')" );
         testSuccessfulListUsers( subject, with( initialUsers, "Henrik" ) );
@@ -435,7 +432,7 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
     {
         assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', false)" );
         S subject = neo.login( "Henrik", "bar" );
-        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( subject ) );
+        neo.assertAuthenticated( subject );
         testFailListRoles( subject, PERMISSION_DENIED);
         testSuccessfulListRoles( adminSubject, initialRoles );
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + ADMIN + "')" );
@@ -460,14 +457,14 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         assertEmpty( adminSubject, "CALL dbms.createUser('Craig', 'foo', false)" );
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Craig', '" + PUBLISHER + "')" );
         S subject = neo.login( "Henrik", "bar" );
-        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( subject ) );
+        neo.assertAuthenticated( subject );
 
         testFailListUserRoles( subject, "Craig", PERMISSION_DENIED );
-        executeQuery( adminSubject, "CALL dbms.listRolesForUser('Craig') YIELD value as roles RETURN roles",
+        assertSuccess( adminSubject, "CALL dbms.listRolesForUser('Craig') YIELD value as roles RETURN roles",
                 r -> assertKeyIs( r, "roles", PUBLISHER ) );
 
         S craigSubject = neo.login( "Craig", "foo" );
-        executeQuery( craigSubject, "CALL dbms.listRolesForUser('Craig') YIELD value as roles RETURN roles",
+        assertSuccess( craigSubject, "CALL dbms.listRolesForUser('Craig') YIELD value as roles RETURN roles",
                 r -> assertKeyIs( r, "roles", PUBLISHER ) );
     }
 
@@ -488,9 +485,9 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Craig', '" + PUBLISHER + "')" );
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + PUBLISHER + "')" );
         S subject = neo.login( "Henrik", "bar" );
-        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( subject ) );
+        neo.assertAuthenticated( subject );
         testFailListRoleUsers( subject, PUBLISHER, PERMISSION_DENIED );
-        executeQuery( adminSubject,
+        assertSuccess( adminSubject,
                 "CALL dbms.listUsersForRole('" + PUBLISHER + "') YIELD value as users RETURN users",
                 r -> assertKeyIs( r, "users", "Henrik", "Craig", "writeSubject" ) );
     }
@@ -516,16 +513,16 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'abc', false)" );
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
         S subject = neo.login( "Henrik", "abc" );
-        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( subject ) );
+        neo.assertAuthenticated( subject );
         testSuccessfulRead( subject, 3 );
         assertEmpty( subject, "CALL dbms.changeUserPassword('Henrik', '123')" );
-        //TODO: uncomment the next line and make the test pass
-        //testSuccessfulRead( subject, 3 );
+        neo.updateAuthToken( subject, "Henrik", "123" ); // Because RESTSubject caches an auth token that is sent with every request
+        testSuccessfulRead( subject, 3 );
         neo.logout( subject );
         subject = neo.login( "Henrik", "abc" );
-        assertEquals( AuthenticationResult.FAILURE, neo.authenticationResult( subject ) );
+        neo.assertUnauthenticated( subject );
         subject = neo.login( "Henrik", "123" );
-        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( subject ) );
+        neo.assertAuthenticated( subject );
         testSuccessfulRead( subject, 3 );
     }
 
@@ -547,14 +544,14 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'abc', false)" );
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
         S subject = neo.login( "Henrik", "abc" );
-        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( subject ) );
+        neo.assertAuthenticated( subject );
         testSuccessfulRead( subject, 3 );
         assertEmpty( adminSubject, "CALL dbms.changeUserPassword('Henrik', '123')" );
         neo.logout( subject );
         subject = neo.login( "Henrik", "abc" );
-        assertEquals( AuthenticationResult.FAILURE, neo.authenticationResult( subject ) );
+        neo.assertUnauthenticated( subject );
         subject = neo.login( "Henrik", "123" );
-        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( subject ) );
+        neo.assertAuthenticated( subject );
         testSuccessfulRead( subject, 3 );
     }
 
@@ -573,7 +570,7 @@ public abstract class AuthScenariosLogic<S> extends AuthTestBase<S>
         assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'abc', false)" );
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + READER + "')" );
         S subject = neo.login( "Henrik", "abc" );
-        assertEquals( AuthenticationResult.SUCCESS, neo.authenticationResult( subject ) );
+        neo.assertAuthenticated( subject );
         testSuccessfulRead( subject, 3 );
         assertFail( subject, "CALL dbms.changeUserPassword('Craig', '123')", PERMISSION_DENIED );
     }

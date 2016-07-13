@@ -129,10 +129,10 @@ abstract class AuthTestBase<S>
 
     void testSuccessfulRead( S subject, int count )
     {
-        executeQuery( subject, "MATCH (n) RETURN count(n) as count", r -> {
+        assertSuccess( subject, "MATCH (n) RETURN count(n) as count", r -> {
             List<Object> result = r.stream().map( s -> s.get( "count" ) ).collect( Collectors.toList() );
             assertTrue( result.size() == 1 );
-            assertTrue( count == (int) result.get( 0 ) );
+            assertTrue( String.valueOf( count ).equals( String.valueOf( result.get( 0 ) ) ) );
         } );
     }
 
@@ -188,7 +188,7 @@ abstract class AuthTestBase<S>
 
     void testSuccessfulListUsers( S subject, String[] users )
     {
-        executeQuery( subject, "CALL dbms.listUsers() YIELD username",
+        assertSuccess( subject, "CALL dbms.listUsers() YIELD username",
                 r -> assertKeyIsArray( r, "username", users ) );
     }
 
@@ -199,7 +199,7 @@ abstract class AuthTestBase<S>
 
     void testSuccessfulListRoles( S subject, String[] roles )
     {
-        executeQuery( subject, "CALL dbms.listRoles() YIELD role",
+        assertSuccess( subject, "CALL dbms.listRoles() YIELD role",
                 r -> assertKeyIsArray( r, "role", roles ) );
     }
 
@@ -270,43 +270,9 @@ abstract class AuthTestBase<S>
             ) );
     }
 
-    void testAuthenticated( S subject )
-    {
-        assertTrue( neo.isAuthenticated( subject ) );
-    }
-
-    void testUnAuthenticated( S subject )
-    {
-        assertFalse( neo.isAuthenticated( subject ) );
-    }
-
-    void testCallCount( S subject, String call, Map<String,Object> params,
-            final int count )
-    {
-        String err =
-            neo.executeQuery( subject, call, params,
-                ( res ) -> {
-                    int left = count;
-                    while ( left > 0 )
-                    {
-                        assertTrue( "Expected " + count + " results, but got only " + (count - left), res.hasNext() );
-                        res.next();
-                        left--;
-                    }
-                    assertFalse( "Expected " + count + " results, but there are more ", res.hasNext() );
-                }
-            );
-        assertNoError(err);
-    }
-
-    void executeQuery( S subject, String call )
+    private void executeQuery( S subject, String call )
     {
         neo.executeQuery( subject, call, null, r -> {} );
-    }
-
-    void executeQuery( S subject, String call, Consumer<ResourceIterator<Map<String, Object>>> resultConsumer )
-    {
-        neo.executeQuery( subject, call, null, resultConsumer );
     }
 
     boolean userHasRole( String user, String role ) throws InvalidArgumentsException
