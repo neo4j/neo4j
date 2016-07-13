@@ -34,6 +34,8 @@ import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 public class RaftState implements ReadableRaftState
 {
@@ -42,6 +44,7 @@ public class RaftState implements ReadableRaftState
     private final StateStorage<VoteState> voteStorage;
     private final RaftMembership membership;
     private final TermState termState;
+    private final Log log;
     private CoreMember leader;
     private long leaderCommit = -1;
     private final VoteState voteState;
@@ -57,7 +60,7 @@ public class RaftState implements ReadableRaftState
                       RaftMembership membership,
                       RaftLog entryLog,
                       StateStorage<VoteState> voteStorage,
-                      InFlightMap<Long,RaftLogEntry> inFlightMap )
+                      InFlightMap<Long, RaftLogEntry> inFlightMap, LogProvider logProvider )
     {
         this.myself = myself;
         this.termStorage = termStorage;
@@ -67,6 +70,7 @@ public class RaftState implements ReadableRaftState
         this.membership = membership;
         this.entryLog = entryLog;
         this.inFlightMap = inFlightMap;
+        log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -151,7 +155,10 @@ public class RaftState implements ReadableRaftState
         {
             voteStorage.persistStoreData( voteState );
         }
+
+        logIfLeaderChanged(outcome.getLeader());
         leader = outcome.getLeader();
+
         leaderCommit = outcome.getLeaderCommit();
         votesForMe = outcome.getVotesForMe();
         lastLogIndexBeforeWeBecameLeader = outcome.getLastLogIndexBeforeWeBecameLeader();
@@ -163,5 +170,22 @@ public class RaftState implements ReadableRaftState
             logCommand.applyTo( inFlightMap );
         }
         commitIndex = outcome.getCommitIndex();
+    }
+
+    private void logIfLeaderChanged( CoreMember leader )
+    {
+        if ( this.leader == null )
+        {
+            if ( leader != null )
+            {
+                log.info( "First leader elected: %s", leader );
+            }
+            return;
+        }
+
+        if ( !this.leader.equals( leader ) )
+        {
+            log.info( "Leader changed from %s to %s", this.leader, leader );
+        }
     }
 }

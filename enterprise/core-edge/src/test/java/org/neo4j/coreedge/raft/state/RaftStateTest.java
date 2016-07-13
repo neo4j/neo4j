@@ -42,6 +42,7 @@ import org.neo4j.coreedge.raft.state.follower.FollowerState;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
+import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Collections.emptySet;
 import static org.junit.Assert.assertEquals;
@@ -63,7 +64,7 @@ public class RaftStateTest
         InFlightMap<Long,RaftLogEntry> cache = new InFlightMap<>();
         RaftState raftState = new RaftState( member( 0 ),
                 new InMemoryStateStorage<>( new TermState() ), new FakeMembership(), new InMemoryRaftLog(),
-                new InMemoryStateStorage<>( new VoteState() ), cache );
+                new InMemoryStateStorage<>( new VoteState() ), cache, NullLogProvider.getInstance() );
 
         List<LogCommand> logCommands = new LinkedList<LogCommand>()
         {{
@@ -98,7 +99,7 @@ public class RaftStateTest
                 new InMemoryStateStorage<>( new TermState() ),
                 new FakeMembership(), new InMemoryRaftLog(),
                 new InMemoryStateStorage<>( new VoteState( ) ),
-                new InFlightMap<>());
+                new InFlightMap<>(), NullLogProvider.getInstance() );
 
         raftState.update( new Outcome( CANDIDATE, 1, null, -1, null, new HashSet<>(), -1, initialFollowerStates(), true, emptyLogCommands(),
                 emptyOutgoingMessages(), Collections.emptySet(), -1) );

@@ -130,7 +130,7 @@ public class RaftInstance implements LeaderLocator,
 
         this.membershipManager = membershipManager;
 
-        this.state = new RaftState( myself, termStorage, membershipManager, entryLog, voteStorage, inFlightMap );
+        this.state = new RaftState( myself, termStorage, membershipManager, entryLog, voteStorage, inFlightMap, logProvider );
 
         leaderNotFoundMonitor = monitors.newMonitor( LeaderNotFoundMonitor.class );
 

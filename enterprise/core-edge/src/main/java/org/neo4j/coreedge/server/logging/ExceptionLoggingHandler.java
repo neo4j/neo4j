@@ -38,6 +38,13 @@ public class ExceptionLoggingHandler extends ChannelHandlerAdapter
     @Override
     public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) throws Exception
     {
-        log.error( format( "Failed to process message on channel %s.", ctx.channel() ), cause );
+        if ( ctx != null )
+        {
+            log.error( format( "Failed to process message on channel %s.", ctx.channel() ), cause );
+        }
+        else
+        {
+            log.error( format( "Failed to process message on a null channel." ), cause );
+        }
     }
 }

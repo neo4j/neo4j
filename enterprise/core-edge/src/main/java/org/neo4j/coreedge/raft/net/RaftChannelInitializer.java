@@ -28,14 +28,18 @@ import org.neo4j.coreedge.raft.net.codecs.RaftMessageEncoder;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.coreedge.server.logging.ExceptionLoggingHandler;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 public class RaftChannelInitializer extends ChannelInitializer<SocketChannel>
 {
     private final ChannelMarshal<ReplicatedContent> marshal;
+    private final Log log;
 
-    public RaftChannelInitializer( ChannelMarshal<ReplicatedContent> marshal )
+    public RaftChannelInitializer( ChannelMarshal<ReplicatedContent> marshal, LogProvider logProvider )
     {
         this.marshal = marshal;
+        log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -44,6 +48,6 @@ public class RaftChannelInitializer extends ChannelInitializer<SocketChannel>
         ChannelPipeline pipeline = ch.pipeline();
         pipeline.addLast( "frameEncoder", new LengthFieldPrepender( 4 ) );
         pipeline.addLast( "raftMessageEncoder", new RaftMessageEncoder( marshal ) );
-        pipeline.addLast( new ExceptionLoggingHandler( null ) );
+        pipeline.addLast( new ExceptionLoggingHandler( log ) );
     }
 }

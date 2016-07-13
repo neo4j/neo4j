@@ -36,6 +36,7 @@ import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Collections.emptySet;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -126,7 +127,7 @@ public class RaftStateBuilder
         StubMembership membership = new StubMembership();
 
         RaftState state =
-                new RaftState( myself, termStore, membership, entryLog, voteStore, new InFlightMap<>() );
+                new RaftState( myself, termStore, membership, entryLog, voteStore, new InFlightMap<>(), NullLogProvider.getInstance() );
 
         Collection<RaftMessages.Directed> noMessages = Collections.emptyList();
         List<LogCommand> noLogCommands = Collections.emptyList();
