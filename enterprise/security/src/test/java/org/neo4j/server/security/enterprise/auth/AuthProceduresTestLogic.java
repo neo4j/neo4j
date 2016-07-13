@@ -54,7 +54,7 @@ import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.R
 
 public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
 {
-    final static String PWD_CHANGE = PASSWORD_CHANGE_REQUIRED.name().toLowerCase();
+    static final String PWD_CHANGE = PASSWORD_CHANGE_REQUIRED.name().toLowerCase();
 
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
