@@ -25,18 +25,32 @@ import org.junit.Test;
 
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.test.server.HTTP;
 
-import static junit.framework.TestCase.assertEquals;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class JavaProceduresTest
@@ -121,6 +135,124 @@ public class JavaProceduresTest
         }
     }
 
+    public static class MyProceduresUsingMyCoreAPI
+    {
+        public static class LongResult
+        {
+            public Long value;
+        }
+
+        @Context
+        public MyCoreAPI myCoreAPI;
+
+        @Procedure( value = "makeNode", mode = Procedure.Mode.WRITE )
+        public Stream<LongResult> makeNode( @Name( "label" ) String label ) throws ProcedureException
+        {
+            LongResult t = new LongResult();
+            t.value = myCoreAPI.makeNode( label );
+            return Stream.of( t );
+        }
+
+        @Procedure( value = "willFail", mode = Procedure.Mode.READ )
+        public Stream<LongResult> willFail() throws ProcedureException
+        {
+            LongResult t = new LongResult();
+            t.value = myCoreAPI.makeNode( "Test" );
+            return Stream.of( t );
+        }
+
+        @Procedure( "countNodes" )
+        public Stream<LongResult> countNodes()
+        {
+            LongResult t = new LongResult();
+            t.value = myCoreAPI.countNodes();
+            return Stream.of( t );
+        }
+    }
+
+    public static class MyCoreAPI
+    {
+        private final GraphDatabaseAPI graph;
+        private final ThreadToStatementContextBridge txBridge;
+        private final Log log;
+
+        public MyCoreAPI( GraphDatabaseAPI graph, ThreadToStatementContextBridge txBridge, Log log )
+        {
+            this.graph = graph;
+            this.txBridge = txBridge;
+            this.log = log;
+        }
+
+        public long makeNode( String label ) throws ProcedureException
+        {
+            long result;
+            try ( Transaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE ) )
+            {
+                Statement statement = this.txBridge.get();
+                DataWriteOperations writeOps = statement.dataWriteOperations();
+                long nodeId = writeOps.nodeCreate();
+                int labelId = writeOps.labelGetOrCreateForName( label );
+                writeOps.nodeAddLabel( nodeId, labelId );
+                result = nodeId;
+                tx.success();
+            }
+            catch ( Exception e )
+            {
+                log.error( "Failed to create node: " + e.getMessage() );
+                throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
+                        "Failed to create node: " + e.getMessage(), e );
+            }
+            return result;
+        }
+
+        public long countNodes()
+        {
+            long result;
+            try ( Transaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.READ ) )
+            {
+                Statement statement = this.txBridge.get();
+                result = statement.readOperations().countsForNode( -1 );
+                tx.success();
+            }
+            return result;
+        }
+    }
+
+    // Similar to the MyExtensionThatAddsInjectable, this demonstrates a
+    // non-public mechanism for adding new context components, but in this
+    // case the goal is to provide alternative Core API's and as such it wraps
+    // the old Core API.
+    public static class MyExtensionThatAddsAlternativeCoreAPI
+            extends KernelExtensionFactory<MyExtensionThatAddsAlternativeCoreAPI.Dependencies>
+    {
+        public MyExtensionThatAddsAlternativeCoreAPI()
+        {
+            super( "my-ext" );
+        }
+
+        @Override
+        public Lifecycle newInstance( KernelContext context,
+                Dependencies dependencies ) throws Throwable
+        {
+            dependencies.procedures().registerComponent( MyCoreAPI.class,
+                    ( ctx ) -> new MyCoreAPI( dependencies.getGraphDatabaseAPI(), dependencies.txBridge(),
+                            dependencies.logService().getUserLog( MyCoreAPI.class ) ) );
+            return new LifecycleAdapter();
+        }
+
+        public interface Dependencies
+        {
+            LogService logService();
+
+            Procedures procedures();
+
+            GraphDatabaseAPI getGraphDatabaseAPI();
+
+            ThreadToStatementContextBridge txBridge();
+
+        }
+    }
+
     @Test
     public void shouldLaunchWithDeclaredProcedures() throws Exception
     {
@@ -163,10 +295,45 @@ public class JavaProceduresTest
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
                     quotedJson( "{ 'statements': [ { 'statement': 'CALL hello' } ] }" ) );
 
+            assertEquals( "[]", response.get( "errors" ).toString() );
             JsonNode result = response.get( "results" ).get( 0 );
             assertEquals( "result", result.get( "columns" ).get( 0 ).asText() );
             assertEquals( "world", result.get( "data" ).get( 0 ).get( "row" ).get( 0 ).asText() );
-            assertEquals( "[]", response.get( "errors" ).toString() );
         }
+    }
+
+    @Test
+    public void shouldWorkWithInjectableFromKernelExtensionWithMorePower() throws Throwable
+    {
+        // When
+        try ( ServerControls server = TestServerBuilders.newInProcessBuilder()
+                .withProcedure( MyProceduresUsingMyCoreAPI.class ).newServer() )
+        {
+            // Then
+            assertQueryGetsValue( server, "CALL makeNode(\\'Test\\')", 0L );
+            assertQueryGetsValue( server, "CALL makeNode(\\'Test\\')", 1L );
+            assertQueryGetsValue( server, "CALL makeNode(\\'Test\\')", 2L );
+            assertQueryGetsValue( server, "CALL countNodes", 3L );
+            assertQueryGetsError( server, "CALL willFail", "Write operations are not allowed" );
+        }
+    }
+
+    private void assertQueryGetsValue( ServerControls server, String query, long value ) throws Throwable
+    {
+        HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
+                quotedJson( "{ 'statements': [ { 'statement': '" + query + "' } ] }" ) );
+
+        assertEquals( "[]", response.get( "errors" ).toString() );
+        JsonNode result = response.get( "results" ).get( 0 );
+        assertEquals( "value", result.get( "columns" ).get( 0 ).asText() );
+        assertEquals( value, result.get( "data" ).get( 0 ).get( "row" ).get( 0 ).asLong() );
+    }
+
+    private void assertQueryGetsError( ServerControls server, String query, String error ) throws Throwable
+    {
+        HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
+                quotedJson( "{ 'statements': [ { 'statement': '" + query + "' } ] }" ) );
+
+        assertThat( response.get( "errors" ).toString(), containsString( error ) );
     }
 }
