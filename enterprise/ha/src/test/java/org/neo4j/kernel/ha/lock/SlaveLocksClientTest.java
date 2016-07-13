@@ -317,64 +317,144 @@ public class SlaveLocksClientTest
         }
     }
 
-    @Test( expected = LockClientStoppedException.class )
+    @Test
     public void acquireSharedFailsWhenClientStopped()
     {
-        stoppedClient().acquireShared( NODE, 1 );
+        SlaveLocksClient client = stoppedClient();
+        try
+        {
+            client.acquireShared( NODE, 1 );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( LockClientStoppedException.class ) );
+        }
     }
 
-    @Test( expected = LockClientStoppedException.class )
+    @Test
     public void releaseSharedFailsWhenClientStopped()
     {
-        stoppedClient().releaseShared( NODE, 1 );
+        SlaveLocksClient client = stoppedClient();
+        try
+        {
+            client.releaseShared( NODE, 1 );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( LockClientStoppedException.class ) );
+        }
     }
 
-    @Test( expected = LockClientStoppedException.class )
+    @Test
     public void acquireExclusiveFailsWhenClientStopped()
     {
-        stoppedClient().acquireExclusive( NODE, 1 );
+        SlaveLocksClient client = stoppedClient();
+        try
+        {
+            client.acquireExclusive( NODE, 1 );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( LockClientStoppedException.class ) );
+        }
     }
 
-    @Test( expected = LockClientStoppedException.class )
+    @Test
     public void releaseExclusiveFailsWhenClientStopped()
     {
-        stoppedClient().releaseExclusive( NODE, 1 );
+        SlaveLocksClient client = stoppedClient();
+        try
+        {
+            client.releaseExclusive( NODE, 1 );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( LockClientStoppedException.class ) );
+        }
     }
 
-    @Test( expected = LockClientStoppedException.class )
+    @Test
     public void getLockSessionIdWhenClientStopped()
     {
-        stoppedClient().getLockSessionId();
+        SlaveLocksClient client = stoppedClient();
+        try
+        {
+            client.getLockSessionId();
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( LockClientStoppedException.class ) );
+        }
     }
 
-    @Test( expected = LockClientStoppedException.class )
+    @Test
     public void acquireSharedFailsWhenClientClosed()
     {
-        closedClient().acquireShared( NODE, 1 );
+        SlaveLocksClient client = closedClient();
+        try
+        {
+            client.acquireShared( NODE, 1 );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( LockClientStoppedException.class ) );
+        }
     }
 
-    @Test( expected = LockClientStoppedException.class )
+    @Test
     public void releaseSharedFailsWhenClientClosed()
     {
-        closedClient().releaseShared( NODE, 1 );
+        SlaveLocksClient client = closedClient();
+        try
+        {
+            client.releaseShared( NODE, 1 );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( LockClientStoppedException.class ) );
+        }
     }
 
-    @Test( expected = LockClientStoppedException.class )
+    @Test
     public void acquireExclusiveFailsWhenClientClosed()
     {
-        closedClient().acquireExclusive( NODE, 1 );
+        SlaveLocksClient client = closedClient();
+        try
+        {
+            client.acquireExclusive( NODE, 1 );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( LockClientStoppedException.class ) );
+        }
     }
 
-    @Test( expected = LockClientStoppedException.class )
+    @Test
     public void releaseExclusiveFailsWhenClientClosed()
     {
-        closedClient().releaseExclusive( NODE, 1 );
+        SlaveLocksClient client = closedClient();
+        try
+        {
+            client.releaseExclusive( NODE, 1 );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( LockClientStoppedException.class ) );
+        }
     }
 
-    @Test( expected = LockClientStoppedException.class )
+    @Test
     public void getLockSessionIdWhenClientClosed()
     {
-        closedClient().getLockSessionId();
+        SlaveLocksClient client = closedClient();
+        try
+        {
+            client.getLockSessionId();
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( LockClientStoppedException.class ) );
+        }
     }
 
     @Test
@@ -480,8 +560,8 @@ public class SlaveLocksClientTest
 
     private SlaveLocksClient closedClient()
     {
-        client.close();
         client.acquireShared( NODE, 1 ); // trigger new lock session initialization
+        client.close();
         return client;
     }
 }
