@@ -93,7 +93,7 @@ public class CheckTxLogsTest
                 )
         );
         CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
-        CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
         boolean success = checker.scan( new File[]{log}, CheckType.NODE, handler );
@@ -137,7 +137,7 @@ public class CheckTxLogsTest
         );
 
         CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
-        CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
         boolean success = checker.scan( new File[]{log}, CheckType.NODE, handler );
@@ -198,7 +198,7 @@ public class CheckTxLogsTest
         );
 
         CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
-        CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
         boolean success = checker.scan( new File[]{log1, log2, log3}, CheckType.NODE, handler );
@@ -254,7 +254,7 @@ public class CheckTxLogsTest
         );
 
         CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
-        CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
         boolean success = checker.scan( new File[]{log}, CheckType.PROPERTY, handler );
@@ -319,7 +319,7 @@ public class CheckTxLogsTest
         );
 
         CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
-        CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
         boolean success = checker.scan( new File[]{log1, log2, log3}, CheckType.PROPERTY, handler );
