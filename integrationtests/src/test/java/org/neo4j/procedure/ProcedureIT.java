@@ -105,6 +105,84 @@ public class ProcedureIT
     }
 
     @Test
+    public void shouldCallProcedureWithDefaultArgument() throws Throwable
+    {
+        //Given/When
+        Result res = db.execute( "CALL org.neo4j.procedure.simpleArgumentWithDefault" );
+
+        // Then
+        assertThat( res.next(), equalTo( map( "someVal", 42L ) ) );
+        assertFalse( res.hasNext() );
+    }
+
+    @Test
+    public void shouldCallYieldProcedureWithDefaultArgument() throws Throwable
+    {
+        // Given/When
+        Result res = db.execute(
+                "CALL org.neo4j.procedure.simpleArgumentWithDefault() YIELD someVal as n RETURN n + 1295 as val" );
+
+        // Then
+        assertThat( res.next(), equalTo( map( "val", 1337L ) ) );
+        assertFalse( res.hasNext() );
+    }
+
+    @Test
+    public void shouldCallProcedureWithAllDefaultArgument() throws Throwable
+    {
+        //Given/When
+        Result res = db.execute( "CALL org.neo4j.procedure.defaultValues" );
+
+        // Then
+        assertThat( res.next(), equalTo( map( "string", "a string", "integer", 42L, "aFloat", 3.14, "aBoolean", true ) ) );
+        assertFalse( res.hasNext() );
+    }
+
+    @Test
+    public void shouldCallProcedureWithOneProvidedRestDefaultArgument() throws Throwable
+    {
+        //Given/When
+        Result res = db.execute( "CALL org.neo4j.procedure.defaultValues('another string')");
+
+        // Then
+        assertThat( res.next(), equalTo( map( "string", "another string", "integer", 42L, "aFloat", 3.14, "aBoolean", true ) ) );
+        assertFalse( res.hasNext() );
+    }
+
+    @Test
+    public void shouldCallProcedureWithTwoProvidedRestDefaultArgument() throws Throwable
+    {
+        //Given/When
+        Result res = db.execute( "CALL org.neo4j.procedure.defaultValues('another string', 1337)");
+
+        // Then
+        assertThat( res.next(), equalTo( map( "string", "another string", "integer", 1337L, "aFloat", 3.14, "aBoolean", true ) ) );
+        assertFalse( res.hasNext() );
+    }
+
+    @Test
+    public void shouldCallProcedureWithThreeProvidedRestDefaultArgument() throws Throwable
+    {
+        //Given/When
+        Result res = db.execute( "CALL org.neo4j.procedure.defaultValues('another string', 1337, 2.718281828)");
+
+        // Then
+        assertThat( res.next(), equalTo( map( "string", "another string", "integer", 1337L, "aFloat", 2.718281828, "aBoolean", true ) ) );
+        assertFalse( res.hasNext() );
+    }
+
+    @Test
+    public void shouldCallProcedureWithFourProvidedRestDefaultArgument() throws Throwable
+    {
+        //Given/When
+        Result res = db.execute( "CALL org.neo4j.procedure.defaultValues('another string', 1337, 2.718281828, false)");
+
+        // Then
+        assertThat( res.next(), equalTo( map( "string", "another string", "integer", 1337L, "aFloat", 2.718281828, "aBoolean", false ) ) );
+        assertFalse( res.hasNext() );
+    }
+
+    @Test
     public void shouldGiveNiceErrorMessageOnWrongStaticType() throws Throwable
     {
         //Expect
@@ -192,6 +270,70 @@ public class ProcedureIT
 
             // Then
             assertThat( res.next(), equalTo( map( "someVal", 2L ) ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallProcedureWithMapArgumentDefaultingToNull() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute(
+                    "CALL org.neo4j.procedure.mapWithNullDefault()" );
+
+            // Then
+            assertThat( res.next(), equalTo( map( "map", null ) ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallProcedureWithMapArgumentDefaultingToMap() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute(
+                    "CALL org.neo4j.procedure.mapWithOtherDefault" );
+
+            // Then
+            assertThat( res.next(), equalTo( map( "map", map("default", true) ) ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallProcedureWithListWithDefault() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute(
+                    "CALL org.neo4j.procedure.listWithDefault" );
+
+            // Then
+            assertThat( res.next(), equalTo( map( "list", Arrays.asList( 42L, 1337L ) ) ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallProcedureWithGenericListWithDefault() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute(
+                    "CALL org.neo4j.procedure.genericListWithDefault" );
+
+            // Then
+            assertThat( res.next(), equalTo( map( "list", Arrays.asList( 42L, 1337L ) ) ) );
             assertFalse( res.hasNext() );
         }
     }
@@ -862,6 +1004,36 @@ public class ProcedureIT
         }
     }
 
+    @Test
+    public void shouldCallProcedureWithDefaultNodeArgument() throws Throwable
+    {
+        //Given/When
+        Result res = db.execute( "CALL org.neo4j.procedure.nodeWithDefault" );
+
+        // Then
+        assertThat( res.next(), equalTo( map( "node", null ) ) );
+        assertFalse( res.hasNext() );
+    }
+
+    @Test
+    public void shouldIndicateDefaultValueWhenListingProcedures() throws Throwable
+    {
+        //Given/When
+        Result res = db.execute( "CALL dbms.procedures()" );
+
+        while(res.hasNext())
+        {
+            Map<String,Object> result = res.next();
+            if ( result.get("name").equals( "org.neo4j.procedure.nodeWithDefault" ))
+            {
+                assertThat(result.get("signature"),
+                        equalTo("org.neo4j.procedure.nodeWithDefault(node = null :: NODE?) :: (node :: NODE?)"));
+            }
+        }
+        // Then
+        assertFalse( res.hasNext() );
+    }
+
     @Before
     public void setUp() throws IOException
     {
@@ -897,6 +1069,42 @@ public class ProcedureIT
         }
     }
 
+    public static class PrimitiveOutput
+    {
+        public String string;
+        public long integer;
+        public double aFloat;
+        public boolean aBoolean;
+
+        public PrimitiveOutput( String string, long integer, double aFloat, boolean aBoolean )
+        {
+            this.string = string;
+            this.integer = integer;
+            this.aFloat = aFloat;
+            this.aBoolean = aBoolean;
+        }
+    }
+
+    public static class MapOutput
+    {
+        public Map<String, Object> map;
+
+        public MapOutput(Map<String, Object> map)
+        {
+            this.map = map;
+        }
+    }
+
+    public static class ListOutput
+    {
+        public List<Long> list;
+
+        public ListOutput(List<Long> list)
+        {
+            this.list = list;
+        }
+    }
+
     public static class DoubleOutput
     {
         public double result = 0.0d;
@@ -918,6 +1126,11 @@ public class ProcedureIT
         public NodeOutput()
         {
 
+        }
+
+        public NodeOutput(Node node)
+        {
+            this.node = node;
         }
 
         void setNode( Node node )
@@ -977,6 +1190,23 @@ public class ProcedureIT
         }
 
         @Procedure
+        public Stream<Output> simpleArgumentWithDefault( @Name( value = "name", defaultValue = "42") long someValue )
+        {
+            return Stream.of( new Output( someValue ) );
+        }
+
+        @Procedure
+        public Stream<PrimitiveOutput> defaultValues(
+                @Name( value = "string", defaultValue = "a string") String string,
+                @Name( value = "integer", defaultValue = "42") long integer,
+                @Name( value = "float", defaultValue = "3.14") double aFloat,
+                @Name( value = "boolean", defaultValue = "true") boolean aBoolean
+                )
+        {
+            return Stream.of( new PrimitiveOutput( string, integer, aFloat, aBoolean ) );
+        }
+
+        @Procedure
         public Stream<Output> nodeListArgument( @Name( "nodes" ) List<Node> nodes )
         {
             return Stream.of( new Output( nodes.size() ) );
@@ -1017,6 +1247,30 @@ public class ProcedureIT
         public Stream<Output> mapArgument( @Name( "map" ) Map<String,Object> map )
         {
             return Stream.of( new Output( map.size() ) );
+        }
+
+        @Procedure
+        public Stream<MapOutput> mapWithNullDefault( @Name( value = "map", defaultValue = "null") Map<String,Object> map )
+        {
+            return Stream.of( new MapOutput( map ) );
+        }
+
+        @Procedure
+        public Stream<MapOutput> mapWithOtherDefault( @Name( value = "map", defaultValue = "{default: true}") Map<String,Object> map )
+        {
+            return Stream.of( new MapOutput( map ) );
+        }
+
+        @Procedure
+        public Stream<ListOutput> listWithDefault( @Name( value = "list", defaultValue = "[42, 1337]") List<Long> list )
+        {
+            return Stream.of( new ListOutput(list ) );
+        }
+
+        @Procedure
+        public Stream<ListOutput> genericListWithDefault( @Name( value = "list", defaultValue = "[[42, 1337]]") List<List<Long>> list )
+        {
+            return Stream.of( new ListOutput(list.get(0) ) );
         }
 
         @Procedure
@@ -1189,6 +1443,12 @@ public class ProcedureIT
                 .execute( "WITH {node} AS node MATCH p=(node)-[*]->() RETURN p", map( "node", node ) )
                 .stream()
                 .map( record -> new PathOutputRecord( (Path) record.getOrDefault( "p", null ) ) );
+        }
+
+        @Procedure( mode = WRITE )
+        public Stream<NodeOutput> nodeWithDefault( @Name( value = "node", defaultValue = "null") Node node )
+        {
+            return Stream.of(new NodeOutput(node));
         }
 
         @Procedure( mode = WRITE )

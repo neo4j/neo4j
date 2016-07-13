@@ -24,12 +24,19 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType;
+import org.neo4j.procedure.Name;
 
+import static java.lang.Boolean.parseBoolean;
+import static java.lang.Double.parseDouble;
+import static java.lang.Long.parseLong;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTAny;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTBoolean;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTFloat;
@@ -38,6 +45,9 @@ import static org.neo4j.kernel.api.proc.Neo4jTypes.NTList;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTMap;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNumber;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
+import static org.neo4j.kernel.impl.proc.Neo4jValue.ntBoolean;
+import static org.neo4j.kernel.impl.proc.Neo4jValue.ntFloat;
+import static org.neo4j.kernel.impl.proc.Neo4jValue.ntInteger;
 
 public class TypeMappers
 {
@@ -50,6 +60,7 @@ public class TypeMappers
     {
         AnyType type();
         Object toNeoValue( Object javaValue ) throws ProcedureException;
+        Optional<Neo4jValue> defaultValue(Name parameter) throws ProcedureException;
     }
 
     private final Map<Type,NeoValueConverter> javaToNeo = new HashMap<>();
@@ -101,7 +112,8 @@ public class TypeMappers
 
             if( rawType == List.class )
             {
-                return toList( converterFor( pt.getActualTypeArguments()[0] ) );
+                Type type = pt.getActualTypeArguments()[0];
+                return toList( converterFor( type ), type );
             }
             else if( rawType == Map.class )
             {
@@ -125,17 +137,26 @@ public class TypeMappers
     }
 
     private final NeoValueConverter TO_ANY = new SimpleConverter( NTAny, Object.class );
-    private final NeoValueConverter TO_STRING = new SimpleConverter( NTString, String.class );
-    private final NeoValueConverter TO_INTEGER = new SimpleConverter( NTInteger, Long.class );
-    private final NeoValueConverter TO_FLOAT = new SimpleConverter( NTFloat, Double.class );
-    private final NeoValueConverter TO_NUMBER = new SimpleConverter( NTNumber, Number.class );
-    private final NeoValueConverter TO_BOOLEAN = new SimpleConverter( NTBoolean, Boolean.class );
-    private final NeoValueConverter TO_MAP = new SimpleConverter( NTMap, Map.class );
-    private final NeoValueConverter TO_LIST = toList( TO_ANY );
+    private final NeoValueConverter TO_STRING = new SimpleConverter( NTString, String.class, Neo4jValue::ntString );
+    private final NeoValueConverter TO_INTEGER = new SimpleConverter( NTInteger, Long.class, s -> ntInteger( parseLong(s) ) );
+    private final NeoValueConverter TO_FLOAT = new SimpleConverter( NTFloat, Double.class, s -> ntFloat( parseDouble(s) ));
+    private final NeoValueConverter TO_NUMBER = new SimpleConverter( NTNumber, Number.class, s -> {
+        try
+        {
+            return ntInteger( parseLong(s) );
+        }
+        catch ( NumberFormatException e )
+        {
+            return ntFloat( parseDouble( s ) );
+        }
+    });
+    private final NeoValueConverter TO_BOOLEAN = new SimpleConverter( NTBoolean, Boolean.class, s -> ntBoolean( parseBoolean(s) ));
+    private final NeoValueConverter TO_MAP = new SimpleConverter( NTMap, Map.class, new MapConverter());
+    private final NeoValueConverter TO_LIST = toList( TO_ANY, Object.class );
 
-    private NeoValueConverter toList( NeoValueConverter inner )
+    private NeoValueConverter toList( NeoValueConverter inner, Type type )
     {
-        return new SimpleConverter( NTList( inner.type() ), List.class );
+        return new SimpleConverter( NTList( inner.type() ), List.class, new ListConverter(type, inner.type() ));
     }
 
     private ProcedureException javaToNeoMappingError( Type cls )
@@ -153,11 +174,40 @@ public class TypeMappers
     {
         private final AnyType type;
         private final Class<?> javaClass;
+        private final Function<String,Neo4jValue> defaultConverter;
 
         public SimpleConverter( AnyType type, Class<?> javaClass )
         {
+            this( type, javaClass, nullParser(javaClass, type) );
+        }
+
+        public SimpleConverter( AnyType type, Class<?> javaClass, Function<String,Neo4jValue> defaultConverter )
+        {
             this.type = type;
             this.javaClass = javaClass;
+            this.defaultConverter = defaultConverter;
+        }
+
+        public Optional<Neo4jValue> defaultValue( Name parameter ) throws ProcedureException
+        {
+            String defaultValue = parameter.defaultValue();
+            if ( defaultValue.equals( Name.DEFAULT_VALUE ) )
+            {
+                return Optional.empty();
+            }
+            else
+            {
+                try
+                {
+                    return Optional.of( defaultConverter.apply( defaultValue ) );
+                }
+                catch ( Exception e )
+                {
+                    throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
+                            "Default value `%s` could not be parsed as a %s", parameter.defaultValue(),
+                            javaClass.getSimpleName() );
+                }
+            }
         }
 
         @Override
@@ -169,12 +219,29 @@ public class TypeMappers
         @Override
         public Object toNeoValue( Object javaValue ) throws ProcedureException
         {
-            if( javaValue == null || javaClass.isInstance( javaValue ) )
+            if ( javaValue == null || javaClass.isInstance( javaValue ) )
             {
                 return javaValue;
             }
             throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
-                    "Expected `%s` to be a `%s`, found `%s`.", javaValue, javaClass.getSimpleName(), javaValue.getClass());
+                    "Expected `%s` to be a `%s`, found `%s`.", javaValue, javaClass.getSimpleName(),
+                    javaValue.getClass() );
+        }
+
+        private static Function<String,Neo4jValue> nullParser( Class<?> javaType, Neo4jTypes.AnyType neoType )
+        {
+            return s -> {
+                if ( s.equalsIgnoreCase( "null" ) )
+                {
+                    return new Neo4jValue( null, neoType );
+                }
+                else
+                {
+                    throw new IllegalArgumentException( String.format( "A %s can only have a `defaultValue = \"null\"",
+                            javaType.getSimpleName() ) );
+                }
+
+            };
         }
     }
 }

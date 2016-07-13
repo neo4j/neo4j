@@ -110,6 +110,32 @@ public class ReflectiveProcedureWithArgumentsTest
         compile( ClassWithProcedureWithoutAnnotatedArgs.class );
     }
 
+    @Test
+    public void shouldFailIfMisplacedDefaultValue() throws Throwable
+    {
+        // Expect
+        exception.expect( ProcedureException.class );
+        exception.expectMessage(
+                "Non-default argument at position 2 with name c in method defaultValues follows default argument. " +
+                "Add a default value or rearrange arguments so that the non-default values comes first." );
+
+        // When
+        compile( ClassWithProcedureWithMisplacedDefault.class );
+    }
+
+    @Test
+    public void shouldFailIfWronglyTypedDefaultValue() throws Throwable
+    {
+        // Expect
+        exception.expect( ProcedureException.class );
+        exception.expectMessage( String.format("Argument `a` at position 0 in `defaultValues` with%n" +
+                "type `long` cannot be converted to a Neo4j type: Default value `forty-two` could not be parsed as a " +
+                "Long" ));
+
+        // When
+        compile( ClassWithProcedureWithBadlyTypedDefault.class );
+    }
+
     public static class MyOutputRecord
     {
         public String name;
@@ -153,6 +179,34 @@ public class ReflectiveProcedureWithArgumentsTest
         public Stream<MyOutputRecord> listCoolPeople( String name, int age )
         {
             return Stream.of( new MyOutputRecord( name + " is " + age + " years old." ) );
+        }
+    }
+
+    public static class ClassWithProcedureWithDefaults
+    {
+        @Procedure
+        public Stream<MyOutputRecord> defaultValues( @Name( value = "a", defaultValue = "a") String a , @Name( value = "b", defaultValue = "42") long b, @Name( value = "c",
+                defaultValue = "3.14") double c)
+        {
+            return Stream.empty();
+        }
+    }
+
+    public static class ClassWithProcedureWithMisplacedDefault
+    {
+        @Procedure
+        public Stream<MyOutputRecord> defaultValues( @Name( "a" ) String a , @Name( value = "b", defaultValue = "42") long b, @Name( "c" ) Object c)
+        {
+            return Stream.empty();
+        }
+    }
+
+    public static class ClassWithProcedureWithBadlyTypedDefault
+    {
+        @Procedure
+        public Stream<MyOutputRecord> defaultValues( @Name( value = "a", defaultValue = "forty-two") long b)
+        {
+            return Stream.empty();
         }
     }
 

@@ -24,9 +24,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType;
+import org.neo4j.kernel.impl.proc.Neo4jValue;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
@@ -96,11 +98,18 @@ public class ProcedureSignature
     {
         private final String name;
         private final AnyType type;
+        private final Optional<Neo4jValue> defaultValue;
 
-        public FieldSignature( String name, AnyType type )
+        public FieldSignature( String name, AnyType type)
+        {
+            this(name, type, Optional.empty());
+        }
+
+        public FieldSignature( String name, AnyType type, Optional<Neo4jValue> defaultValue )
         {
             this.name = name;
             this.type = type;
+            this.defaultValue = defaultValue;
         }
 
         public String name()
@@ -113,10 +122,16 @@ public class ProcedureSignature
             return type;
         }
 
+        public Optional<Neo4jValue> defaultValue()
+        {
+            return defaultValue;
+        }
+
         @Override
         public String toString()
         {
-            return String.format("%s :: %s", name, type);
+            String nameValue = defaultValue.isPresent() ? name + " = " + defaultValue.get().value() : name;
+            return String.format("%s :: %s", nameValue, type);
         }
 
         @Override
@@ -253,7 +268,7 @@ public class ProcedureSignature
         /** Define an input field */
         public Builder in( String name, AnyType type )
         {
-            inputSignature.add( new FieldSignature( name, type ) );
+            inputSignature.add( new FieldSignature( name, type) );
             return this;
         }
 

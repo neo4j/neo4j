@@ -88,7 +88,7 @@ import static org.neo4j.kernel.api.proc.Neo4jTypes.NTRelationship;
 /**
  * Datasource module for {@link GraphDatabaseFacadeFactory}. This implements all the
  * remaining services not yet created by either the {@link PlatformModule} or {@link EditionModule}.
- * <p/>
+ * <p>
  * When creating new services, this would be the default place to put them, unless they need to go into the other
  * modules for any reason.
  */
@@ -350,8 +350,9 @@ public class DataSourceModule
         Log internalLog = platform.logging.getInternalLog( Procedures.class );
 
         Procedures procedures = new Procedures(
-                new BuiltInProcedures( Version.getKernel().getReleaseVersion(),  platform.databaseInfo.edition.toString()),
-                pluginDir,  internalLog );
+                new BuiltInProcedures( Version.getKernel().getReleaseVersion(),
+                        platform.databaseInfo.edition.toString() ),
+                pluginDir, internalLog );
         platform.life.add( procedures );
         platform.dependencies.satisfyDependency( procedures );
 
@@ -360,8 +361,8 @@ public class DataSourceModule
         procedures.registerType( Path.class, new SimpleConverter( NTPath, Path.class ) );
 
         // Register injected public API components
-        Log proceduresLog = platform.logging.getUserLog( Procedures.class  );
-        procedures.registerComponent( Log.class, (ctx) -> proceduresLog );
+        Log proceduresLog = platform.logging.getUserLog( Procedures.class );
+        procedures.registerComponent( Log.class, ( ctx ) -> proceduresLog );
 
         // Register injected private API components: useful to have available in procedures to access the kernel etc.
         ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platform.config, platform.storeDir,
@@ -376,7 +377,7 @@ public class DataSourceModule
         //  - Group-transaction writes (same pattern as above, but rather than splitting large transactions,
         //                              combine lots of small ones)
         //  - Bleeding-edge performance (KernelTransaction, to bypass overhead of working with Core API)
-        procedures.registerComponent( DependencyResolver.class, (ctx) -> platform.dependencies );
+        procedures.registerComponent( DependencyResolver.class, ( ctx ) -> platform.dependencies );
         procedures.registerComponent( KernelTransaction.class, ( ctx ) -> ctx.get( KERNEL_TRANSACTION ) );
         procedures.registerComponent( GraphDatabaseAPI.class, ( ctx ) -> platform.graphDatabaseFacade );
 
@@ -395,7 +396,7 @@ public class DataSourceModule
 
     /**
      * At end of startup, wait for instance to become available for transactions.
-     * <p/>
+     * <p>
      * This helps users who expect to be able to access the instance after
      * the constructor is run.
      */

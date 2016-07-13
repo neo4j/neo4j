@@ -405,12 +405,17 @@ public class FullTextIndex
      * the current state of the node.
      *
      * This procedure works largely the same as {@link #search(String, String)},
-     * with two notable differences. One, it is annotated with `mode = SCHEMA`,
-     * which is <i>required</i> if you want to perform updates to indexes in your
+     * with three notable differences. One, it is annotated with `mode = SCHEMA`,
+     * which is <i>required</i> if you want to perform updates to the graph in your
      * procedure.
      *
      * Two, it returns {@code void} rather than a stream. This is simply a short-hand
      * for saying our procedure always returns an empty stream of empty records.
+     *
+     * Three, it uses a default value for the property list, in this way you can call
+     * the procedure by simply invoking {@code CALL index(nodeId)}. Default values are
+     * are provided as the Cypher string representation of the given type, e.g.
+     * {@code {default: true}}, {@code null}, or {@code -1}.
      *
      * @param nodeId the id of the node to index
      * @param propKeys a list of property keys to index, only the ones the node
@@ -418,7 +423,7 @@ public class FullTextIndex
      */
     @Procedure( name = "example.index", mode = SCHEMA )
     public void index( @Name("nodeId") long nodeId,
-                       @Name("properties") List<String> propKeys )
+                       @Name(value = "properties", defaultValue = "[]") List<String> propKeys )
     {
         Node node = db.getNodeById( nodeId );
 

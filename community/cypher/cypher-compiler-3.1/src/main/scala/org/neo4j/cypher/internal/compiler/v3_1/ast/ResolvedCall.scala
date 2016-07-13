@@ -31,13 +31,11 @@ object ResolvedCall {
     val UnresolvedCall(_, _, declaredArguments, declaredResults) = unresolved
     val position = unresolved.position
     val signature = signatureLookup(QualifiedProcedureName(unresolved))
-    val callArguments = declaredArguments.getOrElse(signatureArguments(signature, position))
+    val nonDefaults = signature.inputSignature.flatMap(s => if (s.default.isDefined) None else Some(Parameter(s.name, CTAny)(position)))
+    val callArguments = declaredArguments.getOrElse(nonDefaults)
     val callResults = declaredResults.getOrElse(signatureResults(signature, position))
     ResolvedCall(signature, callArguments, callResults, declaredArguments.nonEmpty, declaredResults.nonEmpty)(position)
   }
-
-  private def signatureArguments(signature: ProcedureSignature, position: InputPosition): Seq[Parameter] =
-    signature.inputSignature.map { field => Parameter(field.name, CTAny)(position) }
 
   private def signatureResults(signature: ProcedureSignature, position: InputPosition): Seq[ProcedureResultItem] =
     signature.outputSignature.getOrElse(Seq.empty).map { field => ProcedureResultItem(Variable(field.name)(position))(position) }
@@ -90,10 +88,13 @@ case class ResolvedCall(signature: ProcedureSignature,
 
   private def argumentCheck: SemanticCheck = {
     val expectedNumArgs = signature.inputSignature.length
-    val actualNumArgs = callArguments.length
+    val defaultArgs = signature.inputSignature.flatMap(_.default).drop(callArguments.length)
+    val actualNumArgs = callArguments.length + defaultArgs.length
 
     if (declaredArguments) {
       if (expectedNumArgs == actualNumArgs) {
+        //this zip is fine since it will only verify provided args in callArguments
+        //default values are checked at load time
         signature.inputSignature.zip(callArguments).map {
           case (field, arg) =>
             arg.semanticCheck(SemanticContext.Results) chain arg.expectType(field.typ.covariant)
