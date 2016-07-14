@@ -17,25 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters
+package org.neo4j.cypher.internal.compiler.v3_1.ast.conditions
 
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
-import org.neo4j.cypher.internal.frontend.v3_1.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.Condition
+import org.neo4j.cypher.internal.frontend.v3_1.Foldable._
 
-case object nameMatchPatternElements extends Rewriter {
+case object noUnnamedPatternElementsInPatternComprehension extends Condition {
 
-  def apply(that: AnyRef): AnyRef = instance(that)
+  override def name: String = productPrefix
 
-  private val rewriter = Rewriter.lift {
-    case m: Match =>
-      val rewrittenPattern = m.pattern.endoRewrite(nameAllPatternElements.namingRewriter)
-      m.copy(pattern = rewrittenPattern)(m.position)
+  override def apply(that: Any): Seq[String] = that.treeFold(Seq.empty[String]) {
+    case expr: PatternComprehension if containsUnNamedPatternElement(expr.pattern) =>
+      acc => (acc :+ s"Expression $expr contains pattern elements which are not named", None)
   }
 
-  private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
+  private def containsUnNamedPatternElement(expr: RelationshipsPattern) = expr.exists {
+    case p: PatternElement => p.variable.isEmpty
+  }
 }
-
-
-
-
-

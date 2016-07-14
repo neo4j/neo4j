@@ -125,6 +125,7 @@ object ExtractExpression {
 
 case class ListComprehension(scope: ExtractScope, expression: Expression)(val position: InputPosition)
   extends FilteringExpression {
+
   val name = "[...]"
 
   def variable = scope.variable
@@ -144,7 +145,8 @@ case class ListComprehension(scope: ExtractScope, expression: Expression)(val po
         val outerTypes: TypeGenerator = e.types(_).wrapInList
         this.specifyType(outerTypes)
       }
-    case None    => this.specifyType(expression.types)
+    case None =>
+      this.specifyType(expression.types)
   }
 }
 
@@ -154,27 +156,26 @@ object ListComprehension {
             innerPredicate: Option[Expression],
             extractExpression: Option[Expression])(position: InputPosition): ListComprehension =
     ListComprehension(ExtractScope(variable, innerPredicate, extractExpression)(position), expression)(position)
-
 }
 
-case class PatternComprehension(pattern: RelationshipsPattern, predicate: Option[Expression], projection: Expression)
-                               (val position: InputPosition)
+case class PatternComprehension(namedPath: Option[Variable], pattern: RelationshipsPattern,
+                                predicate: Option[Expression], projection: Expression)(val position: InputPosition)
   extends ScopeExpression {
 
-  override def semanticCheck(ctx: SemanticContext) =
-    checkInnerExpression
+  self =>
 
-  private def checkInnerExpression: SemanticCheck =
+  override def semanticCheck(ctx: SemanticContext) =
     withScopedState {
       pattern.semanticCheck(Pattern.SemanticContext.Match) chain
-      projection.semanticCheck(SemanticContext.Simple) chain
-      predicate.semanticCheck(SemanticContext.Simple)
+      namedPath.map(_.declare(CTPath): SemanticCheck).getOrElse(SemanticCheckResult.success) chain
+      predicate.semanticCheck(SemanticContext.Simple) chain
+      projection.semanticCheck(SemanticContext.Simple)
     } chain {
       val outerTypes: TypeGenerator = projection.types(_).wrapInList
-      this.specifyType(outerTypes)
+      self.specifyType(outerTypes)
     }
 
-  override def variables: Set[Variable] = pattern.element.allVariables
+  override def variables: Set[Variable] = pattern.element.allVariables ++ namedPath.toSet
 }
 
 sealed trait IterablePredicateExpression extends FilteringExpression {

@@ -25,6 +25,12 @@ import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression.SemanticContext
 // Scope expressions bundle together variables of a new scope
 // together with any child expressions that get evaluated in a context where
 // these variables are bound
+//
+// This is a hard contract: There must be no child expressions of a scope expressions
+// that are not
+// - either introduced variables
+// - or child expressions in a scope where those variables are bound
+//
 trait ScopeExpression extends Expression {
   def variables: Set[Variable]
 }

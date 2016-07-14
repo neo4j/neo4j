@@ -22,20 +22,24 @@ package org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.{Rewriter, bottomUp}
 
-case object nameMatchPatternElements extends Rewriter {
+case object inlineNamedPathsInPatternComprehensions extends Rewriter {
 
-  def apply(that: AnyRef): AnyRef = instance(that)
+  private val instance = bottomUp(Rewriter.lift {
+    case expr @ PatternComprehension(Some(path), pattern, predicate, projection) =>
+      val patternElement = pattern.element
+      expr.copy(
+        namedPath = None,
+        predicate = predicate.map(_.inline(path, patternElement)),
+        projection = projection.inline(path, patternElement)
+      )(expr.position)
+  })
 
-  private val rewriter = Rewriter.lift {
-    case m: Match =>
-      val rewrittenPattern = m.pattern.endoRewrite(nameAllPatternElements.namingRewriter)
-      m.copy(pattern = rewrittenPattern)(m.position)
+  private implicit final class InliningExpression(val expr: Expression) extends AnyVal {
+    def inline(path: Variable, patternElement: PatternElement) =
+      expr.copyAndReplace(path) by {
+        PathExpression(projectNamedPaths.patternPartPathExpression(patternElement))(expr.position)
+      }
   }
 
-  private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
+  override def apply(v: AnyRef): AnyRef = instance(v)
 }
-
-
-
-
-

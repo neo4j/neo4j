@@ -34,7 +34,7 @@ class PatternComprehensionTest extends CypherFunSuite with AstConstructionTestSu
   val stringLiteral = StringLiteral("APA")(pos)
 
   test("pattern comprehension on a property returns the expected type") {
-    val expression = PatternComprehension(pattern, None, property)(pos)
+    val expression = PatternComprehension(None, pattern, None, property)(pos)
 
     val result = expression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
 
@@ -43,7 +43,7 @@ class PatternComprehensionTest extends CypherFunSuite with AstConstructionTestSu
   }
 
   test("pattern comprehension with literal string projection has correct type") {
-    val expression = PatternComprehension(pattern, None, stringLiteral)(pos)
+    val expression = PatternComprehension(None, pattern, None, stringLiteral)(pos)
 
     val result = expression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
 
@@ -52,7 +52,7 @@ class PatternComprehensionTest extends CypherFunSuite with AstConstructionTestSu
   }
 
   test("inner projection using missing identifier reports error") {
-    val expression = PatternComprehension(pattern, None, failingProperty)(pos)
+    val expression = PatternComprehension(None, pattern, None, failingProperty)(pos)
 
     val result = expression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
 
@@ -61,7 +61,7 @@ class PatternComprehensionTest extends CypherFunSuite with AstConstructionTestSu
   }
 
   test("inner filter using missing identifier reports error") {
-    val expression = PatternComprehension(pattern, Some(failingProperty), stringLiteral)(pos)
+    val expression = PatternComprehension(None, pattern, Some(failingProperty), stringLiteral)(pos)
 
     val result = expression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
 
@@ -69,7 +69,7 @@ class PatternComprehensionTest extends CypherFunSuite with AstConstructionTestSu
   }
 
   test("pattern can't reuse identifier with different type") {
-    val expression = PatternComprehension(pattern, None, stringLiteral)(pos)
+    val expression = PatternComprehension(None, pattern, None, stringLiteral)(pos)
 
     val semanticState = SemanticState.clean.declareVariable(varFor("n"), CTBoolean).right.get
     val result = expression.semanticCheck(Expression.SemanticContext.Simple)(semanticState)
