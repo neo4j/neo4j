@@ -269,8 +269,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         final MessageLogger<CoreMember> messageLogger;
         if ( config.get( CoreEdgeClusterSettings.raft_messages_log_enable ) )
         {
-            messageLogger =
-                    life.add( new BetterMessageLogger<>( myself, raftMessagesLog( storeDir ) ) );
+            File logsDir = config.get( GraphDatabaseSettings.logs_directory );
+            messageLogger = life.add( new BetterMessageLogger<>( myself, raftMessagesLog( logsDir ) ) );
         }
         else
         {
@@ -587,13 +587,14 @@ public class EnterpriseCoreEditionModule extends EditionModule
         }
     }
 
-    private static PrintWriter raftMessagesLog( File storeDir )
+    private static PrintWriter raftMessagesLog( File logsDir )
     {
         //noinspection ResultOfMethodCallIgnored
-        storeDir.mkdirs();
+        logsDir.mkdirs();
         try
         {
-            return new PrintWriter( new FileOutputStream( new File( storeDir, "raft-messages.log" ), true ) );
+
+            return new PrintWriter( new FileOutputStream( new File( logsDir, "raft-messages.log" ), true ) );
         }
         catch ( FileNotFoundException e )
         {
