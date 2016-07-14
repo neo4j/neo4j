@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.locking;
 
 /**
- * A {@link StatementLocks} implementation that uses given {@link Locks.Client} for both {@link #implicit() implicit}
- * and {@link #explicit() explicit} locks.
+ * A {@link StatementLocks} implementation that uses given {@link Locks.Client} for both
+ * {@link #optimistic() optimistic} and {@link #pessimistic() pessimistic} locks.
  */
 public class SimpleStatementLocks implements StatementLocks
 {
@@ -33,13 +33,13 @@ public class SimpleStatementLocks implements StatementLocks
     }
 
     @Override
-    public Locks.Client explicit()
+    public Locks.Client pessimistic()
     {
         return client;
     }
 
     @Override
-    public Locks.Client implicit()
+    public Locks.Client optimistic()
     {
         return client;
     }

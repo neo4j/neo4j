@@ -23,7 +23,7 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 
 /**
- * A {@link StatementLocks} implementation that defers {@link #implicit() implicit}
+ * A {@link StatementLocks} implementation that defers {@link #optimistic() optimistic}
  * locks using {@link DeferringLockClient}.
  */
 public class DeferringStatementLocks implements StatementLocks
@@ -38,13 +38,13 @@ public class DeferringStatementLocks implements StatementLocks
     }
 
     @Override
-    public Locks.Client explicit()
+    public Locks.Client pessimistic()
     {
         return explicit;
     }
 
     @Override
-    public Locks.Client implicit()
+    public Locks.Client optimistic()
     {
         return implicit;
     }

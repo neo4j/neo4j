@@ -36,8 +36,8 @@ public class SimpleStatementLocksTest
         final SimpleStatementLocks statementLocks = new SimpleStatementLocks( client );
 
         // THEN
-        assertSame( client, statementLocks.explicit() );
-        assertSame( client, statementLocks.implicit() );
+        assertSame( client, statementLocks.pessimistic() );
+        assertSame( client, statementLocks.optimistic() );
     }
 
     @Test

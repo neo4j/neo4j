@@ -19,32 +19,28 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.api.KernelStatement;
 
 /**
- * Component used by {@link KernelStatement} to acquire {@link #implicit() implicit} and {@link #explicit() explicit}
- * locks.
+ * Component used by {@link KernelStatement} to acquire {@link #pessimistic() pessimistic} and
+ * {@link #optimistic() optimistic} locks.
  */
 public interface StatementLocks extends AutoCloseable
 {
     /**
-     * Get {@link Locks.Client} responsible for explicit locks. Such locks are explicitly grabbed by the user via
-     * {@link Transaction#acquireReadLock(PropertyContainer)} and
-     * {@link Transaction#acquireWriteLock(PropertyContainer)}.
+     * Get {@link Locks.Client} responsible for pessimistic locks. Such locks will be grabbed right away.
      *
-     * @return the locks client to serve explicit locks.
+     * @return the locks client to serve pessimistic locks.
      */
-    Locks.Client explicit();
+    Locks.Client pessimistic();
 
     /**
-     * Get {@link Locks.Client} responsible for implicit locks. Such locks are grabbed by the database itself to
-     * provide consistency guarantees.
+     * Get {@link Locks.Client} responsible for optimistic locks. Such locks could potentially be grabbed later at
+     * commit time.
      *
      * @return the locks client to serve implicit locks.
      */
-    Locks.Client implicit();
+    Locks.Client optimistic();
 
     /**
      * Prepare the underlying {@link Locks.Client client}(s) for commit.

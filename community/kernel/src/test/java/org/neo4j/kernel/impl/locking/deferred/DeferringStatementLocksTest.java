@@ -44,8 +44,8 @@ public class DeferringStatementLocksTest
         final DeferringStatementLocks statementLocks = new DeferringStatementLocks( client );
 
         // THEN
-        assertSame( client, statementLocks.explicit() );
-        assertThat( statementLocks.implicit(), instanceOf( DeferringLockClient.class ) );
+        assertSame( client, statementLocks.pessimistic() );
+        assertThat( statementLocks.optimistic(), instanceOf( DeferringLockClient.class ) );
     }
 
     @Test
@@ -70,8 +70,8 @@ public class DeferringStatementLocksTest
         final DeferringStatementLocks statementLocks = new DeferringStatementLocks( client );
 
         // WHEN
-        statementLocks.implicit().acquireExclusive( ResourceTypes.NODE, 1 );
-        statementLocks.implicit().acquireExclusive( ResourceTypes.RELATIONSHIP, 42 );
+        statementLocks.optimistic().acquireExclusive( ResourceTypes.NODE, 1 );
+        statementLocks.optimistic().acquireExclusive( ResourceTypes.RELATIONSHIP, 42 );
         verify( client, never() ).acquireExclusive( any( Locks.ResourceType.class ), anyLong() );
         statementLocks.prepareForCommit();
 

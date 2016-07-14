@@ -602,7 +602,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 }
 
                 statementLocks.prepareForCommit();
-                context.init( statementLocks.explicit() );
+                context.init( statementLocks.pessimistic() );
                 prepareRecordChangesFromTransactionState();
             }
 
@@ -636,7 +636,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                 headerInformation.getMasterId(),
                                 headerInformation.getAuthorId(),
                                 startTimeMillis, lastTransactionIdWhenStarted, clock.currentTimeMillis(),
-                                statementLocks.explicit().getLockSessionId() );
+                                statementLocks.pessimistic().getLockSessionId() );
 
                         // Commit the transaction
                         commitProcess.commit( transactionRepresentation, lockGroup, commitEvent, INTERNAL );
@@ -1236,6 +1236,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public String toString()
     {
-        return "KernelTransaction[" + this.statementLocks.explicit().getLockSessionId() + "]";
+        return "KernelTransaction[" + this.statementLocks.pessimistic().getLockSessionId() + "]";
     }
 }
