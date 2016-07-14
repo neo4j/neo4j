@@ -91,6 +91,8 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 )
 public class LdapAuthenticationIT extends AbstractLdapTestUnit
 {
+    final String MD5_HASHED_abc123 = "{MD5}6ZoYxCjLONXyYIU2eJIuAw=="; // Hashed 'abc123' (see ldap_test_data.ldif)
+
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getTestGraphDatabaseFactory(), getSettingsFunction() );
 
@@ -98,6 +100,26 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
             throws IOException
     {
         server.restartDatabase( overrideSettingsFunction );
+    }
+
+    private void restartNeo4jServerWithSaslDigestMd5() throws IOException
+    {
+        server.restartDatabase( ldapOnlyAuthSettings.andThen(
+                settings -> {
+                    settings.put( SecuritySettings.ldap_auth_mechanism, "DIGEST-MD5" );
+                    settings.put( SecuritySettings.ldap_user_dn_template, "{0}" );
+                }
+        ) );
+    }
+
+    private void restartNeo4jServerWithSaslCramMd5() throws IOException
+    {
+        server.restartDatabase( ldapOnlyAuthSettings.andThen(
+                settings -> {
+                    settings.put( SecuritySettings.ldap_auth_mechanism, "CRAM-MD5" );
+                    settings.put( SecuritySettings.ldap_user_dn_template, "{0}" );
+                }
+        ) );
     }
 
     protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
@@ -134,78 +156,70 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
 
     @Test
     @ApplyLdifFiles( "ldap_test_data.ldif" )
-    public void shouldBeAbleToLoginWithLdap() throws Throwable
+    public void shouldLoginWithLdap() throws Throwable
     {
-        // When
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1", map( "principal", "neo",
-                                "credentials", "abc123", "scheme", "basic" ) ) ) );
-
-        // Then
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+        assertAuth( "neo4j", "abc123" );
     }
 
     @Test
     @ApplyLdifFiles( "ldap_test_data.ldif" )
-    public void shouldBeAbleToLoginWithLdapUsingSaslDigestMd5() throws Throwable
+    public void shouldFailToLoginWithLdapIfInvalidCredentials() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen(
-                settings -> {
-                    settings.put( SecuritySettings.ldap_auth_mechanism, "DIGEST-MD5" );
-                    settings.put( SecuritySettings.ldap_user_dn_template, "{0}" );
-                }
-        ) );
-
-        // When
-        String principal = "neo4j";
-        String credentials = "{MD5}6ZoYxCjLONXyYIU2eJIuAw=="; // Hashed 'abc123' (see ldap_test_data.ldif)
-
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1", map( "principal", principal,
-                                "credentials", credentials, "scheme", "basic" ) ) ) );
-
-        // Then
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+        assertAuthFail( "neo4j", "CANT_REMEMBER_MY_PASSWORDS_ANYMORE!" );
     }
 
     @Test
     @ApplyLdifFiles( "ldap_test_data.ldif" )
-    public void shouldBeAbleToLoginWithLdapUsingSaslCramMd5() throws Throwable
+    public void shouldLoginWithLdapUsingSaslDigestMd5() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen(
-                settings -> {
-                    settings.put( SecuritySettings.ldap_auth_mechanism, "CRAM-MD5" );
-                    settings.put( SecuritySettings.ldap_user_dn_template, "{0}" );
-                }
-        ) );
-
         // When
-        String principal = "neo4j";
-        String credentials = "{MD5}6ZoYxCjLONXyYIU2eJIuAw=="; // Hashed 'abc123' (see ldap_test_data.ldif)
-
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1", map( "principal", principal,
-                                "credentials", credentials, "scheme", "basic" ) ) ) );
+        restartNeo4jServerWithSaslDigestMd5();
 
         // Then
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+        assertAuth( "neo4j", MD5_HASHED_abc123 );
+    }
+
+    @Test
+    @ApplyLdifFiles( "ldap_test_data.ldif" )
+    public void shouldFailToLoginWithLdapDigestMd5IfInvalidCredentials() throws Throwable
+    {
+        // When
+        restartNeo4jServerWithSaslDigestMd5();
+
+        // Then
+        assertAuthFail( "neo4j", MD5_HASHED_abc123.toUpperCase() );
+    }
+
+    @Test
+    @ApplyLdifFiles( "ldap_test_data.ldif" )
+    public void shouldLoginWithLdapUsingSaslCramMd5() throws Throwable
+    {
+        // When
+        restartNeo4jServerWithSaslCramMd5();
+
+        // Then
+        assertAuth( "neo4j", MD5_HASHED_abc123 );
+    }
+
+    @Test
+    @ApplyLdifFiles( "ldap_test_data.ldif" )
+    public void shouldFailToLoginWithLdapCramMd5IfInvalidCredentials() throws Throwable
+    {
+        // When
+        restartNeo4jServerWithSaslCramMd5();
+
+        // Then
+        assertAuthFail( "neo4j", MD5_HASHED_abc123.toUpperCase() );
     }
 
     @Test
     @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldBeAbleToLoginAndAuthorizeReaderWithLdapOnly() throws Throwable
     {
+        // When
         restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings );
 
+        // Then
         testAuthWithReaderUser();
     }
 
@@ -213,8 +227,10 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldBeAbleToLoginAndAuthorizePublisherWithLdapOnly() throws Throwable
     {
+        // When
         restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings );
 
+        // Then
         testAuthWithPublisherUser();
     }
 
@@ -222,8 +238,10 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithLdapOnly() throws Throwable
     {
+        // When
         restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings );
 
+        // Then
         testAuthWithNoPermissionUser( "smith" );
     }
 
@@ -231,10 +249,12 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithLdapOnlyAndNoGroupToRoleMapping() throws Throwable
     {
+        // When
         restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
             settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, null );
         } ) );
 
+        // Then
         // User 'neo' has reader role by default, but since we are not passing a group-to-role mapping
         // he should get no permissions
         testAuthWithNoPermissionUser( "neo" );
@@ -244,10 +264,12 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldBeAbleToLoginAndAuthorizeReaderWithUserLdapContext() throws Throwable
     {
+        // When
         restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
             settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
         } ) );
 
+        // Then
         testAuthWithReaderUser();
     }
 
@@ -255,10 +277,12 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldBeAbleToLoginAndAuthorizePublisherWithUserLdapContext() throws Throwable
     {
+        // When
         restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
             settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
         } ) );
 
+        // Then
         testAuthWithPublisherUser();
     }
 
@@ -266,10 +290,12 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithUserLdapContext() throws Throwable
     {
+        // When
         restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
             settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
         } ) );
 
+        // Then
         testAuthWithNoPermissionUser( "smith" );
     }
 
@@ -277,11 +303,13 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithUserLdapContextAndNoGroupToRoleMapping() throws Throwable
     {
+        // When
         restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings -> {
             settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
             settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, null );
         } ) );
 
+        // Then
         // User 'neo' has reader role by default, but since we are not passing a group-to-role mapping
         // he should get no permissions
         testAuthWithNoPermissionUser( "neo" );
@@ -291,6 +319,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     @ApplyLdifFiles( "ldap_test_data.ldif" )
     public void shouldBeAbleToLoginWithLdapAndAuthorizeInternally() throws Throwable
     {
+        // When
         restartNeo4jServerWithOverriddenSettings( settings -> {
             settings.put( SecuritySettings.internal_authentication_enabled, "false" );
             settings.put( SecuritySettings.internal_authorization_enabled, "true" );
@@ -298,6 +327,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
             settings.put( SecuritySettings.ldap_authorization_enabled, "false" );
         } );
 
+        // Then
         //--------------------------
         // First login as the admin user 'neo4j' and create the internal user 'neo' with role 'reader'
         testCreateReaderUser();
@@ -335,14 +365,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
 
     private void testCreateReaderUser() throws Exception
     {
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1", map( "principal", "neo4j",
-                                "credentials", "abc123", "scheme", "basic" ) ) ) );
-
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+        assertAuth( "neo4j", "abc123" );
 
         // NOTE: The default user 'neo4j' has password change required, so we have to first change it
         client.send( TransportTestUtil.chunk(
@@ -356,15 +379,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     private void testAuthWithReaderUser() throws Exception
     {
         // When
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1", map( "principal", "neo",
-                                "credentials", "abc123", "scheme", "basic" ) ) ) );
-
-        // Then
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+        assertAuth( "neo", "abc123" );
 
         // When
         client.send( TransportTestUtil.chunk(
@@ -388,15 +403,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     private void testAuthWithPublisherUser() throws Exception
     {
         // When
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1", map( "principal", "tank",
-                                "credentials", "abc123", "scheme", "basic" ) ) ) );
-
-        // Then
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+        assertAuth( "tank", "abc123" );
 
         // When
         client.send( TransportTestUtil.chunk(
@@ -410,15 +417,7 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
     private void testAuthWithNoPermissionUser( String username ) throws Exception
     {
         // When
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1", map( "principal", username,
-                                "credentials", "abc123", "scheme", "basic" ) ) ) );
-
-        // Then
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+        assertAuth( username, "abc123" );
 
         // When
         client.send( TransportTestUtil.chunk(
@@ -429,6 +428,30 @@ public class LdapAuthenticationIT extends AbstractLdapTestUnit
         assertThat( client, eventuallyRecieves(
                 msgFailure( Status.Security.Forbidden,
                         String.format( "Read operations are not allowed for '%s'.", username ) ) ) );
+    }
+
+    private void assertAuth( String username, String password ) throws Exception
+    {
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", map( "principal", username,
+                                "credentials", password, "scheme", "basic" ) ) ) );
+
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+    }
+
+    private void assertAuthFail( String username, String password ) throws Exception
+    {
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", map( "principal", username,
+                                "credentials", password, "scheme", "basic" ) ) ) );
+
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves( msgFailure( Status.Security.Unauthorized, "The client is unauthorized due to authentication failure." ) ) );
     }
 
     private Consumer<Map<Setting<?>,String>> ldapOnlyAuthSettings = settings ->
