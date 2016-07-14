@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.util.Listener;
 /**
  * A replicator implementation suitable in a RAFT context. Will handle resending due to timeouts and leader switches.
  */
-public class RaftReplicator implements Replicator<ReplicatedContent>, Listener<CoreMember>
+public class RaftReplicator implements Replicator, Listener<CoreMember>
 {
     private final CoreMember me;
     private final Outbound<CoreMember,RaftMessages.RaftMessage> outbound;
@@ -90,9 +90,7 @@ public class RaftReplicator implements Replicator<ReplicatedContent>, Listener<C
             }
         } while( !progress.isReplicated() );
 
-        BiConsumer<Object,Throwable> cleanup = ( ignored1, ignored2 ) -> {
-            sessionPool.releaseSession( session );
-        };
+        BiConsumer<Object,Throwable> cleanup = ( ignored1, ignored2 ) -> sessionPool.releaseSession( session );
 
         if( trackResult )
         {
