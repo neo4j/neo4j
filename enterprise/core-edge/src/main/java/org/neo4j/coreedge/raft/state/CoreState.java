@@ -252,6 +252,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
             {
                 if ( !sessionState.validateOperation( operation.globalSession(), operation.operationId() ) )
                 {
+                    commandIndex++;
                     continue;
                 }
 

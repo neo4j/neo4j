@@ -22,6 +22,7 @@ package org.neo4j.coreedge.raft.state;
 import org.junit.Test;
 import org.mockito.InOrder;
 
+import java.util.Arrays;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -57,6 +58,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
@@ -90,6 +92,13 @@ public class CoreStateTest
     {
         when( coreStateMachines.commandDispatcher() ).thenReturn( commandDispatcher );
         when( coreStateMachines.getLastAppliedIndex() ).thenReturn( -1L );
+    }
+
+    private ReplicatedTransaction tx( byte dataValue )
+    {
+        byte[] dataArray = new byte[30];
+        Arrays.fill( dataArray, dataValue );
+        return new ReplicatedTransaction( dataArray );
     }
 
     private int sequenceNumber = 0;
@@ -162,6 +171,67 @@ public class CoreStateTest
         inOrder.verify( coreStateMachines ).commandDispatcher();
         inOrder.verify( commandDispatcher ).dispatch( eq( nullTx ), eq( 1L ), anyCallback() );
         inOrder.verify( commandDispatcher ).close();
+    }
+
+    @Test
+    public void duplicatesShouldBeIgnoredButStillIncreaseCommandIndex() throws Exception
+    {
+        // given
+        coreState.setStateMachine( coreStateMachines );
+        coreState.start();
+
+        // when
+        raftLog.append( new RaftLogEntry( 0, new NewLeaderBarrier() ) );
+        raftLog.append( new RaftLogEntry( 0, new DistributedOperation( nullTx, globalSession, new LocalOperationId( 0, 0 ) ) ) );
+        raftLog.append( new RaftLogEntry( 0, new DistributedOperation( nullTx, globalSession, new LocalOperationId( 0, 0 ) ) ) ); // duplicate
+        raftLog.append( new RaftLogEntry( 0, new DistributedOperation( nullTx, globalSession, new LocalOperationId( 0, 1 ) ) ) );
+
+        coreState.notifyCommitted( 3 );
+        applier.sync( false );
+
+        InOrder inOrder = inOrder( coreStateMachines, commandDispatcher );
+
+        // then
+        inOrder.verify( coreStateMachines ).commandDispatcher();
+        inOrder.verify( commandDispatcher ).dispatch( eq( nullTx ), eq( 1L ), anyCallback() );
+        // duplicate not dispatched
+        inOrder.verify( commandDispatcher ).dispatch( eq( nullTx ), eq( 3L ), anyCallback() );
+        inOrder.verify( commandDispatcher ).close();
+        verifyNoMoreInteractions( commandDispatcher );
+    }
+
+    @Test
+    public void outOfOrderDuplicatesShouldBeIgnoredButStillIncreaseCommandIndex() throws Exception
+    {
+        // given
+        coreState.setStateMachine( coreStateMachines );
+        coreState.start();
+
+        // when
+        raftLog.append( new RaftLogEntry( 0, new DistributedOperation( tx( (byte) 100 ), globalSession, new LocalOperationId( 0, 0 ) ) ) );
+        raftLog.append( new RaftLogEntry( 0, new DistributedOperation( tx( (byte) 101 ), globalSession, new LocalOperationId( 0, 1 ) ) ) );
+        raftLog.append( new RaftLogEntry( 0, new DistributedOperation( tx( (byte) 102 ), globalSession, new LocalOperationId( 0, 2 ) ) ) );
+        raftLog.append( new RaftLogEntry( 0, new DistributedOperation( tx( (byte) 101 ), globalSession, new LocalOperationId( 0, 1 ) ) ) ); // duplicate of tx 101
+        raftLog.append( new RaftLogEntry( 0, new DistributedOperation( tx( (byte) 100 ), globalSession, new LocalOperationId( 0, 0 ) ) ) ); // duplicate of tx 100
+        raftLog.append( new RaftLogEntry( 0, new DistributedOperation( tx( (byte) 103 ), globalSession, new LocalOperationId( 0, 3 ) ) ) );
+        raftLog.append( new RaftLogEntry( 0, new DistributedOperation( tx( (byte) 104 ), globalSession, new LocalOperationId( 0, 4 ) ) ) );
+
+        coreState.notifyCommitted( 6 );
+        applier.sync( false );
+
+        InOrder inOrder = inOrder( coreStateMachines, commandDispatcher );
+
+        // then
+        inOrder.verify( coreStateMachines ).commandDispatcher();
+        inOrder.verify( commandDispatcher ).dispatch( eq( tx( (byte) 100 ) ), eq( 0L ), anyCallback() );
+        inOrder.verify( commandDispatcher ).dispatch( eq( tx( (byte) 101 ) ), eq( 1L ), anyCallback() );
+        inOrder.verify( commandDispatcher ).dispatch( eq( tx( (byte) 102 ) ), eq( 2L ), anyCallback() );
+        // duplicate of tx 101 not dispatched, at index 3
+        // duplicate of tx 100 not dispatched, at index 4
+        inOrder.verify( commandDispatcher ).dispatch( eq( tx( (byte) 103 ) ), eq( 5L ), anyCallback() );
+        inOrder.verify( commandDispatcher ).dispatch( eq( tx( (byte) 104 ) ), eq( 6L ), anyCallback() );
+        inOrder.verify( commandDispatcher ).close();
+        verifyNoMoreInteractions( commandDispatcher );
     }
 
     // TODO: Test recovery, see CoreState#start().
