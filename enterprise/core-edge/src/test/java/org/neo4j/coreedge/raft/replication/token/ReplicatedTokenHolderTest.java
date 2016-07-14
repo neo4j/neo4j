@@ -59,8 +59,8 @@ import static org.mockito.Mockito.when;
 
 public class ReplicatedTokenHolderTest
 {
-    Dependencies dependencies = mock( Dependencies.class );
-    long TIMEOUT_MILLIS = 10;
+    private Dependencies dependencies = mock( Dependencies.class );
+    private long TIMEOUT_MILLIS = 10;
 
     @Test
     public void shouldStoreInitialTokens() throws Exception
@@ -156,7 +156,7 @@ public class ReplicatedTokenHolderTest
         }
     }
 
-    private static class DropAllTheThingsReplicator implements Replicator<ReplicatedContent>
+    private static class DropAllTheThingsReplicator implements Replicator
     {
         @Override
         public Future<Object> replicate( final ReplicatedContent content, boolean trackResult )

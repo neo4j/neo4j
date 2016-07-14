@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.coreedge.raft.state.StateMachine;
 
-public class DirectReplicator<Command extends ReplicatedContent> implements Replicator<Command>
+public class DirectReplicator<Command extends ReplicatedContent> implements Replicator
 {
     private final StateMachine<Command> stateMachine;
     private long commandIndex = 0;
@@ -36,10 +36,10 @@ public class DirectReplicator<Command extends ReplicatedContent> implements Repl
     }
 
     @Override
-    public synchronized Future<Object> replicate( Command content, boolean trackResult )
+    public synchronized Future<Object> replicate( ReplicatedContent content, boolean trackResult )
     {
         AtomicReference<CompletableFuture<Object>> futureResult = new AtomicReference<>( new CompletableFuture<>() );
-        stateMachine.applyCommand( content, commandIndex++, result -> {
+        stateMachine.applyCommand( (Command) content, commandIndex++, result -> {
             if ( trackResult )
             {
                 futureResult.getAndUpdate( result::apply );
