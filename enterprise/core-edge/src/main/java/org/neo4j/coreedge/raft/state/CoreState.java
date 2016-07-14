@@ -73,7 +73,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     private long lastFlushed = NOTHING;
 
     public CoreState(
-            RaftLog raftLog,
+            CoreStateMachines coreStateMachines, RaftLog raftLog,
             int maxBatchSize,
             int flushEvery,
             Supplier<DatabaseHealth> dbHealth,
@@ -84,9 +84,10 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
             CoreServerSelectionStrategy someoneElse,
             CoreStateApplier applier,
             CoreStateDownloader downloader,
-            InFlightMap<Long,RaftLogEntry> inFlightMap,
+            InFlightMap<Long, RaftLogEntry> inFlightMap,
             Monitors monitors )
     {
+        this.coreStateMachines = coreStateMachines;
         this.raftLog = raftLog;
         this.lastFlushedStorage = lastFlushedStorage;
         this.flushEvery = flushEvery;
@@ -100,17 +101,6 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
         this.inFlightMap = inFlightMap;
         this.commitIndexMonitor = monitors.newMonitor( RaftLogCommitIndexMonitor.class, getClass() );
         this.batcher = new OperationBatcher( maxBatchSize );
-    }
-
-    synchronized void setStateMachine( CoreStateMachines coreStateMachines )
-    {
-        this.coreStateMachines = coreStateMachines;
-    }
-
-    public void skip( long lastApplied )
-    {
-        this.lastApplied = this.lastFlushed = lastApplied;
-        log.info( format( "Skipping lastApplied index forward to %d", lastApplied ) );
     }
 
     @Override
@@ -332,6 +322,21 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     synchronized void installSnapshot( CoreSnapshot coreSnapshot )
     {
         coreStateMachines.installSnapshots( coreSnapshot );
+        long snapshotPrevIndex = coreSnapshot.prevIndex();
+        try
+        {
+            if ( snapshotPrevIndex > 1 )
+            {
+                raftLog.skip( snapshotPrevIndex, coreSnapshot.prevTerm() );
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+        this.lastApplied = this.lastFlushed = snapshotPrevIndex;
+        log.info( format( "Skipping lastApplied index forward to %d", snapshotPrevIndex ) );
+
         sessionState = coreSnapshot.get( CoreStateType.SESSION_TRACKER );
     }
 
