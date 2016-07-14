@@ -47,8 +47,8 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
+import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyConstraintViolationKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.procedures.ProcedureSignature;
@@ -156,7 +156,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         {
             IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
             assertIndexOnline( state, indexDescriptor );
-            state.locks().implicit().acquireExclusive( INDEX_ENTRY,
+            state.locks().explicit().acquireExclusive( INDEX_ENTRY,
                     indexEntryResourceId( labelId, propertyKeyId, ObjectUtil.toString( value ) ) );
 
             long existing = entityReadOperations.nodeGetFromUniqueIndexSeek( state, indexDescriptor, value );
@@ -328,7 +328,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         }
 
         // If we find the node - hold a shared lock. If we don't find a node - hold an exclusive lock.
-        Locks.Client locks = state.locks().implicit();
+        Locks.Client locks = state.locks().explicit();
         long indexEntryId = indexEntryResourceId( labelId, propertyKeyId, stringVal );
 
         locks.acquireShared( INDEX_ENTRY, indexEntryId );

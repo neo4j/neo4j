@@ -22,9 +22,12 @@ package org.neo4j.kernel.impl.locking;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -38,14 +41,23 @@ import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.OtherThreadRule;
+import org.neo4j.test.Race;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterables.count;
 
 public class DeferringLocksIT
 {
+    private static final Label LABEL = DynamicLabel.label( "label" );
+    private static final String PROPERTY_KEY = "key";
+    private static final String VALUE_1 = "value1";
+    private static final String VALUE_2 = "value2";
+
     @Rule
     public final DatabaseRule db = new ImpermanentDatabaseRule()
     {
@@ -57,6 +69,8 @@ public class DeferringLocksIT
     };
     @Rule
     public final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
+    @Rule
+    public final OtherThreadRule<Void> t3 = new OtherThreadRule<>();
 
     @Test
     public void shouldNotFreakOutIfTwoTransactionsDecideToEachAddTheSameProperty() throws Exception
@@ -78,7 +92,7 @@ public class DeferringLocksIT
             {
                 try ( Transaction tx = db.beginTx() )
                 {
-                    node.setProperty( "key", true );
+                    node.setProperty( PROPERTY_KEY, VALUE_1 );
                     tx.success();
                     barrier.reached();
                 }
@@ -88,7 +102,7 @@ public class DeferringLocksIT
         try ( Transaction tx = db.beginTx() )
         {
             barrier.await();
-            node.setProperty( "key", false );
+            node.setProperty( PROPERTY_KEY, VALUE_2 );
             tx.success();
             barrier.release();
         }
@@ -109,7 +123,7 @@ public class DeferringLocksIT
         try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode();
-            node.setProperty( "key", true );
+            node.setProperty( PROPERTY_KEY, VALUE_1 );
             tx.success();
         }
 
@@ -121,7 +135,7 @@ public class DeferringLocksIT
             {
                 try ( Transaction tx = db.beginTx() )
                 {
-                    Object key = node.removeProperty( "key" );
+                    Object key = node.removeProperty( PROPERTY_KEY );
                     tx.success();
                     barrier.reached();
                 }
@@ -131,7 +145,7 @@ public class DeferringLocksIT
         try ( Transaction tx = db.beginTx() )
         {
             barrier.await();
-            node.setProperty( "key", false );
+            node.setProperty( PROPERTY_KEY, VALUE_2 );
             tx.success();
             barrier.release();
         }
@@ -139,7 +153,7 @@ public class DeferringLocksIT
         future.get();
         try ( Transaction tx = db.beginTx() )
         {
-            assertFalse( (Boolean)node.getProperty( "key", false ) );
+            assertEquals( VALUE_2, node.getProperty( PROPERTY_KEY, VALUE_2 ) );
             tx.success();
         }
     }
@@ -154,7 +168,7 @@ public class DeferringLocksIT
         {
             Node node = db.createNode();
             nodeId = node.getId();
-            node.setProperty( "key", true );
+            node.setProperty( PROPERTY_KEY, VALUE_1 );
             tx.success();
         }
 
@@ -176,7 +190,7 @@ public class DeferringLocksIT
         try ( Transaction tx = db.beginTx() )
         {
             barrier.await();
-            db.getNodeById( nodeId ).setProperty( "key", false );
+            db.getNodeById( nodeId ).setProperty( PROPERTY_KEY, VALUE_2 );
             tx.success();
             barrier.release();
         }
@@ -187,7 +201,7 @@ public class DeferringLocksIT
             try
             {
                 db.getNodeById( nodeId );
-                assertFalse( (Boolean) db.getNodeById( nodeId ).getProperty( "key", false ) );
+                assertEquals( VALUE_2, db.getNodeById( nodeId ).getProperty( PROPERTY_KEY, VALUE_2 ) );
             }
             catch ( NotFoundException e )
             {
@@ -198,97 +212,132 @@ public class DeferringLocksIT
     }
 
     @Test
-    public void nodeAddedToIndexOnCommit() throws Exception
+    public void readOwnChangesFromRacingIndexNoBlock() throws Throwable
     {
-        // GIVEN
-        final Label label = DynamicLabel.label( "label" );
-        final String key = "key";
+        Race race = new Race();
 
-        // WHEN
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = db.createNode( label );
-            node.setProperty( key, true );
+        race.addContestant( new Runnable()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    try ( Transaction tx = db.beginTx() )
+                                    {
+                                        createNodeWithProperty( LABEL, PROPERTY_KEY, VALUE_1 );
+                                        assertNodeWith( LABEL, PROPERTY_KEY, VALUE_1 );
 
-            t2.execute( createAndAwaitIndex( label, key ) ).get();
+                                        tx.success();
+                                    }
+                                }
+                            }
+        );
 
-            tx.success();
-        }
+        race.addContestant( new Runnable()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    try ( Transaction tx = db.beginTx() )
+                                    {
+                                        createAndAwaitIndex( LABEL, PROPERTY_KEY );
+                                        tx.success();
+                                    }
+                                }
+                            }
+        );
 
-        // THEN
-        assertInTxNodeWith( label, key, true );
-    }
+        race.go();
 
-    @Test
-    public void ownChangesAddedToOwnIndex() throws Exception
-    {
-        // GIVEN
-        final Label label = DynamicLabel.label( "label" );
-        final String key = "key";
-
-        // WHEN
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = db.createNode( label );
-            node.setProperty( key, true );
-
-            db.schema().indexFor( label ).on( key ).create();
-
-            assertNodeWith( label, key, true );
-
-            tx.success();
-        }
-
-        assertInTxNodeWith( label, key, true );
-    }
-
-    @Test
-    public void readOwnChangesFromRacingIndex() throws Exception
-    {
-        // GIVEN
-        final Label label = DynamicLabel.label( "label" );
-        final String key = "key";
-        final boolean value = true;
-
-        // WHEN
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = db.createNode( label );
-            node.setProperty( key, value );
-
-            t2.execute( createAndAwaitIndex( label, key ) ).get();
-
-            assertNodeWith( label, key, value );
-
-            tx.success();
-        }
-
-        assertInTxNodeWith( label, key, value );
+        assertInTxNodeWith( LABEL, PROPERTY_KEY, VALUE_1 );
     }
 
     @Test
     public void readOwnChangesWithoutIndex() throws Exception
     {
-        // GIVEN
-        final Label label = DynamicLabel.label( "label" );
-        final String key = "key";
-        final boolean value = true;
-
         // WHEN
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( label );
-            node.setProperty( key, value );
+            Node node = db.createNode( LABEL );
+            node.setProperty( PROPERTY_KEY, VALUE_1 );
 
-            assertNodeWith( label, key, value );
+            assertNodeWith( LABEL, PROPERTY_KEY, VALUE_1 );
 
             tx.success();
         }
 
-        assertInTxNodeWith( label, key, value );
+        assertInTxNodeWith( LABEL, PROPERTY_KEY, VALUE_1 );
     }
 
-    void assertInTxNodeWith( Label label, String key, boolean value )
+    @Test
+    public void racingMultipleUniquenessConstraintCreation() throws Exception
+    {
+        final Future<Void> t2ConstraintCreator = t2.execute( createUniquenessConstraintOn( LABEL, PROPERTY_KEY ) );
+        final Future<Void> t3ConstraintCreator = t3.execute( createUniquenessConstraintOn( LABEL, PROPERTY_KEY ) );
+
+        assertOnlyOneSucceeds( t2ConstraintCreator, t3ConstraintCreator, ConstraintViolationException.class );
+    }
+
+    @Test
+    public void racingMultipleIndexCreation() throws Exception
+    {
+        final Future<Void> t2IndexCreator = t2.execute( createIndexOn( LABEL, PROPERTY_KEY ) );
+        final Future<Void> t3IndexCreator = t3.execute( createIndexOn( LABEL, PROPERTY_KEY ) );
+
+        assertOnlyOneSucceeds( t2IndexCreator, t3IndexCreator, ConstraintViolationException.class );
+    }
+
+    @Test
+    public void racingCreationOfNodesWithDuplicatedProperties() throws Exception
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.success();
+        }
+
+        final Future<Void> t2NodeCreator = t2.execute( createNode( LABEL, PROPERTY_KEY, VALUE_1 ) );
+        final Future<Void> t3NodeCreator = t3.execute( createNode( LABEL, PROPERTY_KEY, VALUE_1 ) );
+
+        assertOnlyOneSucceeds( t2NodeCreator, t3NodeCreator, ConstraintViolationException.class );
+    }
+
+    private void assertOnlyOneSucceeds( Future<Void> action1, Future<Void> action2,
+            Class<? extends Exception> expectedFailure ) throws Exception
+    {
+        try
+        {
+            if ( get( action1 ) == null )
+            {
+                try
+                {
+                    get( action2 );
+                    fail( "Second action should fail if first one succeeds" );
+                }
+                catch ( ExecutionException e )
+                {
+                    // Good
+                    assertThat( e.getCause(), instanceOf( expectedFailure ) );
+                }
+            }
+            else
+            {
+                fail( "First action should either return null or throw" );
+            }
+        }
+        catch ( ExecutionException e )
+        {
+            // Good
+            assertThat( e.getCause(), instanceOf( expectedFailure ) );
+            assertNull( get( action2 ) );
+        }
+    }
+
+    private void assertInTxNodeWith( Label label, String key, Object value )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -297,16 +346,76 @@ public class DeferringLocksIT
         }
     }
 
-    void assertNodeWith( Label label, String key, boolean value )
+    private void assertNodeWith( Label label, String key, Object value )
     {
         ResourceIterator<Node> nodes = db.findNodes( label, key, value );
         assertTrue( nodes.hasNext() );
         Node foundNode = nodes.next();
         assertTrue( foundNode.hasLabel( label ) );
-        assertTrue( (Boolean) foundNode.getProperty( key ) );
+        assertEquals( value, foundNode.getProperty( key ) );
     }
 
-    WorkerCommand<Void,Void> createAndAwaitIndex( final Label label, final String key )
+    private Node createNodeWithProperty( Label label, String key, Object value )
+    {
+        Node node = db.createNode( label );
+        node.setProperty( key, value );
+        return node;
+    }
+
+    private WorkerCommand<Void,Void> createNode( final Label label, final String propertyKey,
+            final Object propertyValue )
+    {
+        return new WorkerCommand<Void,Void>()
+        {
+            @Override
+            public Void doWork( Void state ) throws Exception
+            {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    Node node = db.createNode( label );
+                    node.setProperty( propertyKey, propertyValue );
+                    tx.success();
+                }
+                return null;
+            }
+        };
+    }
+
+    private WorkerCommand<Void,Void> createIndexOn( final Label label, final String propertyKey )
+    {
+        return new WorkerCommand<Void,Void>()
+        {
+            @Override
+            public Void doWork( Void state ) throws Exception
+            {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    db.schema().indexFor( label ).on( propertyKey ).create();
+                    tx.success();
+                }
+                return null;
+            }
+        };
+    }
+
+    private WorkerCommand<Void,Void> createUniquenessConstraintOn( final Label label, final String propertyKey )
+    {
+        return new WorkerCommand<Void,Void>()
+        {
+            @Override
+            public Void doWork( Void state ) throws Exception
+            {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    db.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
+                    tx.success();
+                }
+                return null;
+            }
+        };
+    }
+
+    private WorkerCommand<Void,Void> createAndAwaitIndex( final Label label, final String key )
     {
         return new WorkerCommand<Void,Void>()
         {
@@ -318,11 +427,17 @@ public class DeferringLocksIT
                     db.schema().indexFor( label ).on( key ).create();
                     tx.success();
                 }
-                try ( Transaction tx = db.beginTx() ) {
+                try ( Transaction tx = db.beginTx() )
+                {
                     db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
                 }
                 return null;
             }
         };
+    }
+
+    private static <T> T get( Future<T> future ) throws InterruptedException, ExecutionException, TimeoutException
+    {
+        return future.get( 20, TimeUnit.SECONDS );
     }
 }
