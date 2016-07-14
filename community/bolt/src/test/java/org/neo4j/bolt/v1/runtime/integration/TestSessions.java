@@ -38,6 +38,7 @@ import org.neo4j.bolt.v1.runtime.internal.concurrent.ThreadedSessions;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.api.bolt.SessionTracker;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -70,7 +71,8 @@ class TestSessions implements TestRule, Sessions
                 DependencyResolver resolver = gdb.getDependencyResolver();
                 StandardSessions sessions = life.add(
                         new StandardSessions( gdb, new UsageData( scheduler ), NullLogService.getInstance(),
-                                resolver.resolveDependency( ThreadToStatementContextBridge.class ))
+                                resolver.resolveDependency( ThreadToStatementContextBridge.class ),
+                                SessionTracker.NOOP )
                 );
                 actual = new ThreadedSessions(
                         sessions,

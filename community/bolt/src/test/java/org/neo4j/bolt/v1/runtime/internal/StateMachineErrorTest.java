@@ -35,6 +35,7 @@ import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.cypher.SyntaxException;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.api.bolt.SessionTracker;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -62,7 +63,8 @@ public class StateMachineErrorTest
     private ThreadToStatementContextBridge txBridge = mock( ThreadToStatementContextBridge.class );
     private StatementRunner runner = mock( StatementRunner.class );
     private InternalTransaction tx = mock( InternalTransaction.class );
-    private JobScheduler scheduler = mock(JobScheduler.class );
+    private JobScheduler scheduler = mock( JobScheduler.class );
+    private SessionTracker sessionTracker = mock( SessionTracker.class );
 
     @Before
     public void setup()
@@ -91,8 +93,9 @@ public class StateMachineErrorTest
 
     private SessionStateMachine newIdleMachine()
     {
-        SessionStateMachine machine = new SessionStateMachine( "<idle>", new UsageData( scheduler ), db, txBridge, runner, NullLogService
-                .getInstance(), Authentication.NONE );
+        SessionStateMachine machine =
+                new SessionStateMachine( "<idle>", new UsageData( scheduler ), db, txBridge, runner,
+                        NullLogService.getInstance(), Authentication.NONE, sessionTracker );
         machine.init( "FunClient", map(), null, Session.Callback.NO_OP );
         return machine;
     }
@@ -221,8 +224,8 @@ public class StateMachineErrorTest
     {
         // Given
         RecordingCallback messages = new RecordingCallback();
-        SessionStateMachine machine = new SessionStateMachine( "<test>", new UsageData( scheduler ), db, txBridge, runner, NullLogService
-                .getInstance(), Authentication.NONE );
+        SessionStateMachine machine = new SessionStateMachine( "<test>", new UsageData( scheduler ), db, txBridge,
+                runner, NullLogService.getInstance(), Authentication.NONE, sessionTracker );
 
         // When
         machine.run( "RETURN 1", null, null, messages );

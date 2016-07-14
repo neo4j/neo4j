@@ -34,6 +34,7 @@ import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.bolt.SessionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AccessMode;
@@ -82,6 +83,7 @@ public class SessionStateMachine implements Session, SessionState
                             ctx.result( authResult.credentialsExpired() );
                             ctx.spi.udcRegisterClient( clientName );
                             ctx.setQuerySourceFromClientNameAndPrincipal( clientName, authToken.get( AuthToken.PRINCIPAL ) );
+                            ctx.spi.sessionActivated( ctx );
                             return IDLE;
                         }
                         catch ( AuthenticationException e )
@@ -423,7 +425,14 @@ public class SessionStateMachine implements Session, SessionState
                     @Override
                     protected State onNoImplementation( SessionStateMachine ctx, String command )
                     {
-                        ctx.ignored();
+                        if ( ctx.willBeHalted() )
+                        {
+                            ctx.error( ctx.haltMark.explanation() );
+                        }
+                        else
+                        {
+                            ctx.ignored();
+                        }
                         return STOPPED;
                     }
                 };
@@ -540,6 +549,7 @@ public class SessionStateMachine implements Session, SessionState
                     ctx.error( Neo4jError.from( e ) );
                 }
             }
+            ctx.spi.sessionHalted( ctx );
             return STOPPED;
         }
 
@@ -623,6 +633,12 @@ public class SessionStateMachine implements Session, SessionState
      */
     private final AtomicInteger interruptCounter = new AtomicInteger();
 
+    /**
+     * This is set when {@link #markForHalting(Status, String)} is called.
+     * When this is true, all messages will be ignored, and the session stopped.
+     */
+    protected final TerminationMark haltMark = new TerminationMark();
+
     /** The current session state */
     private State state = State.UNINITIALIZED;
 
@@ -685,11 +701,14 @@ public class SessionStateMachine implements Session, SessionState
         AuthenticationResult authenticate( Map<String, Object> authToken ) throws AuthenticationException;
         void udcRegisterClient( String clientName );
         Statement currentStatement();
+        void sessionActivated( Session session );
+        void sessionHalted( Session session );
     }
     public SessionStateMachine( String connectionDescriptor, UsageData usageData, GraphDatabaseFacade db, ThreadToStatementContextBridge txBridge,
-            StatementRunner engine, LogService logging, Authentication authentication )
+            StatementRunner engine, LogService logging, Authentication authentication, SessionTracker sessionTracker )
     {
-        this( new StandardStateMachineSPI( connectionDescriptor, usageData, db, engine, logging, authentication, txBridge ));
+        this( new StandardStateMachineSPI( connectionDescriptor, usageData, db, engine, logging, authentication,
+                txBridge, sessionTracker ));
     }
     public SessionStateMachine( SPI spi )
     {
@@ -818,6 +837,37 @@ public class SessionStateMachine implements Session, SessionState
     }
 
     @Override
+    public void markForHalting( Status status, String message )
+    {
+        // NOTE: This is a side-channel method call. You *cannot*
+        //       mutate any of the regular state in the state machine
+        //       from inside this method, it WILL lead to race conditions.
+        //       Imagine this is always called from a separate thread, while
+        //       the main session worker thread is actively working on mutating
+        //       fields on the session.
+        haltMark.setMark( new Neo4jError( status, message ) );
+
+        // If there is currently a transaction running, terminate it
+        KernelTransaction tx = this.currentTransaction;
+        if(tx != null)
+        {
+            tx.markForTermination( status );
+        }
+    }
+
+    @Override
+    public boolean willBeHalted()
+    {
+        return haltMark.isMarked();
+    }
+
+    @Override
+    public String username()
+    {
+        return authSubject.name();
+    }
+
+    @Override
     public void close()
     {
         before( null, null );
@@ -892,7 +942,11 @@ public class SessionStateMachine implements Session, SessionState
             cb.started( attachment );
         }
 
-        if( interruptCounter.get() > 0 )
+        if ( haltMark.isMarked() )
+        {
+            state = state.halt( this );
+        }
+        else if ( interruptCounter.get() > 0 )
         {
             // Force into interrupted state. This is how we 'discover'
             // that `interrupt` has been called.

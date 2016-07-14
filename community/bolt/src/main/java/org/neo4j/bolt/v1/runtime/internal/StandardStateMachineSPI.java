@@ -24,9 +24,11 @@ import java.util.Map;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
+import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.concurrent.DecayingFlags;
+import org.neo4j.kernel.api.bolt.SessionTracker;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -49,9 +51,11 @@ class StandardStateMachineSPI implements SessionStateMachine.SPI
     private final Authentication authentication;
     private final ThreadToStatementContextBridge txBridge;
     private final DecayingFlags featureUsage;
+    private final SessionTracker sessionTracker;
 
     StandardStateMachineSPI( String connectionDescriptor, UsageData usageData, GraphDatabaseFacade db, StatementRunner statementRunner,
-            LogService logging, Authentication authentication, ThreadToStatementContextBridge txBridge )
+            LogService logging, Authentication authentication, ThreadToStatementContextBridge txBridge,
+            SessionTracker sessionTracker )
     {
         this.connectionDescriptor = connectionDescriptor;
         this.usageData = usageData;
@@ -62,6 +66,7 @@ class StandardStateMachineSPI implements SessionStateMachine.SPI
         this.errorReporter = new ErrorReporter( logging );
         this.log = logging.getInternalLog( SessionStateMachine.class );
         this.authentication = authentication;
+        this.sessionTracker = sessionTracker;
     }
 
     @Override
@@ -125,5 +130,17 @@ class StandardStateMachineSPI implements SessionStateMachine.SPI
     public Statement currentStatement()
     {
         return txBridge.get();
+    }
+
+    @Override
+    public void sessionActivated( Session session )
+    {
+        sessionTracker.sessionActivated( session );
+    }
+
+    @Override
+    public void sessionHalted( Session session )
+    {
+        sessionTracker.sessionHalted( session );
     }
 }

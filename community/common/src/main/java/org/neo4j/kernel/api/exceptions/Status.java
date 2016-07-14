@@ -417,6 +417,24 @@ public interface Status
         }
     }
 
+    enum Session implements Status
+    {
+        InvalidSession( ClientError, "The session is no longer available, possibly due to termination." );
+
+        private final Code code;
+
+        @Override
+        public Code code()
+        {
+            return code;
+        }
+
+        Session( Classification classification, String description )
+        {
+            this.code = new Code( classification, this, description );
+        }
+    }
+
     enum General implements Status
     {
         // client errors

@@ -29,6 +29,9 @@ import java.util.stream.Stream;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.KernelTransaction;
+
+import org.neo4j.kernel.api.bolt.HaltableUserSession;
+import org.neo4j.kernel.api.bolt.SessionTracker;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
@@ -193,7 +196,7 @@ public class AuthProcedures
     {
         ensureAdminAuthSubject();
 
-        return countByUsername(
+        return countTransactionByUsername(
                     getActiveTransactions().stream()
                         .filter( tx -> tx.getReasonIfTerminated() == null )
                         .map( tx -> tx.mode().name() )
@@ -218,6 +221,44 @@ public class AuthProcedures
         return Stream.of( new TransactionTerminationResult( username, killCount ) );
     }
 
+    @Procedure( name = "dbms.listSessions", mode = DBMS )
+    public Stream<SessionResult> listSessions()
+    {
+        ensureAdminAuthSubject();
+
+        SessionTracker sessionTracker = getSessionTracker();
+        return countSessionByUsername(
+                sessionTracker.getActiveSessions().stream()
+                        .filter( session -> !session.willBeHalted() )
+                        .map( HaltableUserSession::username )
+                );
+    }
+
+    @Procedure( name = "dbms.terminateSessionsForUser", mode = DBMS )
+    public Stream<SessionResult> terminateSessionsForUser( @Name( "username" ) String username )
+            throws InvalidArgumentsException
+    {
+        EnterpriseAuthSubject subject = EnterpriseAuthSubject.castOrFail( authSubject );
+        if ( !subject.isAdmin() && !subject.doesUsernameMatch( username ) )
+        {
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
+        }
+
+        subject.getUserManager().getUser( username );
+
+        Long killCount = 0L;
+        for ( HaltableUserSession session : getSessionTracker().getActiveSessions() )
+        {
+            if ( session.username().equals( username ) )
+            {
+                session.markForHalting( Status.Session.InvalidSession,
+                        Status.Session.InvalidSession.code().description() );
+                killCount += 1;
+            }
+        }
+        return Stream.of( new SessionResult( username, killCount ) );
+    }
+
     // ----------------- helpers ---------------------
 
     private Set<KernelTransaction> getActiveTransactions()
@@ -225,12 +266,26 @@ public class AuthProcedures
         return graph.getDependencyResolver().resolveDependency( KernelTransactions.class ).activeTransactions();
     }
 
-    private Stream<TransactionResult> countByUsername( Stream<String> usernames )
+    private SessionTracker getSessionTracker()
+    {
+        return graph.getDependencyResolver().resolveDependency( SessionTracker.class );
+    }
+
+    private Stream<TransactionResult> countTransactionByUsername( Stream<String> usernames )
     {
         return usernames.collect(
                     Collectors.groupingBy( Function.identity(), Collectors.counting() )
                 ).entrySet().stream().map(
                     entry -> new TransactionResult( entry.getKey(), entry.getValue() )
+                );
+    }
+
+    private Stream<SessionResult> countSessionByUsername( Stream<String> usernames )
+    {
+        return usernames.collect(
+                    Collectors.groupingBy( Function.identity(), Collectors.counting() )
+                ).entrySet().stream().map(
+                    entry -> new SessionResult( entry.getKey(), entry.getValue() )
                 );
     }
 
@@ -313,6 +368,18 @@ public class AuthProcedures
         {
             this.username = username;
             this.transactionsTerminated = transactionsTerminated;
+        }
+    }
+
+    public static class SessionResult
+    {
+        public final String username;
+        public final Long sessionCount;
+
+        SessionResult( String username, Long sessionCount )
+        {
+            this.username = username;
+            this.sessionCount = sessionCount;
         }
     }
 }

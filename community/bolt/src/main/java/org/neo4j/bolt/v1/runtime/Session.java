@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.neo4j.bolt.v1.runtime.internal.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
+import org.neo4j.kernel.api.bolt.HaltableUserSession;
 
 /**
  * A user session associated with a given {@link Sessions}. The majority of methods on this
@@ -37,7 +38,7 @@ import org.neo4j.bolt.v1.runtime.spi.RecordStream;
  * While the operations are asynchronous, they are guaranteed to be executed in calling order. This allows you to call
  * several operations in sequence without waiting for the previous operation to complete.
  */
-public interface Session extends AutoCloseable
+public interface Session extends AutoCloseable, HaltableUserSession
 {
     /**
      * Callback for handling the result of requests. For a given session, callbacks will be invoked serially,

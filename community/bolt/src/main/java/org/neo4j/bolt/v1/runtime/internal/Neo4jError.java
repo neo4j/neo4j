@@ -143,6 +143,8 @@ public class Neo4jError
             return Status.Network.valueOf( error );
         case "Security":
             return Status.Security.valueOf( error );
+        case "Session":
+            return Status.Session.valueOf( error );
         default:
             return Status.General.UnknownError;
         }

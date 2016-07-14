@@ -29,6 +29,7 @@ import java.util.Map;
 import org.neo4j.bolt.v1.runtime.MonitoredSessions.MonitoredSession;
 import org.neo4j.bolt.v1.runtime.internal.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
+import org.neo4j.kernel.api.bolt.HaltableUserSession;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -125,7 +126,7 @@ public class MonitoredSessionsTest
         }
     }
 
-    private static class ControlledCompletionSession implements Session
+    private static class ControlledCompletionSession extends HaltableUserSession.Adapter implements Session
     {
         public Callback callback;
 

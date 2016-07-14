@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.neo4j.bolt.v1.runtime.internal.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.monitoring.Monitors;
 
 /**
@@ -135,6 +136,24 @@ public class MonitoredSessions implements Sessions
         public void interrupt()
         {
             delegate.interrupt();
+        }
+
+        @Override
+        public String username()
+        {
+            return delegate.username();
+        }
+
+        @Override
+        public void markForHalting( Status status, String message )
+        {
+            delegate.markForHalting( status, message );
+        }
+
+        @Override
+        public boolean willBeHalted()
+        {
+            return delegate.willBeHalted();
         }
 
         @Override

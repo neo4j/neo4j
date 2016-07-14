@@ -25,13 +25,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.neo4j.bolt.v1.runtime.Session;
+import org.neo4j.kernel.api.bolt.HaltableUserSession;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 
 /**
  * Executes incoming session commands on a specified session.
  */
-public class SessionWorker implements Runnable
+public class SessionWorker implements Runnable, HaltableUserSession
 {
     /** Poison pill for closing the session and shutting down the worker */
     public static final Consumer<Session> SHUTDOWN = session1 -> {};
@@ -125,5 +127,21 @@ public class SessionWorker implements Runnable
     public void interrupt()
     {
         session.interrupt();
+    }
+
+    public String username()
+    {
+        return session.username();
+    }
+
+    public void markForHalting( Status status, String message )
+    {
+        session.markForHalting( status, message );
+    }
+
+    @Override
+    public boolean willBeHalted()
+    {
+        return session.willBeHalted();
     }
 }

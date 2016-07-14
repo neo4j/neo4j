@@ -26,6 +26,7 @@ import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.internal.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
+import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * A session implementation that delegates work to a worker thread.
@@ -123,5 +124,23 @@ public class SessionWorkerFacade implements Session
             throw new RuntimeException( "Worker interrupted while queueing request, the session may have been " +
                                         "forcibly closed, or the database may be shutting down." );
         }
+    }
+
+    @Override
+    public String username()
+    {
+        return worker.username();
+    }
+
+    @Override
+    public void markForHalting( Status status, String message )
+    {
+        worker.markForHalting( status, message );
+    }
+
+    @Override
+    public boolean willBeHalted()
+    {
+        return worker.willBeHalted();
     }
 }
