@@ -57,6 +57,7 @@ public class RemoveOrphanConstraintIndexesOnStartup
                 IndexDescriptor index = indexes.next();
                 if ( statement.readOperations().indexGetOwningUniquenessConstraintId( index ) == null )
                 {
+                    log.info( "Removing orphan constraint index: " + index );
                     statement.schemaWriteOperations().uniqueIndexDrop( index );
                 }
             }
