@@ -21,6 +21,7 @@ package org.neo4j.tools.txlog;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -50,10 +51,12 @@ public class CheckTxLogs
 {
     private static final String HELP_FLAG = "help";
 
+    private PrintStream out;
     private final FileSystemAbstraction fs;
 
-    public CheckTxLogs( FileSystemAbstraction fs )
+    public CheckTxLogs( PrintStream out, FileSystemAbstraction fs )
     {
+        this.out = out;
         this.fs = fs;
     }
 
@@ -62,26 +65,38 @@ public class CheckTxLogs
         Args arguments = Args.withFlags( HELP_FLAG ).parse( args );
         if ( arguments.getBoolean( HELP_FLAG ) )
         {
-            printUsageAndExit();
+            printUsageAndExit( System.out );
         }
-        File dir = parseDir( arguments );
+        File dir = parseDir( System.out, arguments );
 
         File[] logs = txLogsIn( dir );
         System.out.println( "Found " + logs.length + " log files to verify" );
 
-        CheckTxLogs tool = new CheckTxLogs( new DefaultFileSystemAbstraction() );
-
-        tool.scan( logs, CheckType.NODE, new PrintingInconsistenciesHandler() );
-        tool.scan( logs, CheckType.PROPERTY, new PrintingInconsistenciesHandler() );
+        CheckTxLogs tool = new CheckTxLogs( System.out, new DefaultFileSystemAbstraction() );
+        if ( !tool.checkAll( logs ) )
+        {
+            System.exit( 1 );
+        }
     }
 
-    <C extends Command, R extends Abstract64BitRecord> void scan( File[] logs, CheckType<C,R> check,
+    public boolean checkAll( File[] logs ) throws IOException
+    {
+        boolean success = true;
+
+        success &= scan( logs, CheckType.NODE, new PrintingInconsistenciesHandler( out ) );
+        success &= scan( logs, CheckType.PROPERTY, new PrintingInconsistenciesHandler( out ) );
+
+        return success;
+    }
+
+    <C extends Command, R extends Abstract64BitRecord> boolean scan( File[] logs, CheckType<C,R> check,
             InconsistenciesHandler handler ) throws IOException
     {
-        System.out.println( "Checking logs for " + check.name() + " inconsistencies" );
+        out.println( "Checking logs for " + check.name() + " inconsistencies" );
 
         CommittedRecords<R> state = new CommittedRecords<>( check );
 
+        boolean validLogs = true;
         for ( File log : logs )
         {
             long commandsRead = 0;
@@ -97,24 +112,27 @@ public class CheckTxLogs
                         {
                             long logVersion = PhysicalLogFiles.getLogVersion( log );
                             C cmd = check.commandClass().cast( command );
-                            process( cmd, check, state, logVersion, handler );
+                            validLogs &= process( cmd, check, state, logVersion, handler );
                         }
                     }
                     commandsRead++;
                 }
             }
-            System.out.println( "Processed " + log.getCanonicalPath() + " with " + commandsRead + " commands" );
-            System.out.println( state );
+            out.println( "Processed " + log.getCanonicalPath() + " with " + commandsRead + " commands" );
+            out.println( state );
         }
+
+        return validLogs;
     }
 
-    private <C extends Command, R extends Abstract64BitRecord> void process( C command, CheckType<C,R> check,
+    private <C extends Command, R extends Abstract64BitRecord> boolean process( C command, CheckType<C,R> check,
             CommittedRecords<R> state, long logVersion, InconsistenciesHandler handler )
     {
         R before = check.before( command );
         R after = check.after( command );
 
-        if ( !state.isValid( before ) )
+        boolean isValid = state.isValid( before );
+        if ( !isValid )
         {
             LogRecord<R> seen = state.get( before.getId() );
             LogRecord<R> current = new LogRecord<>( before, logVersion );
@@ -123,19 +141,21 @@ public class CheckTxLogs
         }
 
         state.put( after, logVersion );
+
+        return isValid;
     }
 
-    private static File parseDir( Args args )
+    private static File parseDir( PrintStream out, Args args )
     {
         if ( args.orphans().size() != 1 )
         {
-            printUsageAndExit();
+            printUsageAndExit( out );
         }
         File dir = new File( args.orphans().get( 0 ) );
         if ( !dir.isDirectory() )
         {
-            System.out.println( "Invalid directory: '" + dir + "'" );
-            printUsageAndExit();
+            out.println( "Invalid directory: '" + dir + "'" );
+            printUsageAndExit( out );
         }
         return dir;
     }
@@ -156,10 +176,10 @@ public class CheckTxLogs
         return logs;
     }
 
-    private static void printUsageAndExit()
+    private static void printUsageAndExit( PrintStream out )
     {
-        System.out.println( "Tool expects single argument - directory with tx logs" );
-        System.out.println( "Example:\n\t./checkTxLogs <directory containing neostore.transaction.db files>" );
+        out.println( "Tool expects single argument - directory with tx logs" );
+        out.println( "Example:\n\t./checkTxLogs <directory containing neostore.transaction.db files>" );
         System.exit( 1 );
     }
 }

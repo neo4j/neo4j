@@ -61,6 +61,50 @@ public class CheckTxLogsTest
     public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
 
     @Test
+    public void shouldReportNoInconsistenciesFromValidLog() throws Exception
+    {
+
+        // Given
+        File log = logFile( 1 );
+
+        writeTxContent( log,
+                new Command.NodeCommand().init(
+                        new NodeRecord( 42, false, false, -1, -1, 1 ),
+                        new NodeRecord( 42, true, false, 42, -1, 1 )
+                ),
+                new Command.PropertyCommand().init(
+                        propertyRecord( 5, false, -1, -1 ),
+                        propertyRecord( 5, true, -1, -1, 777 )
+                ),
+                new Command.NodeCommand().init(
+                        new NodeRecord( 1, true, true, 2, -1, 1 ),
+                        new NodeRecord( 1, true, false, -1, -1, 1 )
+                )
+        );
+
+        writeTxContent( log,
+                new Command.NodeCommand().init(
+                        new NodeRecord( 2, false, false, -1, -1, 1 ),
+                        new NodeRecord( 2, true, false, -1, -1, 1 )
+                ),
+                new Command.NodeCommand().init(
+                        new NodeRecord( 42, true, false, 42, -1, 1 ),
+                        new NodeRecord( 42, true, false, 24, 5, 1 )
+                )
+        );
+        CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
+
+        // When
+        boolean success = checker.scan( new File[]{log}, CheckType.NODE, handler );
+
+        // Then
+        assertTrue( success );
+
+        assertEquals( 0, handler.inconsistencies.size() );
+    }
+
+    @Test
     public void shouldReportNodeInconsistenciesFromSingleLog() throws IOException
     {
         // Given
@@ -93,12 +137,14 @@ public class CheckTxLogsTest
         );
 
         CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
-        CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        checker.scan( new File[]{log}, CheckType.NODE, handler );
+        boolean success = checker.scan( new File[]{log}, CheckType.NODE, handler );
 
         // Then
+        assertFalse( success );
+
         assertEquals( 1, handler.inconsistencies.size() );
 
         NodeRecord seenRecord = (NodeRecord) handler.inconsistencies.get( 0 ).committed.record();
@@ -152,12 +198,14 @@ public class CheckTxLogsTest
         );
 
         CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
-        CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        checker.scan( new File[]{log1, log2, log3}, CheckType.NODE, handler );
+        boolean success = checker.scan( new File[]{log1, log2, log3}, CheckType.NODE, handler );
 
         // Then
+        assertFalse( success );
+
         assertEquals( 2, handler.inconsistencies.size() );
 
         NodeRecord seenRecord1 = (NodeRecord) handler.inconsistencies.get( 0 ).committed.record();
@@ -206,12 +254,14 @@ public class CheckTxLogsTest
         );
 
         CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
-        CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        checker.scan( new File[]{log}, CheckType.PROPERTY, handler );
+        boolean success = checker.scan( new File[]{log}, CheckType.PROPERTY, handler );
 
         // Then
+        assertFalse( success );
+
         assertEquals( 1, handler.inconsistencies.size() );
 
         PropertyRecord seenRecord = (PropertyRecord) handler.inconsistencies.get( 0 ).committed.record();
@@ -269,12 +319,14 @@ public class CheckTxLogsTest
         );
 
         CapturingInconsistenciesHandler handler = new CapturingInconsistenciesHandler();
-        CheckTxLogs checker = new CheckTxLogs( fsRule.get() );
+        CheckTxLogs checker = new CheckTxLogs( System.out, fsRule.get() );
 
         // When
-        checker.scan( new File[]{log1, log2, log3}, CheckType.PROPERTY, handler );
+        boolean success = checker.scan( new File[]{log1, log2, log3}, CheckType.PROPERTY, handler );
 
         // Then
+        assertFalse( success );
+
         assertEquals( 2, handler.inconsistencies.size() );
 
         PropertyRecord seenRecord1 = (PropertyRecord) handler.inconsistencies.get( 0 ).committed.record();
