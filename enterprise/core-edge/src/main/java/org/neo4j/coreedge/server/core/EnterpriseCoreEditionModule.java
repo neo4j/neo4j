@@ -262,7 +262,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
         long logThresholdMillis = config.get( CoreEdgeClusterSettings.unknown_address_logging_throttle );
         final SenderService senderService =
-                new SenderService( new RaftChannelInitializer( marshal ), logProvider, platformModule.monitors,
+                new SenderService( new RaftChannelInitializer( marshal, logProvider ), logProvider, platformModule.monitors,
                         maxQueueSize, new NonBlockingChannels() );
         life.add( senderService );
 
