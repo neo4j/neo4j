@@ -17,12 +17,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.enterprise.auth;
+package org.neo4j.server.security.enterprise.auth.plugin.api;
 
-public interface RealmLifecycle
+public class AuthenticationException extends Exception
 {
-    void initialize() throws Throwable;
-    void start() throws Throwable;
-    void stop() throws Throwable;
-    void shutdown() throws Throwable;
 }

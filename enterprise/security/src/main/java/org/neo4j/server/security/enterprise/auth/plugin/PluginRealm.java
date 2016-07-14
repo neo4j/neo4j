@@ -29,12 +29,12 @@ import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
 
 import org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder;
-import org.neo4j.server.security.enterprise.auth.RealmLifecycle;
 import org.neo4j.server.security.enterprise.auth.ShiroAuthToken;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationPlugin;
+import org.neo4j.server.security.enterprise.auth.plugin.spi.RealmLifecycle;
 
 public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
 {
@@ -85,26 +85,33 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
     {
         if ( token instanceof ShiroAuthToken )
         {
-            if ( authPlugin != null )
+            try
             {
-                AuthInfo authInfo = authPlugin.getAuthInfo( ((ShiroAuthToken) token).getAuthTokenMap() );
-                if ( authInfo != null )
+                if ( authPlugin != null )
                 {
-                    PluginAuthInfo pluginAuthInfo = PluginAuthInfo.create( authInfo, getName() );
+                    AuthInfo authInfo = authPlugin.getAuthInfo( ((ShiroAuthToken) token).getAuthTokenMap() );
+                    if ( authInfo != null )
+                    {
+                        PluginAuthInfo pluginAuthInfo = PluginAuthInfo.create( authInfo, getName() );
 
-                    cacheAuthorizationInfo( pluginAuthInfo );
+                        cacheAuthorizationInfo( pluginAuthInfo );
 
-                    return pluginAuthInfo;
+                        return pluginAuthInfo;
+                    }
+                }
+                else if ( authenticationPlugin != null )
+                {
+                    org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo authenticationInfo =
+                            authenticationPlugin.getAuthenticationInfo( ((ShiroAuthToken) token).getAuthTokenMap() );
+                    if ( authenticationInfo != null )
+                    {
+                        return PluginAuthenticationInfo.create( authenticationInfo, getName() );
+                    }
                 }
             }
-            else if ( authenticationPlugin != null )
+            catch ( org.neo4j.server.security.enterprise.auth.plugin.api.AuthenticationException e )
             {
-                org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo authenticationInfo =
-                        authenticationPlugin.getAuthenticationInfo( ((ShiroAuthToken) token).getAuthTokenMap() );
-                if ( authenticationInfo != null )
-                {
-                    return PluginAuthenticationInfo.create( authenticationInfo, getName() );
-                }
+                throw new AuthenticationException( e.getMessage(), e.getCause() );
             }
         }
         return null;

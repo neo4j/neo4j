@@ -21,8 +21,6 @@ package org.neo4j.server.security.enterprise.auth.plugin.spi;
 
 import java.util.Map;
 
-import org.neo4j.server.security.enterprise.auth.RealmLifecycle;
-
 /**
  * TODO
  */
