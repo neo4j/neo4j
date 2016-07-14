@@ -112,6 +112,11 @@ public class ReplicatedTransactionStateMachine implements StateMachine<Replicate
     @Override
     public long lastAppliedIndex()
     {
+        if ( queue == null )
+        {
+            /** See {@link #installCommitProcess}. */
+            throw new IllegalStateException( "Value has not been installed" );
+        }
         return lastCommittedIndex;
     }
 

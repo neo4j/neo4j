@@ -32,6 +32,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BiConsumer;
@@ -46,12 +47,15 @@ import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.coreedge.server.core.locks.LeaderOnlyLockManager;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
+import org.neo4j.test.DbRepresentation;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -86,7 +90,7 @@ public class Cluster
 
     public void start() throws InterruptedException, ExecutionException
     {
-        ExecutorService executor = Executors.newCachedThreadPool();
+        ExecutorService executor = Executors.newCachedThreadPool( new NamedThreadFactory( "server-starter" ) );
         try
         {
             startCoreServers( executor );
@@ -376,8 +380,7 @@ public class Cluster
         for ( int i = 0; i < noOfCoreServers; i++ )
         {
             CoreServer coreServer = new CoreServer( i, noOfCoreServers, addresses, discoveryServiceFactory,
-                    recordFormat, parentDir,
-                    extraParams, instanceExtraParams );
+                    recordFormat, parentDir, extraParams, instanceExtraParams );
             coreServers.put( i, coreServer );
         }
     }
@@ -437,4 +440,14 @@ public class Cluster
         edgeServers.values().forEach( EdgeServer::shutdown );
     }
 
+    public static void dataMatchesEventually( CoreServer server, Collection<CoreServer> targetDBs ) throws TimeoutException, InterruptedException
+    {
+        CoreGraphDatabase sourceDB = server.database();
+        DbRepresentation sourceRepresentation = DbRepresentation.of( sourceDB );
+        for ( CoreServer targetDB : targetDBs )
+        {
+            Predicates.await( () -> sourceRepresentation.equals( DbRepresentation.of( targetDB.database() ) ),
+                    DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
+        }
+    }
 }

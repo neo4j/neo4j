@@ -25,21 +25,19 @@ package org.neo4j.coreedge.raft.log.segmented;
 public class State
 {
     Segments segments;
+    Terms terms;
 
     long prevIndex = -1;
     long prevTerm = -1;
     long appendIndex = -1;
-    long currentTerm = -1;
 
     @Override
     public String toString()
     {
         return "State{" +
-               "segments=" + segments +
-               ", prevIndex=" + prevIndex +
+               "prevIndex=" + prevIndex +
                ", prevTerm=" + prevTerm +
                ", appendIndex=" + appendIndex +
-               ", currentTerm=" + currentTerm +
                '}';
     }
 }

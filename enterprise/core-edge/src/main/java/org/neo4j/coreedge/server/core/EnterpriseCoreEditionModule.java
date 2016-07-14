@@ -190,8 +190,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         }
     }
 
-    EnterpriseCoreEditionModule(final PlatformModule platformModule,
-                                DiscoveryServiceFactory discoveryServiceFactory)
+    EnterpriseCoreEditionModule( final PlatformModule platformModule,
+            DiscoveryServiceFactory discoveryServiceFactory )
     {
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
 
@@ -269,8 +269,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         final MessageLogger<CoreMember> messageLogger;
         if ( config.get( CoreEdgeClusterSettings.raft_messages_log_enable ) )
         {
-            messageLogger =
-                    life.add( new BetterMessageLogger<>( myself, raftMessagesLog( storeDir ) ) );
+            messageLogger = life.add( new BetterMessageLogger<>( myself, raftMessagesLog( storeDir ) ) );
         }
         else
         {
@@ -320,8 +319,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         CoreState coreState;
 
         CoreStateApplier coreStateApplier = new CoreStateApplier( logProvider );
-        CoreStateDownloader downloader =
-                new CoreStateDownloader( localDatabase, storeFetcher, coreToCoreClient, logProvider );
+        CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, storeFetcher,
+                coreToCoreClient, logProvider );
 
         InFlightMap<Long,RaftLogEntry> inFlightMap = new InFlightMap<>();
 
@@ -357,7 +356,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
             raftMembershipStorage = life.add(
                     new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "membership-state" ),
-                            "membership-state", new RaftMembershipState.Marshal( new CoreMemberMarshal() ),
+                            "membership-state", new RaftMembershipState.Marshal(),
                             config.get( CoreEdgeClusterSettings.raft_membership_state_size ), databaseHealthSupplier,
                             logProvider ) );
         }
@@ -382,7 +381,10 @@ public class EnterpriseCoreEditionModule extends EditionModule
         RaftMembershipManager raftMembershipManager =
                 new RaftMembershipManager( leaderOnlyReplicator, memberSetBuilder, raftLog, logProvider,
                         expectedClusterSize, electionTimeout1, systemUTC(),
-                        config.get( CoreEdgeClusterSettings.join_catch_up_timeout ), raftMembershipStorage );
+                        config.get( CoreEdgeClusterSettings.join_catch_up_timeout ), raftMembershipStorage,
+                        lastFlushedStorage.getInitialState() );
+
+        life.add( raftMembershipManager );
 
         RaftLogShippingManager logShipping =
                 new RaftLogShippingManager( loggingOutbound, logProvider, raftLog, systemUTC(),

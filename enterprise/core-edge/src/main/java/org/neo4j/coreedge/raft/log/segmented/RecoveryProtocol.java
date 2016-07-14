@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 
-import org.neo4j.coreedge.helper.StatUtil.StatContext;
 import org.neo4j.coreedge.raft.log.EntryRecord;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
@@ -54,12 +53,10 @@ class RecoveryProtocol
     private final ChannelMarshal<ReplicatedContent> contentMarshal;
     private final LogProvider logProvider;
     private final Log log;
-    private final StatContext scanStats;
-    private long expectedVersion;
     private ReaderPool readerPool;
 
     RecoveryProtocol( FileSystemAbstraction fileSystem, FileNames fileNames, ReaderPool readerPool,
-            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider, StatContext scanStats )
+            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider )
     {
         this.fileSystem = fileSystem;
         this.fileNames = fileNames;
@@ -67,12 +64,6 @@ class RecoveryProtocol
         this.contentMarshal = contentMarshal;
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
-        this.scanStats = scanStats;
-    }
-
-    RecoveryProtocol( FileSystemAbstraction fileSystem, FileNames fileNames, ReaderPool readerPool, ChannelMarshal<ReplicatedContent> marshal, LogProvider logProvider )
-    {
-        this( fileSystem, fileNames, readerPool, marshal, logProvider, null );
     }
 
     State run() throws IOException, DamagedLogStorageException, DisposedException
@@ -82,75 +73,86 @@ class RecoveryProtocol
 
         if ( files.entrySet().isEmpty() )
         {
-            state.segments = new Segments( fileSystem, fileNames, readerPool, emptyList(), contentMarshal, logProvider, -1, scanStats );
+            state.segments = new Segments( fileSystem, fileNames, readerPool, emptyList(), contentMarshal, logProvider, -1 );
             state.segments.rotate( -1, -1, -1 );
+            state.terms = new Terms( -1, -1 );
             return state;
         }
 
         List<SegmentFile> segmentFiles = new ArrayList<>();
+        SegmentFile segment = null;
+
         long firstVersion = files.firstKey();
-        expectedVersion = firstVersion;
+        long expectedVersion = firstVersion;
+        boolean mustRecoverLastHeader = false;
 
         for ( Map.Entry<Long,File> entry : files.entrySet() )
         {
+            long fileNameVersion = entry.getKey();
+            File file = entry.getValue();
+            SegmentHeader header;
+
+            checkVersionSequence( fileNameVersion, expectedVersion );
+
             try
             {
-                long fileNameVersion = entry.getKey();
-                File file = entry.getValue();
-
-                SegmentHeader header;
-                try
-                {
-                    header = loadHeader( fileSystem, file );
-                }
-                catch ( EndOfStreamException e )
-                {
-                    if ( files.lastKey() != fileNameVersion )
-                    {
-                        throw new DamagedLogStorageException( e, "File with incomplete or no header found: %s", file );
-                    }
-
-                    header = new SegmentHeader( state.appendIndex, fileNameVersion, state.appendIndex, state.currentTerm );
-                    writeHeader( fileSystem, file, header );
-                }
-
-                SegmentFile segment = new SegmentFile( fileSystem, file, readerPool, fileNameVersion, contentMarshal, logProvider, header, scanStats );
-
-                checkVersionStrictlyMonotonic( fileNameVersion );
-                checkVersionMatches( segment.header().version(), fileNameVersion );
-
-                segmentFiles.add( segment );
-
-                if ( fileNameVersion == firstVersion )
-                {
-                    state.prevIndex = segment.header().prevIndex();
-                    state.prevTerm = segment.header().prevTerm();
-                }
-
-                expectedVersion++;
-                // check term
+                header = loadHeader( fileSystem, file );
+                checkVersionMatches( header.version(), fileNameVersion );
             }
-            catch ( IOException e )
+            catch ( EndOfStreamException e )
             {
-                log.error( "Error during recovery", e );
+                if ( files.lastKey() != fileNameVersion )
+                {
+                    throw new DamagedLogStorageException( e, "Intermediate file with incomplete or no header found: %s", file );
+                }
+                else if ( files.size() == 1 )
+                {
+                    throw new DamagedLogStorageException( e, "Single file with incomplete or no header found: %s", file );
+                }
+
+                /* Last file header must be recovered by scanning next-to-last file and writing a new header based on that. */
+                mustRecoverLastHeader = true;
+                break;
             }
+
+            segment = new SegmentFile( fileSystem, file, readerPool, fileNameVersion, contentMarshal, logProvider, header );
+            segmentFiles.add( segment );
+
+            if ( fileNameVersion == firstVersion )
+            {
+                state.prevIndex = segment.header().prevIndex();
+                state.prevTerm = segment.header().prevTerm();
+            }
+
+            expectedVersion++;
         }
 
-        SegmentFile last = segmentFiles.get( segmentFiles.size() - 1 );
+        assert segment != null;
 
-        state.segments = new Segments( fileSystem, fileNames, readerPool, segmentFiles, contentMarshal, logProvider, files.lastKey(), scanStats );
-        state.appendIndex = last.header().prevIndex();
-        state.currentTerm = last.header().prevTerm();
+        state.segments = new Segments( fileSystem, fileNames, readerPool, segmentFiles, contentMarshal, logProvider, segment.header().version() );
+        state.appendIndex = segment.header().prevIndex();
+        state.terms = new Terms( segment.header().prevIndex(), segment.header().prevTerm() );
 
-        long firstIndexInLastSegmentFile = last.header().prevIndex() + 1;
-        try ( IOCursor<EntryRecord> cursor = last.getCursor( firstIndexInLastSegmentFile ) )
+        try ( IOCursor<EntryRecord> cursor = segment.getCursor( segment.header().prevIndex() + 1 ) )
         {
             while ( cursor.next() )
             {
                 EntryRecord entry = cursor.get();
                 state.appendIndex = entry.logIndex();
-                state.currentTerm = entry.logEntry().term();
+                state.terms.append( state.appendIndex, entry.logEntry().term() );
             }
+        }
+
+        if ( mustRecoverLastHeader )
+        {
+            SegmentHeader header = new SegmentHeader( state.appendIndex, expectedVersion, state.appendIndex, state.terms.latest() );
+            log.warn( "Recovering last file based on next-to-last file. " + header );
+
+            File file = fileNames.getForVersion( expectedVersion );
+            writeHeader( fileSystem, file, header );
+
+            segment = new SegmentFile( fileSystem, file, readerPool, expectedVersion, contentMarshal, logProvider, header );
+            segmentFiles.add( segment );
         }
 
         return state;
@@ -180,7 +182,7 @@ class RecoveryProtocol
         }
     }
 
-    private void checkVersionStrictlyMonotonic( long fileNameVersion ) throws DamagedLogStorageException
+    private static void checkVersionSequence( long fileNameVersion, long expectedVersion ) throws DamagedLogStorageException
     {
         if ( fileNameVersion != expectedVersion )
         {
@@ -188,7 +190,7 @@ class RecoveryProtocol
         }
     }
 
-    private void checkVersionMatches( long headerVersion, long fileNameVersion ) throws DamagedLogStorageException
+    private static void checkVersionMatches( long headerVersion, long fileNameVersion ) throws DamagedLogStorageException
     {
         if ( headerVersion != fileNameVersion )
         {

@@ -88,7 +88,7 @@ public class PositionCacheTest
     public void shouldPushOutOldEntries() throws Exception
     {
         // given
-        int count = 20;
+        int count = PositionCache.CACHE_SIZE + 4;
         for ( int i = 0; i < count; i++ )
         {
             cache.put( pos( i ) );

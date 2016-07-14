@@ -280,22 +280,18 @@ public class RaftLogShipper
         if ( timedOut() )
         {
             onTimeout();
-            return;
         }
-
-        if ( timeoutAbsoluteMillis <= 0 )
+        else if ( timeoutAbsoluteMillis != 0 )
         {
-            return;
-        }
-
-        long timeLeft = timeoutAbsoluteMillis - clock.millis();
-        if ( timeLeft > 0 )
-        {
-            scheduleTimeout( timeLeft );
-        }
-        else
-        {
-            onTimeout();
+            long timeLeft = timeoutAbsoluteMillis - clock.millis();
+            if ( timeLeft > 0 )
+            {
+                scheduleTimeout( timeLeft );
+            }
+            else
+            {
+                onTimeout();
+            }
         }
     }
 
@@ -423,25 +419,17 @@ public class RaftLogShipper
                 return;
             }
 
-            if ( (prevLogIndex == -1 && prevLogTerm != -1) || (prevLogTerm == -1 && prevLogIndex != -1) )
-            {
-                log.warn( "%s aborting append entry request since someone has pruned away the entries we needed." +
-                                "Sending a LogCompactionInfo instead. Leader context=%s, prevLogTerm=%d",
-                        statusAsString(), leaderContext, prevLogTerm );
-                outbound.send( follower, new RaftMessages.LogCompactionInfo( leader, leaderContext.term,
-                        prevLogIndex ) );
-                return;
-            }
-
-            RaftMessages.AppendEntries.Request appendRequest =
-                    new RaftMessages.AppendEntries.Request( leader, leaderContext.term, prevLogIndex, prevLogTerm,
-                            entries, leaderContext.commitIndex );
-
+            boolean entryMissing = false;
             try ( InFlightLogEntryReader logEntrySupplier = new InFlightLogEntryReader( raftLog, inFlightMap, false ) )
             {
                 for ( int offset = 0; offset < batchSize; offset++ )
                 {
                     entries[offset] = logEntrySupplier.get( startIndex + offset );
+                    if ( entries[offset] == null )
+                    {
+                        entryMissing = true;
+                        break;
+                    }
                     if ( entries[offset].term() > leaderContext.term )
                     {
                         log.warn( "%s aborting send. Not leader anymore? %s, entryTerm=%d",
@@ -451,12 +439,43 @@ public class RaftLogShipper
                 }
             }
 
-            outbound.send( follower, appendRequest );
+            if ( entryMissing || doesNotExistInLog( prevLogIndex, prevLogTerm ) )
+            {
+                if ( raftLog.prevIndex() >= prevLogIndex )
+                {
+                    sendLogCompactionInfo( leaderContext );
+                }
+                else
+                {
+                    log.error( "Could not send compaction info and entries were missing, but log is not behind." );
+                }
+            }
+            else
+            {
+                RaftMessages.AppendEntries.Request appendRequest = new RaftMessages.AppendEntries.Request(
+                        leader, leaderContext.term, prevLogIndex, prevLogTerm, entries, leaderContext.commitIndex );
+
+                outbound.send( follower, appendRequest );
+            }
         }
         catch ( IOException e )
         {
             log.warn( statusAsString() + " exception during batch send", e );
         }
+    }
+
+    private boolean doesNotExistInLog( long logIndex, long logTerm )
+    {
+        return logTerm == -1 && logIndex != -1;
+    }
+
+    private void sendLogCompactionInfo( LeaderContext leaderContext )
+    {
+        log.warn( "Sending log compaction info. Log pruned? Status=%s, LeaderContext=%s",
+                statusAsString(), leaderContext );
+
+        outbound.send( follower, new RaftMessages.LogCompactionInfo(
+                leader, leaderContext.term, raftLog.prevIndex() ) );
     }
 
     private String statusAsString()

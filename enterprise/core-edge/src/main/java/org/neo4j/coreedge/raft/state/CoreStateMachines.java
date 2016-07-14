@@ -200,7 +200,7 @@ public class CoreStateMachines
         }
     }
 
-    public long getApplyingIndex()
+    long getLastAppliedIndex()
     {
         long lastAppliedTxIndex = replicatedTxStateMachine.lastAppliedIndex();
         assert lastAppliedTxIndex == labelTokenStateMachine.lastAppliedIndex();
@@ -210,6 +210,6 @@ public class CoreStateMachines
         long lastAppliedLockTokenIndex = replicatedLockTokenStateMachine.lastAppliedIndex();
         long lastAppliedIdAllocationIndex = idAllocationStateMachine.lastAppliedIndex();
 
-        return max( max( lastAppliedLockTokenIndex, lastAppliedIdAllocationIndex ), lastAppliedIdAllocationIndex );
+        return max( max( lastAppliedLockTokenIndex, lastAppliedIdAllocationIndex ), lastAppliedTxIndex );
     }
 }

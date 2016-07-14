@@ -39,6 +39,7 @@ import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.storageengine.api.Token;
 
+import static junit.framework.TestCase.assertEquals;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -109,6 +110,41 @@ public class CoreStateMachinesTest
         verifier.verify( txSM ).ensuredApplied();
 
         verifier.verifyNoMoreInteractions();
+    }
+
+    @Test
+    public void shouldReturnLastAppliedOfAllStateMachines() throws Exception
+    {
+        // tx state machines are backed by the same store (the tx log) so they should return the same lastApplied
+        StateMachine<?>[] txSMs = new StateMachine[]{labelTokenSM, relationshipTypeTokenSM, propertyKeyTokenSM, txSM};
+
+        // these have separate storage
+        StateMachine<?>[] otherSMs = new StateMachine[]{idAllocationSM, lockTokenSM};
+
+        int totalDistinctSMs = otherSMs.length + 1; // distinct meaning backed by different storage
+
+        // here we try to order all the distinct state machines in different orders to prove that,
+        // regardless of which one is latest, we still recover the latest applied index
+        for ( long base = 0; base < totalDistinctSMs; base++ )
+        {
+            long index = 0;
+            long lastAppliedIndex;
+            for ( StateMachine<?> sm : otherSMs )
+            {
+                lastAppliedIndex = (base + index) % totalDistinctSMs;
+                when( sm.lastAppliedIndex() ).thenReturn( lastAppliedIndex );
+                index++;
+            }
+
+            lastAppliedIndex = (base + index) % totalDistinctSMs; // all the txSMs have the same backing store
+            for ( StateMachine<?> sm : txSMs )
+            {
+                when( sm.lastAppliedIndex() ).thenReturn( lastAppliedIndex );
+            }
+
+            // then
+            assertEquals( otherSMs.length, coreStateMachines.getLastAppliedIndex() );
+        }
     }
 
     @SuppressWarnings( "unchecked" )

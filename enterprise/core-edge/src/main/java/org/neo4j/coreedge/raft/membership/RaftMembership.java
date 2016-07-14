@@ -40,16 +40,12 @@ public interface RaftMembership
      */
     Set<CoreMember> replicationMembers();
 
-    long logIndex();
-
     /**
      * Register a membership listener.
      *
      * @param listener The listener.
      */
     void registerListener( RaftMembership.Listener listener );
-
-    void deregisterListener( RaftMembership.Listener listener );
 
     /**
      * This interface must be implemented from whoever wants to be notified of membership changes. Membership changes
