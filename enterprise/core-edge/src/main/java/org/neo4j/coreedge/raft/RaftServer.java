@@ -19,6 +19,8 @@
  */
 package org.neo4j.coreedge.raft;
 
+import java.util.concurrent.TimeUnit;
+
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -33,11 +35,6 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.net.codecs.RaftMessageDecoder;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
@@ -54,25 +51,19 @@ import static java.lang.String.format;
 public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages.StoreIdAwareMessage>
 {
     private final ListenSocketAddress listenAddress;
-    private final LocalDatabase localDatabase;
-    private final RaftStateMachine raftStateMachine;
     private final Log log;
     private final ChannelMarshal<ReplicatedContent> marshal;
     private MessageHandler<RaftMessages.StoreIdAwareMessage> messageHandler;
     private EventLoopGroup workerGroup;
     private Channel channel;
-    private final List<BatchingMessageHandler.MismatchedStoreListener> listeners = new ArrayList<>();
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "raft-server" );
 
     public RaftServer( ChannelMarshal<ReplicatedContent> marshal, ListenSocketAddress listenAddress,
-                       LocalDatabase localDatabase, LogProvider logProvider,
-                       RaftStateMachine raftStateMachine)
+                       LogProvider logProvider )
     {
         this.marshal = marshal;
         this.listenAddress = listenAddress;
-        this.localDatabase = localDatabase;
-        this.raftStateMachine = raftStateMachine;
         this.log = logProvider.getLog( getClass() );
     }
 

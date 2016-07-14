@@ -333,7 +333,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 databaseHealthSupplier, logProvider, progressTracker, lastFlushedStorage,
                 sessionTrackerStorage, someoneElse, coreStateApplier, downloader, inFlightMap, platformModule.monitors ) );
 
-        raftServer = new RaftServer( marshal, raftListenAddress, localDatabase, logProvider, coreState );
+        raftServer = new RaftServer( marshal, raftListenAddress, logProvider );
 
         StateStorage<TermState> termState;
         StateStorage<VoteState> voteState;
