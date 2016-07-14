@@ -203,7 +203,8 @@ public class BasicAuthenticationTest
     public void shouldFailOnMalformedToken() throws Exception
     {
         // Given
-        BasicAuthManager manager = new BasicAuthManager( mock( UserRepository.class), mock( PasswordPolicy.class ), FakeClock.systemUTC(), true );
+        BasicAuthManager manager = new BasicAuthManager( mock( UserRepository.class), mock( PasswordPolicy.class ),
+                FakeClock.systemUTC() );
         BasicAuthSubject authSubject = mock( BasicAuthSubject.class );
         BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );

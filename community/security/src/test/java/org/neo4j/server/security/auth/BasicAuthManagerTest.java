@@ -191,63 +191,6 @@ public class BasicAuthManagerTest
         }
     }
 
-    @Test
-    public void shouldThrowWhenAuthIsDisabled() throws Throwable
-    {
-        manager.stop();
-        users = new InMemoryUserRepository();
-        manager = new BasicAuthManager( users, mock( PasswordPolicy.class ),
-                                        mock( AuthenticationStrategy.class ), false );
-        manager.start();
-
-        try
-        {
-            manager.login( authToken( "foo", "bar" ) );
-            fail( "exception expected" );
-        } catch ( IllegalStateException e )
-        {
-            // expected
-        }
-
-        try
-        {
-            manager.newUser( "foo", "bar", true );
-            fail( "exception expected" );
-        } catch ( IllegalStateException e )
-        {
-            // expected
-        }
-
-        try
-        {
-            manager.deleteUser( "foo" );
-            fail( "exception expected" );
-        } catch ( IllegalStateException e )
-        {
-            // expected
-        }
-
-        try
-        {
-            manager.getUser( "foo" );
-            fail( "exception expected" );
-        } catch ( IllegalStateException e )
-        {
-            // expected
-        }
-
-        try
-        {
-            manager.setUserPassword( "foo", "bar" );
-            fail( "exception expected" );
-        } catch ( IllegalStateException e )
-        {
-            // expected
-        }
-
-        assertThat( users.numberOfUsers(), equalTo( 0 ) );
-    }
-
     private User createUser( String username, String password, boolean pwd_change )
             throws IOException, InvalidArgumentsException
     {
