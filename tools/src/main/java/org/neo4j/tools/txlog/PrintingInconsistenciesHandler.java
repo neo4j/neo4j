@@ -19,32 +19,36 @@
  */
 package org.neo4j.tools.txlog;
 
+import java.io.PrintStream;
+
 /**
- * Handler that simply prints given number of inconsistencies to {@link System#out} and then throws exception.
+ * Handler that simply prints given number of inconsistencies to {@link PrintingInconsistenciesHandler#out} and throws
+ * an exception if too many inconsistencies are found.
  */
 class PrintingInconsistenciesHandler implements InconsistenciesHandler
 {
-    private static final int DEFAULT_NUMBER_OF_INCONSISTENCIES_TO_PRINT = 100;
+    private static final int DEFAULT_NUMBER_OF_INCONSISTENCIES_TO_PRINT = 1024;
 
     private final int inconsistenciesToPrint;
     private int seenInconsistencies;
+    private PrintStream out;
 
-    PrintingInconsistenciesHandler()
+    PrintingInconsistenciesHandler( PrintStream out )
     {
-        this( DEFAULT_NUMBER_OF_INCONSISTENCIES_TO_PRINT );
+        this( out, DEFAULT_NUMBER_OF_INCONSISTENCIES_TO_PRINT );
     }
 
-    PrintingInconsistenciesHandler( int inconsistenciesToPrint )
+    PrintingInconsistenciesHandler( PrintStream out, int inconsistenciesToPrint )
     {
+        this.out = out;
         this.inconsistenciesToPrint = inconsistenciesToPrint;
     }
 
     @Override
     public void reportInconsistentCommand( RecordInfo<?> committed, RecordInfo<?> current )
     {
-        System.out.println( "+" + committed );
-        System.out.println( "-" + current );
-
+        out.println( "+" + committed );
+        out.println( "-" + current );
         seenInconsistencies++;
         if ( seenInconsistencies >= inconsistenciesToPrint )
         {
