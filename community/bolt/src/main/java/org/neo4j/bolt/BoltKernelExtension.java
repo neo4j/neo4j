@@ -123,7 +123,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         ThreadToStatementContextBridge txBridge();
 
-        SessionTracker sessionManager();
+        SessionTracker sessionTracker();
     }
 
     public BoltKernelExtension()
@@ -150,7 +150,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                 new MonitoredSessions( dependencies.monitors(),
                         new ThreadedSessions(
                                 life.add( new StandardSessions( api, dependencies.usageData(), logging,
-                                        dependencies.txBridge(), dependencies.sessionManager() ) ),
+                                        dependencies.txBridge(), dependencies.sessionTracker() ) ),
                                 scheduler, logging ), Clock.systemUTC() );
 
         List<ProtocolInitializer> connectors = config
