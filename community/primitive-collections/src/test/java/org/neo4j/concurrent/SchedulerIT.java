@@ -21,6 +21,7 @@ package org.neo4j.concurrent;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.Callable;
@@ -41,9 +42,9 @@ import static org.neo4j.concurrent.Scheduler.OnRejection.DROP;
 import static org.neo4j.concurrent.Scheduler.OnRejection.SPAWN;
 import static org.neo4j.concurrent.Scheduler.OnRejection.THROW;
 
+@Ignore // This test adds 3 minutes to the build time, and I'm not sure we need to run it every time.
 public class SchedulerIT
 {
-
     private BinaryLatch latch;
     private Callable<Object> callable;
 
