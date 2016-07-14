@@ -126,36 +126,13 @@ class SlaveLocksClient implements Locks.Client
         }
     }
 
-    private long[] onlyFirstTimeLocks( Map<Long,AtomicInteger> lockMap, long[] resourceIds )
-    {
-        int cursor = 0;
-        for ( int i = 0; i < resourceIds.length; i++ )
-        {
-            assertNotStopped();
-            AtomicInteger preExistingLock = lockMap.get( resourceIds[i] );
-            if ( preExistingLock != null )
-            {
-                // We already hold this lock, just increment the local reference count
-                preExistingLock.incrementAndGet();
-            }
-            else
-            {
-                resourceIds[cursor++] = resourceIds[i];
-            }
-        }
-        if ( cursor == 0 )
-        {
-            return PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-        }
-        return cursor == resourceIds.length ? resourceIds : Arrays.copyOf( resourceIds, cursor );
-    }
-
     @Override
     public void acquireExclusive( Locks.ResourceType resourceType, long... resourceIds ) throws
             AcquireLockTimeoutException
     {
-        Map<Long, AtomicInteger> lockMap = getLockMap( exclusiveLocks, resourceType );
+        assertNotStopped();
 
+        Map<Long, AtomicInteger> lockMap = getLockMap( exclusiveLocks, resourceType );
         long[] newResourceIds = onlyFirstTimeLocks( lockMap, resourceIds );
         if ( newResourceIds.length > 0 )
         {
@@ -252,6 +229,8 @@ class SlaveLocksClient implements Locks.Client
             initialized = false;
         }
     }
+
+    @Override
     public int getLockSessionId()
     {
         assertNotStopped();
@@ -287,6 +266,29 @@ class SlaveLocksClient implements Locks.Client
                     "Failed to end the lock session on the master (which implies releasing all held locks)",
                     master, e );
         }
+    }
+
+    private long[] onlyFirstTimeLocks( Map<Long,AtomicInteger> lockMap, long[] resourceIds )
+    {
+        int cursor = 0;
+        for ( int i = 0; i < resourceIds.length; i++ )
+        {
+            AtomicInteger preExistingLock = lockMap.get( resourceIds[i] );
+            if ( preExistingLock != null )
+            {
+                // We already hold this lock, just increment the local reference count
+                preExistingLock.incrementAndGet();
+            }
+            else
+            {
+                resourceIds[cursor++] = resourceIds[i];
+            }
+        }
+        if ( cursor == 0 )
+        {
+            return PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+        }
+        return cursor == resourceIds.length ? resourceIds : Arrays.copyOf( resourceIds, cursor );
     }
 
     private void acquireSharedOnMaster( Locks.ResourceType resourceType, long... resourceIds )
