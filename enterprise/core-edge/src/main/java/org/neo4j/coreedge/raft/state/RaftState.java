@@ -156,7 +156,7 @@ public class RaftState implements ReadableRaftState
             voteStorage.persistStoreData( voteState );
         }
 
-        logIfLeaderChanged(outcome.getLeader());
+        logIfLeaderChanged( outcome.getLeader() );
         leader = outcome.getLeader();
 
         leaderCommit = outcome.getLeaderCommit();
