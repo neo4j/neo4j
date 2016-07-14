@@ -97,6 +97,7 @@ import static org.neo4j.coreedge.server.core.RoleProcedure.CoreOrEdge.CORE;
 public class EnterpriseCoreEditionModule extends EditionModule
 {
     public static final String CLUSTER_STATE_DIRECTORY_NAME = "cluster-state";
+    public static final String CORE_MEMBER_ID_NAME = "core-member-id";
 
     private final ConsensusModule consensusModule;
     private final CoreTopologyService discoveryService;
@@ -142,7 +143,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         try
         {
             StateStorage<MemberId> idStorage = life.add( new DurableStateStorage<>(
-                    fileSystem, clusterStateDirectory, "raft-member-id", new MemberIdMarshal(), 1,
+                    fileSystem, clusterStateDirectory, CORE_MEMBER_ID_NAME, new MemberIdMarshal(), 1,
                     databaseHealthSupplier, logProvider ) );
             MemberId member = idStorage.getInitialState();
             if ( member == null )

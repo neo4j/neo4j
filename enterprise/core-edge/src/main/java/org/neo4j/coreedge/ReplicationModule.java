@@ -47,6 +47,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ReplicationModule
 {
+    public static final String LAST_FLUSHED_NAME = "last-flushed";
+    public static final String SESSION_TRACKER_NAME = "session-tracker";
+
     private final RaftReplicator replicator;
     private final ProgressTrackerImpl progressTracker;
     private final SessionTracker sessionTracker;
@@ -60,13 +63,10 @@ public class ReplicationModule
         DurableStateStorage<GlobalSessionTrackerState> sessionTrackerStorage;
         try
         {
-            sessionTrackerStorage = life.add(
-                    new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "session-tracker-state" ),
-                            "session-tracker",
-                            new GlobalSessionTrackerState.Marshal( new MemberId.MemberIdMarshal() ),
-                            config.get( CoreEdgeClusterSettings.global_session_tracker_state_size ),
-                            databaseHealthSupplier, logProvider ) );
-
+            sessionTrackerStorage = life.add( new DurableStateStorage<>( fileSystem, clusterStateDirectory,
+                    SESSION_TRACKER_NAME, new GlobalSessionTrackerState.Marshal( new MemberId.MemberIdMarshal() ),
+                    config.get( CoreEdgeClusterSettings.global_session_tracker_state_size ), databaseHealthSupplier,
+                    logProvider ) );
         }
         catch ( IOException e )
         {

@@ -98,4 +98,12 @@ public class TermState
             return state.currentTerm();
         }
     }
+
+    @Override
+    public String toString()
+    {
+        return "TermState{" +
+               "term=" + term +
+               '}';
+    }
 }
