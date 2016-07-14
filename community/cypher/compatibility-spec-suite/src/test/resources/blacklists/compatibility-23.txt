@@ -38,7 +38,7 @@ Get node degree via length of pattern expression that specifies a relationship t
 Return a var length path of length zero
 Fail when using property access on primitive type
 Null-setting one property with ON CREATE
-Fail when imposing new predicates on already bound variable
+Fail when imposing new predicates on a variable that is already bound
 Failing when using undefined variable in pattern
 Failing when using undefined variable in SET
 Failing when using undefined variable in DELETE
@@ -64,8 +64,6 @@ Setting and returning the size of a list property
 Setting and returning the size of a list property
 Arithmetic expressions inside aggregation
 Concatenating and returning the size of literal lists
-Concatenating lists of different type
-Appending to a list of different type
 Failing when returning an undefined variable
 Failing when comparing to an undefined variable
 Failing when re-using a relationship in the same pattern
