@@ -357,6 +357,40 @@ public abstract class RaftLogContractTest
     }
 
     @Test
+    public void pruneShouldNotChangePrevIndexAfterSkipping() throws Exception
+    {
+        /**
+         * Given the situation where a skip happens followed by a prune, you may have the prune operation incorretly
+         * set the prevIndex to be the value of the last segment in the log, disreguarding the skip command.
+         * This test ensures that in this scenario, we will respect the current prevIndex value if it has been set to
+         * something in the future (i.e. skip) rather than modify it to be the value of the last segment.
+         *
+         * Initial Scenario:    [0][1][2][3][4][5][6][7][8][9]              prevIndex = 0
+         * Skip to 20 :         [0][1][2][3][4][5][6][7][8][9]...[20]               prevIndex = 20
+         * Prune segment 8:                                [9]...[20]               prevIndex = 20 //not 9
+         */
+
+        // given
+        RaftLog log = createRaftLog();
+
+        long term = 0;
+        for ( int i = 0; i < 2000; i++ )
+        {
+            log.append( new RaftLogEntry( term, valueOf( i ) ) );
+        }
+
+        long skipIndex = 3000;
+        log.skip( skipIndex, term );
+        assertEquals( skipIndex, log.prevIndex() );
+
+        // when
+        log.prune( skipIndex );
+
+        // then
+        assertEquals( skipIndex, log.prevIndex() );
+    }
+
+    @Test
     public void shouldProperlyReportExistenceOfIndexesAfterSkipping() throws Exception
     {
         // given
@@ -411,13 +445,14 @@ public abstract class RaftLogContractTest
         assertEquals( -1L, term );
     }
 
-    private ReplicatedString string(int numberOfCharacters) {
-        StringBuffer s = new StringBuffer(  );
+    private ReplicatedString string( int numberOfCharacters )
+    {
+        StringBuilder builder = new StringBuilder();
         for ( int i = 0; i < numberOfCharacters; i++ )
         {
-             s.append( String.valueOf( i ) );
+            builder.append( String.valueOf( i ) );
         }
-        return ReplicatedString.valueOf( s.toString() ) ;
+        return ReplicatedString.valueOf( builder.toString() );
     }
 
     // TODO: Test what happens when the log has rotated, *not* pruned and then skipping happens which causes
