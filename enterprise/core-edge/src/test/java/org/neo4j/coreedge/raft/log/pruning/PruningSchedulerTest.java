@@ -19,7 +19,16 @@
  */
 package org.neo4j.coreedge.raft.log.pruning;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.neo4j.test.DoubleLatch;
+import org.neo4j.test.OnDemandJobScheduler;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -32,15 +41,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.raftLogPruning;
-
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.junit.Test;
-import org.neo4j.test.DoubleLatch;
-import org.neo4j.test.OnDemandJobScheduler;
 
 public class PruningSchedulerTest
 {
@@ -60,31 +60,8 @@ public class PruningSchedulerTest
 
         // then
         assertNotNull( jobScheduler.getJob() );
-        verify( jobScheduler, times( 1 ) ).schedule( eq( raftLogPruning ), any( Runnable.class ),
-                eq( 20L ), eq( TimeUnit.MILLISECONDS ) );
-    }
-
-    @Test
-    public void shouldRescheduleTheJobAfterARun() throws Throwable
-    {
-        // given
-        PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 20L );
-
-        assertNull( jobScheduler.getJob() );
-
-        scheduler.start();
-
-        Runnable scheduledJob = jobScheduler.getJob();
-        assertNotNull( scheduledJob );
-
-        // when
-        jobScheduler.runJob();
-
-        // then
-        verify( jobScheduler, times( 2 ) ).schedule( eq( raftLogPruning ), any( Runnable.class ),
-                eq( 20L ), eq( TimeUnit.MILLISECONDS ) );
-        verify( logPruner, times( 1 ) ).prune();
-        assertEquals( scheduledJob, jobScheduler.getJob() );
+        verify( jobScheduler, times( 1 ) ).scheduleRecurring( eq( raftLogPruning ), any( Runnable.class ),
+                eq( 20L ), eq( 20L ), eq( TimeUnit.MILLISECONDS ) );
     }
 
     @Test

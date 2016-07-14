@@ -413,9 +413,9 @@ public final class Scheduler
         throw new AssertionError( "Missing rejection case: " + onRejection );
     }
 
-    public static Future<?> executeRecurring( Runnable action, long period, TimeUnit unit )
+    public static Future<?> executeRecurring( Runnable action, long initialDelay, long period, TimeUnit unit )
     {
-        return schedulingService.scheduleAtFixedRate( action, 0, period, unit );
+        return schedulingService.scheduleAtFixedRate( action, initialDelay, period, unit );
     }
 
     static boolean awaitQuiesce( long timeout, TimeUnit unit )

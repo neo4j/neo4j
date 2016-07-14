@@ -83,6 +83,6 @@ public class UsageData extends LifecycleAdapter
     @Override
     public void start() throws Throwable
     {
-        featureDecayJob = scheduler.schedule( udc, get( UsageDataKeys.features )::sweep, 1, DAYS );
+        featureDecayJob = scheduler.scheduleRecurring( udc, get( UsageDataKeys.features )::sweep, 1, 1, DAYS );
     }
 }

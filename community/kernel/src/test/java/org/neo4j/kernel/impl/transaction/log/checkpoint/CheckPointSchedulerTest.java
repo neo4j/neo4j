@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OnDemandJobScheduler;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -61,31 +60,8 @@ public class CheckPointSchedulerTest
 
         // then
         assertNotNull( jobScheduler.getJob() );
-        verify( jobScheduler, times( 1 ) ).schedule( eq( checkPoint ), any( Runnable.class ),
-                eq( 20L ), eq( TimeUnit.MILLISECONDS ) );
-    }
-
-    @Test
-    public void shouldRescheduleTheJobAfterARun() throws Throwable
-    {
-        // given
-        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20L );
-
-        assertNull( jobScheduler.getJob() );
-
-        scheduler.start();
-
-        Runnable scheduledJob = jobScheduler.getJob();
-        assertNotNull( scheduledJob );
-
-        // when
-        jobScheduler.runJob();
-
-        // then
-        verify( jobScheduler, times( 2 ) ).schedule( eq( checkPoint ), any( Runnable.class ),
-                eq( 20L ), eq( TimeUnit.MILLISECONDS ) );
-        verify( checkPointer, times( 1 ) ).checkPointIfNeeded( any( TriggerInfo.class ) );
-        assertEquals( scheduledJob, jobScheduler.getJob() );
+        verify( jobScheduler, times( 1 ) ).scheduleRecurring( eq( checkPoint ), any( Runnable.class ),
+                eq( 20L ), eq( 20L ), eq( TimeUnit.MILLISECONDS ) );
     }
 
     @Test
