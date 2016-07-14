@@ -50,9 +50,7 @@ public class CoreStateMachines
 
     private final ReplicatedLockTokenStateMachine replicatedLockTokenStateMachine;
     private final ReplicatedIdAllocationStateMachine idAllocationStateMachine;
-    private final CoreState coreState;
     private final RecoverTransactionLogState txLogState;
-    private final RaftLog raftLog;
     private final LocalDatabase localDatabase;
 
     private final CommandDispatcher currentBatch = new StateMachineCommandDispatcher();
@@ -65,9 +63,7 @@ public class CoreStateMachines
             ReplicatedTokenStateMachine<Token> propertyKeyTokenStateMachine,
             ReplicatedLockTokenStateMachine replicatedLockTokenStateMachine,
             ReplicatedIdAllocationStateMachine idAllocationStateMachine,
-            CoreState coreState,
             RecoverTransactionLogState txLogState,
-            RaftLog raftLog,
             LocalDatabase localDatabase )
     {
         this.replicatedTxStateMachine = replicatedTxStateMachine;
@@ -76,9 +72,7 @@ public class CoreStateMachines
         this.propertyKeyTokenStateMachine = propertyKeyTokenStateMachine;
         this.replicatedLockTokenStateMachine = replicatedLockTokenStateMachine;
         this.idAllocationStateMachine = idAllocationStateMachine;
-        this.coreState = coreState;
         this.txLogState = txLogState;
-        this.raftLog = raftLog;
         this.localDatabase = localDatabase;
     }
 
@@ -120,20 +114,6 @@ public class CoreStateMachines
         idAllocationStateMachine.installSnapshot( coreSnapshot.get( CoreStateType.ID_ALLOCATION ) );
         replicatedLockTokenStateMachine.installSnapshot( coreSnapshot.get( CoreStateType.LOCK_TOKEN ) );
         // transactions and tokens live in the store
-
-        long snapshotPrevIndex = coreSnapshot.prevIndex();
-        try
-        {
-            if ( snapshotPrevIndex > 1 )
-            {
-                raftLog.skip( snapshotPrevIndex, coreSnapshot.prevTerm() );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-        coreState.skip( snapshotPrevIndex );
     }
 
     public void refresh( TransactionRepresentationCommitProcess localCommit )
@@ -146,8 +126,6 @@ public class CoreStateMachines
         labelTokenStateMachine.installCommitProcess( localCommit, lastAppliedIndex );
         relationshipTypeTokenStateMachine.installCommitProcess( localCommit, lastAppliedIndex );
         propertyKeyTokenStateMachine.installCommitProcess( localCommit, lastAppliedIndex );
-
-        coreState.setStateMachine( this );
     }
 
     private class StateMachineCommandDispatcher implements CommandDispatcher

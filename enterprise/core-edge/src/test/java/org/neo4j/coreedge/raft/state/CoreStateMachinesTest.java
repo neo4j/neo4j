@@ -166,8 +166,8 @@ public class CoreStateMachinesTest
     private final MonitoredRaftLog txLogState = mock( MonitoredRaftLog.class);
 
     private final CoreStateMachines coreStateMachines = new CoreStateMachines( txSM, labelTokenSM,
-            relationshipTypeTokenSM, propertyKeyTokenSM, lockTokenSM, idAllocationSM, coreState,
-            recoverTransactionLogState, txLogState, mock( LocalDatabase.class ) );
+            relationshipTypeTokenSM, propertyKeyTokenSM, lockTokenSM, idAllocationSM,
+            recoverTransactionLogState, mock( LocalDatabase.class ) );
 
     private final ReplicatedTransaction replicatedTransaction = mock( ReplicatedTransaction.class );
     private final ReplicatedIdAllocationRequest iAllocationRequest = mock( ReplicatedIdAllocationRequest.class );
