@@ -19,7 +19,16 @@
  */
 package org.neo4j.causalclustering.core.consensus.log.pruning;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.Test;
+
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.DoubleLatch;
+import org.neo4j.test.OnDemandJobScheduler;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -33,18 +42,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.raftLogPruning;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.junit.Test;
-
-import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.DoubleLatch;
-import org.neo4j.test.OnDemandJobScheduler;
-
 public class PruningSchedulerTest
 {
+    private static final NullLogProvider LOG_PROVIDER = NullLogProvider.getInstance();
     private final LogPruner logPruner = mock( LogPruner.class );
     private final OnDemandJobScheduler jobScheduler = spy( new OnDemandJobScheduler() );
 
@@ -52,7 +52,7 @@ public class PruningSchedulerTest
     public void shouldScheduleTheCheckPointerJobOnStart() throws Throwable
     {
         // given
-        PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 20L, NullLogProvider.getInstance() );
+        PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 20L, LOG_PROVIDER );
 
         assertNull( jobScheduler.getJob() );
 
@@ -61,38 +61,15 @@ public class PruningSchedulerTest
 
         // then
         assertNotNull( jobScheduler.getJob() );
-        verify( jobScheduler, times( 1 ) ).schedule( eq( raftLogPruning ), any( Runnable.class ),
-                eq( 20L ), eq( TimeUnit.MILLISECONDS ) );
-    }
-
-    @Test
-    public void shouldRescheduleTheJobAfterARun() throws Throwable
-    {
-        // given
-        PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 20L, NullLogProvider.getInstance() );
-
-        assertNull( jobScheduler.getJob() );
-
-        scheduler.start();
-
-        Runnable scheduledJob = jobScheduler.getJob();
-        assertNotNull( scheduledJob );
-
-        // when
-        jobScheduler.runJob();
-
-        // then
-        verify( jobScheduler, times( 2 ) ).schedule( eq( raftLogPruning ), any( Runnable.class ),
-                eq( 20L ), eq( TimeUnit.MILLISECONDS ) );
-        verify( logPruner, times( 1 ) ).prune();
-        assertEquals( scheduledJob, jobScheduler.getJob() );
+        verify( jobScheduler, times( 1 ) ).scheduleRecurring( eq( raftLogPruning ), any( Runnable.class ),
+                eq( 20L ), eq( 20L ), eq( TimeUnit.MILLISECONDS ) );
     }
 
     @Test
     public void shouldNotRescheduleAJobWhenStopped() throws Throwable
     {
         // given
-        PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 20L, NullLogProvider.getInstance() );
+        PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 20L, LOG_PROVIDER );
 
         assertNull( jobScheduler.getJob() );
 
@@ -110,7 +87,7 @@ public class PruningSchedulerTest
     @Test
     public void stoppedJobCantBeInvoked() throws Throwable
     {
-        PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 10L, NullLogProvider.getInstance() );
+        PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 10L, LOG_PROVIDER );
         scheduler.start();
         jobScheduler.runJob();
 
@@ -139,7 +116,7 @@ public class PruningSchedulerTest
             checkPointerLatch.waitForAllToFinish();
         };
 
-        final PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 20L, NullLogProvider.getInstance() );
+        final PruningScheduler scheduler = new PruningScheduler( logPruner, jobScheduler, 20L, LOG_PROVIDER );
 
         // when
         scheduler.start();

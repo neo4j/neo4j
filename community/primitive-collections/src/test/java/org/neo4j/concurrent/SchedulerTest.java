@@ -81,7 +81,7 @@ public class SchedulerTest
     public void recurringTaskMustExecuteUntilCancelled() throws Exception
     {
         Semaphore latch = new Semaphore( 0 );
-        Future<?> future = Scheduler.executeRecurring( latch::release, 1, TimeUnit.MILLISECONDS );
+        Future<?> future = Scheduler.executeRecurring( latch::release, 0, 1, TimeUnit.MILLISECONDS );
         latch.acquire();
         long start = System.currentTimeMillis();
         latch.acquire( 9 );
