@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -61,7 +62,6 @@ import org.neo4j.kernel.monitoring.tracing.Tracers;
 
 import static java.util.Collections.newSetFromMap;
 import static org.neo4j.kernel.configuration.Settings.setting;
-import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.deferred_locking;
 
 /**
  * Central source of transactions in the database.
@@ -82,9 +82,8 @@ public class KernelTransactions extends LifecycleAdapter
 
     private final NeoStoreTransactionContextFactory neoStoreTransactionContextFactory;
     private final NeoStores neoStores;
-    private final Locks locks;
+    private final StatementLocksFactory statementLocksFactory;
     private final boolean txTerminationAwareLocks;
-    private final boolean deferringLocks;
     private final IntegrityValidator integrityValidator;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final IndexingService indexingService;
@@ -144,9 +143,8 @@ public class KernelTransactions extends LifecycleAdapter
     {
         this.neoStoreTransactionContextFactory = neoStoreTransactionContextFactory;
         this.neoStores = neoStores;
-        this.locks = locks;
+        this.statementLocksFactory = new StatementLocksFactory( locks, config );
         this.txTerminationAwareLocks = config.get( tx_termination_aware_locks );
-        this.deferringLocks = config.get( deferred_locking );
         this.integrityValidator = integrityValidator;
         this.constraintIndexCreator = constraintIndexCreator;
         this.indexingService = indexingService;
@@ -185,10 +183,10 @@ public class KernelTransactions extends LifecycleAdapter
             KernelTransactionImplementation tx = new KernelTransactionImplementation(
                     statementOperations, schemaWriteGuard,
                     labelScanStore, indexingService, updateableSchemaState, recordState, providerMap,
-                    neoStores, locks, hooks, constraintIndexCreator, transactionHeaderInformationFactory,
+                    neoStores, statementLocksFactory, hooks, constraintIndexCreator, transactionHeaderInformationFactory,
                     transactionCommitProcess, transactionMonitor, storeLayer, legacyIndexTransactionState,
                     localTxPool, constraintSemantics, clock, tracers.transactionTracer, procedureCache,
-                    context, txTerminationAwareLocks, deferringLocks );
+                    context, txTerminationAwareLocks );
             allTransactions.add( tx );
 
             return tx;

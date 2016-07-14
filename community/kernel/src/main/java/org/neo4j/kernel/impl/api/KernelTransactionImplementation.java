@@ -70,10 +70,8 @@ import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.LockGroup;
-import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
-import org.neo4j.kernel.impl.locking.deferred.DeferringStatementLocks;
+import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -164,9 +162,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final Clock clock;
     private final TransactionToRecordStateVisitor txStateToRecordStateVisitor = new TransactionToRecordStateVisitor();
     private final Collection<Command> extractedCommands = new ArrayCollection<>( 32 );
-    private final Locks locksManager;
+    private final StatementLocksFactory statementLocksFactory;
     private final boolean txTerminationAwareLocks;
-    private final boolean deferringLocks;
     private TransactionState txState;
     private LegacyIndexTransactionState legacyIndexTransactionState;
     private TransactionType transactionType = TransactionType.ANY;
@@ -210,7 +207,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             TransactionRecordState recordState,
                                             SchemaIndexProviderMap providerMap,
                                             NeoStores neoStores,
-                                            Locks locks,
+                                            StatementLocksFactory statementLocksFactory,
                                             TransactionHooks hooks,
                                             ConstraintIndexCreator constraintIndexCreator,
                                             TransactionHeaderInformationFactory headerInformationFactory,
@@ -224,8 +221,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             TransactionTracer tracer,
                                             ProcedureCache procedureCache,
                                             NeoStoreTransactionContext context,
-                                            boolean txTerminationAwareLocks,
-                                            boolean deferringLocks )
+                                            boolean txTerminationAwareLocks )
     {
         this.operations = operations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -234,9 +230,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.recordState = recordState;
         this.providerMap = providerMap;
         this.schemaState = schemaState;
-        this.locksManager = locks;
+        this.statementLocksFactory = statementLocksFactory;
         this.txTerminationAwareLocks = txTerminationAwareLocks;
-        this.deferringLocks = deferringLocks;
         this.hooks = hooks;
         this.constraintIndexCreator = constraintIndexCreator;
         this.headerInformationFactory = headerInformationFactory;
@@ -258,8 +253,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp )
     {
-        this.statementLocks = deferringLocks ? new DeferringStatementLocks( locksManager.newClient() )
-                                             : new SimpleStatementLocks( locksManager.newClient() );
+        this.statementLocks = statementLocksFactory.newInstance();
         this.terminationReason = null;
         this.closing = closed = failure = success = false;
         this.transactionType = TransactionType.ANY;

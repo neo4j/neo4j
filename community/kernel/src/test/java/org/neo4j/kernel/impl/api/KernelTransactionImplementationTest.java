@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.store.ProcedureCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreStatement;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpLocks;
+import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -631,10 +633,11 @@ public class KernelTransactionImplementationTest
     {
         when( storeReadLayer.acquireStatement() ).thenReturn( mock( StoreStatement.class ) );
 
-        return new KernelTransactionImplementation( null, null, null, null, null, recordState, null, neoStores, locks,
-                hooks, null, headerInformationFactory, commitProcess, transactionMonitor, storeReadLayer,
-                legacyIndexState, pool, new StandardConstraintSemantics(), clock, TransactionTracer.NULL,
-                new ProcedureCache(), mock( NeoStoreTransactionContext.class ), txTerminationAware, false );
+        return new KernelTransactionImplementation( null, null, null, null, null, recordState, null, neoStores,
+                new StatementLocksFactory( locks, new Config() ), hooks, null, headerInformationFactory, commitProcess,
+                transactionMonitor, storeReadLayer, legacyIndexState, pool, new StandardConstraintSemantics(), clock,
+                TransactionTracer.NULL, new ProcedureCache(), mock( NeoStoreTransactionContext.class ),
+                txTerminationAware );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess
