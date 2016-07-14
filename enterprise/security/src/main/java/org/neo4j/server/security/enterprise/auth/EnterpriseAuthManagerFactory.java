@@ -20,11 +20,14 @@
 package org.neo4j.server.security.enterprise.auth;
 
 import com.github.benmanes.caffeine.cache.Ticker;
+import org.apache.shiro.cache.CacheManager;
 import org.apache.shiro.realm.Realm;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.helpers.Service;
@@ -83,58 +86,11 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
             realms.add( new LdapRealm( config, securityLog ) );
         }
 
-        Boolean pluginAuthenticationEnabled = config.get( SecuritySettings.plugin_authentication_enabled );
-        Boolean pluginAuthorizationEnabled = config.get( SecuritySettings.plugin_authorization_enabled );
+        // Load plugin realms if we have any
+        realms.addAll( createPluginRealms( config, logProvider ) );
 
-        if ( pluginAuthenticationEnabled && pluginAuthorizationEnabled )
-        {
-            // Combined authentication and authorization plugins
-            Iterable<AuthPlugin> authPlugins = Service.load( AuthPlugin.class );
-
-            for ( AuthPlugin plugin : authPlugins )
-            {
-                PluginRealm pluginRealm = new PluginRealm( plugin );
-                realms.add( pluginRealm );
-            }
-        }
-
-        if ( pluginAuthenticationEnabled )
-        {
-            // Authentication only plugins
-            Iterable<AuthenticationPlugin> authenticationPlugins = Service.load( AuthenticationPlugin.class );
-
-            for ( AuthenticationPlugin plugin : authenticationPlugins )
-            {
-                PluginRealm pluginRealm = new PluginRealm( plugin, null );
-                realms.add( pluginRealm );
-            }
-        }
-
-        if ( pluginAuthorizationEnabled )
-        {
-            // Authorization only plugins
-            Iterable<AuthorizationPlugin> authorizationPlugins = Service.load( AuthorizationPlugin.class );
-
-            for ( AuthorizationPlugin plugin : authorizationPlugins )
-            {
-                PluginRealm pluginRealm = new PluginRealm( null, plugin );
-                realms.add( pluginRealm );
-            }
-        }
-
-        long ttl = config.get( SecuritySettings.auth_cache_ttl );
-        int maxCapacity = config.get( SecuritySettings.auth_cache_max_capacity );
-
-        return new MultiRealmAuthManager( internalRealm, realms,
-                new ShiroCaffeineCache.Manager( Ticker.systemTicker(), ttl, maxCapacity ),
+        return new MultiRealmAuthManager( internalRealm, realms, createCacheManager( config ),
                 securityLog, config.get( EnterpriseEditionSettings.security_log_successful_authentication ) );
-    }
-
-    private SecurityLog getSecurityLog( Log allegedSecurityLog )
-    {
-        return allegedSecurityLog instanceof SecurityLog ?
-               (SecurityLog) allegedSecurityLog :
-                new SecurityLog( allegedSecurityLog );
     }
 
     private static InternalFlatFileRealm createInternalRealm( Config config, LogProvider logProvider,
@@ -146,6 +102,84 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
                 new BasicPasswordPolicy(), new RateLimitedAuthenticationStrategy( Clocks.systemClock(), 3 ),
                 config.get( SecuritySettings.internal_authentication_enabled ),
                 config.get( SecuritySettings.internal_authorization_enabled ), jobScheduler );
+    }
+
+    private SecurityLog getSecurityLog( Log allegedSecurityLog )
+    {
+        return allegedSecurityLog instanceof SecurityLog ?
+               (SecurityLog) allegedSecurityLog :
+               new SecurityLog( allegedSecurityLog );
+    }
+
+    private static CacheManager createCacheManager( Config config )
+    {
+        long ttl = config.get( SecuritySettings.auth_cache_ttl );
+        int maxCapacity = config.get( SecuritySettings.auth_cache_max_capacity );
+        return new ShiroCaffeineCache.Manager( Ticker.systemTicker(), ttl, maxCapacity );
+    }
+
+    private static List<Realm> createPluginRealms( Config config, LogProvider logProvider )
+    {
+        List<Realm> realms = new ArrayList<>();
+        Set<Class> excludedClasses = new HashSet<>();
+
+        Boolean pluginAuthenticationEnabled = config.get( SecuritySettings.plugin_authentication_enabled );
+        Boolean pluginAuthorizationEnabled = config.get( SecuritySettings.plugin_authorization_enabled );
+
+        if ( pluginAuthenticationEnabled && pluginAuthorizationEnabled )
+        {
+            // Combined authentication and authorization plugins
+            Iterable<AuthPlugin> authPlugins = Service.load( AuthPlugin.class );
+
+            for ( AuthPlugin plugin : authPlugins )
+            {
+                PluginRealm pluginRealm = new PluginRealm( plugin, logProvider );
+                realms.add( pluginRealm );
+            }
+        }
+
+        if ( pluginAuthenticationEnabled )
+        {
+            // Authentication only plugins
+            Iterable<AuthenticationPlugin> authenticationPlugins = Service.load( AuthenticationPlugin.class );
+
+            for ( AuthenticationPlugin plugin : authenticationPlugins )
+            {
+                PluginRealm pluginRealm;
+
+                if ( pluginAuthorizationEnabled && plugin instanceof AuthorizationPlugin )
+                {
+                    // This plugin implements both interfaces, create a combined plugin
+                    pluginRealm = new PluginRealm( plugin, (AuthorizationPlugin) plugin, logProvider );
+
+                    // We need to make sure we do not add a duplicate when the AuthorizationPlugin service gets loaded
+                    // so we allow only one instance per combined plugin class
+                    excludedClasses.add( plugin.getClass() );
+                }
+                else
+                {
+                    pluginRealm = new PluginRealm( plugin, null, logProvider );
+                }
+                realms.add( pluginRealm );
+            }
+        }
+
+        if ( pluginAuthorizationEnabled )
+        {
+            // Authorization only plugins
+            Iterable<AuthorizationPlugin> authorizationPlugins = Service.load( AuthorizationPlugin.class );
+
+            for ( AuthorizationPlugin plugin : authorizationPlugins )
+            {
+                if ( !excludedClasses.contains( plugin.getClass() ) )
+                {
+                    PluginRealm pluginRealm = new PluginRealm( null, plugin, logProvider );
+                    realms.add( pluginRealm );
+                }
+            }
+        }
+
+        return realms;
     }
 
     public static RoleRepository getRoleRepository( Config config, LogProvider logProvider,

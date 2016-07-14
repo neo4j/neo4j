@@ -20,7 +20,9 @@
 package org.neo4j.server.security.enterprise.auth.plugin;
 
 import java.util.Collection;
+import java.util.Collections;
 
+import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationInfo;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationPlugin;
 
@@ -29,6 +31,10 @@ public class TestAuthorizationPlugin implements AuthorizationPlugin
     @Override
     public AuthorizationInfo getAuthorizationInfo( Collection<Object> principals )
     {
+        if ( principals.contains( "neo4j" ) )
+        {
+            return (AuthorizationInfo) () -> Collections.singleton( PredefinedRoles.READER );
+        }
         return null;
     }
 

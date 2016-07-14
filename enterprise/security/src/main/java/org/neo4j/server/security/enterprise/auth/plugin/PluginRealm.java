@@ -28,6 +28,8 @@ import org.apache.shiro.cache.Cache;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
 
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder;
 import org.neo4j.server.security.enterprise.auth.ShiroAuthToken;
 import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthInfo;
@@ -41,27 +43,28 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle
     private AuthenticationPlugin authenticationPlugin;
     private AuthorizationPlugin authorizationPlugin;
     private AuthPlugin authPlugin;
+    private final Log log;
 
-    public PluginRealm()
+    public PluginRealm( LogProvider logProvider )
     {
-        super();
         setCredentialsMatcher( new AllowAllCredentialsMatcher() );
         setAuthenticationCachingEnabled( true );
         setAuthorizationCachingEnabled( true );
         setRolePermissionResolver( PredefinedRolesBuilder.rolePermissionResolver );
+        log = logProvider.getLog( getClass() );
     }
 
-    // TODO: Merge AuthenticationPlugin and AuthorizationPlugin into a single plugin interface?
-    public PluginRealm( AuthenticationPlugin authenticationPlugin, AuthorizationPlugin authorizationPlugin )
+    public PluginRealm( AuthenticationPlugin authenticationPlugin, AuthorizationPlugin authorizationPlugin,
+            LogProvider logProvider )
     {
-        this();
+        this( logProvider );
         this.authenticationPlugin = authenticationPlugin;
         this.authorizationPlugin = authorizationPlugin;
     }
 
-    public PluginRealm( AuthPlugin authPlugin )
+    public PluginRealm( AuthPlugin authPlugin, LogProvider logProvider )
     {
-        this();
+        this( logProvider );
         this.authPlugin = authPlugin;
     }
 

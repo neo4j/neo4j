@@ -148,6 +148,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
     {
         testAuthWithReaderUser( "neo", null );
     }
+
     protected void testAuthWithPublisherUser() throws Exception
     {
         testAuthWithPublisherUser( "tank", null );
@@ -169,9 +170,65 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
 
     protected void testAuthWithReaderUser( String username, String realm ) throws Exception
     {
-        // When
         assertAuth( username, "abc123", realm );
+        assertReadSucceeds();
+        assertWriteFails( username );
+    }
 
+    protected void testAuthWithPublisherUser( String username, String realm ) throws Exception
+    {
+        assertAuth( username, "abc123", realm );
+        assertWriteSucceeds();
+    }
+
+    protected void testAuthWithNoPermissionUser( String username ) throws Exception
+    {
+        assertAuth( username, "abc123" );
+        assertReadFails( username );
+    }
+
+    protected void assertAuth( String username, String password ) throws Exception
+    {
+        assertConnectionSucceeds( authToken( username, password, null ) );
+    }
+
+    protected void assertAuth( String username, String password, String realm ) throws Exception
+    {
+        assertConnectionSucceeds( authToken( username, password, realm ) );
+    }
+
+    protected void assertAuthFail( String username, String password ) throws Exception
+    {
+        assertConnectionFails( map( "principal", username, "credentials", password, "scheme", "basic" ) );
+    }
+
+    protected void assertConnectionSucceeds( Map<String,Object> authToken ) throws Exception
+    {
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", authToken ) ) );
+
+        // Then
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyReceives( msgSuccess() ) );
+    }
+
+    protected void assertConnectionFails( Map<String,Object> authToken ) throws Exception
+    {
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", authToken ) ) );
+
+        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
+                "The client is unauthorized due to authentication failure." ) ) );
+    }
+
+    protected void assertReadSucceeds() throws Exception
+    {
         // When
         client.send( TransportTestUtil.chunk(
                 run( "MATCH (n) RETURN n" ),
@@ -179,37 +236,10 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
 
         // Then
         assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
-
-        // When
-        client.send( TransportTestUtil.chunk(
-                run( "CREATE ()" ),
-                pullAll() ) );
-
-        // Then
-        assertThat( client, eventuallyReceives(
-                msgFailure( Status.Security.Forbidden,
-                        String.format( "Write operations are not allowed for '" + username + "'." ) ) ) );
     }
 
-    protected void testAuthWithPublisherUser( String username, String realm ) throws Exception
+    protected void assertReadFails( String username ) throws Exception
     {
-        // When
-        assertAuth( username, "abc123", realm );
-
-        // When
-        client.send( TransportTestUtil.chunk(
-                run( "CREATE ()" ),
-                pullAll() ) );
-
-        // Then
-        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
-    }
-
-    protected void testAuthWithNoPermissionUser( String username ) throws Exception
-    {
-        // When
-        assertAuth( username, "abc123" );
-
         // When
         client.send( TransportTestUtil.chunk(
                 run( "MATCH (n) RETURN n" ),
@@ -221,32 +251,28 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
                         String.format( "Read operations are not allowed for '%s'.", username ) ) ) );
     }
 
-    protected void assertAuth( String username, String password ) throws Exception
+    protected void assertWriteSucceeds() throws Exception
     {
-        assertAuth( username, password, null );
+        // When
+        client.send( TransportTestUtil.chunk(
+                run( "CREATE ()" ),
+                pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
-    protected void assertAuth( String username, String password, String realm ) throws Exception
+    protected void assertWriteFails( String username ) throws Exception
     {
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk( init( "TestClient/1.1", authToken( username, password, realm ) ) ) );
+        // When
+        client.send(TransportTestUtil.chunk(
+        run("CREATE ()"),
+        pullAll()));
 
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
-    }
-
-    protected void assertAuthFail( String username, String password ) throws Exception
-    {
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1", map( "principal", username,
-                                "credentials", password, "scheme", "basic" ) ) ) );
-
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
-                "The client is unauthorized due to authentication failure." ) ) );
+        // Then
+        assertThat( client,eventuallyReceives(
+            msgFailure(Status.Security.Forbidden,
+            String.format("Write operations are not allowed for '%s'.",username ) ) ) );
     }
 
     protected Map<String,Object> authToken( String username, String password, String realm )

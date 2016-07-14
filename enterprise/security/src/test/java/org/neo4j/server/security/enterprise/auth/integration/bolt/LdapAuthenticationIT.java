@@ -545,6 +545,13 @@ public class LdapAuthenticationIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldBeAbleToLoginWithLdapWhenSelectingRealmFromClient() throws Throwable
     {
+        restartNeo4jServerWithOverriddenSettings( settings -> {
+            settings.put( SecuritySettings.internal_authentication_enabled, "true" );
+            settings.put( SecuritySettings.internal_authorization_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
+        } );
+
         //--------------------------
         // When we have a native 'tank' that is read only, and ldap 'tank' that is publisher
         testCreateReaderUser("tank");

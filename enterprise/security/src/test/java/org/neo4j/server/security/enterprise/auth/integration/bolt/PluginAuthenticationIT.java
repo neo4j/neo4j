@@ -24,17 +24,8 @@ import org.junit.Test;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.api.exceptions.Status;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
-import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
-import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
-import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
-import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
@@ -48,50 +39,25 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldAuthenticateWithTestAuthenticationPlugin() throws Throwable
     {
-        // When
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1",
-                                map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic", "realm", "TestAuthenticationPlugin" ) ) ) );
-
-        // Then
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
+        assertConnectionSucceeds( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic", "realm",
+                "TestAuthenticationPlugin" ) );
     }
 
     @Test
     public void shouldAuthenticateAndAuthorizeWithTestAuthPlugin() throws Throwable
     {
-        // When
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1",
-                                map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic", "realm", "TestAuthPlugin" ) ) ) );
+        assertConnectionSucceeds(
+                map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic", "realm", "TestAuthPlugin" ) );
+        assertReadSucceeds();
+        assertWriteFails( "neo4j" );
+    }
 
-        // Then
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
-
-
-        // When
-        client.send( TransportTestUtil.chunk(
-                run( "MATCH (n) RETURN n" ),
-                pullAll() ) );
-
-        // Then
-        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
-
-        // When
-        client.send( TransportTestUtil.chunk(
-                run( "CREATE ()" ),
-                pullAll() ) );
-
-        // Then
-        assertThat( client, eventuallyReceives(
-                msgFailure( Status.Security.Forbidden,
-                        String.format( "Write operations are not allowed" ) ) ) );
-
+    @Test
+    public void shouldAuthenticateAndAuthorizeWithTestCombinedAuthPlugin() throws Throwable
+    {
+        assertConnectionSucceeds( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic", "realm",
+                "TestCombinedAuthPlugin" ) );
+        assertReadSucceeds();
+        assertWriteFails( "neo4j" );
     }
 }
