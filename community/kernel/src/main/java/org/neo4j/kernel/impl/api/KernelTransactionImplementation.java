@@ -73,7 +73,6 @@ import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
-import org.neo4j.kernel.impl.locking.deferred.DeferringLockClient;
 import org.neo4j.kernel.impl.locking.deferred.DeferringStatementLocks;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -355,11 +354,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
         currentStatement.acquire();
         return currentStatement;
-    }
-
-    private Locks.Client deferringLocks( Locks.Client locks )
-    {
-        return new DeferringLockClient( locks );
     }
 
     public void releaseStatement( Statement statement )
