@@ -200,7 +200,9 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
     @Override
     public synchronized long skip( long newIndex, long newTerm ) throws IOException
     {
-        log.info( "Skipping from {index: %d, term: %d} to {index: %d, term: %d}", state.appendIndex, state.terms.latest(), newIndex, newTerm );
+        log.info( "Skipping from {index: %d, term: %d} to {index: %d, term: %d}",
+                state.appendIndex, state.terms.latest(), newIndex, newTerm );
+
         if ( state.appendIndex < newIndex )
         {
             skipSegment( state.appendIndex, newIndex, newTerm );
