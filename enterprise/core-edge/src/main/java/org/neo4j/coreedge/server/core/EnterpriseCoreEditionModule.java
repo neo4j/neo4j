@@ -40,24 +40,18 @@ import org.neo4j.coreedge.catchup.tx.edge.TransactionLogCatchUpFactory;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
 import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
-import org.neo4j.coreedge.discovery.RaftDiscoveryServiceConnector;
 import org.neo4j.coreedge.raft.BatchingMessageHandler;
+import org.neo4j.coreedge.raft.ConsensusModule;
 import org.neo4j.coreedge.raft.ContinuousJob;
 import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.RaftServer;
-import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
-import org.neo4j.coreedge.raft.log.MonitoredRaftLog;
-import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.pruning.PruningScheduler;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
-import org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog;
-import org.neo4j.coreedge.raft.membership.CoreMemberSetBuilder;
 import org.neo4j.coreedge.raft.membership.MembershipWaiter;
-import org.neo4j.coreedge.raft.membership.RaftMembershipManager;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.net.LoggingInbound;
 import org.neo4j.coreedge.raft.net.LoggingOutbound;
@@ -67,14 +61,12 @@ import org.neo4j.coreedge.raft.net.RaftOutbound;
 import org.neo4j.coreedge.raft.replication.ProgressTrackerImpl;
 import org.neo4j.coreedge.raft.replication.RaftReplicator;
 import org.neo4j.coreedge.raft.replication.Replicator;
-import org.neo4j.coreedge.raft.replication.SendToMyself;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationStateMachine;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdGeneratorFactory;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdRangeAcquirer;
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.GlobalSessionTrackerState;
 import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
-import org.neo4j.coreedge.raft.replication.shipping.RaftLogShippingManager;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedLabelTokenHolder;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedPropertyKeyTokenHolder;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedRelationshipTypeTokenHolder;
@@ -92,10 +84,6 @@ import org.neo4j.coreedge.raft.state.DurableStateStorage;
 import org.neo4j.coreedge.raft.state.LongIndexMarshal;
 import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
-import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
-import org.neo4j.coreedge.raft.state.term.MonitoredTermStateStorage;
-import org.neo4j.coreedge.raft.state.term.TermState;
-import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.CoreMember.CoreMemberMarshal;
@@ -125,8 +113,8 @@ import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
-import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.enterprise.StandardSessionTracker;
+import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -156,6 +144,7 @@ import org.neo4j.udc.UsageData;
 
 import static java.time.Clock.systemUTC;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
 
 /**
@@ -166,7 +155,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 {
     public static final String CLUSTER_STATE_DIRECTORY_NAME = "cluster-state";
 
-    private final RaftInstance raft;
+    private final ConsensusModule consensusModule;
     private final CoreTopologyService discoveryService;
     private final LogProvider logProvider;
 
@@ -181,8 +170,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         try
         {
             procedures.register( new DiscoverMembersProcedure( discoveryService, logProvider ) );
-            procedures.register( new AcquireEndpointsProcedure( discoveryService, raft, logProvider ) );
-            procedures.register( new ClusterOverviewProcedure( discoveryService, raft, logProvider ) );
+            procedures.register( new AcquireEndpointsProcedure( discoveryService, consensusModule.raftInstance(), logProvider ) );
+            procedures.register( new ClusterOverviewProcedure( discoveryService, consensusModule.raftInstance(), logProvider ) );
         }
         catch ( ProcedureException e )
         {
@@ -291,10 +280,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
         final DelayedRenewableTimeoutService raftTimeoutService =
                 new DelayedRenewableTimeoutService( systemUTC(), logProvider );
 
-        RaftLog underlyingLog = createRaftLog( config, life, fileSystem, clusterStateDirectory, marshal, logProvider );
-
-        MonitoredRaftLog raftLog = new MonitoredRaftLog( underlyingLog, platformModule.monitors );
-
         NonBlockingChannels nonBlockingChannels = new NonBlockingChannels();
 
         CoreToCoreClient.ChannelInitializer channelInitializer =
@@ -327,98 +312,38 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         NotMyselfSelectionStrategy someoneElse = new NotMyselfSelectionStrategy( discoveryService, myself );
 
+        consensusModule =
+                new ConsensusModule( myself, platformModule, raftOutbound, clusterStateDirectory, raftTimeoutService,
+                        discoveryService, lastFlushedStorage.getInitialState() );
+
         coreState = dependencies.satisfyDependency( new CoreState(
-                raftLog, config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
+                consensusModule.raftLog(), config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
                 config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),
                 databaseHealthSupplier, logProvider, progressTracker, lastFlushedStorage,
                 sessionTrackerStorage, someoneElse, coreStateApplier, downloader, inFlightMap, platformModule.monitors ) );
 
         raftServer = new RaftServer( marshal, raftListenAddress, logProvider );
 
-        StateStorage<TermState> termState;
-        StateStorage<VoteState> voteState;
-        StateStorage<RaftMembershipState> raftMembershipStorage;
-
-        try
-        {
-            StateStorage<TermState> durableTermState = life.add(
-                    new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "term-state" ),
-                            "term-state", new TermState.Marshal(),
-                            config.get( CoreEdgeClusterSettings.term_state_size ), databaseHealthSupplier,
-                            logProvider ) );
-
-            termState = new MonitoredTermStateStorage( durableTermState, platformModule.monitors );
-
-            voteState = life.add(
-                    new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "vote-state" ),
-                            "vote-state", new VoteState.Marshal( new CoreMemberMarshal() ),
-                            config.get( CoreEdgeClusterSettings.vote_state_size ), databaseHealthSupplier,
-                            logProvider ) );
-
-            raftMembershipStorage = life.add(
-                    new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "membership-state" ),
-                            "membership-state", new RaftMembershipState.Marshal(),
-                            config.get( CoreEdgeClusterSettings.raft_membership_state_size ), databaseHealthSupplier,
-                            logProvider ) );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-
         LoggingInbound<RaftMessages.StoreIdAwareMessage> loggingRaftInbound =
                 new LoggingInbound<>( raftServer, messageLogger, myself );
-
-        long electionTimeout1 = config.get( CoreEdgeClusterSettings.leader_election_timeout );
-        long heartbeatInterval = electionTimeout1 / 3;
-
-        Integer expectedClusterSize = config.get( CoreEdgeClusterSettings.expected_core_cluster_size );
-
-        CoreMemberSetBuilder memberSetBuilder = new CoreMemberSetBuilder();
-
-        SendToMyself leaderOnlyReplicator =
-                new SendToMyself( myself, loggingOutbound );
-
-        RaftMembershipManager raftMembershipManager =
-                new RaftMembershipManager( leaderOnlyReplicator, memberSetBuilder, raftLog, logProvider,
-                        expectedClusterSize, electionTimeout1, systemUTC(),
-                        config.get( CoreEdgeClusterSettings.join_catch_up_timeout ), raftMembershipStorage,
-                        lastFlushedStorage.getInitialState() );
-
-        life.add( raftMembershipManager );
-
-        RaftLogShippingManager logShipping =
-                new RaftLogShippingManager( loggingOutbound, logProvider, raftLog, systemUTC(),
-                        myself, raftMembershipManager, electionTimeout1,
-                        config.get( CoreEdgeClusterSettings.catchup_batch_size ),
-                        config.get( CoreEdgeClusterSettings.log_shipping_max_lag ), inFlightMap );
-
-        RaftInstance raftInstance =
-                new RaftInstance( myself, termState, voteState, raftLog, coreState, electionTimeout1,
-                        heartbeatInterval, raftTimeoutService, loggingOutbound, logProvider, raftMembershipManager,
-                        logShipping, databaseHealthSupplier, inFlightMap, platformModule.monitors );
 
         int queueSize = config.get( CoreEdgeClusterSettings.raft_in_queue_size );
         int maxBatch = config.get( CoreEdgeClusterSettings.raft_in_queue_max_batch );
         BatchingMessageHandler batchingMessageHandler =
-                new BatchingMessageHandler( raftInstance, logProvider, queueSize, maxBatch, localDatabase, coreState );
+                new BatchingMessageHandler( consensusModule.raftInstance(), logProvider, queueSize, maxBatch, localDatabase, coreState );
 
         life.add( new ContinuousJob( platformModule.jobScheduler, new JobScheduler.Group( "raft-batch-handler", NEW_THREAD ),
                 batchingMessageHandler ) );
 
         loggingRaftInbound.registerHandler( batchingMessageHandler );
 
-        life.add( new RaftDiscoveryServiceConnector( discoveryService, raftInstance ) );
-
-        life.add(logShipping);
-
-        raft = dependencies.satisfyDependency( raftInstance );
+        dependencies.satisfyDependency( consensusModule.raftInstance() );
 
         life.add( new PruningScheduler( coreState, platformModule.jobScheduler,
                 config.get( CoreEdgeClusterSettings.raft_log_pruning_frequency ) ) );
 
         RaftReplicator replicator =
-                new RaftReplicator( raft, myself,
+                new RaftReplicator( consensusModule.raftInstance(), myself,
                         loggingOutbound,
                         sessionPool, progressTracker,
                         new ExponentialBackoffStrategy( 10, SECONDS ) );
@@ -483,7 +408,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         CoreStateMachines coreStateMachines = new CoreStateMachines( replicatedTxStateMachine, labelTokenStateMachine,
                 relationshipTypeTokenStateMachine, propertyKeyTokenStateMachine, replicatedLockTokenStateMachine,
-                idAllocationStateMachine, coreState, txLogState, raftLog, localDatabase );
+                idAllocationStateMachine, coreState, txLogState, consensusModule.raftLog(), localDatabase );
 
         commitProcessFactory = ( appender, applier, ignored ) -> {
             TransactionRepresentationCommitProcess localCommit =
@@ -517,7 +442,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
 
         long leaderLockTokenTimeout = config.get( CoreEdgeClusterSettings.leader_lock_token_timeout );
-        Locks lockManager = createLockManager( config, logging, replicator, myself, raft, leaderLockTokenTimeout,
+        Locks lockManager = createLockManager( config, logging, replicator, myself, consensusModule.raftInstance(), leaderLockTokenTimeout,
                 replicatedLockTokenStateMachine );
 
         this.lockManager = dependencies.satisfyDependency( lockManager );
@@ -531,48 +456,15 @@ public class EnterpriseCoreEditionModule extends EditionModule
         long joinCatchupTimeout = config.get( CoreEdgeClusterSettings.join_catch_up_timeout );
 
         life.add( CoreServerStartupProcess.createLifeSupport(
-                platformModule.dataSourceManager, replicatedIdGeneratorFactory, raft, coreState, raftServer,
+                platformModule.dataSourceManager, replicatedIdGeneratorFactory, consensusModule.raftInstance(), coreState, raftServer,
                 catchupServer, raftTimeoutService, membershipWaiter, joinCatchupTimeout, logProvider ) );
 
         dependencies.satisfyDependency( createSessionTracker() );
     }
 
-    private RaftLog createRaftLog( Config config, LifeSupport life, FileSystemAbstraction fileSystem,
-            File clusterStateDirectory, CoreReplicatedContentMarshal marshal, LogProvider logProvider )
-    {
-        RaftLogImplementation raftLogImplementation =
-                RaftLogImplementation.valueOf( config.get( CoreEdgeClusterSettings.raft_log_implementation ) );
-        switch ( raftLogImplementation )
-        {
-            case IN_MEMORY:
-            {
-                return new InMemoryRaftLog();
-            }
-
-            case SEGMENTED:
-            {
-                long rotateAtSize = config.get( CoreEdgeClusterSettings.raft_log_rotation_size );
-                int readerPoolSize = config.get( CoreEdgeClusterSettings.raft_log_reader_pool_size );
-
-                String pruningStrategyConfig = config.get( CoreEdgeClusterSettings.raft_log_pruning_strategy );
-
-                return life.add( new SegmentedRaftLog(
-                        fileSystem,
-                        new File( clusterStateDirectory, RaftLog.PHYSICAL_LOG_DIRECTORY_NAME ),
-                        rotateAtSize,
-                        marshal,
-                        logProvider,
-                        pruningStrategyConfig,
-                        readerPoolSize, systemUTC() ) );
-            }
-            default:
-                throw new IllegalStateException( "Unknown raft log implementation: " + raftLogImplementation );
-        }
-    }
-
     public boolean isLeader()
     {
-        return raft.currentRole() == Role.LEADER;
+        return consensusModule.raftInstance().currentRole() == Role.LEADER;
     }
 
     private File createClusterStateDirectory( File dir, FileSystemAbstraction fileSystem )

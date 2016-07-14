@@ -409,16 +409,13 @@ public class RaftInstanceTest
     }
 
     @Test
-    public void shouldPanicWhenFailingToHandleMessageAtBootstrapTime() throws Throwable
+    public void shouldThrowBootstrapExceptionIfUnableToBootstrap() throws Throwable
     {
         // given
-        TestDatabaseHealth databaseHealth = new TestDatabaseHealth();
-
         ExplodingRaftLog explodingLog = new ExplodingRaftLog();
         explodingLog.startExploding();
         RaftInstance raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .raftLog( explodingLog )
-                .databaseHealth( databaseHealth )
                 .build();
         try
         {
@@ -428,33 +425,8 @@ public class RaftInstanceTest
         }
         catch ( RaftInstance.BootstrapException e )
         {
-            // then
-            assertTrue( databaseHealth.hasPanicked() );
+            // expected
         }
-    }
-
-    @Test
-    public void shouldPanicWhenFailingToHandleMessageUnderNormalConditions() throws Throwable
-    {
-        // given
-        TestDatabaseHealth databaseHealth = new TestDatabaseHealth();
-
-        ExplodingRaftLog explodingLog = new ExplodingRaftLog();
-
-        RaftInstance raft = new RaftInstanceBuilder( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
-                .raftLog( explodingLog )
-                .databaseHealth( databaseHealth )
-                .build();
-
-        raft.bootstrapWithInitialMembers( new RaftTestGroup( asSet( myself, member1, member2 ) ) );
-        explodingLog.startExploding();
-
-        // when
-        raft.handle( new RaftMessages.AppendEntries.Request( member1, 0, -1, -1,
-                new RaftLogEntry[]{new RaftLogEntry( 0, new ReplicatedString( "hello" ) )}, 0 ) );
-
-        // then
-        assertTrue( databaseHealth.hasPanicked() );
     }
 
     @Test

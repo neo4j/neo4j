@@ -68,7 +68,7 @@ public class AppendEntriesMessageFlowTest
     }
 
     @Test
-    public void shouldReturnFalseOnAppendRequestFromOlderTerm()
+    public void shouldReturnFalseOnAppendRequestFromOlderTerm() throws Exception
     {
         // when
         raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( -1 ).prevLogIndex( 0 )
@@ -81,7 +81,7 @@ public class AppendEntriesMessageFlowTest
     }
 
     @Test
-    public void shouldReturnTrueOnAppendRequestWithFirstLogEntry()
+    public void shouldReturnTrueOnAppendRequestWithFirstLogEntry() throws Exception
     {
         // when
         raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 0 ).prevLogIndex( -1 )
@@ -93,7 +93,7 @@ public class AppendEntriesMessageFlowTest
     }
 
     @Test
-    public void shouldReturnTrueOnAppendRequestWithFirstLogEntryAndIgnorePrevTerm()
+    public void shouldReturnTrueOnAppendRequestWithFirstLogEntryAndIgnorePrevTerm() throws Exception
     {
         // when
         raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 0 ).prevLogIndex( -1 )
@@ -106,7 +106,7 @@ public class AppendEntriesMessageFlowTest
     }
 
     @Test
-    public void shouldReturnFalseOnAppendRequestWhenPrevLogEntryNotMatched()
+    public void shouldReturnFalseOnAppendRequestWhenPrevLogEntryNotMatched() throws Exception
     {
         // when
         raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 0 ).prevLogIndex( 0 )
@@ -118,7 +118,7 @@ public class AppendEntriesMessageFlowTest
     }
 
     @Test
-    public void shouldAcceptSequenceOfAppendEntries()
+    public void shouldAcceptSequenceOfAppendEntries() throws Exception
     {
         // when
         raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 0 ).prevLogIndex( -1 )
@@ -153,7 +153,7 @@ public class AppendEntriesMessageFlowTest
     }
 
     @Test
-    public void shouldReturnFalseIfLogHistoryDoesNotMatch()
+    public void shouldReturnFalseIfLogHistoryDoesNotMatch() throws Exception
     {
         raft.handle( appendEntriesRequest().from( otherMember ).leaderTerm( 0 ).prevLogIndex( -1 )
                 .prevLogTerm( -1 ).logEntry( new RaftLogEntry( 0, data( 1 ) ) ).build() );
