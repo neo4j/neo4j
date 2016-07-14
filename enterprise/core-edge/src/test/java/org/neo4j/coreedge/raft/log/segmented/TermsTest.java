@@ -40,7 +40,7 @@ public class TermsTest
 
         // then
         assertTermInRange( -1, prevIndex, ( index ) -> -1L );
-        assertEquals( prevTerm, terms.get( prevIndex ) );
+        assertEquals( prevTerm, terms.getTermFor( prevIndex ) );
         assertTermInRange( prevIndex + 1, prevIndex + 10, ( index ) -> -1L );
     }
 
@@ -56,8 +56,8 @@ public class TermsTest
 
         // then
         assertTermInRange( 0, count, ( index ) -> index * 2L );
-        assertEquals( -1, terms.get( -1 ) );
-        assertEquals( -1, terms.get( count ) );
+        assertEquals( -1, terms.getTermFor( -1 ) );
+        assertEquals( -1, terms.getTermFor( count ) );
     }
 
     @Test
@@ -154,7 +154,7 @@ public class TermsTest
         terms = new Terms( prevIndex, term );
 
         appendRange( prevIndex + 1, 20, term );
-        assertEquals( term, terms.get( 19 ) );
+        assertEquals( term, terms.getTermFor( 19 ) );
 
         // when
         long truncateFromIndex = 15;
@@ -267,7 +267,7 @@ public class TermsTest
 
         // then
         assertTermInRange( prevIndex, skipIndex, -1 );
-        assertEquals( skipTerm, terms.get( skipIndex ) );
+        assertEquals( skipTerm, terms.getTermFor( skipIndex ) );
 
         // when
         appendRange( skipIndex + 1, skipIndex + 20, skipTerm );
@@ -276,16 +276,35 @@ public class TermsTest
         assertTermInRange( skipIndex + 1, skipIndex + 20, skipTerm );
     }
 
+    @Test
+    public void shouldMaintainSaneMemoryUseForTerms() throws Exception
+    {
+        // given
+        terms = new Terms( 1, 1 );
+
+        // when
+        for ( int i = 2; i < 1_000_000; i++ )
+        {
+            // then nothing blows up, even after many entries and pruning every 100
+            terms.append( i, i );
+
+            if ( i % 100 == 0 )
+            {
+                terms.prune( i );
+            }
+        }
+    }
+
     private void assertTermInRange( long from, long to, long expectedTerm )
     {
         assertTermInRange( from, to, ( index ) -> expectedTerm );
     }
 
-    private void assertTermInRange( long from, long to, Function<Long,Long> expectedTermFunction )
+    private void assertTermInRange( long from, long to, Function<Long, Long> expectedTermFunction )
     {
         for ( long index = from; index < to; index++ )
         {
-            assertEquals( (long) expectedTermFunction.apply( index ), terms.get( index ) );
+            assertEquals( (long) expectedTermFunction.apply( index ), terms.getTermFor( index ) );
         }
     }
 
@@ -294,7 +313,7 @@ public class TermsTest
         appendRange( from, to, ( index ) -> term );
     }
 
-    private void appendRange( long from, long to, Function<Long,Long> termFunction )
+    private void appendRange( long from, long to, Function<Long, Long> termFunction )
     {
         for ( long index = from; index < to; index++ )
         {

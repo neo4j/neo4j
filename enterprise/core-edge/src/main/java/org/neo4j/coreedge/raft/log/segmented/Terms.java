@@ -66,8 +66,8 @@ public class Terms
         if ( term != terms[size - 1] )
         {
             setSize( size + 1 );
-            indexes[size - 1] = index;
-            terms[size - 1] = term;
+            indexes[size - 1 ] = index;
+            terms[size - 1 ] = term;
         }
     }
 
@@ -107,7 +107,30 @@ public class Terms
     synchronized void prune( long upToIndex )
     {
         min = max( upToIndex, min );
-        // could also prune out array
+
+        int offset = find( min );
+
+        if ( offset == -1 )
+        {
+            return;
+        }
+
+        size = 1;
+        indexes = Arrays.copyOfRange( indexes, offset, indexes.length );
+        terms = Arrays.copyOfRange( terms, offset, terms.length);
+    }
+
+    private int find( long min )
+    {
+        for ( int i = 0; i < indexes.length; i++ )
+        {
+            if ( indexes[i] == min )
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     synchronized void skip( long prevIndex, long prevTerm )
@@ -120,7 +143,7 @@ public class Terms
         terms[0] = prevTerm;
     }
 
-    synchronized long get( long logIndex )
+    synchronized long getTermFor( long logIndex )
     {
         if ( logIndex == -1 || logIndex < min || logIndex > max )
         {
