@@ -34,14 +34,15 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.OtherThreadRule;
-import org.neo4j.test.Race;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -135,7 +136,7 @@ public class DeferringLocksIT
             {
                 try ( Transaction tx = db.beginTx() )
                 {
-                    Object key = node.removeProperty( PROPERTY_KEY );
+                    node.removeProperty( PROPERTY_KEY );
                     tx.success();
                     barrier.reached();
                 }
@@ -187,12 +188,20 @@ public class DeferringLocksIT
                 return null;
             }
         } );
-        try ( Transaction tx = db.beginTx() )
+        try
         {
-            barrier.await();
-            db.getNodeById( nodeId ).setProperty( PROPERTY_KEY, VALUE_2 );
-            tx.success();
-            barrier.release();
+            try ( Transaction tx = db.beginTx() )
+            {
+                barrier.await();
+                db.getNodeById( nodeId ).setProperty( PROPERTY_KEY, VALUE_2 );
+                tx.success();
+                barrier.release();
+            }
+        }
+        catch ( TransactionFailureException e )
+        {
+            // Node was already deleted, fine.
+            assertThat( e.getCause(), instanceOf( InvalidRecordException.class ) );
         }
 
         future.get();
@@ -214,39 +223,35 @@ public class DeferringLocksIT
     @Test
     public void readOwnChangesFromRacingIndexNoBlock() throws Throwable
     {
-        Race race = new Race();
+        t2.execute( new WorkerCommand<Void,Void>()
+        {
+            @Override
+            public Void doWork( Void state ) throws Exception
+            {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    createNodeWithProperty( LABEL, PROPERTY_KEY, VALUE_1 );
+                    assertNodeWith( LABEL, PROPERTY_KEY, VALUE_1 );
 
-        race.addContestant( new Runnable()
-                            {
-                                @Override
-                                public void run()
-                                {
-                                    try ( Transaction tx = db.beginTx() )
-                                    {
-                                        createNodeWithProperty( LABEL, PROPERTY_KEY, VALUE_1 );
-                                        assertNodeWith( LABEL, PROPERTY_KEY, VALUE_1 );
+                    tx.success();
+                }
+                return null;
+            }
+        } );
 
-                                        tx.success();
-                                    }
-                                }
-                            }
-        );
-
-        race.addContestant( new Runnable()
-                            {
-                                @Override
-                                public void run()
-                                {
-                                    try ( Transaction tx = db.beginTx() )
-                                    {
-                                        createAndAwaitIndex( LABEL, PROPERTY_KEY );
-                                        tx.success();
-                                    }
-                                }
-                            }
-        );
-
-        race.go();
+        t3.execute( new WorkerCommand<Void,Void>()
+        {
+            @Override
+            public Void doWork( Void state ) throws Exception
+            {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    createAndAwaitIndex( LABEL, PROPERTY_KEY );
+                    tx.success();
+                }
+                return null;
+            }
+        } );
 
         assertInTxNodeWith( LABEL, PROPERTY_KEY, VALUE_1 );
     }

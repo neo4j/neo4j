@@ -307,7 +307,7 @@ class SlaveLocksClient implements Locks.Client
             }
             catch ( ComException e )
             {
-                throw new DistributedLockFailureException( "Cannot get shared lock on master", master, e );
+                throw new DistributedLockFailureException( "Cannot get shared lock(s) on master", master, e );
             }
         }
     }
@@ -322,7 +322,7 @@ class SlaveLocksClient implements Locks.Client
         }
         catch ( ComException e )
         {
-            throw new DistributedLockFailureException( "Cannot get exclusive lock on master", master, e );
+            throw new DistributedLockFailureException( "Cannot get exclusive lock(s) on master", master, e );
         }
     }
 

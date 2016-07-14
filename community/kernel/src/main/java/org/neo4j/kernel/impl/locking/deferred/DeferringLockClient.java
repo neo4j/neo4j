@@ -86,6 +86,8 @@ public class DeferringLockClient implements Locks.Client
 
     void acquireDeferredLocks()
     {
+        assertNotStopped();
+
         long[] current = new long[10];
         int cursor = 0;
         Locks.ResourceType currentType = null;
@@ -117,8 +119,6 @@ public class DeferringLockClient implements Locks.Client
 
     private void flushLocks( long[] current, int cursor, Locks.ResourceType currentType, boolean exclusive )
     {
-        assertNotStopped();
-
         if ( cursor > 0 )
         {
             long[] resourceIds = Arrays.copyOf( current, cursor );

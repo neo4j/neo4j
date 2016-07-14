@@ -223,11 +223,10 @@ public class CommunityEditionModule
 
     public static Locks createLockManager( Config config, LogService logging )
     {
-        // If we want to use deferred locking then use the community lock manager since it won't give
-        // false positives about deadlocks. Besides when we use deferred locking we batch locks
-        // and so the locking should scale better anyway. So if we configured deferred locking then
-        // we'll simply strole right through the loop immediately below because there's no external
-        // lock manager (of ours) named "community".
+        // If we want to use deferred locking then use the community lock manager.
+        // When we use deferred locking we batch locks and so the locking should scale better.
+        // So if we configured deferred locking then we'll simply strole right through the loop immediately below
+        // because there's no external lock manager (of ours) named "community".
         String key = config.get( GraphDatabaseFacadeFactory.Configuration.deferred_locking ) ?
                 "community" : config.get( GraphDatabaseFacadeFactory.Configuration.lock_manager );
         for ( Locks.Factory candidate : Service.load( Locks.Factory.class ) )
