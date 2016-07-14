@@ -19,24 +19,28 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.server.security.auth.BasicPasswordPolicy;
-import org.neo4j.server.security.auth.InMemoryUserRepository;
-import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
-
-import static java.time.Clock.systemUTC;
 
 class NeoShallowEmbeddedInteraction implements NeoInteractionLevel<EnterpriseAuthSubject>
 {
@@ -46,11 +50,22 @@ class NeoShallowEmbeddedInteraction implements NeoInteractionLevel<EnterpriseAut
 
     NeoShallowEmbeddedInteraction() throws Throwable
     {
-        db = (GraphDatabaseFacade) new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase();
-        InternalFlatFileRealm internalRealm =
-                new InternalFlatFileRealm( new InMemoryUserRepository(), new InMemoryRoleRepository(),
-                        new BasicPasswordPolicy(), new RateLimitedAuthenticationStrategy( systemUTC(), 3 ) );
-        manager = new MultiRealmAuthManager( internalRealm, Collections.singletonList( internalRealm ) );
+        Path IMPERMANENT_DB_ROLES_PATH = Paths.get( "target/test-data/impermanent-db/data/dbms/roles" );
+        if ( Files.exists( IMPERMANENT_DB_ROLES_PATH ) )
+        {
+            Files.delete( IMPERMANENT_DB_ROLES_PATH );
+        }
+
+        Map<Setting<?>, String> settings = new HashMap<>();
+        settings.put( boltConnector( "0" ).enabled, "true" );
+        settings.put( boltConnector( "0" ).encryption_level, OPTIONAL.name() );
+        settings.put( BoltKernelExtension.Settings.tls_key_file, NeoInteractionLevel.tempPath( "key", ".key" ) );
+        settings.put( BoltKernelExtension.Settings.tls_certificate_file, NeoInteractionLevel.tempPath( "cert", ".cert" ) );
+        settings.put( GraphDatabaseSettings.auth_enabled, "true" );
+        settings.put( GraphDatabaseSettings.auth_manager, "enterprise-auth-manager" );
+
+        db = (GraphDatabaseFacade) new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase( settings );
+        manager = db.getDependencyResolver().resolveDependency( MultiRealmAuthManager.class );
         manager.init();
         manager.start();
         userManager = manager.getUserManager();
@@ -124,8 +139,8 @@ class NeoShallowEmbeddedInteraction implements NeoInteractionLevel<EnterpriseAut
     @Override
     public void tearDown() throws Throwable
     {
-        db.shutdown();
         manager.stop();
         manager.shutdown();
+        db.shutdown();
     }
 }

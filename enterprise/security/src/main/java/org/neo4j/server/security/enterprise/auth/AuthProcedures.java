@@ -81,6 +81,8 @@ public class AuthProcedures
         else
         {
             enterpriseSubject.getUserManager().setUserPassword( username, newPassword );
+            terminateTransactionsForValidUser( username );
+            terminateSessionsForValidUser( username );
         }
     }
 
@@ -113,6 +115,8 @@ public class AuthProcedures
             throw new InvalidArgumentsException( "Deleting yourself is not allowed!" );
         }
         adminSubject.getUserManager().deleteUser( username );
+        terminateTransactionsForValidUser( username );
+        terminateSessionsForValidUser( username );
     }
 
     @Procedure( name = "dbms.suspendUser", mode = DBMS )
@@ -124,6 +128,8 @@ public class AuthProcedures
             throw new InvalidArgumentsException( "Suspending yourself is not allowed!" );
         }
         adminSubject.getUserManager().suspendUser( username );
+        terminateTransactionsForValidUser( username );
+        terminateSessionsForValidUser( username );
     }
 
     @Procedure( name = "dbms.activateUser", mode = DBMS )
@@ -209,16 +215,7 @@ public class AuthProcedures
     {
         ensureSelfOrAdminAuthSubject( username );
 
-        Long killCount = 0L;
-        for ( KernelTransaction tx : getActiveTransactions() )
-        {
-            if ( tx.mode().name().equals( username ) && tx != this.tx )
-            {
-                tx.markForTermination( Status.Transaction.Terminated );
-                killCount += 1;
-            }
-        }
-        return Stream.of( new TransactionTerminationResult( username, killCount ) );
+        return terminateTransactionsForValidUser( username );
     }
 
     @Procedure( name = "dbms.listSessions", mode = DBMS )
@@ -246,6 +243,27 @@ public class AuthProcedures
 
         subject.getUserManager().getUser( username );
 
+        return terminateSessionsForValidUser( username );
+    }
+
+    // ----------------- helpers ---------------------
+
+    private Stream<TransactionTerminationResult> terminateTransactionsForValidUser( String username )
+    {
+        Long killCount = 0L;
+        for ( KernelTransaction tx : getActiveTransactions() )
+        {
+            if ( tx.mode().name().equals( username ) && tx != this.tx )
+            {
+                tx.markForTermination( Status.Transaction.Terminated );
+                killCount += 1;
+            }
+        }
+        return Stream.of( new TransactionTerminationResult( username, killCount ) );
+    }
+
+    private Stream<SessionResult> terminateSessionsForValidUser( String username )
+    {
         Long killCount = 0L;
         for ( HaltableUserSession session : getSessionTracker().getActiveSessions() )
         {
@@ -258,8 +276,6 @@ public class AuthProcedures
         }
         return Stream.of( new SessionResult( username, killCount ) );
     }
-
-    // ----------------- helpers ---------------------
 
     private Set<KernelTransaction> getActiveTransactions()
     {

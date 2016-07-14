@@ -26,12 +26,21 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
+import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
+import org.neo4j.bolt.v1.transport.socket.client.Connection;
+import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static org.neo4j.bolt.v1.messaging.message.Messages.init;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyRecieves;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.security.AuthenticationResult.FAILURE;
 import static org.neo4j.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
@@ -46,6 +55,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
 {
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
+
     //---------- Change own password -----------
 
     // Enterprise version of test in BuiltInProceduresIT.callChangePasswordWithAccessModeInDbmsMode.
@@ -316,6 +326,18 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
                 "Old password and new password cannot be the same" );
     }
 
+    @Test
+    public void shouldTerminateTransactionsOnChangeUserPassword() throws Throwable
+    {
+        shouldTerminateTransactionsForUser( writeSubject, "dbms.changeUserPassword( '%s', 'newPassword' )" );
+    }
+
+    @Test
+    public void shouldTerminateSessionsOnChangeUserPassword() throws Exception
+    {
+        shouldTerminateSessionsForUser( "writeSubject", "abc", "dbms.changeUserPassword( '%s', 'newPassword' )" );
+    }
+
     //---------- create user -----------
 
     @Test
@@ -415,6 +437,18 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         testFailDeleteUser( adminSubject, "adminSubject", "Deleting yourself is not allowed" );
     }
 
+    @Test
+    public void shouldTerminateTransactionsOnUserDeletion() throws Throwable
+    {
+        shouldTerminateTransactionsForUser( writeSubject, "dbms.deleteUser( '%s' )" );
+    }
+
+    @Test
+    public void shouldTerminateSessionsOnUserDeletion() throws Exception
+    {
+        shouldTerminateSessionsForUser( "writeSubject", "abc", "dbms.deleteUser( '%s' )" );
+    }
+
     //---------- suspend user -----------
 
     @Test
@@ -450,6 +484,18 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     public void shouldFailToSuspendYourself() throws Exception
     {
         assertFail( adminSubject, "CALL dbms.suspendUser('adminSubject')", "Suspending yourself is not allowed" );
+    }
+
+    @Test
+    public void shouldTerminateTransactionsOnUserSuspension() throws Throwable
+    {
+        shouldTerminateTransactionsForUser( writeSubject, "dbms.suspendUser( '%s' )" );
+    }
+
+    @Test
+    public void shouldTerminateSessionsOnUserSuspension() throws Exception
+    {
+        shouldTerminateSessionsForUser( "writeSubject", "abc", "dbms.suspendUser( '%s' )" );
     }
 
     //---------- activate user -----------
@@ -875,4 +921,49 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         testFailCreateUser( schemaSubject, PERMISSION_DENIED );
         assertEmpty( schemaSubject, "CALL dbms.changePassword( '321' )" );
     }
+
+    // --------------------- helpers -----------------------
+
+    private void shouldTerminateTransactionsForUser( S subject, String procedure ) throws Throwable
+    {
+        ThreadedTransactionCreate<S> userThread = new ThreadedTransactionCreate<>( neo );
+        userThread.execute( threading, subject );
+        userThread.barrier.await();
+
+        assertEmpty( adminSubject, "CALL " + String.format(procedure, neo.nameOf( subject ) ) );
+
+        assertSuccess( adminSubject, "CALL dbms.listTransactions()",
+                r -> assertKeyIsMap( r, "username", "activeTransactions", map( "adminSubject", "1" ) ) );
+
+        userThread.closeAndAssertTransactionTermination();
+
+        assertEmpty( adminSubject, "MATCH (n:Test) RETURN n.name AS name" );
+    }
+
+    private void shouldTerminateSessionsForUser( String username, String password, String procedure ) throws Exception
+    {
+        Connection boltConnection = new SocketConnection();
+        HostnamePort boltAddress = new HostnamePort( "localhost:7687" );
+        authenticate( boltConnection, boltAddress, username, password );
+
+        assertEmpty( adminSubject,  "CALL " + String.format(procedure, username ) );
+
+        assertEmpty( adminSubject, "CALL dbms.listSessions()" );
+    }
+
+    private void authenticate( Connection client, HostnamePort address, String username, String password )
+            throws Exception
+    {
+        Map<String, Object> authToken =
+                map( "principal", username, "credentials", password, "scheme", "basic" );
+
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", authToken ) ) );
+
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+    }
+
 }
