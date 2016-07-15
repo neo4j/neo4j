@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache;
 
 import java.io.Flushable;
 import java.io.IOException;
+import java.util.Optional;
 
 /**
  * IOLimiter instances can be passed to the {@link PageCache#flushAndForce(IOLimiter)} and
@@ -101,6 +102,16 @@ public interface IOLimiter
     default void enableLimit()
     {
         // Same as for disableLimit().
+    }
+
+    /**
+     * Get the configured max IOPS that this limiter will target, if any.
+     * @return An {@code Optional.of( the configured limit )}, or {@code Optional.empty()} if there is no configured
+     * limit.
+     */
+    default Optional<Integer> getMaxIOPS()
+    {
+        return Optional.empty();
     }
 
     /**
