@@ -219,7 +219,7 @@ class SlaveLocksClient implements Locks.Client
             if ( !stopped )
             {
                 endLockSessionOnMaster( true );
-                stopped = false;
+                stopped = true;
             }
             initialized = false;
         }

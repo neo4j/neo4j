@@ -22,6 +22,7 @@ package org.neo4j.ha.upgrade;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -46,6 +47,7 @@ import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.com.master.ConversationManager;
+import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.master.MasterImpl.Monitor;
 import org.neo4j.kernel.ha.com.master.MasterImplTest;
@@ -87,11 +89,14 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_RESPONSE_UNPACKER;
+import static org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import static org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.DEFAULT_BATCH_SIZE;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -197,6 +202,37 @@ public class MasterClientTest
                 .apply( any( TransactionRepresentation.class ), any( ValidatedIndexUpdates.class ),
                         any( LockGroup.class ), anyLong(), any( TransactionApplicationMode.class ) );
         verify( txIdStore, times( TX_LOG_COUNT ) ).transactionClosed( anyLong(), anyLong(), anyLong() );
+    }
+
+    @Test
+    public void endLockSessionDoesNotUnpackResponse() throws Throwable
+    {
+        StoreId storeId = new StoreId( 1, 2, 3, 4 );
+        long txChecksum = 123;
+        long lastAppliedTx = 5;
+
+        ResponseUnpacker responseUnpacker = mock( ResponseUnpacker.class );
+        MasterImpl.SPI masterImplSPI = MasterImplTest.mockedSpi( storeId );
+        when( masterImplSPI.packTransactionObligationResponse( any( RequestContext.class ), Matchers.anyObject() ) )
+                .thenReturn( Response.empty() );
+        when( masterImplSPI.getTransactionChecksum( anyLong() ) ).thenReturn( txChecksum );
+
+        cleanupRule.add( newMasterServer( masterImplSPI ) );
+
+        MasterClient214 client = cleanupRule.add( newMasterClient214( storeId, responseUnpacker ) );
+
+        HandshakeResult handshakeResult;
+        try ( Response<HandshakeResult> handshakeResponse = client.handshake( 1, storeId ) )
+        {
+            handshakeResult = handshakeResponse.response();
+        }
+        verify( responseUnpacker ).unpackResponse( any( Response.class ), any( TxHandler.class ) );
+        reset( responseUnpacker );
+
+        RequestContext context = new RequestContext( handshakeResult.epoch(), 1, 1, lastAppliedTx, txChecksum );
+
+        client.endLockSession( context, false );
+        verify( responseUnpacker, never() ).unpackResponse( any( Response.class ), any( TxHandler.class ) );
     }
 
     private static MasterImpl.SPI mockMasterImplSpiWith( StoreId storeId )
