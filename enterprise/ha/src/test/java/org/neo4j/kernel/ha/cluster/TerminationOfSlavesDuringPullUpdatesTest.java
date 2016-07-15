@@ -54,6 +54,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.runners.Parameterized.Parameters;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.kernel.impl.api.KernelTransactions.tx_termination_aware_locks;
 
 @RunWith( Parameterized.class )
 public class TerminationOfSlavesDuringPullUpdatesTest
@@ -68,8 +69,10 @@ public class TerminationOfSlavesDuringPullUpdatesTest
             .withSharedSetting( HaSettings.tx_push_factor, "0" );
 
     @Parameter
-    public ReadContestantAction action;
+    public ReadContestantActions action;
     @Parameter( 1 )
+    public boolean txTerminationAwareLocks;
+    @Parameter( 2 )
     public String name;
 
     @Parameters( name = "{1}" )
@@ -77,18 +80,35 @@ public class TerminationOfSlavesDuringPullUpdatesTest
     {
         return Arrays.<Object>asList( new Object[][]
                 {
-                        {new PropertyValueReadContestantAction( longString( 'a' ), longString( 'b' ),
-                                true ), "NodeStringProperty"},
-                        {new PropertyValueReadContestantAction( longString( 'a' ), longString( 'b' ),
-                                false ), "RelationshipStringProperty"},
-                        {new PropertyValueReadContestantAction( longArray( 'a' ), longArray( 'b' ),
-                                true ), "NodeArrayProperty"},
-                        {new PropertyValueReadContestantAction( longArray( 'a' ), longArray( 'b' ),
-                                false ), "RelationshipArrayProperty"},
-                        {new PropertyKeyReadContestantAction( 'a', 'b',
-                                true ), "NodePropertyKeys"},
-                        {new PropertyKeyReadContestantAction( 'a', 'b',
-                                false ), "RelationshipPropertyKeys"}
+                        {new PropertyValueActions( longString( 'a' ), longString( 'b' ), true ),
+                                true, "NodeStringProperty[txTerminationAwareLocks=yes]"},
+                        {new PropertyValueActions( longString( 'a' ), longString( 'b' ), true ),
+                                false, "NodeStringProperty[txTerminationAwareLocks=no]"},
+
+                        {new PropertyValueActions( longString( 'a' ), longString( 'b' ), false ),
+                                true, "RelationshipStringProperty[txTerminationAwareLocks=yes]"},
+                        {new PropertyValueActions( longString( 'a' ), longString( 'b' ), false ),
+                                false, "RelationshipStringProperty[txTerminationAwareLocks=no]"},
+
+                        {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), true ),
+                                true, "NodeArrayProperty[txTerminationAwareLocks=yes]"},
+                        {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), true ),
+                                false, "NodeArrayProperty[txTerminationAwareLocks=no]"},
+
+                        {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), false ),
+                                true, "RelationshipArrayProperty[txTerminationAwareLocks=yes]"},
+                        {new PropertyValueActions( longArray( 'a' ), longArray( 'b' ), false ),
+                                false, "RelationshipArrayProperty[txTerminationAwareLocks=no]"},
+
+                        {new PropertyKeyActions( 'a', 'b', true ),
+                                true, "NodePropertyKeys[txTerminationAwareLocks=yes]"},
+                        {new PropertyKeyActions( 'a', 'b', true ),
+                                false, "NodePropertyKeys[txTerminationAwareLocks=no]"},
+
+                        {new PropertyKeyActions( 'a', 'b', false ),
+                                true, "RelationshipPropertyKeys[txTerminationAwareLocks=yes]"},
+                        {new PropertyKeyActions( 'a', 'b', false ),
+                                false, "RelationshipPropertyKeys[txTerminationAwareLocks=no]"}
                 }
         );
     }
@@ -99,7 +119,7 @@ public class TerminationOfSlavesDuringPullUpdatesTest
         long safeZone = TimeUnit.MILLISECONDS.toMillis( 0 );
         clusterRule.withSharedSetting( HaSettings.id_reuse_safe_zone_time, String.valueOf( safeZone ) );
         // given
-        final ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
+        final ClusterManager.ManagedCluster cluster = startCluster();
         HighlyAvailableGraphDatabase master = cluster.getMaster();
 
         // when
@@ -133,7 +153,7 @@ public class TerminationOfSlavesDuringPullUpdatesTest
         long safeZone = TimeUnit.MINUTES.toMillis( 1 );
         clusterRule.withSharedSetting( HaSettings.id_reuse_safe_zone_time, String.valueOf( safeZone ) );
         // given
-        final ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
+        final ClusterManager.ManagedCluster cluster = startCluster();
         HighlyAvailableGraphDatabase master = cluster.getMaster();
 
         // when
@@ -160,7 +180,7 @@ public class TerminationOfSlavesDuringPullUpdatesTest
         race.go();
     }
 
-    private Runnable readContestant( final ReadContestantAction action, final long entityId,
+    private Runnable readContestant( final ReadContestantActions action, final long entityId,
             final HighlyAvailableGraphDatabase slave, final AtomicBoolean end )
     {
         return new Runnable()
@@ -213,7 +233,7 @@ public class TerminationOfSlavesDuringPullUpdatesTest
         };
     }
 
-    private interface ReadContestantAction
+    private interface ReadContestantActions
     {
         long createInitialEntity( HighlyAvailableGraphDatabase db );
 
@@ -224,14 +244,14 @@ public class TerminationOfSlavesDuringPullUpdatesTest
         void verifyProperties( HighlyAvailableGraphDatabase db, long entityId );
     }
 
-    private static class PropertyValueReadContestantAction implements ReadContestantAction
+    private static class PropertyValueActions implements ReadContestantActions
     {
         static final String KEY = "key";
         final Object valueA;
         final Object valueB;
         final boolean node;
 
-        PropertyValueReadContestantAction( Object valueA, Object valueB, boolean node )
+        PropertyValueActions( Object valueA, Object valueB, boolean node )
         {
             this.valueA = valueA;
             this.valueB = valueB;
@@ -306,13 +326,13 @@ public class TerminationOfSlavesDuringPullUpdatesTest
         }
     }
 
-    private static class PropertyKeyReadContestantAction implements ReadContestantAction
+    private static class PropertyKeyActions implements ReadContestantActions
     {
         final char keyPrefixA;
         final char keyPrefixB;
         final boolean node;
 
-        PropertyKeyReadContestantAction( char keyPrefixA, char keyPrefixB, boolean node )
+        PropertyKeyActions( char keyPrefixA, char keyPrefixB, boolean node )
         {
             this.keyPrefixA = keyPrefixA;
             this.keyPrefixB = keyPrefixB;
@@ -396,6 +416,12 @@ public class TerminationOfSlavesDuringPullUpdatesTest
         {
             return node ? db.getNodeById( id ) : db.getRelationshipById( id );
         }
+    }
+
+    private ClusterManager.ManagedCluster startCluster() throws Exception
+    {
+        return clusterRule.withSharedSetting( tx_termination_aware_locks, String.valueOf( txTerminationAwareLocks ) )
+                .startCluster();
     }
 
     private static Object longArray( char b )
