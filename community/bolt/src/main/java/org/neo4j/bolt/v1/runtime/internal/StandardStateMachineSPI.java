@@ -20,6 +20,8 @@
 package org.neo4j.bolt.v1.runtime.internal;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.AuthenticationException;
@@ -28,14 +30,16 @@ import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.concurrent.DecayingFlags;
-import org.neo4j.kernel.api.bolt.SessionTracker;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.bolt.SessionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
@@ -44,17 +48,19 @@ class StandardStateMachineSPI implements SessionStateMachine.SPI
 {
     private final String connectionDescriptor;
     private final UsageData usageData;
-    private final GraphDatabaseFacade db;
+    private final GraphDatabaseAPI db;
     private final StatementRunner statementRunner;
     private final ErrorReporter errorReporter;
     private final Log log;
     private final Authentication authentication;
+    private final Supplier<TransactionIdStore> transactionIdStore;
     private final ThreadToStatementContextBridge txBridge;
     private final DecayingFlags featureUsage;
     private final SessionTracker sessionTracker;
 
-    StandardStateMachineSPI( String connectionDescriptor, UsageData usageData, GraphDatabaseFacade db, StatementRunner statementRunner,
-            LogService logging, Authentication authentication, ThreadToStatementContextBridge txBridge,
+    StandardStateMachineSPI( String connectionDescriptor, UsageData usageData, GraphDatabaseAPI db,
+            StatementRunner statementRunner, LogService logging, Authentication authentication,
+            ThreadToStatementContextBridge txBridge, Supplier<TransactionIdStore> transactionIdStore,
             SessionTracker sessionTracker )
     {
         this.connectionDescriptor = connectionDescriptor;
@@ -66,6 +72,7 @@ class StandardStateMachineSPI implements SessionStateMachine.SPI
         this.errorReporter = new ErrorReporter( logging );
         this.log = logging.getInternalLog( SessionStateMachine.class );
         this.authentication = authentication;
+        this.transactionIdStore = transactionIdStore;
         this.sessionTracker = sessionTracker;
     }
 
@@ -88,10 +95,14 @@ class StandardStateMachineSPI implements SessionStateMachine.SPI
     }
 
     @Override
-    public KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode mode )
+    public KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode mode, VersionTracker versionTracker )
+            throws TransactionFailureException
     {
+        versionTracker.assertUpToDate();
         db.beginTransaction( type, mode );
-        return txBridge.getKernelTransactionBoundToThisThread( false );
+        KernelTransaction kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( false );
+        kernelTransaction.registerCloseListener( versionTracker::updateVersion );
+        return kernelTransaction;
     }
 
     @Override
@@ -142,5 +153,10 @@ class StandardStateMachineSPI implements SessionStateMachine.SPI
     public void sessionHalted( Session session )
     {
         sessionTracker.sessionHalted( session );
+    }
+
+    public VersionTracker versionTracker( long startingVersion )
+    {
+        return new TransactionIdTracker( transactionIdStore, startingVersion, 30, TimeUnit.SECONDS );
     }
 }

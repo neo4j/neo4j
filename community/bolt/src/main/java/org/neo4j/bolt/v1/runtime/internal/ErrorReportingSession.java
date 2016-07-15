@@ -27,13 +27,13 @@ import org.neo4j.bolt.v1.runtime.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.kernel.api.bolt.HaltableUserSession;
 
-public class ErrorReportingSession extends HaltableUserSession.Adapter implements Session
+class ErrorReportingSession extends HaltableUserSession.Adapter implements Session
 {
     private final String connectionDescriptor;
     private final Neo4jError error;
     private final String id;
 
-    public ErrorReportingSession( String connectionDescriptor, Neo4jError error )
+    ErrorReportingSession( String connectionDescriptor, Neo4jError error )
     {
         this.error = error;
         this.id = UUID.randomUUID().toString();
@@ -62,7 +62,8 @@ public class ErrorReportingSession extends HaltableUserSession.Adapter implement
     }
 
     @Override
-    public <A> void init( String clientName, Map<String,Object> authToken, A attachment, Callback<Boolean,A> callback )
+    public <A> void init( String clientName, Map<String,Object> authToken, long currentHighestTransactionId,
+            A attachment, Callback<Boolean,A> callback )
     {
         reportError( attachment, callback );
     }

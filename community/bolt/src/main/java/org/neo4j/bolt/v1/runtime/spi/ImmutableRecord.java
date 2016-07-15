@@ -58,6 +58,14 @@ public class ImmutableRecord implements Record
     }
 
     @Override
+    public String toString()
+    {
+        return "ImmutableRecord{" +
+                "fields=" + Arrays.toString( fields ) +
+                '}';
+    }
+
+    @Override
     public int hashCode()
     {
         return Arrays.hashCode( fields );

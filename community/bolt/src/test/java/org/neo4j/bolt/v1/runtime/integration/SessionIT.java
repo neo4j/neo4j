@@ -56,7 +56,7 @@ public class SessionIT
     private static final Map<String,Object> EMPTY_PARAMS = emptyMap();
 
     @Rule
-    public TestSessions env = new TestSessions();
+    public SessionRule env = new SessionRule();
     private final RecordingCallback responses = new RecordingCallback<>();
     private final RecordingCallback<RecordStream, ?> pulling = new RecordingCallback<>();
     private final RecordingCallback<Void, ?> discarding = new RecordingCallback<>();
@@ -66,7 +66,7 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
 
         // When
         session.run( "", EMPTY_PARAMS, null, responses );
@@ -80,7 +80,7 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
 
         // When
         session.run( System.lineSeparator(), EMPTY_PARAMS, null, responses );
@@ -95,7 +95,7 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap() , null, null );
+        session.init( "TestClient/1.0", emptyMap() , -1, null, null );
 
         // When
         session.run( "CREATE (n {k:'k'}) RETURN n.k", EMPTY_PARAMS, null, responses );
@@ -115,7 +115,7 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
 
         // And Given that I've ran and pulled one stream
         session.run( "RETURN 1", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata, Object>noop() );
@@ -133,7 +133,7 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
 
         // And Given that I've ran and pulled one stream
         session.run( "RETURN 1", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata,Object>noop() );
@@ -151,7 +151,7 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
 
         // And Given that I've ran and pulled one stream
         session.run( "BEGIN", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata, Object>noop() );
@@ -171,7 +171,7 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
 
         // And Given that I've ran one statement
         session.run( "RETURN 1", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata, Object>noop() );
@@ -188,7 +188,7 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
 
         // And Given that I've ran and pulled one stream
         session.run( "RETURN 1", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata, Object>noop() );
@@ -206,7 +206,7 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
 
         // And Given that I've ran and pulled one stream
         session.run( "RETURN 1", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata, Object>noop() );
@@ -224,7 +224,7 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
 
         // And Given that I've ran and pulled one stream
         session.run( "RETURN 1", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata, Object>noop() );
@@ -242,7 +242,7 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
 
         // And Given that I've ran and pulled one stream
         session.run( "RETURN 1", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata, Object>noop() );
@@ -260,7 +260,7 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
         session.run( "CREATE (n:Victim)-[:REL]->()", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata, Object>noop() );
         session.discardAll( null, Session.Callbacks.<Void,Object>noop() );
 
@@ -284,7 +284,7 @@ public class SessionIT
         // transaction, be they client-local or inside neo, can be handled the
         // same way by a driver.
         Session session = env.newSession("bolt-test");
-        session.init( "TestClient/1.0", emptyMap(), null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
 
         session.run( "BEGIN", EMPTY_PARAMS, null, noOp() );
         session.discardAll( null, noOp() );
@@ -313,7 +313,7 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
 
         final CountDownLatch pullAllCallbackCalled = new CountDownLatch( 1 );
         final AtomicReference<Neo4jError> error = new AtomicReference<>();
@@ -353,9 +353,9 @@ public class SessionIT
     {
         // Given
         Session firstSession = env.newSession( "<test>" );
-        firstSession.init( "TestClient/1.0", emptyMap(), null, null );
+        firstSession.init( "TestClient/1.0", emptyMap(), -1, null, null );
         Session secondSession = env.newSession( "<test>" );
-        secondSession.init( "TestClient/1.0", emptyMap(), null, null );
+        secondSession.init( "TestClient/1.0", emptyMap(), -1, null, null );
 
         // And given I've started a transaction in one session
         runAndPull( firstSession, "BEGIN" );
@@ -377,7 +377,7 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
         Map<String, Object> params = new HashMap<>();
         params.put( "csvFileUrl", createLocalIrisData( session ) );
 
@@ -424,7 +424,7 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
         Map<String, Object> params = new HashMap<>();
         params.put( "csvFileUrl", createLocalIrisData( session ) );
         runAndPull( session, "BEGIN" );
@@ -454,7 +454,7 @@ public class SessionIT
     {
         // Given
         Session session = env.newSession( "<test>" );
-        session.init( "TestClient/1.0", emptyMap(), null, null );
+        session.init( "TestClient/1.0", emptyMap(), -1, null, null );
 
         // And given I've started a transaction that failed
         runAndPull( session, "BEGIN" );

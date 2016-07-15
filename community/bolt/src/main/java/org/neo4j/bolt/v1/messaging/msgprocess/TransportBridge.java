@@ -58,8 +58,9 @@ public class TransportBridge extends MessageHandler.Adapter<RuntimeException>
     @Override
     public void handleInitMessage( String clientName, Map<String,Object> authToken ) throws RuntimeException
     {
-        session.init( clientName, authToken, null, initCallback );
-
+        // TODO: make the client transmit the version for now it is hardcoded to -1 to ensure current behaviour
+        long currentHighestTransactionId = -1;
+        session.init( clientName, authToken, currentHighestTransactionId, null, initCallback );
     }
 
     @Override

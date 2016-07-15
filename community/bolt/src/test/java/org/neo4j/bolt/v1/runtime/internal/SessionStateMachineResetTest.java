@@ -44,7 +44,7 @@ public class SessionStateMachineResetTest
         SessionStateMachine.SPI spi = mock( SessionStateMachine.SPI.class );
         when( spi.authenticate( any() ) ).thenReturn( mock( BasicAuthenticationResult.class ) );
         SessionStateMachine ssm = new SessionStateMachine( spi );
-        ssm.init( "bob/1.0", map(), null, noOp() );
+        ssm.init( "bob/1.0", map(), -1, null, noOp() );
 
         // When
         ssm.interrupt();
@@ -68,7 +68,7 @@ public class SessionStateMachineResetTest
         SessionStateMachine.SPI spi = mock( SessionStateMachine.SPI.class );
         when( spi.authenticate( any() ) ).thenReturn( mock( BasicAuthenticationResult.class ) );
         SessionStateMachine ssm = new SessionStateMachine( spi );
-        ssm.init( "bob/1.0", map(), null, noOp() );
+        ssm.init( "bob/1.0", map(), -1, null, noOp() );
 
         // When
         ssm.interrupt();

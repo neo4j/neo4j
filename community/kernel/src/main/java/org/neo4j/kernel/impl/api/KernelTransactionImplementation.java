@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -143,7 +144,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private TransactionHooks.TransactionHooksState hooksState;
     private final KernelStatement currentStatement;
     private final StorageStatement storageStatement;
-    private CloseListener closeListener;
+    private final List<CloseListener> closeListeners = new ArrayList<>( 2 );
     private AccessMode accessMode;
     private Locks.Client locks;
     private boolean beforeHookInvoked;
@@ -357,14 +358,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return txState != null && txState.hasChanges();
     }
 
-    private void markAsClosed()
+    private void markAsClosed( long txId )
     {
         assertTransactionOpen();
         closed = true;
         closeCurrentStatementIfAny();
-        if ( closeListener != null )
+        for ( CloseListener closeListener : closeListeners )
         {
-            closeListener.notify( success );
+            closeListener.notify( txId );
         }
     }
 
@@ -477,6 +478,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private long commit() throws TransactionFailureException
     {
         boolean success = false;
+        long txId = READ_ONLY;
 
         try ( CommitEvent commitEvent = transactionEvent.beginCommitEvent() )
         {
@@ -538,11 +540,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     // Commit the transaction
                     success = true;
                     TransactionToApply batch = new TransactionToApply( transactionRepresentation );
-                    return commitProcess.commit( batch, commitEvent, INTERNAL );
+                    txId = commitProcess.commit( batch, commitEvent, INTERNAL );
                 }
             }
             success = true;
-            return READ_ONLY;
+            return txId;
         }
         catch ( ConstraintValidationKernelException | CreateConstraintFailureException e )
         {
@@ -557,7 +559,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             }
             else
             {
-                afterCommit();
+                afterCommit( txId );
             }
         }
     }
@@ -609,11 +611,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private void afterCommit()
+    private void afterCommit( long txId )
     {
         try
         {
-            markAsClosed();
+            markAsClosed( txId );
             if ( beforeHookInvoked )
             {
                 hooks.afterCommit( txState, this, hooksState );
@@ -629,7 +631,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         try
         {
-            markAsClosed();
+            markAsClosed( ROLLBACK );
             if ( beforeHookInvoked )
             {
                 hooks.afterRollback( txState, this, hooksState );
@@ -660,7 +662,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             legacyIndexTransactionState = null;
             txState = null;
             hooksState = null;
-            closeListener = null;
+            closeListeners.clear();
             reuseCount++;
             pool.release( this );
         }
@@ -693,8 +695,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public void registerCloseListener( CloseListener listener )
     {
-        assert closeListener == null;
-        closeListener = listener;
+        assert listener != null;
+        closeListeners.add( listener );
     }
 
     @Override

@@ -37,7 +37,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 public class SessionAuthIT
 {
     @Rule
-    public TestSessions env = new TestSessions().withAuthEnabled( true );
+    public SessionRule env = new SessionRule().withAuthEnabled( true );
 
     @Test
     public void shouldGiveCredentialsExpiredStatusOnExpiredCredentials() throws Throwable
@@ -51,7 +51,7 @@ public class SessionAuthIT
         session.init( "TestClient/1.0.0", map(
                 "scheme", "basic",
                 "principal", "neo4j",
-                "credentials", "neo4j" ), null, recorder );
+                "credentials", "neo4j" ), -1, null, recorder );
         session.run( "CREATE ()", map(), null, recorder );
 
         // then
@@ -73,7 +73,7 @@ public class SessionAuthIT
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "j4oen"
-        ), null, recorder );
+        ), -1, null, recorder );
         session.ackFailure( null, recorder );
         session.run( "RETURN 1337", map(), null, recorder );
 
@@ -97,7 +97,7 @@ public class SessionAuthIT
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "j4oen"
-        ), null, recorder );
+        ), -1, null, recorder );
         session.reset( null, recorder );
         session.run( "RETURN 1337", map(), null, recorder );
 
@@ -172,14 +172,14 @@ public class SessionAuthIT
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "j4oen"
-        ), null, recorder );
+        ), -1, null, recorder );
         session.ackFailure( null, recorder );
         // when
         session.init( "TestClient/1.0.0", map(
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "neo4j"
-        ), null, recorder );
+        ), -1, null, recorder );
 
         // then
         assertThat( recorder, recorded( failed(), success(), success() ));
@@ -198,14 +198,14 @@ public class SessionAuthIT
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "j4oen"
-        ), null, recorder );
+        ), -1, null, recorder );
         session.reset( null, recorder );
         // when
         session.init( "TestClient/1.0.0", map(
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "neo4j"
-        ), null, recorder );
+        ), -1, null, recorder );
 
         // then
         assertThat( recorder, recorded( failed(), success(), success() ));
@@ -225,7 +225,7 @@ public class SessionAuthIT
                 "principal", "neo4j",
                 "credentials", "neo4j",
                 "new_credentials", "secret"
-                ), null, recorder );
+                ), -1, null, recorder );
         session.run( "CREATE ()", map(), null, recorder );
 
         // then

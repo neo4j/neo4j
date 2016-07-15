@@ -23,9 +23,6 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Collections;
-
-import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
@@ -37,7 +34,7 @@ import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyMap;
+import static org.mockito.Matchers.anyMapOf;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -64,10 +61,10 @@ public class SessionStateMachineTest
     public void shouldRollbackExplicitTransactionOnReset() throws Throwable
     {
         // Given
-        when( spi.run( any( SessionStateMachine.class ), anyString(), anyMap() ) )
+        when( spi.run( any( SessionStateMachine.class ), anyString(), anyMapOf( String.class, Object.class) ) )
                 .thenThrow( new RollbackInducingKernelException() );
 
-        machine.init( "FunClient/1.2", emptyMap(), null, noOp()  );
+        machine.init( "FunClient/1.2", emptyMap(), -1, null, noOp()  );
         machine.beginImplicitTransaction();
 
         // When
@@ -89,13 +86,14 @@ public class SessionStateMachineTest
     public void shouldStopRunningTxOnHalt() throws Throwable
     {
         // When
-        machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, null, Session.Callback.NO_OP );
         machine.beginTransaction();
         machine.close();
 
         // Then
         assertThat( machine.state(), CoreMatchers.equalTo( SessionStateMachine.State.STOPPED ) );
-        verify( spi ).beginTransaction( any( KernelTransaction.Type.class ), any( AccessMode.class ));
+        verify( spi ).beginTransaction( any( KernelTransaction.Type.class ), any( AccessMode.class ),
+                any( VersionTracker.class ) );
         verify( ktx ).close();
     }
 
@@ -103,7 +101,7 @@ public class SessionStateMachineTest
     public void shouldPublishClientName() throws Throwable
     {
         // When
-        machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, null, Session.Callback.NO_OP );
 
         // Then
         verify( spi ).udcRegisterClient( "FunClient/1.2" );
@@ -113,10 +111,10 @@ public class SessionStateMachineTest
     public void shouldResetToIdleOnIdle() throws Throwable
     {
         // Given
-        machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, null, Session.Callback.NO_OP );
 
         // When
-        TestCallback callback = new TestCallback();
+        TestCallback<Void> callback = new TestCallback<>();
         machine.reset( null, callback );
 
         // Then
@@ -128,11 +126,11 @@ public class SessionStateMachineTest
     public void shouldResetToIdleOnInTransaction() throws Throwable
     {
         // Given
-        machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, null, Session.Callback.NO_OP );
         machine.beginTransaction();
 
         // When
-        TestCallback callback = new TestCallback();
+        TestCallback<Void> callback = new TestCallback<>();
         machine.reset( null, callback );
 
         // Then
@@ -144,14 +142,14 @@ public class SessionStateMachineTest
     public void shouldResetToIdleOnStreamOpenWithExplicitTransaction() throws Throwable
     {
         // Given
-        when( spi.run( any( SessionStateMachine.class ), anyString(), anyMap() ) )
+        when( spi.run( any( SessionStateMachine.class ), anyString(), anyMapOf( String.class, Object.class) ) )
                 .thenReturn( mock( RecordStream.class ) );
-        machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, null, Session.Callback.NO_OP );
         machine.beginTransaction();
-        machine.run( "RETURN 1", Collections.EMPTY_MAP, null, Session.Callback.NO_OP );
+        machine.run( "RETURN 1", emptyMap(), null, Session.Callback.NO_OP );
 
         // When
-        TestCallback callback = new TestCallback();
+        TestCallback<Void> callback = new TestCallback<>();
         machine.reset( null, callback );
 
         // Then
@@ -163,13 +161,13 @@ public class SessionStateMachineTest
     public void shouldResetToIdleOnStreamOpenWithImplicitTransaction() throws Throwable
     {
         // Given
-        when( spi.run( any( SessionStateMachine.class ), anyString(), anyMap() ) )
+        when( spi.run( any( SessionStateMachine.class ), anyString(), anyMapOf( String.class, Object.class) ) )
                 .thenReturn( mock( RecordStream.class ) );
-        machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
-        machine.run( "RETURN 1", Collections.EMPTY_MAP, null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, null, Session.Callback.NO_OP );
+        machine.run( "RETURN 1", emptyMap(), null, Session.Callback.NO_OP );
 
         // When
-        TestCallback callback = new TestCallback();
+        TestCallback<Void> callback = new TestCallback<>();
         machine.reset( null, callback );
 
         // Then
@@ -181,10 +179,10 @@ public class SessionStateMachineTest
     public void shouldCallStartedWhenStartingProcessing() throws Throwable
     {
         // Given
-        TestCallback callback = new TestCallback();
+        TestCallback<Boolean> callback = new TestCallback<>();
 
         // When
-        machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, callback );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, null, callback );
 
         // Then
         assertThat( callback.startedCount, equalTo( 1 ) );
@@ -194,13 +192,13 @@ public class SessionStateMachineTest
     public void shouldResetToIdleOnError() throws Throwable
     {
         // Given
-        when( spi.run( any( SessionStateMachine.class ), anyString(), anyMap() ) )
+        when( spi.run( any( SessionStateMachine.class ), anyString(), anyMapOf( String.class, Object.class) ) )
                 .thenThrow( new RollbackInducingKernelException() );
-        machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
-        machine.run( "RETURN 1", Collections.EMPTY_MAP, null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, null, Session.Callback.NO_OP );
+        machine.run( "RETURN 1", emptyMap(), null, Session.Callback.NO_OP );
 
         // When
-        TestCallback callback = new TestCallback();
+        TestCallback<Void> callback = new TestCallback<>();
         machine.reset( null, callback );
 
         // Then
@@ -212,12 +210,12 @@ public class SessionStateMachineTest
     public void shouldErrorWhenOutOfOrderRollback() throws Throwable
     {
         // Given
-        when( spi.run( any( SessionStateMachine.class ), anyString(), anyMap() ) )
+        when( spi.run( any( SessionStateMachine.class ), anyString(), anyMapOf( String.class, Object.class) ) )
                 .thenThrow( new RollbackInducingKernelException() );
-        machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, null, Session.Callback.NO_OP );
 
         // When
-        machine.run( "ROLLBACK", Collections.EMPTY_MAP, null, Session.Callback.NO_OP );
+        machine.run( "ROLLBACK", emptyMap(), null, Session.Callback.NO_OP );
 
         // Then
         assertThat( machine.state(), equalTo( ERROR ) );
@@ -227,9 +225,9 @@ public class SessionStateMachineTest
     public void shouldGoBackToIdleAfterImplicitTxFailure() throws Throwable
     {
         // Given
-        when( spi.run( any( SessionStateMachine.class ), anyString(), anyMap() ) )
+        when( spi.run( any( SessionStateMachine.class ), anyString(), anyMapOf( String.class, Object.class) ) )
                 .thenThrow( new RollbackInducingKernelException() );
-        machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, noOp() );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, null, noOp() );
 
         // When
         machine.run( "Statement that fails", emptyMap(), null, noOp() );
@@ -243,9 +241,9 @@ public class SessionStateMachineTest
     public void shouldMoveBackTo_IN_TRANSACTION_afterAckFailureOnExplicitTx() throws Throwable
     {
         // Given all statements will fail
-        when( spi.run( any( SessionStateMachine.class ), anyString(), anyMap() ) )
+        when( spi.run( any( SessionStateMachine.class ), anyString(), anyMapOf( String.class, Object.class) ) )
                 .thenThrow( new RollbackInducingKernelException() );
-        machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, noOp() );
+        machine.init( "FunClient/1.2",  emptyMap(), -1, null, noOp() );
 
         // When
         machine.beginTransaction();
@@ -273,10 +271,10 @@ public class SessionStateMachineTest
     }
 
     @Before
-    public void setup() throws AuthenticationException
+    public void setup() throws Exception
     {
         when( spi.authenticate( any() ) ).thenReturn( AuthenticationResult.AUTH_DISABLED );
-        when( spi.beginTransaction( any(), any() )).thenAnswer( (inv) -> {
+        when( spi.beginTransaction( any(), any(), any() ) ).thenAnswer( (inv) -> {
             // The state machine will ask for different types of transactions, we
             // modify out mock to suit it's needs. I'm not sure this is a good way
             // to do this.
@@ -287,11 +285,11 @@ public class SessionStateMachineTest
 
     }
 
-    static class TestCallback<V> extends Session.Callback.Adapter<V, Object>
+    private static class TestCallback<V> extends Session.Callback.Adapter<V, Object>
     {
-        public int completedCount;
-        public int ignoredCount;
-        public int startedCount;
+        private int completedCount;
+        int ignoredCount;
+        int startedCount;
 
         @Override
         public void started( Object attachment )
@@ -318,7 +316,7 @@ public class SessionStateMachineTest
         }
     }
 
-    public static class RollbackInducingKernelException extends RuntimeException implements Status.HasStatus
+    private static class RollbackInducingKernelException extends RuntimeException implements Status.HasStatus
     {
         @Override
         public Status status()

@@ -174,6 +174,16 @@ public class Predicates
     public static void await( Supplier<Boolean> condition, long timeout, TimeUnit timeoutUnit, long pollInterval, TimeUnit pollUnit )
             throws TimeoutException, InterruptedException
     {
+        if ( !tryAwait( condition, timeout, timeoutUnit, pollInterval, pollUnit ) )
+        {
+            throw new TimeoutException(
+                    "Waited for " + timeout + " " + timeoutUnit + ", but " + condition + " was not accepted." );
+        }
+    }
+
+    public static boolean tryAwait( Supplier<Boolean> condition, long timeout, TimeUnit timeoutUnit, long pollInterval, TimeUnit pollUnit )
+            throws InterruptedException
+    {
         long deadlineMillis = System.currentTimeMillis() + timeoutUnit.toMillis( timeout );
         long pollIntervalMillis = pollUnit.toMillis( pollInterval );
 
@@ -181,12 +191,12 @@ public class Predicates
         {
             if ( condition.get() )
             {
-                return;
+                return true;
             }
             Thread.sleep( pollIntervalMillis );
         }
         while ( System.currentTimeMillis() < deadlineMillis );
-        throw new TimeoutException( "Waited for " + timeout + " " + timeoutUnit + ", but " + condition + " was not accepted." );
+        return false;
     }
 
     public static void awaitForever( BooleanSupplier condition, long checkInterval, TimeUnit unit ) throws InterruptedException

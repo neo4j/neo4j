@@ -95,7 +95,7 @@ public class ResetFuzzTest
         // given
         life.start();
         Session session = sessions.newSession( "<test>" );
-        session.init( "Test/0.0.0", map(), null, Session.Callback.NO_OP );
+        session.init( "Test/0.0.0", map(), -1, null, Session.Callback.NO_OP );
 
         TransportBridge bridge = new TransportBridge(
                 NullLog.getInstance(), session, new MessageHandler.Adapter<>(), ( () -> {} ) );
@@ -177,7 +177,7 @@ public class ResetFuzzTest
         }
 
         @Override
-        public KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode mode )
+        public KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode mode, VersionTracker versionTracker )
         {
             liveTransactions.incrementAndGet();
             return new CloseTrackingKernelTransaction();
@@ -229,7 +229,23 @@ public class ResetFuzzTest
         @Override
         public void sessionHalted( Session session )
         {
+        }
 
+        @Override
+        public VersionTracker versionTracker( long startingVersion )
+        {
+            return new VersionTracker()
+            {
+                @Override
+                public void assertUpToDate()
+                {
+                }
+
+                @Override
+                public void updateVersion( long version )
+                {
+                }
+            };
         }
     }
 

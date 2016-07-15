@@ -80,6 +80,10 @@ public class SessionMatchers
                 }
 
                 Record[] actual = ((RecordingCallback.Result) item).records();
+                if ( actual.length != values.length )
+                {
+                    return false;
+                }
                 for ( int i = 0; i < values.length; i++ )
                 {
                     if ( !values[i].matches( actual[i] ) )
