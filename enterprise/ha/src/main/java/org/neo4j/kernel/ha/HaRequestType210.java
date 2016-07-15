@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.io.IOException;
-
 import org.jboss.netty.buffer.ChannelBuffer;
+
+import java.io.IOException;
 
 import org.neo4j.com.Deserializer;
 import org.neo4j.com.ObjectSerializer;
@@ -30,13 +30,13 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.TargetCaller;
 import org.neo4j.com.storecopy.ToNetworkStoreWriter;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -139,15 +139,33 @@ public class HaRequestType210 extends AbstractHaRequestTypes
                 return master.pullUpdates( context );
             }
         }, VOID_SERIALIZER );
-        register( Type.END_LOCK_SESSION, new TargetCaller<Master, Void>()
-        {
-            @Override
-            public Response<Void> call( Master master, RequestContext context, ChannelBuffer input,
-                    ChannelBuffer target )
-            {
-                return master.endLockSession( context, readBoolean( input ) );
-            }
-        }, VOID_SERIALIZER );
+        register(
+                Type.END_LOCK_SESSION,
+                new TargetCaller<Master,Void>()
+                {
+                    @Override
+                    public Response<Void> call( Master master, RequestContext context, ChannelBuffer input,
+                                                ChannelBuffer target )
+                    {
+                        return master.endLockSession( context, readBoolean( input ) );
+                    }
+                },
+                VOID_SERIALIZER,
+                /*
+                A 'false' argument here means we won't unpack the response.
+
+                We do this because END_LOCK_SESSION request can be send in 3 cases:
+                 1) transaction committed successfully
+                 2) transaction rolled back successfully
+                 3) transaction was terminated
+
+                Master's response for this call is an obligation to pull up to a specified txId.
+                Processing/unpacking of this response is not needed in all 3 cases:
+                 1) committed transaction pulls transaction stream as part of COMMIT call
+                 2) rolled back transaction does not care about reading any more
+                 3) terminated transaction does not care about reading any more
+                */
+                false );
         register( Type.HANDSHAKE, new TargetCaller<Master, HandshakeResult>()
         {
             @Override
