@@ -28,6 +28,7 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.CoreStateMachinesModule;
+import org.neo4j.coreedge.ReplicationModule;
 import org.neo4j.coreedge.catchup.CatchupServer;
 import org.neo4j.coreedge.catchup.CheckpointerSupplier;
 import org.neo4j.coreedge.catchup.DataSourceSupplier;
@@ -58,12 +59,6 @@ import org.neo4j.coreedge.raft.net.LoggingOutbound;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.net.RaftChannelInitializer;
 import org.neo4j.coreedge.raft.net.RaftOutbound;
-import org.neo4j.coreedge.raft.replication.ProgressTrackerImpl;
-import org.neo4j.coreedge.raft.replication.RaftReplicator;
-import org.neo4j.coreedge.raft.replication.session.GlobalSession;
-import org.neo4j.coreedge.raft.replication.session.GlobalSessionTrackerState;
-import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
-import org.neo4j.coreedge.raft.replication.tx.ExponentialBackoffStrategy;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.CoreState;
 import org.neo4j.coreedge.raft.state.CoreStateApplier;
@@ -119,8 +114,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.udc.UsageData;
 
 import static java.time.Clock.systemUTC;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.coreedge.server.core.RoleProcedure.CoreOrEdge.CORE;
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
 
@@ -158,8 +151,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         }
     }
 
-    EnterpriseCoreEditionModule( final PlatformModule platformModule,
-            DiscoveryServiceFactory discoveryServiceFactory )
+    EnterpriseCoreEditionModule( final PlatformModule platformModule, DiscoveryServiceFactory discoveryServiceFactory )
     {
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
 
@@ -177,7 +169,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         CoreMember myself;
         StateStorage<Long> lastFlushedStorage;
-        StateStorage<GlobalSessionTrackerState> sessionTrackerStorage;
 
         try
         {
@@ -196,13 +187,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
                     new DurableStateStorage<>( fileSystem, new File( clusterStateDirectory, "last-flushed-state" ),
                             "last-flushed", new LongIndexMarshal(), config.get( CoreEdgeClusterSettings.last_flushed_state_size ),
                             databaseHealthSupplier, logProvider ) );
-
-            sessionTrackerStorage = life.add( new DurableStateStorage<>( fileSystem,
-                    new File( clusterStateDirectory, "session-tracker-state" ), "session-tracker",
-                    new GlobalSessionTrackerState.Marshal( new CoreMemberMarshal() ),
-                    config.get( CoreEdgeClusterSettings.global_session_tracker_state_size ), databaseHealthSupplier,
-                    logProvider ) );
-
         }
         catch ( IOException e )
         {
@@ -259,9 +243,6 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 new StoreCopyClient( coreToCoreClient ), new TxPullClient( coreToCoreClient ),
                 new TransactionLogCatchUpFactory() );
 
-        GlobalSession myGlobalSession = new GlobalSession( UUID.randomUUID(), myself );
-        LocalSessionPool sessionPool = new LocalSessionPool( myGlobalSession );
-        ProgressTrackerImpl progressTracker = new ProgressTrackerImpl( myGlobalSession );
         RaftOutbound raftOutbound =
                 new RaftOutbound( discoveryService, senderService, localDatabase, logProvider, logThresholdMillis );
         Outbound<CoreMember,RaftMessages.RaftMessage> loggingOutbound = new LoggingOutbound<>(
@@ -289,14 +270,13 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         dependencies.satisfyDependency( consensusModule.raftInstance() );
 
-        RaftReplicator replicator =
-                new RaftReplicator( consensusModule.raftInstance(), myself,
-                        loggingOutbound,
-                        sessionPool, progressTracker,
-                        new ExponentialBackoffStrategy( 10, SECONDS ) );
+        ReplicationModule replicationModule = new ReplicationModule( myself, platformModule, config, consensusModule,
+                loggingOutbound, clusterStateDirectory,
+                fileSystem, databaseHealthSupplier, logProvider );
 
         coreStateMachinesModule = new CoreStateMachinesModule( myself, platformModule, clusterStateDirectory,
-                databaseHealthSupplier, config, replicator, consensusModule.raftInstance(), dependencies, localDatabase );
+                databaseHealthSupplier, config, replicationModule.getReplicator(), consensusModule.raftInstance(),
+                dependencies, localDatabase );
 
         this.idGeneratorFactory = coreStateMachinesModule.idGeneratorFactory;
         this.idTypeConfigurationProvider = coreStateMachinesModule.idTypeConfigurationProvider;
@@ -306,11 +286,14 @@ public class EnterpriseCoreEditionModule extends EditionModule
         this.lockManager = coreStateMachinesModule.lockManager;
         this.commitProcessFactory = coreStateMachinesModule.commitProcessFactory;
 
-        CoreState coreState = dependencies.satisfyDependency( new CoreState( coreStateMachinesModule.coreStateMachines,
-                consensusModule.raftLog(), config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
-                config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),
-                databaseHealthSupplier, logProvider, progressTracker, lastFlushedStorage,
-                sessionTrackerStorage, someoneElse, coreStateApplier, downloader, inFlightMap, platformModule.monitors ) );
+        CoreState coreState = new CoreState( coreStateMachinesModule.coreStateMachines, consensusModule.raftLog(),
+                config.get( CoreEdgeClusterSettings.state_machine_apply_max_batch_size ),
+                config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ), databaseHealthSupplier,
+                logProvider, replicationModule.getProgressTracker(), lastFlushedStorage,
+                replicationModule.getSessionTracker(), someoneElse, coreStateApplier, downloader, inFlightMap,
+                platformModule.monitors );
+
+        dependencies.satisfyDependency( coreState );
 
         life.add( new PruningScheduler( coreState, platformModule.jobScheduler,
                 config.get( CoreEdgeClusterSettings.raft_log_pruning_frequency ) ) );
@@ -330,22 +313,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         dependencies.satisfyDependency(
                 createKernelData( fileSystem, platformModule.pageCache, storeDir, config, graphDatabaseFacade, life ) );
 
-        life.add( dependencies.satisfyDependency( createAuthManager( config, logging ) ) );
-
-        headerInformationFactory = createHeaderInformationFactory();
-
-        schemaWriteGuard = createSchemaWriteGuard();
-
-        transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout );
-
-        constraintSemantics = new EnterpriseConstraintSemantics();
-
-        coreAPIAvailabilityGuard =
-                new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
-
-        registerRecovery( platformModule.databaseInfo, life, dependencies );
-
-        publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
+        editionInvariants( platformModule, dependencies, config, logging, life );
 
         this.lockManager = dependencies.satisfyDependency( lockManager );
 
@@ -362,6 +330,27 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 catchupServer, raftTimeoutService, membershipWaiter, joinCatchupTimeout, logProvider ) );
 
         dependencies.satisfyDependency( createSessionTracker() );
+    }
+
+    private void editionInvariants( PlatformModule platformModule, Dependencies dependencies, Config config,
+            LogService logging, LifeSupport life )
+    {
+        life.add( dependencies.satisfyDependency( createAuthManager( config, logging ) ) );
+
+        headerInformationFactory = createHeaderInformationFactory();
+
+        schemaWriteGuard = createSchemaWriteGuard();
+
+        transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout );
+
+        constraintSemantics = new EnterpriseConstraintSemantics();
+
+        coreAPIAvailabilityGuard =
+                new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
+
+        registerRecovery( platformModule.databaseInfo, life, dependencies );
+
+        publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
     }
 
     public boolean isLeader()
