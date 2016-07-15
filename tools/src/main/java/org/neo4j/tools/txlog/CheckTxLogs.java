@@ -91,6 +91,12 @@ public class CheckTxLogs
         }
     }
 
+    // used in other projects do not remove!
+    public boolean checkAll( File[] logs ) throws IOException
+    {
+        return scan( logs, new PrintingInconsistenciesHandler( out ), CheckTypes.CHECK_TYPES );
+    }
+
     boolean scan( File[] logs, InconsistenciesHandler handler, CheckType<?,?>... checkTypes ) throws IOException
     {
         boolean success = true;
