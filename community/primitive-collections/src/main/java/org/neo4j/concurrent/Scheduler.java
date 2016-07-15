@@ -409,8 +409,9 @@ public final class Scheduler
                 throw (RejectedExecutionException) th;
             }
             throw new RejectedExecutionException( th );
+        default:
+            throw new AssertionError( "Missing rejection case: " + onRejection );
         }
-        throw new AssertionError( "Missing rejection case: " + onRejection );
     }
 
     public static Future<?> executeRecurring( Runnable action, long initialDelay, long period, TimeUnit unit )
