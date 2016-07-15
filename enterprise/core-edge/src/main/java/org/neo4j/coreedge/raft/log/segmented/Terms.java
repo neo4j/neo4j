@@ -26,10 +26,10 @@ import static java.lang.Math.max;
 /**
  * Keeps track of all the terms in memory for efficient lookup.
  * The implementation favours lookup of recent entries.
- *
+ * <p>
  * Exposed methods shadow the regular RAFT log manipulation
  * functions and must be invoked from respective places.
- *
+ * <p>
  * During recovery truncate should be called between every segment
  * switch to "simulate" eventual truncations as a reason for switching
  * segments. It is ok to call truncate even if the reason was not a
@@ -66,8 +66,8 @@ public class Terms
         if ( term != terms[size - 1] )
         {
             setSize( size + 1 );
-            indexes[size - 1 ] = index;
-            terms[size - 1 ] = term;
+            indexes[size - 1] = index;
+            terms[size - 1] = term;
         }
     }
 
@@ -115,16 +115,16 @@ public class Terms
             return;
         }
 
-        size = 1;
+        size = indexes.length - offset;
         indexes = Arrays.copyOfRange( indexes, offset, indexes.length );
-        terms = Arrays.copyOfRange( terms, offset, terms.length);
+        terms = Arrays.copyOfRange( terms, offset, terms.length );
     }
 
     private int find( long min )
     {
         for ( int i = 0; i < indexes.length; i++ )
         {
-            if ( indexes[i] == min )
+            if ( indexes[i] >= min )
             {
                 return i;
             }

@@ -21,9 +21,12 @@ package org.neo4j.coreedge.raft.log.segmented;
 
 import org.junit.Test;
 
+import java.lang.reflect.Field;
 import java.util.function.Function;
 
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 public class TermsTest
@@ -281,6 +284,7 @@ public class TermsTest
     {
         // given
         terms = new Terms( 1, 1 );
+        final int PRUNE_EVERY = 100;
 
         // when
         for ( int i = 2; i < 1_000_000; i++ )
@@ -288,11 +292,32 @@ public class TermsTest
             // then nothing blows up, even after many entries and pruning every 100
             terms.append( i, i );
 
-            if ( i % 100 == 0 )
+            if ( i % PRUNE_EVERY == 0 )
             {
                 terms.prune( i );
             }
         }
+
+        assertThat( getTermsSize(), lessThan( PRUNE_EVERY + 1 ) );
+        assertThat( getIndexesSize(), lessThan( PRUNE_EVERY + 1 ) );
+    }
+
+    private int getTermsSize() throws NoSuchFieldException, IllegalAccessException
+    {
+        return getField( "terms" );
+    }
+
+    private int getIndexesSize() throws NoSuchFieldException, IllegalAccessException
+    {
+        return getField( "indexes" );
+    }
+
+    private int getField( String name ) throws NoSuchFieldException, IllegalAccessException
+    {
+        Field field = Terms.class.getDeclaredField( name );
+        field.setAccessible( true );
+        long[] longs = (long[]) field.get( terms );
+        return longs.length;
     }
 
     private void assertTermInRange( long from, long to, long expectedTerm )
