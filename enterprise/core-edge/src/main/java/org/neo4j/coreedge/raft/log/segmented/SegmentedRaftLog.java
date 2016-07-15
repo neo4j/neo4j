@@ -38,15 +38,15 @@ import org.neo4j.logging.LogProvider;
 /**
  * The segmented RAFT log is an append only log supporting the operations required to support
  * the RAFT consensus algorithm.
- * <p>
+ *
  * A RAFT log must be able to append new entries, but also truncate not yet committed entries,
  * prune out old compacted entries and skip to a later starting point.
- * <p>
+ *
  * The RAFT log consists of a sequence of individual log files, called segments, with
  * the following format:
- * <p>
+ *
  * [HEADER] [ENTRY]*
- * <p>
+ *
  * So a header with zero or more entries following it. Each segment file contains a consecutive
  * sequence of appended entries. The operations of truncating and skipping in the log is implemented
  * by switching to the next segment file, called the next version. A new segment file is also started
@@ -227,7 +227,7 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
     @Override
     public long readEntryTerm( long logIndex ) throws IOException
     {
-        long term = state.terms.get( logIndex );
+        long term = state.terms.getTermFor( logIndex );
         if ( term == -1 && logIndex >= state.prevIndex )
         {
             RaftLogEntry entry = readLogEntry( logIndex );
