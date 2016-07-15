@@ -46,24 +46,17 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     protected final AuthenticationStrategy authStrategy;
     protected final UserRepository users;
     protected final PasswordPolicy passwordPolicy;
-    protected final boolean authEnabled;
 
-    public BasicAuthManager( UserRepository users, PasswordPolicy passwordPolicy, AuthenticationStrategy authStrategy, boolean authEnabled )
+    public BasicAuthManager( UserRepository users, PasswordPolicy passwordPolicy, AuthenticationStrategy authStrategy )
     {
         this.users = users;
         this.passwordPolicy = passwordPolicy;
         this.authStrategy = authStrategy;
-        this.authEnabled = authEnabled;
     }
 
-    public BasicAuthManager( UserRepository users, PasswordPolicy passwordPolicy, AuthenticationStrategy authStrategy )
+    public BasicAuthManager( UserRepository users, PasswordPolicy passwordPolicy, Clock clock )
     {
-        this( users, passwordPolicy, authStrategy, true );
-    }
-
-    public BasicAuthManager( UserRepository users, PasswordPolicy passwordPolicy, Clock clock, boolean authEnabled )
-    {
-        this( users, passwordPolicy, new RateLimitedAuthenticationStrategy( clock, 3 ), authEnabled );
+        this( users, passwordPolicy, new RateLimitedAuthenticationStrategy( clock, 3 ) );
     }
 
     @Override
@@ -77,7 +70,7 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     {
         users.start();
 
-        if ( authEnabled && users.numberOfUsers() == 0 )
+        if ( users.numberOfUsers() == 0 )
         {
             newUser( "neo4j", "neo4j", true );
         }
@@ -98,8 +91,6 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     @Override
     public AuthSubject login( Map<String,Object> authToken ) throws InvalidAuthTokenException
     {
-        assertAuthEnabled();
-
         String username = AuthToken.safeCast( AuthToken.PRINCIPAL, authToken );
         String password = AuthToken.safeCast( AuthToken.CREDENTIALS, authToken );
 
@@ -120,7 +111,6 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     public User newUser( String username, String initialPassword, boolean requirePasswordChange ) throws IOException,
             InvalidArgumentsException
     {
-        assertAuthEnabled();
         assertValidName( username );
         User user = new User.Builder()
                 .withName( username )
@@ -134,7 +124,6 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     @Override
     public boolean deleteUser( String username ) throws IOException
     {
-        assertAuthEnabled();
         User user = users.getUserByName( username );
         return user != null && users.delete( user );
     }
@@ -142,7 +131,6 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     @Override
     public User getUser( String username ) throws InvalidArgumentsException
     {
-        assertAuthEnabled();
         User user = users.getUserByName( username );
         if ( user == null )
         {
@@ -168,7 +156,6 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     public void setUserPassword( String username, String password ) throws IOException,
             InvalidArgumentsException
     {
-        assertAuthEnabled();
         User existingUser = users.getUserByName( username );
         if ( existingUser == null )
         {
@@ -193,14 +180,6 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
         {
             // try again
             setUserPassword( username, password );
-        }
-    }
-
-    protected void assertAuthEnabled()
-    {
-        if ( !authEnabled )
-        {
-            throw new IllegalStateException( "Auth not enabled" );
         }
     }
 

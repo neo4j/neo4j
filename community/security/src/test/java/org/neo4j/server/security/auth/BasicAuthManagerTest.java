@@ -19,11 +19,16 @@
  */
 package org.neo4j.server.security.auth;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
+import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
@@ -33,23 +38,36 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.security.AuthenticationResult.*;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 
 public class BasicAuthManagerTest
 {
-    @Test
-    public void shouldCreateDefaultUserIfNoneExist() throws Throwable
-    {
-        // Given
-        final InMemoryUserRepository users = new InMemoryUserRepository();
-        final BasicAuthManager manager =
-                new BasicAuthManager( users, mock( PasswordPolicy.class ), mock( AuthenticationStrategy.class ) );
+    private InMemoryUserRepository users;
+    private BasicAuthManager manager;
+    private AuthenticationStrategy authStrategy = mock( AuthenticationStrategy.class );;
 
-        // When
+    @Before
+    public void setup() throws Throwable
+    {
+        users = new InMemoryUserRepository();
+        manager = new BasicAuthManager( users, mock( PasswordPolicy.class ), authStrategy );
         manager.start();
+    }
+
+    @After
+    public void teardown() throws Throwable
+    {
+        manager.stop();
+    }
+
+    @Test
+    public void shouldCreateDefaultUserIfNoneExist()
+    {
+        // When
+        final User user = users.getUserByName( "neo4j" );
 
         // Then
-        final User user = users.getUserByName( "neo4j" );
         assertNotNull( user );
         assertTrue( user.credentials().matchesPassword( "neo4j" ) );
         assertTrue( user.passwordChangeRequired() );
@@ -59,90 +77,54 @@ public class BasicAuthManagerTest
     public void shouldFindAndAuthenticateUserSuccessfully() throws Throwable
     {
         // Given
-        final InMemoryUserRepository users = new InMemoryUserRepository();
-        final User user = new User.Builder( "jake", Credential.forPassword( "abc123" )).build();
-        users.create( user );
-        final AuthenticationStrategy authStrategy = mock( AuthenticationStrategy.class );
-        final BasicAuthManager manager = new BasicAuthManager( users, mock( PasswordPolicy.class ), authStrategy );
-        manager.start();
-        when( authStrategy.authenticate( user, "abc123" )).thenReturn( AuthenticationResult.SUCCESS );
+        final User user = createUser( "jake", "abc123", false );
 
         // When
-        AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) );
-        AuthenticationResult result = authSubject.getAuthenticationResult();
+        when( authStrategy.authenticate( user, "abc123" )).thenReturn( SUCCESS );
 
         // Then
-        assertThat( result, equalTo( AuthenticationResult.SUCCESS ) );
+        assertLoginGivesResult( "jake", "abc123", SUCCESS );
     }
 
     @Test
     public void shouldFindAndAuthenticateUserAndReturnAuthStrategyResult() throws Throwable
     {
         // Given
-        final InMemoryUserRepository users = new InMemoryUserRepository();
-        final User user = new User.Builder( "jake", Credential.forPassword( "abc123" )).withRequiredPasswordChange( true ).build();
-        users.create( user );
-        final AuthenticationStrategy authStrategy = mock( AuthenticationStrategy.class );
-        final BasicAuthManager manager = new BasicAuthManager( users, mock( PasswordPolicy.class ), authStrategy );
-        manager.start();
-        when( authStrategy.authenticate( user, "abc123" )).thenReturn( AuthenticationResult.TOO_MANY_ATTEMPTS );
+        final User user = createUser( "jake", "abc123", true );
 
         // When
-        AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) );
-        AuthenticationResult result = authSubject.getAuthenticationResult();
+        when( authStrategy.authenticate( user, "abc123" )).thenReturn( TOO_MANY_ATTEMPTS );
 
         // Then
-        assertThat( result, equalTo( AuthenticationResult.TOO_MANY_ATTEMPTS ) );
+        assertLoginGivesResult( "jake", "abc123", TOO_MANY_ATTEMPTS );
     }
 
     @Test
     public void shouldFindAndAuthenticateUserAndReturnPasswordChangeIfRequired() throws Throwable
     {
         // Given
-        final InMemoryUserRepository users = new InMemoryUserRepository();
-        final User user = new User.Builder( "jake", Credential.forPassword( "abc123" )).withRequiredPasswordChange( true ).build();
-        users.create( user );
-        final AuthenticationStrategy authStrategy = mock( AuthenticationStrategy.class );
-        final BasicAuthManager manager = new BasicAuthManager( users, mock( PasswordPolicy.class ), authStrategy );
-        manager.start();
-        when( authStrategy.authenticate( user, "abc123" )).thenReturn( AuthenticationResult.SUCCESS );
+        final User user = createUser( "jake", "abc123", true );
 
         // When
-        AuthSubject authSubject = manager.login( authToken( "jake", "abc123" ) );
-        AuthenticationResult result = authSubject.getAuthenticationResult();
+        when( authStrategy.authenticate( user, "abc123" )).thenReturn( SUCCESS );
 
         // Then
-        assertThat( result, equalTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED ) );
+        assertLoginGivesResult( "jake", "abc123", PASSWORD_CHANGE_REQUIRED );
     }
 
     @Test
     public void shouldFailAuthenticationIfUserIsNotFound() throws Throwable
     {
         // Given
-        final InMemoryUserRepository users = new InMemoryUserRepository();
-        final User user = new User.Builder( "jake", Credential.forPassword( "abc123" )).withRequiredPasswordChange( true ).build();
-        users.create( user );
-        final AuthenticationStrategy authStrategy = mock( AuthenticationStrategy.class );
-        final BasicAuthManager manager = new BasicAuthManager( users, mock( PasswordPolicy.class ), authStrategy );
-        manager.start();
-
-        // When
-        AuthSubject authSubject = manager.login( authToken( "unknown", "abc123" ) );
-        AuthenticationResult result = authSubject.getAuthenticationResult();
+        createUser( "jake", "abc123", true );
 
         // Then
-        assertThat( result, equalTo( AuthenticationResult.FAILURE ) );
+        assertLoginGivesResult( "unknown", "abc123", FAILURE );
     }
 
     @Test
     public void shouldCreateUser() throws Throwable
     {
-        // Given
-        final InMemoryUserRepository users = new InMemoryUserRepository();
-        final BasicAuthManager manager =
-                new BasicAuthManager( users, mock( PasswordPolicy.class ), mock( AuthenticationStrategy.class ) );
-        manager.start();
-
         // When
         manager.newUser( "foo", "bar", true );
 
@@ -157,12 +139,7 @@ public class BasicAuthManagerTest
     public void shouldDeleteUser() throws Throwable
     {
         // Given
-        final InMemoryUserRepository users = new InMemoryUserRepository();
-        final User user = new User.Builder( "jake", Credential.forPassword( "abc123" )).withRequiredPasswordChange( true ).build();
-        users.create( user );
-        final BasicAuthManager manager =
-                new BasicAuthManager( users, mock( PasswordPolicy.class ), mock( AuthenticationStrategy.class ) );
-        manager.start();
+        manager.newUser( "jake", "abc123", true );
 
         // When
         manager.deleteUser( "jake" );
@@ -175,12 +152,7 @@ public class BasicAuthManagerTest
     public void shouldDeleteUnknownUser() throws Throwable
     {
         // Given
-        final InMemoryUserRepository users = new InMemoryUserRepository();
-        final User user = new User.Builder( "jake", Credential.forPassword( "abc123" )).withRequiredPasswordChange( true ).build();
-        users.create( user );
-        final BasicAuthManager manager =
-                new BasicAuthManager( users, mock( PasswordPolicy.class ), mock( AuthenticationStrategy.class ) );
-        manager.start();
+        manager.newUser( "jake", "abc123", true );
 
         // When
         manager.deleteUser( "unknown" );
@@ -193,11 +165,7 @@ public class BasicAuthManagerTest
     public void shouldSetPassword() throws Throwable
     {
         // Given
-        final InMemoryUserRepository users = new InMemoryUserRepository();
-        users.create( new User.Builder( "jake", Credential.forPassword( "abc123" )).withRequiredPasswordChange( true ).build() );
-        final BasicAuthManager manager =
-                new BasicAuthManager( users, mock( PasswordPolicy.class ), mock( AuthenticationStrategy.class ) );
-        manager.start();
+        manager.newUser( "jake", "abc123", true );
 
         // When
         manager.setUserPassword( "jake", "hello, world!" );
@@ -211,12 +179,6 @@ public class BasicAuthManagerTest
     @Test
     public void shouldReturnNullWhenSettingPasswordForUnknownUser() throws Throwable
     {
-        // Given
-        final InMemoryUserRepository users = new InMemoryUserRepository();
-        final BasicAuthManager manager =
-                new BasicAuthManager( users, mock( PasswordPolicy.class ), mock( AuthenticationStrategy.class ) );
-        manager.start();
-
         // When
         try
         {
@@ -229,59 +191,19 @@ public class BasicAuthManagerTest
         }
     }
 
-    @Test
-    public void shouldThrowWhenAuthIsDisabled() throws Throwable
+    private User createUser( String username, String password, boolean pwd_change )
+            throws IOException, InvalidArgumentsException
     {
-        final InMemoryUserRepository users = new InMemoryUserRepository();
-        final BasicAuthManager manager =
-                new BasicAuthManager( users, mock( PasswordPolicy.class ), mock( AuthenticationStrategy.class ), false );
-        manager.start();
+        User user = new User.Builder( username, Credential.forPassword( password ))
+            .withRequiredPasswordChange( pwd_change ).build();
+        users.create(user);
+        return user;
+    }
 
-        try
-        {
-            manager.login( authToken( "foo", "bar" ) );
-            fail( "exception expected" );
-        } catch ( IllegalStateException e )
-        {
-            // expected
-        }
-
-        try
-        {
-            manager.newUser( "foo", "bar", true );
-            fail( "exception expected" );
-        } catch ( IllegalStateException e )
-        {
-            // expected
-        }
-
-        try
-        {
-            manager.deleteUser( "foo" );
-            fail( "exception expected" );
-        } catch ( IllegalStateException e )
-        {
-            // expected
-        }
-
-        try
-        {
-            manager.getUser( "foo" );
-            fail( "exception expected" );
-        } catch ( IllegalStateException e )
-        {
-            // expected
-        }
-
-        try
-        {
-            manager.setUserPassword( "foo", "bar" );
-            fail( "exception expected" );
-        } catch ( IllegalStateException e )
-        {
-            // expected
-        }
-
-        assertTrue( users.numberOfUsers() == 0 );
+    private void assertLoginGivesResult( String username, String password, AuthenticationResult expectedResult )
+            throws InvalidAuthTokenException
+    {
+        AuthSubject authSubject = manager.login( authToken( username, password ) );
+        assertThat( authSubject.getAuthenticationResult(), equalTo( expectedResult ) );
     }
 }

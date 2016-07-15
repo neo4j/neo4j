@@ -48,12 +48,17 @@ public class BasicAuthManagerFactory extends AuthManager.Factory
     @Override
     public AuthManager newInstance( Config config, LogProvider logProvider )
     {
+        if ( !config.get( GraphDatabaseSettings.auth_enabled ) )
+        {
+            throw new IllegalStateException( "Attempted to build BasicAuthManager even though " +
+                    "configuration setting auth_enabled=false" );
+        }
+
         final UserRepository userRepository =
                 new FileUserRepository( config.get( GraphDatabaseSettings.auth_store ).toPath(), logProvider );
 
         final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
 
-        return new BasicAuthManager( userRepository, passwordPolicy, systemUTC(),
-                config.get( GraphDatabaseSettings.auth_enabled ) );
+        return new BasicAuthManager( userRepository, passwordPolicy, systemUTC() );
     }
 }
