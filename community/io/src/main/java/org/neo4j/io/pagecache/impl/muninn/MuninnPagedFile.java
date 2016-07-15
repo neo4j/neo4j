@@ -24,7 +24,11 @@ import java.io.Flushable;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
+import org.neo4j.concurrent.Scheduler;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
@@ -40,7 +44,9 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
-final class MuninnPagedFile implements PagedFile, Flushable
+import static org.neo4j.concurrent.Scheduler.OnRejection.CALLER_RUNS;
+
+public final class MuninnPagedFile implements PagedFile, Flushable
 {
     private static final int translationTableChunkSizePower = Integer.getInteger(
             "org.neo4j.io.pagecache.impl.muninn.MuninnPagedFile.translationTableChunkSizePower", 12 );
@@ -48,6 +54,15 @@ final class MuninnPagedFile implements PagedFile, Flushable
     private static final long translationTableChunkSizeMask = translationTableChunkSize - 1;
     private static final int translationTableChunkArrayBase = UnsafeUtil.arrayBaseOffset( MuninnPage[].class );
     private static final int translationTableChunkArrayScale = UnsafeUtil.arrayIndexScale( MuninnPage[].class );
+    @SuppressWarnings( "unchecked" )
+    private static final ThreadLocal<MuninnPage[]> flushArrayCache = new ThreadLocal()
+    {
+        @Override
+        protected Object initialValue()
+        {
+            return new MuninnPage[translationTableChunkSize];
+        }
+    };
 
     private static final long headerStateOffset =
             UnsafeUtil.getFieldOffset( MuninnPagedFile.class, "headerState" );
@@ -250,12 +265,116 @@ final class MuninnPagedFile implements PagedFile, Flushable
             throws IOException
     {
         // TODO it'd be awesome if, on Linux, we'd call sync_file_range(2) instead of fsync
-        MuninnPage[] pages = new MuninnPage[translationTableChunkSize];
-        long filePageId = -1; // Start at -1 because we increment at the *start* of the chunk-loop iteration.
-        long limiterStamp = IOLimiter.INITIAL_STAMP;
         Object[][] tt = this.translationTable;
-        for ( Object[] chunk : tt )
+        long filePageId = -1; // Start at -1 because we increment at the *start* of the chunk-loop iteration.
+        int idx = 0;
+        int len = tt.length;
+
+        if ( limiter.getMaxIOPS().isPresent() )
         {
+            // We need to do IOPS accounting, so go with single-threaded flushing for now.
+            // This can still be made faster by filtering unmodified chunks in parallel.
+            flushRange( filePageId, tt, idx, len, flushOpportunity, forClosing, limiter );
+        }
+        else
+        {
+            // We have no IOPS limits imposed upon us. Let's go parallel on this bad boy!
+            flushRangeParallel( filePageId, tt, idx, len, flushOpportunity, forClosing, limiter );
+        }
+
+        swapper.force();
+    }
+
+    private void flushRangeParallel( long filePageId, Object[][] tt, int idx, int len, FlushEventOpportunity flushOpportunity,
+                             boolean forClosing, IOLimiter limiter ) throws IOException
+    {
+        int chunksPerJob = Math.max( 1, len / 1024 );
+        int range = chunksPerJob * translationTableChunkSize;
+        int jobs = len / chunksPerJob;
+        if ( jobs == 1 )
+        {
+            jobs = 0; // Do it in-thread if there's only one job
+        }
+        Future<?>[] futures = new Future[jobs];
+
+        for ( int i = 0; i < jobs; i++ )
+        {
+            FlushRange callable = new FlushRange( filePageId, tt, idx, chunksPerJob, flushOpportunity, forClosing, limiter );
+            futures[i] = Scheduler.executeIOBound( callable, CALLER_RUNS );
+            filePageId += range;
+            idx += chunksPerJob;
+        }
+
+        // Flush any left-over chunks
+        int leftOverRange = len - idx;
+        if ( leftOverRange > 0 )
+        {
+            flushRange( filePageId, tt, idx, leftOverRange, flushOpportunity, forClosing, limiter );
+        }
+
+        // Wait for parallel tasks to complete
+        for ( Future<?> future : futures )
+        {
+            while ( !future.isDone() )
+            {
+                try
+                {
+                    future.get();
+                }
+                catch ( InterruptedException ignore )
+                {
+                }
+                catch ( ExecutionException e )
+                {
+                    if ( e.getCause() instanceof IOException )
+                    {
+                        throw (IOException) e.getCause();
+                    }
+                    throw new IOException( "Exception during parallel file flush", e );
+                }
+            }
+        }
+    }
+
+    private class FlushRange implements Callable<Object>
+    {
+        private final long filePageId;
+        private final Object[][] tt;
+        private final int idx;
+        private final int chunksPerJob;
+        private final FlushEventOpportunity flushOpportunity;
+        private final boolean forClosing;
+        private final IOLimiter limiter;
+
+        private FlushRange( long filePageId, Object[][] tt, int idx, int chunksPerJob,
+                            FlushEventOpportunity flushOpportunity, boolean forClosing, IOLimiter limiter )
+        {
+            this.filePageId = filePageId;
+            this.tt = tt;
+            this.idx = idx;
+            this.chunksPerJob = chunksPerJob;
+            this.flushOpportunity = flushOpportunity;
+            this.forClosing = forClosing;
+            this.limiter = limiter;
+        }
+
+        @Override
+        public Object call() throws Exception
+        {
+            flushRange( filePageId, tt, idx, chunksPerJob, flushOpportunity, forClosing, limiter );
+            return null;
+        }
+    }
+
+    private void flushRange( long filePageId, Object[][] tt, int idx, int len, FlushEventOpportunity flushOpportunity,
+                             boolean forClosing, IOLimiter limiter ) throws IOException
+    {
+        MuninnPage[] pages = flushArrayCache.get();
+        long limiterStamp = IOLimiter.INITIAL_STAMP;
+        int targetIdx = len + idx;
+        for (; idx < targetIdx; idx++ )
+        {
+            Object[] chunk = tt[idx];
             // TODO Look into if we can tolerate flushing a few clean pages if it means we can use larger vectors.
             // TODO The clean pages in question must still be loaded, though. Otherwise we'll end up writing
             // TODO garbage to the file.
@@ -316,8 +435,6 @@ final class MuninnPagedFile implements PagedFile, Flushable
                 limiterStamp = limiter.maybeLimitIO( limiterStamp, pagesGrabbed, this );
             }
         }
-
-        swapper.force();
     }
 
     private void vectoredFlush(
