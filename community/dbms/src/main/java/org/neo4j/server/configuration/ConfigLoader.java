@@ -30,10 +30,8 @@ import java.util.function.Function;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.shell.ShellSettings;
 
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
-import static org.neo4j.kernel.configuration.Settings.TRUE;
 
 public class ConfigLoader
 {
@@ -90,7 +88,6 @@ public class ConfigLoader
      */
     private static void overrideEmbeddedDefaults( Map<String, String> config )
     {
-        config.putIfAbsent( ShellSettings.remote_shell_enabled.name(), TRUE );
         config.putIfAbsent( GraphDatabaseSettings.auth_enabled.name(), "true" );
 
         String dataDirectory = config.getOrDefault( data_directory.name(), data_directory.getDefaultValue() );

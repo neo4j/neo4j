@@ -37,7 +37,9 @@ import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.fail;
 import static org.neo4j.jmx.JmxUtils.getAttribute;
 import static org.neo4j.jmx.JmxUtils.getObjectName;
 
@@ -86,7 +88,7 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void connectWithShellOnDefaultPortWhenNoShellConfigSupplied() throws Throwable
+    public void shouldNotBeAbleToConnectWithShellOnDefaultPortWhenNoShellConfigSupplied() throws Throwable
     {
         // Given
         server = CommunityServerBuilder.server().build();
@@ -95,7 +97,16 @@ public class ServerConfigIT extends ExclusiveServerTestBase
         server.start();
 
         // Then
-        ShellLobby.newClient().shutdown();
+        try
+        {
+            ShellLobby.newClient().shutdown();
+            fail( "Should not have been able to connect a shell client" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( "Should have been got connection refused", e.getMessage(),
+                    containsString( "Connection refused" ) );
+        }
     }
 
     private int findFreeShellPortToUse( int startingPort )
