@@ -21,6 +21,7 @@ package org.neo4j.coreedge.raft.log.segmented;
 
 import org.junit.Test;
 
+import java.lang.reflect.Field;
 import java.util.function.Function;
 
 import static org.junit.Assert.assertEquals;
@@ -276,6 +277,135 @@ public class TermsTest
         assertTermInRange( skipIndex + 1, skipIndex + 20, skipTerm );
     }
 
+    @Test
+    public void shouldNotPruneAnythingIfBeforeMin() throws Exception
+    {
+        // given
+        long term = 5;
+        long prevIndex = 10;
+        terms = new Terms( prevIndex, term );
+
+        appendRange( prevIndex + 1, prevIndex + 10, term );
+        appendRange( prevIndex + 10, prevIndex + 20, term + 1 );
+
+        assertEquals( 2, getIndexesSize() );
+        assertEquals( 2, getTermsSize() );
+
+        // when
+        terms.prune( prevIndex );
+
+        // then
+        assertTermInRange( prevIndex - 10, prevIndex, -1 );
+        assertTermInRange( prevIndex, prevIndex + 10, term );
+        assertTermInRange( prevIndex + 10, prevIndex + 20, term + 1 );
+
+        assertEquals( 2, getIndexesSize() );
+        assertEquals( 2, getTermsSize() );
+    }
+
+    @Test
+    public void shouldPruneInMiddleOfFirstRange() throws Exception
+    {
+        // given
+        long term = 5;
+        long prevIndex = 10;
+        terms = new Terms( prevIndex, term );
+
+        appendRange( prevIndex + 1, prevIndex + 10, term ); // half-pruned
+        appendRange( prevIndex + 10, prevIndex + 20, term + 1 );
+
+        assertEquals( 2, getIndexesSize() );
+        assertEquals( 2, getTermsSize() );
+
+        // when
+        long pruneIndex = prevIndex + 5;
+        terms.prune( pruneIndex );
+
+        // then
+        assertTermInRange( prevIndex - 10, pruneIndex, -1 );
+        assertTermInRange( pruneIndex, prevIndex + 10, term );
+        assertTermInRange( prevIndex + 10, prevIndex + 20, term + 1 );
+
+        assertEquals( 2, getIndexesSize() );
+        assertEquals( 2, getTermsSize() );
+    }
+
+    @Test
+    public void shouldPruneAtBoundaryOfRange() throws Exception
+    {
+        // given
+        long term = 5;
+        long prevIndex = 10;
+        terms = new Terms( prevIndex, term );
+
+        appendRange( prevIndex + 1, prevIndex + 10, term ); // completely pruned
+        appendRange( prevIndex + 10, prevIndex + 20, term + 1 );
+
+        assertEquals( 2, getIndexesSize() );
+        assertEquals( 2, getTermsSize() );
+
+        // when
+        long pruneIndex = prevIndex + 10;
+        terms.prune( pruneIndex );
+
+        // then
+        assertTermInRange( prevIndex - 10, pruneIndex , -1 );
+        assertTermInRange( prevIndex + 10, prevIndex + 20, term + 1 );
+
+        assertEquals( 1, getIndexesSize() );
+        assertEquals( 1, getTermsSize() );
+    }
+
+    @Test
+    public void shouldPruneSeveralCompleteRanges() throws Exception
+    {
+        // given
+        // given
+        long term = 5;
+        long prevIndex = 10;
+        terms = new Terms( prevIndex, term );
+
+        appendRange( prevIndex + 1, prevIndex + 10, term ); // completely pruned
+        appendRange( prevIndex + 10, prevIndex + 20, term + 1 ); // completely pruned
+        appendRange( prevIndex + 20, prevIndex + 30, term + 2 ); // half-pruned
+        appendRange( prevIndex + 30, prevIndex + 40, term + 3 );
+        appendRange( prevIndex + 40, prevIndex + 50, term + 4 );
+
+        assertEquals( 5, getIndexesSize() );
+        assertEquals( 5, getTermsSize() );
+
+        // when
+        long pruneIndex = prevIndex + 25;
+        terms.prune( pruneIndex );
+
+        // then
+        assertTermInRange( prevIndex - 10, pruneIndex , -1 );
+        assertTermInRange( pruneIndex, prevIndex + 30, term + 2 );
+        assertTermInRange( prevIndex + 30, prevIndex + 40, term + 3 );
+        assertTermInRange( prevIndex + 40, prevIndex + 50, term + 4 );
+
+        assertEquals( 3, getIndexesSize() );
+        assertEquals( 3, getTermsSize() );
+    }
+
+    private int getTermsSize() throws NoSuchFieldException, IllegalAccessException
+    {
+        return getField( "terms" );
+    }
+
+    private int getIndexesSize() throws NoSuchFieldException, IllegalAccessException
+    {
+        return getField( "indexes" );
+    }
+
+    private int getField( String name ) throws NoSuchFieldException, IllegalAccessException
+    {
+        Field field = Terms.class.getDeclaredField( name );
+        field.setAccessible( true );
+        long[] longs = (long[]) field.get( terms );
+        return longs.length;
+    }
+
     private void assertTermInRange( long from, long to, long expectedTerm )
     {
         assertTermInRange( from, to, ( index ) -> expectedTerm );
@@ -285,7 +415,7 @@ public class TermsTest
     {
         for ( long index = from; index < to; index++ )
         {
-            assertEquals( (long) expectedTermFunction.apply( index ), terms.get( index ) );
+            assertEquals( "For index: " + index, (long) expectedTermFunction.apply( index ), terms.get( index ) );
         }
     }
 
