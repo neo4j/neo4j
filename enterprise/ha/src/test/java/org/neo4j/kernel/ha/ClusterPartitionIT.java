@@ -157,7 +157,7 @@ public class ClusterPartitionIT
                 .withProvider( ClusterManager.clusterOfSize( clusterSize ) )
                 .withSharedConfig( stringMap(
                         ClusterSettings.heartbeat_interval.name(), "1",
-                        ClusterSettings.heartbeat_timeout.name(), "3",
+//                        ClusterSettings.heartbeat_timeout.name(), "3",
                         HaSettings.tx_push_factor.name(), "4" ) ) // so we know the initial data made it everywhere
                 .build();
 
@@ -237,7 +237,7 @@ public class ClusterPartitionIT
                 .withProvider( ClusterManager.clusterOfSize( clusterSize ) )
                 .withSharedConfig( stringMap(
                         ClusterSettings.heartbeat_interval.name(), "1",
-                        ClusterSettings.heartbeat_timeout.name(), "3",
+//                        ClusterSettings.heartbeat_timeout.name(), "3",
                         HaSettings.tx_push_factor.name(), "4" ) ) // so we know the initial data made it everywhere
                 .build();
 
