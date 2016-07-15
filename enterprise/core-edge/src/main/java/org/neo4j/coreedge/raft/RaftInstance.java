@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import org.neo4j.coreedge.helper.VolatileFuture;
 import org.neo4j.coreedge.raft.log.RaftLog;
@@ -33,9 +32,9 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.membership.RaftGroup;
 import org.neo4j.coreedge.raft.membership.RaftMembershipManager;
-import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
+import org.neo4j.coreedge.raft.outcome.ConsensusOutcome;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.replication.shipping.RaftLogShippingManager;
 import org.neo4j.coreedge.raft.roles.Role;
@@ -46,7 +45,6 @@ import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.util.Listener;
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -73,10 +71,10 @@ import static org.neo4j.coreedge.raft.roles.Role.LEADER;
  * the leader will have replicated it safely, and at a later point in time the commit() function
  * of the entry log will be called.
  */
-public class RaftInstance implements LeaderLocator,
-        Inbound.MessageHandler<RaftMessages.RaftMessage>, CoreMetaData
+public class RaftInstance implements LeaderLocator, CoreMetaData
 {
     private final LeaderNotFoundMonitor leaderNotFoundMonitor;
+    private RenewableTimeoutService.RenewableTimeout heartbeatTimer;
 
     public enum Timeouts implements RenewableTimeoutService.TimeoutName
     {
@@ -92,10 +90,8 @@ public class RaftInstance implements LeaderLocator,
     private RenewableTimeoutService.RenewableTimeout electionTimer;
     private RaftMembershipManager membershipManager;
 
-    private final RaftStateMachine raftStateMachine;
     private final long electionTimeout;
 
-    private final Supplier<DatabaseHealth> databaseHealthSupplier;
     private final VolatileFuture<CoreMember> volatileLeader = new VolatileFuture<>( null );
 
     private final Outbound<CoreMember, RaftMessages.RaftMessage> outbound;
@@ -105,19 +101,17 @@ public class RaftInstance implements LeaderLocator,
     private RaftLogShippingManager logShipping;
 
     public RaftInstance( CoreMember myself, StateStorage<TermState> termStorage,
-            StateStorage<VoteState> voteStorage, RaftLog entryLog,
-            RaftStateMachine raftStateMachine, long electionTimeout, long heartbeatInterval,
-            RenewableTimeoutService renewableTimeoutService,
-            Outbound<CoreMember,RaftMessages.RaftMessage> outbound,
-            LogProvider logProvider, RaftMembershipManager membershipManager,
-            RaftLogShippingManager logShipping,
-            Supplier<DatabaseHealth> databaseHealthSupplier,
-            InFlightMap<Long,RaftLogEntry> inFlightMap,
-            Monitors monitors )
+                         StateStorage<VoteState> voteStorage, RaftLog entryLog,
+                         long electionTimeout, long heartbeatInterval,
+                         RenewableTimeoutService renewableTimeoutService,
+                         Outbound<CoreMember, RaftMessages.RaftMessage> outbound,
+                         LogProvider logProvider, RaftMembershipManager membershipManager,
+                         RaftLogShippingManager logShipping,
+                         InFlightMap<Long, RaftLogEntry> inFlightMap,
+                         Monitors monitors )
     {
         this.myself = myself;
         this.entryLog = entryLog;
-        this.raftStateMachine = raftStateMachine;
         this.electionTimeout = electionTimeout;
         this.heartbeatInterval = heartbeatInterval;
 
@@ -125,7 +119,6 @@ public class RaftInstance implements LeaderLocator,
 
         this.outbound = outbound;
         this.logShipping = logShipping;
-        this.databaseHealthSupplier = databaseHealthSupplier;
         this.log = logProvider.getLog( getClass() );
 
         this.membershipManager = membershipManager;
@@ -139,17 +132,37 @@ public class RaftInstance implements LeaderLocator,
 
     private void initTimers()
     {
-        electionTimer = renewableTimeoutService.create(
-                Timeouts.ELECTION, electionTimeout, randomTimeoutRange(), timeout -> {
+        electionTimer = renewableTimeoutService.create( Timeouts.ELECTION, electionTimeout, randomTimeoutRange(),
+                timeout -> {
                     log.info( "Election timeout triggered, base timeout value is %d", electionTimeout );
-                    handle( new RaftMessages.Timeout.Election( myself ) );
+                    try
+                    {
+                        handle( new RaftMessages.Timeout.Election( myself ) );
+                    }
+                    catch ( IOException e )
+                    {
+                        log.error( "Failed to process election timeout.", e );
+                    }
                     timeout.renew();
                 } );
-        renewableTimeoutService.create(
-                Timeouts.HEARTBEAT, heartbeatInterval, 0, timeout -> {
-                    handle( new RaftMessages.Timeout.Heartbeat( myself ) );
+        heartbeatTimer = renewableTimeoutService.create( Timeouts.HEARTBEAT, heartbeatInterval, 0,
+                timeout -> {
+                    try
+                    {
+                        handle( new RaftMessages.Timeout.Heartbeat( myself ) );
+                    }
+                    catch ( IOException e )
+                    {
+                        log.error( "Failed to process heartbeat timeout.", e );
+                    }
                     timeout.renew();
                 } );
+    }
+
+    public void stopTimers()
+    {
+        heartbeatTimer.cancel();
+        electionTimer.cancel();
     }
 
     /**
@@ -160,8 +173,10 @@ public class RaftInstance implements LeaderLocator,
      */
     public synchronized void bootstrapWithInitialMembers( RaftGroup memberSet ) throws BootstrapException
     {
+        log.info( "Attempting to bootstrap with initial member set %s", memberSet );
         if ( entryLog.appendIndex() >= 0 )
         {
+            log.info( "Ignoring bootstrap attempt because the raft log is not empty." );
             return;
         }
 
@@ -181,7 +196,6 @@ public class RaftInstance implements LeaderLocator,
         }
         catch ( IOException e )
         {
-            databaseHealthSupplier.get().panic( e );
             throw new BootstrapException( e );
         }
     }
@@ -242,14 +256,6 @@ public class RaftInstance implements LeaderLocator,
         return state;
     }
 
-    private void checkForSnapshotNeed( Outcome outcome )
-    {
-        if ( outcome.needsFreshSnapshot() )
-        {
-            raftStateMachine.notifyNeedFreshSnapshot();
-        }
-    }
-
     private void notifyLeaderChanges( Outcome outcome )
     {
         for ( Listener<CoreMember> listener : leaderListeners )
@@ -290,47 +296,27 @@ public class RaftInstance implements LeaderLocator,
         return false;
     }
 
-    private void panicAndStop( RaftMessages.RaftMessage incomingMessage, Throwable e )
+    public synchronized ConsensusOutcome handle( RaftMessages.RaftMessage incomingMessage ) throws IOException
     {
-        log.error( "Failed to process Raft message " + incomingMessage, e );
-        databaseHealthSupplier.get().panic( e );
-        electionTimer.cancel();
-    }
+        Outcome outcome = currentRole.handler.handle( incomingMessage, state, log );
 
-    public synchronized void handle( RaftMessages.RaftMessage incomingMessage )
-    {
-        try
+        boolean newLeaderWasElected = leaderChanged( outcome, state.leader() );
+
+        state.update( outcome ); // updates to raft log happen within
+        sendMessages( outcome );
+
+        handleTimers( outcome );
+        handleLogShipping( outcome );
+
+        driveMembership( outcome );
+
+        volatileLeader.set( outcome.getLeader() );
+
+        if ( newLeaderWasElected )
         {
-            Outcome outcome = currentRole.handler.handle( incomingMessage, state, log );
-
-            boolean newLeaderWasElected = leaderChanged( outcome, state.leader() );
-            boolean newCommittedEntry = outcome.getCommitIndex() > state.commitIndex();
-
-            state.update( outcome ); // updates to raft log happen within
-            sendMessages( outcome );
-
-            handleTimers( outcome );
-            handleLogShipping( outcome );
-
-            driveMembership( outcome );
-
-            volatileLeader.set( outcome.getLeader() );
-
-            if ( newCommittedEntry )
-            {
-                raftStateMachine.notifyCommitted( state.commitIndex() );
-            }
-            if ( newLeaderWasElected )
-            {
-                notifyLeaderChanges( outcome );
-            }
-
-            checkForSnapshotNeed( outcome );
+            notifyLeaderChanges( outcome );
         }
-        catch ( Throwable e )
-        {
-            panicAndStop( incomingMessage, e );
-        }
+        return outcome;
     }
 
     private void driveMembership( Outcome outcome ) throws IOException

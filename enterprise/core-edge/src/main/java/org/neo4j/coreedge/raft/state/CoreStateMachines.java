@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.core.CoreStateType;
-import org.neo4j.coreedge.raft.log.MonitoredRaftLog;
+import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationStateMachine;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequest;
@@ -52,7 +52,7 @@ public class CoreStateMachines
     private final ReplicatedIdAllocationStateMachine idAllocationStateMachine;
     private final CoreState coreState;
     private final RecoverTransactionLogState txLogState;
-    private final MonitoredRaftLog raftLog;
+    private final RaftLog raftLog;
     private final LocalDatabase localDatabase;
 
     private final CommandDispatcher currentBatch = new StateMachineCommandDispatcher();
@@ -67,7 +67,7 @@ public class CoreStateMachines
             ReplicatedIdAllocationStateMachine idAllocationStateMachine,
             CoreState coreState,
             RecoverTransactionLogState txLogState,
-            MonitoredRaftLog raftLog,
+            RaftLog raftLog,
             LocalDatabase localDatabase )
     {
         this.replicatedTxStateMachine = replicatedTxStateMachine;

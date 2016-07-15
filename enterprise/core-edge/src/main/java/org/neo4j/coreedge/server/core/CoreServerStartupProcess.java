@@ -54,7 +54,8 @@ public class CoreServerStartupProcess
         services.add( raftServer );
         services.add( catchupServer );
         services.add( raftTimeoutService );
-        services.add( new MembershipWaiterLifecycle( membershipWaiter, joinCatchupTimeout, raft, raftServer, logProvider ) );
+        services.add( new MembershipWaiterLifecycle( membershipWaiter, joinCatchupTimeout, raft, logProvider ) );
+
         return services;
     }
 
@@ -63,16 +64,14 @@ public class CoreServerStartupProcess
         private final MembershipWaiter membershipWaiter;
         private final Long joinCatchupTimeout;
         private final RaftInstance raft;
-        private final RaftServer raftServer;
         private final Log log;
 
         private MembershipWaiterLifecycle( MembershipWaiter membershipWaiter, Long joinCatchupTimeout,
-                RaftInstance raft, RaftServer raftServer, LogProvider logProvider )
+                                           RaftInstance raft, LogProvider logProvider )
         {
             this.membershipWaiter = membershipWaiter;
             this.joinCatchupTimeout = joinCatchupTimeout;
             this.raft = raft;
-            this.raftServer = raftServer;
             this.log = logProvider.getLog( getClass() );
         }
 

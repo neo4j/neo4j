@@ -39,7 +39,7 @@ import org.neo4j.coreedge.server.CoreMember;
  * A state update could be to change role, change term, etc.
  * A command could be to append to the RAFT log, tell the log shipper that there was a mismatch, etc.
  */
-public class Outcome implements Message
+public class Outcome implements Message, ConsensusOutcome
 {
     /* Common */
     private Role nextRole;
@@ -256,6 +256,7 @@ public class Outcome implements Message
         return renewElectionTimeout;
     }
 
+    @Override
     public boolean needsFreshSnapshot()
     {
         return needsFreshSnapshot;
@@ -291,6 +292,7 @@ public class Outcome implements Message
         return steppingDown;
     }
 
+    @Override
     public long getCommitIndex()
     {
         return commitIndex;

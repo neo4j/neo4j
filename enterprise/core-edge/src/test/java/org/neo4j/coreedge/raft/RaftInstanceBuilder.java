@@ -19,9 +19,9 @@
  */
 package org.neo4j.coreedge.raft;
 
+import java.io.IOException;
 import java.time.Clock;
 import java.util.Collection;
-import java.util.function.Supplier;
 
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
@@ -31,6 +31,7 @@ import org.neo4j.coreedge.raft.membership.RaftGroup;
 import org.neo4j.coreedge.raft.membership.RaftMembershipManager;
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.net.Outbound;
+import org.neo4j.coreedge.raft.outcome.ConsensusOutcome;
 import org.neo4j.coreedge.raft.replication.SendToMyself;
 import org.neo4j.coreedge.raft.replication.shipping.RaftLogShippingManager;
 import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
@@ -39,7 +40,6 @@ import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -81,7 +81,6 @@ public class RaftInstanceBuilder
     private long retryTimeMillis = electionTimeout / 2;
     private int catchupBatchSize = 64;
     private int maxAllowedShippingLag = 256;
-    private Supplier<DatabaseHealth> databaseHealthSupplier;
     private StateStorage<RaftMembershipState> raftMembership =
             new InMemoryStateStorage<>( new RaftMembershipState() );
     private Monitors monitors = new Monitors();
@@ -105,10 +104,27 @@ public class RaftInstanceBuilder
         RaftLogShippingManager logShipping =
                 new RaftLogShippingManager( outbound, logProvider, raftLog, clock, member, membershipManager,
                         retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, inFlightMap );
-        RaftInstance raft = new RaftInstance( member, termState, voteState, raftLog, raftStateMachine, electionTimeout,
+        RaftInstance raft = new RaftInstance( member, termState, voteState, raftLog, electionTimeout,
                 heartbeatInterval, renewableTimeoutService, outbound, logProvider,
-                membershipManager, logShipping, databaseHealthSupplier, inFlightMap, monitors );
-        inbound.registerHandler( raft );
+                membershipManager, logShipping, inFlightMap, monitors );
+        inbound.registerHandler( ( incomingMessage ) -> {
+            try
+            {
+                ConsensusOutcome outcome = raft.handle( incomingMessage );
+                if ( outcome.needsFreshSnapshot() )
+                {
+                    raftStateMachine.notifyNeedFreshSnapshot();
+                }
+                else
+                {
+                    raftStateMachine.notifyCommitted( outcome.getCommitIndex());
+                }
+            }
+            catch ( IOException e )
+            {
+                e.printStackTrace();
+            }
+        } );
         return raft;
     }
 
@@ -151,12 +167,6 @@ public class RaftInstanceBuilder
     public RaftInstanceBuilder stateMachine( RaftStateMachine raftStateMachine )
     {
         this.raftStateMachine = raftStateMachine;
-        return this;
-    }
-
-    RaftInstanceBuilder databaseHealth( final DatabaseHealth databaseHealth )
-    {
-        this.databaseHealthSupplier = () -> databaseHealth;
         return this;
     }
 

@@ -27,6 +27,7 @@ import java.util.concurrent.BlockingQueue;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.raft.RaftMessages.RaftMessage;
 import org.neo4j.coreedge.raft.net.Inbound.MessageHandler;
+import org.neo4j.coreedge.raft.outcome.ConsensusOutcome;
 import org.neo4j.coreedge.server.StoreId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -36,7 +37,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class BatchingMessageHandler implements Runnable, MessageHandler<RaftMessages.StoreIdAwareMessage>, MismatchedStoreIdService
 {
     private final Log log;
-    private final MessageHandler<RaftMessage> innerHandler;
+    private final RaftInstance raftInstance;
     private final BlockingQueue<RaftMessages.StoreIdAwareMessage> messageQueue;
 
     private final int maxBatch;
@@ -46,11 +47,11 @@ public class BatchingMessageHandler implements Runnable, MessageHandler<RaftMess
     private RaftStateMachine raftStateMachine;
     private final List<MismatchedStoreListener> listeners = new ArrayList<>(  );
 
-    public BatchingMessageHandler( MessageHandler<RaftMessage> innerHandler, LogProvider logProvider,
+    public BatchingMessageHandler( RaftInstance raftInstance, LogProvider logProvider,
                                    int queueSize, int maxBatch, LocalDatabase localDatabase,
                                    RaftStateMachine raftStateMachine )
     {
-        this.innerHandler = innerHandler;
+        this.raftInstance = raftInstance;
         this.localDatabase = localDatabase;
         this.raftStateMachine = raftStateMachine;
         this.log = logProvider.getLog( getClass() );
@@ -95,7 +96,7 @@ public class BatchingMessageHandler implements Runnable, MessageHandler<RaftMess
             {
                 if ( messageQueue.isEmpty() )
                 {
-                    innerHandler.handle( message.message() );
+                    innerHandle( message.message() );
                 }
                 else
                 {
@@ -124,6 +125,27 @@ public class BatchingMessageHandler implements Runnable, MessageHandler<RaftMess
                 }
 
             }
+        }
+    }
+
+    private void innerHandle( RaftMessage raftMessage )
+    {
+        try
+        {
+            ConsensusOutcome outcome = raftInstance.handle( raftMessage );
+            if ( outcome.needsFreshSnapshot() )
+            {
+                raftStateMachine.notifyNeedFreshSnapshot();
+            }
+            else
+            {
+                raftStateMachine.notifyCommitted( outcome.getCommitIndex());
+            }
+        }
+        catch ( Throwable e )
+        {
+            raftInstance.stopTimers();
+            localDatabase.panic( e );
         }
     }
 
@@ -162,13 +184,13 @@ public class BatchingMessageHandler implements Runnable, MessageHandler<RaftMess
             }
             else
             {
-                innerHandler.handle( message );
+                innerHandle( message );
             }
         }
 
         if ( batchRequest != null )
         {
-            innerHandler.handle( batchRequest );
+            innerHandle( batchRequest );
         }
     }
 }
