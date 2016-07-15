@@ -147,6 +147,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
                     else
                     {
                         batcher.flush();
+                        lastApplied = logIndex;
                     }
                 }
                 batcher.flush();
@@ -157,6 +158,11 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
                 dbHealth.get().panic( e );
             }
         } );
+    }
+
+    public synchronized long lastApplied()
+    {
+        return lastApplied;
     }
 
     private class OperationBatcher
@@ -294,15 +300,12 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
          * which we must replay to reach a consistent state. */
         long lastPossiblyApplying = max( coreStateMachines.getLastAppliedIndex(), sessionState.logIndex() );
 
-        /* The session state and last flushed must be strictly less */
-        if ( lastApplied > lastPossiblyApplying )
+        if ( lastPossiblyApplying > lastApplied )
         {
-            throw new IllegalStateException( format( "lastApplied: %d, lastPossiblyApplying: %d, sessionIndex:%d",
-                    lastApplied, lastPossiblyApplying, sessionState.logIndex() ) );
+            log.info( "Recovering up to: " + lastPossiblyApplying );
+            submitApplyJob( lastPossiblyApplying );
+            applier.sync( false );
         }
-
-        submitApplyJob( lastPossiblyApplying );
-        applier.sync( false );
     }
 
     @Override

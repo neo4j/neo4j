@@ -375,6 +375,42 @@ public class CoreStateTest
         assertFalse( dbHealth.isHealthy() );
     }
 
+    @Test
+    public void shouldIncreaseLastAppliedForStateMachineCommands() throws Exception
+    {
+        // given
+        coreState.setStateMachine( coreStateMachines );
+        coreState.start();
+
+        // when
+        raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
+        raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
+        raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
+        coreState.notifyCommitted( 2 );
+        applier.sync( false );
+
+        // then
+        assertEquals( 2, coreState.lastApplied() );
+    }
+
+    @Test
+    public void shouldIncreaseLastAppliedForOtherCommands() throws Exception
+    {
+        // given
+        coreState.setStateMachine( coreStateMachines );
+        coreState.start();
+
+        // when
+        raftLog.append( new RaftLogEntry( 0, new NewLeaderBarrier() ) );
+        raftLog.append( new RaftLogEntry( 0, new NewLeaderBarrier() ) );
+        raftLog.append( new RaftLogEntry( 0, new NewLeaderBarrier() ) );
+        coreState.notifyCommitted( 2 );
+        applier.sync( false );
+
+        // then
+        assertEquals( 2, coreState.lastApplied() );
+    }
+
     private Consumer<Result> anyCallback()
     {
         @SuppressWarnings( "unchecked" )
