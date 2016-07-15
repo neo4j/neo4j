@@ -22,9 +22,9 @@ package org.neo4j.coreedge.raft.state;
 import java.io.IOException;
 import java.util.function.Consumer;
 
+import org.neo4j.coreedge.SnapFlushable;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.core.CoreStateType;
-import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationStateMachine;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequest;
@@ -40,7 +40,7 @@ import org.neo4j.storageengine.api.Token;
 
 import static java.lang.Math.max;
 
-public class CoreStateMachines
+public class CoreStateMachines implements SnapFlushable
 {
     private final ReplicatedTransactionStateMachine replicatedTxStateMachine;
 
@@ -84,6 +84,21 @@ public class CoreStateMachines
         return currentBatch;
     }
 
+    @Override
+    public long getLastAppliedIndex()
+    {
+        long lastAppliedTxIndex = replicatedTxStateMachine.lastAppliedIndex();
+        assert lastAppliedTxIndex == labelTokenStateMachine.lastAppliedIndex();
+        assert lastAppliedTxIndex == relationshipTypeTokenStateMachine.lastAppliedIndex();
+        assert lastAppliedTxIndex == propertyKeyTokenStateMachine.lastAppliedIndex();
+
+        long lastAppliedLockTokenIndex = replicatedLockTokenStateMachine.lastAppliedIndex();
+        long lastAppliedIdAllocationIndex = idAllocationStateMachine.lastAppliedIndex();
+
+        return max( max( lastAppliedLockTokenIndex, lastAppliedIdAllocationIndex ), lastAppliedTxIndex );
+    }
+
+    @Override
     public void flush() throws IOException
     {
         assert !runningBatch;
@@ -98,7 +113,8 @@ public class CoreStateMachines
         idAllocationStateMachine.flush();
     }
 
-    void addSnapshots( CoreSnapshot coreSnapshot )
+    @Override
+    public void addSnapshots( CoreSnapshot coreSnapshot )
     {
         assert !runningBatch;
 
@@ -107,7 +123,8 @@ public class CoreStateMachines
         // transactions and tokens live in the store
     }
 
-    void installSnapshots( CoreSnapshot coreSnapshot )
+    @Override
+    public void installSnapshots( CoreSnapshot coreSnapshot )
     {
         assert !runningBatch;
 
@@ -169,25 +186,11 @@ public class CoreStateMachines
             replicatedTxStateMachine.ensuredApplied();
             replicatedLockTokenStateMachine.applyCommand( lockRequest, commandIndex, callback );
         }
-
         @Override
         public void close()
         {
             runningBatch = false;
             replicatedTxStateMachine.ensuredApplied();
         }
-    }
-
-    long getLastAppliedIndex()
-    {
-        long lastAppliedTxIndex = replicatedTxStateMachine.lastAppliedIndex();
-        assert lastAppliedTxIndex == labelTokenStateMachine.lastAppliedIndex();
-        assert lastAppliedTxIndex == relationshipTypeTokenStateMachine.lastAppliedIndex();
-        assert lastAppliedTxIndex == propertyKeyTokenStateMachine.lastAppliedIndex();
-
-        long lastAppliedLockTokenIndex = replicatedLockTokenStateMachine.lastAppliedIndex();
-        long lastAppliedIdAllocationIndex = idAllocationStateMachine.lastAppliedIndex();
-
-        return max( max( lastAppliedLockTokenIndex, lastAppliedIdAllocationIndex ), lastAppliedTxIndex );
     }
 }

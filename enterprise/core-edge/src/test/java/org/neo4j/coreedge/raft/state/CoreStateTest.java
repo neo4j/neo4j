@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.UUID;
 import java.util.function.Consumer;
 
+import org.neo4j.coreedge.SessionTracker;
 import org.neo4j.coreedge.raft.NewLeaderBarrier;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
@@ -67,8 +68,8 @@ public class CoreStateTest
     private final InMemoryRaftLog raftLog = spy( new InMemoryRaftLog() );
 
     private final InMemoryStateStorage<Long> lastFlushedStorage = new InMemoryStateStorage<>( -1L );
-    private final InMemoryStateStorage<GlobalSessionTrackerState> sessionStorage =
-            new InMemoryStateStorage<>( new GlobalSessionTrackerState() );
+    private final SessionTracker sessionStorage = new SessionTracker(
+            new InMemoryStateStorage<>( new GlobalSessionTrackerState() ) );
 
     private final DatabaseHealth dbHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
             NullLogProvider.getInstance().getLog( getClass() ) );
