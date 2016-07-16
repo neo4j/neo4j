@@ -149,7 +149,8 @@ public class AuthProcedures
         EnterpriseAuthSubject enterpriseSubject = EnterpriseAuthSubject.castOrFail( authSubject );
         EnterpriseUserManager userManager = enterpriseSubject.getUserManager();
         return Stream.of( new UserResult( enterpriseSubject.name(),
-                userManager.getRoleNamesForUser( enterpriseSubject.name() ) ) );
+                userManager.getRoleNamesForUser( enterpriseSubject.name() ),
+                userManager.getUser( enterpriseSubject.name() ).getFlags() ) );
     }
 
     @Procedure( name = "dbms.listUsers", mode = DBMS )
@@ -161,7 +162,8 @@ public class AuthProcedures
         List<UserResult> results = new ArrayList<>();
         for ( String u : users )
         {
-            results.add( new UserResult( u, userManager.getRoleNamesForUser( u ) ) );
+            results.add(
+                    new UserResult( u, userManager.getRoleNamesForUser( u ), userManager.getUser( u ).getFlags() ) );
         }
         return results.stream();
     }
@@ -341,12 +343,15 @@ public class AuthProcedures
     {
         public final String username;
         public final List<String> roles;
+        public final List<String> flags;
 
-        UserResult( String username, Set<String> roles )
+        UserResult( String username, Set<String> roles, Iterable<String> flags )
         {
             this.username = username;
             this.roles = new ArrayList<>();
             this.roles.addAll( roles );
+            this.flags = new ArrayList<>();
+            for ( String f : flags ) {this.flags.add( f );}
         }
     }
 

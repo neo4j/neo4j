@@ -46,6 +46,7 @@ import static org.neo4j.kernel.api.security.AuthenticationResult.FAILURE;
 import static org.neo4j.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
 import static org.neo4j.kernel.api.security.AuthenticationResult.SUCCESS;
 import static org.neo4j.server.security.enterprise.auth.AuthProcedures.PERMISSION_DENIED;
+import static org.neo4j.server.security.enterprise.auth.InternalFlatFileRealm.IS_SUSPENDED;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ARCHITECT;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.PUBLISHER;
@@ -53,6 +54,8 @@ import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.R
 
 public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
 {
+    static final String PWD_CHANGE = PASSWORD_CHANGE_REQUIRED.name().toLowerCase();
+
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
 
@@ -455,7 +458,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     public void shouldSuspendUser() throws Exception
     {
         assertEmpty( adminSubject, "CALL dbms.suspendUser('readSubject')" );
-        assertTrue( userManager.getUser( "readSubject" ).hasFlag( InternalFlatFileRealm.IS_SUSPENDED ) );
+        assertTrue( userManager.getUser( "readSubject" ).hasFlag( IS_SUSPENDED ) );
     }
 
     @Test
@@ -463,7 +466,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     {
         assertEmpty( adminSubject, "CALL dbms.suspendUser('readSubject')" );
         assertEmpty( adminSubject, "CALL dbms.suspendUser('readSubject')" );
-        assertTrue( userManager.getUser( "readSubject" ).hasFlag( InternalFlatFileRealm.IS_SUSPENDED ) );
+        assertTrue( userManager.getUser( "readSubject" ).hasFlag( IS_SUSPENDED ) );
     }
 
     @Test
@@ -505,7 +508,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     {
         userManager.suspendUser( "readSubject" );
         assertEmpty( adminSubject, "CALL dbms.activateUser('readSubject')" );
-        assertFalse( userManager.getUser( "readSubject" ).hasFlag( InternalFlatFileRealm.IS_SUSPENDED ) );
+        assertFalse( userManager.getUser( "readSubject" ).hasFlag( IS_SUSPENDED ) );
     }
 
     @Test
@@ -514,7 +517,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         userManager.suspendUser( "readSubject" );
         assertEmpty( adminSubject, "CALL dbms.activateUser('readSubject')" );
         assertEmpty( adminSubject, "CALL dbms.activateUser('readSubject')" );
-        assertFalse( userManager.getUser( "readSubject" ).hasFlag( InternalFlatFileRealm.IS_SUSPENDED ) );
+        assertFalse( userManager.getUser( "readSubject" ).hasFlag( IS_SUSPENDED ) );
     }
 
     @Test
@@ -678,6 +681,24 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         userManager.addUserToRole( "writeSubject", READER );
         assertSuccess( adminSubject, "CALL dbms.listUsers()",
                 r -> assertKeyIsMap( r, "username", "roles", expected ) );
+    }
+
+    @Test
+    public void shouldReturnUsersWithFlags() throws Exception
+    {
+        Map<String,Object> expected = map(
+                "adminSubject", listOf(),
+                "readSubject", listOf(),
+                "schemaSubject", listOf(),
+                "writeSubject", listOf( IS_SUSPENDED ),
+                "pwdSubject", listOf( PWD_CHANGE, IS_SUSPENDED ),
+                "noneSubject", listOf(),
+                "neo4j", listOf( PWD_CHANGE.toLowerCase() )
+        );
+        userManager.suspendUser( "writeSubject" );
+        userManager.suspendUser( "pwdSubject" );
+        assertSuccess( adminSubject, "CALL dbms.listUsers()",
+                r -> assertKeyIsMap( r, "username", "flags", expected ) );
     }
 
     @Test
