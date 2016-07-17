@@ -138,6 +138,7 @@ public class TestPullUpdates
         ClusterManager clusterManager = new ClusterManager.Builder( root )
                 .withSharedConfig( MapUtil.stringMap(
                         HaSettings.pull_interval.name(), "0s",
+                        HaSettings.tx_push_factor.name(), "0",
                         KernelTransactions.tx_termination_aware_locks.name(), Settings.TRUE ) ).build();
         clusterManager.start();
         cluster = clusterManager.getDefaultCluster();
