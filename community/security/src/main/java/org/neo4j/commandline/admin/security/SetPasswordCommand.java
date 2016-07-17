@@ -31,7 +31,6 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.security.auth.BasicAuthManager;
@@ -97,7 +96,7 @@ public class SetPasswordCommand implements AdminCommand
                     new FileUserRepository( new File( authDir, "auth.db" ).toPath(), NullLogProvider.getInstance() );
             userRepository.start();
             PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
-            BasicAuthManager authManager = new BasicAuthManager( userRepository, passwordPolicy, systemUTC(), true );
+            BasicAuthManager authManager = new BasicAuthManager( userRepository, passwordPolicy, systemUTC() );
             authManager.setUserPassword( username, password );
         }
         catch ( Exception e )
