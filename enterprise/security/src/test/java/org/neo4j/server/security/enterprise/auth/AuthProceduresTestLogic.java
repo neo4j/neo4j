@@ -25,26 +25,21 @@ import org.junit.Test;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.Connection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.api.security.exception.InvalidArgumentsException;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.bolt.v1.messaging.message.Messages.init;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyRecieves;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.api.security.AuthenticationResult.FAILURE;
-import static org.neo4j.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
-import static org.neo4j.kernel.api.security.AuthenticationResult.SUCCESS;
 import static org.neo4j.server.security.enterprise.auth.AuthProcedures.PERMISSION_DENIED;
 import static org.neo4j.server.security.enterprise.auth.InternalFlatFileRealm.IS_SUSPENDED;
 import static org.neo4j.server.security.enterprise.auth.PredefinedRolesBuilder.ADMIN;
@@ -67,17 +62,18 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     public void shouldChangeOwnPassword() throws Throwable
     {
         assertEmpty( readSubject, "CALL dbms.changePassword( '321' )" );
-        assertEquals( SUCCESS, neo.authenticationResult( readSubject ) );
         neo.updateAuthToken( readSubject, "readSubject", "321" ); // Because RESTSubject caches an auth token that is sent with every request
+        neo.assertAuthenticated( readSubject );
         testSuccessfulRead( readSubject, 3 );
     }
 
     @Test
     public void shouldChangeOwnPasswordEvenIfHasNoAuthorization() throws Throwable
     {
-        testAuthenticated( noneSubject );
+        neo.assertAuthenticated( noneSubject );
         assertEmpty( noneSubject, "CALL dbms.changePassword( '321' )" );
-        assertEquals( SUCCESS, neo.authenticationResult( noneSubject ) );
+        neo.updateAuthToken( noneSubject, "noneSubject", "321" ); // Because RESTSubject caches an auth token that is sent with every request
+        neo.assertAuthenticated( noneSubject );
     }
 
     @Test
@@ -267,9 +263,8 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         // TODO: uncomment and fix
         // testUnAuthenticated( readSubject );
 
-        assertEquals( FAILURE, neo.authenticationResult( neo.login( "readSubject", "123" ) ) );
-        assertEquals( SUCCESS, neo.authenticationResult( neo.login( "readSubject", "321" ) ) );
-
+        neo.assertUnauthenticated( neo.login( "readSubject", "123" ) );
+        neo.assertAuthenticated( neo.login( "readSubject", "321" ) );
     }
 
     // Should fail vaguely to change password for non-admin subject, regardless of user and password
@@ -286,13 +281,13 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     public void shouldChangeUserPasswordIfSameUser() throws Throwable
     {
         assertEmpty( readSubject, "CALL dbms.changeUserPassword( 'readSubject', '321' )" );
-        assertEquals( SUCCESS, neo.authenticationResult( readSubject ) );
         neo.updateAuthToken( readSubject, "readSubject", "321" ); // Because RESTSubject caches an auth token that is sent with every request
+        neo.assertAuthenticated( readSubject );
         testSuccessfulRead( readSubject, 3 );
 
         assertEmpty( adminSubject, "CALL dbms.changeUserPassword( 'adminSubject', 'cba' )" );
-        assertEquals( SUCCESS, neo.authenticationResult( adminSubject ) );
         neo.updateAuthToken( adminSubject, "adminSubject", "cba" ); // Because RESTSubject caches an auth token that is sent with every request
+        neo.assertAuthenticated( adminSubject );
         testSuccessfulRead( adminSubject, 3 );
     }
 
@@ -338,7 +333,16 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldTerminateSessionsOnChangeUserPassword() throws Exception
     {
-        shouldTerminateSessionsForUser( "writeSubject", "abc", "dbms.changeUserPassword( '%s', 'newPassword' )" );
+        Connection conn = startBoltSession( "writeSubject", "abc" );
+        assertSuccess( adminSubject, "CALL dbms.listSessions() YIELD username, sessionCount " +
+                        "WITH username, sessionCount WHERE username = 'writeSubject' RETURN username, sessionCount",
+                r -> assertKeyIsMap( r, "username", "sessionCount", map( "writeSubject", IS_BOLT ? "2" : "1" ) ) );
+
+        assertEmpty( adminSubject, "CALL dbms.changeUserPassword( 'writeSubject', 'newPassword' )" );
+
+        assertEmpty( adminSubject, "CALL dbms.listSessions() YIELD username, sessionCount " +
+                        "WITH username, sessionCount WHERE username = 'writeSubject' RETURN username, sessionCount");
+        conn.disconnect();
     }
 
     //---------- create user -----------
@@ -449,7 +453,16 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldTerminateSessionsOnUserDeletion() throws Exception
     {
-        shouldTerminateSessionsForUser( "writeSubject", "abc", "dbms.deleteUser( '%s' )" );
+        Connection conn = startBoltSession( "writeSubject", "abc" );
+        assertSuccess( adminSubject, "CALL dbms.listSessions() YIELD username, sessionCount " +
+                        "WITH username, sessionCount WHERE username = 'writeSubject' RETURN username, sessionCount",
+                r -> assertKeyIsMap( r, "username", "sessionCount", map( "writeSubject", IS_BOLT ? "2" : "1" ) ) );
+
+        assertEmpty( adminSubject, "CALL dbms.deleteUser( 'writeSubject' )" );
+
+        assertEmpty( adminSubject, "CALL dbms.listSessions() YIELD username, sessionCount " +
+                "WITH username, sessionCount WHERE username = 'writeSubject' RETURN username, sessionCount");
+        conn.disconnect();
     }
 
     //---------- suspend user -----------
@@ -498,7 +511,16 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldTerminateSessionsOnUserSuspension() throws Exception
     {
-        shouldTerminateSessionsForUser( "writeSubject", "abc", "dbms.suspendUser( '%s' )" );
+        Connection conn = startBoltSession( "writeSubject", "abc" );
+        assertSuccess( adminSubject, "CALL dbms.listSessions() YIELD username, sessionCount " +
+                        "WITH username, sessionCount WHERE username = 'writeSubject' RETURN username, sessionCount",
+                r -> assertKeyIsMap( r, "username", "sessionCount", map( "writeSubject", IS_BOLT ? "2" : "1" ) ) );
+
+        assertEmpty( adminSubject, "CALL dbms.suspendUser( 'writeSubject' )" );
+
+        assertEmpty( adminSubject, "CALL dbms.listSessions() YIELD username, sessionCount " +
+                "WITH username, sessionCount WHERE username = 'writeSubject' RETURN username, sessionCount");
+        conn.disconnect();
     }
 
     //---------- activate user -----------
@@ -809,7 +831,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
     @Test
     public void shouldListUsersForRole() throws Exception
     {
-        executeQuery( adminSubject, "CALL dbms.listUsersForRole('admin') YIELD value as users RETURN users",
+        assertSuccess( adminSubject, "CALL dbms.listUsersForRole('admin') YIELD value as users RETURN users",
                 r -> assertKeyIs( r, "users", "adminSubject", "neo4j" ) );
     }
 
@@ -864,7 +886,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         assertEmpty( adminSubject, "CALL dbms.createUser('Henrik', 'bar', true)" );
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Henrik', '" + ARCHITECT + "')" );
         S henrik = neo.login( "Henrik", "bar" );
-        assertEquals( PASSWORD_CHANGE_REQUIRED, neo.authenticationResult( henrik ) );
+        neo.assertPasswordChangeRequired( henrik );
         testFailRead( henrik, 3, pwdReqErrMsg( READ_OPS_NOT_ALLOWED ) );
         testFailWrite( henrik, pwdReqErrMsg( WRITE_OPS_NOT_ALLOWED ) );
         testFailSchema( henrik, pwdReqErrMsg( SCHEMA_OPS_NOT_ALLOWED ) );
@@ -873,7 +895,7 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         assertEmpty( adminSubject, "CALL dbms.createUser('Olivia', 'bar', true)" );
         assertEmpty( adminSubject, "CALL dbms.addUserToRole('Olivia', '" + ADMIN + "')" );
         S olivia = neo.login( "Olivia", "bar" );
-        assertEquals( PASSWORD_CHANGE_REQUIRED, neo.authenticationResult( olivia ) );
+        neo.assertPasswordChangeRequired( olivia );
         testFailRead( olivia, 3, pwdReqErrMsg( READ_OPS_NOT_ALLOWED ) );
         testFailWrite( olivia, pwdReqErrMsg( WRITE_OPS_NOT_ALLOWED ) );
         testFailSchema( olivia, pwdReqErrMsg( SCHEMA_OPS_NOT_ALLOWED ) );
@@ -961,30 +983,18 @@ public abstract class AuthProceduresTestLogic<S> extends AuthTestBase<S>
         assertEmpty( adminSubject, "MATCH (n:Test) RETURN n.name AS name" );
     }
 
-    private void shouldTerminateSessionsForUser( String username, String password, String procedure ) throws Exception
+    private Connection startBoltSession( String username, String password ) throws Exception
     {
         Connection boltConnection = new SocketConnection();
-        HostnamePort boltAddress = new HostnamePort( "localhost:7687" );
-        authenticate( boltConnection, boltAddress, username, password );
+        HostnamePort address = new HostnamePort( "localhost:7687" );
+        Map<String,Object> authToken = map( "principal", username, "credentials", password, "scheme", "basic" );
 
-        assertEmpty( adminSubject,  "CALL " + String.format(procedure, username ) );
+        boltConnection.connect( address ).send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk( init( "TestClient/1.1", authToken ) ) );
 
-        assertEmpty( adminSubject, "CALL dbms.listSessions()" );
-    }
-
-    private void authenticate( Connection client, HostnamePort address, String username, String password )
-            throws Exception
-    {
-        Map<String, Object> authToken =
-                map( "principal", username, "credentials", password, "scheme", "basic" );
-
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
-                        init( "TestClient/1.1", authToken ) ) );
-
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+        assertThat( boltConnection, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( boltConnection, eventuallyRecieves( msgSuccess() ) );
+        return boltConnection;
     }
 
 }

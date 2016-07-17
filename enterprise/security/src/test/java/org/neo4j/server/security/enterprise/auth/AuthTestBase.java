@@ -49,16 +49,18 @@ abstract class AuthTestBase<S>
 {
     protected boolean PWD_CHANGE_CHECK_FIRST = false;
     protected String CHANGE_PWD_ERR_MSG = AuthProcedures.PERMISSION_DENIED;
+    protected String BOLT_PWD_ERR_MSG =
+            "The credentials you provided were valid, but must be changed before you can use this instance.";
     protected String READ_OPS_NOT_ALLOWED = "Read operations are not allowed";
     protected String WRITE_OPS_NOT_ALLOWED = "Write operations are not allowed";
     protected String SCHEMA_OPS_NOT_ALLOWED = "Schema operations are not allowed";
 
     protected boolean IS_EMBEDDED = true;
+    protected boolean IS_BOLT = false;
 
     protected String pwdReqErrMsg( String errMsg )
     {
-        return PWD_CHANGE_CHECK_FIRST ?
-               CHANGE_PWD_ERR_MSG : errMsg;
+        return PWD_CHANGE_CHECK_FIRST ? CHANGE_PWD_ERR_MSG : IS_EMBEDDED ? errMsg : BOLT_PWD_ERR_MSG;
     }
 
     final String EMPTY_ROLE = "empty";
@@ -127,13 +129,17 @@ abstract class AuthTestBase<S>
 
     void testSuccessfulRead( S subject, int count )
     {
-        testCallCount( subject, "MATCH (n) RETURN n", null, count );
+        assertSuccess( subject, "MATCH (n) RETURN count(n) as count", r -> {
+            List<Object> result = r.stream().map( s -> s.get( "count" ) ).collect( Collectors.toList() );
+            assertTrue( result.size() == 1 );
+            assertTrue( String.valueOf( count ).equals( String.valueOf( result.get( 0 ) ) ) );
+        } );
     }
 
     void testFailRead( S subject, int count ) { testFailRead( subject, count, READ_OPS_NOT_ALLOWED ); }
     void testFailRead( S subject, int count, String errMsg )
     {
-        assertFail( subject, "MATCH (n) RETURN n", errMsg );
+        assertFail( subject, "MATCH (n) RETURN count(n)", errMsg );
     }
 
     void testSuccessfulWrite( S subject )
@@ -182,7 +188,7 @@ abstract class AuthTestBase<S>
 
     void testSuccessfulListUsers( S subject, String[] users )
     {
-        executeQuery( subject, "CALL dbms.listUsers() YIELD username",
+        assertSuccess( subject, "CALL dbms.listUsers() YIELD username",
                 r -> assertKeyIsArray( r, "username", users ) );
     }
 
@@ -193,7 +199,7 @@ abstract class AuthTestBase<S>
 
     void testSuccessfulListRoles( S subject, String[] roles )
     {
-        executeQuery( subject, "CALL dbms.listRoles() YIELD role",
+        assertSuccess( subject, "CALL dbms.listRoles() YIELD role",
                 r -> assertKeyIsArray( r, "role", roles ) );
     }
 
@@ -214,6 +220,20 @@ abstract class AuthTestBase<S>
         assertFail( subject,
                 "CALL dbms.listUsersForRole('" + roleName + "') YIELD value AS users RETURN count(users)",
                 errMsg );
+    }
+
+    void testSessionKilled( S subject )
+    {
+        String errorMessage = "Invalid username or password";
+        if ( IS_BOLT )
+        {
+            errorMessage = "The session is no longer available, possibly due to termination.";
+        }
+        else if ( IS_EMBEDDED )
+        {
+            errorMessage = "Read operations are not allowed";
+        }
+        assertFail( subject, "MATCH (n:Node) RETURN count(n)", errorMessage );
     }
 
     void assertPasswordChangeWhenPasswordChangeRequired( S subject, String newPassword )
@@ -250,43 +270,9 @@ abstract class AuthTestBase<S>
             ) );
     }
 
-    void testAuthenticated( S subject )
-    {
-        assertTrue( neo.isAuthenticated( subject ) );
-    }
-
-    void testUnAuthenticated( S subject )
-    {
-        assertFalse( neo.isAuthenticated( subject ) );
-    }
-
-    void testCallCount( S subject, String call, Map<String,Object> params,
-            final int count )
-    {
-        String err =
-            neo.executeQuery( subject, call, params,
-                ( res ) -> {
-                    int left = count;
-                    while ( left > 0 )
-                    {
-                        assertTrue( "Expected " + count + " results, but got only " + (count - left), res.hasNext() );
-                        res.next();
-                        left--;
-                    }
-                    assertFalse( "Expected " + count + " results, but there are more ", res.hasNext() );
-                }
-            );
-        assertNoError(err);
-    }
-
-    void executeQuery( S subject, String call )
+    private void executeQuery( S subject, String call )
     {
         neo.executeQuery( subject, call, null, r -> {} );
-    }
-
-    void executeQuery( S subject, String call, Consumer<ResourceIterator<Map<String, Object>>> resultConsumer )
-    {
-        neo.executeQuery( subject, call, null, resultConsumer );
     }
 
     boolean userHasRole( String user, String role ) throws InvalidArgumentsException

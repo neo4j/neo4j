@@ -38,6 +38,8 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
@@ -116,19 +118,9 @@ class NeoShallowEmbeddedInteraction implements NeoInteractionLevel<EnterpriseAut
     }
 
     @Override
-    public boolean isAuthenticated( EnterpriseAuthSubject subject )
+    public void updateAuthToken( EnterpriseAuthSubject subject, String username, String password )
     {
-        return subject.getShiroSubject().isAuthenticated();
     }
-
-    @Override
-    public AuthenticationResult authenticationResult( EnterpriseAuthSubject subject )
-    {
-        return subject.getAuthenticationResult();
-    }
-
-    @Override
-    public void updateAuthToken( EnterpriseAuthSubject subject, String username, String password ) {}
 
     @Override
     public String nameOf( EnterpriseAuthSubject subject )
@@ -142,5 +134,23 @@ class NeoShallowEmbeddedInteraction implements NeoInteractionLevel<EnterpriseAut
         manager.stop();
         manager.shutdown();
         db.shutdown();
+    }
+
+    @Override
+    public void assertAuthenticated( EnterpriseAuthSubject subject )
+    {
+        assertThat( subject.getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
+    }
+
+    @Override
+    public void assertPasswordChangeRequired( EnterpriseAuthSubject subject )
+    {
+        assertThat( subject.getAuthenticationResult(), equalTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED ) );
+    }
+
+    @Override
+    public void assertUnauthenticated( EnterpriseAuthSubject subject )
+    {
+        assertThat( subject.getAuthenticationResult(), equalTo( AuthenticationResult.FAILURE ) );
     }
 }
