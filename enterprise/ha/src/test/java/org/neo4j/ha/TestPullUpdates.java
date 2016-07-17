@@ -20,7 +20,6 @@
 package org.neo4j.ha;
 
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -32,8 +31,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.function.IntFunction;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.IntFunction;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -46,7 +45,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -54,6 +52,7 @@ import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
@@ -133,7 +132,6 @@ public class TestPullUpdates
         awaitPropagation( 2, commonNodeId, cluster );
     }
 
-    @Ignore // TODO This test is not working as expected since 3.0
     @Test
     public void terminatedTransactionDoesNotForceUpdatePullingWithTxTerminationAwareLocks() throws Throwable
     {
@@ -142,6 +140,7 @@ public class TestPullUpdates
         ClusterManager clusterManager = new ClusterManager.Builder( root )
                 .withSharedConfig( MapUtil.stringMap(
                         HaSettings.pull_interval.name(), "0s",
+                        HaSettings.tx_push_factor.name(), "0",
                         KernelTransactions.tx_termination_aware_locks.name(), Settings.TRUE ) ).build();
         clusterManager.start();
         cluster = clusterManager.getCluster();
