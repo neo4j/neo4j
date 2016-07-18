@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 public class RecordIdIteration
 {
-    public static final PrimitiveLongIterator backwards( long highExcluded, long lowIncluded )
+    public static final PrimitiveLongIterator backwards( long lowIncluded, long highExcluded )
     {
         return new PrimitiveLongCollections.PrimitiveLongBaseIterator()
         {
@@ -57,5 +57,10 @@ public class RecordIdIteration
     public static PrimitiveLongIterator allIn( RecordStore<? extends AbstractBaseRecord> store )
     {
         return forwards( store.getNumberOfReservedLowIds(), store.getHighId() );
+    }
+
+    public static PrimitiveLongIterator allInReversed( RecordStore<? extends AbstractBaseRecord> store )
+    {
+        return backwards( store.getNumberOfReservedLowIds(), store.getHighId() );
     }
 }

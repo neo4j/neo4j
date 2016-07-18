@@ -37,7 +37,7 @@ public class RelationshipLinkbackStage extends Stage
             NodeRelationshipCache cache, long lowRelationshipId, long highRelationshipId, boolean denseNodes )
     {
         super( "Relationship --> Relationship" + topic, config );
-        add( new ReadRecordsStep<>( control(), config, store, backwards( highRelationshipId, lowRelationshipId ) ) );
+        add( new ReadRecordsStep<>( control(), config, store, backwards( lowRelationshipId, highRelationshipId ) ) );
         add( new RecordProcessorStep<>( control(), "LINK", config,
                 new RelationshipLinkbackProcessor( cache, denseNodes ), false ) );
         add( new UpdateRecordsStep<>( control(), config, store ) );

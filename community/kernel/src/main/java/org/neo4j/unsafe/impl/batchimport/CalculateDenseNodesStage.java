@@ -21,7 +21,6 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
@@ -40,7 +39,6 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.MAIN;
 public class CalculateDenseNodesStage extends Stage
 {
     private RelationshipTypeCheckerStep typer;
-    private final NodeStore nodeStore;
     private final NodeRelationshipCache cache;
 
     public CalculateDenseNodesStage( Configuration config, InputIterable<InputRelationship> relationships,
@@ -61,7 +59,6 @@ public class CalculateDenseNodesStage extends Stage
         add( new CalculateRelationshipsStep( control(), config, neoStores.getRelationshipStore() ) );
         add( new CalculateDenseNodePrepareStep( control(), config, badCollector ) );
         add( new CalculateDenseNodesStep( control(), config, cache ) );
-        nodeStore = neoStores.getNodeStore();
     }
 
     /*
@@ -70,14 +67,5 @@ public class CalculateDenseNodesStage extends Stage
     public Object[] getRelationshipTypes( long belowOrEqualToThreshold )
     {
         return typer.getRelationshipTypes( belowOrEqualToThreshold );
-    }
-
-    @Override
-    public void close()
-    {
-        // At this point we know how many nodes we have, so we tell the cache that instead of having the
-        // cache keeping track of that in a the face of concurrent updates.
-        cache.setHighNodeId( nodeStore.getHighId() );
-        super.close();
     }
 }

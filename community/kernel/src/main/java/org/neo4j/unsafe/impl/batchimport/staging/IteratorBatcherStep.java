@@ -21,18 +21,18 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
-
-import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import java.util.Iterator;
 
 /**
  * Takes an Iterator and chops it up into array batches downstream.
  */
-public class IteratorBatcherStep<T> extends IoProducerStep
+public abstract class IteratorBatcherStep<T> extends IoProducerStep
 {
-    private final InputIterator<T> data;
+    private final Iterator<T> data;
     private final Class<T> itemClass;
+    protected long cursor;
 
-    public IteratorBatcherStep( StageControl control, Configuration config, InputIterator<T> data, Class<T> itemClass )
+    public IteratorBatcherStep( StageControl control, Configuration config, Iterator<T> data, Class<T> itemClass )
     {
         super( control, config );
         this.data = data;
@@ -53,25 +53,8 @@ public class IteratorBatcherStep<T> extends IoProducerStep
         for ( ; i < batchSize && data.hasNext(); i++ )
         {
             batch[i] = data.next();
+            cursor++;
         }
         return i == batchSize ? batch : Arrays.copyOf( batch, i );
-    }
-
-    @Override
-    public void close() throws Exception
-    {
-        data.close();
-    }
-
-    @Override
-    protected long position()
-    {
-        return data.position();
-    }
-
-    @Override
-    public int processors( int delta )
-    {
-        return data.processors( delta );
     }
 }

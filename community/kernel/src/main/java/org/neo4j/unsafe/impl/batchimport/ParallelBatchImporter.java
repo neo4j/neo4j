@@ -36,6 +36,8 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor;
+import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
@@ -53,8 +55,10 @@ import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
+import static java.lang.Math.max;
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.SourceOrCachedInputIterable.cachedForSure;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
@@ -178,6 +182,9 @@ public class ParallelBatchImporter implements BatchImporter
                 // the node and calc dense node stages in parallel.
                 executeStages( nodeStage, calculateDenseNodesStage );
             }
+            // At this point we know how many nodes we have, so we tell the cache that instead of having the
+            // cache keeping track of that in a the face of concurrent updates.
+            nodeRelationshipCache.setHighNodeId( neoStore.getNodeStore().getHighId() );
 
             importRelationships( nodeRelationshipCache, storeUpdateMonitor, neoStore, writeMonitor,
                     idMapper, cachedRelationships, inputCache,
@@ -186,8 +193,15 @@ public class ParallelBatchImporter implements BatchImporter
                     calculateDenseNodesStage.getRelationshipTypes( config.batchSize() ) );
 
             // Release this potentially really big piece of cached data
+            long memoryWeCanHoldForCertain = totalMemoryUsageOf( idMapper, nodeRelationshipCache );
+            long highNodeId = nodeRelationshipCache.getHighNodeId();
+            idMapper.close();
+            idMapper = null;
             nodeRelationshipCache.close();
             nodeRelationshipCache = null;
+
+            new RelationshipGroupDefragmenter( config, executionMonitor ).run(
+                    max( max( memoryWeCanHoldForCertain, highNodeId * 4), mebiBytes( 1 ) ), neoStore, highNodeId );
 
             // Stage 6 -- count nodes per label and labels per node
             nodeLabelsCache = new NodeLabelsCache( AUTO, neoStore.getLabelRepository().getHighId() );
@@ -230,6 +244,16 @@ public class ParallelBatchImporter implements BatchImporter
                 fileSystem.deleteFile( badFile );
             }
         }
+    }
+
+    private long totalMemoryUsageOf( MemoryStatsVisitor.Visitable... users )
+    {
+        GatheringMemoryStatsVisitor total = new GatheringMemoryStatsVisitor();
+        for ( MemoryStatsVisitor.Visitable user : users )
+        {
+            user.acceptMemoryStatsVisitor( total );
+        }
+        return total.getHeapUsage() + total.getOffHeapUsage();
     }
 
     private void importRelationships( NodeRelationshipCache nodeRelationshipCache,
