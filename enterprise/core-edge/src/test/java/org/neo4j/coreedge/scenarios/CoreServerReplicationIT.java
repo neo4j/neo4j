@@ -43,8 +43,6 @@ import static org.neo4j.helpers.collection.Iterables.count;
 
 public class CoreServerReplicationIT
 {
-    private static final int DEFAULT_TIMEOUT_MS = 15_000;
-
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() )
             .withNumberOfCoreServers( 3 )
@@ -145,6 +143,30 @@ public class CoreServerReplicationIT
         // then
         assertEquals( 15, countNodes( last ) );
         dataMatchesEventually( last, cluster.coreServers() );
+    }
+
+    @Test
+    public void shouldReplicateTransactionsToReplacementCoreServers() throws Exception
+    {
+        // when
+        cluster.coreTx( ( db, tx ) -> {
+            Node node = db.createNode( label( "boo" ) );
+            node.setProperty( "foobar", "baz_bat" );
+            tx.success();
+        } );
+
+        cluster.removeCoreServerWithServerId( 0 );
+        CoreServer replacement = cluster.addCoreServerWithServerId( 0, 3 );
+        replacement.start();
+
+        CoreServer leader = cluster.coreTx( ( db, tx ) -> {
+            db.schema().indexFor( label( "boo" ) ).on( "foobar" ).create();
+            tx.success();
+        } );
+
+        // then
+        assertEquals( 1, countNodes( leader ) );
+        dataMatchesEventually( leader, cluster.coreServers() );
     }
 
     private long countNodes( CoreServer server )
