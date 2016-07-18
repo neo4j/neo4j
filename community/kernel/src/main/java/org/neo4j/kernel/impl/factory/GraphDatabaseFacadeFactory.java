@@ -24,15 +24,16 @@ import java.util.Map;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
+import org.neo4j.udc.UsageDataKeys;
 
 import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.STRING;
@@ -93,6 +94,8 @@ public abstract class GraphDatabaseFacadeFactory
                 setting( "dbms.tracer", Settings.STRING, (String) null ); // 'null' default.
 
         public static final Setting<String> editionName = setting( "edition", Settings.STRING, "Community" );
+        public static final Setting<UsageDataKeys.OperationalMode> operationalMode = setting( "operationalMode",
+                Settings.options( UsageDataKeys.OperationalMode.class ), UsageDataKeys.OperationalMode.single.name() );
     }
 
     /**

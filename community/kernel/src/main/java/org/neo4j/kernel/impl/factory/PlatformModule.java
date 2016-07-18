@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.security.URLAccessRules;
 import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -170,20 +171,9 @@ public class PlatformModule
 
         transactionMonitor = dependencies.satisfyDependency( createTransactionCounters() );
 
-        KernelContext kernelContext = dependencies.satisfyDependency( new KernelContext()
-        {
-            @Override
-            public FileSystemAbstraction fileSystem()
-            {
-                return PlatformModule.this.fileSystem;
-            }
-
-            @Override
-            public File storeDir()
-            {
-                return PlatformModule.this.storeDir;
-            }
-        } );
+        UsageDataKeys.OperationalMode operationalMode = config.get( GraphDatabaseFacadeFactory.Configuration.operationalMode );
+        KernelContext kernelContext = dependencies.satisfyDependency(
+                new SimpleKernelContext( this.fileSystem, this.storeDir, operationalMode ));
 
         kernelExtensions = dependencies.satisfyDependency( new KernelExtensions(
                 kernelContext,

@@ -101,6 +101,7 @@ import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -146,9 +147,9 @@ import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
+import org.neo4j.udc.UsageDataKeys;
 
 import static java.lang.Boolean.parseBoolean;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
@@ -306,20 +307,7 @@ public class BatchInserterImpl implements BatchInserter
                             }
                         } );
 
-        KernelContext kernelContext = new KernelContext()
-        {
-            @Override
-            public FileSystemAbstraction fileSystem()
-            {
-                return fileSystem;
-            }
-
-            @Override
-            public File storeDir()
-            {
-                return storeDir;
-            }
-        };
+        KernelContext kernelContext = new SimpleKernelContext( fileSystem, storeDir, UsageDataKeys.OperationalMode.single );
         KernelExtensions extensions = life
                 .add( new KernelExtensions( kernelContext, kernelExtensions, deps,
                                             UnsatisfiedDependencyStrategies.ignore() ) );

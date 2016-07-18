@@ -46,9 +46,11 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.udc.UsageDataKeys;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 public class LuceneLabelScanStore
@@ -138,7 +140,7 @@ public class LuceneLabelScanStore
         this.fs = fs;
         this.writerFactory = writerFactory;
         this.fullStoreStream = fullStoreStream;
-        this.readOnly = config.get( GraphDatabaseSettings.read_only );
+        this.readOnly = isReadOnly( config );
         this.monitor = monitor;
     }
 
@@ -363,5 +365,12 @@ public class LuceneLabelScanStore
         fs.mkdirs( directoryLocation );
         needsRebuild = true;
         directory = directoryFactory.open( directoryLocation );
+    }
+
+    private static boolean isReadOnly( Config config )
+    {
+        UsageDataKeys.OperationalMode operationalMode = config.get( GraphDatabaseFacadeFactory.Configuration.operationalMode );
+        return config.get( GraphDatabaseSettings.read_only ) &&
+               (UsageDataKeys.OperationalMode.ha != operationalMode);
     }
 }

@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.udc.UsageDataKeys;
 
 import static org.neo4j.helpers.collection.Iterables.append;
 import static org.neo4j.helpers.collection.Iterables.toList;
@@ -39,7 +40,7 @@ public class CommunityFacadeFactory
             graphDatabaseFacade )
     {
         params.put( Configuration.editionName.name(), "Community" );
-
+        params.put( Configuration.operationalMode.name(), UsageDataKeys.OperationalMode.single.name() );
         return super.newFacade( storeDir, params, newDependencies( dependencies ).settingsClasses(
                 toList( append( GraphDatabaseSettings.class, dependencies.settingsClasses() ) ) ),
                 graphDatabaseFacade );

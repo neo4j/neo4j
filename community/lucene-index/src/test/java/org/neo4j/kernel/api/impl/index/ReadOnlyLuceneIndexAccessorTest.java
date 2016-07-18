@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.index.IndexFileNames;
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,7 +38,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.test.TargetDirectory;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -114,7 +115,8 @@ public class ReadOnlyLuceneIndexAccessorTest
         {
             List<String> filesNames = Iterables.toList( Iterables.map( new FileNameExtractor(), indexSnapshot ) );
 
-            assertArrayEquals( "Expected snapshot to contain actual index files.", indexFiles, filesNames.toArray() );
+            assertThat( "Expected snapshot to contain actual index files.",  indexFiles, Matchers
+                    .arrayContainingInAnyOrder( filesNames.toArray() ) );
         }
     }
 

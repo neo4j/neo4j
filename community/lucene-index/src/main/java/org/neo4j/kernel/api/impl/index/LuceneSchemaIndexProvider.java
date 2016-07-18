@@ -42,9 +42,11 @@ import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.api.index.util.FolderLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.udc.UsageDataKeys;
 
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 {
@@ -63,7 +65,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         File rootDirectory = getRootDirectory( storeDir, LuceneSchemaIndexProviderFactory.KEY );
         this.folderLayout = new FolderLayout( rootDirectory );
         this.failureStorage = new FailureStorage( fileSystem, folderLayout );
-        this.readOnly = config.get( GraphDatabaseSettings.read_only );
+        this.readOnly = isReadOnly( config );
     }
 
     @Override
@@ -167,5 +169,12 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
             throw new IllegalStateException( "Index " + indexId + " isn't failed" );
         }
         return failure;
+    }
+
+    private static boolean isReadOnly( Config config )
+    {
+        UsageDataKeys.OperationalMode operationalMode = config.get( GraphDatabaseFacadeFactory.Configuration.operationalMode );
+        return config.get( GraphDatabaseSettings.read_only ) &&
+               (UsageDataKeys.OperationalMode.ha != operationalMode);
     }
 }

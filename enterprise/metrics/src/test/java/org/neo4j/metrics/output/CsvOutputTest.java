@@ -26,19 +26,18 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.NullLog;
 import org.neo4j.metrics.MetricsSettings;
 import org.neo4j.test.TargetDirectory;
-
-import static org.junit.Assert.fail;
+import org.neo4j.udc.UsageDataKeys;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class CsvOutputTest
@@ -106,20 +105,7 @@ public class CsvOutputTest
 
     private KernelContext kerneContext( final File storeDir )
     {
-        return new KernelContext()
-        {
-            @Override
-            public File storeDir()
-            {
-                return storeDir;
-            }
-
-            @Override
-            public FileSystemAbstraction fileSystem()
-            {
-                return new DefaultFileSystemAbstraction();
-            }
-        };
+        return new SimpleKernelContext( new DefaultFileSystemAbstraction(), storeDir, UsageDataKeys.OperationalMode.single );
     }
 
     private Config config( String... keysValues )

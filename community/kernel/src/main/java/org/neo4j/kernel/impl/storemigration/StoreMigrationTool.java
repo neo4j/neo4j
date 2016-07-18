@@ -32,6 +32,7 @@ import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -39,6 +40,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.udc.UsageDataKeys;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.ignore;
@@ -73,20 +75,8 @@ public class StoreMigrationTool
         deps.satisfyDependencies( fs, config );
 
 
-        KernelContext kernelContext = new KernelContext()
-        {
-            @Override
-            public FileSystemAbstraction fileSystem()
-            {
-                return fs;
-            }
-
-            @Override
-            public File storeDir()
-            {
-                return legacyStoreDirectory;
-            }
-        };
+        KernelContext kernelContext = new SimpleKernelContext(  fs, legacyStoreDirectory,
+                UsageDataKeys.OperationalMode.single );
         KernelExtensions kernelExtensions = life.add( new KernelExtensions(
                 kernelContext, GraphDatabaseDependencies.newDependencies().kernelExtensions(),
                 deps, ignore() ) );

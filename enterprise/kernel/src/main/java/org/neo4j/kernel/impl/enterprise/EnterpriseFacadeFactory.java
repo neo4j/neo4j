@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.udc.UsageDataKeys;
 
 /**
  * This facade creates instances of the Enterprise edition of Neo4j.
@@ -37,6 +38,7 @@ public class EnterpriseFacadeFactory extends GraphDatabaseFacadeFactory
             GraphDatabaseFacade graphDatabaseFacade )
     {
         params.put( Configuration.editionName.name(), "Enterprise" );
+        params.put( Configuration.operationalMode.name(), UsageDataKeys.OperationalMode.single.name() );
         return super.newFacade( storeDir, params, dependencies, graphDatabaseFacade );
     }
 
