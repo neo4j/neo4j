@@ -50,8 +50,10 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
  * ability to perform an election at all should be caught by this test. Very
  * rare false positives should not be used as an indication for increasing the
  * limits.
+ *
+ * Notice the class name: this is _not_ going to be run as part of the main build.
  */
-public class ElectionPerformanceIT
+public class ElectionPerformanceTesting
 {
     /**
      * This class simply waits for a single entry to have been committed for each member,
