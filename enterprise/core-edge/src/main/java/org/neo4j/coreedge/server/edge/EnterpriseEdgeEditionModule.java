@@ -43,6 +43,7 @@ import org.neo4j.coreedge.raft.replication.tx.ExponentialBackoffStrategy;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.NonBlockingChannels;
+import org.neo4j.coreedge.server.core.RoleProcedure;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
@@ -51,6 +52,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.api.bolt.SessionTracker;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
@@ -71,6 +73,7 @@ import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -90,6 +93,8 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.udc.UsageData;
 
 import static java.util.Collections.singletonMap;
+
+import static org.neo4j.coreedge.server.core.RoleProcedure.CoreOrEdge.EDGE;
 import static org.neo4j.kernel.impl.factory.CommunityEditionModule.createLockManager;
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
 
@@ -99,8 +104,21 @@ import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THR
  */
 public class EnterpriseEdgeEditionModule extends EditionModule
 {
-    public EnterpriseEdgeEditionModule( final PlatformModule platformModule,
-                                        DiscoveryServiceFactory discoveryServiceFactory )
+    @Override
+    public void registerProcedures( Procedures procedures )
+    {
+        try
+        {
+            procedures.register( new RoleProcedure( EDGE ) );
+        }
+        catch ( ProcedureException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    EnterpriseEdgeEditionModule( final PlatformModule platformModule,
+                                 DiscoveryServiceFactory discoveryServiceFactory )
     {
         LogService logging = platformModule.logging;
         Log userLog = logging.getUserLog( EnterpriseEdgeEditionModule.class );

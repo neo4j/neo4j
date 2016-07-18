@@ -145,6 +145,7 @@ import org.neo4j.udc.UsageData;
 import static java.time.Clock.systemUTC;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import static org.neo4j.coreedge.server.core.RoleProcedure.CoreOrEdge.CORE;
 import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.NEW_THREAD;
 
 /**
@@ -172,6 +173,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
             procedures.register( new DiscoverMembersProcedure( discoveryService, logProvider ) );
             procedures.register( new AcquireEndpointsProcedure( discoveryService, consensusModule.raftInstance(), logProvider ) );
             procedures.register( new ClusterOverviewProcedure( discoveryService, consensusModule.raftInstance(), logProvider ) );
+            procedures.register( new RoleProcedure( CORE ) );
         }
         catch ( ProcedureException e )
         {
