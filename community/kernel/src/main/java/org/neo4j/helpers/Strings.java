@@ -19,8 +19,11 @@
  */
 package org.neo4j.helpers;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Helper functions for working with strings.
@@ -174,6 +177,21 @@ public final class Strings
             result.append( line ).append( System.lineSeparator() );
         }
         return result.toString();
+    }
+
+    /**
+     * Join given elements with the given separator.
+     *
+     * @param separator the element separator.
+     * @param elements objects to join.
+     * @return joined string.
+     * @throws NullPointerException if either {@code separator} or {@code elements} is null.
+     */
+    public static String join( String separator, Object... elements )
+    {
+        Objects.requireNonNull( separator );
+        Objects.requireNonNull( elements );
+        return StringUtils.join( elements, separator );
     }
 
     public static void escape( Appendable output, String arg ) throws IOException

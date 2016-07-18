@@ -32,7 +32,7 @@ import org.neo4j.kernel.configuration.Settings;
 public class EnterpriseEditionSettings
 {
     @Description( "Specified names of id types (comma separated) that should be reused. " +
-                  "Currently only 'RELATIONSHIP' type is supported. " )
+                  "Currently only 'NODE' and 'RELATIONSHIP' types are supported. " )
     public static Setting<List<String>> idTypesToReuse =
             Settings.setting( "dbms.ids.reuse.types.override", Settings.STRING_LIST, "" );
 

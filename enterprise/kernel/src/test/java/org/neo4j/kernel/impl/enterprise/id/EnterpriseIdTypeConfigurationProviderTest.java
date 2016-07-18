@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.IdTypeConfiguration;
@@ -50,6 +51,7 @@ public class EnterpriseIdTypeConfigurationProviderTest
         return Arrays.asList( new Object[]{IdType.PROPERTY},
                 new Object[]{IdType.STRING_BLOCK},
                 new Object[]{IdType.ARRAY_BLOCK},
+                new Object[]{IdType.NODE},
                 new Object[]{IdType.RELATIONSHIP},
                 new Object[]{IdType.NODE_LABELS} );
     }
@@ -63,9 +65,9 @@ public class EnterpriseIdTypeConfigurationProviderTest
     public void nonReusableTypeConfiguration()
     {
         IdTypeConfigurationProvider provider = createIdTypeProvider();
-        IdTypeConfiguration typeConfiguration = provider.getIdTypeConfiguration( IdType.NODE );
-        assertFalse( "Node ids are not reusable.", typeConfiguration.allowAggressiveReuse() );
-        assertEquals( "Node ids are not reusable.", 1024, typeConfiguration.getGrabSize() );
+        IdTypeConfiguration typeConfiguration = provider.getIdTypeConfiguration( IdType.SCHEMA );
+        assertFalse( "Schema record ids are not reusable.", typeConfiguration.allowAggressiveReuse() );
+        assertEquals( "Schema record ids are not reusable.", 1024, typeConfiguration.getGrabSize() );
     }
 
     @Test
@@ -80,7 +82,7 @@ public class EnterpriseIdTypeConfigurationProviderTest
     private IdTypeConfigurationProvider createIdTypeProvider()
     {
         Map<String,String> params = MapUtil.stringMap( EnterpriseEditionSettings.idTypesToReuse.name(),
-                IdType.RELATIONSHIP.name() );
+                Strings.join( ",", IdType.NODE, IdType.RELATIONSHIP ) );
         Config config = new Config( params );
         return new EnterpriseIdTypeConfigurationProvider( config );
     }
