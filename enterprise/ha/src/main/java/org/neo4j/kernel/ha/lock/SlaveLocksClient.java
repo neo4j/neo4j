@@ -36,6 +36,8 @@ import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.impl.locking.LockType.READ;
 import static org.neo4j.kernel.impl.locking.LockType.WRITE;
@@ -59,6 +61,7 @@ class SlaveLocksClient implements Locks.Client
     // Using atomic ints to avoid creating garbage through boxing.
     private final Map<Locks.ResourceType, Map<Long, AtomicInteger>> sharedLocks;
     private final Map<Locks.ResourceType, Map<Long, AtomicInteger>> exclusiveLocks;
+    private final Log log;
     private final boolean txTerminationAwareLocks;
     private boolean initialized;
     private volatile boolean stopped;
@@ -69,6 +72,7 @@ class SlaveLocksClient implements Locks.Client
             Locks localLockManager,
             RequestContextFactory requestContextFactory,
             AvailabilityGuard availabilityGuard,
+            LogProvider logProvider,
             boolean txTerminationAwareLocks )
     {
         this.master = master;
@@ -76,6 +80,7 @@ class SlaveLocksClient implements Locks.Client
         this.localLockManager = localLockManager;
         this.requestContextFactory = requestContextFactory;
         this.availabilityGuard = availabilityGuard;
+        this.log = logProvider.getLog( getClass() );
         this.txTerminationAwareLocks = txTerminationAwareLocks;
         sharedLocks = new HashMap<>();
         exclusiveLocks = new HashMap<>();
@@ -203,7 +208,7 @@ class SlaveLocksClient implements Locks.Client
         if ( txTerminationAwareLocks )
         {
             client.stop();
-            endLockSessionOnMaster( false );
+            stopLockSessionOnMaster();
             stopped = true;
         }
     }
@@ -218,7 +223,7 @@ class SlaveLocksClient implements Locks.Client
         {
             if ( !stopped )
             {
-                endLockSessionOnMaster( true );
+                closeLockSessionOnMaster();
                 stopped = true;
             }
             initialized = false;
@@ -230,6 +235,23 @@ class SlaveLocksClient implements Locks.Client
     {
         assertNotStopped();
         return initialized ? client.getLockSessionId() : -1;
+    }
+
+    private void stopLockSessionOnMaster()
+    {
+        try
+        {
+            endLockSessionOnMaster( false );
+        }
+        catch ( Throwable t )
+        {
+            log.warn( "Unable to stop lock session on master", t );
+        }
+    }
+
+    private void closeLockSessionOnMaster()
+    {
+        endLockSessionOnMaster( true );
     }
 
     private void endLockSessionOnMaster( boolean success )

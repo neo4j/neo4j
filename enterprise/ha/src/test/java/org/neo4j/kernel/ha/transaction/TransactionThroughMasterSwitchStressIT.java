@@ -21,7 +21,13 @@ package org.neo4j.kernel.ha.transaction;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -41,15 +47,13 @@ import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
 import org.neo4j.test.ha.ClusterRule;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
 
-import static org.junit.Assert.assertEquals;
-
 import static java.lang.System.currentTimeMillis;
-
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.TimeUtil.parseTimeMillis;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.UNKNOWN;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
-import static org.neo4j.kernel.impl.ha.ClusterManager.memberSeesOtherMemberAsFailed;
+import static org.neo4j.kernel.impl.api.KernelTransactions.tx_termination_aware_locks;
 import static org.neo4j.kernel.impl.ha.ClusterManager.memberThinksItIsRole;
 
 /**
@@ -77,27 +81,38 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.memberThinksItIsRole;
  * This test is a stress test and duration of execution can be controlled via system property
  * -D{@link org.neo4j.kernel.ha.transaction.TransactionThroughMasterSwitchStressIT}.duration
  */
+@RunWith( Parameterized.class )
 public class TransactionThroughMasterSwitchStressIT
 {
+    @Parameter
+    public boolean txTerminationAwareLocks;
+
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() )
-                .withInstanceSetting( HaSettings.slave_only,
-                        new IntFunction<String>() // instances 1 and 2 are slave only
+            .withSharedSetting( tx_termination_aware_locks, String.valueOf( txTerminationAwareLocks ) )
+            .withInstanceSetting( HaSettings.slave_only,
+                    new IntFunction<String>() // instances 1 and 2 are slave only
+                    {
+                        @Override
+                        public String apply( int value )
                         {
-                            @Override
-                            public String apply( int value )
+                            if ( value == 1 || value == 2 )
                             {
-                                if ( value == 1 || value == 2 )
-                                {
-                                    return Settings.TRUE;
-                                }
-                                else
-                                {
-                                    return Settings.FALSE;
-                                }
+                                return Settings.TRUE;
+                            }
+                            else
+                            {
+                                return Settings.FALSE;
                             }
                         }
-                );
+                    }
+            );
+
+    @Parameters(name = "txTerminationAwareLocks={0}")
+    public static List<Object[]> txTerminationAwareLocks()
+    {
+        return Arrays.asList( new Object[]{false}, new Object[]{true} );
+    }
 
     @Test
     public void shouldNotHaveTransactionsRunningThroughRoleSwitchProduceInconsistencies() throws Throwable

@@ -631,7 +631,7 @@ public class HighlyAvailableEditionModule
                                        LifeSupport modeSwitchersLife, final Config config,
                                        DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
                                        RequestContextFactory requestContextFactory,
-                                       AvailabilityGuard availabilityGuard, final LogService logging )
+                                       AvailabilityGuard availabilityGuard, final LogService logService )
     {
         DelegateInvocationHandler<Locks> lockManagerDelegate = new DelegateInvocationHandler<>( Locks.class );
         final Locks lockManager = (Locks) newProxyInstance( Locks.class.getClassLoader(),
@@ -644,9 +644,9 @@ public class HighlyAvailableEditionModule
             @Override
             public Locks newInstance()
             {
-                return CommunityEditionModule.createLockManager( config, logging );
+                return CommunityEditionModule.createLockManager( config, logService );
             }
-        }, config ) );
+        }, logService.getInternalLogProvider(), config ) );
         return lockManager;
     }
 
