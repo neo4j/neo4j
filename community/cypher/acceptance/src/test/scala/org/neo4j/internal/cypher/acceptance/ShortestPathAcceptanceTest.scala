@@ -38,6 +38,19 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     nodeD = createLabeledNode("D")
   }
 
+  test("unnamed shortest path with fallback-required predicate should work") {
+    val r1 = relate(nodeA, nodeB, "bar" -> 1)
+    relate(nodeB, nodeC, "foo" -> 1)
+    relate(nodeC, nodeD, "foo" -> 1)
+    val r4 = relate(nodeB, nodeD, "foo" -> 1)
+
+    val queryWithComplexPredicate = "MATCH shortestPath((src:A)-[r*]->(dst:D)) WHERE ALL (x IN tail(r) WHERE x.foo = (head(r)).bar) RETURN r AS rels"
+
+    val result = executeWithAllPlannersAndCompatibilityMode(queryWithComplexPredicate).columnAs[List[Node]]("rels").toList
+
+    result should equal(List(List(r1, r4)))
+  }
+
   test("finds shortest path that fulfills predicate on nodes") {
     /* a-b-c-d */
     relate(nodeA, nodeB)
