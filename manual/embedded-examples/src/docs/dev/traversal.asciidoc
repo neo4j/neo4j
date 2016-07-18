@@ -106,7 +106,7 @@ tag=walkOrderedPath
 
 Note that we set the uniqueness to 
 +link:javadocs/org/neo4j/graphdb/traversal/Uniqueness.html#NODE_PATH[Uniqueness.NODE_PATH]+
-as we want to be able to revisit the same node dureing the traversal, but not the same path.
+as we want to be able to revisit the same node during the traversal, but not the same path.
 
 .Perform the traversal and print the result
 [snippet,java]
