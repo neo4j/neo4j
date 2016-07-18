@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -27,6 +28,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientDatabaseFailureException;
+import org.neo4j.ha.TestRunConditions;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
@@ -37,6 +39,7 @@ import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.PENDING;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
@@ -152,6 +155,7 @@ public class ClusterPartitionIT
     public void losingQuorumIncrementallyShouldMakeAllInstancesPendingAndReadOnly() throws Throwable
     {
         int clusterSize = 5; // we need 5 to differentiate between all other instances gone and just quorum being gone
+        assumeTrue( TestRunConditions.shouldRunAtClusterSize( clusterSize ) );
 
         ClusterManager manager = new ClusterManager.Builder().withRootDirectory( dir.cleanDirectory( "testcluster" ) )
                 .withCluster( ClusterManager.clusterOfSize( clusterSize ) )
@@ -232,6 +236,7 @@ public class ClusterPartitionIT
     public void losingQuorumAbruptlyShouldMakeAllInstancesPendingAndReadOnly() throws Throwable
     {
         int clusterSize = 5; // we need 5 to differentiate between all other instances gone and just quorum being gone
+        assumeTrue( TestRunConditions.shouldRunAtClusterSize( clusterSize ) );
 
         ClusterManager manager = new ClusterManager.Builder().withRootDirectory( dir.cleanDirectory( "testcluster" ) )
                 .withCluster( ClusterManager.clusterOfSize( clusterSize ) )
